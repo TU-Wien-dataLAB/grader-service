@@ -93,6 +93,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
             self.log.error(e)
             self.session.rollback()
             raise HTTPError(400, reason="Cannot add object to database.")
+        self.set_status(201)
         self.write_json(assignment)
 
 
