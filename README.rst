@@ -26,6 +26,10 @@ Grader Convert
 .. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
 
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml
+
+
 Grader Service
 
 .. image:: https://img.shields.io/pypi/v/grader-service
