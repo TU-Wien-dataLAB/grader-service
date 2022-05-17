@@ -13,6 +13,9 @@ General
 .. image:: https://img.shields.io/github/license/TU-Wien-dataLAB/Grader-Service
     :alt: GitHub
 
+.. image:: https://img.shields.io/github/commit-activity/m/TU-Wien-dataLAB/Grader-Service
+    :alt: GitHub commit activity
+
 Grader Convert
 
 .. image:: https://img.shields.io/pypi/v/grader-convert
@@ -36,6 +39,12 @@ Grader Labextension
 
 .. image:: https://img.shields.io/pypi/pyversions/grader-labextension
     :alt: PyPI - Python Version
+
+.. image:: https://img.shields.io/npm/v/grader-labextension
+    :alt: npm
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
