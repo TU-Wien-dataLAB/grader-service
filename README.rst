@@ -4,6 +4,7 @@
    :alt: banner
    :align: center
 
+General
 
 .. image:: https://readthedocs.org/projects/grader-service/badge/?version=latest
     :target: https://grader-service.readthedocs.io/en/latest/?badge=latest
@@ -12,6 +13,23 @@
 .. image:: https://img.shields.io/github/license/TU-Wien-dataLAB/Grader-Service
     :alt: GitHub
 
+Grader Convert
+
+.. image:: https://img.shields.io/pypi/v/grader-convert
+    :alt: PyPI
+
+Grader Service
+
+.. image:: https://img.shields.io/pypi/v/grader-service
+    :alt: PyPI
+
+Grader Labextension
+
+.. image:: https://img.shields.io/pypi/v/grader-labextension
+    :alt: PyPI
+
+.. image:: https://img.shields.io/pypi/pyversions/grader-labextension
+    :alt: PyPI - Python Version
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
