@@ -39,6 +39,10 @@ Grader Service
 .. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
 
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml
+
+
 Grader Labextension
 
 .. image:: https://img.shields.io/pypi/v/grader-labextension
