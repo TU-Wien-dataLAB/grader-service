@@ -36,8 +36,8 @@ jobs:
       working-directory: ./grader_convert
       run: python -m build
     - name: Publish package
-      working-directory: ./grader_convert
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      # working-directory: ./grader_convert
+      uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
         password: ${{ secrets.PYPI_SETUP_TOKEN }}
