@@ -18,6 +18,9 @@ Grader Convert
 .. image:: https://img.shields.io/pypi/v/grader-convert
     :alt: PyPI
 
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
+
 Grader Service
 
 .. image:: https://img.shields.io/pypi/v/grader-service
