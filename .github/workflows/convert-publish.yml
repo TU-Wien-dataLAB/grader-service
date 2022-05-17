@@ -34,11 +34,11 @@ jobs:
         pip install -r requirements.txt
     - name: Build package
       working-directory: ./grader_convert
-      run: python -m build
+      run: python -m build -n
     - name: Publish package
-      # working-directory: ./grader_convert
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_SETUP_TOKEN }}
-        verbose: true
+      working-directory: ./grader_convert
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
+      run: |
+        twine upload dist/*
