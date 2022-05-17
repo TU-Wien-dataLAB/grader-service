@@ -13,7 +13,7 @@ from grader_convert.main import main
 
 _version = "0.1.0"
 
-source_root = Path(".")
+source_root = Path(__file__).parent
 # Read the requirements
 with (source_root / "requirements.txt").open(encoding="utf8") as f:
     requirements = f.readlines()
