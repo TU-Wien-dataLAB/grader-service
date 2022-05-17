@@ -26,6 +26,9 @@ Grader Service
 .. image:: https://img.shields.io/pypi/v/grader-service
     :alt: PyPI
 
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
+
 Grader Labextension
 
 .. image:: https://img.shields.io/pypi/v/grader-labextension
