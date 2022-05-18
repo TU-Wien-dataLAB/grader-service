@@ -196,11 +196,6 @@ class RPCHandler(GitBaseHandler):
 
     Use this handler to handle example.git/git-upload-pack and example.git/git-receive-pack URLs"""
 
-    def on_finish(self):
-        # we do not close the session we just commit because LocalAutogradeExecutor still needs it
-        if self.session:
-            self.session.commit()
-
     async def prepare(self):
         await super().prepare()
         self.rpc = self.path_args[0]
@@ -215,94 +210,12 @@ class RPCHandler(GitBaseHandler):
         )
 
     async def post(self, rpc):
-        ## Create submission in database
-        # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_name', 'repo_type', ...]
-        pathlets = self.request.path.strip("/").split("/")
-        pathlets = pathlets[3:]
-        if pathlets[-1] == "git-receive-pack" and pathlets[-2] == "assignment":
-            # get lecture and assignment if they exist
-            try:
-                lecture = (
-                    self.session.query(Lecture)
-                        .filter(Lecture.code == pathlets[0])
-                        .one()
-                )
-                assignment: Assignment = (
-                    self.session.query(Assignment)
-                        .filter(
-                        Assignment.lectid == lecture.id,
-                        Assignment.name == unquote(pathlets[1]),
-                    ).one()
-                )
-            except NoResultFound:
-                raise HTTPError(404)
-            except MultipleResultsFound:
-                raise HTTPError(400)
-
-            submission = Submission()
-            submission.assignid = assignment.id
-            submission.date = datetime.datetime.utcnow()
-            submission.username = self.user.name
-            submission.feedback_available = False
-
-            if assignment.duedate is not None and submission.date > assignment.duedate:
-                self.write({"message": "Cannot submit assignment: Past due date!"})
-                self.write_error(400)
-
-            await self.git_response()
-
-            try:
-                ret = subprocess.run(
-                    shlex.split("git rev-parse main"),
-                    capture_output=True,
-                    cwd=self.gitdir,
-                )
-                submission.commit_hash = str(ret.stdout, "utf-8").strip()
-                submission.auto_status = "not_graded"
-                submission.manual_status = "not_graded"
-            except subprocess.CalledProcessError as e:
-                self.write_error(400)
-                return
-            except FileNotFoundError as e:
-                self.write_error(404)
-                return
-
-            self.session.add(submission)
-            self.session.commit()
-
-            # If the assignment has automatic grading or fully automatic grading perform necessary operations
-            if assignment.automatic_grading in [AutoGradingBehaviour.auto, AutoGradingBehaviour.full_auto]:
-                executor = RequestHandlerConfig.instance().autograde_executor_class(
-                    self.application.grader_service_dir, submission, close_session=False, config=self.application.config
-                )
-                if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
-                    feedback_executor = GenerateFeedbackExecutor(
-                        self.application.grader_service_dir, submission, config=self.application.config
-                    )
-                    GraderExecutor.instance().submit(
-                        executor.start,
-                        on_finish=lambda: GraderExecutor.instance().submit(feedback_executor.start)
-                    )
-                else:
-                    GraderExecutor.instance().submit(
-                        executor.start,
-                        lambda: self.log.info(f"Autograding task of submission {submission.id} exited!")
-                    )
-
-            self.set_header("Content-Type", "application/x-git-%s-result" % rpc)
-            self.set_header(
-                "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-            )
-            if assignment.automatic_grading == AutoGradingBehaviour.unassisted:
-                self.session.close()
-            await self.finish()
-        else:
-            self.set_header("Content-Type", "application/x-git-%s-result" % rpc)
-            self.set_header(
-                "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-            )
-            await self.git_response()
-            await self.finish()
+        self.set_header("Content-Type", "application/x-git-%s-result" % rpc)
+        self.set_header(
+            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+        )
+        await self.git_response()
+        await self.finish()
 
 
 @register_handler(path="/.*/info/refs", version_specifier=VersionSpecifier.NONE)
@@ -338,4 +251,4 @@ class InfoRefsHandler(GitBaseHandler):
         await self.flush()
 
         await self.git_response()
-        self.finish()
+        await self.finish()
