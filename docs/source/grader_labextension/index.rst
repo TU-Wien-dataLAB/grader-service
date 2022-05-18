@@ -38,7 +38,7 @@ Subpackages
    :maxdepth: 4
 
    grader_labextension.api
-   grader_labextension.handlers
+   handlers/handlers
    grader_labextension.services
 
 Submodules
