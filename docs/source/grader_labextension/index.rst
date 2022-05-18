@@ -26,7 +26,7 @@ REST API Documentation
 -----------------------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    grader_labextension_rest_api
 
@@ -35,14 +35,12 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    grader_labextension.api
    handlers/handlers
    grader_labextension.services
 
-Submodules
-----------
 
 Handlers
 ------------------------------------

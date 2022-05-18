@@ -5,15 +5,15 @@ REST API Documentation
 ------------------------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    grader_service_rest_api
 
-Subpackages
+Contents
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    autograding/grader_service.autograding
    handlers/handlers
