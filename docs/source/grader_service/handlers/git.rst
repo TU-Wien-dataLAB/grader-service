@@ -1,9 +1,6 @@
 Git
 ====================================
 
-Submodules
-----------
-
 Server
 ------------------------------------------
 
@@ -12,11 +9,3 @@ Server
    :undoc-members:
    :show-inheritance:
 
-..
-    Module contents
-    ---------------
-
-    .. automodule:: grader_service.handlers.git
-       :members:
-       :undoc-members:
-       :show-inheritance:

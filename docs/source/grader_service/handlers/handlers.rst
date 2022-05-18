@@ -1,28 +1,17 @@
 Handlers
 ================================
 
-Subpackages
+Contents
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
 
-   grader_service.handlers.git
-
-
-
-
-
-
-
-
-
-
-..
-    Module contents
-    ---------------
-
-    .. automodule:: grader_service.handlers
-       :members:
-       :undoc-members:
-       :show-inheritance:
+   base_handler
+   lecture
+   assignment
+   submission
+   grading
+   permission
+   git
+   handler_utils
