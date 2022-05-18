@@ -1,29 +1,15 @@
 Models and Utils
 ===========================
 
-Models
+Contents
 -----------
 
 .. toctree::
    :maxdepth: 4
 
    grader_service.api.models
+   grader_service.api.utils
 
-Typing utils
-----------------------------------------
-
-.. automodule:: grader_service.api.typing_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Util
--------------------------------
-
-.. automodule:: grader_service.api.util
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 

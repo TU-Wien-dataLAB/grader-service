@@ -1,8 +1,9 @@
 ORM
 ===========================
+.. currentmodule:: grader_service.orm
 
-Submodules
-----------
+.. autosummary::
+    Assignment
 
 Assignment
 -------------------------------------

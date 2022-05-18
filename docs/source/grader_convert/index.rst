@@ -1,19 +1,16 @@
 Grader Convert
 =======================
 
-Subpackages
+Contents
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    grader_convert.converters
    grader_convert.gradebook
    grader_convert.nbgraderformat
    grader_convert.preprocessors
-
-Submodules
-----------
 
 Main
 ---------------------------
