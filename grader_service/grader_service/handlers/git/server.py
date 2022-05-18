@@ -87,13 +87,13 @@ class GitBaseHandler(GraderBaseHandler):
 
     def gitlookup(self, rpc: str):
         pathlets = self.request.path.strip("/").split("/")
-        # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_name', 'repo_type', ...]
+        # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_id', 'repo_type', ...]
         if len(pathlets) < 6:
             return None
         pathlets = pathlets[3:]
         lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
         assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, pathlets[0], unquote(pathlets[1]))
+            os.path.join(self.gitbase, pathlets[0], pathlets[1])
         )
 
         repo_type = pathlets[2]
@@ -120,18 +120,9 @@ class GitBaseHandler(GraderBaseHandler):
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:
-            assignment = (
-                self.session.query(Assignment)
-                    .filter(
-                    Assignment.lectid == lecture.id,
-                    Assignment.name == unquote(pathlets[1]),
-                )
-                    .one()
-            )
-        except NoResultFound:
+            assignment = self.get_assignment(lecture.id, int(pathlets[1]))
+        except ValueError:
             raise HTTPError(404)
-        except MultipleResultsFound:
-            raise HTTPError(400)
 
         if repo_type == "assignment":
             repo_type: str = assignment.type
@@ -147,12 +138,7 @@ class GitBaseHandler(GraderBaseHandler):
             return None
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
-
-        try:
-            out = subprocess.run(["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True)
-            is_git = out.returncode == 0 and "true" in out.stdout.decode("utf-8")
-        except FileNotFoundError:
-            is_git = False
+        is_git = self.is_base_git_dir(path)
         # return git repo
         if os.path.exists(path) and is_git:
             return path

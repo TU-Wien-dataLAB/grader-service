@@ -10,6 +10,12 @@ jupyterhub_cookie_secret
 
 jupyterhub.sqlite*
 
+/examples/dev_environment/home_dir
+/examples/dev_environment/home_dir/**/*
+/examples/dev_environment/service_dir
+/examples/dev_environment/service_dir/**/*
+/examples/dev_environment/venv
+
 ### Linux ###
 *~
 

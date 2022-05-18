@@ -167,6 +167,8 @@ class GraderService(config.Application):
 
     async def start(self):
         self.log.info("Starting Grader Service...")
+        self.log.info(f"Config File: {self.config_file}")
+        self.log.info(f"Config: {self.config}")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
