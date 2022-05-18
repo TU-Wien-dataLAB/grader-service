@@ -1,13 +1,13 @@
-alembic==1.6.4
-SQLAlchemy==1.4.22
+alembic>=1.6.4
+SQLAlchemy>=1.4.22
 tornado==6.1
 six==1.16.0
 traitlets>=5.0.5
 tornado_sqlalchemy>=0.7.0
-typing-extensions==3.10.0.2
-urllib3==1.26.6
-json5==0.9.6
-jsonschema==3.2.0
+typing-extensions>=3.10.0.2
+urllib3>=1.26.6
+json5>=0.9.6
+jsonschema>=3.2.0
 setuptools
 kubernetes>=17.17.0
 #missing local libs

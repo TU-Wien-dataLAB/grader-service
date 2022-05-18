@@ -1,13 +1,86 @@
+.. image:: ./docs/source/_static/assets/images/logo_name.png
+   :width: 95%
+   :alt: banner
+   :align: center
 
-Grader Extensions
-=================
+General
+
+.. image:: https://readthedocs.org/projects/grader-service/badge/?version=latest
+    :target: https://grader-service.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+.. image:: https://img.shields.io/github/license/TU-Wien-dataLAB/Grader-Service
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/blob/main/LICENSE
+    :alt: BSD-3-Clause
+
+.. image:: https://img.shields.io/github/commit-activity/m/TU-Wien-dataLAB/Grader-Service
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/commits/
+    :alt: GitHub commit activity
+
+Grader Convert
+
+.. image:: https://img.shields.io/pypi/v/grader-convert
+    :target: https://pypi.org/project/grader-convert/
+    :alt: PyPI
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml
+
+
+Grader Service
+
+.. image:: https://img.shields.io/pypi/v/grader-service
+    :target: https://pypi.org/project/grader-service/
+    :alt: PyPI
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml
+
+
+Grader Labextension
+
+.. image:: https://img.shields.io/pypi/v/grader-labextension
+    :target: https://pypi.org/project/grader-labextension/
+    :alt: PyPI
+
+.. image:: https://img.shields.io/pypi/pyversions/grader-labextension
+    :target: https://pypi.org/project/grader-labextension/
+    :alt: PyPI - Python Version
+
+.. image:: https://img.shields.io/npm/v/grader-labextension
+    :target: https://www.npmjs.com/package/grader-labextension
+    :alt: npm
+
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml/badge.svg?branch=main
+    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml
+
+|
+
+Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
 This repository contains the lab/server extensions and the grader service as well as grader-convert.
 
 The grader service has only been tested on Unix/macOS operating systems.
 
+Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
+
+.. image:: ./docs/source/_static/assets/gifs/release2_small.gif
+
+
 Installation
 ============
+
+.. installation-start
+
+This repository contains the lab/server extensions and the grader service as well as grader-convert.
+
+The grader service has only been tested on Unix/macOS operating systems.
 
 This repository contains all the necessary packages for a full installation of the grader service.
 
@@ -39,107 +112,98 @@ In the ``grader`` directory run:
 
 .. code-block::
 
-   pip install ./convert
-   pip install ./grading_labextension
+   pip install ./grader_convert
+   pip install ./grader_labextension
    pip install ./grader_service
 
 
 Then, navigate to the ``grading_labextension``\ -directory and follow the instructions in the README file
 
+.. installation-end
+
+
+Getting Started
+===============
+
+.. running-start
+
 Running grader service
-----------------------
+=======================
 
-To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config:
+To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config: ::
 
-.. code-block::
-
-   c.JupyterHub.services.append(
-       {
-           'name': 'grader',
-           'url': 'http://127.0.0.1:4010',
-           'api_token': '<token>'
-       }
-   )
+    c.JupyterHub.services.append(
+        {
+            'name': 'grader',
+            'url': 'http://127.0.0.1:4010',
+            'api_token': '<token>'
+        }
+    )
 
 
-You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message:
+You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
 
-.. code-block::
-
-   Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
-
-
+    Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
 
 Specifying user roles
-^^^^^^^^^^^^^^^^^^^^^
+======================
 
-Since the JupyterHub is the only source of authentication for the service, it has to rely on the JupyterHub to provide all the necessary information for user groups. JupyterHub version 2.0 now supports RBAC which will be implemented soon.
+Since the JupyterHub is the only source of authentication for the service, it has to rely on the JupyterHub to provide all the necessary information for user groups.
 
-Until then, the service relies on the group configuration of JupyterHub version 1.5. Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by double underscores.
+Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by colons.
 
-The config could look like this:
+The config could look like this: ::
 
-.. code-block::
-
-   c.JupyterHub.load_groups = {
-       "lect1__instructor": ["user1"],
-       "lect1__tutor": ["user2"],
-       "lect1__student": ["user3", "user4"]
-   }
-
+    c.JupyterHub.load_groups = {
+        "lect1:instructor": ["user1"],
+        "lect1:tutor": ["user2"],
+        "lect1:student": ["user3", "user4"]
+    }
 
 Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.
 
 Starting the service
---------------------
+=====================
 
-In order to start the grader service we have to provide a configuration file for it as well:
+In order to start the grader service we have to provide a configuration file for it as well: ::
 
-.. code-block::
+    import os
 
-   import os
+    c.GraderService.service_host = "127.0.0.1"
+    # existing directory to use as the base directory for the grader service
+    service_dir = os.path.expanduser("<grader_service_dir>")
+    c.GraderService.grader_service_dir = service_dir
 
-   c.GraderService.service_host = "127.0.0.1"
-   # existing directory to use as the base directory for the grader service
-   service_dir = os.path.expanduser("<grader_service_dir>")
-   c.GraderService.grader_service_dir = service_dir
+    c.GraderServer.hub_service_name = "grader"
+    c.GraderServer.hub_api_token = "<token>"
+    c.GraderServer.hub_api_url = "http://127.0.0.1:8081/hub/api"
+    c.GraderServer.hub_base_url = "/"
 
-   c.GraderServer.hub_service_name = "grader"
-   c.GraderServer.hub_api_token = "<token>"
-   c.GraderServer.hub_api_url = "http://127.0.0.1:8081/hub/api"
-   c.GraderServer.hub_base_url = "/"
-
-   c.LocalAutogradeExecutor.base_input_path = os.path.expanduser(os.path.join(service_dir, "convert_in"))
-   c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(service_dir, "convert_out"))
+    c.LocalAutogradeExecutor.base_input_path = os.path.expanduser(os.path.join(service_dir, "convert_in"))
+    c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(service_dir, "convert_out"))
 
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
 
-Then the grader service can be started by specifying the config file as such:
+Then the grader service can be started by specifying the config file as such: ::
 
-.. code-block::
+    grader-service -f <grader_service_config.py>
 
-   grader-service -f <grader_service_config.py>
+When restarting the JupyterHub you should now see the following log message: ::
 
-
-When restarting the JupyterHub you should now see the following log message:
-
-.. code-block::
-
-   Adding external service grader at http://127.0.0.1:4010
-
+    Adding external service grader at http://127.0.0.1:4010
 
 Do not forget to set the log level to ``INFO`` in the JupyterHub config if you want to see this message.
 
-The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the ``jupyter_notebook_config.py`` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
+The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the `jupyter_notebook_config.py` file. When using the defaults from above we do not need to explicitly configure this but it would look like this: ::
 
-.. code-block::
+    import os
+    c.GitService.git_access_token = os.environ.get("JUPYTERHUB_API_TOKEN")
+    c.GitService.git_remote_url = "http://127.0.0.1:4010/services/grader/git"
 
-   import os
-   c.GitService.git_access_token = os.environ.get("JUPYTERHUB_API_TOKEN")
-   c.GitService.git_remote_url = "127.0.0.1:4010/services/grader/git"
-   c.GitService.git_http_scheme = "http"
+    c.RequestService.url = "http://127.0.0.1:4010"
 
-   c.RequestService.port = 4010
-   c.RequestService.host = "127.0.0.1"
-   c.RequestService.scheme = "http"
+
+.. running-end
+
+

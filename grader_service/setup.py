@@ -14,7 +14,7 @@ from grader_service.alembic.migrate import main as migrate_main
 
 _version = '0.1.0'
 
-source_root = Path(".")
+source_root = Path(__file__).parent
 # Read the requirements
 with (source_root / "requirements.txt").open(encoding="utf8") as f:
     requirements = f.readlines()
@@ -24,8 +24,8 @@ setup(
     version=_version,
     packages=find_packages(".", exclude=["grader_service.tests", "grader_service.tests.*"]),
     package_data={'grader_service.alembic': ['alembic.ini']},
-    url='https://gitlab.tuwien.ac.at/hpc/datalab/jupyter/grader/grader.git',
-    license='MIT',
+    url="https://github.com/TU-Wien-dataLAB/Grader-Service",
+    license="BSD-3-Clause",
     author='Elias Wimmer, Florian Jäger & Matthias Matt',
     author_email='',
     description='Grader service',
@@ -37,4 +37,9 @@ setup(
     },
     python_requires=">=3.8",
     install_requires=requirements,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+    ],
 )

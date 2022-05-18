@@ -1,0 +1,44 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Convert Tests
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      working-directory: ./grader_convert
+      run: |
+        python -m pip install --upgrade pip
+        python -m venv venv
+        source venv/bin/activate
+        pip install ipykernel
+        python -m ipykernel install --user --name=python3
+        pip install -r requirements.txt
+        pip install -r ../requirements-test.txt
+    - name: Run tests
+      working-directory: ./grader_convert
+      run: |
+        source venv/bin/activate
+        pytest ./grader_convert/tests

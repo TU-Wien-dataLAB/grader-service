@@ -50,33 +50,6 @@ def get_query_side_effect(lid=1, code="ivs21s", a_type="user", scope=Scope.stude
     return query_side_effect
 
 
-def test_git_lookup_student(tmpdir):
-    path = "services/grader/git/iv21s/1/assignment"
-    git_dir = str(tmpdir.mkdir("git"))
-
-    handler_mock = Mock()
-    handler_mock.request.path = path
-    handler_mock.gitbase = git_dir
-    handler_mock.user.name = "test_user"
-    # handler_mock.session = session
-
-    # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student)
-    handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="user",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
-    handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
-
-    lookup_dir = GitBaseHandler.gitlookup(handler_mock, rpc="send-pack")
-
-    assert os.path.exists(lookup_dir)
-    assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
-    common_path = os.path.commonpath([git_dir, lookup_dir])
-    created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/user/test_user"
-
-
 def test_git_lookup_instructor(tmpdir):
     path = "services/grader/git/iv21s/1/source"
     git_dir = str(tmpdir.mkdir("git"))

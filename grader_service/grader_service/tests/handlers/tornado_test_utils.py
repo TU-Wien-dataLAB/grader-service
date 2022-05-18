@@ -51,6 +51,7 @@ def app(tmpdir, sql_alchemy_db):
     GraderServer.hub_service_url = ""
     application = GraderServer(
         grader_service_dir=service_dir,
+        base_url="/services/grader",
         handlers=handlers,
         db=sql_alchemy_db,
         cookie_secret="test",

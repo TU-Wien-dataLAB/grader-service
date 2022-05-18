@@ -35,8 +35,7 @@ class GitBaseHandler(GraderBaseHandler):
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.clear()
-        if status_code == 403 and not self.has_auth:
-            status_code = 401
+        if status_code == 401:
             self.set_header("WWW-Authenticate", 'Basic realm="User Visible Realm"')
         self.set_status(status_code)
 
