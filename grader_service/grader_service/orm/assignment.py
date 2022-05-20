@@ -23,7 +23,9 @@ class Assignment(Base, Serializable):
     __tablename__ = "assignment"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
+    """Name of the assignment"""
     type = Column(Enum("user", "group"), nullable=False, server_default="user")
+    """Type of the assignment"""
     lectid = Column(Integer, ForeignKey("lecture.id"))
     duedate = Column(DateTime, nullable=False)
     points = Column(Integer, nullable=True)

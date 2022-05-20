@@ -83,6 +83,7 @@ class Gradebook:
         return self.in_context > 0
 
     def write_model(self):
+        """Writes JSON string to a JSON file"""
         with open(self.json_file, "w") as f:
             json_str = json.dumps(self.model.to_dict())
             self.log.info(

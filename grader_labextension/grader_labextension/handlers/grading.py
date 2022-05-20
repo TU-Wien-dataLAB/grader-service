@@ -15,7 +15,17 @@ import os
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/save?"
 )
 class ExportGradesHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}/submissions/save.
+    """
     async def put(self, lecture_id: int, assignment_id: int):
+        """
+        Exports submissions of an assignment to the csv format.
+
+        :param lecture_id: id of the lecture
+        :param assignment_id: id of the assignment
+        :return: the csv content
+        """
         query_params = RequestService.get_query_string(
             {
                 "instructor-version": "true",
@@ -52,6 +62,10 @@ class ExportGradesHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/auto\/?"
 )
 class GradingAutoHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to
+    /lecture/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/auto.
+    """
     async def get(self, lecture_id: int, assignment_id: int, sub_id: int):
         """Sends a GET-request to the grader service to autograde a submission
 
@@ -79,6 +93,10 @@ class GradingAutoHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/manual\/?"
 )
 class GradingManualHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to
+    /lecture/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/manual.
+    """
     async def get(self, lecture_id: int, assignment_id: int, sub_id: int):
         """Generates a local git repository and pulls autograded files of a submission in the user directory
 
@@ -142,6 +160,10 @@ class GradingManualHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/feedback\/?"
 )
 class GenerateFeedbackHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to
+    /lecture/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/feedback.
+    """
     async def get(self, lecture_id: int, assignment_id: int, sub_id: int):
         """Sends a GET-request to the grader service to generate feedback for a graded submission
 
@@ -170,6 +192,10 @@ class GenerateFeedbackHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/pull\/feedback\/?"
 )
 class PullFeedbackHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to
+    /lecture/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/pull/feedback.
+    """
     async def get(self, lecture_id: int, assignment_id: int, sub_id: int):
         """Generates a local git repository and pulls the feedback files of a submission in the user directory 
 
