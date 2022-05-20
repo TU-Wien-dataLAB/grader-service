@@ -21,7 +21,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments.
     """
     async def get(self, lecture_id: int):
-        """Sends a get request to the grader service and returns assignments of the lecture
+        """Sends a GET request to the grader service and returns assignments of the lecture
 
         :param lecture_id: id of the lecture
         :type lecture_id: int

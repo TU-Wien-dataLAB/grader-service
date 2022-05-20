@@ -58,6 +58,9 @@ class LectureBaseHandler(ExtensionBaseHandler):
 
 @register_handler(path=r"\/lectures\/(?P<lecture_id>\d*)\/?")
 class LectureObjectHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}.
+    """
     @web.authenticated
     async def put(self, lecture_id: int):
         """Sends a PUT-request to the grader service to update a lecture
@@ -124,7 +127,15 @@ class LectureObjectHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/users\/?"
 )
 class LectureStudentsHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/users.
+    """
     async def get(self, lecture_id: int):
+        """
+        Sends a GET request to the grader service and returns attendants of lecture
+        :param lecture_id: id of the lecture
+        :return: attendants of lecture
+        """
         try:
             response = await self.request_service.request(
                 method="GET",

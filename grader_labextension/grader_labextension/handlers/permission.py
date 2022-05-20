@@ -13,6 +13,9 @@ from tornado.httpclient import HTTPError
 
 @register_handler(path=r"\/permissions\/?")
 class PermissionBaseHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /permissions.
+    """
     @web.authenticated
     async def get(self):
         """ Sends a GET-request to the grader service and returns the permissions of a user
