@@ -15,6 +15,9 @@ from tornado.httpclient import HTTPError
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?"
 )
 class SubmissionHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
+    """
     async def get(self, lecture_id: int, assignment_id: int):
         """ Sends a GET-request to the grader service and returns submissions of a assignment
 
@@ -46,6 +49,9 @@ class SubmissionHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/properties\/?"
 )
 class SubmissionPropertiesHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/properties.
+    """
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """Sends a GET-request to the grader service and returns the properties of a submission
 
@@ -97,6 +103,9 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?"
 )
 class SubmissionObjectHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
+    """
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """Sends a GET-request to the grader service and returns the properties of a submission
 

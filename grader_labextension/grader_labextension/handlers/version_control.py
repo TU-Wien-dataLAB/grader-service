@@ -25,6 +25,9 @@ from tornado.httpclient import HTTPClientError, HTTPResponse
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/generate\/?"
 )
 class GenerateHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/generate.
+    """
     async def put(self, lecture_id: int, assignment_id: int):
         """Generates the release files from the source files of a assignment
 
@@ -80,6 +83,9 @@ class GenerateHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/remote-status\/(?P<repo>\w*)\/?"
 )
 class GitRemoteStatusHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/remote_status/{repo}.
+    """
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         if repo not in {"assignment", "source", "release"}:
             self.write_error(404)
@@ -111,7 +117,18 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/log\/(?P<repo>\w*)\/?"
 )
 class GitLogHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/log/{repo}.
+    """
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
+        """
+        Sends a GET request to the grader service to get the logs of a given repo.
+
+        :param lecture_id: id of the lecture
+        :param assignment_id: id of the assignment
+        :param repo: repo name
+        :return: logs of git repo
+        """
         if repo not in {"assignment", "source", "release"}:
             self.write_error(404)
         n_history = int(self.get_argument("n", "10"))
@@ -160,6 +177,9 @@ class GitLogHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/pull\/(?P<repo>\w*)\/?"
 )
 class PullHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/pull/{repo}.
+    """
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         """Creates a local repository and pulls the specified repo type
 
@@ -212,6 +232,9 @@ class PullHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/push\/(?P<repo>\w*)\/?"
 )
 class PushHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/push/{repo}.
+    """
     async def put(self, lecture_id: int, assignment_id: int, repo: str):
         """Pushes from the local repositories to remote
             If the repo type is release, it also generate the release files and updates the assignment properties in the grader service
@@ -368,7 +391,17 @@ class PushHandler(ExtensionBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?"
 )
 class ResetHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/reset.
+    """
     async def get(self, lecture_id: int, assignment_id: int):
+        """
+        Sends a GET request to the grader service that resets the user repo.
+
+        :param lecture_id: id of the lecture
+        :param assignment_id: id of the assignment
+        :return: void
+        """
         try:
             await self.request_service.request(
                 "GET",
@@ -386,7 +419,17 @@ class ResetHandler(ExtensionBaseHandler):
     path=r"\/(?P<lecture_id>\d*)\/(?P<assignment_id>\d*)\/(?P<notebook_name>.*)"
 )
 class NotebookAccessHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/{notebook_name}.
+    """
     async def get(self, lecture_id: int, assignment_id: int, notebook_name: str):
+        """
+        Sends a GET request to the grader service to access notebook and redirect to it.
+        :param lecture_id: id of the lecture
+        :param assignment_id: id of the assignment
+        :param notebook_name: notebook name
+        :return: void
+        """
         notebook_name = unquote(notebook_name)
 
         try:
