@@ -15,6 +15,9 @@ from tornado.httpclient import HTTPError
 
 @register_handler(path=r"\/lectures\/?")
 class LectureBaseHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures.
+    """
     @web.authenticated
     async def get(self):
         """Sends a GET-request to the grader service and returns the autorized lectures

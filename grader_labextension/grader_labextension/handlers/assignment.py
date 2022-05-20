@@ -18,7 +18,7 @@ from tornado.httpclient import HTTPError
 @register_handler(path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/?")
 class AssignmentBaseHandler(ExtensionBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments.
     """
     async def get(self, lecture_id: int):
         """Sends a get request to the grader service and returns assignments of the lecture
@@ -107,7 +107,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
 )
 class AssignmentObjectHandler(ExtensionBaseHandler):
     """
-        Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}.
+        Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}.
         """
     async def put(self, lecture_id: int, assignment_id: int):
         """Sends a PUT-request to the grader service to update a assignment

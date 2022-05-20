@@ -24,7 +24,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 )
 class AssignmentBaseHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments.
     """
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
@@ -103,7 +103,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
 )
 class AssignmentObjectHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}.
     """
 
     @authorize([Scope.instructor])
@@ -207,7 +207,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 )
 class AssignmentResetHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}/reset.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/reset.
     """
     @authorize([Scope.instructor, Scope.tutor, Scope.student])
     async def get(self, lecture_id: int, assignment_id: int):
@@ -245,7 +245,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 )
 class AssignmentPropertiesHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}/properties.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/properties.
     """
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):

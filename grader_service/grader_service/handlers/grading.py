@@ -23,7 +23,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize, R
 )
 class GradingAutoHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}/grading/
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/grading/
     {submission_id}/auto.
     """
     def on_finish(self):
@@ -65,7 +65,7 @@ class GradingAutoHandler(GraderBaseHandler):
 )
 class GenerateFeedbackHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/assignments/{assignment_id}/grading/
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/grading/
     {submission_id}/feedback.
     """
     def on_finish(self):

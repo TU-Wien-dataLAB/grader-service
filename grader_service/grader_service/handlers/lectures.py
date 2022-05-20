@@ -20,7 +20,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 @register_handler(r"\/lectures\/?", VersionSpecifier.ALL)
 class LectureBaseHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture.
+    Tornado Handler class for http requests to /lectures.
     """
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self):
@@ -86,7 +86,7 @@ class LectureBaseHandler(GraderBaseHandler):
 @register_handler(r"\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
 class LectureObjectHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}.
+    Tornado Handler class for http requests to /lectures/{lecture_id}.
     """
     @authorize([Scope.instructor])
     async def put(self, lecture_id: int):
@@ -160,7 +160,7 @@ class LectureObjectHandler(GraderBaseHandler):
 )
 class LectureStudentsHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /lecture/{lecture_id}/users.
+    Tornado Handler class for http requests to /lectures/{lecture_id}/users.
     """
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int):
