@@ -12,6 +12,8 @@ from jupyter_core.application import JupyterApp
 from traitlets.config.application import Application
 from traitlets.traitlets import Unicode, validate, TraitError
 
+from .._version import __version__
+
 base_converter_aliases = {
     "log-level": "Application.log_level",
     "i": "ConverterApp.input_directory",
@@ -37,7 +39,7 @@ class ConverterApp(Application):
     description = """Base app for converters
     """
 
-    __version__ = "0.0.1"
+    __version__ = __version__
 
     aliases = base_converter_aliases
     flags = base_converter_flags

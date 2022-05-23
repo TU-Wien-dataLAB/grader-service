@@ -11,8 +11,7 @@ from setuptools import setup
 import os
 from grader_service.main import main
 from grader_service.alembic.migrate import main as migrate_main
-
-_version = '0.1.0'
+from grader_service._version import __version__
 
 source_root = Path(__file__).parent
 # Read the requirements
@@ -21,7 +20,7 @@ with (source_root / "requirements.txt").open(encoding="utf8") as f:
 
 setup(
     name='grader-service',
-    version=_version,
+    version=__version__,
     packages=find_packages(".", exclude=["grader_service.tests", "grader_service.tests.*"]),
     package_data={'grader_service.alembic': ['alembic.ini']},
     url="https://github.com/TU-Wien-dataLAB/Grader-Service",

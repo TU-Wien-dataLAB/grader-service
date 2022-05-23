@@ -64,10 +64,6 @@ Grader Labextension
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
-This repository contains the lab/server extensions and the grader service as well as grader-convert.
-
-The grader service has only been tested on Unix/macOS operating systems.
-
 Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
 
 .. image:: ./docs/source/_static/assets/gifs/release2_small.gif
@@ -78,7 +74,7 @@ Installation
 
 .. installation-start
 
-This repository contains the lab/server extensions and the grader service as well as grader-convert.
+This repository contains the packages for the jupyter extensions and the grader service as well as grader-convert.
 
 The grader service has only been tested on Unix/macOS operating systems.
 
@@ -86,7 +82,7 @@ This repository contains all the necessary packages for a full installation of t
 
 
 * ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service.
-* ``grading_labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
+* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
 * ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
 
 Requirements
@@ -106,18 +102,20 @@ Manual Installation
 Local installation
 ------------------
 
-Navigate to the ``convert`` directory and install the package requirements with the package manager ``pip``
-
 In the ``grader`` directory run:
 
 .. code-block::
-
+   pip install -r ./grader_convert/requirements.txt
    pip install ./grader_convert
+
+   pip install -r ./grader_labextension/requirements.txt
    pip install ./grader_labextension
+
+   pip install -r ./grader_service/requirements.txt
    pip install ./grader_service
 
 
-Then, navigate to the ``grading_labextension``\ -directory and follow the instructions in the README file
+Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file
 
 .. installation-end
 

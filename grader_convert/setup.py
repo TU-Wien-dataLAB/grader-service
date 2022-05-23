@@ -10,8 +10,7 @@ from setuptools import find_packages
 from setuptools import setup
 import os
 from grader_convert.main import main
-
-_version = "0.1.0"
+from grader_convert._version import __version__
 
 source_root = Path(__file__).parent
 # Read the requirements
@@ -20,7 +19,7 @@ with (source_root / "requirements.txt").open(encoding="utf8") as f:
 
 setup(
     name="grader-convert",
-    version=_version, 
+    version=__version__,
     packages=find_packages(".", exclude=["grader_convert.tests", "grader_convert.tests.*"]),
     package_data={"grader_convert": ["templates/**/*"], "grader_convert.nbgraderformat": ["*.json"]},
     url="https://github.com/TU-Wien-dataLAB/Grader-Service",

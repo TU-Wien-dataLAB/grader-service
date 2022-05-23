@@ -1,7 +1,10 @@
 openapi: '3.0.2'
 info:
   title: Grader API
-  version: '0.1'
+  description: The REST API for the grader service
+  license:
+    name: BSD-3-Clause
+  version: '0.1.0'
 servers:
   - url: /services/mock
     description: relative path to mock
