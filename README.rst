@@ -105,6 +105,7 @@ Local installation
 In the ``grader`` directory run:
 
 .. code-block::
+
    pip install -r ./grader_convert/requirements.txt
    pip install ./grader_convert
 
