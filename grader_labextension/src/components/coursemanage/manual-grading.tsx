@@ -5,7 +5,14 @@
 // LICENSE file in the root directory of this source tree.
 
 import { ModalTitle } from '../util/modal-title';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography
+} from '@mui/material';
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
@@ -18,6 +25,7 @@ import { GradeBook } from '../../services/gradebook';
 import { createManualFeedback } from '../../services/grading.service';
 import { FilesList } from '../util/file-list';
 import { AgreeDialog } from '../util/dialog';
+import ReplayIcon from '@mui/icons-material/Replay';
 
 export interface IManualGradingProps {
   lecture: Lecture;
@@ -39,21 +47,14 @@ export const ManualGrading = (props: IManualGradingProps) => {
     handleDisagree: null
   });
   React.useEffect(() => {
-    getProperties(
-      props.lecture.id,
-      props.assignment.id,
-      props.submission.id
-    ).then(properties => {
-      const gradeBook = new GradeBook(properties);
-      setGradeBook(gradeBook);
-    });
+    reloadProperties();
     createManualFeedback(
       props.lecture.id,
       props.assignment.id,
       props.submission.id
     ).then(() => {
       const manualPath = `manualgrade/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`;
-      console.log("Successfully pulled autograde repo into " + manualPath);
+      console.log('Successfully pulled autograde repo into ' + manualPath);
       setPath(manualPath);
     });
   }, [props.lecture, props.assignment, props.submission]);
@@ -85,6 +86,17 @@ export const ManualGrading = (props: IManualGradingProps) => {
         props.showAlert('error', 'Error updating submission!');
       }
     );
+  };
+
+  const reloadProperties = () => {
+    getProperties(
+      props.lecture.id,
+      props.assignment.id,
+      props.submission.id
+    ).then(properties => {
+      const gradeBook = new GradeBook(properties);
+      setGradeBook(gradeBook);
+    });
   };
 
   return (
@@ -182,9 +194,23 @@ export const ManualGrading = (props: IManualGradingProps) => {
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
       <FilesList path={path} showAlert={props.showAlert} sx={{ m: 2 }} />
-      <Button variant="outlined" color="success" onClick={openFinishDialog} sx={{ml: 2}}>
-        Confirm Manualgrade
-      </Button>
+
+      <Stack direction={'row'} sx={{ml: 2}} spacing={2}>
+        <Tooltip title="Reload">
+          <IconButton aria-label="reload" onClick={() => reloadProperties()}>
+            <ReplayIcon />
+          </IconButton>
+        </Tooltip>
+        <Button
+          variant="outlined"
+          color="success"
+          onClick={openFinishDialog}
+          sx={{ ml: 2 }}
+        >
+          Confirm Manualgrade
+        </Button>
+      </Stack>
+
       <AgreeDialog open={showDialog} {...dialogContent} />
     </Box>
   );
