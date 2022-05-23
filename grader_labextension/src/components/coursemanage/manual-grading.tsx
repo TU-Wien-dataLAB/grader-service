@@ -195,7 +195,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
       <FilesList path={path} showAlert={props.showAlert} sx={{ m: 2 }} />
 
-      <Stack direction={'row'} sx={{ml: 2}} spacing={2}>
+      <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
         <Tooltip title="Reload">
           <IconButton aria-label="reload" onClick={() => reloadProperties()}>
             <ReplayIcon />
