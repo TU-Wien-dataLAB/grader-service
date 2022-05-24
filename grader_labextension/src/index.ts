@@ -38,13 +38,14 @@ import { NotebookModeSwitch } from './components/notebook/slider';
 import { checkIcon, editIcon } from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { ServiceManager } from '@jupyterlab/services';
+import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
 import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
+import IModel = Contents.IModel;
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -148,6 +149,10 @@ const extension: JupyterFrontEndPlugin<void> = {
     const connectTrackerSignals = (tracker: INotebookTracker) => {
       tracker.currentChanged.connect(async () => {
         const notebookPanel = tracker.currentWidget;
+        //Notebook not yet loaded
+        if (notebookPanel === null) {
+          return;
+        }
         const notebook: Notebook = tracker.currentWidget.content;
         const mode = false;
 
@@ -164,9 +169,17 @@ const extension: JupyterFrontEndPlugin<void> = {
 
       tracker.activeCellChanged.connect(() => {
         const notebookPanel: NotebookPanel = tracker.currentWidget;
+        //Notebook not yet loaded
+        if (notebookPanel === null) {
+          return;
+        }
         const notebook: Notebook = tracker.currentWidget.content;
-        const notebookPaths: string[] =
-          notebookPanel.context.contentsModel.path.split('/');
+        const contentsModel: IModel = notebookPanel.context.contentsModel;
+        if (contentsModel === null) {
+          return;
+        }
+        const notebookPaths: string[] = contentsModel.path.split('/');
+
         if (notebookPaths[0] === 'manualgrade') {
           return;
         }
@@ -185,7 +198,10 @@ const extension: JupyterFrontEndPlugin<void> = {
             return true;
           })
         ) {
-          (cell.layout as PanelLayout).insertWidget(0, new CreationWidget(cell));
+          (cell.layout as PanelLayout).insertWidget(
+            0,
+            new CreationWidget(cell)
+          );
         }
       }, this);
     };
@@ -274,9 +290,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       app.commands.addCommand(command, {
         label: 'Assignments',
         execute: async () => {
-          const assignmentWidget: MainAreaWidget<AssignmentList> = await app.commands.execute(
-            AssignmentsCommandIDs.create
-          );
+          const assignmentWidget: MainAreaWidget<AssignmentList> =
+            await app.commands.execute(AssignmentsCommandIDs.create);
 
           if (!assignmentWidget.isAttached) {
             // Attach the widget to the main work area if it's not there
