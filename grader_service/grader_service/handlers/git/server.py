@@ -1,8 +1,11 @@
-import datetime
-import logging
+# Copyright (c) 2022, TU Wien
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
 import os
 import shlex
-import shutil
 import subprocess
 from typing import Optional, List
 from urllib.parse import unquote
@@ -26,9 +29,6 @@ from grader_service.server import GraderServer
 
 
 class GitBaseHandler(GraderBaseHandler):
-
-    def create_assignment_repo(self):
-        pass
 
     async def data_received(self, chunk: bytes):
         return self.process.stdin.write(chunk)
@@ -63,15 +63,13 @@ class GitBaseHandler(GraderBaseHandler):
         repo_type = pathlets[2]
 
         if role.role == Scope.student:
-            # 1. no source interaction with the source repo for students
-            # 2. no push to release allowed for students TODO: change to no access for students after git refactor
-            # 3. no pull allowed for autograde for students
-            if (repo_type == "source") or \
-                    (repo_type == "release" and rpc in ["send-pack", "receive-pack"]) or \
+            # 1. no source or release interaction with the source repo for students
+            # 2. no pull allowed for autograde for students
+            if (repo_type in ["source", "release"]) or \
                     (repo_type == "autograde" and rpc == "upload-pack"):
                 raise HTTPError(403)
 
-            # 4. students should not be able to pull other submissions -> add query param for sub_id
+            # 3. students should not be able to pull other submissions -> add query param for sub_id
             if repo_type == "feedback" and rpc == "upload-pack":
                 try:
                     sub_id = int(pathlets[3])
@@ -81,7 +79,7 @@ class GitBaseHandler(GraderBaseHandler):
                 if submission is None or submission.username != self.user.name:
                     raise HTTPError(403)
 
-        # 5. no push allowed for autograde and feedback -> the autograder executor can push locally (will bypass this)
+        # 4. no push allowed for autograde and feedback -> the autograder executor can push locally (will bypass this)
         if repo_type in ["autograde", "feedback"] and rpc in ["send-pack", "receive-pack"]:
             raise HTTPError(403)
 
@@ -148,30 +146,17 @@ class GitBaseHandler(GraderBaseHandler):
             try:
                 self.log.info("Running: git init --bare")
                 subprocess.run(["git", "init", "--bare", path], check=True)
-
-                if repo_type == assignment.type:
-                    git_path_base = os.path.join(self.application.grader_service_dir, "tmp", assignment.lecture.code,
-                                                 assignment.name, self.user.name)
-                    # Deleting dir
-                    if os.path.exists(git_path_base):
-                        shutil.rmtree(git_path_base)
-
-                    self.log.info(f"DIR {git_path_base}")
-                    os.makedirs(git_path_base, exist_ok=True)
-                    git_path_release = os.path.join(git_path_base, "release")
-                    git_path_user = os.path.join(git_path_base, self.user.name)
-                    self.log.info(f"GIT BASE {git_path_base}")
-                    self.log.info(f"GIT RELEASE {git_path_release}")
-                    self.log.info(f"GIT USER {git_path_user}")
-
-                    repo_path_release = self.construct_git_dir('release', assignment.lecture, assignment)
-                    repo_path_user = path
-
-                    self.overwrite_user_repository(tmp_path_base=git_path_base, tmp_path_release=git_path_release,
-                                                   tmp_path_user=git_path_user, repo_path_release=repo_path_release,
-                                                   repo_path_user=repo_path_user)
             except subprocess.CalledProcessError:
                 return None
+
+            if repo_type in ["user", "group"]:
+                repo_path_release = self.construct_git_dir('release', assignment.lecture, assignment)
+                if not os.path.exists(repo_path_release):
+                    return None
+                self.duplicate_release_repo(repo_path_release=repo_path_release, repo_path_user=path,
+                                            assignment=assignment, message="Initialize with Release",
+                                            checkout_main=True)
+
             return path
 
     @staticmethod
