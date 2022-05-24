@@ -23,6 +23,10 @@ Grader Convert
     :target: https://pypi.org/project/grader-convert/
     :alt: PyPI
 
+.. image:: https://img.shields.io/pypi/pyversions/grader-convert
+    :target: https://pypi.org/project/grader-convert/
+    :alt: PyPI - Python Version
+
 .. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
 
@@ -35,6 +39,10 @@ Grader Service
 .. image:: https://img.shields.io/pypi/v/grader-service
     :target: https://pypi.org/project/grader-service/
     :alt: PyPI
+
+.. image:: https://img.shields.io/pypi/pyversions/grader-service
+    :target: https://pypi.org/project/grader-service/
+    :alt: PyPI - Python Version
 
 .. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
