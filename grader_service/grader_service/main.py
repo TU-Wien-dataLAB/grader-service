@@ -27,12 +27,13 @@ from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
+from ._version import __version__
 
 
 class GraderService(config.Application):
 
     name = "grader-service"
-    version = "0.1.0"
+    version = __version__
 
     description = """Starts the grader service, which can be used to create and distribute assignments,
   collect submissions and grade them.
