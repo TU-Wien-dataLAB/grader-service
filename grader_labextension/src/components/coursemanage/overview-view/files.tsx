@@ -42,6 +42,7 @@ import { PageConfig } from '@jupyterlab/coreutils';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import { getRemoteStatus } from '../../../services/file.service';
 import { RepoType } from '../../util/repo-type';
+
 /**
  * Props for FilesComponent.
  */
@@ -53,7 +54,7 @@ export interface IFilesProps {
 }
 
 /**
- * Renders in a file list the assignment files
+ * Renders in a file list the assignment files.
  * @param props props of the file component
  */
 export const Files = (props: IFilesProps) => {
@@ -143,6 +144,7 @@ export const Files = (props: IFilesProps) => {
   };
 
   const closeDialog = () => setShowDialog(false);
+
   /**
    * Pushes files to the source und release repo.
    * @param commitMessage the commit message
@@ -226,15 +228,11 @@ export const Files = (props: IFilesProps) => {
       <CardHeader
         title="Files"
         action={
-          <Grid container>
-            <Grid item>
-              <Tooltip title="Reload">
-                <IconButton aria-label="reload" onClick={() => reloadFiles()}>
-                  <ReplayIcon />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
+          <Tooltip title="Reload">
+            <IconButton aria-label="reload" onClick={() => reloadFiles()}>
+              <ReplayIcon />
+            </IconButton>
+          </Tooltip>
         }
       />
 
