@@ -84,7 +84,7 @@ Installation
 
 .. note::
 
-   The labextension does not currently work with JupyterLab version ``3.4.x``. We are working of a fix.
+   The labextension does not currently work with JupyterLab version ``3.4.x``. We are working on a fix.
 
 This repository contains the packages for the jupyter extensions and the grader service as well as grader-convert.
 
