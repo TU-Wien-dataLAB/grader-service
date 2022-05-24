@@ -27,11 +27,10 @@ from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
-from _version import __version__
+from grader_service._version import __version__
 
 
 class GraderService(config.Application):
-
     name = "grader-service"
     version = __version__
 
@@ -49,7 +48,8 @@ class GraderService(config.Application):
     service_host = Unicode(os.getenv("GRADER_SERVICE_HOST", "0.0.0.0"), help="The host address of the service").tag(
         config=True
     )
-    service_port = Int(int(os.getenv("GRADER_SERVICE_PORT", "4010")), help="The port the service runs on").tag(config=True)
+    service_port = Int(int(os.getenv("GRADER_SERVICE_PORT", "4010")), help="The port the service runs on").tag(
+        config=True)
 
     reuse_port = Bool(False, help="Whether to allow for the specified service port to be reused.").tag(config=True)
 
@@ -129,13 +129,15 @@ class GraderService(config.Application):
         root_logger.removeHandler(
             root_logger.handlers[0]
         )  # remove root handler to prevent duplicate logging
+        fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
+        formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
+
         for log in ("access", "application", "general"):
             logger = logging.getLogger("tornado.{}".format(log))
             if len(logger.handlers) > 0:
                 logger.removeHandler(logger.handlers[0])
             logger.setLevel(log_level)
             handler = stream_handler(stream=sys.stdout)
-            formatter = tornado.log.LogFormatter(color=True, datefmt=None)
             handler.setFormatter(formatter)
             logger.addHandler(handler)
         sql_logger = logging.getLogger("sqlalchemy")
@@ -143,20 +145,14 @@ class GraderService(config.Application):
         sql_logger.setLevel("WARN")
         sql_handler = stream_handler(stream=sys.stdout)
         sql_handler.setLevel("WARN")
-        sql_handler.setFormatter(
-            logging.Formatter("[%(asctime)s] %(levelname)-8s sqlalchemy %(message)s")
-        )
+        sql_handler.setFormatter(formatter)
         sql_logger.addHandler(sql_handler)
 
         traitlet_logger = traitlets_log.get_logger()
         traitlet_logger.removeHandler(traitlet_logger.handlers[0])
         traitlet_logger.setLevel(log_level)
         traitlets_handler = stream_handler(stream=sys.stdout)
-        traitlets_handler.setFormatter(
-            logging.Formatter(
-                "[%(asctime)s] %(levelname)-8s %(name)-13s %(module)-15s %(message)s"
-            )
-        )
+        traitlets_handler.setFormatter(formatter)
         traitlet_logger.addHandler(traitlets_handler)
 
     def initialize(self, argv, *args, **kwargs):
@@ -166,15 +162,15 @@ class GraderService(config.Application):
         self._start_future = asyncio.Future()
 
         self.parse_command_line(argv)
+        self.log.info("Loading config file...")
         self.load_config_file(self.config_file)
 
     async def cleanup(self):
         pass
 
     async def start(self):
+        self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
         self.log.info("Starting Grader Service...")
-        self.log.info(f"Config File: {self.config_file}")
-        self.log.info(f"Config: {self.config}")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
