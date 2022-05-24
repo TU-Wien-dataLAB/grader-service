@@ -245,7 +245,7 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(404)
 
         try:
-            subprocess.run(["git", "branch", "main", "--contains", commit_hash], cwd=git_repo_path)
+            subprocess.run(["git", "branch", "main", "--contains", commit_hash], cwd=git_repo_path, capture_output=True)
         except subprocess.CalledProcessError:
             raise HTTPError(404)
 
