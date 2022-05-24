@@ -65,7 +65,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           <GradingComponent
             lecture={props.lecture}
             assignment={props.assignment}
-            latest_submissions={latestSubmissions}
+            allSubmissions={props.allSubmissions}
             root={props.root}
             showAlert={props.showAlert}
           />

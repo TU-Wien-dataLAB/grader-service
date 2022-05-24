@@ -4,7 +4,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { ModalTitle } from '../util/modal-title';
+import { ModalTitle } from '../../util/modal-title';
 import {
   Box,
   Button,
@@ -14,17 +14,17 @@ import {
   Typography
 } from '@mui/material';
 import * as React from 'react';
-import { Lecture } from '../../model/lecture';
-import { Assignment } from '../../model/assignment';
-import { Submission } from '../../model/submission';
+import { Lecture } from '../../../model/lecture';
+import { Assignment } from '../../../model/assignment';
+import { Submission } from '../../../model/submission';
 import {
   getProperties,
   updateSubmission
-} from '../../services/submissions.service';
-import { GradeBook } from '../../services/gradebook';
-import { createManualFeedback } from '../../services/grading.service';
-import { FilesList } from '../util/file-list';
-import { AgreeDialog } from '../util/dialog';
+} from '../../../services/submissions.service';
+import { GradeBook } from '../../../services/gradebook';
+import { createManualFeedback } from '../../../services/grading.service';
+import { FilesList } from '../../util/file-list';
+import { AgreeDialog } from '../../util/dialog';
 import ReplayIcon from '@mui/icons-material/Replay';
 
 export interface IManualGradingProps {
