@@ -27,7 +27,7 @@ from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
-from ._version import __version__
+from _version import __version__
 
 
 class GraderService(config.Application):
@@ -55,7 +55,12 @@ class GraderService(config.Application):
 
     grader_service_dir = Unicode(os.getenv("GRADER_SERVICE_DIRECTORY"), allow_none=False).tag(config=True)
 
-    db_url = Unicode(os.getenv("GRADER_DB_URL", "sqlite:///grader.db"), allow_none=False).tag(config=True)
+    db_url = Unicode(allow_none=False).tag(config=True)
+
+    @default('db_url')
+    def _default_username(self):
+        service_dir_url = f'sqlite:///{os.path.join(self.grader_service_dir, "grader.db")}'
+        return os.getenv("GRADER_DB_URL", service_dir_url)
 
     service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
     service_git_email = Unicode("", allow_none=False).tag(config=True)
