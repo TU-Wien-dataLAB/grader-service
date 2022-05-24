@@ -125,32 +125,6 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
 
         self.log = self.application.log
 
-    def overwrite_user_repository(self, tmp_path_base: str, tmp_path_release: str, tmp_path_user: str,
-                                  repo_path_release: str, repo_path_user: str):
-        try:
-            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
-            self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-            # first checkout and push to make sure main branch exists in user repo (if it was just initialized)
-            self._run_command("git checkout -B main", cwd=tmp_path_user)
-            # self._run_command("git push -u origin main", cwd=tmp_path_user)
-            self.log.info(f"Copying repository contents from {tmp_path_release} to {tmp_path_user}")
-            ignore = shutil.ignore_patterns(".git", "__pycache__")
-            if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-                shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            else:
-                for item in os.listdir(tmp_path_release):
-                    s = os.path.join(tmp_path_release, item)
-                    d = os.path.join(tmp_path_user, item)
-                    if os.path.isdir(s):
-                        shutil.copytree(s, d, ignore=ignore)
-                    else:
-                        shutil.copy2(s, d)
-
-            self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "Reset"\'', tmp_path_user)
-            self._run_command("git push origin main", tmp_path_user)
-        finally:
-            shutil.rmtree(tmp_path_base)
-
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
