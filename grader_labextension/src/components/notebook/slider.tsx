@@ -16,17 +16,18 @@ export class NotebookModeSwitch extends ReactWidget {
   public component: JSX.Element;
   public mode: boolean;
 
-  constructor(
-    mode: boolean,
-    notebookpanel: NotebookPanel,
-    notebook: Notebook
-  ) {
+  constructor(mode: boolean, notebookpanel: NotebookPanel, notebook: Notebook) {
     super();
     this.mode = mode;
     const onChange = (m: boolean) => {
       this.mode = m;
     };
-    const props : ImodeSwitchProps = {notebook: notebook, notebookpanel: notebookpanel, mode: mode, onChange: onChange};
+    const props: IModeSwitchProps = {
+      notebook: notebook,
+      notebookpanel: notebookpanel,
+      mode: mode,
+      onChange: onChange
+    };
     this.component = SwitchModeFactory.getSwitch(props);
   }
 
@@ -35,7 +36,7 @@ export class NotebookModeSwitch extends ReactWidget {
   }
 }
 
-export interface ImodeSwitchProps {
+export interface IModeSwitchProps {
   mode: boolean;
   notebookpanel: NotebookPanel;
   notebook: Notebook;

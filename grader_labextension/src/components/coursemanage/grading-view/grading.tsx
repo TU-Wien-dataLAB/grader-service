@@ -43,7 +43,7 @@ import {
 } from '../../../services/grading.service';
 import LoadingOverlay from '../../util/overlay';
 import { getAssignment } from '../../../services/assignments.service';
-import { ManualGrading } from '../manual-grading';
+import { ManualGrading } from './manual-grading';
 import { PanoramaSharp } from '@mui/icons-material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { GlobalObjects } from '../../../index';
@@ -54,7 +54,7 @@ import { GlobalObjects } from '../../../index';
 export interface IGradingProps {
   lecture: Lecture;
   assignment: Assignment;
-  latest_submissions: Submission[];
+  allSubmissions: Submission[];
   root: HTMLElement;
   showAlert: (severity: string, msg: string) => void;
 }
@@ -72,7 +72,7 @@ interface IRowValues extends Submission {
  */
 export const GradingComponent = (props: IGradingProps) => {
   const [option, setOption] = React.useState(
-    'latest' as 'none' | 'latest' | 'best'
+    'none' as 'none' | 'latest' | 'best'
   );
   const [showDialog, setShowDialog] = React.useState(false);
   const [showLogs, setShowLogs] = React.useState(false);
@@ -196,9 +196,7 @@ export const GradingComponent = (props: IGradingProps) => {
     return rows;
   };
 
-  const [submissions, setSubmissions] = React.useState(
-    props.latest_submissions
-  );
+  const [submissions, setSubmissions] = React.useState(props.allSubmissions);
   const [rows, setRows] = React.useState([]);
 
   const [selectedRows, setSelectedRows] = React.useState<GridSelectionModel>(
