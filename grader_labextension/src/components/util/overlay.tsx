@@ -75,6 +75,7 @@ export default function LoadingOverlay(props: IOverlayProps) {
       aria-describedby="modal-modal-description"
       container={props.container}
       keepMounted={props.keepMounted}
+      disableEnforceFocus={true}
       disableEscapeKeyDown={props.disableEscapeKeyDown}
       sx={{ position: 'absolute', width: '100%', height: '100%' }}
     >

@@ -5,11 +5,11 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import {Lecture} from '../../model/lecture';
-import {getAllLectures} from '../../services/lectures.service';
-import {Scope, UserPermissions} from '../../services/permission.service';
-import {LectureComponent} from './lecture';
-import {Alert, AlertProps, AlertTitle, Portal} from '@mui/material';
+import { Lecture } from '../../model/lecture';
+import { getAllLectures } from '../../services/lectures.service';
+import { Scope, UserPermissions } from '../../services/permission.service';
+import { LectureComponent } from './lecture';
+import { Alert, AlertProps, AlertTitle, Portal, Snackbar } from '@mui/material';
 
 export interface ICourseManageProps {
   // lectures: Array<Lecture>;
@@ -38,7 +38,9 @@ export const CourseManageComponent = (props: ICourseManageProps) => {
   };
 
   const [lectures, setLectures] = React.useState([] as Lecture[]);
-  const [completedLectures, setCompletedLectures] = React.useState([] as Lecture[])
+  const [completedLectures, setCompletedLectures] = React.useState(
+    [] as Lecture[]
+  );
   React.useEffect(() => {
     UserPermissions.loadPermissions()
       .then(() => {
@@ -75,13 +77,19 @@ export const CourseManageComponent = (props: ICourseManageProps) => {
         ))}
       <Portal container={document.body}>
         {alert && (
-          <Alert
+          <Snackbar
+            open={alert}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            autoHideDuration={6000}
             onClose={handleAlertClose}
-            severity={severity as AlertProps['severity']}
-            sx={{position: 'fixed', left: '50%', ml: '-50px', mt: 10}}
           >
-            <AlertTitle>{alertMessage}</AlertTitle>
-          </Alert>
+            <Alert
+              onClose={handleAlertClose}
+              severity={severity as AlertProps['severity']}
+            >
+              <AlertTitle>{alertMessage}</AlertTitle>
+            </Alert>
+          </Snackbar>
         )}
       </Portal>
     </div>

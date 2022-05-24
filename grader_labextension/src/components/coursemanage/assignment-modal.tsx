@@ -82,11 +82,14 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           onChange={(event, newValue) => {
             console.log(newValue);
             setNavigation(newValue);
-            getAllSubmissions(props.lecture, props.assignment, "latest", true).then(
-              (response: any) => {
-                setSubmissions(response);
-              }
-            );
+            getAllSubmissions(
+              props.lecture,
+              props.assignment,
+              'latest',
+              true
+            ).then((response: any) => {
+              setSubmissions(response);
+            });
           }}
         >
           <BottomNavigationAction label="Overview" icon={<MoreVertIcon />} />
