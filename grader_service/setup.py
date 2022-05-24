@@ -38,6 +38,8 @@ setup(
     install_requires=requirements,
     classifiers=[
         "License :: OSI Approved :: BSD License",
+        "Development Status :: 3 - Alpha",
+        "Framework :: Jupyter",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

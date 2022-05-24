@@ -63,7 +63,9 @@ setup_args = dict(
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     install_requires=[
-        "jupyter_server>=1.6,<2"
+        "jupyter_server>=1.6,<2",
+        "urllib3>=1.26.6",
+        "traitlets>=5.0.5",
     ],
     zip_safe=False,
     include_package_data=True,
@@ -72,6 +74,7 @@ setup_args = dict(
     keywords=["Jupyter", "JupyterLab", "JupyterLab3"],
     classifiers=[
         "License :: OSI Approved :: BSD License",
+        "Development Status :: 3 - Alpha",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
