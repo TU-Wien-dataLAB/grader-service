@@ -336,12 +336,16 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :param cwd: The working directory the subprocess should run in.
         :return: Coroutine which resolves to a Subprocess object which resulted from the execution.
         """
-        process = Subprocess(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
         try:
+            process = Subprocess(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
             await process.wait_for_exit()
         except CalledProcessError:
             self.grading_logs = process.stderr.read().decode("utf-8")
             self.log.error(self.grading_logs)
+        except FileNotFoundError as e:
+            self.grading_logs = str(e)
+            self.log.error(self.grading_logs)
+            raise e
         return process
 
     @validate("base_input_path", "base_output_path")
@@ -386,9 +390,9 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         command = f'{self.convert_executable} autograde -i "{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
         self.log.info(f"Running {command}")
         process = await self._run_subprocess(command, None)
-        self.grading_logs = process.stderr.read().decode("utf-8")
-        self.log.info(self.grading_logs)
         if process.returncode == 0:
+            self.grading_logs = process.stderr.read().decode("utf-8")
+            self.log.info(self.grading_logs)
             self.log.info("Process has successfully completed execution!")
         else:
             raise RuntimeError("Process has failed execution!")
