@@ -160,6 +160,7 @@ To run the grader service you first have to register the service in JupyterHub a
             'api_token': '<token>'
         }
     )
+
 The api token can be generated in the jupyterhub control panel.
 You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
 
