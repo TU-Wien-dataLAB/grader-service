@@ -76,6 +76,16 @@ Read the `official documentation <https://grader-service.readthedocs.io/en/lates
 
 .. image:: ./docs/source/_static/assets/gifs/release2_small.gif
 
+Requirements
+===========
+..
+
+   JupyterHub,
+   JupyterLab,
+   Python >= 3.8,
+   pip,
+   Node.js
+   npm
 
 Installation
 ============
@@ -90,25 +100,29 @@ This repository contains all the necessary packages for a full installation of t
 
 
 * ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service.
+
+.. code-block::
+
+    pip install grader-convert
+
 * ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
+
+.. code-block::
+
+    pip install grader-labextension
+
 * ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
 
-Requirements
-------------
+.. code-block::
 
-..
-
-   JupyterHub, Python >= 3.8,
-   pip,
-   Node.js
-   npm
+    pip install grader-service
 
 
-Manual Installation
-===================
+
 
 Local installation
 ------------------
+Clone this repository and navigate to the repository base.
 
 In the ``grader`` directory run:
 
@@ -147,7 +161,6 @@ To run the grader service you first have to register the service in JupyterHub a
         }
     )
 
-
 You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
 
     Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
@@ -160,6 +173,21 @@ Since the JupyterHub is the only source of authentication for the service, it ha
 Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by colons.
 
 The config could look like this: ::
+
+    ## generic
+    c.JupyterHub.admin_access = True
+    c.Spawner.default_url = '/lab'
+    c.Spawner.cmd=["jupyter-labhub"]
+
+
+    ## authenticator
+    c.JupyterHub.authenticator_class = 'jupyterhub.auth.DummyAuthenticator'
+    c.Authenticator.allowed_users = {'user1', 'user2', 'user3', 'user4'}
+    c.Authenticator.admin_users = {'user1', 'user2', 'user3', 'user4'}
+
+    ## spawner
+    c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
+    c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
 
     c.JupyterHub.load_groups = {
         "lect1:instructor": ["user1"],
