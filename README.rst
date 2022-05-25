@@ -160,7 +160,7 @@ To run the grader service you first have to register the service in JupyterHub a
             'api_token': '<token>'
         }
     )
-
+The api token can be generated in the jupyterhub control panel.
 You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
 
     Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
@@ -219,6 +219,11 @@ In order to start the grader service we have to provide a configuration file for
 
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
+
+Furthermore the database must be initialized before we can start the service.
+To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
+
+    grader-service-migrate
 
 Then the grader service can be started by specifying the config file as such: ::
 
