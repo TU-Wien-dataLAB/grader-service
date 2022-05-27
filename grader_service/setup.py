@@ -12,6 +12,7 @@ import os
 from grader_service.main import main
 from grader_service.alembic.migrate import main as migrate_main
 from grader_service._version import __version__
+from grader_service.scripts.quickstart import main as quickstart_main
 
 source_root = Path(__file__).parent
 # Read the requirements
@@ -32,6 +33,7 @@ setup(
         'console_scripts': [
             f'grader-service = {main.__module__}:main',
             f'grader-service-migrate = {migrate_main.__module__}:main'
+            f'grader-service-quickstart = {quickstart_main.__module__}:main'
         ],
     },
     python_requires=">=3.8",
