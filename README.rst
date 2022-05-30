@@ -76,6 +76,16 @@ Read the `official documentation <https://grader-service.readthedocs.io/en/lates
 
 .. image:: ./docs/source/_static/assets/gifs/release2_small.gif
 
+Requirements
+===========
+..
+
+   JupyterHub,
+   JupyterLab,
+   Python >= 3.8,
+   pip,
+   Node.js,
+   npm
 
 Installation
 ============
@@ -90,29 +100,24 @@ This repository contains all the necessary packages for a full installation of t
 
 
 * ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service.
-* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
-* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
-
-Requirements
-------------
-
-..
-
-   JupyterHub, Python >= 3.8,
-   pip,
-   Node.js,
-   npm
-
-Installation with ``pip``
--------------------------
 
 .. code-block::
 
-   pip install grader-convert
+    pip install grader-convert
 
-   pip install grader-service
+* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
 
-   pip install grader-labextension
+.. code-block::
+
+    pip install grader-labextension
+
+* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
+
+.. code-block::
+
+    pip install grader-service
+
+
 
 Installation from Source
 --------------------------
@@ -165,7 +170,7 @@ To run the grader service you first have to register the service in JupyterHub a
         }
     )
 
-
+The api token can be generated in the jupyterhub control panel.
 You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
 
     Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
@@ -178,6 +183,21 @@ Since the JupyterHub is the only source of authentication for the service, it ha
 Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by colons.
 
 The config could look like this: ::
+
+    ## generic
+    c.JupyterHub.admin_access = True
+    c.Spawner.default_url = '/lab'
+    c.Spawner.cmd=["jupyter-labhub"]
+
+
+    ## authenticator
+    c.JupyterHub.authenticator_class = 'jupyterhub.auth.DummyAuthenticator'
+    c.Authenticator.allowed_users = {'user1', 'user2', 'user3', 'user4'}
+    c.Authenticator.admin_users = {'user1', 'user2', 'user3', 'user4'}
+
+    ## spawner
+    c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
+    c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
 
     c.JupyterHub.load_groups = {
         "lect1:instructor": ["user1"],
@@ -209,6 +229,11 @@ In order to start the grader service we have to provide a configuration file for
 
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
+
+Furthermore the database must be initialized before we can start the service.
+To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
+
+    grader-service-migrate
 
 Then the grader service can be started by specifying the config file as such: ::
 
