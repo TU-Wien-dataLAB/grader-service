@@ -100,15 +100,27 @@ Requirements
 
    JupyterHub, Python >= 3.8,
    pip,
-   Node.js
+   Node.js,
    npm
 
+Installation with ``pip``
+-------------------------
 
-Manual Installation
-===================
+.. code-block::
+
+   pip install grader-convert
+
+   pip install grader-service
+
+   pip install grader-labextension
+
+Installation from Source
+--------------------------
+
+To install this package from source, clone into the repository or download the `zip file <https://github.com/TU-Wien-dataLAB/Grader-Service/archive/refs/heads/main.zip/>`_.
 
 Local installation
-------------------
+^^^^^^^^^^^^^^^^^^^^
 
 In the ``grader`` directory run:
 
@@ -124,7 +136,13 @@ In the ``grader`` directory run:
    pip install ./grader_service
 
 
-Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file
+Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
+
+Development Environment
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alternatively you can run the installation scripts in ``examples/dev_environment``.
+Follow the documentation there. The directory also contains the config files for a local installation.
 
 .. installation-end
 

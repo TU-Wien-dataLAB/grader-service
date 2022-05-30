@@ -15,7 +15,6 @@ pip install -e ../../grader_convert
 echo "Installing grader_service..."
 pip install -r ../../grader_service/requirements.txt
 pip install -e ../../grader_service
-grader-service-migrate
 
 echo "Installing grader_labextension..."
 pip install -r ../../grader_labextension/requirements.txt
@@ -32,6 +31,11 @@ mkdir -p ./home_dir
 
 mkdir -p ./service_dir
 chmod 777 ./service_dir
+
+# create db in grader service directory
+cd service_dir || exit
+grader-service-migrate
+cd .. || exit
 
 mkdir -p ./service_dir/git
 chmod 777 ./service_dir/git
