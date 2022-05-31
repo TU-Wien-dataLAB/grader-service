@@ -288,7 +288,7 @@ class GraderService(config.Application):
         path = change["new"]
         git_path = os.path.join(path, "git")
         if not os.path.isdir(git_path):
-            os.mkdir(git_path, mode=664)
+            os.mkdir(git_path, mode=0o700)
 
 
 main = GraderService.launch_instance

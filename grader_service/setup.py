@@ -32,7 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             f'grader-service = {main.__module__}:main',
-            f'grader-service-migrate = {migrate_main.__module__}:main'
+            f'grader-service-migrate = {migrate_main.__module__}:main',
             f'grader-service-quickstart = {quickstart_main.__module__}:main'
         ],
     },

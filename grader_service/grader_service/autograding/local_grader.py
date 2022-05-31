@@ -355,7 +355,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             raise TraitError("The path specified has to be absolute")
         if not os.path.exists(path):
             self.log.info(f"Path {path} not found, creating new directories.")
-            Path(path).mkdir(parents=True, exist_ok=True, mode=664)
+            Path(path).mkdir(parents=True, exist_ok=True, mode=0o700)
         if not os.path.isdir(path):
             raise TraitError("The path has to be an existing directory")
         return path
