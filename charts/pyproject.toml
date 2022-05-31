@@ -20,22 +20,14 @@ regex = '''
   '''
 
 [tool.tbump.git]
-message_template = "Bump service to {new_version}"
-tag_template = "grader-service-{new_version}"
+message_template = "Bump chart to {new_version}"
+tag_template = "chart-{new_version}"
 
 # For each file to patch, add a [[tool.tbump.file]] config
 # section containing the path of the file, relative to the
 # pyproject.toml location.
 
-[[tool.tbump.file]]
-src = "grader_service/_version.py"
-search = "__version__ = '{current_version}'"
-
 
 [[tool.tbump.file]]
-src = "../docs/source/_static/openapi/grader_api.yml"
-search = "version: '{current_version}'"
-
-[[tool.tbump.file]]
-src = "../charts/grader-service/Chart.yaml"
-search = "appVersion: \"{current_version}\""
+src = "grader-service/Chart.yaml"
+search = "version: {current_version}"
