@@ -280,7 +280,7 @@ class GraderService(config.Application):
         if not os.path.isabs(path):
             raise TraitError("The path is not absolute")
         if not os.path.isdir(path):
-            raise TraitError("The path has to be an existing directory")
+            os.mkdir(path, mode=0o700)
         return path
 
     @observe("grader_service_dir")
