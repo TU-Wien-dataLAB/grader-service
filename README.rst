@@ -68,7 +68,8 @@ Grader Labextension
 .. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml
 
-|
+.. note::
+    Disclaimer: Grader Service is still in the early development stages. You may encounter issues while using the service.
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
