@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from http import HTTPStatus
 from urllib.error import HTTPError
 
 import pytest
@@ -165,7 +166,7 @@ async def test_post_assignment_name_already_used(
         assert post_response.code == 201
     except HTTPError as e:
         print(e)
-        return
+        assert False
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -175,7 +176,7 @@ async def test_post_assignment_name_already_used(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 409
+    assert e.code == HTTPStatus.CONFLICT
 
 
 
@@ -272,7 +273,8 @@ async def test_post_assignment_database_error(
             body=json.dumps({"some": "value"}),
         )
     e = exc_info.value
-    assert e.code == 400
+    #TODO Change to bad request
+    assert e.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 async def test_post_no_status_error(
@@ -705,7 +707,7 @@ async def test_get_assignment_instructor_version_unauthorized(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 403
+    assert e.code == HTTPStatus.UNAUTHORIZED
 
 
 async def test_delete_assignment(
@@ -913,7 +915,7 @@ async def test_delete_released_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -925,7 +927,7 @@ async def test_delete_released_assignment(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_complete_assignment(
@@ -947,7 +949,7 @@ async def test_delete_complete_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -959,7 +961,7 @@ async def test_delete_complete_assignment(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_assignment_properties(
