@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from urllib.error import HTTPError
 
 import pytest
 from grader_service.server import GraderServer
@@ -140,6 +141,43 @@ async def test_post_assignment(
     assert get_response.code == 200
     assignments = json.loads(get_response.body.decode())
     assert len(assignments) == orig_len + 1
+
+async def test_post_assignment_name_already_used(
+ app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    url = service_base_url + "/lectures/3/assignments/"
+
+    #http_server = jupyter_hub_mock_server(default_user, default_token)
+    post_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created",
+                                 points=None, automatic_grading="unassisted")
+    try:
+        post_response = await http_server_client.fetch(
+            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(post_assignment.to_dict())
+        )
+        assert post_response.code == 201
+    except HTTPError as e:
+        print(e)
+        return
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(post_assignment.to_dict()),
+        )
+    e = exc_info.value
+    assert e.code == 409
+
+
 
 
 async def test_post_assignment_lecture_deleted(
