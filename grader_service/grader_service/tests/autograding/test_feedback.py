@@ -26,6 +26,7 @@ async def test_feedback(
     sql_alchemy_db,
     tmpdir
 ):
+    default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
     l_id = 3 # default user is instructor
     a_id = 3
     s_id = 1

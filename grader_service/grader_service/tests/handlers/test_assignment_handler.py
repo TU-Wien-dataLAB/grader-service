@@ -143,6 +143,7 @@ async def test_post_assignment(
     assignments = json.loads(get_response.body.decode())
     assert len(assignments) == orig_len + 1
 
+
 async def test_post_assignment_name_already_used(
  app: GraderServer,
         service_base_url,
@@ -158,15 +159,11 @@ async def test_post_assignment_name_already_used(
     #http_server = jupyter_hub_mock_server(default_user, default_token)
     post_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created",
                                  points=None, automatic_grading="unassisted")
-    try:
-        post_response = await http_server_client.fetch(
-            url, method="POST", headers={"Authorization": f"Token {default_token}"},
-            body=json.dumps(post_assignment.to_dict())
-        )
-        assert post_response.code == 201
-    except HTTPError as e:
-        print(e)
-        assert False
+    post_response = await http_server_client.fetch(
+        url, method="POST", headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment.to_dict())
+    )
+    assert post_response.code == 201
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -693,6 +690,7 @@ async def test_get_assignment_instructor_version_unauthorized(
         default_user,
         default_token,
 ):
+    default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
 

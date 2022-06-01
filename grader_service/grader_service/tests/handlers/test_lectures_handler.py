@@ -207,6 +207,7 @@ async def test_put_lecture_unauthorized(
     default_user,
     default_token,
 ):
+    default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1"
@@ -312,6 +313,7 @@ async def test_delete_lecture_unauthorized(
     default_user,
     default_token,
 ):
+    default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1"
