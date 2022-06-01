@@ -10,7 +10,7 @@ from setuptools import find_packages
 from setuptools import setup
 import os
 from grader_service.main import main
-from grader_service.alembic.migrate import main as migrate_main
+from grader_service.migrate.migrate import main as migrate_main
 from grader_service._version import __version__
 from grader_service.scripts.quickstart import main as quickstart_main
 

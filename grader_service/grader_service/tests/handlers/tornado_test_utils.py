@@ -11,20 +11,20 @@ from grader_service import handlers  # need import to register handlers
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from tornado_sqlalchemy import SQLAlchemy
-import alembic
-# from alembic import config
-# from alembic.command import upgrade
-from .db_util import insert_assignments
+# import alembic
+from alembic import config
+from alembic.command import upgrade
+from .db_util import insert_assignments, insert_lectures
 
 __all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user", "default_token"]
 
 
 @pytest.fixture(scope="function")
 def db_test_config():
-    cfg = alembic.config.Config(
+    cfg = config.Config(
         os.path.abspath(os.path.dirname(__file__) + "../../../alembic_test.ini")
     )
-    cfg.set_main_option("script_location", os.path.abspath(os.path.dirname(__file__) + "../../../alembic"))
+    cfg.set_main_option("script_location", os.path.abspath(os.path.dirname(__file__) + "../../../migrate"))
     yield cfg
 
 @pytest.fixture(scope="function")
@@ -34,8 +34,9 @@ def sql_alchemy_db(db_test_config):
     with engine.begin() as connection:
         db_test_config.attributes["connection"] = connection
         # downgrade(cfg, "base")
-        alembic.command.upgrade(db_test_config, "head")
+        upgrade(db_test_config, "head")
     engine = db.engine
+    insert_lectures(engine)
     insert_assignments(engine)
     yield db
 

@@ -16,20 +16,11 @@ def insert_users(session):
 
 
 def insert_lectures(session):
-    session.execute(
-        'INSERT INTO "lecture" ("name","semester","code", "state") VALUES ("lecture1","WS21","AU.294","active")')
-    session.execute(
-        'INSERT INTO "lecture" ("name","semester","code", "state") VALUES ("lecture1","SS21","AU.294","active")')
-    session.execute(
-        'INSERT INTO "lecture" ("name","semester","code", "state") VALUES ("lecture2","WS20","AU.297","active")')
-    session.execute(
-        'INSERT INTO "lecture" ("name","semester","code", "state") VALUES ("lecture3","SS22","AU.212","active")')
-    session.execute(
-        'INSERT INTO "lecture" ("name","semester","code", "state") VALUES ("lecture4","SS21","AU.194","active")')
-    session.execute('INSERT INTO "takepart" ("username","lectid","role") VALUES ("user1",1,"student")')
-    session.execute('INSERT INTO "takepart" ("username","lectid","role") VALUES ("user1",2,"student")')
-    session.execute('INSERT INTO "takepart" ("username","lectid","role") VALUES ("user2",1,"student")')
-    session.execute('INSERT INTO "takepart" ("username","lectid","role") VALUES ("user2",2,"student")')
+    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture1","21wle1","active","active")')
+    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture1","21sle1","active","active")')
+    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture2","20wle2","active","active")')
+    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture3","22sle3","active","active")')
+    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture4","21sle4","active","active")')
 
 
 def insert_assignments(ex, lecture_id=1):
