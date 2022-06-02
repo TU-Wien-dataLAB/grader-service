@@ -85,7 +85,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
             .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active) \
             .one_or_none()
 
-        if (assignment_with_name != None):
+        if assignment_with_name is not None:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
         assignment.lectid = lecture_id
         assignment.duedate = assignment_model.due_date
@@ -129,6 +129,13 @@ class AssignmentObjectHandler(GraderBaseHandler):
         body = tornado.escape.json_decode(self.request.body)
         assignment_model = AssignmentModel.from_dict(body)
         assignment = self.get_assignment(lecture_id, assignment_id)
+        # Validate name
+        assignment_with_name = self.session.query(Assignment) \
+            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active) \
+            .one_or_none()
+
+        if assignment_with_name is not None:
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
 
         assignment.name = assignment_model.name
         assignment.duedate = assignment_model.due_date
@@ -158,7 +165,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         role = self.session.query(Role).get((self.user.name, lecture_id))
         if instructor_version and role.role < Scope.instructor:
-            raise HTTPError(HTTPStatus.UNAUTHORIZED)
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
         assignment = self.session.query(Assignment).get(assignment_id)
         if (
                 assignment is None
@@ -166,7 +173,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 or (role.role == Scope.student and assignment.status == "created")
                 or assignment.lectid != lecture_id
         ):
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
         self.write_json(assignment)
 
     @authorize([Scope.instructor])

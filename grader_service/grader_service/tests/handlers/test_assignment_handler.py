@@ -51,7 +51,7 @@ async def test_get_assignments_instructor(
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
 
-    l_id = 3 # default user is instructor
+    l_id = 3  # default user is instructor
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
     engine = sql_alchemy_db.engine
@@ -120,7 +120,8 @@ async def test_post_assignment(
     assert isinstance(assignments, list)
     orig_len = len(assignments)
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -145,7 +146,7 @@ async def test_post_assignment(
 
 
 async def test_post_assignment_name_already_used(
- app: GraderServer,
+        app: GraderServer,
         service_base_url,
         http_server_client,
         jupyter_hub_mock_server,
@@ -156,7 +157,6 @@ async def test_post_assignment_name_already_used(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    #http_server = jupyter_hub_mock_server(default_user, default_token)
     post_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created",
                                  points=None, automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
@@ -176,6 +176,48 @@ async def test_post_assignment_name_already_used(
     assert e.code == HTTPStatus.CONFLICT
 
 
+async def test_put_assignment_name_already_used(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    post_url = service_base_url + "/lectures/3/assignments/"
+
+    # Add assignments first
+    post_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created",
+                                 points=0, automatic_grading="unassisted")
+    post_assignment_2 = Assignment(id=-2, name="pytest2", type="user", due_date=None, status="created",
+                                   points=0, automatic_grading="unassisted")
+    post_response = await http_server_client.fetch(
+        post_url, method="POST", headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment.to_dict())
+    )
+    post_response_2 = await http_server_client.fetch(
+        post_url, method="POST", headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment_2.to_dict())
+    )
+    assert post_response.code == HTTPStatus.CREATED
+    assert post_response_2.code == HTTPStatus.CREATED
+
+    #Convert bytes body to json
+    json_body = json.loads(post_response.body.decode("utf8"))
+    put_url = post_url + str(json_body["id"])
+    # Update assignment 1 with name of assignment 2
+    post_assignment.name = post_assignment_2.name
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            put_url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(post_assignment.to_dict()),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_post_assignment_lecture_deleted(
@@ -270,7 +312,7 @@ async def test_post_assignment_database_error(
             body=json.dumps({"some": "value"}),
         )
     e = exc_info.value
-    #TODO Change to bad request
+    # TODO Change to bad request
     assert e.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -310,7 +352,8 @@ async def test_put_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -354,7 +397,8 @@ async def test_put_assignment_wrong_lecture_id(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -375,6 +419,7 @@ async def test_put_assignment_wrong_lecture_id(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
+    print(e.response)
     assert e.code == 404
 
 
@@ -390,7 +435,8 @@ async def test_put_assignment_wrong_assignment_id(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -424,7 +470,8 @@ async def test_put_assignment_deleted_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -466,7 +513,8 @@ async def test_put_assignment_no_point_changes(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -510,7 +558,8 @@ async def test_get_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -573,7 +622,8 @@ async def test_get_assignment_wrong_lecture_id(
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -608,7 +658,8 @@ async def test_get_assignment_wrong_assignment_id(
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -682,7 +733,7 @@ async def test_get_assignment_instructor_version(
     assert get_response.code == 200
 
 
-async def test_get_assignment_instructor_version_unauthorized(
+async def test_get_assignment_instructor_version_forbidden(
         app: GraderServer,
         service_base_url,
         http_server_client,
@@ -705,7 +756,7 @@ async def test_get_assignment_instructor_version_unauthorized(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == HTTPStatus.UNAUTHORIZED
+    assert e.code == HTTPStatus.FORBIDDEN
 
 
 async def test_delete_assignment(
@@ -720,7 +771,8 @@ async def test_delete_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -762,7 +814,8 @@ async def test_delete_assignment_deleted_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -854,7 +907,8 @@ async def test_delete_assignment_same_name_twice(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -906,7 +960,8 @@ async def test_delete_released_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="released", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="released", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -940,7 +995,8 @@ async def test_delete_complete_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="complete", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="complete", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -974,7 +1030,8 @@ async def test_assignment_properties(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None, automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
         method="POST",
