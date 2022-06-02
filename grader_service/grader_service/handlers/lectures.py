@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from http import HTTPStatus
 
 import tornado
 from grader_service.api.models.lecture import Lecture as LectureModel
@@ -57,9 +58,7 @@ class LectureBaseHandler(GraderBaseHandler):
                     .one_or_none()
             )
         except NoResultFound:
-            raise HTTPError(404)
-        except MultipleResultsFound:
-            raise HTTPError(400)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
@@ -69,17 +68,7 @@ class LectureBaseHandler(GraderBaseHandler):
         lecture.deleted = DeleteState.active
 
         self.session.commit()
-        try:
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_model.code)
-                    .one_or_none()
-            )
-        except NoResultFound:
-            raise HTTPError(404)
-        except MultipleResultsFound:
-            raise HTTPError(400)
-        self.set_status(201)
+        self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
 
 
@@ -119,7 +108,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
 
         self.write_json(role.lecture)
 

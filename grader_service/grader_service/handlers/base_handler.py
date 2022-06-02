@@ -161,7 +161,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                 or submission.assignid != assignment_id
                 or submission.assignment.lectid != lecture_id
         ):
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
         return submission
 
     @property

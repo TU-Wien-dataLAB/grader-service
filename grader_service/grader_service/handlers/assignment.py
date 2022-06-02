@@ -82,7 +82,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment_with_name = self.session.query(Assignment) \
-            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active) \
+            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active, Assignment.lectid == assignment.lectid) \
             .one_or_none()
 
         if assignment_with_name is not None:
@@ -131,7 +131,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id, assignment_id)
         # Validate name
         assignment_with_name = self.session.query(Assignment) \
-            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active) \
+            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active, Assignment.lectid == assignment.lectid) \
             .one_or_none()
 
         if assignment_with_name is not None:
@@ -282,7 +282,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         if assignment.properties is not None:
             self.write(assignment.properties)
         else:
-            raise HTTPError(HTTPStatus.NOT_FOUND)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
 
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int):
