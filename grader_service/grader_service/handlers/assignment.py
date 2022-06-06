@@ -82,7 +82,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment_with_name = self.session.query(Assignment) \
-            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active, Assignment.lectid == assignment.lectid) \
+            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active, Assignment.lectid == lecture_id) \
             .one_or_none()
 
         if assignment_with_name is not None:

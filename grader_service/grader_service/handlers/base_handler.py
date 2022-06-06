@@ -151,7 +151,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
         assignment = self.session.query(Assignment).get(assignment_id)
         if assignment is None or assignment.deleted == 1 or assignment.lectid != lecture_id:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment with id" + str(assignment_id) + " was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment with id " + str(assignment_id) + " was not found")
         return assignment
 
     def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
