@@ -7,6 +7,7 @@ from http import HTTPStatus
 
 from tornado.web import HTTPError
 
+
 def parse_ids(*args):
     """
     Transforms loose ids to an id tuple.

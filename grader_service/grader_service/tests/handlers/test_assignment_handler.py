@@ -176,6 +176,27 @@ async def test_post_assignment_name_already_used(
     assert e.code == HTTPStatus.CONFLICT
 
 
+async def test_delete_assignment_not_found(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    url = service_base_url + "/lectures/3/assignments/-5"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+
 async def test_put_assignment_name_already_used(
         app: GraderServer,
         service_base_url,
@@ -204,7 +225,7 @@ async def test_put_assignment_name_already_used(
     assert post_response.code == HTTPStatus.CREATED
     assert post_response_2.code == HTTPStatus.CREATED
 
-    #Convert bytes body to json
+    # Convert bytes body to json
     json_body = json.loads(post_response.body.decode("utf8"))
     put_url = post_url + str(json_body["id"])
     # Update assignment 1 with name of assignment 2
