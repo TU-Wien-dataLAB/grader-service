@@ -223,7 +223,7 @@ class SubmissionHandler(GraderBaseHandler):
         try:
             commit_hash = body["commit_hash"]
         except KeyError:
-            raise HTTPError(400)
+            raise HTTPError(400, reason="Commit hash not found in body")
 
         assignment = self.get_assignment(lecture_id, assignment_id)
         submission_ts = datetime.datetime.utcnow()
