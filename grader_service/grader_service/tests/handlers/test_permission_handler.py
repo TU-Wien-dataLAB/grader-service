@@ -25,13 +25,13 @@ async def test_get_permission(
     default_user,
     default_token,
 ):
-    default_user["groups"] = ["20wle2__instructor", "21wle1__student", "22wle1__instructor"]
+    default_user["groups"] = ["20wle2:instructor", "21wle1:student", "22wle1:instructor"]
 
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
-    url = service_base_url + f"/permissions/"
+    url = service_base_url + f"/permissions"
 
-    response = yield http_server_client.fetch(
+    response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert response.code == 200
@@ -43,7 +43,7 @@ async def test_get_permission(
         if v == 1: return "tutor"
         if v == 2: return "instructor"
     
-    groups = {tuple(g.split("__")) for g in default_user["groups"]}
+    groups = {tuple(g.split(":")) for g in default_user["groups"]}
     for p in permissions:
         t = (p["lecture_code"], get_scope(p["scope"]))
         assert t in groups
@@ -59,13 +59,13 @@ async def test_get_permission_new_groups(
     default_user,
     default_token,
 ):
-    default_user["groups"] = ["pytest__tutor"]
+    default_user["groups"] = ["pytest:tutor"]
 
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + f"/permissions/"
 
-    response = yield http_server_client.fetch(
+    response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert response.code == 200
@@ -77,7 +77,7 @@ async def test_get_permission_new_groups(
         if v == 1: return "tutor"
         if v == 2: return "instructor"
     
-    groups = {tuple(g.split("__")) for g in default_user["groups"]}
+    groups = {tuple(g.split(":")) for g in default_user["groups"]}
     for p in permissions:
         t = (p["lecture_code"], get_scope(p["scope"]))
         assert t in groups
