@@ -3,7 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
+import csv
 from datetime import datetime
 from re import sub
 import secrets
@@ -19,6 +19,21 @@ from .db_util import insert_submission, insert_take_part
 # Imports are important otherwise they will not be found
 from .tornado_test_utils import *
 from .db_util import insert_assignments
+
+
+async def submission_test_setup(sql_alchemy_db, http_server_client, default_user, default_token,
+                                url: str, a_id: int):
+    engine = sql_alchemy_db.engine
+    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
+    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
+    # should make no difference
+    insert_submission(engine, assignment_id=a_id, username="user1")
+    insert_submission(engine, assignment_id=a_id, username="user1")
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    return response
 
 
 async def test_get_submissions(
@@ -50,20 +65,89 @@ async def test_get_submissions(
     Submission.from_dict(submissions[0])
 
 
-async def submission_test_setup(sql_alchemy_db, http_server_client, default_user, default_token,
-                                url: str, a_id: int):
+async def test_get_submissions_format_csv(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    a_id = 1
+    url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?format=csv"
+    response = await submission_test_setup(sql_alchemy_db,
+                                           http_server_client,
+                                           default_user,
+                                           default_token,
+                                           url,
+                                           a_id)
+    assert response.code == 200
+    decoded_content = response.body.decode('utf-8')
+
+    body_csv = csv.reader(decoded_content.splitlines(), delimiter=',')
+    submissions = list(body_csv)
+    #Delete column description
+    submissions.pop(0)
+
+    assert len(submissions) == 2
+    assert submissions[0][4] == "ubuntu"
+    assert submissions[1][4] == "ubuntu"
+    Submission.from_dict(submissions[0])
+
+
+async def test_get_submissions_format_wrong(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 1  # default user is student
+    a_id = 1
     engine = sql_alchemy_db.engine
-    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
-    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
-    # should make no difference
-    insert_submission(engine, assignment_id=a_id, username="user1")
-    insert_submission(engine, assignment_id=a_id, username="user1")
 
-    response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"}
-    )
-    return response
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/?format=abc"
 
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == 400
+
+async def test_get_submissions_filter_wrong(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 1  # default user is student
+    a_id = 1
+    engine = sql_alchemy_db.engine
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/?filter=abc"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == 400
 
 async def test_get_submissions_latest(
         app: GraderServer,
@@ -660,6 +744,7 @@ async def test_put_submission_wrong_submission(
     e = exc_info.value
     assert e.code == 404
 
+
 async def test_post_submission_git_repo_not_found(
         app: GraderServer,
         service_base_url,
@@ -690,6 +775,66 @@ async def test_post_submission_git_repo_not_found(
         )
     e = exc_info.value
     assert e.code == 404
+
+
+async def test_post_submission_commit_hash_not_found(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 3  # user has to be instructor
+    a_id = 3
+    engine = sql_alchemy_db.engine
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user["name"])
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
+
+    pre_submission = {"value": "10"}
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_submission),
+        )
+    e = exc_info.value
+    assert e.code == 400
+
+
+async def test_post_submission_commit_hash_not_found(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 3  # user has to be instructor
+    a_id = 3
+    engine = sql_alchemy_db.engine
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user["name"])
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
+
+    pre_submission = {"value": "10"}
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_submission),
+        )
+    e = exc_info.value
+    assert e.code == 400
 
 
 async def test_submission_properties(
@@ -730,6 +875,70 @@ async def test_submission_properties(
     assignment_props = json.loads(get_response.body.decode())
     assert assignment_props == prop
 
+async def test_submission_properties_not_correct(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 3  # default user is student
+    a_id = 4
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
+
+    engine = sql_alchemy_db.engine
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user["name"])
+
+    prop = "{}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(prop)
+        )
+    e = exc_info.value
+    assert e.code == 400
+
+async def test_submission_properties_not_found(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 3  # default user is student
+    a_id = 4
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
+
+    engine = sql_alchemy_db.engine
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user["name"])
+
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="GET",
+            headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == 404
 
 async def test_submission_properties_lecture_assignment_missmatch(
         app: GraderServer,
