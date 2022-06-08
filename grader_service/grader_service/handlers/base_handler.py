@@ -186,7 +186,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             else:
                 group = self.session.query(Group).get((self.user.name, lecture.id))
                 if group is None:
-                    raise HTTPError(404)
+                    raise HTTPError(404, reason="User is not in a group")
                 path = os.path.join(type_path, group.name)
         elif repo_type == "user":
             user_path = os.path.join(assignment_path, repo_type)
@@ -196,7 +196,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                 return None
             group = self.session.query(Group).get((group_name, lecture.id))
             if group is None:
-                raise HTTPError(404)
+                raise HTTPError(404, reason="User is not in a group")
             group_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(group_path, group.name)
         else:
