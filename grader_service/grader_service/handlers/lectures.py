@@ -51,13 +51,13 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture_model = LectureModel.from_dict(body)
-        try:
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_model.code)
-                    .one_or_none()
-            )
-        except NoResultFound:
+
+        lecture = (
+            self.session.query(Lecture)
+                .filter(Lecture.code == lecture_model.code)
+                .one_or_none()
+        )
+        if lecture is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
 
         lecture.name = lecture_model.name
@@ -133,13 +133,17 @@ class LectureObjectHandler(GraderBaseHandler):
             lecture.deleted = 1
             a: Assignment
             for a in lecture.assignments:
-                if (len(a.submissions)) > 0 or a.status in ["released", "complete"]:
+                if (len(a.submissions)) > 0:
                     self.session.rollback()
-                    raise HTTPError(400, "Cannot delete assignment")
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions")
+                if a.status in ["released", "complete"]:
+                    self.session.rollback()
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because its status is not created")
+
                 a.deleted = 1
             self.session.commit()
         except ObjectDeletedError:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
         self.write("OK")
 
 
