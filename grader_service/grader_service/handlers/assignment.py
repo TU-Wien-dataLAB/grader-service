@@ -1,6 +1,5 @@
 import json
 import shutil
-import sys
 from http import HTTPStatus
 
 import tornado
@@ -11,7 +10,6 @@ from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.exc import IntegrityError
 from tornado.web import HTTPError
 from .handler_utils import parse_ids

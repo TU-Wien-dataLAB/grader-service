@@ -4,8 +4,6 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
-from urllib.error import HTTPError
-
 import pytest
 from grader_service.server import GraderServer
 import json
@@ -1556,6 +1554,37 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(prop),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
+
+
+async def test_delete_assignment_with_submissions(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = 3  # user has to be instructor
+    a_id = 3
+    engine = sql_alchemy_db.engine
+
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user["name"])
+
+    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
