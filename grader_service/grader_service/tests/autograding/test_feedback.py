@@ -17,7 +17,7 @@ from sqlalchemy.orm.session import Session
 
 # Imports are important otherwise they will not be found
 from ..handlers.tornado_test_utils import *
-from ..handlers.db_util import insert_submission, insert_assignments
+from ..handlers.db_util import insert_submission
 from sqlalchemy.orm import sessionmaker
 
 
@@ -26,12 +26,11 @@ async def test_feedback(
     sql_alchemy_db,
     tmpdir
 ):
-    l_id = 3 # default user is instructor
-    a_id = 3
+    default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
+    a_id = 1
     s_id = 1
 
     engine: Engine = sql_alchemy_db.engine
-    insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user["name"])
     
     session: Session = sessionmaker(bind=engine)()

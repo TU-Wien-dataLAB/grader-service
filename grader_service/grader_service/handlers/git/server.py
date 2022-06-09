@@ -7,15 +7,9 @@
 import os
 import shlex
 import subprocess
-from typing import Optional, List
-from urllib.parse import unquote
+from typing import List
 
-from grader_service.autograding.grader_executor import GraderExecutor
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
-
-from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
-from grader_service.orm.group import Group
+from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
@@ -24,8 +18,6 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from tornado.ioloop import IOLoop
 from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
-
-from grader_service.server import GraderServer
 
 
 class GitBaseHandler(GraderBaseHandler):
@@ -110,9 +102,9 @@ class GitBaseHandler(GraderBaseHandler):
                 self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()
             )
         except NoResultFound:
-            raise HTTPError(404)
+            raise HTTPError(404, reason="Lecture was not found")
         except MultipleResultsFound:
-            raise HTTPError(400)
+            raise HTTPError(500, reason="Found more than one lecture")
 
         role = self.session.query(Role).get((self.user.name, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)

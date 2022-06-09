@@ -1,6 +1,7 @@
 import json
 import shutil
-import sys
+from http import HTTPStatus
+
 import tornado
 import os
 from grader_convert.gradebook.models import GradeBookModel
@@ -9,13 +10,11 @@ from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.exc import IntegrityError
 from tornado.web import HTTPError
 from .handler_utils import parse_ids
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-
 
 
 @register_handler(
@@ -39,7 +38,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
 
         if (
                 role.role == Scope.student
@@ -70,15 +69,23 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(404)
-        body = tornado.escape.json_decode(self.request.body)
+            raise HTTPError(HTTPStatus.NOT_FOUND)
         try:
+            body = tornado.escape.json_decode(self.request.body)
             assignment_model = AssignmentModel.from_dict(body)
         except ValueError as e:
-            raise HTTPError(400, log_message=str(e))
+            # TODO Return useful error message
+            raise HTTPError(HTTPStatus.BAD_REQUEST, log_message=str(e))
         assignment = Assignment()
 
         assignment.name = assignment_model.name
+        assignment_with_name = self.session.query(Assignment) \
+            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active,
+                    Assignment.lectid == lecture_id) \
+            .one_or_none()
+
+        if assignment_with_name is not None:
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
         assignment.lectid = lecture_id
         assignment.duedate = assignment_model.due_date
         assignment.status = assignment_model.status
@@ -92,8 +99,8 @@ class AssignmentBaseHandler(GraderBaseHandler):
         except IntegrityError as e:
             self.log.error(e)
             self.session.rollback()
-            raise HTTPError(400, reason="Cannot add object to database.")
-        self.set_status(201)
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason="Cannot add object to database.")
+        self.set_status(HTTPStatus.CREATED)
         self.write_json(assignment)
 
 
@@ -121,6 +128,14 @@ class AssignmentObjectHandler(GraderBaseHandler):
         body = tornado.escape.json_decode(self.request.body)
         assignment_model = AssignmentModel.from_dict(body)
         assignment = self.get_assignment(lecture_id, assignment_id)
+        # Validate name
+        assignment_with_name = self.session.query(Assignment) \
+            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active,
+                    Assignment.lectid == assignment.lectid) \
+            .one_or_none()
+
+        if assignment_with_name is not None:
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
 
         assignment.name = assignment_model.name
         assignment.duedate = assignment_model.due_date
@@ -150,7 +165,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         role = self.session.query(Role).get((self.user.name, lecture_id))
         if instructor_version and role.role < Scope.instructor:
-            raise HTTPError(403)
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
         assignment = self.session.query(Assignment).get(assignment_id)
         if (
                 assignment is None
@@ -158,7 +173,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 or (role.role == Scope.student and assignment.status == "created")
                 or assignment.lectid != lecture_id
         ):
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
         self.write_json(assignment)
 
     @authorize([Scope.instructor])
@@ -173,32 +188,30 @@ class AssignmentObjectHandler(GraderBaseHandler):
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters()
-        try:
-            assignment = self.get_assignment(lecture_id, assignment_id)
+        assignment = self.get_assignment(lecture_id, assignment_id)
 
-            if len(assignment.submissions) > 0:
-                raise HTTPError(400, reason="Cannot delete assignment that has submissions")
+        if len(assignment.submissions) > 0:
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Cannot delete assignment that has submissions")
 
-            if assignment.status in ["released", "complete"]:
-                raise HTTPError(400, reason=f'Cannot delete assignment with status "{assignment.status}"')
+        if assignment.status in ["released", "complete"]:
+            raise HTTPError(HTTPStatus.CONFLICT,
+                            reason=f'Cannot delete assignment with status "{assignment.status}"')
 
-            previously_deleted = (
-                self.session.query(Assignment)
-                    .filter(
-                    Assignment.lectid == lecture_id,
-                    Assignment.name == assignment.name,
-                    Assignment.deleted == DeleteState.deleted,
+        previously_deleted = (
+            self.session.query(Assignment)
+                .filter(
+                Assignment.lectid == lecture_id,
+                Assignment.name == assignment.name,
+                Assignment.deleted == DeleteState.deleted,
                 )
-                    .one_or_none()
-            )
-            if previously_deleted is not None:
-                self.session.delete(previously_deleted)
-                self.session.commit()
-
-            assignment.deleted = DeleteState.deleted
+                .one_or_none()
+        )
+        if previously_deleted is not None:
+            self.session.delete(previously_deleted)
             self.session.commit()
-        except ObjectDeletedError:
-            raise HTTPError(404)
+
+        assignment.deleted = DeleteState.deleted
+        self.session.commit()
 
 
 @register_handler(
@@ -209,6 +222,7 @@ class AssignmentResetHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/reset.
     """
+
     @authorize([Scope.instructor, Scope.tutor, Scope.student])
     async def get(self, lecture_id: int, assignment_id: int):
         self.validate_parameters()
@@ -247,6 +261,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/properties.
     """
+
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         """
@@ -264,7 +279,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         if assignment.properties is not None:
             self.write(assignment.properties)
         else:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
 
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int):
@@ -282,7 +297,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id, assignment_id)
         properties_string: str = self.request.body.decode("utf-8")
         # Check if assignment contains no cells that need manual grading if assignment is fully auto graded
-        if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name:
+        if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
             model = GradeBookModel.from_dict(json.loads(properties_string))
             _check_full_auto_grading(self, model)
         assignment.properties = properties_string
@@ -299,8 +314,9 @@ def _check_full_auto_grading(self: GraderBaseHandler, model):
     """
     for nb in model.notebooks.values():
         if len(nb.task_cells_dict) > 0:
-            raise HTTPError(400, reason="Fully autograded notebook cannot contain task cells!")
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Fully autograded notebook cannot contain task cells!")
         grades = set(nb.grade_cells_dict.keys())
         solutions = set(nb.solution_cells_dict.keys())
         if len(grades & solutions) > 0:
-            raise HTTPError(400, reason="Fully autograded notebook cannot contain manually graded cells!")
+            raise HTTPError(HTTPStatus.CONFLICT,
+                            reason="Fully autograded notebook cannot contain manually graded cells!")

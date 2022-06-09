@@ -280,7 +280,7 @@ class GraderService(config.Application):
         if not os.path.isabs(path):
             raise TraitError("The path is not absolute")
         if not os.path.isdir(path):
-            raise TraitError("The path has to be an existing directory")
+            os.mkdir(path, mode=0o700)
         return path
 
     @observe("grader_service_dir")
@@ -288,7 +288,7 @@ class GraderService(config.Application):
         path = change["new"]
         git_path = os.path.join(path, "git")
         if not os.path.isdir(git_path):
-            os.mkdir(git_path, mode=664)
+            os.mkdir(git_path, mode=0o700)
 
 
 main = GraderService.launch_instance

@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from http import HTTPStatus
 
 import tornado
 from grader_service.api.models.lecture import Lecture as LectureModel
@@ -50,16 +51,14 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture_model = LectureModel.from_dict(body)
-        try:
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_model.code)
-                    .one_or_none()
-            )
-        except NoResultFound:
-            raise HTTPError(404)
-        except MultipleResultsFound:
-            raise HTTPError(400)
+
+        lecture = (
+            self.session.query(Lecture)
+                .filter(Lecture.code == lecture_model.code)
+                .one_or_none()
+        )
+        if lecture is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
@@ -69,17 +68,7 @@ class LectureBaseHandler(GraderBaseHandler):
         lecture.deleted = DeleteState.active
 
         self.session.commit()
-        try:
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_model.code)
-                    .one_or_none()
-            )
-        except NoResultFound:
-            raise HTTPError(404)
-        except MultipleResultsFound:
-            raise HTTPError(400)
-        self.set_status(201)
+        self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
 
 
@@ -119,7 +108,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
 
         self.write_json(role.lecture)
 
@@ -144,13 +133,17 @@ class LectureObjectHandler(GraderBaseHandler):
             lecture.deleted = 1
             a: Assignment
             for a in lecture.assignments:
-                if (len(a.submissions)) > 0 or a.status in ["released", "complete"]:
+                if (len(a.submissions)) > 0:
                     self.session.rollback()
-                    raise HTTPError(400, "Cannot delete assignment")
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions")
+                if a.status in ["released", "complete"]:
+                    self.session.rollback()
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because its status is not created")
+
                 a.deleted = 1
             self.session.commit()
         except ObjectDeletedError:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
         self.write("OK")
 
 

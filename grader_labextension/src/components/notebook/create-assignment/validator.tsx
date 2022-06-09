@@ -104,6 +104,7 @@ export const Validator = (props: ValidatorProps) => {
         icon="automatic-updates"
         outlined
         intent="success"
+        small={true}
       >
         Validate
       </Button>
@@ -120,7 +121,7 @@ export const Validator = (props: ValidatorProps) => {
               <Box sx={{ width: '450px' }}>
                 <Alert severity="success">
                   <AlertTitle>No errors found</AlertTitle>
-                  </Alert>
+                </Alert>
               </Box>
             )}
             {results.map((e: ReportItem) => (
