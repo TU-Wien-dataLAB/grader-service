@@ -300,7 +300,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id, assignment_id)
         properties_string: str = self.request.body.decode("utf-8")
         # Check if assignment contains no cells that need manual grading if assignment is fully auto graded
-        if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name:
+        if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
             model = GradeBookModel.from_dict(json.loads(properties_string))
             _check_full_auto_grading(self, model)
         assignment.properties = properties_string

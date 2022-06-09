@@ -299,7 +299,7 @@ async def test_post_assignment_decode_error(
     e = exc_info.value
     assert e.code == 400
 
-    pre_assignment = Assignment(id=-1, name="pytest", type=1, due_date=None, status="created", points=None)
+    pre_assignment = Assignment(id=-1, name="pytest", type=1, status="created", )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -349,7 +349,7 @@ async def test_post_no_status_error(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status=None, points=None)
+    pre_assignment = Assignment(id=-1, name="pytest", type="user")
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -373,7 +373,7 @@ async def test_put_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -418,7 +418,7 @@ async def test_put_assignment_wrong_lecture_id(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -456,7 +456,7 @@ async def test_put_assignment_wrong_assignment_id(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -491,7 +491,7 @@ async def test_put_assignment_deleted_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -534,7 +534,7 @@ async def test_put_assignment_no_point_changes(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -579,7 +579,7 @@ async def test_get_assignment(
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -643,7 +643,7 @@ async def test_get_assignment_wrong_lecture_id(
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
     post_response = await http_server_client.fetch(
         url,
@@ -1188,3 +1188,374 @@ async def test_assignment_properties_not_found(
         )
     e = exc_info.value
     assert e.code == 404
+
+
+async def test_assignment_properties_properties_wrong_for_autograde(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    url = service_base_url + "/lectures/3/assignments/"
+
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="full_auto")
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_assignment.to_dict()),
+    )
+    assert post_response.code == 201
+    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
+    assert post_assignment.automatic_grading == "full_auto"
+    url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
+    prop = {
+        "_type": "GradeBookModel",
+        "notebooks": {
+            "a5": {
+                "_type": "Notebook",
+                "comments_dict": {},
+                "flagged": False,
+                "grade_cells_dict": {
+                    "cell-81540a070d18c412": {
+                        "_type": "GradeCell",
+                        "cell_type": "code",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 1.0,
+                        "name": "cell-81540a070d18c412",
+                        "notebook_id": None
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "GradeCell",
+                        "cell_type": "markdown",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 2.0,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None
+                    },
+                    "cell-da8c82e850a1922b": {
+                        "_type": "GradeCell",
+                        "cell_type": "code",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 1.0,
+                        "name": "cell-da8c82e850a1922b",
+                        "notebook_id": None
+                    }
+                },
+                "grades_dict": {},
+                "id": "a5",
+                "kernelspec": "{\"display_name\": \"Python 3\", \"language\": \"python\", \"name\": \"python3\"}",
+                "name": "a5",
+                "solution_cells_dict": {
+                    "cell-28df1799f8f8b769": {
+                        "_type": "SolutionCell",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "name": "cell-28df1799f8f8b769",
+                        "notebook_id": None
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "SolutionCell",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None
+                    }
+                },
+                "source_cells_dict": {
+                    "cell-1b9d18df2b17e57f": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "92c710dde448a453c67a457a1a516266",
+                        "id": None,
+                        "locked": None,
+                        "name": "cell-1b9d18df2b17e57f",
+                        "notebook_id": None,
+                        "source": "## Aufgabe 3\nDoes Java use \"fake\"-threads? Explain why or why not?"
+                    },
+                    "cell-26053a7da067ded3": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "341dd0694041ff4b5666c5ae94083cb4",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-26053a7da067ded3",
+                        "notebook_id": None,
+                        "source": "### Aufgabe 1"
+                    },
+                    "cell-28df1799f8f8b769": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "bd34afadfba8f9e585d1245ca8d75beb",
+                        "id": None,
+                        "locked": False,
+                        "name": "cell-28df1799f8f8b769",
+                        "notebook_id": None,
+                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()"
+                    },
+                    "cell-58d7f9f371feee54": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "378450bc4a5678dafbcd41aa17baa337",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-58d7f9f371feee54",
+                        "notebook_id": None,
+                        "source": "## Aufgabe 2\nWhat are \"fake\"-threads?"
+                    },
+                    "cell-81540a070d18c412": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "efff0d4fdfcbd070c4a9afa0afc914dc",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-81540a070d18c412",
+                        "notebook_id": None,
+                        "source": "assert (reverse('lol') == 'lol')"
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "cbcb81d7877ddde960682872f59d9578",
+                        "id": None,
+                        "locked": False,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None,
+                        "source": "YOUR ANSWER HERE"
+                    },
+                    "cell-c06c761f0b7b0f59": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "4ce43bbad8e68a85ba3a7594ea9a41be",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-c06c761f0b7b0f59",
+                        "notebook_id": None,
+                        "source": "reverse('Test')"
+                    },
+                    "cell-da8c82e850a1922b": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "5e838f105bec52e51e488e029e4727fd",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-da8c82e850a1922b",
+                        "notebook_id": None,
+                        "source": "assert (reverse('Test') == 'tseT')"
+                    }
+                },
+                "task_cells_dict": {
+                    "cell-58d7f9f371feee54": {
+                        "_type": "TaskCell",
+                        "cell_type": "code",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 2.0,
+                        "name": "cell-58d7f9f371feee54",
+                        "notebook_id": None
+                    }
+                }
+            }
+        },
+        "schema_version": "1"
+    }
+    with pytest.raises(HTTPClientError) as exc_info:
+        put_response = await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(prop),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
+
+
+async def test_assignment_properties_properties_manual_graded_with_auto_grading(
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        jupyter_hub_mock_server,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    url = service_base_url + "/lectures/3/assignments/"
+
+    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="created", points=None,
+                                automatic_grading="full_auto")
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_assignment.to_dict()),
+    )
+    assert post_response.code == 201
+    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
+    assert post_assignment.automatic_grading == "full_auto"
+    url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
+    prop = {
+        "_type": "GradeBookModel",
+        "notebooks": {
+            "a5": {
+                "_type": "Notebook",
+                "comments_dict": {},
+                "flagged": False,
+                "grade_cells_dict": {
+                    "cell-81540a070d18c412": {
+                        "_type": "GradeCell",
+                        "cell_type": "code",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 1.0,
+                        "name": "cell-81540a070d18c412",
+                        "notebook_id": None
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "GradeCell",
+                        "cell_type": "markdown",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 2.0,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None
+                    },
+                    "cell-da8c82e850a1922b": {
+                        "_type": "GradeCell",
+                        "cell_type": "code",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "max_score": 1.0,
+                        "name": "cell-da8c82e850a1922b",
+                        "notebook_id": None
+                    }
+                },
+                "grades_dict": {},
+                "id": "a5",
+                "kernelspec": "{\"display_name\": \"Python 3\", \"language\": \"python\", \"name\": \"python3\"}",
+                "name": "a5",
+                "solution_cells_dict": {
+                    "cell-28df1799f8f8b769": {
+                        "_type": "SolutionCell",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "name": "cell-28df1799f8f8b769",
+                        "notebook_id": None
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "SolutionCell",
+                        "comment_id": None,
+                        "grade_id": None,
+                        "id": None,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None
+                    }
+                },
+                "source_cells_dict": {
+                    "cell-1b9d18df2b17e57f": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "92c710dde448a453c67a457a1a516266",
+                        "id": None,
+                        "locked": None,
+                        "name": "cell-1b9d18df2b17e57f",
+                        "notebook_id": None,
+                        "source": "## Aufgabe 3\nDoes Java use \"fake\"-threads? Explain why or why not?"
+                    },
+                    "cell-26053a7da067ded3": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "341dd0694041ff4b5666c5ae94083cb4",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-26053a7da067ded3",
+                        "notebook_id": None,
+                        "source": "### Aufgabe 1"
+                    },
+                    "cell-28df1799f8f8b769": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "bd34afadfba8f9e585d1245ca8d75beb",
+                        "id": None,
+                        "locked": False,
+                        "name": "cell-28df1799f8f8b769",
+                        "notebook_id": None,
+                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()"
+                    },
+                    "cell-81540a070d18c412": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "efff0d4fdfcbd070c4a9afa0afc914dc",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-81540a070d18c412",
+                        "notebook_id": None,
+                        "source": "assert (reverse('lol') == 'lol')"
+                    },
+                    "cell-9ea0264ada6c25bd": {
+                        "_type": "SourceCell",
+                        "cell_type": "markdown",
+                        "checksum": "cbcb81d7877ddde960682872f59d9578",
+                        "id": None,
+                        "locked": False,
+                        "name": "cell-9ea0264ada6c25bd",
+                        "notebook_id": None,
+                        "source": "YOUR ANSWER HERE"
+                    },
+                    "cell-c06c761f0b7b0f59": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "4ce43bbad8e68a85ba3a7594ea9a41be",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-c06c761f0b7b0f59",
+                        "notebook_id": None,
+                        "source": "reverse('Test')"
+                    },
+                    "cell-da8c82e850a1922b": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "5e838f105bec52e51e488e029e4727fd",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-da8c82e850a1922b",
+                        "notebook_id": None,
+                        "source": "assert (reverse('Test') == 'tseT')"
+                    }
+                },
+                "task_cells_dict": {
+
+                }
+            }
+        },
+        "schema_version": "1"
+    }
+    with pytest.raises(HTTPClientError) as exc_info:
+        put_response = await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(prop),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
