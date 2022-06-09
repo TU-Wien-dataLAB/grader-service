@@ -82,7 +82,8 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment_with_name = self.session.query(Assignment) \
-            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active, Assignment.lectid == lecture_id) \
+            .filter(Assignment.name == assignment.name, Assignment.deleted == DeleteState.active,
+                    Assignment.lectid == lecture_id) \
             .one_or_none()
 
         if assignment_with_name is not None:
@@ -131,7 +132,8 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id, assignment_id)
         # Validate name
         assignment_with_name = self.session.query(Assignment) \
-            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active, Assignment.lectid == assignment.lectid) \
+            .filter(Assignment.name == assignment_model.name, Assignment.deleted == DeleteState.active,
+                    Assignment.lectid == assignment.lectid) \
             .one_or_none()
 
         if assignment_with_name is not None:
@@ -188,33 +190,30 @@ class AssignmentObjectHandler(GraderBaseHandler):
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters()
-        try:
-            assignment = self.get_assignment(lecture_id, assignment_id)
+        assignment = self.get_assignment(lecture_id, assignment_id)
 
-            if len(assignment.submissions) > 0:
-                raise HTTPError(HTTPStatus.CONFLICT, reason="Cannot delete assignment that has submissions")
+        if len(assignment.submissions) > 0:
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Cannot delete assignment that has submissions")
 
-            if assignment.status in ["released", "complete"]:
-                raise HTTPError(HTTPStatus.CONFLICT,
-                                reason=f'Cannot delete assignment with status "{assignment.status}"')
+        if assignment.status in ["released", "complete"]:
+            raise HTTPError(HTTPStatus.CONFLICT,
+                            reason=f'Cannot delete assignment with status "{assignment.status}"')
 
-            previously_deleted = (
-                self.session.query(Assignment)
-                    .filter(
-                    Assignment.lectid == lecture_id,
-                    Assignment.name == assignment.name,
-                    Assignment.deleted == DeleteState.deleted,
+        previously_deleted = (
+            self.session.query(Assignment)
+                .filter(
+                Assignment.lectid == lecture_id,
+                Assignment.name == assignment.name,
+                Assignment.deleted == DeleteState.deleted,
                 )
-                    .one_or_none()
-            )
-            if previously_deleted is not None:
-                self.session.delete(previously_deleted)
-                self.session.commit()
-
-            assignment.deleted = DeleteState.deleted
+                .one_or_none()
+        )
+        if previously_deleted is not None:
+            self.session.delete(previously_deleted)
             self.session.commit()
-        except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
+
+        assignment.deleted = DeleteState.deleted
+        self.session.commit()
 
 
 @register_handler(
