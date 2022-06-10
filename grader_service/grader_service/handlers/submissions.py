@@ -14,12 +14,9 @@ from grader_service.autograding.grader_executor import GraderExecutor
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
-from grader_service.orm import Lecture
-from grader_service.orm.user import User
 import tornado
 from grader_service.api.models.submission import Submission as SubmissionModel
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
-from grader_service.orm.base import DeleteState
+from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -53,6 +50,7 @@ def tuple_to_submission(t):
     ) = t
     return s
 
+
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
     version_specifier=VersionSpecifier.ALL,
@@ -61,6 +59,7 @@ class SubmissionHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
     """
+
     def on_finish(self):
         # we do not close the session we just commit because we might run
         # LocalAutogradeExecutor or GenerateFeedbackExecutor in POST which still need it
@@ -86,7 +85,8 @@ class SubmissionHandler(GraderBaseHandler):
         self.validate_parameters("filter", "instructor-version", "format")
         submission_filter = self.get_argument("filter", "none")
         if submission_filter not in ["none", "latest", "best"]:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Filter parameter has to be either 'none', 'latest' or 'best'")
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Filter parameter has to be either 'none', 'latest' or 'best'")
         instructor_version = self.get_argument("instructor-version", None) == "true"
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
@@ -200,8 +200,8 @@ class SubmissionHandler(GraderBaseHandler):
             for i, s in enumerate(submissions):
                 d = s.model.to_dict()
                 if i == 0:
-                    self.write(",".join((k for k in d.keys() if k != "logs"))+"\n")
-                self.write(",".join((str(v) for k, v in d.items() if k != "logs"))+"\n")
+                    self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+                self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
         else:
             self.write_json(submissions)
         self.session.close()  # manually close here because on_finish overwrite
@@ -290,8 +290,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
     """
-    @authorize([Scope.tutor, Scope.instructor])
 
+    @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """
         Returns a specific submission.
@@ -346,6 +346,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/
     {submission_id}/properties.
     """
+
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """

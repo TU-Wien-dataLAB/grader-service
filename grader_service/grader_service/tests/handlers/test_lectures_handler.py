@@ -450,3 +450,27 @@ async def test_delete_lecture_assignment_complete(
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
+async def test_delete_lecture_not_found(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    jupyter_hub_mock_server,
+    default_user,
+    default_token,
+    sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = -5
+
+    url = service_base_url + f"/lectures/{l_id}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+

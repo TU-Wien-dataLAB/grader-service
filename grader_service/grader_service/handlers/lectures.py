@@ -126,8 +126,6 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         try:
             lecture = self.session.query(Lecture).get(lecture_id)
-            if lecture is None:
-                raise HTTPError(404)
             if lecture.deleted == 1:
                 raise HTTPError(404)
             lecture.deleted = 1
