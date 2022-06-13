@@ -222,6 +222,8 @@ In order to start the grader service we have to provide a configuration file for
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
 
+Alternatively, you can run ``grader-service --generate-config -f /path/to/grader_service_config.py`` to generate the skeleton for the config file that show all possible configuration options.
+
 Furthermore the database must be initialized before we can start the service.
 To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
 
