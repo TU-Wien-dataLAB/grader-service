@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from http import HTTPStatus
 
 import pytest
 from grader_service.server import GraderServer
@@ -106,6 +107,35 @@ async def test_post_lectures(
     lectures = json.loads(get_response.body.decode())
     assert len(lectures) == orig_len
 
+async def test_post_lectures_ghost_lecture_not_found(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    jupyter_hub_mock_server,
+    default_user,
+    default_token,
+):
+    #TODO TEST DOES NOT ENTER HANDLER
+    default_user["groups"] = ["pt:instructor"]
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+    url = service_base_url + "/lectures"
+
+    pre_lecture = Lecture(
+        id=-1, name="pytest_lecture", code="abc", complete=False
+    )
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_lecture.to_dict()),
+        )
+    e = exc_info.value
+    print(e.response.error)
+    assert e.code == HTTPStatus.NOT_FOUND
+
+
 
 async def test_post_not_found(
     app: GraderServer,
@@ -115,10 +145,10 @@ async def test_post_not_found(
     default_user,
     default_token,
 ):
+    #TODO TEST DOES NOT ENTER HANDLER
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures"
-    # same code not in user groups
     pre_lecture = Lecture(
         id=-1, name="pytest_lecture", code="pt", complete=False
     )
@@ -355,7 +385,7 @@ async def test_delete_lecture_assignment_with_submissions(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_lecture_assignment_released(
@@ -383,7 +413,7 @@ async def test_delete_lecture_assignment_released(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_lecture_assignment_complete(
@@ -418,5 +448,29 @@ async def test_delete_lecture_assignment_complete(
             headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.CONFLICT
+
+async def test_delete_lecture_not_found(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    jupyter_hub_mock_server,
+    default_user,
+    default_token,
+    sql_alchemy_db,
+):
+    http_server = jupyter_hub_mock_server(default_user, default_token)
+    app.hub_api_url = http_server.url_for("")[0:-1]
+
+    l_id = -5
+
+    url = service_base_url + f"/lectures/{l_id}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
 

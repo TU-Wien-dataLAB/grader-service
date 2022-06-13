@@ -3,16 +3,14 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from http import HTTPStatus
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.autograding.grader_executor import GraderExecutor
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from .handler_utils import parse_ids
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from tornado.web import HTTPError
-from tornado.ioloop import IOLoop
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 
@@ -55,7 +53,7 @@ class GradingAutoHandler(GraderBaseHandler):
             lambda: self.log.info(f"Autograding task of submission {submission.id} exited!")
         )
         submission = self.session.query(Submission).get(sub_id)
-        self.set_status(202)
+        self.set_status(HTTPStatus.ACCEPTED, reason="Autograding submission process started")
         self.write_json(submission)
 
 
@@ -96,5 +94,5 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lambda: self.log.info(f"Successfully generated feedback for submission {submission.id}!")
         )
         submission = self.session.query(Submission).get(sub_id)
-        self.set_status(202)
+        self.set_status(HTTPStatus.ACCEPTED, reason="Generating feedback process started")
         self.write_json(submission)

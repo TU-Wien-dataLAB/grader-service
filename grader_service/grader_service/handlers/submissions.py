@@ -8,17 +8,15 @@ import datetime
 import json
 import os.path
 import subprocess
+from http import HTTPStatus
 
 from grader_service.autograding.grader_executor import GraderExecutor
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
-from grader_service.orm import Lecture
-from grader_service.orm.user import User
 import tornado
 from grader_service.api.models.submission import Submission as SubmissionModel
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
-from grader_service.orm.base import DeleteState
+from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -52,6 +50,7 @@ def tuple_to_submission(t):
     ) = t
     return s
 
+
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
     version_specifier=VersionSpecifier.ALL,
@@ -60,6 +59,7 @@ class SubmissionHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
     """
+
     def on_finish(self):
         # we do not close the session we just commit because we might run
         # LocalAutogradeExecutor or GenerateFeedbackExecutor in POST which still need it
@@ -85,15 +85,16 @@ class SubmissionHandler(GraderBaseHandler):
         self.validate_parameters("filter", "instructor-version", "format")
         submission_filter = self.get_argument("filter", "none")
         if submission_filter not in ["none", "latest", "best"]:
-            raise HTTPError(400, reason="Filter parameter has to be either 'none', 'latest' or 'best'")
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Filter parameter has to be either 'none', 'latest' or 'best'")
         instructor_version = self.get_argument("instructor-version", None) == "true"
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
-            raise HTTPError(400, reason="Response format can either be 'json' or 'csv'")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'")
 
         role: Role = self.get_role(lecture_id)
         if instructor_version and role.role < Scope.tutor:
-            raise HTTPError(403)
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
         assignment = self.get_assignment(lecture_id, assignment_id)
 
         if instructor_version:
@@ -199,8 +200,8 @@ class SubmissionHandler(GraderBaseHandler):
             for i, s in enumerate(submissions):
                 d = s.model.to_dict()
                 if i == 0:
-                    self.write(",".join((k for k in d.keys() if k != "logs"))+"\n")
-                self.write(",".join((str(v) for k, v in d.items() if k != "logs"))+"\n")
+                    self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+                self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
         else:
             self.write_json(submissions)
         self.session.close()  # manually close here because on_finish overwrite
@@ -222,12 +223,12 @@ class SubmissionHandler(GraderBaseHandler):
         try:
             commit_hash = body["commit_hash"]
         except KeyError:
-            raise HTTPError(400)
+            raise HTTPError(400, reason="Commit hash not found in body")
 
         assignment = self.get_assignment(lecture_id, assignment_id)
         submission_ts = datetime.datetime.utcnow()
         if assignment.duedate is not None and submission_ts > assignment.duedate:
-            raise HTTPError(400, reason="Submission after due date of assignment!")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Submission after due date of assignment!")
 
         submission = Submission()
         submission.assignid = assignment.id
@@ -237,17 +238,17 @@ class SubmissionHandler(GraderBaseHandler):
 
         if assignment.duedate is not None and submission.date > assignment.duedate:
             self.write({"message": "Cannot submit assignment: Past due date!"})
-            self.write_error(400)
+            self.write_error(HTTPStatus.FORBIDDEN)
 
         git_repo_path = self.construct_git_dir(repo_type=assignment.type, lecture=assignment.lecture,
                                                assignment=assignment)
         if git_repo_path is None or not os.path.exists(git_repo_path):
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Git repository not found")
 
         try:
             subprocess.run(["git", "branch", "main", "--contains", commit_hash], cwd=git_repo_path, capture_output=True)
         except subprocess.CalledProcessError:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
         submission.commit_hash = commit_hash
         submission.auto_status = "not_graded"
@@ -255,12 +256,12 @@ class SubmissionHandler(GraderBaseHandler):
 
         self.session.add(submission)
         self.session.commit()
-        self.set_status(201)
+        self.set_status(HTTPStatus.CREATED)
         self.write_json(submission)
 
         # If the assignment has automatic grading or fully automatic grading perform necessary operations
         if assignment.automatic_grading in [AutoGradingBehaviour.auto, AutoGradingBehaviour.full_auto]:
-            self.set_status(202)
+            self.set_status(HTTPStatus.ACCEPTED)
             executor = RequestHandlerConfig.instance().autograde_executor_class(
                 self.application.grader_service_dir, submission, close_session=False, config=self.application.config
             )
@@ -289,8 +290,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
     """
-    @authorize([Scope.tutor, Scope.instructor])
 
+    @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """
         Returns a specific submission.
@@ -345,6 +346,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/
     {submission_id}/properties.
     """
+
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """
@@ -365,7 +367,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         if submission.properties is not None:
             self.write(submission.properties)
         else:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
 
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -388,7 +390,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         try:
             score = GradeBookModel.from_dict(json.loads(properties_string)).score
         except:
-            raise HTTPError(400, reason="Cannot parse properties file!")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
         submission.score = score
         submission.properties = properties_string
         self.session.commit()

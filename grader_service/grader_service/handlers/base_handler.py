@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import time
+from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
 from urllib.parse import ParseResult, urlparse, quote
 
@@ -150,7 +151,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
         assignment = self.session.query(Assignment).get(assignment_id)
         if assignment is None or assignment.deleted == 1 or assignment.lectid != lecture_id:
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment with id " + str(assignment_id) + " was not found")
         return assignment
 
     def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
@@ -160,7 +161,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                 or submission.assignid != assignment_id
                 or submission.assignment.lectid != lecture_id
         ):
-            raise HTTPError(404)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
         return submission
 
     @property
@@ -185,7 +186,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             else:
                 group = self.session.query(Group).get((self.user.name, lecture.id))
                 if group is None:
-                    raise HTTPError(404)
+                    raise HTTPError(404, reason="User is not in a group")
                 path = os.path.join(type_path, group.name)
         elif repo_type == "user":
             user_path = os.path.join(assignment_path, repo_type)
@@ -195,7 +196,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                 return None
             group = self.session.query(Group).get((group_name, lecture.id))
             if group is None:
-                raise HTTPError(404)
+                raise HTTPError(404, reason="User is not in a group")
             group_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(group_path, group.name)
         else:
