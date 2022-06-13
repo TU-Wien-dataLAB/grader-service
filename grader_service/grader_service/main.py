@@ -12,13 +12,14 @@ import shlex
 import signal
 import subprocess
 import sys
+import inspect
 
 import tornado
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
 from traitlets import config, Bool
 from traitlets import log as traitlets_log
-from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default
+from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default, HasTraits
 
 # run __init__.py to register handlers
 import grader_service.handlers
@@ -44,6 +45,8 @@ class GraderService(config.Application):
   spawn the grader service:
       grader-service -f /etc/grader/grader_service_config.py
   """
+
+    generate_config = Bool(False, help="Generate config file based on defaults.").tag(config=True)
 
     service_host = Unicode(os.getenv("GRADER_SERVICE_HOST", "0.0.0.0"), help="The host address of the service").tag(
         config=True
@@ -73,7 +76,7 @@ class GraderService(config.Application):
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
-        if not os.path.isfile(proposal.value):
+        if not os.path.isfile(proposal.value) and not self.generate_config:
             print(
                 "ERROR: Failed to find specified config file: {}".format(
                     proposal.value
@@ -107,6 +110,10 @@ class GraderService(config.Application):
                 },
             },
             "Show the application's configuration (json format)",
+        ),
+        'generate-config': (
+            {'GraderService': {'generate_config': True}},
+            "generate default config file",
         ),
     }
 
@@ -155,6 +162,23 @@ class GraderService(config.Application):
         traitlets_handler.setFormatter(formatter)
         traitlet_logger.addHandler(traitlets_handler)
 
+    def write_config_file(self):
+        self.log.info(f"Writing config file {os.path.abspath(self.config_file)}")
+        config_file_dir = os.path.dirname(os.path.abspath(self.config_file))
+        if not os.path.isdir(config_file_dir):
+            self.exit(f"The directory to write the config file has to exist. {config_file_dir} not found")
+        if os.path.isfile(os.path.abspath(self.config_file)):
+            self.exit(f"Config file {os.path.abspath(self.config_file)} already exists!")
+
+        config_classes = [x[1] for x in inspect.getmembers(sys.modules[__name__],
+                                                           lambda x: inspect.isclass(x) and issubclass(x, HasTraits))]
+        config_text = self.generate_config_file(classes=config_classes)
+        if isinstance(config_text, bytes):
+            config_text = config_text.decode('utf8')
+        print("Generating config: %s" % self.config_file)
+        with open(self.config_file, mode='w') as f:
+            f.write(config_text)
+
     def initialize(self, argv, *args, **kwargs):
         super().initialize(*args, **kwargs)
         self.setup_loggers(self.log_level)
@@ -170,6 +194,11 @@ class GraderService(config.Application):
 
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
+
+        if self.generate_config:
+            self.write_config_file()
+            self.exit(0)
+
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
