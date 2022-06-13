@@ -66,6 +66,7 @@ setup_args = dict(
         "jupyter_server>=1.6,<2",
         "urllib3>=1.26.6",
         "traitlets>=5.0.5",
+        "grader-convert>=0.1.2",
     ],
     zip_safe=False,
     include_package_data=True,
