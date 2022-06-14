@@ -133,13 +133,13 @@ In the ``grader`` directory run:
 .. code-block::
 
    pip install -r ./grader_convert/requirements.txt
-   pip install ./grader_convert
+   pip install --no-use-pep517 ./grader_convert
 
    pip install -r ./grader_labextension/requirements.txt
-   pip install ./grader_labextension
+   pip install --no-use-pep517 ./grader_labextension
 
    pip install -r ./grader_service/requirements.txt
-   pip install ./grader_service
+   pip install --no-use-pep517 ./grader_service
 
 
 Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
