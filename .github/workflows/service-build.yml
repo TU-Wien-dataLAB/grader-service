@@ -33,7 +33,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install build wheel twine
         pip install -r ../grader_convert/requirements.txt
-        pip install ../grader_convert  
         pip install -r requirements.txt
     - name: Build package
       working-directory: ./grader_service
