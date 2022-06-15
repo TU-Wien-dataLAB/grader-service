@@ -129,7 +129,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
             )
         except HTTPError as e:
             self.set_status(e.code)
-            self.write_error(e.code, exc_info=e)
+            self.write_error(e.code)
             return
         self.write(json.dumps(response))
 
