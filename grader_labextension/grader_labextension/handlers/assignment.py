@@ -86,7 +86,8 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
             self.set_status(e.code)
             self.write_error(e.code)
             return
-        # if we did not get an error when creating the assignment (i.e. the user is authorized etc.) then we can create the directory structure if it does not exist yet
+        # if we did not get an error when creating the assignment (i.e. the user is authorized etc.) then we can
+        # create the directory structure if it does not exist yet
         os.makedirs(
             os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{response["id"]}'),
             exist_ok=True
@@ -128,7 +129,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
             )
         except HTTPError as e:
             self.set_status(e.code)
-            self.write_error(e.code)
+            self.write_error(e.code, exc_info=e)
             return
         self.write(json.dumps(response))
 

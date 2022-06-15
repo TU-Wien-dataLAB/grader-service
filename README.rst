@@ -133,13 +133,13 @@ In the ``grader`` directory run:
 .. code-block::
 
    pip install -r ./grader_convert/requirements.txt
-   pip install ./grader_convert
+   pip install --no-use-pep517 ./grader_convert
 
    pip install -r ./grader_labextension/requirements.txt
    pip install ./grader_labextension
 
    pip install -r ./grader_service/requirements.txt
-   pip install ./grader_service
+   pip install --no-use-pep517 ./grader_service
 
 
 Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
@@ -236,7 +236,7 @@ Alternatively, you can run ``grader-service --generate-config -f /path/to/grader
 Furthermore the database must be initialized before we can start the service.
 To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
 
-    grader-service migrate
+    grader-service-migrate
 
 Then the grader service can be started by specifying the config file as such: ::
 
