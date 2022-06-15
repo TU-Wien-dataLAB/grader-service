@@ -236,7 +236,7 @@ Alternatively, you can run ``grader-service --generate-config -f /path/to/grader
 Furthermore the database must be initialized before we can start the service.
 To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
 
-    grader-service migrate
+    grader-service-migrate
 
 Then the grader service can be started by specifying the config file as such: ::
 
