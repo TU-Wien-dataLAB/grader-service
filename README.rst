@@ -136,7 +136,7 @@ In the ``grader`` directory run:
    pip install --no-use-pep517 ./grader_convert
 
    pip install -r ./grader_labextension/requirements.txt
-   pip install --no-use-pep517 ./grader_labextension
+   pip install ./grader_labextension
 
    pip install -r ./grader_service/requirements.txt
    pip install --no-use-pep517 ./grader_service
