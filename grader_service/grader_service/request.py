@@ -16,17 +16,10 @@ from traitlets.traitlets import Int, TraitError, Unicode, validate
 
 
 class RequestService(LoggingConfigurable):
-    scheme = Unicode(
-        "http", help="The http scheme to use. Either 'http' or 'https'"
-    ).tag(config=True)
-    host = Unicode(
-        "127.0.0.1", help="Host adress the service should make requests to"
-    ).tag(config=True)
-    port = Int(4010, help="Host port of service").tag(config=True)
-
-    def __init__(self, **kwargs):
+    def __init__(self, url: str, **kwargs):
         super().__init__(**kwargs)
         self.http_client = AsyncHTTPClient()
+        self.url = url
 
     async def request(
         self,
@@ -70,10 +63,6 @@ class RequestService(LoggingConfigurable):
         if not 1 <= value <= 65535:
             raise TraitError("Port number has to be between 1 and 65535.")
         return value
-
-    @property
-    def url(self):
-        return self.scheme + "://" + self.host + ":" + str(self.port)
 
     @staticmethod
     def get_query_string(params: dict) -> dict:
