@@ -5,7 +5,9 @@ metadata:
   name: {{ include "grader-service.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
- #storageClassName: {{ .Values.storageClassName | quote }}
+#{{- if .Values.storageClassName }}
+# storageClassName: {{ .Values.storageClassName | quote }}
+#{{- end }}
  accessModes:
     - {{ .Values.accessMode | quote }}
  resources:

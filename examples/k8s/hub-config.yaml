@@ -1,0 +1,121 @@
+
+# hub relates to the hub pod, responsible for running JupyterHub, its configured
+# Authenticator class KubeSpawner, and its configured Proxy class
+# ConfigurableHTTPProxy. KubeSpawner creates the user pods, and
+# ConfigurableHTTPProxy speaks with the actual ConfigurableHTTPProxy server in
+# the proxy pod.
+hub:
+  config:
+    JupyterHub:
+      admin_access: true
+      authenticator_class: dummy
+  cookieSecret:
+  concurrentSpawnLimit: 64
+  consecutiveFailureLimit: 5
+  db:
+    type: sqlite-pvc
+    pvc:
+      accessModes:
+        - ReadWriteOnce
+      storage: 1Gi
+  allowNamedServers: true
+  namedServerLimitPerUser: 2
+  serviceAccount:
+    create: true
+  extraConfig:
+    default: |
+      c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
+      c.Authenticator.admin_users = {'admin', 'instructor'}
+      c.JupyterHub.services.append(
+          {
+              'name': 'grader',
+              'url': 'http://grader-service:4010',
+              'api_token': '7e272a9df62444de9d2d111b5ff6e70f'
+          }
+      )
+      c.JupyterHub.load_groups = {
+        "lect1:instructor": ["instructor"],
+        "lect1:tutor": ["tutor"],
+        "lect1:student": ["student"]
+      }
+
+rbac:
+  create: true
+
+# proxy relates to the proxy pod, the proxy-public service, and the autohttps
+# pod and proxy-http service.
+proxy:
+  secretToken:
+  service:
+    type: LoadBalancer
+  # chp relates to the proxy pod, which is responsible for routing traffic based
+  # on dynamic configuration sent from JupyterHub to CHP's REST API.
+
+# singleuser relates to the configuration of KubeSpawner which runs in the hub
+# pod, and its spawning of user pods such as jupyter-myusername.
+singleuser:
+  networkPolicy:
+    enabled: true
+    ingress: []
+    egress: []
+    egressAllowRules:
+      cloudMetadataServer: false
+      dnsPortsPrivateIPs: true
+      nonPrivateIPs: true
+      privateIPs: false
+    interNamespaceAccessLabels: ignore
+    allowedIngressPorts: []
+  events: true
+  extraLabels:
+    hub.jupyter.org/network-access-hub: "true"
+  storage:
+    type: dynamic
+    capacity: 10Gi
+    homeMountPath: /home/jovyan
+    dynamic:
+      pvcNameTemplate: claim-{username}{servername}
+      volumeNameTemplate: volume-{username}{servername}
+      storageAccessModes: [ReadWriteOnce]
+  startTimeout: 300
+  defaultUrl: /lab
+  image:
+    name: grader-user
+    tag: "dev"
+  profileList: []
+  extraEnv:
+    GRADER_HOST_URL: http://grader-service:4010
+
+# scheduling relates to the user-scheduler pods and user-placeholder pods.
+scheduling:
+  userScheduler:
+    enabled: false
+  userPlaceholder:
+    enabled: false
+
+# prePuller relates to the hook|continuous-image-puller DaemonsSets
+prePuller:
+  hook:
+    enabled: false
+
+ingress:
+  enabled: false
+
+# cull relates to the jupyterhub-idle-culler service, responsible for evicting
+# inactive singleuser pods.
+#
+# The configuration below, except for enabled, corresponds to command-line flags
+# for jupyterhub-idle-culler as documented here:
+# https://github.com/jupyterhub/jupyterhub-idle-culler#as-a-standalone-script
+#
+cull:
+  enabled: true
+  users: false # --cull-users
+  adminUsers: true # --cull-admin-users
+  removeNamedServers: false # --remove-named-servers
+  timeout: 3600 # --timeout
+  every: 600 # --cull-every
+  concurrency: 10 # --concurrency
+  maxAge: 0 # --max-age
+
+debug:
+  enabled: true

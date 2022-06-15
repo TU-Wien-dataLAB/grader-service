@@ -28,16 +28,15 @@ RUN python3 -m pip install jupyterhub
 RUN python3 -m pip install --upgrade notebook
 
 # INSTALL grader-service
-COPY ./grading_labextension /grading_labextension
-COPY ./convert /convert
-
-COPY ./convert /convert
+COPY ./grader_labextension /grader_labextension
+COPY ./grader_convert /grader_convert
 
 # install grading service
-RUN python3 -m pip install -r /grading_labextension/requirements.txt && \
-    python3 -m pip install -r /convert/requirements.txt && \
-    python3 -m pip install  /convert/ && \
-    python3 -m pip install  /grading_labextension
+RUN python3 -m pip install -r /grader_labextension/requirements.txt && \
+    python3 -m pip install -r /grader_convert/requirements.txt
+
+RUN python3 -m pip install --no-use-pep517 /grader_convert/ && \
+    python3 -m pip install /grader_labextension
 
 RUN useradd -m -s /bin/bash -N -u 1000 jovyan
 RUN echo "jovyan:jupyter" | chpasswd

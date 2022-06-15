@@ -3,10 +3,10 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: s210.dl.hpc.tuwien.ac.at/grader/grader-service
+  repository: grader-service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "dev"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -50,10 +50,10 @@ gitConfig:
   gitEmail: "grader-service@mail.com"
 
 volumePermissions:
-  enabled: false
+  enabled: true
 
 # pvc
-storageClassName: ""
+#storageClassName: "csi-cinder-sc-delete"
 accessMode: "ReadWriteOnce"
 capacity: "10G"
 

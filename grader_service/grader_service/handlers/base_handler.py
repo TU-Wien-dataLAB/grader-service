@@ -111,8 +111,6 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
 
-        super().__init__(application, request, **kwargs)
-
         self.application: GraderServer = (
             self.application
         )  # add type hint for application
