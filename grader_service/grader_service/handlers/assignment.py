@@ -134,7 +134,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                     Assignment.lectid == assignment.lectid) \
             .one_or_none()
 
-        if assignment_with_name is not None:
+        if assignment_with_name is not None and assignment_with_name.id == assignment_id:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
 
         assignment.name = assignment_model.name
