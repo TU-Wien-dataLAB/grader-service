@@ -102,8 +102,6 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     """
     Base class of all handler classes that implements validation and request functions
     """
-    request_service = RequestService()
-    hub_request_service = RequestService()
 
     def __init__(
             self,
@@ -113,17 +111,15 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
 
+        super().__init__(application, request, **kwargs)
+
         self.application: GraderServer = (
             self.application
         )  # add type hint for application
         hub_api_parsed: ParseResult = urlparse(self.application.hub_api_url)
-        self.hub_request_service.scheme = hub_api_parsed.scheme
-        (
-            self.hub_request_service.host,
-            self.hub_request_service.port,
-        ) = httputil.split_host_and_port(hub_api_parsed.netloc)
-        self.hub_api_base_path: str = hub_api_parsed.path
+        self.hub_request_service = RequestService(url=f"{hub_api_parsed.scheme}://{hub_api_parsed.netloc}")
 
+        self.hub_api_base_path: str = hub_api_parsed.path
         self.log = self.application.log
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
