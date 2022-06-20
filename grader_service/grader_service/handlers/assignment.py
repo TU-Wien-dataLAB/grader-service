@@ -45,12 +45,12 @@ class AssignmentBaseHandler(GraderBaseHandler):
         ):  # students do not get assignments that are created
             assignments = (
                 self.session.query(Assignment)
-                    .filter(
+                .filter(
                     Assignment.lectid == role.lecture.id,
                     Assignment.deleted == DeleteState.active,
                     Assignment.status != "created",
                 )
-                    .all()
+                .all()
             )
         else:
             assignments = [
@@ -199,12 +199,12 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         previously_deleted = (
             self.session.query(Assignment)
-                .filter(
+            .filter(
                 Assignment.lectid == lecture_id,
                 Assignment.name == assignment.name,
                 Assignment.deleted == DeleteState.deleted,
-                )
-                .one_or_none()
+            )
+            .one_or_none()
         )
         if previously_deleted is not None:
             self.session.delete(previously_deleted)
@@ -246,9 +246,10 @@ class AssignmentResetHandler(GraderBaseHandler):
         repo_path_release = self.construct_git_dir('release', assignment.lecture, assignment)
         repo_path_user = self.construct_git_dir(assignment.type, assignment.lecture, assignment)
 
-        self.overwrite_user_repository(tmp_path_base=git_path_base, tmp_path_release=git_path_release,
-                                       tmp_path_user=git_path_user, repo_path_release=repo_path_release,
-                                       repo_path_user=repo_path_user)
+        self.duplicate_release_repo(repo_path_release=repo_path_release,
+                                    repo_path_user=repo_path_user,
+                                    assignment=assignment,
+                                    message="Reset Assignment")
 
         self.write_json(assignment)
 
