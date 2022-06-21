@@ -143,7 +143,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment.type = assignment_model.type
         assignment.automatic_grading = assignment_model.automatic_grading
 
-        if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name:
+        if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name and assignment.properties is not None:
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
             _check_full_auto_grading(self, model)
         self.session.commit()
