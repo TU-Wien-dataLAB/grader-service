@@ -79,6 +79,9 @@ export interface IEditDialogProps {
 }
 
 export const EditDialog = (props: IEditDialogProps) => {
+  const [checked, setChecked] = React.useState(
+    props.assignment.due_date !== null
+  );
   const formik = useFormik({
     initialValues: {
       name: props.assignment.name,
@@ -103,7 +106,6 @@ export const EditDialog = (props: IEditDialogProps) => {
   });
 
   const [openDialog, setOpen] = React.useState(false);
-
   return (
     <div>
       <IconButton
@@ -138,24 +140,22 @@ export const EditDialog = (props: IEditDialogProps) => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      value={props.assignment.due_date !== null ? true : false}
+                      checked={checked}
                       onChange={async e => {
-                        console.log('Before: ' + formik.values.due_date);
-                        if (e.target.checked) {
-                          await formik.setFieldValue('due_date', new Date());
-                        } else {
+                        setChecked(e.target.checked);
+                        if (!e.target.checked) {
                           await formik.setFieldValue('due_date', null);
+                        } else {
+                          await formik.setFieldValue('due_date', new Date());
                         }
-                        console.log('After: ' + formik.values.due_date);
                       }}
                     />
                   }
                   label="Set Deadline"
                 />
-
                 <DateTimePicker
                   ampm={false}
-                  disabled={formik.values.due_date === null}
+                  disabled={!checked}
                   renderInput={(props: TextFieldProps) => {
                     return (
                       <TextField
@@ -305,8 +305,6 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
     }
   });
 
-  console.log(props.lecture);
-
   const [openDialog, setOpen] = React.useState(false);
 
   return (
@@ -380,7 +378,7 @@ interface INewAssignmentCardProps {
 export default function NewAssignmentCard(props: INewAssignmentCardProps) {
   return (
     <Card
-      sx={{ width: 225, height: "100%", m: 1.5, backgroundColor: '#fcfcfc' }}
+      sx={{ width: 225, height: '100%', m: 1.5, backgroundColor: '#fcfcfc' }}
     >
       <Tooltip title={'New Assignment'}>
         <CardActionArea
@@ -432,7 +430,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
   const [openDialog, setOpen] = React.useState(false);
 
   return (
-    <Box sx={{minHeight: 225, height: "100%"}}>
+    <Box sx={{ minHeight: 225, height: '100%' }}>
       <NewAssignmentCard
         onClick={e => {
           e.stopPropagation();
