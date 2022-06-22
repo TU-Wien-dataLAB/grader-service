@@ -85,7 +85,7 @@ Requirements
    JupyterLab,
    Python >= 3.8,
    pip,
-   Node.js,
+   Node.js>=12,
    npm
 
 Installation
@@ -130,7 +130,7 @@ Local installation
 
 In the ``grader`` directory run:
 
-.. code-block::
+.. code-block:: bash
 
    pip install -r ./grader_convert/requirements.txt
    pip install --no-use-pep517 ./grader_convert
@@ -161,7 +161,9 @@ Getting Started
 Running grader service
 =======================
 
-To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config: ::
+To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config:
+
+.. code-block:: python
 
     c.JupyterHub.services.append(
         {
@@ -183,7 +185,9 @@ Since the JupyterHub is the only source of authentication for the service, it ha
 
 Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by colons.
 
-The config could look like this: ::
+The config could look like this:
+
+.. code-block:: python
 
     ## generic
     c.JupyterHub.admin_access = True
@@ -211,7 +215,9 @@ Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so o
 Starting the service
 =====================
 
-In order to start the grader service we have to provide a configuration file for it as well: ::
+In order to start the grader service we have to provide a configuration file for it as well:
+
+.. code-block:: python
 
     import os
 
@@ -248,7 +254,9 @@ When restarting the JupyterHub you should now see the following log message: ::
 
 Do not forget to set the log level to ``INFO`` in the JupyterHub config if you want to see this message.
 
-The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the `jupyter_notebook_config.py` file. When using the defaults from above we do not need to explicitly configure this but it would look like this: ::
+The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the `jupyter_notebook_config.py` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
+
+.. code-block:: python
 
     import os
     c.GitService.git_access_token = os.environ.get("JUPYTERHUB_API_TOKEN")
@@ -259,4 +267,51 @@ The last thing we have to configure is the server-side of the JupyterLab plugin 
 
 .. running-end
 
+Using LTI3 Authenticator
+=========================
+
+In order to use the grader service with an LMS like Moodle, the groups first have to be added to the JupyterHub so the grader service gets the necessary information from the hub.
+
+For this purpose, the `LTI 1.3 Authenticator <https://github.com/TU-Wien-dataLAB/lti13oauthenticator>`_ can be used so that users from the LMS can be added to the JupyterHub.
+
+To automatically add the groups for the grader service from the LTI authenticator, the following `post auth hook <https://jupyterhub.readthedocs.io/en/stable/api/auth.html#jupyterhub.auth.Authenticator.post_auth_hook>`_ can be used.
+
+.. code-block:: python
+
+    def post_auth_hook(authenticator, handler, authentication):
+        db: sqlalchemy.orm.session.Session = authenticator.db
+        log = authenticator.log
+
+        course_id = authentication["auth_state"]["course_id"]
+        user_role = authentication["auth_state"]["user_role"]
+        user_name = authentication["name"]
+
+        # there are only Learner and Instructors
+        if user_role == "Learner":
+            user_role = "student"
+        elif user_role == "Instructor":
+            user_role = "instructor"
+        user_model: orm.User = orm.User.find(db, user_name)
+
+        group_name = f"{course_id}:{user_role}"
+        group = orm.Group.find(db, group_name)
+        if group is None:
+            log.info(f"Creating group: '{group_name}'")
+            group = orm.Group()
+            group.name = group_name
+            db.add(group)
+            db.commit()
+
+        extra_grader_groups = [g for g in user_model.groups if g.name.startswith(f"{course_id}:") and g.name != group_name]
+        for g in extra_grader_groups:
+            log.info(f"Removing user from group: {g.name}")
+            g.users.remove(user_model)
+            db.commit()
+
+        if user_model not in group.users:
+            log.info(f"Adding user to group: {group.name}")
+            group.users.append(user_model)
+            db.commit()
+
+        return authentication
 
