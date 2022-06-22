@@ -315,3 +315,5 @@ To automatically add the groups for the grader service from the LTI authenticato
 
         return authentication
 
+
+Make sure that the ``course_id`` does not contain any spaces or special characters!
