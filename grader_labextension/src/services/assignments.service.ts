@@ -9,7 +9,7 @@ import {Lecture} from '../model/lecture';
 import {request, HTTPMethod} from './request.service'
 
 export function createAssignment(lectureId: number, assignment: Assignment): Promise<Assignment> {
-  return request<Assignment>(HTTPMethod.POST, `/lectures/${lectureId}/assignments`, assignment)
+  return request<Assignment, Assignment>(HTTPMethod.POST, `/lectures/${lectureId}/assignments`, assignment)
 }
 
 export function getAllAssignments(lectureId: number): Promise<Assignment[]> {
@@ -21,7 +21,7 @@ export function getAssignment(lectureId: number, assignment: Assignment): Promis
 }
 
 export function updateAssignment(lectureId: number, assignment: Assignment): Promise<Assignment> {
-  return request<Assignment>(HTTPMethod.PUT, `/lectures/${lectureId}/assignments/${assignment.id}`, assignment)
+  return request<Assignment, Assignment>(HTTPMethod.PUT, `/lectures/${lectureId}/assignments/${assignment.id}`, assignment)
 }
 
 export function generateAssignment(lectureId: number, assignment: Assignment): Promise<any> {

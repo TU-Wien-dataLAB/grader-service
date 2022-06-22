@@ -23,7 +23,7 @@ export function getAllLectures(complete: boolean = false): Promise<Lecture[]> {
 }
 
 export function updateLecture(lecture: Lecture): Promise<Lecture> {
-  return request<Lecture>(HTTPMethod.PUT, `/lectures/${lecture.id}`, lecture);
+  return request<Lecture, Lecture>(HTTPMethod.PUT, `/lectures/${lecture.id}`, lecture);
 }
 
 export function getLecture(lectureId: number): Promise<Lecture> {

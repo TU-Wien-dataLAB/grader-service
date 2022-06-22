@@ -16,10 +16,10 @@ export enum HTTPMethod {
   DELETE = 'DELETE'
 }
 
-export function request<T>(
+export function request<T, B = any>(
   method: HTTPMethod,
   endPoint: string,
-  body: object = null,
+  body: B = null,
   headers: HeadersInit = null
 ): Promise<T> {
   const options: RequestInit = {};

@@ -45,17 +45,17 @@ export function getManualFeedback(lecture: Lecture, assignment: Assignment, stud
 }
 
 
-export function updateManualFeedback(lecture: Lecture, assignment: Assignment, student: User, manual: object): Promise<object> {
-  return request<object>(HTTPMethod.PUT, `/lectures/${lecture.id}/assignements/${assignment.id}/grading/${student.name}/manual`, manual)
+export function updateManualFeedback(lecture: Lecture, assignment: Assignment, student: User, manual: any): Promise<any> {
+  return request<any>(HTTPMethod.PUT, `/lectures/${lecture.id}/assignements/${assignment.id}/grading/${student.name}/manual`, manual)
 }
 
 
-export function deleteManualFeedback(lecture: Lecture, assignment: Assignment, student: User, manual: object): Promise<any> {
+export function deleteManualFeedback(lecture: Lecture, assignment: Assignment, student: User, manual: any): Promise<any> {
   return request<any>(HTTPMethod.DELETE, `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/manual`, manual)
 }
 
-export function getGrade(lecture: Lecture, assignment: Assignment, student: User): Promise<object> {
-  return request<object>(HTTPMethod.GET, `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/score`)
+export function getGrade(lecture: Lecture, assignment: Assignment, student: User): Promise<any> {
+  return request<any>(HTTPMethod.GET, `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/score`)
 }
 
 

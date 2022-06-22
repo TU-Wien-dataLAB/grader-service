@@ -94,7 +94,7 @@ export function updateProperties(
   lectureId: number,
   assignmentId: number,
   submissionId: number,
-  properties: object
+  properties: any
 ): Promise<Submission> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/properties`;
   return request<Submission>(HTTPMethod.PUT, url, properties);
@@ -106,7 +106,7 @@ export function getSubmission(
   submissionId: number
 ): Promise<Submission> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`;
-  return request<object>(HTTPMethod.GET, url);
+  return request<Submission>(HTTPMethod.GET, url);
 }
 
 export function updateSubmission(
