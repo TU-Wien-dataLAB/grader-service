@@ -7,36 +7,41 @@
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import { from, throwError } from 'rxjs';
-import { switchMap } from 'rxjs/operators'
+import { switchMap } from 'rxjs/operators';
 
 export enum HTTPMethod {
-  GET = "GET", POST = "POST", PUT = "PUT", DELETE = "DELETE"
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE'
 }
 
-export function request<T>(method: HTTPMethod, endPoint: string, body: object = null, headers: HeadersInit = null): Promise<T> {
-  let options: RequestInit = {}
-  options.method = method
+export function request<T>(
+  method: HTTPMethod,
+  endPoint: string,
+  body: object = null,
+  headers: HeadersInit = null
+): Promise<T> {
+  const options: RequestInit = {};
+  options.method = method;
   if (body) {
-    options.body = JSON.stringify(body)
+    options.body = JSON.stringify(body);
   }
   if (headers) {
-    options.headers = headers
+    options.headers = headers;
   }
   const settings = ServerConnection.makeSettings();
-  let requestUrl = "";
+  let requestUrl = '';
 
   // ServerConnection only allows requests to notebook baseUrl
   requestUrl = URLExt.join(
     settings.baseUrl,
-    "/grader_labextension", // API Namespace
+    '/grader_labextension', // API Namespace
     endPoint
   );
 
-  return from(ServerConnection.makeRequest(requestUrl, options, settings)).pipe(
-    switchMap(async response => {
-      if(!response.ok) {
-        throw throwError(await response.text())
-      }
+  return ServerConnection.makeRequest(requestUrl, options, settings).then(
+    async response => {
       let data: any = await response.text();
       if (data.length > 0) {
         try {
@@ -45,10 +50,12 @@ export function request<T>(method: HTTPMethod, endPoint: string, body: object = 
           console.log('Not a JSON response body.', response);
         }
       }
-      console.log("Request " + method.toString() + " URL: " + requestUrl);
-      console.log(data)
-      return data
-    })
-  ).toPromise()
-
+      console.log('Request ' + method.toString() + ' URL: ' + requestUrl);
+      console.log(data);
+      return data;
+    },
+    error => {
+      return new Error(error);
+    }
+  );
 }
