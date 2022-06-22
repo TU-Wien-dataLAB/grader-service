@@ -6,6 +6,8 @@
 
 import json
 import logging
+import shutil
+import sys
 from pathlib import Path
 from grader_labextension.services.request import RequestService
 from jupyter_server.serverapp import ServerApp, ServerWebApplication
@@ -28,8 +30,14 @@ def _jupyter_labextension_paths():
 
 # unused import to register handlers
 from grader_labextension import handlers
-
 from grader_labextension.registry import HandlerPathRegistry
+
+
+def validate_system_environment():
+    if sys.version_info.major < 3 or sys.version_info.minor < 7:
+        raise RuntimeError("This extension needs Python version 3.7 or above to run!")
+    if shutil.which("git") is None:
+        raise RuntimeError("No git executable found! Git is necessary to run the extension!")
 
 
 def setup_handlers(web_app: ServerWebApplication, config: Config):

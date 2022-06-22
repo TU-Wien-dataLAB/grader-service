@@ -9,6 +9,7 @@ import logging
 import os
 import secrets
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -184,6 +185,11 @@ class GraderService(config.Application):
         self.setup_loggers(self.log_level)
         self.log.info("Starting Initialization...")
         self._start_future = asyncio.Future()
+
+        if sys.version_info.major < 3 or sys.version_info.minor < 8:
+            raise RuntimeError("Grader Service needs Python version 3.8 or above to run!")
+        if shutil.which("git") is None:
+            raise RuntimeError("No git executable found! Git is necessary to run Grader Service!")
 
         self.parse_command_line(argv)
         self.log.info("Loading config file...")
