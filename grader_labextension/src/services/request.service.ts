@@ -6,7 +6,7 @@
 
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
-import { from, throwError } from 'rxjs';
+import { from, lastValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 export enum HTTPMethod {
@@ -40,22 +40,24 @@ export function request<T>(
     endPoint
   );
 
-  return ServerConnection.makeRequest(requestUrl, options, settings).then(
-    async response => {
-      let data: any = await response.text();
-      if (data.length > 0) {
-        try {
-          data = JSON.parse(data);
-        } catch (error) {
-          console.log('Not a JSON response body.', response);
+  return lastValueFrom(
+    from(ServerConnection.makeRequest(requestUrl, options, settings)).pipe(
+      switchMap(async response => {
+        if (!response.ok) {
+          throw new Error(await response.text());
         }
-      }
-      console.log('Request ' + method.toString() + ' URL: ' + requestUrl);
-      console.log(data);
-      return data;
-    },
-    error => {
-      return new Error(error);
-    }
+        let data: any = await response.text();
+        if (data.length > 0) {
+          try {
+            data = JSON.parse(data);
+          } catch (error) {
+            console.log('Not a JSON response body.', response);
+          }
+        }
+        console.log('Request ' + method.toString() + ' URL: ' + requestUrl);
+        console.log(data);
+        return data;
+      })
+    )
   );
 }
