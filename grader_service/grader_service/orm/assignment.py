@@ -30,7 +30,7 @@ class Assignment(Base, Serializable):
     duedate = Column(DateTime, nullable=False)
     points = Column(Integer, nullable=True)
     status = Column(
-        Enum("created", "pushed", "released", "fetching", "fetched", "complete"),
+        Enum("created", "pushed", "released", "complete"),
         default="created",
     )
     automatic_grading = Column(Enum(AutoGradingBehaviour), nullable=False)

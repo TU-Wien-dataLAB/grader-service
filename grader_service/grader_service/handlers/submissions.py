@@ -225,7 +225,12 @@ class SubmissionHandler(GraderBaseHandler):
         except KeyError:
             raise HTTPError(400, reason="Commit hash not found in body")
 
+        role = self.get_role(lecture_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
+        if assignment.status == "complete":
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot submit completed assignment!")
+        if role.role == Scope.student and assignment.status != "released":
+            raise HTTPError(HTTPStatus.NOT_FOUND)
         submission_ts = datetime.datetime.utcnow()
         if assignment.duedate is not None and submission_ts > assignment.duedate:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Submission after due date of assignment!")
