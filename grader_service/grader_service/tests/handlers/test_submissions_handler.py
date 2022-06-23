@@ -46,7 +46,7 @@ async def test_get_submissions(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     a_id = 1
     url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/"
@@ -75,7 +75,7 @@ async def test_get_submissions_format_csv(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     a_id = 1
     url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?format=csv"
@@ -109,7 +109,7 @@ async def test_get_submissions_format_wrong(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1  # default user is student
     a_id = 1
@@ -134,7 +134,7 @@ async def test_get_submissions_filter_wrong(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1  # default user is student
     a_id = 1
@@ -159,7 +159,7 @@ async def test_get_submissions_latest(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     a_id = 1
 
     url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?filter=latest"
@@ -191,7 +191,7 @@ async def test_get_submissions_best(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     a_id = 1
     url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?filter=best"
@@ -224,7 +224,7 @@ async def test_get_submissions_instructor_version(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 4
@@ -281,7 +281,7 @@ async def test_get_submissions_instructor_version_unauthorized(
 ):
     default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1  # default user is student
     a_id = 1
@@ -310,7 +310,7 @@ async def test_get_submissions_latest_instructor_version(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 4
@@ -367,7 +367,7 @@ async def test_get_submissions_best_instructor_version(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 4
@@ -424,7 +424,7 @@ async def test_get_submissions_lecture_assignment_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 1
@@ -448,7 +448,7 @@ async def test_get_submissions_wrong_assignment_id(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1
     a_id = 99
@@ -472,7 +472,7 @@ async def test_get_submission(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 4
@@ -508,7 +508,7 @@ async def test_get_submission_assignment_lecture_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     engine = sql_alchemy_db.engine
@@ -535,7 +535,7 @@ async def test_get_submission_assignment_submission_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 4
@@ -564,7 +564,7 @@ async def test_get_submission_wrong_submission(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -593,7 +593,7 @@ async def test_get_submission_unauthorized(
 ):
     default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1  # user is student
     a_id = 1
@@ -618,7 +618,7 @@ async def test_put_submission(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is student
     a_id = 4
@@ -657,7 +657,7 @@ async def test_put_submission_lecture_assignment_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 1
@@ -689,7 +689,7 @@ async def test_put_submission_assignment_submission_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -722,7 +722,7 @@ async def test_put_submission_wrong_submission(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -755,7 +755,7 @@ async def test_post_submission_git_repo_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -787,7 +787,7 @@ async def test_post_submission_commit_hash_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -817,7 +817,7 @@ async def test_post_submission_commit_hash_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -847,7 +847,7 @@ async def test_submission_properties(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is student
     a_id = 4
@@ -885,7 +885,7 @@ async def test_submission_properties_not_correct(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is student
     a_id = 4
@@ -917,7 +917,7 @@ async def test_submission_properties_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is student
     a_id = 4
@@ -950,7 +950,7 @@ async def test_submission_properties_lecture_assignment_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 1
@@ -992,7 +992,7 @@ async def test_submission_properties_assignment_submission_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -1035,7 +1035,7 @@ async def test_submission_properties_wrong_submission(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -1078,7 +1078,7 @@ async def test_submission_properties_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3

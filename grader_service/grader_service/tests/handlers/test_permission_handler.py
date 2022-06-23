@@ -28,7 +28,7 @@ async def test_get_permission(
     default_user["groups"] = ["20wle2:instructor", "21wle1:student", "22wle1:instructor"]
 
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + f"/permissions"
 
     response = await http_server_client.fetch(
@@ -62,7 +62,7 @@ async def test_get_permission_new_groups(
     default_user["groups"] = ["pytest:tutor"]
 
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + f"/permissions/"
 
     response = await http_server_client.fetch(

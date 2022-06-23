@@ -34,7 +34,7 @@ async def test_auto_grading(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3 # default user is student
     a_id = 4
@@ -66,7 +66,7 @@ async def test_auto_grading_wrong_assignment(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3 # default user is student
     a_id = 3
@@ -97,7 +97,7 @@ async def test_auto_grading_wrong_lecture(
 ):
     default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3 # default user is student
     a_id = 3
@@ -128,7 +128,7 @@ async def test_feedback(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3 # default user is student
     a_id = 4
@@ -161,7 +161,7 @@ async def test_feedback_wrong_assignment(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3 # default user is student
     a_id = 3

@@ -28,7 +28,7 @@ async def test_get_lectures(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     url = service_base_url + "/lectures"
     response = await http_server_client.fetch(
@@ -50,7 +50,7 @@ async def test_get_lectures_with_some_parameter(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     url = service_base_url + "/lectures?some_param=WS21"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -71,7 +71,7 @@ async def test_post_lectures(
 ):
     default_user["groups"] = ["pt:instructor"]  # user has to already be in group (we only activate on post)
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     url = service_base_url + "/lectures"
     get_response = await http_server_client.fetch(
@@ -118,7 +118,7 @@ async def test_post_lectures_ghost_lecture_not_found(
     #TODO TEST DOES NOT ENTER HANDLER
     default_user["groups"] = ["pt:instructor"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures"
 
     pre_lecture = Lecture(
@@ -147,7 +147,7 @@ async def test_post_not_found(
 ):
     #TODO TEST DOES NOT ENTER HANDLER
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures"
     pre_lecture = Lecture(
         id=-1, name="pytest_lecture", code="pt", complete=False
@@ -173,7 +173,7 @@ async def test_post_unknown_parameter(
 ):
     default_user["groups"] = ["pt:instructor"]  # user has to already be in group (we only activate on post)
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     url = service_base_url + "/lectures?some_param=asdf"
     # same code not in user groups
@@ -200,7 +200,7 @@ async def test_put_lecture(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3"
 
     get_response = await http_server_client.fetch(
@@ -239,7 +239,7 @@ async def test_put_lecture_unauthorized(
 ):
     default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1"
 
     get_response = await http_server_client.fetch(
@@ -272,7 +272,7 @@ async def test_get_lecture(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1"
 
     get_response = await http_server_client.fetch(
@@ -293,7 +293,7 @@ async def test_get_lecture_not_found(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -315,7 +315,7 @@ async def test_delete_lecture(
     default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3"
 
     delete_response = await http_server_client.fetch(
@@ -345,7 +345,7 @@ async def test_delete_lecture_unauthorized(
 ):
     default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1"
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -368,7 +368,7 @@ async def test_delete_lecture_assignment_with_submissions(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 2
@@ -398,7 +398,7 @@ async def test_delete_lecture_assignment_released(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}"
@@ -426,7 +426,7 @@ async def test_delete_lecture_assignment_complete(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments"
@@ -460,7 +460,7 @@ async def test_delete_lecture_not_found(
     sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = -5
 

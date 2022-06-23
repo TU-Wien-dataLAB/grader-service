@@ -21,7 +21,7 @@ async def test_version_handler(
     default_token
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")
+    app.auth_cls.hub_api_url = http_server.url_for("")
 
     url = service_base_url + "/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
@@ -38,7 +38,7 @@ async def test_version_handler_with_specifier(
     default_token
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")
+    app.auth_cls.hub_api_url = http_server.url_for("")
 
     url = service_base_url + "/v1/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})

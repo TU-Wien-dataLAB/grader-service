@@ -19,69 +19,6 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 import asyncio
 
 
-async def test_authenticate_user_None():
-    token = "test_token"
-    user = {"name": "user99", "groups": ["lecture1__WS21__student", "lecture1__SS21__tutor", "lecture99__SS22__student"]}
-    user_mock = AsyncMock(return_value=user)
-    # token_mock = Mock(return_value="test_token")
-    m = MagicMock()
-    m.application.max_token_cookie_age_days = 0.05
-    m.get_current_user_async = user_mock
-    # m.session = session
-    m.get_secure_cookie = Mock(return_value=None)
-    m.get_request_token = Mock(return_value=token)
-    m.authenticate_token_user = user_mock
-    await GraderBaseHandler.authenticate_user(m)
-    m.set_secure_cookie.assert_called_with(token, json.dumps(user), expires_days=0.05)
-
-
-async def test_authenticate_token_user_Present():
-    token = "test_token"
-    user = {"name": "user99", "groups": ["lecture1__WS21__student", "lecture1__SS21__tutor", "lecture99__SS22__student"]}
-    user_mock = AsyncMock(return_value=user)
-    # token_mock = Mock(return_value="test_token")
-    m = MagicMock()
-    m.application.max_token_cookie_age_days = 0.05
-    m.get_current_user_async = user_mock
-    # m.session = session
-    m.get_secure_cookie = Mock(return_value=json.dumps(user))
-    m.authenticate_token_user = GraderBaseHandler.authenticate_token_user
-    await GraderBaseHandler.authenticate_token_user(m, token)
-    with pytest.raises(AssertionError):
-        m.set_secure_cookie.assert_called_with(token, json.dumps(user), expires_days=0.05)
-
-def test_authenticate_cookie_user_None():
-    user = {"name": "user99", "groups": ["lecture1__WS21__student", "lecture1__SS21__tutor", "lecture99__SS22__student"]}
-    m = MagicMock()
-    m.application.max_user_cookie_age_days = 1
-    m.get_secure_cookie = Mock(return_value=None)
-    m.authenticate_cookie_user = GraderBaseHandler.authenticate_cookie_user
-    assert not GraderBaseHandler.authenticate_cookie_user(m, user)
-    m.set_secure_cookie.assert_called_with(user["name"], json.dumps(user), expires_days=1)
-
-
-def test_authenticate_cookie_user_Identical():
-    user = {"name": "user99", "groups": ["lecture1__WS21__student", "lecture1__SS21__tutor", "lecture99__SS22__student"]}
-    m = MagicMock()
-    m.application.max_user_cookie_age_days = 1
-    m.get_secure_cookie = Mock(return_value=json.dumps(user))
-    m.authenticate_cookie_user = GraderBaseHandler.authenticate_cookie_user
-    assert GraderBaseHandler.authenticate_cookie_user(m, user)
-    with pytest.raises(AssertionError):
-        m.set_secure_cookie.assert_called_with(user["name"], json.dumps(user), expires_days=1)
-
-def test_authenticate_cookie_user_New():
-    user = {"name": "user99", "groups": ["lecture1__WS21__student", "lecture1__SS21__tutor", "lecture99__SS22__student"]}
-    m = MagicMock()
-    m.application.max_user_cookie_age_days = 1
-    old_user = user.copy()
-    old_user["groups"] = ["lecture1__WS21__student", "lecture1__SS21__tutor"]
-    m.get_secure_cookie = Mock(return_value=json.dumps(old_user))
-    m.authenticate_cookie_user = GraderBaseHandler.authenticate_cookie_user
-    assert not GraderBaseHandler.authenticate_cookie_user(m, user)
-    m.set_secure_cookie.assert_called_with(user["name"], json.dumps(user), expires_days=1)
-
-
 def test_string_serialization():
     assert GraderBaseHandler._serialize("test") == "test"
 

@@ -24,7 +24,7 @@ async def test_get_assignments(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/1/assignments/"
 
     response = await http_server_client.fetch(
@@ -47,7 +47,7 @@ async def test_get_assignments_instructor(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is instructor
     url = service_base_url + f"/lectures/{l_id}/assignments/"
@@ -75,7 +75,7 @@ async def test_get_assignments_lecture_deleted(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is instructor
 
@@ -107,7 +107,7 @@ async def test_post_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     get_response = await http_server_client.fetch(
@@ -152,7 +152,7 @@ async def test_post_assignment_name_already_used(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     post_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -183,7 +183,7 @@ async def test_delete_assignment_not_found(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/-5"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -204,7 +204,7 @@ async def test_put_assignment_name_already_used(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     post_url = service_base_url + "/lectures/3/assignments/"
 
     # Add assignments first
@@ -248,7 +248,7 @@ async def test_post_assignment_lecture_deleted(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is instructor
 
@@ -283,7 +283,7 @@ async def test_post_assignment_decode_error(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user")
@@ -318,7 +318,7 @@ async def test_post_assignment_database_error(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # default user is instructor
     url = service_base_url + "/lectures/3/assignments/"
@@ -344,7 +344,7 @@ async def test_post_no_status_error(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user")
@@ -368,7 +368,7 @@ async def test_put_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -413,7 +413,7 @@ async def test_put_assignment_wrong_lecture_id(
     # default user becomes instructor in lecture with id 1
     default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -451,7 +451,7 @@ async def test_put_assignment_wrong_assignment_id(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -486,7 +486,7 @@ async def test_put_assignment_deleted_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -529,7 +529,7 @@ async def test_put_assignment_no_point_changes(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -574,7 +574,7 @@ async def test_get_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -614,7 +614,7 @@ async def test_get_assignment_created_student(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     l_id = 1  # default user is student
     a_id = 3  # assignment is created
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}"
@@ -637,7 +637,7 @@ async def test_get_assignment_wrong_lecture_id(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
@@ -673,7 +673,7 @@ async def test_get_assignment_wrong_assignment_id(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/"
 
@@ -708,7 +708,7 @@ async def test_get_assignment_incorrect_param(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/3/?some_param=true"
@@ -736,7 +736,7 @@ async def test_get_assignment_instructor_version(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     url = service_base_url + f"/lectures/{l_id}/assignments/4/?instructor-version=true"
@@ -762,7 +762,7 @@ async def test_get_assignment_instructor_version_forbidden(
 ):
     default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 1
     a_id = 1
@@ -787,7 +787,7 @@ async def test_delete_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -830,7 +830,7 @@ async def test_delete_assignment_deleted_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -873,7 +873,7 @@ async def test_delete_assignment_not_created(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -896,7 +896,7 @@ async def test_delete_assignment_with_submissions(
         sql_alchemy_db
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     a_id = 1
     url = service_base_url + f"/lectures/3/assignments/{a_id}"
@@ -923,7 +923,7 @@ async def test_delete_assignment_same_name_twice(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -976,7 +976,7 @@ async def test_delete_released_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="released",
@@ -1011,7 +1011,7 @@ async def test_delete_complete_assignment(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="complete",
@@ -1046,7 +1046,7 @@ async def test_assignment_properties(
         default_token,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -1089,7 +1089,7 @@ async def test_assignment_properties_lecture_assignment_missmatch(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 1
@@ -1129,7 +1129,7 @@ async def test_assignment_properties_wrong_assignment_id(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 99
@@ -1169,7 +1169,7 @@ async def test_assignment_properties_not_found(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 3
@@ -1198,7 +1198,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -1393,7 +1393,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
     url = service_base_url + "/lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -1569,7 +1569,7 @@ async def test_delete_assignment_with_submissions(
         sql_alchemy_db,
 ):
     http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.hub_api_url = http_server.url_for("")[0:-1]
+    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3  # user has to be instructor
     a_id = 3
