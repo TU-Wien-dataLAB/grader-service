@@ -14,9 +14,11 @@ from grader_service.request import RequestService
 
 
 class JupyterHubGroupAuthenticator(TokenAuthenticator):
-    hub_service_name = Unicode(os.environ.get("JUPYTERHUB_SERVICE_NAME", "")).tag(config=True)
-    hub_api_token = Unicode(os.environ.get("JUPYTERHUB_API_TOKEN"), allow_none=False).tag(config=True)
     hub_api_url = Unicode(os.environ.get("JUPYTERHUB_API_URL"), allow_none=False).tag(config=True)
+
+    group_separator = Unicode(":",
+                              help="Separator for splitting lecture codes and user roles in JupyterHub group name.",
+                              allow_none=False, config=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -37,7 +39,8 @@ class JupyterHubGroupAuthenticator(TokenAuthenticator):
 
         lecture_roles = {
             code: {"role": role}
-            for code, role in (t for t in (tuple(g.split(":", 1)) for g in user["groups"]) if len(t) == 2)
+            for code, role in
+            (t for t in (tuple(g.split(self.group_separator, 1)) for g in user["groups"]) if len(t) == 2)
         }
 
         return user_model, lecture_roles

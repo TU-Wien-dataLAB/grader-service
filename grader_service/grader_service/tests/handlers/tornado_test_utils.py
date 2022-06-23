@@ -18,6 +18,8 @@ from .db_util import insert_assignments, insert_lectures
 
 __all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user", "default_token"]
 
+from ...auth.hub import JupyterHubGroupAuthenticator
+
 
 @pytest.fixture(scope="function")
 def db_test_config():
@@ -45,12 +47,8 @@ def sql_alchemy_db(db_test_config):
 def app(tmpdir, sql_alchemy_db):
     service_dir = str(tmpdir.mkdir("grader_service"))
     handlers = HandlerPathRegistry.handler_list()
-    from grader_service.auth.hub import JupyterHubGroupAuthenticator
 
-    JupyterHubGroupAuthenticator.hub_service_name = ""
-    JupyterHubGroupAuthenticator.hub_api_token = ""
     JupyterHubGroupAuthenticator.hub_api_url = ""
-
     application = GraderServer(
         grader_service_dir=service_dir,
         base_url="/services/grader",
