@@ -18,12 +18,13 @@ import inspect
 import tornado
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
-from traitlets import config, Bool
+from traitlets import config, Bool, Type
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default, HasTraits
 
 # run __init__.py to register handlers
 import grader_service.handlers
+from grader_service.auth.hub import JupyterHubGroupAuthenticator
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
@@ -74,6 +75,8 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     base_url_path = Unicode("/services/grader", allow_none=False).tag(config=True)
+
+    authenticator_class = Type(default_value=JupyterHubGroupAuthenticator, klass=object, allow_none=False, config=True)
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
@@ -227,6 +230,7 @@ class GraderService(config.Application):
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
+                auth_cls=self.authenticator_class,
                 handlers=handlers,
                 cookie_secret=secrets.token_hex(
                     nbytes=32

@@ -4,20 +4,16 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import base64
 import datetime
 import functools
 import json
-import logging
 import os
 import shlex
 import shutil
 import subprocess
 import sys
-import time
 from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
-from urllib.parse import ParseResult, urlparse, quote
 
 from traitlets import Type
 from traitlets.config import SingletonConfigurable
@@ -26,17 +22,15 @@ from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
-from grader_service.orm.base import DeleteState, Serializable
-from grader_service.orm.lecture import Lecture, LectureState
+from grader_service.orm.base import Serializable
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
 from grader_service.orm.user import User
 from grader_service.registry import VersionSpecifier, register_handler
-from grader_service.request import RequestService
 from grader_service.server import GraderServer
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from tornado import httputil, web
 from tornado.escape import json_decode
-from tornado.httpclient import HTTPClientError
 from tornado.web import HTTPError
 from tornado_sqlalchemy import SessionMixin
 
@@ -111,13 +105,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
 
-        self.application: GraderServer = (
-            self.application
-        )  # add type hint for application
-        hub_api_parsed: ParseResult = urlparse(self.application.hub_api_url)
-        self.hub_request_service = RequestService(url=f"{hub_api_parsed.scheme}://{hub_api_parsed.netloc}")
-
-        self.hub_api_base_path: str = hub_api_parsed.path
+        self.application: GraderServer = self.application # add type hint for application
         self.log = self.application.log
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -126,7 +114,8 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     async def prepare(self) -> Optional[Awaitable[None]]:
 
         if self.request.path.strip("/") != self.application.base_url.strip("/"):
-            await self.authenticate_user()
+            authenticator = self.application.auth_cls(config=self.application.config)
+            await authenticator.authenticate_user(self)
         return super().prepare()
 
     def validate_parameters(self, *args):
@@ -274,139 +263,6 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             self.log.error(e)
             raise HTTPError(404)
 
-    async def authenticate_user(self):
-        """
-        This is a workaround for async authentication. `get_current_user` cannot be asynchronous and a request cannot be made in a blocking manner.
-        This sets the `current_user` property before each request before being checked by the `authenticated` decorator.
-        """
-        token = self.get_request_token()
-        if token is None:
-            self.write_error(401)
-            await self.finish()
-            return
-
-        start_time = time.monotonic()
-
-        user = await self.authenticate_token_user(token)
-        if user is None:
-            self.log.warn("Request from unauthenticated user")
-            self.write_error(403)
-            await self.finish()
-            return
-        self.set_secure_cookie(token, json.dumps(user), expires_days=self.application.max_token_cookie_age_days)
-        self.log.info(
-            f'User {user["name"]} has been authenticated (took {(time.monotonic() - start_time) * 1e3:.2f}ms)')
-
-        user_model = self.session.query(User).get(user["name"])
-        if user_model is None:
-            self.log.info(f'User {user["name"]} does not exist and will be created.')
-            user_model = User(name=user["name"])
-            self.session.add(user_model)
-            self.session.commit()
-
-        # user is authenticated by the cookie and the user exists in the database
-        if self.authenticate_cookie_user(user):
-            self.current_user = user_model
-            return
-
-        lecture_roles = {
-            code: {"role": role}
-            for code, role in (t for t in (tuple(g.split(":", 1)) for g in user["groups"]) if len(t) == 2)
-        }
-
-        for lecture_code in lecture_roles.keys():
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_code)
-                    .one_or_none()
-            )
-            if lecture is None:  # create lecture if no lecture with that name exists yet (code is set in create)
-                self.log.info(f"Adding new lecture with lecture_code {lecture_code}")
-                lecture = Lecture()
-                lecture.code = lecture_code
-                lecture.name = lecture_code
-                lecture.state = LectureState.active
-                lecture.deleted = DeleteState.active
-                self.session.add(lecture)
-        self.session.commit()
-
-        self.session.query(Role).filter(Role.username == user["name"]).delete()
-        for lecture_code, obj in lecture_roles.items():
-            lecture = (
-                self.session.query(Lecture)
-                    .filter(Lecture.code == lecture_code)
-                    .one_or_none()
-            )
-            if lecture is None:
-                raise HTTPError(500, f"Could not find lecture with code: {lecture_code}. Inconsistent database state!")
-            role = Role()
-            role.username = user["name"]
-            role.lectid = lecture.id
-            role.role = obj["role"]
-            self.session.add(role)
-        self.session.commit()
-
-        self.current_user = user_model
-
-    async def authenticate_token_user(self, token: str) -> Optional[dict]:
-        max_token_age = self.application.max_token_cookie_age_days
-        token_user = self.get_secure_cookie(token, max_age_days=max_token_age)
-        if not token_user:
-            user = await self.get_current_user_async(token)
-            return user
-        else:
-            return json.loads(token_user)
-
-    def authenticate_cookie_user(self, user: dict) -> bool:
-        max_age = self.application.max_user_cookie_age_days
-        cookie_user = self.get_secure_cookie(quote(user["name"]), max_age_days=max_age)
-        if not cookie_user:
-            self.set_secure_cookie(quote(user["name"]), json.dumps(user), expires_days=max_age)
-            return False
-        else:
-            equal = user == json.loads(cookie_user)
-            if not equal:
-                self.set_secure_cookie(
-                    quote(user["name"]), json.dumps(user), expires_days=max_age
-                )
-            return equal
-
-    def get_request_token(self) -> Optional[str]:
-        for (k, v) in sorted(self.request.headers.get_all()):
-            if k == "Authorization":
-                name, value = v.split(" ")
-                if name == "Token":
-                    token = value
-                elif name == "Basic":
-                    auth_decoded = base64.decodebytes(value.encode("ascii")).decode(
-                        "ascii"
-                    )
-                    _, token = auth_decoded.split(
-                        ":", 2
-                    )  # we interpret the password as the token and ignore the username
-                else:
-                    token = None
-                return token
-
-    async def get_current_user_async(self, token) -> Optional[dict]:
-        try:
-            user: dict = await self.hub_request_service.request(
-                "GET",
-                self.hub_api_base_path + f"/user",
-                header={"Authorization": f"token {token}"},
-            )
-            if user["kind"] != "user":
-                return None
-        except HTTPError as e:
-            logging.getLogger(str(self.__class__)).error(e.reason)
-            return None
-        except HTTPClientError as e:
-            logging.getLogger(str(self.__class__)).error(e.response.error)
-            return None
-        except KeyError:
-            return None
-        return user
-
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
         chunk = GraderBaseHandler._serialize(obj)
@@ -482,4 +338,4 @@ class VersionHandlerV1(GraderBaseHandler):
 class RequestHandlerConfig(SingletonConfigurable):
     autograde_executor_class = Type(default_value=LocalAutogradeExecutor,
                                     klass=object,  # TODO: why does using LocalAutogradeExecutor give subclass error?
-                                    allow_none=False).tag(config=True)
+                                    allow_none=False, config=True)
