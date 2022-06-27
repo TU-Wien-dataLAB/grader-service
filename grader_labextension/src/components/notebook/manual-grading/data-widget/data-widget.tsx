@@ -13,19 +13,26 @@ import { GradeBook } from '../../../../services/gradebook';
 import { DataComponent } from './data-component';
 
 export class DataWidget extends ReactWidget {
-    public cell: Cell;
-    public gradebook: GradeBook;
-    public nbname: string;
+  public cell: Cell;
+  public gradebook: GradeBook;
+  public nbname: string;
 
-    constructor(cell: Cell, gradebook: GradeBook, nbname: string) {
-        super();
-        this.cell = cell;
-        this.gradebook = gradebook;
-        this.nbname = nbname
-        }
+  constructor(cell: Cell, gradebook: GradeBook, nbname: string) {
+    super();
+    this.cell = cell;
+    this.gradebook = gradebook;
+    this.nbname = nbname;
+  }
 
-
-    protected render(): ReactElement<any, string | JSXElementConstructor<any>>[] | ReactElement<any, string | JSXElementConstructor<any>> {
-        return (<DataComponent cell={this.cell} gradebook={this.gradebook} nbname={this.nbname}/>);
-    }
+  protected render():
+    | ReactElement<any, string | JSXElementConstructor<any>>[]
+    | ReactElement<any, string | JSXElementConstructor<any>> {
+    return (
+      <DataComponent
+        cell={this.cell}
+        gradebook={this.gradebook}
+        nbname={this.nbname}
+      />
+    );
+  }
 }

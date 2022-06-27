@@ -167,6 +167,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         });
       }, this);
 
+
       tracker.activeCellChanged.connect(() => {
         const notebookPanel: NotebookPanel = tracker.currentWidget;
         //Notebook not yet loaded
