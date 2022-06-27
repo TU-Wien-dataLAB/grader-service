@@ -73,8 +73,8 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         setNumAutoGraded(auto);
         setNumManualGraded(manual);
       },
-      error => {
-        props.showAlert('danger', error);
+      (error: Error) => {
+        props.showAlert('error', error.message);
       }
     );
 

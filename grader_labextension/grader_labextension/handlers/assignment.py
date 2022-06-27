@@ -6,13 +6,16 @@
 
 import json
 import shutil
+
+from tornado.httpclient import HTTPClientError
+from tornado.web import HTTPError
+
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from grader_labextension.services.request import RequestService
 import tornado
 import os
 
-from tornado.httpclient import HTTPError
 
 
 @register_handler(path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/?")
@@ -38,7 +41,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
+        except HTTPClientError as e:
             self.set_status(e.code)
             self.write_error(e.code)
             return
@@ -82,7 +85,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
+        except HTTPClientError as e:
             self.set_status(e.code)
             self.write_error(e.code)
             return
@@ -127,7 +130,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 body=data,
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
+        except HTTPClientError as e:
             self.set_status(e.code)
             self.write_error(e.code)
             return
@@ -159,7 +162,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
+        except HTTPClientError as e:
             self.set_status(e.code)
             self.write_error(e.code)
             return
@@ -196,10 +199,10 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
                 decode_response=False
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
+
         self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
         shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{assignment["id"]}'), ignore_errors=True)
         self.write("OK")

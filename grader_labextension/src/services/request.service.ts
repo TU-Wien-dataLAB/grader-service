@@ -40,11 +40,33 @@ export function request<T, B = any>(
     endPoint
   );
 
+  return ServerConnection.makeRequest(requestUrl, options, settings).then(
+    async response => {
+      if (!response.ok) {
+        throw new ServerConnection.ResponseError(response, response.statusText);
+      }
+      let data: any = await response.text();
+      if (data.length > 0) {
+        try {
+          data = JSON.parse(data);
+        } catch (error) {
+          console.log('Not a JSON response body.', response);
+        }
+      }
+      console.log('Request ' + method.toString() + ' URL: ' + requestUrl);
+      console.log(data);
+      return data;
+    }
+  );
+
   return lastValueFrom(
     from(ServerConnection.makeRequest(requestUrl, options, settings)).pipe(
       switchMap(async response => {
         if (!response.ok) {
-          throw new Error(await response.text());
+          throw new ServerConnection.ResponseError(
+            response,
+            await response.text()
+          );
         }
         let data: any = await response.text();
         if (data.length > 0) {

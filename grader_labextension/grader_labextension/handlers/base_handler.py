@@ -3,7 +3,11 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import json
+import traceback
 from typing import Optional, Awaitable
+
+from tornado.web import HTTPError
 
 from grader_labextension.services.request import RequestService
 from jupyter_server.base.handlers import APIHandler
@@ -79,3 +83,25 @@ class ExtensionBaseHandler(APIHandler):
             self.set_status(e.code)
             self.write_error(e.code)
             return
+
+    def write_error(self, status_code: int, **kwargs) -> None:
+        self.set_header('Content-Type', 'application/json')
+        if self.settings.get("serve_traceback") and "exc_info" in kwargs:
+            # in debug mode, try to send a traceback
+            lines = []
+            for line in traceback.format_exception(*kwargs["exc_info"]):
+                lines.append(line)
+            self.finish(json.dumps({
+                'error': {
+                    'code': status_code,
+                    'message': self._reason,
+                    'traceback': lines,
+                }
+            }))
+        else:
+            self.finish(json.dumps({
+                'error': {
+                    'code': status_code,
+                    'message': self._reason,
+                }
+            }))

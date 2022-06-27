@@ -176,7 +176,7 @@ export const Files = (props: IFilesProps) => {
             props.showAlert('success', 'Successfully Pushed Assignment');
             props.onAssignmentChange(assignment);
           },
-          error => props.showAlert('error', 'Error Updating Assignment')
+          error => props.showAlert('error', error.message)
         );
         closeDialog();
       },
