@@ -35,7 +35,7 @@ import { PanelLayout } from '@lumino/widgets';
 
 import { NotebookModeSwitch } from './components/notebook/slider';
 
-import { checkIcon, editIcon } from '@jupyterlab/ui-components';
+import {checkIcon, editIcon, runIcon} from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
@@ -57,6 +57,10 @@ namespace CourseManageCommandIDs {
   export const create = 'coursemanage:create';
 
   export const open = 'coursemanage:open';
+}
+
+namespace NotebookExecuteIDs {
+  export const run = 'notebookplugin:run-cell';
 }
 
 namespace GradingCommandIDs {
@@ -311,6 +315,14 @@ const extension: JupyterFrontEndPlugin<void> = {
         category: 'Assignments',
         rank: 0
       });
+    });
+    command = NotebookExecuteIDs.run;
+    app.commands.addCommand(command, {
+      label: 'Run cell',
+      execute: async () => {
+        await app.commands.execute('notebook:run-cell');
+      },
+      icon: runIcon
     });
   }
 };
