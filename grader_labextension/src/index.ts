@@ -35,7 +35,7 @@ import { PanelLayout } from '@lumino/widgets';
 
 import { NotebookModeSwitch } from './components/notebook/slider';
 
-import {checkIcon, editIcon, runIcon} from '@jupyterlab/ui-components';
+import { checkIcon, editIcon, runIcon } from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
@@ -46,6 +46,7 @@ import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
+import {undoIcon} from "@jupyterlab/ui-components/lib/icon/iconimports";
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -61,6 +62,10 @@ namespace CourseManageCommandIDs {
 
 namespace NotebookExecuteIDs {
   export const run = 'notebookplugin:run-cell';
+}
+
+namespace RevertCellIDs {
+  export const revert = 'notebookplugin:revert-cell';
 }
 
 namespace GradingCommandIDs {
@@ -170,7 +175,6 @@ const extension: JupyterFrontEndPlugin<void> = {
           notebookPanel.toolbar.insertItem(10, 'Creationmode', switcher);
         });
       }, this);
-
 
       tracker.activeCellChanged.connect(() => {
         const notebookPanel: NotebookPanel = tracker.currentWidget;
@@ -295,8 +299,9 @@ const extension: JupyterFrontEndPlugin<void> = {
       app.commands.addCommand(command, {
         label: 'Assignments',
         execute: async () => {
-          const assignmentWidget: MainAreaWidget<AssignmentList> =
-            await app.commands.execute(AssignmentsCommandIDs.create);
+          const assignmentWidget: MainAreaWidget<AssignmentList> = await app.commands.execute(
+            AssignmentsCommandIDs.create
+          );
 
           if (!assignmentWidget.isAttached) {
             // Attach the widget to the main work area if it's not there
@@ -316,6 +321,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         rank: 0
       });
     });
+
     command = NotebookExecuteIDs.run;
     app.commands.addCommand(command, {
       label: 'Run cell',
@@ -323,6 +329,25 @@ const extension: JupyterFrontEndPlugin<void> = {
         await app.commands.execute('notebook:run-cell');
       },
       icon: runIcon
+    });
+
+    command = RevertCellIDs.revert;
+    app.commands.addCommand(command, {
+      label: 'Revert cell',
+      isVisible: () => {
+        return tracker.activeCell.model.metadata.has('revert');
+      },
+      isEnabled: () => {
+        return tracker.activeCell.model.metadata.has('revert');
+      },
+      execute: () => {
+        tracker.activeCell.model.value.clear();
+        tracker.activeCell.model.value.insert(
+          0,
+          tracker.activeCell.model.metadata.get('revert').toString()
+        );
+      },
+      icon: undoIcon
     });
   }
 };
