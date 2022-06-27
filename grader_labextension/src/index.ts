@@ -46,7 +46,8 @@ import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
-import {undoIcon} from "@jupyterlab/ui-components/lib/icon/iconimports";
+import {listIcon, undoIcon} from "@jupyterlab/ui-components/lib/icon/iconimports";
+import {HintWidget} from "./components/notebook/student-plugin/hint-widget";
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -66,6 +67,10 @@ namespace NotebookExecuteIDs {
 
 namespace RevertCellIDs {
   export const revert = 'notebookplugin:revert-cell';
+}
+
+namespace ShowHintIDs {
+  export const show = 'notebookplugin:show-hint';
 }
 
 namespace GradingCommandIDs {
@@ -348,6 +353,26 @@ const extension: JupyterFrontEndPlugin<void> = {
         );
       },
       icon: undoIcon
+    });
+
+    command = ShowHintIDs.show;
+    app.commands.addCommand(command, {
+      label: 'Show hint',
+      isVisible: () => {
+        return tracker.activeCell.model.metadata.has('hint');
+      },
+      isEnabled: () => {
+        return tracker.activeCell.model.metadata.has('hint');
+      },
+      execute: () => {
+        //TODO currently this add widget on click but it should only use one widget on toggle
+        (tracker.activeCell.layout as PanelLayout).addWidget(
+          new HintWidget(
+            tracker.activeCell.model.metadata.get('hint').toString()
+          )
+        );
+      },
+      icon: listIcon
     });
   }
 };
