@@ -47,7 +47,7 @@ export const FilesList = (props: IFileListProps) => {
         }
       })
       .catch(error => {
-        props.showAlert('error', 'Error Opening File');
+        props.showAlert('error', error.message);
         console.log(error);
       });
   };

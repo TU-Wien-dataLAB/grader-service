@@ -346,8 +346,9 @@ export const GradingComponent = (props: IGradingProps) => {
           mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
         }
       })
-      .catch(error => {
-        props.showAlert('error', 'Error Opening File');
+      .catch(
+          error => {
+        props.showAlert('error', error.message);
         console.log(error);
       });
   };

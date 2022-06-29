@@ -111,7 +111,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                   setLecture(response);
                 },
                 error => {
-                  props.showAlert('danger', error);
+                  props.showAlert('error', error.message);
                 }
               );
             }}

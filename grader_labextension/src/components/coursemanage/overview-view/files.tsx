@@ -147,83 +147,83 @@ export const Files = (props: IFilesProps) => {
 
     const closeDialog = () => setShowDialog(false);
 
-    /**
-     * Pushes files to the source und release repo.
-     * @param commitMessage the commit message
-     */
-    const handlePushAssignment = async (commitMessage: string) => {
-      setDialogContent({
-        title: 'Push Assignment',
-        message: `Do you want to push ${assignment.name}? This updates the state of the assignment on the server with your local state.`,
-        handleAgree: async () => {
-          try {
-            // Note: has to be in this order (release -> source)
-            await pushAssignment(lecture.id, assignment.id, 'release');
-            await pushAssignment(
-              lecture.id,
-              assignment.id,
-              'source',
-              commitMessage
-            );
-          } catch (err) {
-            props.showAlert('error', 'Error Pushing Assignment');
-            closeDialog();
-            return;
-          }
-          const a = assignment;
-          a.status = 'pushed';
-          updateAssignment(lecture.id, a).then(
-            assignment => {
-              setAssignment(assignment);
-              props.showAlert('success', 'Successfully Pushed Assignment');
-              props.onAssignmentChange(assignment);
-            },
-            error => props.showAlert('error', 'Error Updating Assignment')
+  /**
+   * Pushes files to the source und release repo.
+   * @param commitMessage the commit message
+   */
+  const handlePushAssignment = async (commitMessage: string) => {
+    setDialogContent({
+      title: 'Push Assignment',
+      message: `Do you want to push ${assignment.name}? This updates the state of the assignment on the server with your local state.`,
+      handleAgree: async () => {
+        try {
+          // Note: has to be in this order (release -> source)
+          await pushAssignment(lecture.id, assignment.id, 'release');
+          await pushAssignment(
+            lecture.id,
+            assignment.id,
+            'source',
+            commitMessage
           );
+        } catch (err) {
+          props.showAlert('error', 'Error Pushing Assignment');
           closeDialog();
-        },
-        handleDisagree: () => closeDialog()
-      });
-      setShowDialog(true);
-    };
-    /**
-     * Sets the repo status text.
-     * @param status repo status
-     */
-    const getRemoteStatusText = (
-      status: 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
-    ) => {
-      if (status === 'up_to_date') {
-        return 'The local files are up to date with the remote repository.';
-      } else if (status === 'pull_needed') {
-        return 'The remote repository has new changes. Pull now to load them.';
-      } else if (status === 'push_needed') {
-        return 'You have made changes to your local repository which you can push.';
-      } else {
-        return 'The local and remote files are divergent.';
-      }
-    };
-    /**
-     * Pulls changes from source repository.
-     */
-    const handlePullAssignment = async () => {
-      setDialogContent({
-        title: 'Pull Assignment',
-        message: `Do you want to pull ${assignment.name}? This updates your assignment with the state of the server and overwrites all changes.`,
-        handleAgree: async () => {
-          try {
-            await pullAssignment(lecture.id, assignment.id, 'source');
-            props.showAlert('success', 'Successfully Pulled Assignment');
-          } catch (err) {
-            props.showAlert('error', 'Error Pulling Assignment');
-          }
-          reloadFiles();
-          closeDialog();
-        },
-        handleDisagree: () => closeDialog()
-      });
-      setShowDialog(true);
-    };
+          return;
+        }
+        const a = assignment;
+        a.status = 'pushed';
+        updateAssignment(lecture.id, a).then(
+          assignment => {
+            setAssignment(assignment);
+            props.showAlert('success', 'Successfully Pushed Assignment');
+            props.onAssignmentChange(assignment);
+          },
+          error => props.showAlert('error', error.message)
+        );
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  };
+  /**
+   * Sets the repo status text.
+   * @param status repo status
+   */
+  const getRemoteStatusText = (
+    status: 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
+  ) => {
+    if (status === 'up_to_date') {
+      return 'The local files are up to date with the remote repository.';
+    } else if (status === 'pull_needed') {
+      return 'The remote repository has new changes. Pull now to load them.';
+    } else if (status === 'push_needed') {
+      return 'You have made changes to your local repository which you can push.';
+    } else {
+      return 'The local and remote files are divergent.';
+    }
+  };
+  /**
+   * Pulls changes from source repository.
+   */
+  const handlePullAssignment = async () => {
+    setDialogContent({
+      title: 'Pull Assignment',
+      message: `Do you want to pull ${assignment.name}? This updates your assignment with the state of the server and overwrites all changes.`,
+      handleAgree: async () => {
+        try {
+          await pullAssignment(lecture.id, assignment.id, 'source');
+          props.showAlert('success', 'Successfully Pulled Assignment');
+        } catch (err) {
+          props.showAlert('error', 'Error Pulling Assignment');
+        }
+        reloadFiles();
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  };
 
     const newUntitled = async () => {
       console.log('Creating untitled notebook');

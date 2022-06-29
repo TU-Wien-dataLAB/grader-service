@@ -14,8 +14,6 @@ import {
   updateSubmission
 } from '../../../services/submissions.service';
 import { IModeSwitchProps } from '../slider';
-import { GradeCellWidget } from './grade-cell-widget';
-import { GradeCommentCellWidget } from './grade-comment-cell-widget';
 import { showErrorMessage } from '@jupyterlab/apputils';
 import { Button, Intent, Switch } from '@blueprintjs/core';
 import * as React from 'react';
@@ -61,8 +59,6 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
   public async componentDidMount() {
     const lectures = await getAllLectures();
     this.lecture = lectures.find(l => l.code === this.notebookPaths[1]);
-    // const assignments = await getAllAssignments(this.lecture.id);
-    // this.assignment = assignments.find(a => a.id.toString() === this.notebookPaths[2]);
     this.assignment = await getAssignment(this.lecture.id, {
       id: +this.notebookPaths[2]
     } as Assignment);

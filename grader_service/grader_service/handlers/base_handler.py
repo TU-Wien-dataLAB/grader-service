@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import traceback
 from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
 
@@ -269,14 +270,26 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         self.write(json.dumps(chunk))
 
     def write_error(self, status_code: int, **kwargs) -> None:
-        self.clear()
-        self.set_status(status_code)
-        _, e, _ = kwargs.get("exc_info", (None, None, None))
-        if e and isinstance(e, HTTPError) and e.reason:
-            self.write_json(ErrorMessage(e.reason))
+        self.set_header('Content-Type', 'application/json')
+        if self.settings.get("serve_traceback") and "exc_info" in kwargs:
+            # in debug mode, try to send a traceback
+            lines = []
+            for line in traceback.format_exception(*kwargs["exc_info"]):
+                lines.append(line)
+            self.finish(json.dumps({
+                'error': {
+                    'code': status_code,
+                    'message': self._reason,
+                    'traceback': lines,
+                }
+            }))
         else:
-            msg = httputil.responses.get(status_code, "Unknown")
-            self.write_json(ErrorMessage(msg))
+            self.finish(json.dumps({
+                'error': {
+                    'code': status_code,
+                    'message': self._reason,
+                }
+            }))
 
     @classmethod
     def _serialize(cls, obj: object):

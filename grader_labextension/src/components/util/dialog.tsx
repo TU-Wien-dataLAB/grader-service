@@ -238,8 +238,8 @@ export const EditDialog = (props: IEditDialogProps) => {
                       setOpen(false);
                       props.onClose();
                     },
-                    error => {
-                      props.showAlert('danger', 'Can not delete assignment');
+                    (error: Error) => {
+                      props.showAlert('error', error.message);
                     }
                   );
                 }}
