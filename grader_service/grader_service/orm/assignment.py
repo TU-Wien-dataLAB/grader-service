@@ -35,7 +35,9 @@ class Assignment(Base, Serializable):
     )
     automatic_grading = Column(Enum(AutoGradingBehaviour), nullable=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
+    max_submissions = Column(Integer, nullable=True, default=None, unique=False)
     properties = Column(Text, nullable=True, unique=False)
+
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
 
@@ -50,6 +52,7 @@ class Assignment(Base, Serializable):
             status=self.status,
             type=self.type,
             points=self.points,
-            automatic_grading=self.automatic_grading.name
+            automatic_grading=self.automatic_grading.name,
+            max_submissions=self.max_submissions
         )
         return assignment_model

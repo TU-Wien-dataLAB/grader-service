@@ -1,15 +1,15 @@
 ## Model generation:
 #  
 # Typescript:
-# java -jar ../openapi-generator-cli.jar generate -i documentation/openapi/schemas.yml -g typescript-angular -o grading_labextension/src --global-property models
+# java -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g typescript-angular -o grader_labextension/src --global-property models
 #
 # Python (service):
 # call in grader_service directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../documentation/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
+# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
 # 
 # Python (labextension):
-# call in grading_labextension directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../documentation/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grading_labextension.api' ; rm -r grading_labextension/api/test grading_labextension/api/controllers grading_labextension/api/openapi
+# call in grader_labextension directory
+# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_labextension.api' ; rm -r grader_labextension/api/test grader_labextension/api/controllers grader_labextension/api/openapi
 
 openapi: '3.0.2'
 info:
@@ -89,6 +89,8 @@ components:
             - "unassisted"
             - "auto"
             - "full_auto"
+        max_submissions:
+          type: integer
       example:
         id: 1
         name: "assignment_1"

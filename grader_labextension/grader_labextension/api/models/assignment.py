@@ -15,7 +15,7 @@ class Assignment(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, type=None, due_date=None, status=None, points=None, automatic_grading=None):  # noqa: E501
+    def __init__(self, id=None, name=None, type=None, due_date=None, status=None, points=None, automatic_grading=None, max_submissions=None):  # noqa: E501
         """Assignment - a model defined in OpenAPI
 
         :param id: The id of this Assignment.  # noqa: E501
@@ -32,6 +32,8 @@ class Assignment(Model):
         :type points: float
         :param automatic_grading: The automatic_grading of this Assignment.  # noqa: E501
         :type automatic_grading: str
+        :param max_submissions: The max_submissions of this Assignment.  # noqa: E501
+        :type max_submissions: int
         """
         self.openapi_types = {
             'id': int,
@@ -40,7 +42,8 @@ class Assignment(Model):
             'due_date': datetime,
             'status': str,
             'points': float,
-            'automatic_grading': str
+            'automatic_grading': str,
+            'max_submissions': int
         }
 
         self.attribute_map = {
@@ -50,7 +53,8 @@ class Assignment(Model):
             'due_date': 'due_date',
             'status': 'status',
             'points': 'points',
-            'automatic_grading': 'automatic_grading'
+            'automatic_grading': 'automatic_grading',
+            'max_submissions': 'max_submissions'
         }
 
         self._id = id
@@ -60,6 +64,7 @@ class Assignment(Model):
         self._status = status
         self._points = points
         self._automatic_grading = automatic_grading
+        self._max_submissions = max_submissions
 
     @classmethod
     def from_dict(cls, dikt) -> 'Assignment':
@@ -236,3 +241,24 @@ class Assignment(Model):
             )
 
         self._automatic_grading = automatic_grading
+
+    @property
+    def max_submissions(self):
+        """Gets the max_submissions of this Assignment.
+
+
+        :return: The max_submissions of this Assignment.
+        :rtype: int
+        """
+        return self._max_submissions
+
+    @max_submissions.setter
+    def max_submissions(self, max_submissions):
+        """Sets the max_submissions of this Assignment.
+
+
+        :param max_submissions: The max_submissions of this Assignment.
+        :type max_submissions: int
+        """
+
+        self._max_submissions = max_submissions

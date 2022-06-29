@@ -49,6 +49,7 @@ def upgrade():
                     sa.Column('status', sa.Enum('created', 'pushed', 'released', 'fetching', 'fetched', 'complete'),
                               nullable=True),
                     sa.Column('deleted', sa.Enum('active', 'deleted'), server_default='active', nullable=False),
+                    sa.Column('max_submissions', sa.Integer(), nullable=True, default=None, unique=False),
                     sa.Column('properties', sa.Text(), nullable=True, unique=False),
 
                     sa.ForeignKeyConstraint(['lectid'], ['lecture.id'], ),

@@ -242,7 +242,8 @@ class GraderService(config.Application):
             # ssl_options=ssl_context,
             xheaders=True,
         )
-        self.log.info(f"db_url - {self.db_url}")
+        self.log.info(f"Database - {self.db_url}")
+        self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.bind(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
         self.http_server.start()
 
