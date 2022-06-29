@@ -7,7 +7,7 @@
 import { ReactWidget } from '@jupyterlab/apputils';
 import * as React from 'react';
 
-import { HintCompontent } from './hint-component';
+import { HintComponent } from './hint-component';
 
 export class HintWidget extends ReactWidget {
   public hint: string;
@@ -18,6 +18,6 @@ export class HintWidget extends ReactWidget {
   }
 
   protected render(): any {
-    return <HintCompontent hint={this.hint} />;
+    return <HintComponent hint={this.hint} />;
   }
 }
