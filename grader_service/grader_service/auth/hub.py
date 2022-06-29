@@ -34,6 +34,7 @@ class JupyterHubGroupAuthenticator(TokenAuthenticator):
         if user is None:
             self.log.warn("Request from unauthenticated user")
             raise HTTPError(403)
+        self.set_cookie(handler, token, user, minutes_valid=self.max_token_cookie_age_minutes)
 
         user_model = self.get_or_create_user_model(handler, user["name"])
 
@@ -51,7 +52,7 @@ class JupyterHubGroupAuthenticator(TokenAuthenticator):
             user = await self.get_current_user_async(token)
         else:
             user = json.loads(token_user)
-        self.set_cookie(handler, token, user, minutes_valid=self.max_token_cookie_age_minutes)
+
         return user
 
     def authenticate_cookie_user(self, handler: GraderBaseHandler, user: dict) -> bool:
@@ -79,6 +80,10 @@ class JupyterHubGroupAuthenticator(TokenAuthenticator):
             return None
         except HTTPClientError as e:
             self.log.error(e.response.error)
+            return None
+        except ConnectionRefusedError:
+            self.log.error(f"Could not connect to the JupyterHub at {self.hub_api_url}! "
+                           f"Is the URL correct and is it running?")
             return None
         except KeyError:
             return None
