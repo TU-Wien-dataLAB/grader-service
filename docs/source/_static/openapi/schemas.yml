@@ -112,6 +112,7 @@ components:
           type: string
           enum:
             - "not_graded"
+            - "pending"
             - "automatically_graded"
             - "grading_failed"
         manual_status:

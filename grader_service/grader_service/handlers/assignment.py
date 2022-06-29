@@ -93,6 +93,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignment.points = 0
         assignment.deleted = DeleteState.active
         assignment.automatic_grading = assignment_model.automatic_grading
+        assignment.max_submissions = assignment_model.max_submissions
         self.session.add(assignment)
         try:
             self.session.commit()
@@ -136,12 +137,15 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         if assignment_with_name is not None and assignment_with_name.id != assignment_id:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
+        if assignment_model.max_submissions and assignment_model.max_submissions < 1:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Maximum number of submissions cannot be smaller than 1!")
 
         assignment.name = assignment_model.name
         assignment.duedate = assignment_model.due_date
         assignment.status = assignment_model.status
         assignment.type = assignment_model.type
         assignment.automatic_grading = assignment_model.automatic_grading
+        assignment.max_submissions = assignment_model.max_submissions
 
         if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name and assignment.properties is not None:
             model = GradeBookModel.from_dict(json.loads(assignment.properties))

@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { useFormik } from 'formik';
+import {useFormik} from 'formik';
 import * as yup from 'yup';
 
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
@@ -33,21 +33,21 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { Assignment } from '../../model/assignment';
-import { LoadingButton } from '@mui/lab';
+import {Assignment} from '../../model/assignment';
+import {LoadingButton} from '@mui/lab';
 import EditIcon from '@mui/icons-material/Edit';
 import {
   createAssignment,
   deleteAssignment,
   updateAssignment
 } from '../../services/assignments.service';
-import { Lecture } from '../../model/lecture';
+import {Lecture} from '../../model/lecture';
 import TypeEnum = Assignment.TypeEnum;
 import AutomaticGradingEnum = Assignment.AutomaticGradingEnum;
-import { updateLecture } from '../../services/lectures.service';
+import {updateLecture} from '../../services/lectures.service';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import AddIcon from '@mui/icons-material/Add';
-import { Simulate } from 'react-dom/test-utils';
+import {Simulate} from 'react-dom/test-utils';
 import error = Simulate.error;
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
@@ -90,10 +90,12 @@ export const EditDialog = (props: IEditDialogProps) => {
           ? new Date(props.assignment.due_date)
           : null,
       type: props.assignment.type,
-      automatic_grading: props.assignment.automatic_grading
+      automatic_grading: props.assignment.automatic_grading,
+      max_submissions: props.assignment.max_submissions
     },
     validationSchema: validationSchema,
     onSubmit: values => {
+      values.max_submissions = +values.max_submissions
       const updatedAssignment: Assignment = Object.assign(
         props.assignment,
         values
@@ -109,7 +111,7 @@ export const EditDialog = (props: IEditDialogProps) => {
   return (
     <div>
       <IconButton
-        sx={{ mt: -1 }}
+        sx={{mt: -1}}
         onClick={e => {
           e.stopPropagation();
           setOpen(true);
@@ -117,13 +119,13 @@ export const EditDialog = (props: IEditDialogProps) => {
         onMouseDown={event => event.stopPropagation()}
         aria-label="edit"
       >
-        <EditIcon />
+        <EditIcon/>
       </IconButton>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
         <DialogTitle>Edit Assignment</DialogTitle>
         <form onSubmit={formik.handleSubmit}>
           <DialogContent>
-            <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
+            <Stack spacing={2} sx={{ml: 2, mr: 2}}>
               <TextField
                 variant="outlined"
                 fullWidth
@@ -178,12 +180,46 @@ export const EditDialog = (props: IEditDialogProps) => {
                 />
               </LocalizationProvider>
 
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={Boolean(formik.values.max_submissions)}
+                    value={Boolean(formik.values.max_submissions)}
+                    onChange={async e => {
+                      console.log('Before: ' + formik.values.max_submissions);
+                      if (e.target.checked) {
+                        await formik.setFieldValue('max_submissions', 1);
+                      } else {
+                        await formik.setFieldValue('max_submissions', undefined);
+                      }
+                      console.log('After: ' + formik.values.max_submissions);
+                    }}
+                  />
+                }
+                label="Limit Number of Submissions"
+              />
+
+              <TextField
+                variant="outlined"
+                fullWidth
+                disabled={!Boolean(formik.values.max_submissions)}
+                type={"number"}
+                id="max-submissions"
+                name="max_submissions"
+                placeholder="Submissions"
+                value={formik.values.max_submissions}
+                onChange={e => {
+                  formik.setFieldValue('max_submissions', e.target.value);
+                }}
+                error={formik.values.max_submissions < 1}
+              />
+
               <InputLabel id="demo-simple-select-label-auto">
                 Auto-Grading Behaviour
                 <Tooltip title={gradingBehaviourHelp}>
                   <HelpOutlineOutlinedIcon
                     fontSize={'small'}
-                    sx={{ ml: 1.5, mt: 1.0 }}
+                    sx={{ml: 1.5, mt: 1.0}}
                   />
                 </Tooltip>
               </InputLabel>
@@ -311,7 +347,7 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
   return (
     <div>
       <IconButton
-        sx={{ mt: -1 }}
+        sx={{mt: -1}}
         onClick={e => {
           e.stopPropagation();
           setOpen(true);
@@ -319,7 +355,7 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
         onMouseDown={event => event.stopPropagation()}
         aria-label="edit"
       >
-        <EditIcon />
+        <EditIcon/>
       </IconButton>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
         <DialogTitle>Edit Lecture</DialogTitle>
@@ -379,7 +415,7 @@ interface INewAssignmentCardProps {
 export default function NewAssignmentCard(props: INewAssignmentCardProps) {
   return (
     <Card
-      sx={{ width: 225, height: '100%', m: 1.5, backgroundColor: '#fcfcfc' }}
+      sx={{width: 225, height: '100%', m: 1.5, backgroundColor: '#fcfcfc'}}
     >
       <Tooltip title={'New Assignment'}>
         <CardActionArea
@@ -392,7 +428,7 @@ export default function NewAssignmentCard(props: INewAssignmentCardProps) {
             alignItems: 'center'
           }}
         >
-          <AddIcon sx={{ fontSize: 50 }} color="disabled" />
+          <AddIcon sx={{fontSize: 50}} color="disabled"/>
         </CardActionArea>
       </Tooltip>
     </Card>
@@ -410,7 +446,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
       name: 'Assignment',
       due_date: null,
       type: 'user',
-      automatic_grading: 'unassisted' as AutomaticGradingEnum
+      automatic_grading: 'unassisted' as AutomaticGradingEnum,
+      max_submissions: undefined as number,
     },
     validationSchema: validationSchema,
     onSubmit: values => {
@@ -418,7 +455,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         name: values.name,
         due_date: values.due_date,
         type: values.type as TypeEnum,
-        automatic_grading: values.automatic_grading as AutomaticGradingEnum
+        automatic_grading: values.automatic_grading as AutomaticGradingEnum,
+        max_submissions: +values.max_submissions,
       };
       createAssignment(props.lecture.id, updatedAssignment).then(a =>
         console.log(a)
@@ -431,7 +469,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
   const [openDialog, setOpen] = React.useState(false);
 
   return (
-    <Box sx={{ minHeight: 225, height: '100%' }}>
+    <Box sx={{minHeight: 225, height: '100%'}}>
       <NewAssignmentCard
         onClick={e => {
           e.stopPropagation();
@@ -503,12 +541,45 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 />
               </LocalizationProvider>
 
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    value={Boolean(formik.values.max_submissions)}
+                    onChange={async e => {
+                      console.log('Before: ' + formik.values.max_submissions);
+                      if (e.target.checked) {
+                        await formik.setFieldValue('max_submissions', 1);
+                      } else {
+                        await formik.setFieldValue('max_submissions', undefined);
+                      }
+                      console.log('After: ' + formik.values.max_submissions);
+                    }}
+                  />
+                }
+                label="Limit Number of Submissions"
+              />
+
+              <TextField
+                variant="outlined"
+                fullWidth
+                disabled={!formik.values.max_submissions}
+                type={"number"}
+                id="max-submissions"
+                name="max_submissions"
+                placeholder="Submissions"
+                value={formik.values.max_submissions}
+                onChange={e => {
+                  formik.setFieldValue('max_submissions', e.target.value);
+                }}
+                error={formik.values.max_submissions < 1}
+              />
+
               <InputLabel id="demo-simple-select-label-auto">
                 Auto-Grading Behaviour
                 <Tooltip title={gradingBehaviourHelp}>
                   <HelpOutlineOutlinedIcon
                     fontSize={'small'}
-                    sx={{ ml: 1.5, mt: 1.0 }}
+                    sx={{ml: 1.5, mt: 1.0}}
                   />
                 </Tooltip>
               </InputLabel>
@@ -585,7 +656,7 @@ export const CommitDialog = (props: ICommitDialogProps) => {
         <DialogTitle>Commit Files</DialogTitle>
         <DialogContent>
           <TextField
-            sx={{ mt: 2, width: '100%' }}
+            sx={{mt: 2, width: '100%'}}
             id="outlined-textarea"
             label="Commit Message"
             placeholder="Commit Message"
@@ -704,7 +775,7 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
         <DialogTitle>Commit Files</DialogTitle>
         <DialogContent>
           <TextField
-            sx={{ mt: 2, width: '100%' }}
+            sx={{mt: 2, width: '100%'}}
             id="outlined-textarea"
             label="Commit Message"
             placeholder="Commit Message"

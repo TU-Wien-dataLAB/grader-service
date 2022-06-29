@@ -23,9 +23,10 @@ export interface Submission {
     logs?: string;
 }
 export namespace Submission {
-    export type AutoStatusEnum = 'not_graded' | 'automatically_graded' | 'grading_failed';
+    export type AutoStatusEnum = 'not_graded' | 'pending' | 'automatically_graded' | 'grading_failed';
     export const AutoStatusEnum = {
         NotGraded: 'not_graded' as AutoStatusEnum,
+        Pending: 'pending' as AutoStatusEnum,
         AutomaticallyGraded: 'automatically_graded' as AutoStatusEnum,
         GradingFailed: 'grading_failed' as AutoStatusEnum
     };
