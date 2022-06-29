@@ -17,23 +17,23 @@ import {
   Stack,
   Typography
 } from '@mui/material';
-import { red } from '@mui/material/colors';
+import {red} from '@mui/material/colors';
 
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
-import { Assignment } from '../../model/assignment';
+import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions} from '../../services/submissions.service';
 import {
   getAssignment,
   pullAssignment
 } from '../../services/assignments.service';
-import { DeadlineComponent } from '../util/deadline';
-import { AssignmentModalComponent } from './assignment-modal';
-import { Submission } from '../../model/submission';
-import { getFiles } from '../../services/file.service';
+import {DeadlineComponent} from '../util/deadline';
+import {AssignmentModalComponent} from './assignment-modal';
+import {Submission} from '../../model/submission';
+import {getFiles} from '../../services/file.service';
 
 /**
  * Props for AssignmentComponent.
@@ -89,9 +89,15 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   };
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{height: '100%'}}>
       <Card
-        sx={{ maxWidth: 200, minWidth: 200, height: '100%', m: 1.5 }}
+        sx={{
+          maxWidth: 200,
+          minWidth: 200,
+          height: '100%',
+          m: 1.5,
+          bgcolor: (assignment.status === "complete" ? "#F1F1F1" : "white")
+        }}
         onClick={async () => {
           if (files.length === 0) {
             await pullAssignment(props.lecture.id, assignment.id, 'assignment');
@@ -100,14 +106,15 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         }}
       >
         <CardActionArea
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
-          <CardContent sx={{ flexGrow: 1 }}>
-            <Typography variant="h5" component="div">
+          <CardContent sx={{flexGrow: 1}}>
+            <Typography variant="h5" component="div"
+                        color={(assignment.status === "complete" ? "text.disabled" : "text.primary")}>
               {assignment.name}
             </Typography>
             <Typography
-              sx={{ fontSize: 14 }}
+              sx={{fontSize: 14}}
               color="text.secondary"
               gutterBottom
             >
@@ -121,13 +128,13 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                     float: 'right'
                   }}
                 >
-                  Not Released
+                  {(assignment.status === "complete" ? "Completed" : "Not Released")}
                 </Typography>
               )}
             </Typography>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{mt: 1, mb: 1}}/>
 
-            <Typography sx={{ fontSize: 16, mt: 1, ml: 0.5 }}>
+            <Typography sx={{fontSize: 16, mt: 1, ml: 0.5}}>
               {submissions.length}
               <Typography
                 color="text.secondary"
@@ -140,13 +147,13 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {'Submission' + (submissions.length === 1 ? '' : 's')}
               </Typography>
             </Typography>
-            <Typography sx={{ fontSize: 16, mt: 0.25 }}>
+            <Typography sx={{fontSize: 16, mt: 0.25}}>
               {hasFeedback ? (
                 <CheckCircleOutlineOutlinedIcon
-                  sx={{ fontSize: 16, mr: 0.5, mb: -0.35 }}
+                  sx={{fontSize: 16, mr: 0.5, mb: -0.35}}
                 />
               ) : (
-                <CancelOutlinedIcon sx={{ fontSize: 16, mr: 0.5, mb: -0.35 }} />
+                <CancelOutlinedIcon sx={{fontSize: 16, mr: 0.5, mb: -0.35}}/>
               )}
               <Typography
                 color="text.secondary"
