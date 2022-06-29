@@ -61,12 +61,16 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       response => {
         setAllSubmissions(response);
         let auto = 0;
+        const autoUserSet = new Set<string>();
         let manual = 0;
+        const manualUserSet = new Set<string>();
         for (const submission of response) {
-          if (submission.auto_status === 'automatically_graded') {
+          if (submission.auto_status === 'automatically_graded' && !autoUserSet.has(submission.username)) {
+            autoUserSet.add(submission.username);
             auto++;
           }
-          if (submission.manual_status === 'manually_graded') {
+          if (submission.manual_status === 'manually_graded' && !manualUserSet.has(submission.username)) {
+            manualUserSet.add(submission.username);
             manual++;
           }
         }
@@ -128,7 +132,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             <Divider sx={{ mt: 1, mb: 1 }} />
 
             <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-              {allSubmissions.length}
+              {latestSubmissions.length}
               <Typography
                 color="text.secondary"
                 sx={{
@@ -137,13 +141,13 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                   fontSize: 13
                 }}
               >
-                {'Submission' + (allSubmissions.length === 1 ? '' : 's')}
+                {'Submission' + (latestSubmissions.length === 1 ? '' : 's')}
               </Typography>
             </Typography>
             <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
               {numAutoGraded}
               <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
-                {'/' + allSubmissions.length}
+                {'/' + latestSubmissions.length}
               </Typography>
               <Typography
                 color="text.secondary"
@@ -159,7 +163,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
               {numManualGraded}
               <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
-                {'/' + allSubmissions.length}
+                {'/' + latestSubmissions.length}
               </Typography>
               <Typography
                 color="text.secondary"
