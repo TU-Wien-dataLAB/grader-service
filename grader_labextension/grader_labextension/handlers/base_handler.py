@@ -7,6 +7,7 @@ import json
 import traceback
 from typing import Optional, Awaitable
 
+from tornado import httputil
 from tornado.web import HTTPError
 
 from grader_labextension.services.request import RequestService
@@ -86,6 +87,11 @@ class ExtensionBaseHandler(APIHandler):
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')
+        _, e, _ = kwargs.get("exc_info", (None, None, None))
+        if e and isinstance(e, HTTPError) and e.reason:
+            reason = e.reason
+        else:
+            reason = httputil.responses.get(status_code, "Unknown")
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
             # in debug mode, try to send a traceback
             lines = []
@@ -94,7 +100,7 @@ class ExtensionBaseHandler(APIHandler):
             self.finish(json.dumps({
                 'error': {
                     'code': status_code,
-                    'message': self._reason,
+                    'message': reason,
                     'traceback': lines,
                 }
             }))
@@ -102,6 +108,6 @@ class ExtensionBaseHandler(APIHandler):
             self.finish(json.dumps({
                 'error': {
                     'code': status_code,
-                    'message': self._reason,
+                    'message': reason,
                 }
             }))

@@ -271,6 +271,11 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')
+        _, e, _ = kwargs.get("exc_info", (None, None, None))
+        if e and isinstance(e, HTTPError) and e.reason:
+            reason = e.reason
+        else:
+            reason = httputil.responses.get(status_code, "Unknown")
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
             # in debug mode, try to send a traceback
             lines = []
@@ -279,7 +284,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             self.finish(json.dumps({
                 'error': {
                     'code': status_code,
-                    'message': self._reason,
+                    'message': reason,
                     'traceback': lines,
                 }
             }))
@@ -287,7 +292,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             self.finish(json.dumps({
                 'error': {
                     'code': status_code,
-                    'message': self._reason,
+                    'message': reason,
                 }
             }))
 
