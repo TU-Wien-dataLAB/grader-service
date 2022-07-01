@@ -12,6 +12,10 @@
 
 
 export interface ErrorMessage { 
-    msg?: string;
+    code: number;
+    error: string;
+    path: string;
+    message?: string;
+    traceback?: string;
 }
 

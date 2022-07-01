@@ -10,6 +10,7 @@ from typing import Optional, Awaitable
 from tornado import httputil
 from tornado.web import HTTPError
 
+from grader_labextension.api.models.error_message import ErrorMessage
 from grader_labextension.services.request import RequestService
 from jupyter_server.base.handlers import APIHandler
 import os
@@ -88,26 +89,16 @@ class ExtensionBaseHandler(APIHandler):
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')
         _, e, _ = kwargs.get("exc_info", (None, None, None))
+        error = httputil.responses.get(status_code, "Unknown")
+        reason = None
         if e and isinstance(e, HTTPError) and e.reason:
             reason = e.reason
-        else:
-            reason = httputil.responses.get(status_code, "Unknown")
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
             # in debug mode, try to send a traceback
             lines = []
             for line in traceback.format_exception(*kwargs["exc_info"]):
                 lines.append(line)
-            self.finish(json.dumps({
-                'error': {
-                    'code': status_code,
-                    'message': reason,
-                    'traceback': lines,
-                }
-            }))
+            self.finish(json.dumps(
+                ErrorMessage(status_code, error, self.request.path, reason, traceback=json.dumps(lines)).to_dict()))
         else:
-            self.finish(json.dumps({
-                'error': {
-                    'code': status_code,
-                    'message': reason,
-                }
-            }))
+            self.finish(json.dumps(ErrorMessage(status_code, error, self.request.path, reason).to_dict()))

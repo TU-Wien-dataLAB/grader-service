@@ -17,11 +17,11 @@ info:
   version: '0.1'
 
 paths:
- /:
-  get:
-    responses:
-      200:
-        description: OK
+  /:
+    get:
+      responses:
+        200:
+          description: OK
 
 ###### Data type definitions
 components:
@@ -141,12 +141,18 @@ components:
         commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
     ErrorMessage:
       type: "object"
+      required: [ "code", "error", "path" ]
       properties:
-        msg:
-          type: "string"
-          example: "Some very detailed error message."
-      example:
-        msg: "Some very detailed error message."
+        code:
+          type: integer
+        error:
+          type: string
+        path:
+          type: string
+        message:
+          type: string
+        traceback:
+          type: string
     UserSubmissions:
       type: "array"
       items:
