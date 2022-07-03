@@ -1061,7 +1061,7 @@ async def test_assignment_properties(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
-    prop = {"test": "property", "value": 2, "bool": True, "null": None}
+    prop = {"notebooks": {}}
     put_response = await http_server_client.fetch(
         url,
         method="PUT",
@@ -1097,7 +1097,7 @@ async def test_assignment_properties_lecture_assignment_missmatch(
     insert_assignments(engine, l_id)
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/properties"
-    prop = {"test": "property", "value": 2, "bool": True, "null": None}
+    prop = {"notebooks": {}}
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1137,7 +1137,7 @@ async def test_assignment_properties_wrong_assignment_id(
     insert_assignments(engine, l_id)
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/properties"
-    prop = {"test": "property", "value": 2, "bool": True, "null": None}
+    prop = {"notebooks": {}}
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
