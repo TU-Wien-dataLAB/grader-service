@@ -353,6 +353,13 @@ class GradeBookModel(BaseModel):
         return score
 
     @property
+    def max_score(self) -> float:
+        max_score = 0
+        for nb in self.notebooks.values():
+            max_score += nb.max_score
+        return max_score
+
+    @property
     def notebook_id_set(self) -> Set[Notebook]:
         return {x for x in self.notebooks.keys()}
 
