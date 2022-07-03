@@ -14,16 +14,16 @@ import {
   Typography
 } from '@mui/material';
 
-import { Assignment } from '../../model/assignment';
+import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { getAssignment } from '../../services/assignments.service';
-import { AssignmentModalComponent } from './assignment-modal';
-import { DeadlineComponent } from '../util/deadline';
-import { blue } from '@mui/material/colors';
-import { getFiles } from '../../services/file.service';
-import { openBrowser } from './overview-view/util';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions} from '../../services/submissions.service';
+import {getAssignment} from '../../services/assignments.service';
+import {AssignmentModalComponent} from './assignment-modal';
+import {DeadlineComponent} from '../util/deadline';
+import {blue} from '@mui/material/colors';
+import {getFiles} from '../../services/file.service';
+import {openBrowser} from './overview-view/util';
 
 /**
  * Props for AssignmentComponent.
@@ -94,9 +94,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   }, [assignment]);
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{height: '100%'}}>
       <Card
-        sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
+        sx={{maxWidth: 225, minWidth: 225, height: '100%', m: 1.5}}
         onClick={async () => {
           await openBrowser(
             `source/${props.lecture.code}/${assignment.id}`,
@@ -106,14 +106,14 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         }}
       >
         <CardActionArea
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
-          <CardContent sx={{ flexGrow: 1 }}>
+          <CardContent sx={{flexGrow: 1}}>
             <Typography variant="h5" component="div">
               {assignment.name}
             </Typography>
             <Typography
-              sx={{ fontSize: 14 }}
+              sx={{fontSize: 14}}
               color="text.secondary"
               gutterBottom
             >
@@ -129,9 +129,22 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {assignment.status}
               </Typography>
             </Typography>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{mt: 1, mb: 1}}/>
 
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
+              {assignment.points}
+              <Typography
+                color="text.secondary"
+                sx={{
+                  display: 'inline-block',
+                  ml: 0.75,
+                  fontSize: 13
+                }}
+              >
+                {'Point' + (assignment.points === 1 ? '' : 's')}
+              </Typography>
+            </Typography>
+            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
               {latestSubmissions.length}
               <Typography
                 color="text.secondary"
@@ -144,9 +157,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {'Submission' + (latestSubmissions.length === 1 ? '' : 's')}
               </Typography>
             </Typography>
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
               {numAutoGraded}
-              <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
+              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
                 {'/' + latestSubmissions.length}
               </Typography>
               <Typography
@@ -160,9 +173,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {'Autograded Submission' + (numAutoGraded === 1 ? '' : 's')}
               </Typography>
             </Typography>
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
               {numManualGraded}
-              <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
+              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
                 {'/' + latestSubmissions.length}
               </Typography>
               <Typography

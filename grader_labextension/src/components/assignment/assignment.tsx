@@ -55,6 +55,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [submissions, setSubmissions] = React.useState([] as Submission[]);
   const [hasFeedback, setHasFeedback] = React.useState(false);
   const [files, setFiles] = React.useState([]);
+  const [bestScore, setBestScore] = React.useState("-");
 
   React.useEffect(() => {
     getAllSubmissions(props.lecture, assignment, 'none', false).then(
@@ -71,6 +72,12 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
     getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
       setFiles(files);
     });
+
+    getAllSubmissions(props.lecture, props.assignment, "best", false).then(submissions => {
+      if (submissions.length > 0 && submissions[0].score) {
+        setBestScore(submissions[0].score.toString())
+      }
+    })
   }, [props]);
 
   /**
@@ -163,6 +170,22 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 }}
               >
                 {(hasFeedback ? 'Has' : 'No') + ' Feedback'}
+              </Typography>
+            </Typography>
+            <Typography sx={{fontSize: 16, mt: 0.25}}>
+              {bestScore}
+              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
+                {'/' + assignment.points}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                sx={{
+                  display: 'inline-block',
+                  ml: 0.75,
+                  fontSize: 14
+                }}
+              >
+                {'Point' + (assignment.points === 1 ? '' : 's')}
               </Typography>
             </Typography>
           </CardContent>
