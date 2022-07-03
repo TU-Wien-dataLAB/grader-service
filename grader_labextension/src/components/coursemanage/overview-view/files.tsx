@@ -22,7 +22,7 @@ import {
   Card,
   CardActions,
   CardContent,
-  CardHeader,
+  CardHeader, Chip,
   Grid,
   IconButton,
   Tab,
@@ -34,6 +34,8 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import CheckIcon from '@mui/icons-material/Check';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {FilesList} from '../../util/file-list';
 import {GlobalObjects} from '../../../index';
 import {Contents} from '@jupyterlab/services';
@@ -147,83 +149,94 @@ export const Files = (props: IFilesProps) => {
 
     const closeDialog = () => setShowDialog(false);
 
-  /**
-   * Pushes files to the source und release repo.
-   * @param commitMessage the commit message
-   */
-  const handlePushAssignment = async (commitMessage: string) => {
-    setDialogContent({
-      title: 'Push Assignment',
-      message: `Do you want to push ${assignment.name}? This updates the state of the assignment on the server with your local state.`,
-      handleAgree: async () => {
-        try {
-          // Note: has to be in this order (release -> source)
-          await pushAssignment(lecture.id, assignment.id, 'release');
-          await pushAssignment(
-            lecture.id,
-            assignment.id,
-            'source',
-            commitMessage
+    /**
+     * Pushes files to the source und release repo.
+     * @param commitMessage the commit message
+     */
+    const handlePushAssignment = async (commitMessage: string) => {
+      setDialogContent({
+        title: 'Push Assignment',
+        message: `Do you want to push ${assignment.name}? This updates the state of the assignment on the server with your local state.`,
+        handleAgree: async () => {
+          try {
+            // Note: has to be in this order (release -> source)
+            await pushAssignment(lecture.id, assignment.id, 'release');
+            await pushAssignment(
+              lecture.id,
+              assignment.id,
+              'source',
+              commitMessage
+            );
+          } catch (err) {
+            props.showAlert('error', 'Error Pushing Assignment');
+            closeDialog();
+            return;
+          }
+          const a = assignment;
+          a.status = 'pushed';
+          updateAssignment(lecture.id, a).then(
+            assignment => {
+              setAssignment(assignment);
+              props.showAlert('success', 'Successfully Pushed Assignment');
+              props.onAssignmentChange(assignment);
+            },
+            error => props.showAlert('error', error.message)
           );
-        } catch (err) {
-          props.showAlert('error', 'Error Pushing Assignment');
           closeDialog();
-          return;
-        }
-        const a = assignment;
-        a.status = 'pushed';
-        updateAssignment(lecture.id, a).then(
-          assignment => {
-            setAssignment(assignment);
-            props.showAlert('success', 'Successfully Pushed Assignment');
-            props.onAssignmentChange(assignment);
-          },
-          error => props.showAlert('error', error.message)
-        );
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
-  /**
-   * Sets the repo status text.
-   * @param status repo status
-   */
-  const getRemoteStatusText = (
-    status: 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
-  ) => {
-    if (status === 'up_to_date') {
-      return 'The local files are up to date with the remote repository.';
-    } else if (status === 'pull_needed') {
-      return 'The remote repository has new changes. Pull now to load them.';
-    } else if (status === 'push_needed') {
-      return 'You have made changes to your local repository which you can push.';
-    } else {
-      return 'The local and remote files are divergent.';
+        },
+        handleDisagree: () => closeDialog()
+      });
+      setShowDialog(true);
+    };
+    /**
+     * Sets the repo status text.
+     * @param status repo status
+     */
+    const getRemoteStatusText = (
+      status: 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
+    ) => {
+      if (status === 'up_to_date') {
+        return 'The local files are up to date with the remote repository.';
+      } else if (status === 'pull_needed') {
+        return 'The remote repository has new changes. Pull now to load them.';
+      } else if (status === 'push_needed') {
+        return 'You have made changes to your local repository which you can push.';
+      } else {
+        return 'The local and remote files are divergent.';
+      }
+    };
+
+    const getStatusChip = (status: 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent') => {
+      if (status === 'up_to_date') return <Chip sx={{mb: 1.0}} label={"Up To Date"} color="success" size="small"
+                                                icon={<CheckIcon/>}/>;
+      else if (status === 'pull_needed') return <Chip sx={{mb: 1.0}} label={"Pull Needed"} color="warning" size="small"
+                                                      icon={<GetAppRoundedIcon/>}/>;
+      else if (status === 'push_needed') return <Chip sx={{mb: 1.0}} label={"Push Needed"} color="warning" size="small"
+                                                      icon={<PublishRoundedIcon/>}/>;
+      else return <Chip sx={{mb: 1.0}} label={"Divergent"} color="error" size="small" icon={<ErrorOutlineIcon/>}/>;
     }
-  };
-  /**
-   * Pulls changes from source repository.
-   */
-  const handlePullAssignment = async () => {
-    setDialogContent({
-      title: 'Pull Assignment',
-      message: `Do you want to pull ${assignment.name}? This updates your assignment with the state of the server and overwrites all changes.`,
-      handleAgree: async () => {
-        try {
-          await pullAssignment(lecture.id, assignment.id, 'source');
-          props.showAlert('success', 'Successfully Pulled Assignment');
-        } catch (err) {
-          props.showAlert('error', 'Error Pulling Assignment');
-        }
-        reloadFiles();
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
+
+    /**
+     * Pulls changes from source repository.
+     */
+    const handlePullAssignment = async () => {
+      setDialogContent({
+        title: 'Pull Assignment',
+        message: `Do you want to pull ${assignment.name}? This updates your assignment with the state of the server and overwrites all changes.`,
+        handleAgree: async () => {
+          try {
+            await pullAssignment(lecture.id, assignment.id, 'source');
+            props.showAlert('success', 'Successfully Pulled Assignment');
+          } catch (err) {
+            props.showAlert('error', 'Error Pulling Assignment');
+          }
+          reloadFiles();
+          closeDialog();
+        },
+        handleDisagree: () => closeDialog()
+      });
+      setShowDialog(true);
+    };
 
     const newUntitled = async () => {
       console.log('Creating untitled notebook');
@@ -238,6 +251,7 @@ export const Files = (props: IFilesProps) => {
       <Card elevation={3}>
         <CardHeader
           title="Files"
+          titleTypographyProps={{display: 'inline'}}
           action={
             <Tooltip title="Reload">
               <IconButton aria-label="reload" onClick={() => reloadFiles()}>
@@ -245,10 +259,13 @@ export const Files = (props: IFilesProps) => {
               </IconButton>
             </Tooltip>
           }
+          subheader={<Tooltip title={getRemoteStatusText(repoStatus)}>
+            {getStatusChip(repoStatus)}
+          </Tooltip>}
+          subheaderTypographyProps={{display: 'inline', ml: 2}}
         />
 
-        <CardContent sx={{height: '270px', overflowY: 'auto'}}>
-          <Typography>{getRemoteStatusText(repoStatus)}</Typography>
+        <CardContent sx={{height: '256px', overflowY: 'auto'}}>
           <Tabs
             variant="fullWidth"
             value={selectedDir}
@@ -257,7 +274,7 @@ export const Files = (props: IFilesProps) => {
             <Tab label="Source" value="source"/>
             <Tab label="Release" value="release"/>
           </Tabs>
-          <Box height={214} sx={{overflowY: 'auto'}}>
+          <Box height={200} sx={{overflowY: 'auto'}}>
             <FilesList
               path={`${selectedDir}/${props.lecture.code}/${props.assignment.id}`}
               reloadFiles={reloadFilesToggle}
