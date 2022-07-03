@@ -34,6 +34,7 @@ import {DeadlineComponent} from '../util/deadline';
 import {AssignmentModalComponent} from './assignment-modal';
 import {Submission} from '../../model/submission';
 import {getFiles} from '../../services/file.service';
+import {CardDescriptor} from "../util/card-descriptor";
 
 /**
  * Props for AssignmentComponent.
@@ -141,53 +142,17 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             </Typography>
             <Divider sx={{mt: 1, mb: 1}}/>
 
-            <Typography sx={{fontSize: 16, mt: 1, ml: 0.5}}>
-              {submissions.length}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 14
-                }}
-              >
-                {'Submission' + (submissions.length === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{fontSize: 16, mt: 0.25}}>
-              {hasFeedback ? (
+            <CardDescriptor descriptor={"Submission"} value={submissions.length}/>
+            <CardDescriptor sx={{mt: 0.25}} descriptor={(hasFeedback ? 'Has' : 'No') + ' Feedback'} value={
+              hasFeedback ? (
                 <CheckCircleOutlineOutlinedIcon
-                  sx={{fontSize: 16, mr: 0.5, mb: -0.35}}
+                  sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
                 />
               ) : (
-                <CancelOutlinedIcon sx={{fontSize: 16, mr: 0.5, mb: -0.35}}/>
-              )}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  fontSize: 14
-                }}
-              >
-                {(hasFeedback ? 'Has' : 'No') + ' Feedback'}
-              </Typography>
-            </Typography>
-            <Typography sx={{fontSize: 16, mt: 0.25}}>
-              {bestScore}
-              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
-                {'/' + assignment.points}
-              </Typography>
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 14
-                }}
-              >
-                {'Point' + (assignment.points === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
+                <CancelOutlinedIcon sx={{fontSize: 16, mr: -0.25, mb: -0.35}}/>
+              )
+            }/>
+            <CardDescriptor descriptor={"Point"} value={bestScore} ofTotal={assignment.points} />
           </CardContent>
           <DeadlineComponent
             due_date={assignment.due_date}

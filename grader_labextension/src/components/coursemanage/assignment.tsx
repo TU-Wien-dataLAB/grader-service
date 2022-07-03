@@ -24,6 +24,7 @@ import {DeadlineComponent} from '../util/deadline';
 import {blue} from '@mui/material/colors';
 import {getFiles} from '../../services/file.service';
 import {openBrowser} from './overview-view/util';
+import {CardDescriptor} from "../util/card-descriptor";
 
 /**
  * Props for AssignmentComponent.
@@ -131,64 +132,12 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             </Typography>
             <Divider sx={{mt: 1, mb: 1}}/>
 
-            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
-              {assignment.points}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Point' + (assignment.points === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
-              {latestSubmissions.length}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Submission' + (latestSubmissions.length === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
-              {numAutoGraded}
-              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
-                {'/' + latestSubmissions.length}
-              </Typography>
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Autograded Submission' + (numAutoGraded === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{fontSize: 15, mt: 0.5, ml: 0.5}}>
-              {numManualGraded}
-              <Typography sx={{fontSize: 10, ml: 0, display: 'inline-block'}}>
-                {'/' + latestSubmissions.length}
-              </Typography>
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Manualgraded Submission' + (numManualGraded === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
+            <CardDescriptor descriptor={"Point"} value={assignment.points} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Submission"} value={latestSubmissions.length} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Autograded Submission"} value={numAutoGraded}
+                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Manualgraded Submission"} value={numManualGraded}
+                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
           </CardContent>
           <DeadlineComponent
             due_date={assignment.due_date}
@@ -215,5 +164,6 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         />
       </LoadingOverlay>
     </Box>
-  );
+  )
+    ;
 };
