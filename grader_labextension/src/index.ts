@@ -46,8 +46,11 @@ import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
-import {listIcon, undoIcon} from "@jupyterlab/ui-components/lib/icon/iconimports";
-import {HintWidget} from "./components/notebook/student-plugin/hint-widget";
+import {
+  listIcon,
+  undoIcon
+} from '@jupyterlab/ui-components/lib/icon/iconimports';
+import { HintWidget } from './components/notebook/student-plugin/hint-widget';
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -365,12 +368,23 @@ const extension: JupyterFrontEndPlugin<void> = {
         return tracker.activeCell.model.metadata.has('hint');
       },
       execute: () => {
-        //TODO currently this add widget on click but it should only use one widget on toggle
-        (tracker.activeCell.layout as PanelLayout).addWidget(
-          new HintWidget(
-            tracker.activeCell.model.metadata.get('hint').toString()
-          )
-        );
+        let hintWidget: HintWidget = null;
+
+        (tracker.activeCell.layout as PanelLayout).widgets.map(widget => {
+          if (widget instanceof HintWidget) {
+            hintWidget = widget;
+          }
+        });
+        if (hintWidget === null) {
+          (tracker.activeCell.layout as PanelLayout).addWidget(
+            new HintWidget(
+              tracker.activeCell.model.metadata.get('hint').toString()
+            )
+          );
+        } else {
+          hintWidget.toggleShowAlert();
+          hintWidget.update();
+        }
       },
       icon: listIcon
     });
