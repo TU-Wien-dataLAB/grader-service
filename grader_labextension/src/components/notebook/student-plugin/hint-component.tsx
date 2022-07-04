@@ -5,7 +5,7 @@ export interface IHintComponentProps {
   hint: string;
 }
 
-export const HintCompontent = (props: IHintComponentProps) => {
+export const HintComponent = (props: IHintComponentProps) => {
   const [alert, setAlert] = React.useState(true);
 
   return (
