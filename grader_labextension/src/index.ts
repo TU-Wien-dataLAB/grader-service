@@ -380,6 +380,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           );
         } else {
           hintWidget.toggleShowAlert();
+          hintWidget.setHint(
+            tracker.activeCell.model.metadata.get('hint').toString()
+          );
           hintWidget.update();
         }
       },

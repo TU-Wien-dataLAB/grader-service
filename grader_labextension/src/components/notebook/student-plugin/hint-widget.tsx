@@ -10,7 +10,7 @@ import * as React from 'react';
 import { HintComponent } from './hint-component';
 
 export class HintWidget extends ReactWidget {
-  private readonly hint: string;
+  private hint: string;
   private showAlert = true;
 
   constructor(hint: string) {
@@ -20,6 +20,10 @@ export class HintWidget extends ReactWidget {
 
   public toggleShowAlert() {
     this.showAlert = !this.showAlert;
+  }
+
+  public setHint(hint: string) {
+    this.hint = hint;
   }
 
   protected render(): any {
