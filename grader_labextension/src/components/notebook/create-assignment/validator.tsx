@@ -10,31 +10,18 @@ import { Cell } from '@jupyterlab/cells';
 import * as React from 'react';
 import { CellModel, NbgraderData, ToolData } from '../model';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { CellWidget } from './cellwidget';
-import { CreationWidget } from './creation-widget';
 import { ErrorWidget } from './error-widget';
 import {
   Button as MuiButton,
   Alert,
   AlertTitle,
   Box,
-  Card,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  DialogContentText,
-  Typography,
-  Paper,
-  Chip,
-  Grid,
-  CardHeader,
-  CardContent,
-  ListItem,
-  List,
   Stack
 } from '@mui/material';
-import { GradeWidget } from '../manual-grading/grade-widget/grade-widget';
 
 export interface ValidatorProps {
   notebook: Notebook;

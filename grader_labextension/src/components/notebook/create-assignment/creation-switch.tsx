@@ -9,15 +9,9 @@ import { Cell } from '@jupyterlab/cells';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
 import { PanelLayout } from '@lumino/widgets';
 import React from 'react';
-import { Assignment } from '../../../model/assignment';
-import { Lecture } from '../../../model/lecture';
-import { GradeBook } from '../../../services/gradebook';
-import { NbgraderData } from '../model';
 import { IModeSwitchProps } from '../slider';
-import { CellWidget } from './cellwidget';
 import { CreationWidget } from './creation-widget';
 import { ErrorWidget } from './error-widget';
-import { CellPlayButton } from './widget';
 
 export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
   public state = {

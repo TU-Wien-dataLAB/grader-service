@@ -29,8 +29,6 @@ import { Cell } from '@jupyterlab/cells';
 
 import { INotebookTracker } from '@jupyterlab/notebook';
 
-import { CellWidget } from './components/notebook/create-assignment/cellwidget';
-
 import { PanelLayout } from '@lumino/widgets';
 
 import { NotebookModeSwitch } from './components/notebook/slider';
@@ -42,7 +40,6 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
