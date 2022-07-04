@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert, Box, Collapse } from '@mui/material';
+import { Alert, Collapse } from '@mui/material';
 
 export interface IHintComponentProps {
   hint: string;

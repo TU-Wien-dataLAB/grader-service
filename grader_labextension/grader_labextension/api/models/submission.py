@@ -142,7 +142,7 @@ class Submission(Model):
         :param auto_status: The auto_status of this Submission.
         :type auto_status: str
         """
-        allowed_values = ["not_graded", "automatically_graded", "grading_failed"]  # noqa: E501
+        allowed_values = ["not_graded", "pending", "automatically_graded", "grading_failed"]  # noqa: E501
         if auto_status not in allowed_values:
             raise ValueError(
                 "Invalid value for `auto_status` ({0}), must be one of {1}"

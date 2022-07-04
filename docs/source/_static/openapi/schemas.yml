@@ -1,15 +1,15 @@
 ## Model generation:
 #  
 # Typescript:
-# java -jar ../openapi-generator-cli.jar generate -i documentation/openapi/schemas.yml -g typescript-angular -o grading_labextension/src --global-property models
+# java -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g typescript-angular -o grader_labextension/src --global-property models
 #
 # Python (service):
 # call in grader_service directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../documentation/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
+# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
 # 
 # Python (labextension):
-# call in grading_labextension directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../documentation/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grading_labextension.api' ; rm -r grading_labextension/api/test grading_labextension/api/controllers grading_labextension/api/openapi
+# call in grader_labextension directory
+# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_labextension.api' ; rm -r grader_labextension/api/test grader_labextension/api/controllers grader_labextension/api/openapi
 
 openapi: '3.0.2'
 info:
@@ -17,11 +17,11 @@ info:
   version: '0.1'
 
 paths:
- /:
-  get:
-    responses:
-      200:
-        description: OK
+  /:
+    get:
+      responses:
+        200:
+          description: OK
 
 ###### Data type definitions
 components:
@@ -89,6 +89,8 @@ components:
             - "unassisted"
             - "auto"
             - "full_auto"
+        max_submissions:
+          type: integer
       example:
         id: 1
         name: "assignment_1"
@@ -110,6 +112,7 @@ components:
           type: string
           enum:
             - "not_graded"
+            - "pending"
             - "automatically_graded"
             - "grading_failed"
         manual_status:
@@ -138,12 +141,18 @@ components:
         commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
     ErrorMessage:
       type: "object"
+      required: [ "code", "error", "path" ]
       properties:
-        msg:
-          type: "string"
-          example: "Some very detailed error message."
-      example:
-        msg: "Some very detailed error message."
+        code:
+          type: integer
+        error:
+          type: string
+        path:
+          type: string
+        message:
+          type: string
+        traceback:
+          type: string
     UserSubmissions:
       type: "array"
       items:

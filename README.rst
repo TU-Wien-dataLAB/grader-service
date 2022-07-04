@@ -226,10 +226,7 @@ In order to start the grader service we have to provide a configuration file for
     service_dir = os.path.expanduser("<grader_service_dir>")
     c.GraderService.grader_service_dir = service_dir
 
-    c.GraderServer.hub_service_name = "grader"
-    c.GraderServer.hub_api_token = "<token>"
-    c.GraderServer.hub_api_url = "http://127.0.0.1:8081/hub/api"
-    c.GraderServer.hub_base_url = "/"
+    c.JupyterHubGroupAuthenticator.hub_api_url = "http://127.0.0.1:8081/hub/api"
 
     c.LocalAutogradeExecutor.base_input_path = os.path.expanduser(os.path.join(service_dir, "convert_in"))
     c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(service_dir, "convert_out"))

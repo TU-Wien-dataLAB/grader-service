@@ -106,7 +106,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
 
-        self.application: GraderServer = self.application # add type hint for application
+        self.application: GraderServer = self.application  # add type hint for application
         self.log = self.application.log
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
@@ -271,25 +271,20 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')
+        _, e, _ = kwargs.get("exc_info", (None, None, None))
+        error = httputil.responses.get(status_code, "Unknown")
+        reason = None
+        if e and isinstance(e, HTTPError) and e.reason:
+            reason = e.reason
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
             # in debug mode, try to send a traceback
             lines = []
             for line in traceback.format_exception(*kwargs["exc_info"]):
                 lines.append(line)
-            self.finish(json.dumps({
-                'error': {
-                    'code': status_code,
-                    'message': self._reason,
-                    'traceback': lines,
-                }
-            }))
+            self.finish(json.dumps(
+                ErrorMessage(status_code, error, self.request.path, reason, traceback=json.dumps(lines)).to_dict()))
         else:
-            self.finish(json.dumps({
-                'error': {
-                    'code': status_code,
-                    'message': self._reason,
-                }
-            }))
+            self.finish(json.dumps(ErrorMessage(status_code, error, self.request.path, reason).to_dict()))
 
     @classmethod
     def _serialize(cls, obj: object):

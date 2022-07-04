@@ -14,16 +14,17 @@ import {
   Typography
 } from '@mui/material';
 
-import { Assignment } from '../../model/assignment';
+import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { getAssignment } from '../../services/assignments.service';
-import { AssignmentModalComponent } from './assignment-modal';
-import { DeadlineComponent } from '../util/deadline';
-import { blue } from '@mui/material/colors';
-import { getFiles } from '../../services/file.service';
-import { openBrowser } from './overview-view/util';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions} from '../../services/submissions.service';
+import {getAssignment} from '../../services/assignments.service';
+import {AssignmentModalComponent} from './assignment-modal';
+import {DeadlineComponent} from '../util/deadline';
+import {blue} from '@mui/material/colors';
+import {getFiles} from '../../services/file.service';
+import {openBrowser} from './overview-view/util';
+import {CardDescriptor} from "../util/card-descriptor";
 
 /**
  * Props for AssignmentComponent.
@@ -61,12 +62,16 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       response => {
         setAllSubmissions(response);
         let auto = 0;
+        const autoUserSet = new Set<string>();
         let manual = 0;
+        const manualUserSet = new Set<string>();
         for (const submission of response) {
-          if (submission.auto_status === 'automatically_graded') {
+          if (submission.auto_status === 'automatically_graded' && !autoUserSet.has(submission.username)) {
+            autoUserSet.add(submission.username);
             auto++;
           }
-          if (submission.manual_status === 'manually_graded') {
+          if (submission.manual_status === 'manually_graded' && !manualUserSet.has(submission.username)) {
+            manualUserSet.add(submission.username);
             manual++;
           }
         }
@@ -90,9 +95,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   }, [assignment]);
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{height: '100%'}}>
       <Card
-        sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
+        sx={{maxWidth: 225, minWidth: 225, height: '100%', m: 1.5}}
         onClick={async () => {
           await openBrowser(
             `source/${props.lecture.code}/${assignment.id}`,
@@ -102,14 +107,14 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         }}
       >
         <CardActionArea
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
-          <CardContent sx={{ flexGrow: 1 }}>
+          <CardContent sx={{flexGrow: 1}}>
             <Typography variant="h5" component="div">
               {assignment.name}
             </Typography>
             <Typography
-              sx={{ fontSize: 14 }}
+              sx={{fontSize: 14}}
               color="text.secondary"
               gutterBottom
             >
@@ -125,53 +130,14 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {assignment.status}
               </Typography>
             </Typography>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{mt: 1, mb: 1}}/>
 
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-              {allSubmissions.length}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Submission' + (allSubmissions.length === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-              {numAutoGraded}
-              <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
-                {'/' + allSubmissions.length}
-              </Typography>
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Autograded Submission' + (numAutoGraded === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
-            <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-              {numManualGraded}
-              <Typography sx={{ fontSize: 10, ml: 0, display: 'inline-block' }}>
-                {'/' + allSubmissions.length}
-              </Typography>
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  ml: 0.75,
-                  fontSize: 13
-                }}
-              >
-                {'Manualgraded Submission' + (numManualGraded === 1 ? '' : 's')}
-              </Typography>
-            </Typography>
+            <CardDescriptor descriptor={"Point"} value={assignment.points} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Submission"} value={latestSubmissions.length} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Autograded Submission"} value={numAutoGraded}
+                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
+            <CardDescriptor descriptor={"Manualgraded Submission"} value={numManualGraded}
+                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
           </CardContent>
           <DeadlineComponent
             due_date={assignment.due_date}
@@ -198,5 +164,6 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         />
       </LoadingOverlay>
     </Box>
-  );
+  )
+    ;
 };

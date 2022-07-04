@@ -15,21 +15,41 @@ class ErrorMessage(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, msg=None):  # noqa: E501
+    def __init__(self, code=None, error=None, path=None, message=None, traceback=None):  # noqa: E501
         """ErrorMessage - a model defined in OpenAPI
 
-        :param msg: The msg of this ErrorMessage.  # noqa: E501
-        :type msg: str
+        :param code: The code of this ErrorMessage.  # noqa: E501
+        :type code: int
+        :param error: The error of this ErrorMessage.  # noqa: E501
+        :type error: str
+        :param path: The path of this ErrorMessage.  # noqa: E501
+        :type path: str
+        :param message: The message of this ErrorMessage.  # noqa: E501
+        :type message: str
+        :param traceback: The traceback of this ErrorMessage.  # noqa: E501
+        :type traceback: str
         """
         self.openapi_types = {
-            'msg': str
+            'code': int,
+            'error': str,
+            'path': str,
+            'message': str,
+            'traceback': str
         }
 
         self.attribute_map = {
-            'msg': 'msg'
+            'code': 'code',
+            'error': 'error',
+            'path': 'path',
+            'message': 'message',
+            'traceback': 'traceback'
         }
 
-        self._msg = msg
+        self._code = code
+        self._error = error
+        self._path = path
+        self._message = message
+        self._traceback = traceback
 
     @classmethod
     def from_dict(cls, dikt) -> 'ErrorMessage':
@@ -43,22 +63,112 @@ class ErrorMessage(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def msg(self):
-        """Gets the msg of this ErrorMessage.
+    def code(self):
+        """Gets the code of this ErrorMessage.
 
 
-        :return: The msg of this ErrorMessage.
+        :return: The code of this ErrorMessage.
+        :rtype: int
+        """
+        return self._code
+
+    @code.setter
+    def code(self, code):
+        """Sets the code of this ErrorMessage.
+
+
+        :param code: The code of this ErrorMessage.
+        :type code: int
+        """
+        if code is None:
+            raise ValueError("Invalid value for `code`, must not be `None`")  # noqa: E501
+
+        self._code = code
+
+    @property
+    def error(self):
+        """Gets the error of this ErrorMessage.
+
+
+        :return: The error of this ErrorMessage.
         :rtype: str
         """
-        return self._msg
+        return self._error
 
-    @msg.setter
-    def msg(self, msg):
-        """Sets the msg of this ErrorMessage.
+    @error.setter
+    def error(self, error):
+        """Sets the error of this ErrorMessage.
 
 
-        :param msg: The msg of this ErrorMessage.
-        :type msg: str
+        :param error: The error of this ErrorMessage.
+        :type error: str
+        """
+        if error is None:
+            raise ValueError("Invalid value for `error`, must not be `None`")  # noqa: E501
+
+        self._error = error
+
+    @property
+    def path(self):
+        """Gets the path of this ErrorMessage.
+
+
+        :return: The path of this ErrorMessage.
+        :rtype: str
+        """
+        return self._path
+
+    @path.setter
+    def path(self, path):
+        """Sets the path of this ErrorMessage.
+
+
+        :param path: The path of this ErrorMessage.
+        :type path: str
+        """
+        if path is None:
+            raise ValueError("Invalid value for `path`, must not be `None`")  # noqa: E501
+
+        self._path = path
+
+    @property
+    def message(self):
+        """Gets the message of this ErrorMessage.
+
+
+        :return: The message of this ErrorMessage.
+        :rtype: str
+        """
+        return self._message
+
+    @message.setter
+    def message(self, message):
+        """Sets the message of this ErrorMessage.
+
+
+        :param message: The message of this ErrorMessage.
+        :type message: str
         """
 
-        self._msg = msg
+        self._message = message
+
+    @property
+    def traceback(self):
+        """Gets the traceback of this ErrorMessage.
+
+
+        :return: The traceback of this ErrorMessage.
+        :rtype: str
+        """
+        return self._traceback
+
+    @traceback.setter
+    def traceback(self, traceback):
+        """Sets the traceback of this ErrorMessage.
+
+
+        :param traceback: The traceback of this ErrorMessage.
+        :type traceback: str
+        """
+
+        self._traceback = traceback
