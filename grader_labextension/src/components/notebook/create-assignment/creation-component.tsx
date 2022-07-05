@@ -19,7 +19,7 @@ import {
   TextField
 } from '@mui/material';
 
-export interface CreationComponentProps {
+export interface ICreationComponentProps {
   cell: Cell;
 }
 
@@ -33,16 +33,20 @@ const randomString = (length: number) => {
   return result;
 };
 
-export const CreationComponent = (props: CreationComponentProps) => {
+export const CreationComponent = (props: ICreationComponentProps) => {
   const nbgraderData = CellModel.getNbgraderData(props.cell.model.metadata);
   const toolData = CellModel.newToolData(nbgraderData, props.cell.model.type);
   const [type, setType] = React.useState(toolData.type);
   const [id, setId] = React.useState(toolData.id);
   const [points, setPoints] = React.useState(toolData.points);
-  const [hint, setHint] = React.useState(null);
-  const [hintChecked, setChecked] = React.useState(false);
+  const [hintChecked, setChecked] = React.useState(
+    props.cell.model.metadata.has('hint')
+  );
+  const [hint, setHint] = React.useState(
+    hintChecked ? props.cell.model.metadata.get('hint') : ''
+  );
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHintChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked);
   };
   const updateMetadata = () => {
@@ -55,7 +59,7 @@ export const CreationComponent = (props: CreationComponentProps) => {
     toolData.points = points;
     const data = CellModel.newNbgraderData(toolData);
     CellModel.setNbgraderData(data, props.cell.model.metadata);
-    //TODO: Currently we set the optional hint differently than the grader data
+    //TODO: Currently we set the optional hint differently than the grader data, but maybe we should do it like this
     if (hintChecked) {
       props.cell.model.metadata.set('hint', hint);
     } else {
@@ -92,10 +96,10 @@ export const CreationComponent = (props: CreationComponentProps) => {
             >
               <MenuItem value="">-</MenuItem>
               <MenuItem value="readonly">Readonly</MenuItem>
-              {props.cell.model.type == 'code' && (
+              {props.cell.model.type === 'code' && (
                 <MenuItem value="solution">Autograded answer</MenuItem>
               )}
-              {props.cell.model.type == 'code' && (
+              {props.cell.model.type === 'code' && (
                 <MenuItem value="tests">Autograded tests</MenuItem>
               )}
 
@@ -144,7 +148,7 @@ export const CreationComponent = (props: CreationComponentProps) => {
                   control={
                     <Switch
                       checked={hintChecked}
-                      onChange={handleChange}
+                      onChange={handleHintChange}
                       inputProps={{ 'aria-label': 'controlled' }}
                     />
                   }

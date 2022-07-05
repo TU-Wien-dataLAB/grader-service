@@ -17,7 +17,9 @@ import {
   ICommandPalette,
   MainAreaWidget,
   WidgetTracker,
-  IWidgetTracker
+  showDialog,
+  Dialog,
+  showErrorMessage
 } from '@jupyterlab/apputils';
 
 import { ILauncher } from '@jupyterlab/launcher';
@@ -346,11 +348,20 @@ const extension: JupyterFrontEndPlugin<void> = {
         return tracker.activeCell.model.metadata.has('revert');
       },
       execute: () => {
-        tracker.activeCell.model.value.clear();
-        tracker.activeCell.model.value.insert(
-          0,
-          tracker.activeCell.model.metadata.get('revert').toString()
-        );
+        showDialog({
+          title: "Do you want to revert the cell to it's original state?",
+          body: 'This will overwrite your current changes!',
+          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
+        }).then(result => {
+          if (!result.button.accept) {
+            return;
+          }
+          tracker.activeCell.model.value.clear();
+          tracker.activeCell.model.value.insert(
+            0,
+            tracker.activeCell.model.metadata.get('revert').toString()
+          );
+        });
       },
       icon: undoIcon
     });
