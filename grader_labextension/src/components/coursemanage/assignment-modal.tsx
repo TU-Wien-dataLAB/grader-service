@@ -79,6 +79,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             assignment={props.assignment}
             allSubmissions={props.allSubmissions}
             latestSubmissions={props.latestSubmissions}
+            users={props.users}
             root={props.root}
             showAlert={props.showAlert}
           />

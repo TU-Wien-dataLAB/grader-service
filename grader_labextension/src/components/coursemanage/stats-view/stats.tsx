@@ -13,6 +13,7 @@ export interface IStatsProps {
   assignment: Assignment;
   allSubmissions: Submission[];
   latestSubmissions: Submission[];
+  users: { students: string[]; tutors: string[]; instructors: string[] };
   root: HTMLElement;
   showAlert: (severity: string, msg: string) => void;
 }
