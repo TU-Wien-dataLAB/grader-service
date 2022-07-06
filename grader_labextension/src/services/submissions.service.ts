@@ -4,12 +4,16 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import {Assignment} from '../model/assignment';
-import {Lecture} from '../model/lecture';
-import {Submission} from '../model/submission';
-import {request, HTTPMethod} from './request.service';
+import { Assignment } from '../model/assignment';
+import { Lecture } from '../model/lecture';
+import { Submission } from '../model/submission';
+import { request, HTTPMethod } from './request.service';
 
-export function submitAssignment(lecture: Lecture, assignment: Assignment, submit = false) {
+export function submitAssignment(
+  lecture: Lecture,
+  assignment: Assignment,
+  submit = false
+) {
   let url = `/lectures/${lecture.id}/assignments/${assignment.id}/push/assignment`;
   if (submit) {
     const searchParams = new URLSearchParams({
@@ -34,7 +38,7 @@ export async function pullFeedback(
 export function getSubmissions(
   lecture: Lecture,
   assignment: Assignment,
-  filter: string = "none"
+  filter = 'none'
 ): Promise<Submission[]> {
   let url = `/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;
   if (filter) {
@@ -49,7 +53,7 @@ export function getSubmissions(
 export function getAllSubmissions(
   lecture: Lecture,
   assignment: Assignment,
-  filter: "none" | "latest" | "best" = "none",
+  filter: 'none' | 'latest' | 'best' = 'none',
   instructor = true
 ): Promise<Submission[]> {
   let url = `/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;

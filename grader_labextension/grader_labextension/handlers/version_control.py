@@ -7,6 +7,7 @@
 import json
 import os
 import sys
+from http import HTTPStatus
 from urllib.parse import unquote, quote
 
 from jsonschema.exceptions import ValidationError
@@ -349,20 +350,19 @@ class PushHandler(ExtensionBaseHandler):
             git_service.set_remote(f"grader_{repo}")
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
-            self.write_error(400)
-            return
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
 
         try:
             git_service.commit(m=commit_message)
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
 
         try:
             git_service.push(f"grader_{repo}", force=True)
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
-            self.write_error(400)
-            return
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
 
         if submit and repo == "assignment":
             self.log.info(f"Submitting assignment {assignment_id}!")
@@ -375,14 +375,12 @@ class PushHandler(ExtensionBaseHandler):
                     body=submission.to_dict(),
                     header=self.grader_authentication_header,
                 )
-            except (KeyError, IndexError):
-                self.set_status(500)
-                self.write_error(500)
-                return
+            except (KeyError, IndexError) as e:
+                self.log.error(e)
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
             except HTTPClientError as e:
-                self.set_status(e.code)
-                self.write_error(e.code)
-                return
+                self.log.error(e.response)
+                raise HTTPError(e.code, reason=e.response.reason)
 
         self.write("OK")
 
@@ -409,9 +407,8 @@ class ResetHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write("OK")
 
 
@@ -468,13 +465,12 @@ class NotebookAccessHandler(ExtensionBaseHandler):
                 self.log.error("GitError:\n" + e.error)
                 self.write_error(400)
 
-        # http://128.130.202.214:8080/user/ubuntu/lab/tree/20wle2/Assignment%201/6%20-%20Truth%20Tables.ipynb
         try:
             username = self.get_current_user()["name"]
         except TypeError as e:
             self.log.error(e)
-            self.write_error(403)
-            return
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
+
         url = f'/user/{username}/lab/tree/{lecture["code"]}/{assignment["id"]}/{quote(notebook_name)}'
         self.log.info(f"Redirecting to {url}")
         self.redirect(url)

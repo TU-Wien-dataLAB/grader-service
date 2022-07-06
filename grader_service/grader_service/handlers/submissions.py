@@ -233,9 +233,9 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND)
         submission_ts = datetime.datetime.utcnow()
         if assignment.duedate is not None and submission_ts > assignment.duedate:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Submission after due date of assignment!")
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Submission after due date of assignment!")
         if assignment.max_submissions and len(assignment.submissions) >= assignment.max_submissions:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Maximum number of submissions reached!")
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Maximum number of submissions reached!")
 
         submission = Submission()
         submission.assignid = assignment.id

@@ -195,7 +195,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id, assignment_id)
 
         if len(assignment.submissions) > 0:
-            raise HTTPError(HTTPStatus.CONFLICT, reason="Cannot delete assignment that has submissions")
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Can not delete assignment that has submissions")
 
         if assignment.status in ["released", "complete"]:
             raise HTTPError(HTTPStatus.CONFLICT,
