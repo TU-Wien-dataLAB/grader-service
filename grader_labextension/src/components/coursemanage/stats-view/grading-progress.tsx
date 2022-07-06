@@ -1,4 +1,4 @@
-import {IStatsProps} from "./stats";
+import {filterUserSubmissions, IStatsProps} from "./stats";
 import React from "react";
 import {Submission} from "../../../model/submission";
 import {Card, CardContent, CardHeader} from "@mui/material";
@@ -8,10 +8,6 @@ interface GradingProgressData {
   auto: number,
   manual: number,
   feedback: number
-}
-
-const filterUserSubmissions = (submissions: Submission[], users: string[]): Submission[] => {
-  return submissions.filter((v, i, a) => !users.includes(v.username))
 }
 
 const getData = (

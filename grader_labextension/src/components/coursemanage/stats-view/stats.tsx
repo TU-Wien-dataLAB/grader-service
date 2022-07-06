@@ -8,6 +8,12 @@ import * as React from "react";
 import {getAllSubmissions} from "../../../services/submissions.service";
 import {SubmissionTimeSeries} from "./submission-timeseries";
 import {GradingProgress} from "./grading-progress";
+import {StudentSubmissions} from "./student-submissions";
+
+export const filterUserSubmissions = (submissions: Submission[], users: string[]): Submission[] => {
+  return submissions.filter((v, i, a) => !users.includes(v.username))
+}
+
 
 export interface IStatsProps {
   lecture: Lecture;
@@ -49,11 +55,14 @@ export const StatsComponent = (props: IStatsProps) => {
       </ModalTitle>
       <Box sx={{ml: 3, mr: 3, mb: 3, mt: 3}}>
         <Grid container spacing={2} alignItems="stretch">
-          <Grid item xs={6}>
+          <Grid item xs={12}>
             <SubmissionTimeSeries {...props} />
           </Grid>
           <Grid item xs={6}>
             <GradingProgress {...props} />
+          </Grid>
+          <Grid item xs={6}>
+            <StudentSubmissions {...props} />
           </Grid>
         </Grid>
       </Box>
