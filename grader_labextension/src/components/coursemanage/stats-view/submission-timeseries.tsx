@@ -40,7 +40,7 @@ const getData = (submissions: Submission[]): { time: number, n: number }[] => {
 
   const dates: Array<number> = [];
   let currDate = moment(Math.min(...map.keys())).subtract(1, 'days');
-  let lastDate = moment(moment().startOf("day").valueOf());
+  let lastDate = moment();
 
   while (currDate.add(1, 'days').diff(lastDate) < 0) {
     dates.push(currDate.valueOf());

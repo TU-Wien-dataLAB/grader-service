@@ -7,6 +7,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import * as React from "react";
 import {getAllSubmissions} from "../../../services/submissions.service";
 import {SubmissionTimeSeries} from "./submission-timeseries";
+import {GradingProgress} from "./grading-progress";
 
 export interface IStatsProps {
   lecture: Lecture;
@@ -52,7 +53,7 @@ export const StatsComponent = (props: IStatsProps) => {
             <SubmissionTimeSeries {...props} />
           </Grid>
           <Grid item xs={6}>
-
+            <GradingProgress {...props} />
           </Grid>
         </Grid>
       </Box>
