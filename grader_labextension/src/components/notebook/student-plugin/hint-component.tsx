@@ -7,19 +7,9 @@ export interface IHintComponentProps {
 }
 
 export const HintComponent = (props: IHintComponentProps) => {
-  const [alert, setAlert] = React.useState(props.show);
-  React.useEffect(() => {
-    setAlert(props.show);
-  }, [props]);
   return (
-    <Collapse in={alert}>
-      <Alert
-        sx={{ mt: 1, mb: 1 }}
-        severity="info"
-        onClose={() => {
-          setAlert(false);
-        }}
-      >
+    <Collapse in={props.show}>
+      <Alert sx={{ mt: 1, mb: 1 }} severity="info">
         {props.hint}
       </Alert>
     </Collapse>
