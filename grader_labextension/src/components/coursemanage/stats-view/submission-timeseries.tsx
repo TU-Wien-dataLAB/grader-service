@@ -1,12 +1,10 @@
 import * as React from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   TooltipProps, Brush
 } from 'recharts';
@@ -71,7 +69,7 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
         {(data.length === 0)
           ? <Typography color={"text.secondary"}>No Data Available</Typography>
           : <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               height={150}
               width={250}
               data={data}
@@ -82,12 +80,18 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
                 bottom: 5,
               }}
             >
+              <defs>
+                <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
+                </linearGradient>
+              </defs>
               <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD MMM')}/>
               <YAxis dataKey="n"/>
               <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
-              <Line type="monotone" dataKey="n" stroke="#8884d8" activeDot={{r: 8}} strokeWidth={4}/>
+              <Area type="monotone" dataKey="n" stroke="#8884d8" strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>
               <Brush height={10}/>
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         }
       </CardContent>
