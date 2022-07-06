@@ -42,9 +42,8 @@ class SubmissionHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
 
@@ -73,9 +72,8 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -97,9 +95,8 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 decode_response=False
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write("OK")
 
 @register_handler(
@@ -127,9 +124,8 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -153,5 +149,4 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
-            return
         self.write("OK")

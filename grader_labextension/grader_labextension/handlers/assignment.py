@@ -42,9 +42,8 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         # Create directories for every assignment
         try:
@@ -87,9 +86,8 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         # if we did not get an error when creating the assignment (i.e. the user is authorized etc.) then we can
         # create the directory structure if it does not exist yet
         os.makedirs(
@@ -133,9 +131,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def get(self, lecture_id: int, assignment_id: int):
@@ -165,9 +162,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         os.makedirs(
             os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{response["id"]}'),

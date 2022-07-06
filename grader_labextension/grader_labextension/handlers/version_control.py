@@ -29,6 +29,7 @@ class GenerateHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/generate.
     """
+
     async def put(self, lecture_id: int, assignment_id: int):
         """Generates the release files from the source files of a assignment
 
@@ -49,9 +50,8 @@ class GenerateHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         code = lecture["code"]
         a_id = assignment["id"]
 
@@ -67,9 +67,7 @@ class GenerateHandler(ExtensionBaseHandler):
         except:
             e = sys.exc_info()[0]
             self.log.error(e)
-            self.set_status(400)
-            self.write_error(400)
-            return
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason="Could not generate assignment out of source file")
         try:
             gradebook_path = os.path.join(generator._output_directory, "gradebook.json")
             os.remove(gradebook_path)
@@ -87,9 +85,11 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/remote_status/{repo}.
     """
+
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         if repo not in {"assignment", "source", "release"}:
-            self.write_error(404)
+            self.log.error(HTTPStatus.NOT_FOUND)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
         lecture = await self.get_lecture(lecture_id)
         assignment = await self.get_assignment(lecture_id, assignment_id)
         git_service = GitService(
@@ -107,10 +107,9 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
             git_service.set_remote(f"grader_{repo}")
             git_service.fetch_all()
             status = git_service.check_remote_status(f"grader_{repo}", "main")
-        except GitError:
-            self.set_status(400)
-            self.write_error(400)
-            return
+        except GitError as e:
+            self.log.error(e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
         self.write(status.name)
 
 
@@ -121,6 +120,7 @@ class GitLogHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/log/{repo}.
     """
+
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         """
         Sends a GET request to the grader service to get the logs of a given repo.
@@ -131,7 +131,8 @@ class GitLogHandler(ExtensionBaseHandler):
         :return: logs of git repo
         """
         if repo not in {"assignment", "source", "release"}:
-            self.write_error(404)
+            self.log.error(HTTPStatus.NOT_FOUND)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
         n_history = int(self.get_argument("n", "10"))
         try:
             lecture = await self.request_service.request(
@@ -145,9 +146,8 @@ class GitLogHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         git_service = GitService(
             server_root_dir=self.root_dir,
@@ -167,9 +167,9 @@ class GitLogHandler(ExtensionBaseHandler):
                 logs = git_service.get_log(n_history)
             else:
                 logs = []
-        except GitError:
-            self.set_status(400)
-            self.write_error(400)
+        except GitError as e:
+            self.log.error(e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
             return
         self.write(json.dumps(logs))
 
@@ -181,6 +181,7 @@ class PullHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/pull/{repo}.
     """
+
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         """Creates a local repository and pulls the specified repo type
 
@@ -192,7 +193,8 @@ class PullHandler(ExtensionBaseHandler):
         :type repo: str
         """
         if repo not in {"assignment", "source", "release"}:
-            self.write_error(404)
+            self.log.error(HTTPStatus.NOT_FOUND)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
         try:
             lecture = await self.request_service.request(
                 "GET",
@@ -205,9 +207,8 @@ class PullHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         git_service = GitService(
             server_root_dir=self.root_dir,
@@ -226,7 +227,7 @@ class PullHandler(ExtensionBaseHandler):
             self.write("OK")
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
-            self.write_error(400)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
 
 
 @register_handler(
@@ -236,6 +237,7 @@ class PushHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/push/{repo}.
     """
+
     async def put(self, lecture_id: int, assignment_id: int, repo: str):
         """Pushes from the local repositories to remote
             If the repo type is release, it also generate the release files and updates the assignment properties in the grader service
@@ -252,7 +254,8 @@ class PushHandler(ExtensionBaseHandler):
         commit_message = self.get_argument("commit-message", None)
         submit = self.get_argument("submit", "false") == "true"
         if repo == "source" and (commit_message is None or commit_message == ""):
-            self.write_error(400)
+            self.log.error("Commit message was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit message was not found")
 
         try:
             lecture = await self.request_service.request(
@@ -266,9 +269,8 @@ class PushHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         git_service = GitService(
             server_root_dir=self.root_dir,
@@ -305,7 +307,7 @@ class PushHandler(ExtensionBaseHandler):
                     assert isinstance(msg, str)
                 except (KeyError, AssertionError):
                     msg = "Converting release version failed!"
-                raise HTTPError(400, message=msg)
+                raise HTTPError(500, message=msg)
             try:
                 gradebook_path = os.path.join(git_service.path, "gradebook.json")
                 self.log.info(f"Reading gradebook file: {gradebook_path}")
@@ -313,6 +315,8 @@ class PushHandler(ExtensionBaseHandler):
                     gradebook_json: dict = json.load(f)
             except FileNotFoundError:
                 self.log.error(f"Cannot find gradebook file: {gradebook_path}")
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                reason=f"Cannot find gradebook file: {gradebook_path}")
                 return
 
             self.log.info(f"Setting properties of assignment from {gradebook_path}")
@@ -337,6 +341,8 @@ class PushHandler(ExtensionBaseHandler):
                 self.log.error(
                     f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!"
                 )
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                reason=f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!")
                 return
 
         self.log.info(f"File contents of {repo}: {git_service.path}")
@@ -392,6 +398,7 @@ class ResetHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/reset.
     """
+
     async def get(self, lecture_id: int, assignment_id: int):
         """
         Sends a GET request to the grader service that resets the user repo.
@@ -419,6 +426,7 @@ class NotebookAccessHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/{notebook_name}.
     """
+
     async def get(self, lecture_id: int, assignment_id: int, notebook_name: str):
         """
         Sends a GET request to the grader service to access notebook and redirect to it.

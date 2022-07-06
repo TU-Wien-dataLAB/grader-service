@@ -10,7 +10,7 @@ from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 import tornado
 from tornado import web
 from grader_labextension.services.request import RequestService
-from tornado.httpclient import HTTPError
+from tornado.httpclient import HTTPClientError
 
 
 @register_handler(path=r"\/lectures\/?")
@@ -31,10 +31,9 @@ class LectureBaseHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures{query_params}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     @web.authenticated
@@ -49,10 +48,9 @@ class LectureBaseHandler(ExtensionBaseHandler):
                 body=data,
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
 
@@ -77,10 +75,9 @@ class LectureObjectHandler(ExtensionBaseHandler):
                 body=data,
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response_data))
 
     @web.authenticated
@@ -96,10 +93,9 @@ class LectureObjectHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response_data))
 
     @web.authenticated
@@ -116,10 +112,9 @@ class LectureObjectHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write("OK")
 
 
@@ -142,9 +137,8 @@ class LectureStudentsHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/users/",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
 
         self.write(json.dumps(response))
