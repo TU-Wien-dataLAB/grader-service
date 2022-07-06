@@ -80,23 +80,27 @@ export const AssignmentFilesComponent = (
    * Pushes the student submission and submits the assignment
    */
   const submitAssignmentHandler = async () => {
-    try {
-      await submitAssignment(props.lecture, props.assignment, true);
-      props.showAlert('success', 'Successfully Submitted Assignment');
-    } catch (e) {
-      props.showAlert('error', 'Error Submitting Assignment');
-    }
-    try {
-      const submissions = await getAllSubmissions(
-        props.lecture,
-        props.assignment,
-        'none',
-        false
-      );
-      props.setSubmissions(submissions);
-    } catch (e) {
-      props.showAlert('error', 'Error Updating Submissions');
-    }
+    await submitAssignment(props.lecture, props.assignment, true).then(
+      response => {
+        props.showAlert('success', 'Successfully Submitted Assignment');
+      },
+      error => {
+        props.showAlert('error', error.message);
+      }
+    );
+    await getAllSubmissions(
+      props.lecture,
+      props.assignment,
+      'none',
+      false
+    ).then(
+      submissions => {
+        props.setSubmissions(submissions);
+      },
+      error => {
+        props.showAlert('error', error.message);
+      }
+    );
   };
 
   const pushAssignmentHandler = async () => {

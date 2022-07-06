@@ -17,12 +17,12 @@ import tornado
 import os
 
 
-
 @register_handler(path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/?")
 class AssignmentBaseHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments.
     """
+
     async def get(self, lecture_id: int):
         """Sends a GET request to the grader service and returns assignments of the lecture
 
@@ -42,13 +42,13 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         # Create directories for every assignment
         try:
-            dirs = set(filter(lambda e: e[0] != ".", os.listdir(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}'))))
+            dirs = set(
+                filter(lambda e: e[0] != ".", os.listdir(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}'))))
             for assignment in response:
                 if assignment["id"] not in dirs:
                     self.log.info(f'Creating directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
@@ -61,7 +61,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                     pass
         except FileNotFoundError:
             pass
-            
+
         self.write(json.dumps(response))
 
     async def post(self, lecture_id: int):
@@ -69,7 +69,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
 
         :param lecture_id: id of the lecture in which the new assignment is
         :type lecture_id: int
-        """        
+        """
 
         data = tornado.escape.json_decode(self.request.body)
         try:
@@ -86,9 +86,8 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         # if we did not get an error when creating the assignment (i.e. the user is authorized etc.) then we can
         # create the directory structure if it does not exist yet
         os.makedirs(
@@ -113,6 +112,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
     """
         Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}.
         """
+
     async def put(self, lecture_id: int, assignment_id: int):
         """Sends a PUT-request to the grader service to update a assignment
 
@@ -120,7 +120,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
-        """        
+        """
 
         data = tornado.escape.json_decode(self.request.body)
         try:
@@ -131,9 +131,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def get(self, lecture_id: int, assignment_id: int):
@@ -143,7 +142,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         :type lecture_id: int
         :param assignment_id: id of the specific assignment
         :type assignment_id: int
-        """        
+        """
 
         query_params = RequestService.get_query_string(
             {
@@ -163,10 +162,9 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
-        
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
+
         os.makedirs(
             os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{response["id"]}'),
             exist_ok=True
@@ -180,7 +178,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
-        """        
+        """
 
         try:
             assignment = await self.request_service.request(
@@ -206,6 +204,3 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
         shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{assignment["id"]}'), ignore_errors=True)
         self.write("OK")
-
-
-

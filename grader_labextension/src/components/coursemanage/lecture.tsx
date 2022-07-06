@@ -10,22 +10,23 @@ import {
   Card,
   CardActions,
   CardContent,
-  Collapse, Grid,
+  Collapse,
+  Grid,
   LinearProgress,
   Typography
 } from '@mui/material';
 import * as React from 'react';
-import {Assignment} from '../../model/assignment';
-import {Lecture} from '../../model/lecture';
-import {getAllAssignments} from '../../services/assignments.service';
-import {AssignmentComponent} from './assignment';
-import {CreateDialog, EditLectureDialog} from '../util/dialog';
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
+import { getAllAssignments } from '../../services/assignments.service';
+import { AssignmentComponent } from './assignment';
+import { CreateDialog, EditLectureDialog } from '../util/dialog';
 import {
   getLecture,
   getUsers,
   updateLecture
 } from '../../services/lectures.service';
-import {red} from '@mui/material/colors';
+import { red } from '@mui/material/colors';
 
 interface ILectureComponentProps {
   lecture: Lecture;
@@ -65,7 +66,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
     return (
       <div>
         <Card>
-          <LinearProgress/>
+          <LinearProgress />
         </Card>
       </div>
     );
@@ -73,12 +74,12 @@ export const LectureComponent = (props: ILectureComponentProps) => {
   return (
     <div>
       <Card
-        sx={{backgroundColor: expanded ? '#fafafa' : 'background.paper'}}
+        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
         elevation={expanded ? 0 : 2}
         className="lecture-card"
       >
-        <CardContent sx={{mb: -1, display: 'flex'}}>
-          <Typography variant={'h5'} sx={{mr: 2}}>
+        <CardContent sx={{ mb: -1, display: 'flex' }}>
+          <Typography variant={'h5'} sx={{ mr: 2 }}>
             <Typography
               color={'text.secondary'}
               sx={{
@@ -122,7 +123,16 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           <CardContent>
             <Grid container spacing={2} alignItems="stretch">
               {assignments.map((el: Assignment) => (
-                <Grid item gridAutoColumns={"1fr"} sx={{maxWidth: 225, minWidth: 225, minHeight: "100%", m: 1.5}}>
+                <Grid
+                  item
+                  gridAutoColumns={'1fr'}
+                  sx={{
+                    maxWidth: 225,
+                    minWidth: 225,
+                    minHeight: '100%',
+                    m: 1.5
+                  }}
+                >
                   <AssignmentComponent
                     lecture={lecture}
                     assignment={el}
@@ -133,10 +143,20 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                   />
                 </Grid>
               ))}
-              <Grid item gridAutoColumns={"1fr"}
-                    sx={{maxWidth: 225, minWidth: 225, minHeight: 225, heigth: "100%", m: 1.5}}>
+              <Grid
+                item
+                gridAutoColumns={'1fr'}
+                sx={{
+                  maxWidth: 225,
+                  minWidth: 225,
+                  minHeight: 225,
+                  heigth: '100%',
+                  m: 1.5
+                }}
+              >
                 <CreateDialog
                   lecture={lecture}
+                  showAlert={props.showAlert}
                   handleSubmit={() => {
                     getAllAssignments(lecture.id).then(response => {
                       setAssignments(response);
@@ -149,7 +169,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           </CardContent>
         </Collapse>
         <CardActions>
-          <Button size="small" sx={{ml: 'auto'}} onClick={handleExpandClick}>
+          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
             {(expanded ? 'Hide' : 'Show') + ' Assignments'}
           </Button>
         </CardActions>

@@ -6,7 +6,8 @@
 from grader_labextension import RequestService
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
-from tornado.httpclient import HTTPError, HTTPResponse
+from tornado.httpclient import HTTPResponse, HTTPClientError
+from tornado.web import HTTPError
 from grader_labextension.services.git import GitService
 import os
 
@@ -40,10 +41,9 @@ class ExportGradesHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
                 decode_response=False
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         lecture = await self.get_lecture(lecture_id)
         dir_path = os.path.join(self.root_dir, lecture["code"])
@@ -82,10 +82,9 @@ class GradingAutoHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/grading/{sub_id}/auto",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(response)
 
 
@@ -126,10 +125,9 @@ class GradingManualHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{sub_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         git_service = GitService(
             server_root_dir=self.root_dir,
@@ -181,10 +179,9 @@ class GenerateFeedbackHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/grading/{sub_id}/feedback",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(response)
 
 
@@ -224,10 +221,9 @@ class PullFeedbackHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{sub_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
         git_service = GitService(
             server_root_dir=self.root_dir,

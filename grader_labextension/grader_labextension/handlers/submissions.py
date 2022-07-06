@@ -5,10 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+
+from tornado.httpclient import HTTPClientError
+
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from grader_labextension.services.request import RequestService
-from tornado.httpclient import HTTPError
+from tornado.web import HTTPError
 
 
 @register_handler(
@@ -38,10 +41,9 @@ class SubmissionHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions{query_params}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
 
@@ -69,10 +71,9 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/properties",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -93,10 +94,9 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 body=self.request.body.decode("utf-8"),
                 decode_response=False
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write("OK")
 
 @register_handler(
@@ -123,10 +123,9 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -147,8 +146,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
                 body=self.request.body.decode("utf-8"),
                 decode_response=False
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         self.write("OK")

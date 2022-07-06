@@ -10,14 +10,23 @@ import * as React from 'react';
 import { HintComponent } from './hint-component';
 
 export class HintWidget extends ReactWidget {
-  public hint: string;
+  private hint: string;
+  private showAlert = true;
 
   constructor(hint: string) {
     super();
     this.hint = hint;
   }
 
+  public toggleShowAlert() {
+    this.showAlert = !this.showAlert;
+  }
+
+  public setHint(hint: string) {
+    this.hint = hint;
+  }
+
   protected render(): any {
-    return <HintComponent hint={this.hint} />;
+    return <HintComponent hint={this.hint} show={this.showAlert} />;
   }
 }

@@ -69,9 +69,8 @@ class ExtensionBaseHandler(APIHandler):
             )
             return lecture
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
     async def get_assignment(self, lecture_id, assignment_id):
         try:
@@ -82,9 +81,8 @@ class ExtensionBaseHandler(APIHandler):
             )
             return assignment
         except HTTPClientError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')

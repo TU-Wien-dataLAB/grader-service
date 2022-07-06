@@ -8,7 +8,7 @@ import json
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from tornado import web
-from tornado.httpclient import HTTPError
+from tornado.httpclient import HTTPClientError
 
 
 @register_handler(path=r"\/permissions\/?")
@@ -26,8 +26,7 @@ class PermissionBaseHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/permissions",
                 header=self.grader_authentication_header,
             )
-        except HTTPError as e:
-            self.set_status(e.code)
-            self.write_error(e.code)
-            return
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise web.HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))

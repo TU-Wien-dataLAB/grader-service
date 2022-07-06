@@ -1,5 +1,4 @@
 
-
 from sys import path
 from textwrap import dedent
 from typing import Any
@@ -7,6 +6,7 @@ from typing import Any
 from grader_convert.converters.base import BaseConverter
 from grader_convert.converters.baseapp import ConverterApp
 from grader_convert.preprocessors import (
+    AddRevert,
     CheckCellMetadata,
     ClearHiddenTests,
     ClearMarkScheme,
@@ -19,6 +19,8 @@ from grader_convert.preprocessors import (
 )
 from traitlets import Bool, List, default
 from traitlets.config.loader import Config
+
+
 
 
 class GenerateAssignment(BaseConverter):
@@ -48,6 +50,7 @@ class GenerateAssignment(BaseConverter):
             ClearHiddenTests,
             ClearMarkScheme,
             ComputeChecksums,
+            AddRevert,
             CheckCellMetadata,
         ]
     ).tag(config=True)

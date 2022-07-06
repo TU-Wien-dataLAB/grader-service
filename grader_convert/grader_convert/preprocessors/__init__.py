@@ -17,6 +17,7 @@ from .deduplicateids import DeduplicateIds
 from .clearhiddentests import ClearHiddenTests
 from .clearmarkingscheme import ClearMarkScheme
 from .overwritekernelspec import OverwriteKernelspec
+from .addrevert import AddRevert
 
 __all__ = [
     "IncludeHeaderFooter",
@@ -35,4 +36,5 @@ __all__ = [
     "ClearHiddenTests",
     "ClearMarkScheme",
     "OverwriteKernelspec",
+    "AddRevert"
 ]

@@ -17,7 +17,9 @@ import {
   ICommandPalette,
   MainAreaWidget,
   WidgetTracker,
-  IWidgetTracker
+  showDialog,
+  Dialog,
+  showErrorMessage
 } from '@jupyterlab/apputils';
 
 import { ILauncher } from '@jupyterlab/launcher';
@@ -28,8 +30,6 @@ import { CourseManageView } from './widgets/coursemanage';
 import { Cell } from '@jupyterlab/cells';
 
 import { INotebookTracker } from '@jupyterlab/notebook';
-
-import { CellWidget } from './components/notebook/create-assignment/cellwidget';
 
 import { PanelLayout } from '@lumino/widgets';
 
@@ -42,12 +42,14 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { CellPlayButton } from './components/notebook/create-assignment/widget';
 import { AssignmentList } from './widgets/assignment-list';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
-import {listIcon, undoIcon} from "@jupyterlab/ui-components/lib/icon/iconimports";
-import {HintWidget} from "./components/notebook/student-plugin/hint-widget";
+import {
+  listIcon,
+  undoIcon
+} from '@jupyterlab/ui-components/lib/icon/iconimports';
+import { HintWidget } from './components/notebook/student-plugin/hint-widget';
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -346,11 +348,20 @@ const extension: JupyterFrontEndPlugin<void> = {
         return tracker.activeCell.model.metadata.has('revert');
       },
       execute: () => {
-        tracker.activeCell.model.value.clear();
-        tracker.activeCell.model.value.insert(
-          0,
-          tracker.activeCell.model.metadata.get('revert').toString()
-        );
+        showDialog({
+          title: "Do you want to revert the cell to it's original state?",
+          body: 'This will overwrite your current changes!',
+          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
+        }).then(result => {
+          if (!result.button.accept) {
+            return;
+          }
+          tracker.activeCell.model.value.clear();
+          tracker.activeCell.model.value.insert(
+            0,
+            tracker.activeCell.model.metadata.get('revert').toString()
+          );
+        });
       },
       icon: undoIcon
     });
@@ -365,12 +376,26 @@ const extension: JupyterFrontEndPlugin<void> = {
         return tracker.activeCell.model.metadata.has('hint');
       },
       execute: () => {
-        //TODO currently this add widget on click but it should only use one widget on toggle
-        (tracker.activeCell.layout as PanelLayout).addWidget(
-          new HintWidget(
+        let hintWidget: HintWidget = null;
+
+        (tracker.activeCell.layout as PanelLayout).widgets.map(widget => {
+          if (widget instanceof HintWidget) {
+            hintWidget = widget;
+          }
+        });
+        if (hintWidget === null) {
+          (tracker.activeCell.layout as PanelLayout).addWidget(
+            new HintWidget(
+              tracker.activeCell.model.metadata.get('hint').toString()
+            )
+          );
+        } else {
+          hintWidget.toggleShowAlert();
+          hintWidget.setHint(
             tracker.activeCell.model.metadata.get('hint').toString()
-          )
-        );
+          );
+          hintWidget.update();
+        }
       },
       icon: listIcon
     });
