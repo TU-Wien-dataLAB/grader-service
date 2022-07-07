@@ -9,8 +9,7 @@ import { Lecture } from '../../model/lecture';
 import { getAllLectures } from '../../services/lectures.service';
 import { Scope, UserPermissions } from '../../services/permission.service';
 import { LectureComponent } from './lecture';
-import { Alert, AlertProps, AlertTitle, Portal, Snackbar } from '@mui/material';
-import { enqueueSnackbar, SnackbarProvider } from 'notistack';
+import { enqueueSnackbar } from 'notistack';
 
 export interface ICourseManageProps {
   // lectures: Array<Lecture>;
