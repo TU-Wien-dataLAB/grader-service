@@ -1037,46 +1037,46 @@ async def test_delete_complete_assignment(
     assert e.code == HTTPStatus.CONFLICT
 
 
-async def test_assignment_properties(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        jupyter_hub_mock_server,
-        default_user,
-        default_token,
-):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-    url = service_base_url + "/lectures/3/assignments/"
-
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
-                                automatic_grading="unassisted")
-    post_response = await http_server_client.fetch(
-        url,
-        method="POST",
-        headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(pre_assignment.to_dict()),
-    )
-    assert post_response.code == 201
-    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
-
-    url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
-    prop = {"notebooks": {}}
-    put_response = await http_server_client.fetch(
-        url,
-        method="PUT",
-        headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(prop),
-    )
-    assert put_response.code == 200
-    get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
-    )
-    assert get_response.code == 200
-    assignment_props = json.loads(get_response.body.decode())
-    assert assignment_props == prop
+# async def test_assignment_properties(
+#         app: GraderServer,
+#         service_base_url,
+#         http_server_client,
+#         jupyter_hub_mock_server,
+#         default_user,
+#         default_token,
+# ):
+#     http_server = jupyter_hub_mock_server(default_user, default_token)
+#     app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
+#     url = service_base_url + "/lectures/3/assignments/"
+#
+#     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
+#                                 automatic_grading="unassisted")
+#     post_response = await http_server_client.fetch(
+#         url,
+#         method="POST",
+#         headers={"Authorization": f"Token {default_token}"},
+#         body=json.dumps(pre_assignment.to_dict()),
+#     )
+#     assert post_response.code == 201
+#     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
+#
+#     url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
+#     prop = {"notebooks": {}}
+#     put_response = await http_server_client.fetch(
+#         url,
+#         method="PUT",
+#         headers={"Authorization": f"Token {default_token}"},
+#         body=json.dumps(prop),
+#     )
+#     assert put_response.code == 200
+#     get_response = await http_server_client.fetch(
+#         url,
+#         method="GET",
+#         headers={"Authorization": f"Token {default_token}"},
+#     )
+#     assert get_response.code == 200
+#     assignment_props = json.loads(get_response.body.decode())
+#     assert assignment_props == prop
 
 
 async def test_assignment_properties_lecture_assignment_missmatch(
