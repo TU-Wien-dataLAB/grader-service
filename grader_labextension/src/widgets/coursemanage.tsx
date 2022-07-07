@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { CourseManageComponent } from '../components/coursemanage/coursemanage.component';
+import { SnackbarProvider } from 'notistack';
 
 export class CourseManageView extends ReactWidget {
   /**
@@ -20,7 +21,11 @@ export class CourseManageView extends ReactWidget {
 
   render() {
     const root = this.node;
-    return <CourseManageComponent root={root} />;
+    return (
+      <SnackbarProvider maxSnack={3}>
+        <CourseManageComponent root={root} />
+      </SnackbarProvider>
+    );
   }
 }
 

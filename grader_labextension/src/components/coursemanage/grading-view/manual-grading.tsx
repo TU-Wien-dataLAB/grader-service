@@ -26,6 +26,7 @@ import { createManualFeedback } from '../../../services/grading.service';
 import { FilesList } from '../../util/file-list';
 import { AgreeDialog } from '../../util/dialog';
 import ReplayIcon from '@mui/icons-material/Replay';
+import { enqueueSnackbar } from 'notistack';
 
 export interface IManualGradingProps {
   lecture: Lecture;
@@ -33,7 +34,6 @@ export interface IManualGradingProps {
   submission: Submission;
   username: string;
   onClose: () => void;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 export const ManualGrading = (props: IManualGradingProps) => {
@@ -83,7 +83,9 @@ export const ManualGrading = (props: IManualGradingProps) => {
         props.onClose();
       },
       err => {
-        props.showAlert('error', 'Error updating submission!');
+        enqueueSnackbar(err.message, {
+          variant: 'error'
+        });
       }
     );
   };
