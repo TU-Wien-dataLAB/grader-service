@@ -319,7 +319,6 @@ export const Files = (props: IFilesProps) => {
           <FilesList
             path={`${selectedDir}/${props.lecture.code}/${props.assignment.id}`}
             reloadFiles={reloadFilesToggle}
-            showAlert={props.showAlert}
           />
         </Box>
       </CardContent>

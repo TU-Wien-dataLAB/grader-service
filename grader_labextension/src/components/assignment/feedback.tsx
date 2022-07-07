@@ -23,7 +23,6 @@ export interface IFeedbackProps {
   lecture: Lecture;
   assignment: Assignment;
   submission: Submission;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -130,7 +129,7 @@ export const Feedback = (props: IFeedbackProps) => {
         </Stack>
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Feedback Files</Typography>
-      <FilesList path={path} showAlert={props.showAlert} sx={{ m: 2 }} />
+      <FilesList path={path} sx={{ m: 2 }} />
     </Box>
   );
 };

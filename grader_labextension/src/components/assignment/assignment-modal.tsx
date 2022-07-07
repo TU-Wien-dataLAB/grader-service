@@ -23,7 +23,6 @@ export interface IAssignmentModalProps {
   assignment: Assignment;
   submissions: Submission[];
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -62,7 +61,6 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
         <AssignmentFilesComponent
           lecture={props.lecture}
           assignment={props.assignment}
-          showAlert={props.showAlert}
           setSubmissions={setSubmissions}
         />
 
@@ -84,7 +82,6 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           lecture={props.lecture}
           assignment={props.assignment}
           submission={feedbackSubmission}
-          showAlert={props.showAlert}
         />
       </LoadingOverlay>
     </div>

@@ -22,10 +22,10 @@ import IModel = Contents.IModel;
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
 import { getFiles } from '../../services/file.service';
+import { enqueueSnackbar } from 'notistack';
 
 interface IFileListProps {
   path: string;
-  showAlert: (severity: string, msg: string) => void;
   reloadFiles?: boolean;
   sx?: SxProps<Theme>;
 }
@@ -47,7 +47,9 @@ export const FilesList = (props: IFileListProps) => {
         }
       })
       .catch(error => {
-        props.showAlert('error', error.message);
+        enqueueSnackbar(error, {
+          variant: 'error'
+        });
         console.log(error);
       });
   };

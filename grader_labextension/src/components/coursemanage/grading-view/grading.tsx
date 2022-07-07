@@ -42,9 +42,7 @@ import {
   saveSubmissions
 } from '../../../services/grading.service';
 import LoadingOverlay from '../../util/overlay';
-import { getAssignment } from '../../../services/assignments.service';
 import { ManualGrading } from './manual-grading';
-import { PanoramaSharp } from '@mui/icons-material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { GlobalObjects } from '../../../index';
 
@@ -346,8 +344,7 @@ export const GradingComponent = (props: IGradingProps) => {
           mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
         }
       })
-      .catch(
-          error => {
+      .catch(error => {
         props.showAlert('error', error.message);
         console.log(error);
       });
