@@ -131,24 +131,20 @@ export const Files = (props: IFilesProps) => {
    * @param dir dir which should be switched to
    */
   const handleSwitchDir = async (dir: 'source' | 'release') => {
-    if (dir === 'release') {
-      if (
-        generateTimestamp === null ||
-        generateTimestamp < srcChangedTimestamp
-      ) {
-        await generateAssignment(lecture.id, assignment).then(
-          () => {
-            props.showAlert('success', 'Generated student assignment');
-            setGenerateTimestamp(moment().valueOf());
-            setSelectedDir(dir);
-          },
-          error => {
-            props.showAlert('error', error.message);
-          }
-        );
-      } else {
-        setSelectedDir(dir);
-      }
+    if (
+      dir === 'release' &&
+      (generateTimestamp === null || generateTimestamp < srcChangedTimestamp)
+    ) {
+      await generateAssignment(lecture.id, assignment).then(
+        () => {
+          props.showAlert('success', 'Generated student assignment');
+          setGenerateTimestamp(moment().valueOf());
+          setSelectedDir(dir);
+        },
+        error => {
+          props.showAlert('error', error.message);
+        }
+      );
     } else {
       setSelectedDir(dir);
     }
