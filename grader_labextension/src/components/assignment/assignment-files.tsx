@@ -56,12 +56,10 @@ export const AssignmentFilesComponent = (
    * @param repo input which repository should be fetched
    */
   const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
-    try {
-      await pullAssignment(props.lecture.id, props.assignment.id, repo);
-      props.showAlert('success', 'Successfully Pulled Repo');
-    } catch (e) {
-      props.showAlert('error', 'Error Fetching Assignment');
-    }
+    await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
+      () => props.showAlert('success', 'Successfully Pulled Repo'),
+      error => props.showAlert('error', error.message)
+    );
   };
   /**
    * Sends request to reset the student changes.

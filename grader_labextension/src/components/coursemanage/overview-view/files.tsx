@@ -146,7 +146,11 @@ export const Files = (props: IFilesProps) => {
             props.showAlert('error', error.message);
           }
         );
+      } else {
+        setSelectedDir(dir);
       }
+    } else {
+      setSelectedDir(dir);
     }
   };
 
