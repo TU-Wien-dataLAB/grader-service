@@ -44,6 +44,12 @@ export const AssignmentFilesComponent = (
   props: IAssignmentFilesComponentProps
 ) => {
   const [dialog, setDialog] = React.useState(false);
+  const [dialogContent, setDialogContent] = React.useState({
+    title: '',
+    message: '',
+    handleAgree: null,
+    handleDisagree: null
+  });
   const path = `${props.lecture.code}/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
@@ -61,60 +67,83 @@ export const AssignmentFilesComponent = (
    * Sends request to reset the student changes.
    */
   const resetAssignmentHandler = async () => {
-    try {
-      await pushAssignment(
-        props.lecture.id,
-        props.assignment.id,
-        'assignment',
-        'Pre-Reset'
-      );
-      await resetAssignment(props.lecture, props.assignment);
-      await pullAssignment(props.lecture.id, props.assignment.id, 'assignment');
-      props.showAlert('success', 'Successfully Reset Assignment');
-    } catch (e) {
-      props.showAlert('error', 'Error Reseting Assignment');
-    }
-    setDialog(false);
+    setDialogContent({
+      title: 'Reset Assignment',
+      message:
+        'This action will delete your current progress and reset the assignment! \n' +
+        'Therefore you should copy and paste your work to a different directory before progressing. ',
+      handleAgree: async () => {
+        try {
+          await pushAssignment(
+            props.lecture.id,
+            props.assignment.id,
+            'assignment',
+            'Pre-Reset'
+          );
+          await resetAssignment(props.lecture, props.assignment);
+          await pullAssignment(
+            props.lecture.id,
+            props.assignment.id,
+            'assignment'
+          );
+          props.showAlert('success', 'Successfully Reset Assignment');
+        } catch (e) {
+          props.showAlert('error', 'Error Reseting Assignment');
+        }
+        setDialog(false);
+      },
+      handleDisagree: () => {
+        setDialog(false);
+      }
+    });
+    setDialog(true);
   };
+
   /**
    * Pushes the student submission and submits the assignment
    */
   const submitAssignmentHandler = async () => {
-    await submitAssignment(props.lecture, props.assignment, true).then(
-      response => {
-        props.showAlert('success', 'Successfully Submitted Assignment');
+    setDialogContent({
+      title: 'Submit Assignment',
+      message: 'This action will submit your current notebooks!',
+      handleAgree: async () => {
+        await submitAssignment(props.lecture, props.assignment, true).then(
+          response => {
+            props.showAlert('success', 'Successfully Submitted Assignment');
+          },
+          error => {
+            props.showAlert('error', error.message);
+          }
+        );
+        await getAllSubmissions(
+          props.lecture,
+          props.assignment,
+          'none',
+          false
+        ).then(
+          submissions => {
+            props.setSubmissions(submissions);
+          },
+          error => {
+            props.showAlert('error', error.message);
+          }
+        );
+        setDialog(false);
       },
-      error => {
-        props.showAlert('error', error.message);
-      }
-    );
-    await getAllSubmissions(
-      props.lecture,
-      props.assignment,
-      'none',
-      false
-    ).then(
-      submissions => {
-        props.setSubmissions(submissions);
-      },
-      error => {
-        props.showAlert('error', error.message);
-      }
-    );
+      handleDisagree: () => setDialog(false)
+    });
+    setDialog(true);
   };
 
   const pushAssignmentHandler = async () => {
-    try {
-      //TODO add commit message
-      await pushAssignment(
-        props.lecture.id,
-        props.assignment.id,
-        RepoType.ASSIGNMENT
-      );
-      props.showAlert('success', 'Successfully Submitted Assignment');
-    } catch (e) {
-      props.showAlert('error', 'Error Submitting Assignment');
-    }
+    await pushAssignment(
+      props.lecture.id,
+      props.assignment.id,
+      RepoType.ASSIGNMENT
+    ).then(
+      () => props.showAlert('success', 'Successfully Submitted Assignment'),
+      error => props.showAlert('error', error.message)
+    );
   };
 
   return (
@@ -157,23 +186,14 @@ export const AssignmentFilesComponent = (
           variant="outlined"
           size="small"
           color="error"
-          onClick={() => setDialog(true)}
+          onClick={() => resetAssignmentHandler()}
         >
           <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
           Reset
         </Button>
       </Stack>
 
-      <AgreeDialog
-        open={dialog}
-        title={'Reset Assignment'}
-        message={
-          'This action will delete your current progress and reset the assignment! \n' +
-          'Therefore you should copy and paste your work to a different directory before progressing. '
-        }
-        handleAgree={resetAssignmentHandler}
-        handleDisagree={() => setDialog(false)}
-      />
+      <AgreeDialog open={dialog} {...dialogContent} />
     </div>
   );
 };

@@ -63,7 +63,7 @@ class GenerateHandler(ExtensionBaseHandler):
             generator.start()
         except Exception as e:
             self.log.error(e)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
+            raise HTTPError(HTTPStatus.CONFLICT, reason=str(e))
         try:
             gradebook_path = os.path.join(generator._output_directory, "gradebook.json")
             os.remove(gradebook_path)
