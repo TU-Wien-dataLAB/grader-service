@@ -275,6 +275,9 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 .. code-block:: python
 
+    from jupyterhub import orm
+    import sqlalchemy
+
     def post_auth_hook(authenticator, handler, authentication):
         db: sqlalchemy.orm.session.Session = authenticator.db
         log = authenticator.log
