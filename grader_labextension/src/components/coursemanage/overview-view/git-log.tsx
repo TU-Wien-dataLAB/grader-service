@@ -14,7 +14,8 @@ import {
   Divider,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Paper, Typography
 } from '@mui/material';
 
 import * as React from 'react';
@@ -56,7 +57,13 @@ export const GitLog = (props: IGitLogProps) => {
       <CardHeader title="Git Log" />
       <CardContent sx={{ height: '300px', overflowY: 'auto' }}>
         <List sx={{ ml: 1, mr: 1 }}>
-          {gitLogs.map(log => getTimelineItem(log))}
+          {gitLogs.length > 0 ? (
+            gitLogs.map(log => getTimelineItem(log))
+          ) : (
+            <Paper variant={'outlined'}>
+              <Typography>No commits yet!</Typography>
+            </Paper>
+          )}
         </List>
       </CardContent>
     </Card>
