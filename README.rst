@@ -282,7 +282,7 @@ To automatically add the groups for the grader service from the LTI authenticato
         db: sqlalchemy.orm.session.Session = authenticator.db
         log = authenticator.log
 
-        course_id = authentication["auth_state"]["course_id"]
+        course_id = authentication["auth_state"]["course_id"].replace(" ","")
         user_role = authentication["auth_state"]["user_role"]
         user_name = authentication["name"]
 
