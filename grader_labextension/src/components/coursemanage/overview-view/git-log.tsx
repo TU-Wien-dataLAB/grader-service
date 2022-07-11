@@ -15,7 +15,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  Paper, Typography
+  Paper,
+  Typography
 } from '@mui/material';
 
 import * as React from 'react';
