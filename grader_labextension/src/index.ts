@@ -184,19 +184,27 @@ const extension: JupyterFrontEndPlugin<void> = {
             notebookPanel,
             notebook
           );
-          (
+          /*(
             (notebookPanel.layout as PanelLayout).widgets[0]
               .layout as PanelLayout
-          ).insertWidget(10, switcher);
+          ).insertWidget(10, switcher);*/
+
+          tracker.currentWidget.toolbar.insertItem(10, 'Mode', switcher);
 
           //Creation of deadline widget
           const deadlineWidget = new DeadlineWidget(
             tracker.currentWidget.context.path
           );
-          (
+          tracker.currentWidget.toolbar.insertItem(
+            10,
+            'Deadline',
+            deadlineWidget
+          );
+
+          /*(
             (notebookPanel.layout as PanelLayout).widgets[0]
               .layout as PanelLayout
-          ).insertWidget(11, deadlineWidget);
+          ).insertWidget(11, deadlineWidget);*/
         });
       }, this);
 
