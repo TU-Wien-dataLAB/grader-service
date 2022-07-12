@@ -50,6 +50,7 @@ import {
   undoIcon
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
 import { HintWidget } from './components/notebook/student-plugin/hint-widget';
+import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -91,6 +92,10 @@ namespace FeedbackCommandIDs {
   export const create = 'feedback:create';
 
   export const open = 'feedback:open';
+}
+
+namespace DeadlineCommandIDs {
+  export const open = 'deadline:open';
 }
 
 export class GlobalObjects {
@@ -179,7 +184,19 @@ const extension: JupyterFrontEndPlugin<void> = {
             notebookPanel,
             notebook
           );
-          notebookPanel.toolbar.insertItem(10, 'Creationmode', switcher);
+          (
+            (notebookPanel.layout as PanelLayout).widgets[0]
+              .layout as PanelLayout
+          ).insertWidget(10, switcher);
+
+          //Creation of deadline widget
+          const deadlineWidget = new DeadlineWidget(
+            tracker.currentWidget.context.path
+          );
+          (
+            (notebookPanel.layout as PanelLayout).widgets[0]
+              .layout as PanelLayout
+          ).insertWidget(11, deadlineWidget);
         });
       }, this);
 
@@ -306,9 +323,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       app.commands.addCommand(command, {
         label: 'Assignments',
         execute: async () => {
-          const assignmentWidget: MainAreaWidget<AssignmentList> = await app.commands.execute(
-            AssignmentsCommandIDs.create
-          );
+          const assignmentWidget: MainAreaWidget<AssignmentList> =
+            await app.commands.execute(AssignmentsCommandIDs.create);
 
           if (!assignmentWidget.isAttached) {
             // Attach the widget to the main work area if it's not there

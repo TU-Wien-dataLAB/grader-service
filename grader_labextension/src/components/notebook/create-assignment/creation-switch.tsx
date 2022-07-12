@@ -12,6 +12,7 @@ import React from 'react';
 import { IModeSwitchProps } from '../slider';
 import { CreationWidget } from './creation-widget';
 import { ErrorWidget } from './error-widget';
+import { Box } from '@mui/material';
 
 export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
   public state = {
@@ -51,11 +52,13 @@ export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
 
   public render() {
     return (
-      <Switch
-        checked={this.state.mode}
-        label="Creationmode"
-        onChange={this.handleChange}
-      />
+      <Box sx={{ mt: 0.5 }}>
+        <Switch
+          checked={this.state.mode}
+          label="Creationmode"
+          onChange={this.handleChange}
+        />
+      </Box>
     );
   }
 }

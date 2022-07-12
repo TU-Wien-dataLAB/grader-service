@@ -87,7 +87,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
    */
   const onAssignmentClose = async () => {
     setDisplayAssignment(false);
-    setAssignment(await getAssignment(props.lecture.id, assignment));
+    setAssignment(await getAssignment(props.lecture.id, assignment.id));
     const submissions = await getAllSubmissions(
       props.lecture,
       assignment,

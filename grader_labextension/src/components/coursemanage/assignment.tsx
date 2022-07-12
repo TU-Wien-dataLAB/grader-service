@@ -49,7 +49,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [files, setFiles] = React.useState([]);
   const onSubmissionClose = async () => {
     setDisplaySubmissions(false);
-    setAssignment(await getAssignment(props.lecture.id, assignment));
+    setAssignment(await getAssignment(props.lecture.id, assignment.id));
     props.onDeleted();
   };
 
