@@ -166,6 +166,14 @@ export const AssignmentFilesComponent = (
     );
   };
 
+  const isDeadlineOver = () => {
+    if (props.assignment.due_date === null) {
+      return false;
+    }
+    const time = new Date(props.assignment.due_date).getTime();
+    return time < Date.now();
+  };
+
   return (
     <div>
       <FilesList path={path} sx={{ m: 2, mt: 1 }} />
@@ -196,6 +204,7 @@ export const AssignmentFilesComponent = (
           variant="outlined"
           color="success"
           size="small"
+          disabled={isDeadlineOver()}
           onClick={() => submitAssignmentHandler()}
         >
           <GradingIcon fontSize="small" sx={{ mr: 1 }} />
