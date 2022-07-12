@@ -314,9 +314,11 @@ export const Files = (props: IFilesProps) => {
           </Tooltip>
         }
         subheader={
-          <Tooltip title={getRemoteStatusText(repoStatus)}>
-            {getStatusChip(repoStatus)}
-          </Tooltip>
+          repoStatus !== null && (
+            <Tooltip title={getRemoteStatusText(repoStatus)}>
+              {getStatusChip(repoStatus)}
+            </Tooltip>
+          )
         }
         subheaderTypographyProps={{ display: 'inline', ml: 2 }}
       />
