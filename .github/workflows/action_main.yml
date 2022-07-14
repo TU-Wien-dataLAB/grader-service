@@ -17,17 +17,27 @@ jobs:
 
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+        fetch-depth: 2
 
     - name: Get changed dirs                  # To check if any files changed in charts/secure-remote-dind directory
       id: changeDirsStep
       uses: tj-actions/changed-files@v23.1
       with:
         dir_names: true
-        since_last_remote_commit: true
+        files: |
+          **/*
 
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
+
+  test-changed-files:
+    runs-on: ubuntu-latest
+    needs: init
+    steps:
+      - run: |
+          for file in ${{ needs.init.outputs.changeDirs }}; do
+            echo "$file was changed"
+          done
 
   # BUILD EVERYTIME
   build_grader-service:
