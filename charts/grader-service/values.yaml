@@ -3,10 +3,10 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: s210.dl.hpc.tuwien.ac.at/grader/grader-service
+  repository: ghcr.io/tu-wien-datalab/grader-service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  #tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""

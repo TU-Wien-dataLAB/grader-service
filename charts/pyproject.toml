@@ -31,3 +31,7 @@ tag_template = "chart-{new_version}"
 [[tool.tbump.file]]
 src = "grader-service/Chart.yaml"
 search = "version: {current_version}"
+
+[[tool.tbump.file]]
+src = "grader-service/Chart.yaml"
+search = "appVersion: {current_version}"
