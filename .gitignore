@@ -497,3 +497,6 @@ grader_service_config.py
 #OpenAPI
 grader_labextension/.openapi-generator
 grader_service/.openapi-generator
+
+#Workflows
+!.github/workflows/build
