@@ -25,7 +25,6 @@ jobs:
       with:
         dir_names: true
         since_last_remote_commit: true
-        files: .
 
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
