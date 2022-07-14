@@ -12,18 +12,18 @@ jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
-      changeDirs: ${{ steps.changeDirs.outputs.changeDirs }}
+      changeDirs: ${{ steps.outputStep.outputs.changeDirs }}
     steps:
     - name: Get changed dirs                  # To check if any files changed in charts/secure-remote-dind directory
-      id: changeDirs
+      id: changeDirsStep
       uses: tj-actions/changed-files@v14.5
       with:
         dir_names: true
         since_last_remote_commit: true
         files: |
           .
-    - id: changeDirs
-      run: echo "::set-output name=changeFiles::${{ steps.changeDirs.outputs.all_changed_files }}"
+    - id: outputStep
+      run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
   # BUILD EVERYTIME
   build_grader-service:
@@ -59,7 +59,7 @@ jobs:
     - dockerize_grader-service
     - dockerize_labextension
     - build_convert
-    if: always() && github.event.pull_request.merged == true && contains(needs.*.result, 'success') && !(contains(needs.*.result, 'failure')) }}
+    if: always() && github.event.pull_request.merged == true && contains(needs.*.result, 'success') && !(contains(needs.*.result, 'failure'))
     steps:
       - name: TODO use correct version tags for pre-release
         run: echo 'TODO use correct version tags for pre-release'
