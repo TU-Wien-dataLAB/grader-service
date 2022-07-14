@@ -1,0 +1,61 @@
+name: Development
+
+on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  grader-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/workflows/reusable/build_service
+      - uses: ./.github/workflows/reusable/docker_service
+
+  labextension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/workflows/reusable/build_labextension
+      - uses: ./.github/workflows/reusable/docker_labextension
+
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/workflows/reusable/build_convert
+
+#  docs:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: ./.github/workflows/reusable/build_docs
+
+
+#  pre-release:
+#    runs-on: ubuntu-latest
+#    if: startsWith(github.ref, refs/tags/)
+#    steps:
+#      - name: TODO GET ARTIFACTS
+
+
+  release_grader-service:
+    needs: grader-service
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    steps:
+      - uses: ./.github/workflows/reusable/publish_service
+
+  release_labextension:
+    needs: labextension
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    steps:
+      - uses: ./.github/workflows/reusable/publish_labextension
+
+  release_convert:
+    needs: convert
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    steps:
+      - uses: ./.github/workflows/reusable/publish_convert

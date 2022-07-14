@@ -9,19 +9,17 @@
 name: Build Convert
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call: {}
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
+
+    # BUILD
     - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v3
@@ -36,3 +34,30 @@ jobs:
     - name: Build package
       working-directory: ./grader_convert
       run: python -m build -n
+
+    # TEST
+    - name: Install test dependencies
+      working-directory: ./grader_convert
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install ipykernel
+        python -m ipykernel install --user --name=python3
+        pip install -r requirements.txt
+        pip install -r ../requirements-test.txt
+    - name: Run tests
+      working-directory: ./grader_convert
+      run: |
+        source venv/bin/activate
+        pytest ./grader_convert/tests
+
+    # Upload Artifacts
+    - name: Archive convert artifacts
+      uses: actions/upload-artifact@v3
+      working-directory: ./grader_convert
+      with:
+        name: dist-convert
+        retention-days: 1
+        path: |
+          dist
+          !dist/**/*.md
