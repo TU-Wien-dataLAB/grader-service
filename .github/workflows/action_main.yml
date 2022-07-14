@@ -1,24 +1,20 @@
 name: Development
 
 on:
+  push:
   pull_request:
     branches:
       - main
     types:
       - closed
-  push:
-    branches:
-      - dev
-    tags:
-      - "*"
 
 jobs:
+  # BUILD EVERYTIME
   build_grader-service:
     uses: ./.github/workflows/build_service.yml
   dockerize_grader-service:
     needs: build_grader-service
     uses: ./.github/workflows/docker_service.yml
-
 
   build_labextension:
     uses: ./.github/workflows/build_labextension.yml
@@ -34,25 +30,36 @@ jobs:
 #    steps:
 #      - uses: ./.github/workflows/reusable/build_docs
 
-
+  # ONLY ON MERGE SUCCEED
   pre-release:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+    - dockerize_grader-service
+    - dockerize_labextension
+    - build_convert
+    if: github.event.pull_request.merged == true
     steps:
-      - run: echo "TODO run pre-release script on specifc tags"
+      - name: TODO use correct version tags for pre-release
 
-
+  # ONLY ON TAGS
   release_grader-service:
     needs: dockerize_grader-service
-    if: github.event.pull_request.merged == true
+    if: startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
     needs: dockerize_labextension
-    if: github.event.pull_request.merged == true
+    if: startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
     needs: build_convert
-    if: github.event.pull_request.merged == true
+    if: startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/publish_convert.yml
+
+  release_helm:
+    needs:
+    - release_grader-service
+    - release_labextension
+    - release_convert
+    uses: ./.github/workflows/publish_helm.yml
