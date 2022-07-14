@@ -40,6 +40,7 @@ jobs:
     if: github.event.pull_request.merged == true
     steps:
       - name: TODO use correct version tags for pre-release
+        run: echo 'TODO use correct version tags for pre-release'
 
   # ONLY ON TAGS
   release_grader-service:
