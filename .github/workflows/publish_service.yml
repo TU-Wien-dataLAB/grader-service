@@ -10,6 +10,9 @@ name: Upload Grader Service Package
 
 on:
   workflow_call:
+    secrets:
+      PYPI_SETUP_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -33,6 +36,6 @@ jobs:
       working-directory: grader_service
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
+        TWINE_PASSWORD: ${{ token }}
       run: |
         twine upload dist/*
