@@ -37,7 +37,7 @@ jobs:
 
   pre-release:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, refs/tags/)
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - run: echo "TODO run pre-release script on specifc tags"
 
