@@ -19,7 +19,7 @@ jobs:
       with:
         fetch-depth: 2
 
-    - name: Get changed dirs                  # To check if any files changed in charts/secure-remote-dind directory
+    - name: Get changed dirs                  # To check if any files changed in a directory
       id: changeDirsStep
       uses: tj-actions/changed-files@v23.1
       with:
@@ -30,17 +30,7 @@ jobs:
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
-  test-changed-files:
-    runs-on: ubuntu-latest
-    needs: init
-    if: contains(needs.init.outputs.changeDirs, 'examples/k8s')
-    steps:
-      - run: |
-          for file in ${{ needs.init.outputs.changeDirs }}; do
-            echo "$file was changed"
-          done
-
-  # BUILD EVERYTIME
+  # BUILD ON CHANGED FILES
   build_grader-service:
     uses: ./.github/workflows/build_service.yml
     needs: init
