@@ -9,8 +9,13 @@ class AddRevert(NbGraderPreprocessor):
     def preprocess(
             self, nb: NotebookNode, resources: Dict
     ) -> Tuple[NotebookNode, Dict]:
-        self.log.error("LOOOOOOOOOOOOOOOOOOGING")
         for cell in nb.cells:
-            if cell.metadata["nbgrader"]["solution"]:
+
+            if "nbgrader" not in cell.metadata:
                 cell.metadata["revert"] = cell.source
+                continue
+
+            if cell.metadata is None or cell.metadata["nbgrader"]["solution"]:
+                cell.metadata["revert"] = cell.source
+
         return nb, resources

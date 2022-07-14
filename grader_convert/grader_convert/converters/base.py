@@ -345,10 +345,7 @@ class BaseConverter(LoggingConfigurable):
                     "errors on the above failures.".format(self.logfile)
                 )
             else:
-                msg = (
-                    "Please see the the above traceback for details on the specific "
-                    "errors on the above failures."
-                )
+                msg = errors[0]
 
             self.log.error(msg)
             raise GraderConvertException(msg)

@@ -49,6 +49,7 @@ import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { Simulate } from 'react-dom/test-utils';
 import error = Simulate.error;
+import { enqueueSnackbar } from 'notistack';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -74,7 +75,6 @@ export interface IEditDialogProps {
   lecture: Lecture;
   assignment: Assignment;
   onSubmit?: (updatedAssignment: Assignment) => void;
-  showAlert: (severity: string, msg: string) => void;
   onClose: () => void;
 }
 
@@ -278,7 +278,9 @@ export const EditDialog = (props: IEditDialogProps) => {
                       props.onClose();
                     },
                     (error: Error) => {
-                      props.showAlert('error', error.message);
+                      enqueueSnackbar(error.message, {
+                        variant: 'error'
+                      });
                     }
                   );
                 }}
@@ -441,7 +443,6 @@ export default function NewAssignmentCard(props: INewAssignmentCardProps) {
 interface ICreateDialogProps {
   lecture: Lecture;
   handleSubmit: () => void;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 export const CreateDialog = (props: ICreateDialogProps) => {
@@ -465,7 +466,9 @@ export const CreateDialog = (props: ICreateDialogProps) => {
       createAssignment(props.lecture.id, updatedAssignment).then(
         a => console.log(a),
         error => {
-          props.showAlert('error', error.message);
+          enqueueSnackbar(error.message, {
+            variant: 'error'
+          });
         }
       );
       setOpen(false);

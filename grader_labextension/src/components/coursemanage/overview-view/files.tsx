@@ -47,6 +47,7 @@ import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import { getRemoteStatus } from '../../../services/file.service';
 import { RepoType } from '../../util/repo-type';
 import { AddBox } from '@mui/icons-material';
+import { enqueueSnackbar } from 'notistack';
 
 /**
  * Props for FilesComponent.
@@ -55,7 +56,6 @@ export interface IFilesProps {
   lecture: Lecture;
   assignment: Assignment;
   onAssignmentChange: (assignment: Assignment) => void;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -137,12 +137,16 @@ export const Files = (props: IFilesProps) => {
     ) {
       await generateAssignment(lecture.id, assignment).then(
         () => {
-          props.showAlert('success', 'Generated student assignment');
+          enqueueSnackbar('Generated Student Version Notebooks', {
+            variant: 'success'
+          });
           setGenerateTimestamp(moment().valueOf());
           setSelectedDir(dir);
         },
         error => {
-          props.showAlert('error', error.message);
+          enqueueSnackbar(error.message, {
+            variant: 'error'
+          });
         }
       );
     } else {
@@ -171,7 +175,9 @@ export const Files = (props: IFilesProps) => {
             commitMessage
           );
         } catch (err) {
-          props.showAlert('error', 'Error Pushing Assignment');
+          enqueueSnackbar('Error Pushing Assignment', {
+            variant: 'error'
+          });
           closeDialog();
           return;
         }
@@ -180,10 +186,15 @@ export const Files = (props: IFilesProps) => {
         updateAssignment(lecture.id, a).then(
           assignment => {
             setAssignment(assignment);
-            props.showAlert('success', 'Successfully Pushed Assignment');
+            enqueueSnackbar('Success Pushing Assignment', {
+              variant: 'success'
+            });
             props.onAssignmentChange(assignment);
           },
-          error => props.showAlert('error', error.message)
+          error =>
+            enqueueSnackbar(error.message, {
+              variant: 'error'
+            })
         );
         closeDialog();
       },
@@ -265,9 +276,13 @@ export const Files = (props: IFilesProps) => {
       handleAgree: async () => {
         try {
           await pullAssignment(lecture.id, assignment.id, 'source');
-          props.showAlert('success', 'Successfully Pulled Assignment');
+          enqueueSnackbar('Successfully Pulled Assignment', {
+            variant: 'success'
+          });
         } catch (err) {
-          props.showAlert('error', 'Error Pulling Assignment');
+          enqueueSnackbar('Error Pulling Assignment', {
+            variant: 'error'
+          });
         }
         reloadFiles();
         closeDialog();
@@ -299,9 +314,11 @@ export const Files = (props: IFilesProps) => {
           </Tooltip>
         }
         subheader={
-          <Tooltip title={getRemoteStatusText(repoStatus)}>
-            {getStatusChip(repoStatus)}
-          </Tooltip>
+          repoStatus !== null && (
+            <Tooltip title={getRemoteStatusText(repoStatus)}>
+              {getStatusChip(repoStatus)}
+            </Tooltip>
+          )
         }
         subheaderTypographyProps={{ display: 'inline', ml: 2 }}
       />
@@ -319,7 +336,6 @@ export const Files = (props: IFilesProps) => {
           <FilesList
             path={`${selectedDir}/${props.lecture.code}/${props.assignment.id}`}
             reloadFiles={reloadFilesToggle}
-            showAlert={props.showAlert}
           />
         </Box>
       </CardContent>
@@ -372,10 +388,7 @@ export const Files = (props: IFilesProps) => {
             sx={{ mt: -1, pt: 0, pb: 0 }}
             color={'primary'}
             onClick={() =>
-              openBrowser(
-                `${selectedDir}/${lecture.code}/${assignment.id}`,
-                props.showAlert
-              )
+              openBrowser(`${selectedDir}/${lecture.code}/${assignment.id}`)
             }
           >
             <OpenInBrowserIcon />
@@ -387,8 +400,7 @@ export const Files = (props: IFilesProps) => {
             color={'primary'}
             onClick={() =>
               openTerminal(
-                `${serverRoot}/${selectedDir}/${lecture.code}/${assignment.id}`,
-                props.showAlert
+                `${serverRoot}/${selectedDir}/${lecture.code}/${assignment.id}`
               )
             }
           >

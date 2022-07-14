@@ -26,7 +26,6 @@ import { AssignmentComponent } from './assignment';
 interface ILectureComponentProps {
   lecture: Lecture;
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
   open?: boolean;
 }
 
@@ -78,12 +77,20 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           <CardContent>
             <Grid container spacing={2} alignItems="stretch">
               {assignments.map((el: Assignment) => (
-                <Grid item gridAutoColumns={"1fr"} sx={{maxWidth: 225, minWidth: 225, minHeight: "100%", m: 1.5}}>
+                <Grid
+                  item
+                  gridAutoColumns={'1fr'}
+                  sx={{
+                    maxWidth: 225,
+                    minWidth: 225,
+                    minHeight: '100%',
+                    m: 1.5
+                  }}
+                >
                   <AssignmentComponent
                     lecture={props.lecture}
                     assignment={el}
                     root={props.root}
-                    showAlert={props.showAlert}
                   />
                 </Grid>
               ))}

@@ -9,3 +9,4 @@ helm upgrade --cleanup-on-fail \
   --create-namespace \
   --version=1.1.3-n634.hcda1b211 \
   --values hub-config.yaml
+  
