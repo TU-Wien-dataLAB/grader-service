@@ -18,7 +18,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: ./.github/workflows/publish_convert.yml
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
