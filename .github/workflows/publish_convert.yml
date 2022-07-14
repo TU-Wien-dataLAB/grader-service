@@ -31,6 +31,7 @@ jobs:
       with:
         name: dist-convert
     - name: Publish package
+      working-directory: ./grader_convert
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
