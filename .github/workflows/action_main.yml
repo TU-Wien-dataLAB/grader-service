@@ -49,6 +49,6 @@ jobs:
     uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
-    needs: convert
+    needs: build_convert
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     uses: ./.github/workflows/publish_convert.yml
