@@ -10,7 +10,6 @@ helm upgrade --cleanup-on-fail \
   --values grader-config.yaml
 
 # INSTALL LOCAL GRADER CHART:
-
 #helm upgrade --cleanup-on-fail \
 #  --install my-grader ../../charts/grader-service \
 #  --namespace jupyter \
