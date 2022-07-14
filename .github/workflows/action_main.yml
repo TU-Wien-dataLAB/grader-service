@@ -12,19 +12,19 @@ jobs:
   grader-service:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/build/service.yml
-      - uses: ./.github/workflows/docker/service.yml
+      - uses: ./.github/workflows/build_service.yml
+      - uses: ./.github/workflows/docker_service.yml
 
   labextension:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/build/labextension.yml
-      - uses: ./.github/workflows/docker/labextension.yml
+      - uses: ./.github/workflows/build_labextension.yml
+      - uses: ./.github/workflows/docker_labextension.yml
 
   convert:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/build/convert.yml
+      - uses: ./.github/workflows/build_convert.yml
 
 #  docs:
 #    runs-on: ubuntu-latest
@@ -44,18 +44,18 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
-      - uses: ./.github/workflows/publish/service
+      - uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
     needs: labextension
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
-      - uses: ./.github/workflows/publish/labextension
+      - uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
     needs: convert
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
-      - uses: ./.github/workflows/publish/convert
+      - uses: ./.github/workflows/publish_convert.yml
