@@ -9,20 +9,42 @@ on:
       - closed
 
 jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      changeDirs: ${{ steps.changeDirs.outputs.changeDirs }}
+    steps:
+    - name: Get changed dirs                  # To check if any files changed in charts/secure-remote-dind directory
+      id: changeDirs
+      uses: tj-actions/changed-files@v14.5
+      with:
+        dir_names: true
+        since_last_remote_commit: true
+        files: |
+          .
+    - id: changeDirs
+      run: echo "::set-output name=changeFiles::${{ steps.changeDirs.outputs.all_changed_files }}"
+
   # BUILD EVERYTIME
   build_grader-service:
     uses: ./.github/workflows/build_service.yml
+    needs: init
+    if: contains(needs.init.outputs.changeDirs, 'grader_service')
   dockerize_grader-service:
     needs: build_grader-service
     uses: ./.github/workflows/docker_service.yml
 
   build_labextension:
     uses: ./.github/workflows/build_labextension.yml
+    needs: init
+    if: contains(needs.init.outputs.changeDirs, 'grader_labextension')
   dockerize_labextension:
     needs: build_labextension
     uses: ./.github/workflows/docker_labextension.yml
 
   build_convert:
+    needs: init
+    if: contains(needs.init.outputs.changeDirs, 'grader_convert')
     uses: ./.github/workflows/build_convert.yml
 
 #  docs:
@@ -37,7 +59,7 @@ jobs:
     - dockerize_grader-service
     - dockerize_labextension
     - build_convert
-    if: github.event.pull_request.merged == true
+    if: always() && github.event.pull_request.merged == true && contains(needs.*.result, 'success') && !(contains(needs.*.result, 'failure')) }}
     steps:
       - name: TODO use correct version tags for pre-release
         run: echo 'TODO use correct version tags for pre-release'
