@@ -1,12 +1,16 @@
 name: Development
 
 on:
-  release:
-    types: [published]
-  push:
+  pull_request:
     branches:
       - main
+    types:
+      - closed
+  push:
+    branches:
       - dev
+    tags:
+      - "*"
 
 jobs:
   build_grader-service:
@@ -31,24 +35,24 @@ jobs:
 #      - uses: ./.github/workflows/reusable/build_docs
 
 
-#  pre-release:
-#    runs-on: ubuntu-latest
-#    if: startsWith(github.ref, refs/tags/)
-#    steps:
-#      - name: TODO GET ARTIFACTS
+  pre-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, refs/tags/)
+    steps:
+      - run: echo "TODO run pre-release script on specifc tags"
 
 
   release_grader-service:
     needs: dockerize_grader-service
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
     needs: dockerize_labextension
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
     needs: build_convert
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/publish_convert.yml
