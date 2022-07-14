@@ -14,14 +14,19 @@ jobs:
     outputs:
       changeDirs: ${{ steps.outputStep.outputs.changeDirs }}
     steps:
+
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+
     - name: Get changed dirs                  # To check if any files changed in charts/secure-remote-dind directory
       id: changeDirsStep
       uses: tj-actions/changed-files@v23.1
       with:
         dir_names: true
         since_last_remote_commit: true
-        files: |
-          .
+        files: .
+
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
