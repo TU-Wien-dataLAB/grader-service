@@ -18,9 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
     - uses: actions/checkout@v3
 
+    # BUILD
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
@@ -35,6 +35,23 @@ jobs:
     - name: Build package
       working-directory: ./grader_service
       run: python -m build -n
+
+    # TEST
+    - name: Install dependencies
+      working-directory: ./grader_service
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install ipykernel
+        python -m ipykernel install --user --name=python3
+        pip install -r ../grader_convert/requirements.txt
+        pip install -r requirements.txt
+        pip install -r ../requirements-test.txt
+    - name: Run tests
+      working-directory: ./grader_service
+      run: |
+        source venv/bin/activate
+        pytest ./grader_service/tests
 
     # Upload Artifacts
     - name: Archive service artifacts
