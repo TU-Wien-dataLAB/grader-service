@@ -42,14 +42,14 @@ jobs:
   release_grader-service:
     needs: grader-service
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
       - uses: ./.github/workflows/reusable/publish_service
 
   release_labextension:
     needs: labextension
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
       - uses: ./.github/workflows/reusable/publish_labextension
 
