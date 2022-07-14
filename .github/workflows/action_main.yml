@@ -12,18 +12,21 @@ jobs:
   grader-service:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/build_service.yml
       - uses: ./.github/workflows/docker_service.yml
 
   labextension:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/build_labextension.yml
       - uses: ./.github/workflows/docker_labextension.yml
 
   convert:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/build_convert.yml
 
 #  docs:
@@ -44,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
@@ -51,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
@@ -58,4 +63,5 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/workflows/publish_convert.yml

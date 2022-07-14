@@ -9,7 +9,7 @@
 name: Build Labextension
 
 on:
-  workflow_call: {}
+  workflow_call:
 
 permissions:
   contents: read
@@ -18,7 +18,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3.4.1
     - name: Setup node
       uses: actions/setup-node@v1
       with:

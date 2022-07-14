@@ -9,18 +9,15 @@
 name: Build Service
 
 on:
-  workflow_call: {}
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v3
       with:

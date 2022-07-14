@@ -9,7 +9,7 @@
 name: Upload Grader Convert Package
 
 on:
-  workflow_call: {}
+  workflow_call:
 
 permissions:
   contents: read
