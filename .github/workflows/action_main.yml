@@ -9,25 +9,21 @@ on:
       - dev
 
 jobs:
-  grader-service:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/build_service.yml
-      - uses: ./.github/workflows/docker_service.yml
+  build_grader-service:
+    uses: ./.github/workflows/build_service.yml
+  dockerize_grader-service:
+    needs: build_grader-service
+    uses: ./.github/workflows/docker_service.yml
 
-  labextension:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/build_labextension.yml
-      - uses: ./.github/workflows/docker_labextension.yml
 
-  convert:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/build_convert.yml
+  build_labextension:
+    uses: ./.github/workflows/build_labextension.yml
+  dockerize_labextension:
+    needs: build_labextension
+    uses: ./.github/workflows/docker_labextension.yml
+
+  build_convert:
+    uses: ./.github/workflows/build_convert.yml
 
 #  docs:
 #    runs-on: ubuntu-latest
@@ -43,25 +39,16 @@ jobs:
 
 
   release_grader-service:
-    needs: grader-service
-    runs-on: ubuntu-latest
+    needs: dockerize_grader-service
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/publish_service.yml
+    uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
-    needs: labextension
-    runs-on: ubuntu-latest
+    needs: build_labextension
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/publish_labextension.yml
+    uses: ./.github/workflows/publish_labextension.yml
 
   release_convert:
     needs: convert
-    runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/publish_convert.yml
+    uses: ./.github/workflows/publish_convert.yml

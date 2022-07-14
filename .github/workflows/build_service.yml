@@ -18,6 +18,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - uses: ./.github/workflows/build_service
+
+    - uses: actions/checkout@v3
+
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
