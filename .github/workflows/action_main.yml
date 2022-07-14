@@ -44,7 +44,7 @@ jobs:
     uses: ./.github/workflows/publish_service.yml
 
   release_labextension:
-    needs: build_labextension
+    needs: dockerize_labextension
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     uses: ./.github/workflows/publish_labextension.yml
 

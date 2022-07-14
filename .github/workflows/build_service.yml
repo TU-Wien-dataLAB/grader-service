@@ -40,10 +40,9 @@ jobs:
     # Upload Artifacts
     - name: Archive service artifacts
       uses: actions/upload-artifact@v3
-      working-directory: ./grader_service
       with:
         name: dist-service
         retention-days: 1
         path: |
-          dist
-          !dist/**/*.md
+          grader_service/dist
+          !grader_service/dist/**/*.md

@@ -49,10 +49,9 @@ jobs:
     # Upload Artifacts
     - name: Archive labextension artifacts
       uses: actions/upload-artifact@v3
-      working-directory: ./grader_labextension
       with:
         name: dist-labextension
         retention-days: 1
         path: |
-          dist
-          !dist/**/*.md
+          grader_labextension/dist
+          !grader_labextension/dist/**/*.md
