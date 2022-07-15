@@ -52,6 +52,8 @@ gitConfig:
 volumePermissions:
   enabled: false
 
+autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
+
 # pvc
 storageClassName: ""
 accessMode: "ReadWriteOnce"

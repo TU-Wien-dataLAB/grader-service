@@ -7,15 +7,21 @@ metadata:
   labels:
     {{- include "grader-service.labels" . | nindent 4 }}
 data:
+{{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
   grader_service_config.py: |
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
     c.KubeAutogradeExecutor.kube_context = None
     c.KubeAutogradeExecutor.base_input_path = "/var/lib/grader-service/convert_in"
     c.KubeAutogradeExecutor.base_output_path = "/var/lib/grader-service/convert_out"
-    c.KubeAutogradeExecutor.default_image_name = lambda l, a: "mbwali/grader-service:latest"
+    c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
     c.KubeAutogradeExecutor.volume_mounts = [{"name": "data", "mountPath": "/var/lib/grader-service"}]
     c.KubeAutogradeExecutor.volumes = [{"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}]
+{{ else }}
+  grader_service_config.py: |
+    from grader_service.autograding.local_grader import LocalAutogradeExecutor
+    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+{{ end }}
 
   .gitconfig: |
     [user]

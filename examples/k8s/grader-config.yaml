@@ -19,6 +19,8 @@ gitConfig:
 volumePermissions:
   enabled: true
 
+autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
+
 # pvc
 #storageClassName: "csi-cinder-sc-delete"
 accessMode: "ReadWriteOnce"

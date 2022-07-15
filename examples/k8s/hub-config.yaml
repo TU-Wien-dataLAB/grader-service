@@ -56,8 +56,7 @@ singleuser:
     name: ghcr.io/tu-wien-datalab/grader-service-labextension
     tag: "latest"
   extraEnv:
-    GRADER_BASE_URL: /
-    GRADER_HOST_URL: http://proxy-public/services/grader
+    GRADER_HOST_URL: http://proxy-public
 
 # scheduling relates to the user-scheduler pods and user-placeholder pods.
 scheduling:
@@ -69,6 +68,8 @@ scheduling:
 # prePuller relates to the hook|continuous-image-puller DaemonsSets
 prePuller:
   hook:
+    enabled: false
+  continuous:
     enabled: false
 
 ingress:
