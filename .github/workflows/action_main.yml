@@ -74,8 +74,7 @@ jobs:
     needs: dockerize_grader-service
     if: startsWith(github.ref, 'refs/tags/grader-service')
     uses: ./.github/workflows/publish_service.yml
-    with:
-      token: ${{ secrets.PYPI_SETUP_TOKEN }}
+    secrets: inherit
   release_helm:
     needs: release_grader-service
     if: startsWith(github.ref, 'refs/tags/grader-service')
@@ -85,12 +84,10 @@ jobs:
     needs: dockerize_labextension
     if: startsWith(github.ref, 'refs/tags/grader-labextension')
     uses: ./.github/workflows/publish_labextension.yml
-    with:
-      token: ${{ secrets.PYPI_SETUP_TOKEN }}
+    secrets: inherit
 
   release_convert:
     needs: build_convert
     if: startsWith(github.ref, 'refs/tags/grader-convert')
     uses: ./.github/workflows/publish_convert.yml
-    with:
-      token: ${{ secrets.PYPI_SETUP_TOKEN }}
+    secrets: inherit

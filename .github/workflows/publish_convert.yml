@@ -38,6 +38,6 @@ jobs:
       working-directory: ./grader_convert
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ token }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       run: |
         twine upload dist/*

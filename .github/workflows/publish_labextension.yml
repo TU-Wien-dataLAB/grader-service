@@ -38,7 +38,7 @@ jobs:
       working-directory: ./grader_labextension
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ token }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       # skip existing for possible npm release
       run: |
         twine upload --skip-existing dist/*
