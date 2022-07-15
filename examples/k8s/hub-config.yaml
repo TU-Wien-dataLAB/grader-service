@@ -19,6 +19,8 @@ hub:
     default: |
       c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
       c.Authenticator.admin_users = {'admin', 'instructor'}
+      c.JupyterHub.tornado_settings = { 'headers': {'Content-Security-Policy': "frame-ancestors localhost 127.0.0.1 'self'"} }
+
       c.JupyterHub.services.append(
           {
               'name': 'grader',
@@ -54,7 +56,8 @@ singleuser:
     name: ghcr.io/tu-wien-datalab/grader-service-labextension
     tag: "latest"
   extraEnv:
-    GRADER_HOST_URL: http://grader-service:4010
+    GRADER_BASE_URL: /
+    GRADER_HOST_URL: http://proxy-public/services/grader
 
 # scheduling relates to the user-scheduler pods and user-placeholder pods.
 scheduling:
