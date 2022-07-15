@@ -24,11 +24,44 @@ jobs:
         with:
           version: v3.8.1
 
+      - name: Install chart-releaser
+        run : |
+          # Download chart releaser
+          curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/v1.4.0/chart-releaser_1.4.0_linux_amd64.tar.gz"
+          tar -xzf cr.tar.gz
+          rm -f cr.tar.gz
+
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.4.0
-        with:
-          charts_dir: charts
         env:
           CR_SKIP_EXISTING: true
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-{{ .Version }}"
+        run: |
+          repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
+          owner=$(cut -d '/' -f 1 <<< "$GITHUB_REPOSITORY")
+          repo_url="https://$owner.github.io/$repo"
+
+          echo "Creating release..."
+          # package chart
+          ./cr package 'charts/grader-service'
+
+          # upload chart to github releases
+          ./cr upload \
+              --owner "$owner" \
+              --git-repo "$repo" \
+
+          # Update index and push to github pages
+          ./cr index \
+              --owner "$owner" \
+              --git-repo "$repo" \
+              --charts-repo $repo_url \
+              --push
+#
+#      - name: Run chart-releaser
+#        uses: helm/chart-releaser-action@v1.4.0
+#        with:
+#          charts_dir: charts
+#        env:
+#          CR_SKIP_EXISTING: true
+#          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+#          CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-{{ .Version }}"
