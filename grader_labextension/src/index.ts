@@ -22,35 +22,35 @@ import {
   showErrorMessage
 } from '@jupyterlab/apputils';
 
-import { ILauncher } from '@jupyterlab/launcher';
-import { INotebookTools, Notebook, NotebookPanel } from '@jupyterlab/notebook';
+import {ILauncher} from '@jupyterlab/launcher';
+import {INotebookTools, Notebook, NotebookPanel} from '@jupyterlab/notebook';
 
-import { CourseManageView } from './widgets/coursemanage';
+import {CourseManageView} from './widgets/coursemanage';
 
-import { Cell } from '@jupyterlab/cells';
+import {Cell} from '@jupyterlab/cells';
 
-import { INotebookTracker } from '@jupyterlab/notebook';
+import {INotebookTracker} from '@jupyterlab/notebook';
 
-import { PanelLayout } from '@lumino/widgets';
+import {PanelLayout} from '@lumino/widgets';
 
-import { NotebookModeSwitch } from './components/notebook/slider';
+import {NotebookModeSwitch} from './components/notebook/slider';
 
-import { checkIcon, editIcon, runIcon } from '@jupyterlab/ui-components';
-import { CommandRegistry } from '@lumino/commands';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { Contents, ServiceManager } from '@jupyterlab/services';
-import { IDocumentManager } from '@jupyterlab/docmanager';
-import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
-import { UserPermissions } from './services/permission.service';
-import { AssignmentList } from './widgets/assignment-list';
-import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
+import {checkIcon, editIcon, runIcon} from '@jupyterlab/ui-components';
+import {CommandRegistry} from '@lumino/commands';
+import {DocumentRegistry} from '@jupyterlab/docregistry';
+import {Contents, ServiceManager} from '@jupyterlab/services';
+import {IDocumentManager} from '@jupyterlab/docmanager';
+import {IFileBrowserFactory} from '@jupyterlab/filebrowser';
+import {UserPermissions} from './services/permission.service';
+import {AssignmentList} from './widgets/assignment-list';
+import {CreationWidget} from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
 import {
   listIcon,
   undoIcon
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
-import { HintWidget } from './components/notebook/student-plugin/hint-widget';
-import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
+import {HintWidget} from './components/notebook/student-plugin/hint-widget';
+import {DeadlineWidget} from './components/notebook/student-plugin/deadline-widget';
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -155,9 +155,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       name: () => 'grader-assignments'
     });
 
-    const courseManageTracker = new WidgetTracker<
-      MainAreaWidget<CourseManageView>
-    >({
+    const courseManageTracker = new WidgetTracker<MainAreaWidget<CourseManageView>>({
       namespace: 'grader-coursemanage'
     });
 
@@ -351,7 +349,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         category: 'Assignments',
         rank: 0
       });
-    });
+    }).catch(_ => showErrorMessage("Grader Service Unavailable", "Could not connect to the grader service! Please contact your system administrator!"));
 
     command = NotebookExecuteIDs.run;
     app.commands.addCommand(command, {
@@ -375,7 +373,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         showDialog({
           title: "Do you want to revert the cell to it's original state?",
           body: 'This will overwrite your current changes!',
-          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
+          buttons: [Dialog.cancelButton(), Dialog.okButton({label: 'Revert'})]
         }).then(result => {
           if (!result.button.accept) {
             return;
