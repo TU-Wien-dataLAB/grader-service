@@ -11,6 +11,10 @@ function getKey(key: string, lecture?: Lecture, assignment?: Assignment): string
   return "grader:" + key
 }
 
+export function deleteKey(key: string) {
+  localStorage.removeItem(key);
+}
+
 export function storeString(key: string, value: string, lecture?: Lecture, assignment?: Assignment): void {
   key = getKey(key, lecture, assignment);
   localStorage.setItem(key, value);
@@ -21,7 +25,7 @@ export function loadString(key: string, lecture?: Lecture, assignment?: Assignme
   return localStorage.getItem(key);
 }
 
-export function writeBoolean(key: string, value: boolean, lecture?: Lecture, assignment?: Assignment): void {
+export function storeBoolean(key: string, value: boolean, lecture?: Lecture, assignment?: Assignment): void {
   storeString(key, String(value), lecture, assignment)
 }
 
@@ -47,7 +51,7 @@ export function loadNumber(key: string, lecture?: Lecture, assignment?: Assignme
   }
 }
 
-export function writeObject<T>(key: string, value: T, lecture?: Lecture, assignment?: Assignment): void {
+export function storeObject<T>(key: string, value: T, lecture?: Lecture, assignment?: Assignment): void {
   storeString(key, JSON.stringify(value), lecture, assignment);
 }
 
