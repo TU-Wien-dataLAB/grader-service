@@ -5,6 +5,7 @@ import {Assignment} from "../../../model/assignment";
 import {Button, Card, CardContent, CardHeader, TextField, Typography} from "@mui/material";
 import {Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from "recharts";
 import moment from "moment";
+import {loadNumber, storeNumber} from "../../../services/storage.service";
 
 interface Bucket {
   start: number,
@@ -43,7 +44,7 @@ const getData = (
 
 export const ScoreDistribution = (props: IStatsProps) => {
   const [data, setData] = React.useState([] as { name: string, count: number }[]);
-  const startBuckets = 10;
+  const startBuckets = loadNumber('score-buckets', null, props.assignment) || 10;
 
   React.useEffect(() => {
     const d = getData(props.latestSubmissions, props.assignment, startBuckets);
@@ -61,7 +62,10 @@ export const ScoreDistribution = (props: IStatsProps) => {
           margin="dense"
           InputProps={{inputProps: {min: 1, max: Math.max(Math.floor(props.assignment.points), 20)}}}
           defaultValue={startBuckets}
-          onChange={v => setData(getData(props.latestSubmissions, props.assignment, +v.target.value))}
+          onChange={v => {
+            setData(getData(props.latestSubmissions, props.assignment, +v.target.value));
+            storeNumber('score-buckets', +v.target.value, null, props.assignment);
+          }}
           label="Buckets"
           type="number"
           InputLabelProps={{

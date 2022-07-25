@@ -1,17 +1,32 @@
-export function writeString(key: string, value: string): void {
+import {Lecture} from "../model/lecture";
+import {Assignment} from "../model/assignment";
+
+function getKey(key: string, lecture?: Lecture, assignment?: Assignment): string {
+  if (lecture) {
+    key = key + `-l${lecture.id}`;
+  }
+  if (assignment) {
+    key = key + `-a${assignment.id}`;
+  }
+  return "grader:" + key
+}
+
+export function storeString(key: string, value: string, lecture?: Lecture, assignment?: Assignment): void {
+  key = getKey(key, lecture, assignment);
   localStorage.setItem(key, value);
 }
 
-export function loadString(key: string): string | null {
+export function loadString(key: string, lecture?: Lecture, assignment?: Assignment): string | null {
+  key = getKey(key, lecture, assignment);
   return localStorage.getItem(key);
 }
 
-export function writeBoolean(key: string, value: boolean): void {
-  writeString(key, String(value))
+export function writeBoolean(key: string, value: boolean, lecture?: Lecture, assignment?: Assignment): void {
+  storeString(key, String(value), lecture, assignment)
 }
 
-export function loadBoolean(key: string): boolean | null {
-  const v = loadString(key);
+export function loadBoolean(key: string, lecture?: Lecture, assignment?: Assignment): boolean | null {
+  const v = loadString(key, lecture, assignment);
   if (v === null) {
     return null;
   } else {
@@ -19,12 +34,12 @@ export function loadBoolean(key: string): boolean | null {
   }
 }
 
-export function writeNumber(key: string, value: number): void {
-  writeString(key, String(value));
+export function storeNumber(key: string, value: number, lecture?: Lecture, assignment?: Assignment): void {
+  storeString(key, String(value), lecture, assignment);
 }
 
-export function loadNumber(key: string): number | null {
-  const v = loadString(key);
+export function loadNumber(key: string, lecture?: Lecture, assignment?: Assignment): number | null {
+  const v = loadString(key, lecture, assignment);
   if (v === null) {
     return null;
   } else {
@@ -32,11 +47,11 @@ export function loadNumber(key: string): number | null {
   }
 }
 
-export function writeObject(key: string, value: any): void {
-  writeString(key, JSON.stringify(value));
+export function writeObject<T>(key: string, value: T, lecture?: Lecture, assignment?: Assignment): void {
+  storeString(key, JSON.stringify(value), lecture, assignment);
 }
 
-export function loadObject(key: string): any | null {
-  return JSON.parse(loadString(key));
+export function loadObject<T>(key: string, lecture?: Lecture, assignment?: Assignment): T | null {
+  return JSON.parse(loadString(key, lecture, assignment));
 }
 
