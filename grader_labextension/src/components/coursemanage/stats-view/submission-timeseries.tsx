@@ -13,6 +13,7 @@ import {IStatsProps} from "./stats";
 import moment from "moment";
 import {Submission} from "../../../model/submission";
 import {NameType, ValueType} from "recharts/types/component/DefaultTooltipContent";
+import {loadNumber, storeNumber} from "../../../services/storage.service";
 
 const CustomTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
@@ -91,7 +92,14 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
               <YAxis dataKey="n"/>
               <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
               <Area type="monotone" dataKey="n" stroke={"#0088FE"} strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>
-              <Brush height={10}/>
+              <Brush
+                height={15}
+                startIndex={loadNumber("stats-sub-brush-start", null, props.assignment) || 0}
+                endIndex={loadNumber("stats-sub-brush-end", null, props.assignment) || data.length-1}
+                onChange={e => {
+                  storeNumber("stats-sub-brush-start", (e as any).startIndex, null, props.assignment);
+                  storeNumber("stats-sub-brush-end", (e as any).endIndex, null, props.assignment);
+                }}/>
             </AreaChart>
           </ResponsiveContainer>
         }
