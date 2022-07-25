@@ -15,7 +15,6 @@ import {
 import * as React from 'react';
 import { Assignment } from '../../../model/assignment';
 import { DeadlineComponent } from '../../util/deadline';
-import { GradingChart, SubmittedChart } from './charts';
 import { Lecture } from '../../../model/lecture';
 import { utcToLocal } from '../../../services/datetime.service';
 import { Submission } from '../../../model/submission';

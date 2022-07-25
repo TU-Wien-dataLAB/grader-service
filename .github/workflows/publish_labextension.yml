@@ -10,9 +10,6 @@ name: Upload Grader Labextension Package
 
 on:
   workflow_call:
-    secrets:
-      PYPI_SETUP_TOKEN:
-        required: true
 
 permissions:
   contents: read
@@ -33,9 +30,7 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: dist-labextension
-        path: grader_labextension/dist
     - name: Publish the Python package
-      working-directory: ./grader_labextension
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
