@@ -23,6 +23,7 @@ import {OverviewComponent} from './overview-view/overview';
 import {Submission} from '../../model/submission';
 import {StatsComponent} from "./stats-view/stats";
 import {GradeBook} from "../../services/gradebook";
+import {loadNumber, storeNumber} from "../../services/storage.service";
 
 export interface IAssignmentModalProps {
   lecture: Lecture;
@@ -38,7 +39,9 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const [latestSubmissions, setSubmissions] = React.useState(
     props.latestSubmissions
   );
-  const [navigation, setNavigation] = React.useState(0);
+  const [navigation, setNavigation] = React.useState(
+    loadNumber("cm-navigation", null, props.assignment) || 0
+  );
 
   return (
     <Box>
@@ -92,6 +95,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           value={navigation}
           onChange={(event, newValue) => {
             console.log(newValue);
+            storeNumber("cm-navigation", newValue, null, props.assignment);
             setNavigation(newValue);
             getAllSubmissions(
               props.lecture,
