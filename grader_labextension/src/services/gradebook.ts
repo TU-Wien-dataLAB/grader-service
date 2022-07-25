@@ -11,6 +11,10 @@ export class GradeBook {
     this.properties = properties;
   }
 
+  public getNotebooks(): string[] {
+    return Object.keys(this.properties['notebooks']);
+  }
+
   public setComment(notebook: string, cellId: string, comment: string) {
     this.properties['notebooks'][notebook]['comments_dict'][cellId][
       'manual_comment'
@@ -136,6 +140,10 @@ export class GradeBook {
     }
   }
 
+  public getGradeCellMaxScore(notebook: string, cellId: string): number {
+    return this.properties['notebooks'][notebook]['grade_cells_dict'][cellId]['max_score']
+  }
+
   public getNotebookPoints(notebook: string): number {
     let sum = 0;
     const grades_dict = this.properties['notebooks'][notebook]['grades_dict'];
@@ -173,6 +181,15 @@ export class GradeBook {
     const grades_dict = this.properties['notebooks'][notebook]['grades_dict'];
     for (const cellId of Object.keys(grades_dict)) {
       sum += this.getGradeMaxScore(notebook, cellId);
+    }
+    return sum;
+  }
+
+  public getNotebookMaxPointsCells(notebook: string): number {
+    let sum = 0;
+    const grades_dict = this.properties['notebooks'][notebook]['grade_cells_dict'];
+    for (const cellId of Object.keys(grades_dict)) {
+      sum += this.getGradeCellMaxScore(notebook, cellId);
     }
     return sum;
   }

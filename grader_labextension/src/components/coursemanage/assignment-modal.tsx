@@ -22,6 +22,7 @@ import {GradingComponent} from './grading-view/grading';
 import {OverviewComponent} from './overview-view/overview';
 import {Submission} from '../../model/submission';
 import {StatsComponent} from "./stats-view/stats";
+import {GradeBook} from "../../services/gradebook";
 
 export interface IAssignmentModalProps {
   lecture: Lecture;

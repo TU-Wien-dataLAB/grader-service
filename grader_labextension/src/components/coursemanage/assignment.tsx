@@ -17,8 +17,8 @@ import {
 import { Assignment } from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
 import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { getAssignment } from '../../services/assignments.service';
+import {getAllSubmissions, getProperties} from '../../services/submissions.service';
+import {getAssignment, getAssignmentProperties} from '../../services/assignments.service';
 import { AssignmentModalComponent } from './assignment-modal';
 import { DeadlineComponent } from '../util/deadline';
 import { blue } from '@mui/material/colors';
@@ -26,6 +26,7 @@ import { getFiles } from '../../services/file.service';
 import { openBrowser } from './overview-view/util';
 import { CardDescriptor } from '../util/card-descriptor';
 import { enqueueSnackbar } from 'notistack';
+import {GradeBook} from "../../services/gradebook";
 
 /**
  * Props for AssignmentComponent.

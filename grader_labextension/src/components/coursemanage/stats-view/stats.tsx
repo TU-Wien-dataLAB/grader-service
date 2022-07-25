@@ -11,6 +11,9 @@ import {GradingProgress} from "./grading-progress";
 import {StudentSubmissions} from "./student-submissions";
 import {ScoreDistribution} from "./score-distribution";
 import {getUsers} from "../../../services/lectures.service";
+import {GradeBook} from "../../../services/gradebook";
+import {AssignmentScore} from "./assignment-score";
+import {getAssignmentProperties} from "../../../services/assignments.service";
 
 export const filterUserSubmissions = (submissions: Submission[], users: string[]): Submission[] => {
   return submissions.filter((v, i, a) => !users.includes(v.username))
@@ -29,6 +32,7 @@ export interface IStatsProps {
 export const StatsComponent = (props: IStatsProps) => {
   const [submissions, setSubmissions] = React.useState(props.allSubmissions);
   const [latestSubmissions, setLatestSubmissions] = React.useState(props.latestSubmissions);
+  const [gb, setGb] = React.useState(null as GradeBook);
   const [users, setUsers] = React.useState(props.users);
 
   const updateSubmissions = () => {
@@ -45,7 +49,17 @@ export const StatsComponent = (props: IStatsProps) => {
     getUsers(props.lecture).then(response => {
       setUsers(response);
     });
+
+    getAssignmentProperties(props.lecture.id, props.assignment.id).then(properties => {
+      setGb(new GradeBook(properties));
+    })
   };
+
+  React.useEffect(() => {
+    getAssignmentProperties(props.lecture.id, props.assignment.id).then(properties => {
+      setGb(new GradeBook(properties));
+    })
+  }, [props.lecture, props.assignment]);
 
   return (
     <Box>
@@ -64,13 +78,16 @@ export const StatsComponent = (props: IStatsProps) => {
             <SubmissionTimeSeries lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
                                   latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={4}>
             <GradingProgress lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
                              latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={4}>
             <StudentSubmissions lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
                                 latestSubmissions={latestSubmissions} users={users} root={props.root}/>
+          </Grid>
+          <Grid item xs={4}>
+            <AssignmentScore gb={gb}/>
           </Grid>
           <Grid item xs={12}>
             <ScoreDistribution lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
