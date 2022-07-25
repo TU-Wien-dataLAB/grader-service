@@ -12,6 +12,7 @@ function getKey(key: string, lecture?: Lecture, assignment?: Assignment): string
 }
 
 export function deleteKey(key: string) {
+  key = getKey(key);
   localStorage.removeItem(key);
 }
 

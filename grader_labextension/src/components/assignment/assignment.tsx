@@ -35,6 +35,7 @@ import { AssignmentModalComponent } from './assignment-modal';
 import { Submission } from '../../model/submission';
 import { getFiles } from '../../services/file.service';
 import { CardDescriptor } from '../util/card-descriptor';
+import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
 
 /**
  * Props for AssignmentComponent.
@@ -51,7 +52,9 @@ interface IAssignmentComponentProps {
  */
 export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
-  const [displayAssignment, setDisplayAssignment] = React.useState(false);
+  const [displayAssignment, setDisplayAssignment] = React.useState(
+    loadNumber("a-opened-assignment") === props.assignment.id || false
+  );
   const [submissions, setSubmissions] = React.useState([] as Submission[]);
   const [hasFeedback, setHasFeedback] = React.useState(false);
   const [files, setFiles] = React.useState([]);
@@ -87,6 +90,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
    */
   const onAssignmentClose = async () => {
     setDisplayAssignment(false);
+    deleteKey("a-opened-assignment");
     setAssignment(await getAssignment(props.lecture.id, assignment.id));
     const submissions = await getAllSubmissions(
       props.lecture,
@@ -112,6 +116,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             await pullAssignment(props.lecture.id, assignment.id, 'assignment');
           }
           setDisplayAssignment(true);
+          storeNumber("a-opened-assignment", assignment.id);
         }}
       >
         <CardActionArea

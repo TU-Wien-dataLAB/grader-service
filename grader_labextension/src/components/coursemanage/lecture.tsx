@@ -27,7 +27,7 @@ import {
 } from '../../services/lectures.service';
 import {red} from '@mui/material/colors';
 import {enqueueSnackbar} from 'notistack';
-import {loadBoolean, storeBoolean} from "../../services/storage.service";
+import {deleteKey, loadBoolean, storeBoolean} from "../../services/storage.service";
 
 interface ILectureComponentProps {
   lecture: Lecture;
@@ -61,6 +61,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
     getAllAssignments(lecture.id).then(response => {
       setAssignments(response);
     });
+    deleteKey("cm-opened-assignment");
   };
 
   const handleExpandClick = () => {
