@@ -24,7 +24,6 @@ export interface IStatsProps {
   latestSubmissions: Submission[];
   users: { students: string[]; tutors: string[]; instructors: string[] };
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 export const StatsComponent = (props: IStatsProps) => {
@@ -63,23 +62,19 @@ export const StatsComponent = (props: IStatsProps) => {
         <Grid container spacing={2} alignItems="stretch">
           <Grid item xs={12}>
             <SubmissionTimeSeries lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
-                                  latestSubmissions={latestSubmissions} users={users} root={props.root}
-                                  showAlert={props.showAlert}/>
+                                  latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
           <Grid item xs={6}>
             <GradingProgress lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
-                             latestSubmissions={latestSubmissions} users={users} root={props.root}
-                             showAlert={props.showAlert}/>
+                             latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
           <Grid item xs={6}>
             <StudentSubmissions lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
-                                latestSubmissions={latestSubmissions} users={users} root={props.root}
-                                showAlert={props.showAlert}/>
+                                latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
           <Grid item xs={12}>
             <ScoreDistribution lecture={props.lecture} assignment={props.assignment} allSubmissions={submissions}
-                               latestSubmissions={latestSubmissions} users={users} root={props.root}
-                               showAlert={props.showAlert}/>
+                               latestSubmissions={latestSubmissions} users={users} root={props.root}/>
           </Grid>
         </Grid>
       </Box>

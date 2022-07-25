@@ -18,7 +18,8 @@ const CustomTooltip = ({active, payload, label}: TooltipProps<ValueType, NameTyp
   if (active && payload && payload.length) {
     return (
       <div className="custom-tooltip">
-        <p className="label">{`${payload[0].value} Submission${payload[0].value === 1 ? '' : 's'}`}</p>
+        <p className="recharts-tooltip-label">{moment(payload[0].payload.time).format('DD. MMM')}</p>
+        <p className="recharts-tooltip-label">{`${payload[0].value} Submission${payload[0].value === 1 ? '' : 's'}`}</p>
       </div>
     );
   }
@@ -86,7 +87,7 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
                   <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD MMM')}/>
+              <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD. MMM')}/>
               <YAxis dataKey="n"/>
               <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
               <Area type="monotone" dataKey="n" stroke="#8884d8" strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>

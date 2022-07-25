@@ -78,7 +78,6 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             latestSubmissions={props.latestSubmissions}
             users={props.users}
             root={props.root}
-            showAlert={props.showAlert}
           />
         )}
       </Box>
