@@ -43,9 +43,9 @@ export const GradingProgress = (props: IStatsProps) => {
   React.useEffect(() => {
     const d = getData(props.latestSubmissions, props.users);
     const a = [
-      {name: "Feedback", value: d.feedback, fill: '#a4de6c'},
-      {name: "Manual", value: d.manual, fill: '#8884d8'},
-      {name: "Auto", value: d.auto, fill: '#ffc658'},
+      {name: "Feedback", value: d.feedback, fill: '#00C49F'},
+      {name: "Manual", value: d.manual, fill: '#0088FE'},
+      {name: "Auto", value: d.auto, fill: '#FFBB28'},
     ];
     console.log(a);
     setData(a);

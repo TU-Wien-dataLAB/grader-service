@@ -83,14 +83,14 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
             >
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
+                  <stop offset="5%" stopColor={"#0088FE"} stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor={"#0088FE"} stopOpacity={0.2}/>
                 </linearGradient>
               </defs>
               <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD. MMM')}/>
               <YAxis dataKey="n"/>
               <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
-              <Area type="monotone" dataKey="n" stroke="#8884d8" strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>
+              <Area type="monotone" dataKey="n" stroke={"#0088FE"} strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>
               <Brush height={10}/>
             </AreaChart>
           </ResponsiveContainer>

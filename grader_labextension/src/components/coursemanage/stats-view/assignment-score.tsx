@@ -38,7 +38,7 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
               {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(1)}`}
             </text>
             <Tooltip/>
-            <Pie data={data} dataKey='points' nameKey='notebook' innerRadius={"70%"} outerRadius={"90%"}
+            <Pie data={data} dataKey='points' nameKey='notebook' innerRadius={"65%"} outerRadius={"80%"}
                  paddingAngle={5}/>
           </PieChart>
         </ResponsiveContainer>

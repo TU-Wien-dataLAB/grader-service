@@ -89,7 +89,7 @@ export const ScoreDistribution = (props: IStatsProps) => {
               <XAxis dataKey="name"/>
               <YAxis dataKey="count"/>
               <Tooltip/>
-              <Bar dataKey="count" fill={"#8884d8"}/>
+              <Bar dataKey="count" fill={"#0088FE"}/>
             </BarChart>
           </ResponsiveContainer>
         }
