@@ -11,13 +11,11 @@ import {
   Alert,
   Box,
   Divider,
-  FormControlLabel,
-  FormGroup,
   Grid,
   MenuItem,
-  Switch,
   TextField
 } from '@mui/material';
+import { AntSwitch } from './creation-switch';
 
 export interface ICreationComponentProps {
   cell: Cell;
@@ -143,18 +141,12 @@ export const CreationComponent = (props: ICreationComponentProps) => {
 
           {solutionCell && (
             <Grid item>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={hintChecked}
-                      onChange={handleHintChange}
-                      inputProps={{ 'aria-label': 'controlled' }}
-                    />
-                  }
-                  label="Optional hint"
-                />
-              </FormGroup>
+              <AntSwitch
+                sx={{ mt: 2, ml: 1 }}
+                checked={hintChecked}
+                onChange={handleHintChange}
+                inputProps={{ 'aria-label': 'controlled' }}
+              />
             </Grid>
           )}
           {solutionCell && (

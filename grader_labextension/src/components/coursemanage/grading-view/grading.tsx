@@ -42,11 +42,10 @@ import {
   saveSubmissions
 } from '../../../services/grading.service';
 import LoadingOverlay from '../../util/overlay';
-import { getAssignment } from '../../../services/assignments.service';
 import { ManualGrading } from './manual-grading';
-import { PanoramaSharp } from '@mui/icons-material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { GlobalObjects } from '../../../index';
+import { enqueueSnackbar } from 'notistack';
 
 /**
  * Props for GradingComponent.
@@ -56,7 +55,6 @@ export interface IGradingProps {
   assignment: Assignment;
   allSubmissions: Submission[];
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -115,7 +113,9 @@ export const GradingComponent = (props: IGradingProps) => {
           });
         } catch (err) {
           console.error(err);
-          props.showAlert('error', 'Error Autograding Submissions');
+          enqueueSnackbar('Error Autograding Submissions', {
+            variant: 'error'
+          });
         }
         cleanSelectedRows();
         closeDialog();
@@ -147,15 +147,19 @@ export const GradingComponent = (props: IGradingProps) => {
           getAllSubmissions(props.lecture, props.assignment, option, true).then(
             response => {
               setRows(generateRows(response));
-              props.showAlert(
-                'success',
-                `Generating Feedback for ${numSubs} Submissions`
+              enqueueSnackbar(
+                `Generating Feedback for ${numSubs} Submissions`,
+                {
+                  variant: 'success'
+                }
               );
             }
           );
         } catch (err) {
           console.error(err);
-          props.showAlert('error', 'Error Generating Feedback');
+          enqueueSnackbar('Error Generating Feedback', {
+            variant: 'error'
+          });
         }
         cleanSelectedRows();
         closeDialog();
@@ -255,7 +259,9 @@ export const GradingComponent = (props: IGradingProps) => {
     );
     const logs = submission.logs;
     if (logs === undefined || logs === null || logs === '') {
-      props.showAlert('error', 'No logs for submission!');
+      enqueueSnackbar('No logs for submission', {
+        variant: 'error'
+      });
       return;
     }
     setLogs(logs);
@@ -346,9 +352,10 @@ export const GradingComponent = (props: IGradingProps) => {
           mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
         }
       })
-      .catch(
-          error => {
-        props.showAlert('error', error.message);
+      .catch(error => {
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        });
         console.log(error);
       });
   };
@@ -359,10 +366,14 @@ export const GradingComponent = (props: IGradingProps) => {
     try {
       await saveSubmissions(props.lecture, props.assignment, option);
       await openFile(`${props.lecture.code}/submissions.csv`);
-      props.showAlert('success', 'Successfully exported submissions!');
+      enqueueSnackbar('Successfully exported submissions', {
+        variant: 'success'
+      });
     } catch (err) {
       console.log(err);
-      props.showAlert('error', 'Error exporting submissions!');
+      enqueueSnackbar('Error Exporting Submissions', {
+        variant: 'error'
+      });
     }
   };
 
@@ -492,7 +503,6 @@ export const GradingComponent = (props: IGradingProps) => {
           submission={getSubmissionFromRow(selectedRowsData[0])}
           username={selectedRowsData[0]?.username}
           onClose={onManualGradingClose}
-          showAlert={props.showAlert}
         />
       </LoadingOverlay>
 

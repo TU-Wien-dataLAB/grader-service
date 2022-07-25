@@ -9,34 +9,28 @@
 name: Upload Grader Convert Package
 
 on:
-  release:
-    types: [published]
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
   publish:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
         python-version: '3.8'
     - name: Install dependencies
-      working-directory: ./grader_convert
       run: |
         python -m pip install --upgrade pip
-        pip install build wheel twine
-        pip install -r requirements.txt
-    - name: Build package
-      working-directory: ./grader_convert
-      run: python -m build -n
+        pip install twine
+    - name: Download a convert artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-convert
     - name: Publish package
-      working-directory: ./grader_convert
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}

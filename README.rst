@@ -275,11 +275,14 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 .. code-block:: python
 
+    from jupyterhub import orm
+    import sqlalchemy
+
     def post_auth_hook(authenticator, handler, authentication):
         db: sqlalchemy.orm.session.Session = authenticator.db
         log = authenticator.log
 
-        course_id = authentication["auth_state"]["course_id"]
+        course_id = authentication["auth_state"]["course_id"].replace(" ","")
         user_role = authentication["auth_state"]["user_role"]
         user_name = authentication["name"]
 
@@ -289,6 +292,11 @@ To automatically add the groups for the grader service from the LTI authenticato
         elif user_role == "Instructor":
             user_role = "instructor"
         user_model: orm.User = orm.User.find(db, user_name)
+        if user_model is None:
+            user_model = orm.User()
+            user_model.name = user_name
+            db.add(user_model)
+            db.commit()
 
         group_name = f"{course_id}:{user_role}"
         group = orm.Group.find(db, group_name)

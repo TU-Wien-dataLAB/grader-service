@@ -15,6 +15,7 @@ import LoadingOverlay from '../util/overlay';
 import { Feedback } from './feedback';
 import { AssignmentStatus } from './assignment-status';
 import { AssignmentFilesComponent } from './assignment-files';
+import { DeadlineComponent } from '../util/deadline';
 /**
  * Props for AssignmentModalComponent.
  */
@@ -23,7 +24,6 @@ export interface IAssignmentModalProps {
   assignment: Assignment;
   submissions: Submission[];
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -58,11 +58,16 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
 
         <Typography variant={'h6'} sx={{ ml: 2 }}>
           Files
+          <DeadlineComponent
+            sx={{ ml: 1 }}
+            due_date={props.assignment.due_date}
+            compact={false}
+            component={'chip'}
+          />
         </Typography>
         <AssignmentFilesComponent
           lecture={props.lecture}
           assignment={props.assignment}
-          showAlert={props.showAlert}
           setSubmissions={setSubmissions}
         />
 
@@ -84,7 +89,6 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           lecture={props.lecture}
           assignment={props.assignment}
           submission={feedbackSubmission}
-          showAlert={props.showAlert}
         />
       </LoadingOverlay>
     </div>

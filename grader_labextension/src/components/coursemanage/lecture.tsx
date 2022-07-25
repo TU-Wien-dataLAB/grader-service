@@ -5,7 +5,6 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
-  Box,
   Button,
   Card,
   CardActions,
@@ -27,11 +26,11 @@ import {
   updateLecture
 } from '../../services/lectures.service';
 import { red } from '@mui/material/colors';
+import { enqueueSnackbar } from 'notistack';
 
 interface ILectureComponentProps {
   lecture: Lecture;
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
   expanded?: boolean;
 }
 
@@ -112,7 +111,9 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                   setLecture(response);
                 },
                 error => {
-                  props.showAlert('error', error.message);
+                  enqueueSnackbar(error.message, {
+                    variant: 'error'
+                  });
                 }
               );
             }}
@@ -138,7 +139,6 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                     assignment={el}
                     root={props.root}
                     users={users}
-                    showAlert={props.showAlert}
                     onDeleted={onAssignmentDelete}
                   />
                 </Grid>
@@ -156,7 +156,6 @@ export const LectureComponent = (props: ILectureComponentProps) => {
               >
                 <CreateDialog
                   lecture={lecture}
-                  showAlert={props.showAlert}
                   handleSubmit={() => {
                     getAllAssignments(lecture.id).then(response => {
                       setAssignments(response);

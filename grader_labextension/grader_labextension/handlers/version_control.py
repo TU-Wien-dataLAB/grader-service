@@ -6,11 +6,8 @@
 
 import json
 import os
-import sys
 from http import HTTPStatus
 from urllib.parse import unquote, quote
-
-from jsonschema.exceptions import ValidationError
 from tornado.web import HTTPError
 
 from grader_convert.converters.base import GraderConvertException
@@ -64,10 +61,9 @@ class GenerateHandler(ExtensionBaseHandler):
         self.log.info("Starting GenerateAssignment converter")
         try:
             generator.start()
-        except:
-            e = sys.exc_info()[0]
+        except Exception as e:
             self.log.error(e)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason="Could not generate assignment out of source file")
+            raise HTTPError(HTTPStatus.CONFLICT, reason=str(e))
         try:
             gradebook_path = os.path.join(generator._output_directory, "gradebook.json")
             os.remove(gradebook_path)

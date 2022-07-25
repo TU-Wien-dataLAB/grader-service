@@ -1,12 +1,11 @@
 name: Create and publish a Docker image
 
 on:
-  release:
-    types: [published]
+  workflow_call:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-labextension
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push-image:
@@ -16,6 +15,7 @@ jobs:
       packages: write
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -31,12 +31,17 @@ jobs:
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=match,pattern=\d.\d.\d.*,prefix=v
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
-          file: Dockerfile_labextension
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

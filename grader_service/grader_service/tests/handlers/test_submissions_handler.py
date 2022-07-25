@@ -1163,4 +1163,4 @@ async def test_max_submissions_assignment(
         )
 
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == 409

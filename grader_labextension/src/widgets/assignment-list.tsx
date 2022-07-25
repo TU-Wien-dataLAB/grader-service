@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LectureListComponent } from '../components/assignment/lecture-list';
+import { SnackbarProvider } from 'notistack';
 
 export class AssignmentList extends ReactWidget {
   /**
@@ -20,7 +21,11 @@ export class AssignmentList extends ReactWidget {
 
   render(): JSX.Element {
     const root = this.node;
-    return <LectureListComponent root={root} />;
+    return (
+      <SnackbarProvider maxSnack={3}>
+        <LectureListComponent root={root} />
+      </SnackbarProvider>
+    );
   }
 }
 

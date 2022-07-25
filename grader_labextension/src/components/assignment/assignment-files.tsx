@@ -25,6 +25,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import { Submission } from '../../model/submission';
 import { RepoType } from '../util/repo-type';
+import { enqueueSnackbar } from 'notistack';
 
 /**
  * Props for AssignmentFilesComponent.
@@ -32,7 +33,6 @@ import { RepoType } from '../util/repo-type';
 export interface IAssignmentFilesComponentProps {
   lecture: Lecture;
   assignment: Assignment;
-  showAlert: (severity: string, msg: string) => void;
   setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
 }
 
@@ -44,82 +44,139 @@ export const AssignmentFilesComponent = (
   props: IAssignmentFilesComponentProps
 ) => {
   const [dialog, setDialog] = React.useState(false);
+  const [dialogContent, setDialogContent] = React.useState({
+    title: '',
+    message: '',
+    handleAgree: null,
+    handleDisagree: null
+  });
   const path = `${props.lecture.code}/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
    * @param repo input which repository should be fetched
    */
   const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
-    try {
-      await pullAssignment(props.lecture.id, props.assignment.id, repo);
-      props.showAlert('success', 'Successfully Pulled Repo');
-    } catch (e) {
-      props.showAlert('error', 'Error Fetching Assignment');
-    }
+    await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
+      () =>
+        enqueueSnackbar('Successfully Pulled Repo', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
   };
   /**
    * Sends request to reset the student changes.
    */
   const resetAssignmentHandler = async () => {
-    try {
-      await pushAssignment(
-        props.lecture.id,
-        props.assignment.id,
-        'assignment',
-        'Pre-Reset'
-      );
-      await resetAssignment(props.lecture, props.assignment);
-      await pullAssignment(props.lecture.id, props.assignment.id, 'assignment');
-      props.showAlert('success', 'Successfully Reset Assignment');
-    } catch (e) {
-      props.showAlert('error', 'Error Reseting Assignment');
-    }
-    setDialog(false);
+    setDialogContent({
+      title: 'Reset Assignment',
+      message:
+        'This action will delete your current progress and reset the assignment! \n' +
+        'Therefore you should copy and paste your work to a different directory before progressing. ',
+      handleAgree: async () => {
+        try {
+          await pushAssignment(
+            props.lecture.id,
+            props.assignment.id,
+            'assignment',
+            'Pre-Reset'
+          );
+          await resetAssignment(props.lecture, props.assignment);
+          await pullAssignment(
+            props.lecture.id,
+            props.assignment.id,
+            'assignment'
+          );
+          enqueueSnackbar('Successfully Reset Assignment', {
+            variant: 'success'
+          });
+        } catch (e) {
+          enqueueSnackbar('Error Reset Assignment', {
+            variant: 'error'
+          });
+        }
+        setDialog(false);
+      },
+      handleDisagree: () => {
+        setDialog(false);
+      }
+    });
+    setDialog(true);
   };
+
   /**
    * Pushes the student submission and submits the assignment
    */
   const submitAssignmentHandler = async () => {
-    await submitAssignment(props.lecture, props.assignment, true).then(
-      response => {
-        props.showAlert('success', 'Successfully Submitted Assignment');
+    setDialogContent({
+      title: 'Submit Assignment',
+      message: 'This action will submit your current notebooks!',
+      handleAgree: async () => {
+        await submitAssignment(props.lecture, props.assignment, true).then(
+          response => {
+            enqueueSnackbar('Successfully Submitted Assignment', {
+              variant: 'success'
+            });
+          },
+          error => {
+            enqueueSnackbar(error.message, {
+              variant: 'error'
+            });
+          }
+        );
+        await getAllSubmissions(
+          props.lecture,
+          props.assignment,
+          'none',
+          false
+        ).then(
+          submissions => {
+            props.setSubmissions(submissions);
+          },
+          error => {
+            enqueueSnackbar(error, {
+              variant: 'error'
+            });
+          }
+        );
+        setDialog(false);
       },
-      error => {
-        props.showAlert('error', error.message);
-      }
-    );
-    await getAllSubmissions(
-      props.lecture,
-      props.assignment,
-      'none',
-      false
-    ).then(
-      submissions => {
-        props.setSubmissions(submissions);
-      },
-      error => {
-        props.showAlert('error', error.message);
-      }
-    );
+      handleDisagree: () => setDialog(false)
+    });
+    setDialog(true);
   };
 
   const pushAssignmentHandler = async () => {
-    try {
-      //TODO add commit message
-      await pushAssignment(
-        props.lecture.id,
-        props.assignment.id,
-        RepoType.ASSIGNMENT
-      );
-      props.showAlert('success', 'Successfully Submitted Assignment');
-    } catch (e) {
-      props.showAlert('error', 'Error Submitting Assignment');
+    await pushAssignment(
+      props.lecture.id,
+      props.assignment.id,
+      RepoType.ASSIGNMENT
+    ).then(
+      () =>
+        enqueueSnackbar('Successfully Pushed Assignment', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
+  };
+
+  const isDeadlineOver = () => {
+    if (props.assignment.due_date === null) {
+      return false;
     }
+    const time = new Date(props.assignment.due_date).getTime();
+    return time < Date.now();
   };
 
   return (
     <div>
-      <FilesList path={path} showAlert={props.showAlert} sx={{ m: 2, mt: 1 }} />
+      <FilesList path={path} sx={{ m: 2, mt: 1 }} />
 
       <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
         {props.assignment.type === 'group' && (
@@ -147,6 +204,7 @@ export const AssignmentFilesComponent = (
           variant="outlined"
           color="success"
           size="small"
+          disabled={isDeadlineOver()}
           onClick={() => submitAssignmentHandler()}
         >
           <GradingIcon fontSize="small" sx={{ mr: 1 }} />
@@ -157,23 +215,14 @@ export const AssignmentFilesComponent = (
           variant="outlined"
           size="small"
           color="error"
-          onClick={() => setDialog(true)}
+          onClick={() => resetAssignmentHandler()}
         >
           <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
           Reset
         </Button>
       </Stack>
 
-      <AgreeDialog
-        open={dialog}
-        title={'Reset Assignment'}
-        message={
-          'This action will delete your current progress and reset the assignment! \n' +
-          'Therefore you should copy and paste your work to a different directory before progressing. '
-        }
-        handleAgree={resetAssignmentHandler}
-        handleDisagree={() => setDialog(false)}
-      />
+      <AgreeDialog open={dialog} {...dialogContent} />
     </div>
   );
 };

@@ -26,6 +26,7 @@ import {
   updateAssignment
 } from '../../../services/assignments.service';
 import { Lecture } from '../../../model/lecture';
+import { enqueueSnackbar } from 'notistack';
 /**
  * Props for AssignmentStatusComponent.
  */
@@ -33,7 +34,6 @@ export interface IAssignmentStatusProps {
   lecture: Lecture;
   assignment: Assignment;
   onAssignmentChange: (assignment: Assignment) => void;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -83,9 +83,13 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
       a = await updateAssignment(props.lecture.id, a);
       setAssignment(a);
       props.onAssignmentChange(a);
-      props.showAlert('success', success);
+      enqueueSnackbar(success, {
+        variant: 'success'
+      });
     } catch (err) {
-      props.showAlert('error', error);
+      enqueueSnackbar(error, {
+        variant: 'error'
+      });
     }
   };
   /**
@@ -114,7 +118,9 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
         commitMessage
       );
     } catch (err) {
-      props.showAlert('error', 'Error Pushing Assignment');
+      enqueueSnackbar('Error Pushing Assignment', {
+        variant: 'error'
+      });
       return;
     }
     await updateAssignmentStatus(
