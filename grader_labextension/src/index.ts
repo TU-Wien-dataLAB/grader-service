@@ -196,7 +196,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             tracker.currentWidget.context.path
           );
           tracker.currentWidget.toolbar.insertItem(
-            10,
+            11,
             'Deadline',
             deadlineWidget
           );
@@ -224,8 +224,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (notebookPaths[0] === 'manualgrade') {
           return;
         }
-        const switcher: any = (notebookPanel.toolbar.layout as PanelLayout)
-          .widgets[10];
+
+        let switcher: any = null;
+        (notebookPanel.toolbar.layout as PanelLayout).widgets.map(w => {
+          if (w instanceof NotebookModeSwitch) {
+            switcher = w;
+          }
+        });
 
         const cell: Cell = notebook.activeCell;
 
@@ -233,10 +238,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (
           switcher.mode &&
           (cell.layout as PanelLayout).widgets.every(w => {
-            if (w instanceof CreationWidget) {
-              return false;
-            }
-            return true;
+            return !(w instanceof CreationWidget);
           })
         ) {
           (cell.layout as PanelLayout).insertWidget(
