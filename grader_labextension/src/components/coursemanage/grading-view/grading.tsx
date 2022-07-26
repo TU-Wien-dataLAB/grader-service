@@ -425,14 +425,17 @@ export const GradingComponent = (props: IGradingProps) => {
             <MenuItem value={'best'}>Best Submissions of Users</MenuItem>
           </Select>
         </FormControl>
-        <Button
-          disabled={selectedRows.length === 0}
-          sx={{m: 3}}
-          variant="outlined"
-          onClick={handleAutogradeSubmissions}
-        >
-          {`Autograde (${selectedRows.length})`}
-        </Button>
+        <Tooltip
+          title={`Run Autograde Tests for ${selectedRows.length} Submission${selectedRows.length === 1 ? "" : "s"}`}>
+          <Button
+            disabled={selectedRows.length === 0}
+            sx={{m: 3}}
+            variant="outlined"
+            onClick={handleAutogradeSubmissions}
+          >
+            {`Autograde (${selectedRows.length})`}
+          </Button>
+        </Tooltip>
         <NavigateNextIcon
           color={
             selectedRowsData.length === 1 &&
@@ -445,20 +448,22 @@ export const GradingComponent = (props: IGradingProps) => {
           }
           sx={{mb: -1}}
         />
-        <Button
-          disabled={
-            selectedRowsData.length !== 1 ||
-            selectedRowsData[0]?.auto_status !== 'automatically_graded'
-          }
-          sx={{m: 3}}
-          onClick={() => {
-            cleanSelectedRows();
-            setDisplayManualGrading(true);
-          }}
-          variant="outlined"
-        >
-          {'Manualgrade'}
-        </Button>
+        <Tooltip title={"Manually Grade Answers of Submission"}>
+          <Button
+            disabled={
+              selectedRowsData.length !== 1 ||
+              selectedRowsData[0]?.auto_status !== 'automatically_graded'
+            }
+            sx={{m: 3}}
+            onClick={() => {
+              cleanSelectedRows();
+              setDisplayManualGrading(true);
+            }}
+            variant="outlined"
+          >
+            {'Manualgrade'}
+          </Button>
+        </Tooltip>
         <NavigateNextIcon
           color={
             selectedRows.length === 0
@@ -470,18 +475,20 @@ export const GradingComponent = (props: IGradingProps) => {
           }
           sx={{mb: -1}}
         />
-        <Button
-          disabled={
-            selectedRows.length === 0 ||
-            (props.assignment.automatic_grading !== 'full_auto' &&
-              !allManualGraded(selectedRowsData))
-          }
-          sx={{m: 3}}
-          onClick={handleGenerateFeedback}
-          variant="outlined"
-        >
-          {`Generate Feedback (${selectedRows.length})`}
-        </Button>
+        <Tooltip title={"Generate and Publish Feedback"}>
+          <Button
+            disabled={
+              selectedRows.length === 0 ||
+              (props.assignment.automatic_grading !== 'full_auto' &&
+                !allManualGraded(selectedRowsData))
+            }
+            sx={{m: 3}}
+            onClick={handleGenerateFeedback}
+            variant="outlined"
+          >
+            {`Generate Feedback (${selectedRows.length})`}
+          </Button>
+        </Tooltip>
 
         <Button
           startIcon={<FileDownloadIcon/>}

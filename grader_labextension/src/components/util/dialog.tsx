@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { useFormik } from 'formik';
+import {useFormik} from 'formik';
 import * as yup from 'yup';
 
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
@@ -33,23 +33,23 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { Assignment } from '../../model/assignment';
-import { LoadingButton } from '@mui/lab';
+import {Assignment} from '../../model/assignment';
+import {LoadingButton} from '@mui/lab';
 import EditIcon from '@mui/icons-material/Edit';
 import {
   createAssignment,
   deleteAssignment,
   updateAssignment
 } from '../../services/assignments.service';
-import { Lecture } from '../../model/lecture';
+import {Lecture} from '../../model/lecture';
 import TypeEnum = Assignment.TypeEnum;
 import AutomaticGradingEnum = Assignment.AutomaticGradingEnum;
-import { updateLecture } from '../../services/lectures.service';
+import {updateLecture} from '../../services/lectures.service';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import AddIcon from '@mui/icons-material/Add';
-import { Simulate } from 'react-dom/test-utils';
+import {Simulate} from 'react-dom/test-utils';
 import error = Simulate.error;
-import { enqueueSnackbar } from 'notistack';
+import {enqueueSnackbar} from 'notistack';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -110,22 +110,24 @@ export const EditDialog = (props: IEditDialogProps) => {
   const [openDialog, setOpen] = React.useState(false);
   return (
     <div>
-      <IconButton
-        sx={{ mt: -1 }}
-        onClick={e => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        onMouseDown={event => event.stopPropagation()}
-        aria-label="edit"
-      >
-        <EditIcon />
-      </IconButton>
+      <Tooltip title={"Edit Assignment"}>
+        <IconButton
+          sx={{mt: -1}}
+          onClick={e => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          onMouseDown={event => event.stopPropagation()}
+          aria-label="edit"
+        >
+          <EditIcon/>
+        </IconButton>
+      </Tooltip>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
         <DialogTitle>Edit Assignment</DialogTitle>
         <form onSubmit={formik.handleSubmit}>
           <DialogContent>
-            <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
+            <Stack spacing={2} sx={{ml: 2, mr: 2}}>
               <TextField
                 variant="outlined"
                 fullWidth
@@ -222,7 +224,7 @@ export const EditDialog = (props: IEditDialogProps) => {
                 <Tooltip title={gradingBehaviourHelp}>
                   <HelpOutlineOutlinedIcon
                     fontSize={'small'}
-                    sx={{ ml: 1.5, mt: 1.0 }}
+                    sx={{ml: 1.5, mt: 1.0}}
                   />
                 </Tooltip>
               </InputLabel>
@@ -351,17 +353,19 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
 
   return (
     <div>
-      <IconButton
-        sx={{ mt: -1 }}
-        onClick={e => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        onMouseDown={event => event.stopPropagation()}
-        aria-label="edit"
-      >
-        <EditIcon />
-      </IconButton>
+      <Tooltip title={"Edit Lecture"}>
+        <IconButton
+          sx={{mt: -1}}
+          onClick={e => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          onMouseDown={event => event.stopPropagation()}
+          aria-label="edit"
+        >
+          <EditIcon/>
+        </IconButton>
+      </Tooltip>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
         <DialogTitle>Edit Lecture</DialogTitle>
         <form onSubmit={formik.handleSubmit}>
@@ -420,7 +424,7 @@ interface INewAssignmentCardProps {
 export default function NewAssignmentCard(props: INewAssignmentCardProps) {
   return (
     <Card
-      sx={{ width: 225, height: '100%', m: 1.5, backgroundColor: '#fcfcfc' }}
+      sx={{width: 225, height: '100%', m: 1.5, backgroundColor: '#fcfcfc'}}
     >
       <Tooltip title={'New Assignment'}>
         <CardActionArea
@@ -433,7 +437,7 @@ export default function NewAssignmentCard(props: INewAssignmentCardProps) {
             alignItems: 'center'
           }}
         >
-          <AddIcon sx={{ fontSize: 50 }} color="disabled" />
+          <AddIcon sx={{fontSize: 50}} color="disabled"/>
         </CardActionArea>
       </Tooltip>
     </Card>
@@ -479,7 +483,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
   const [openDialog, setOpen] = React.useState(false);
 
   return (
-    <Box sx={{ minHeight: 225, height: '100%' }}>
+    <Box sx={{minHeight: 225, height: '100%'}}>
       <NewAssignmentCard
         onClick={e => {
           e.stopPropagation();
@@ -592,7 +596,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 <Tooltip title={gradingBehaviourHelp}>
                   <HelpOutlineOutlinedIcon
                     fontSize={'small'}
-                    sx={{ ml: 1.5, mt: 1.0 }}
+                    sx={{ml: 1.5, mt: 1.0}}
                   />
                 </Tooltip>
               </InputLabel>
@@ -669,7 +673,7 @@ export const CommitDialog = (props: ICommitDialogProps) => {
         <DialogTitle>Commit Files</DialogTitle>
         <DialogContent>
           <TextField
-            sx={{ mt: 2, width: '100%' }}
+            sx={{mt: 2, width: '100%'}}
             id="outlined-textarea"
             label="Commit Message"
             placeholder="Commit Message"
@@ -788,7 +792,7 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
         <DialogTitle>Commit Files</DialogTitle>
         <DialogContent>
           <TextField
-            sx={{ mt: 2, width: '100%' }}
+            sx={{mt: 2, width: '100%'}}
             id="outlined-textarea"
             label="Commit Message"
             placeholder="Commit Message"

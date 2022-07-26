@@ -43,8 +43,6 @@ export const StatsComponent = (props: IStatsProps) => {
   };
 
   React.useEffect(() => {
-    console.log("###### SUBS #######")
-    console.log(props);
     getAllSubmissions(props.lecture, props.assignment, "none", true).then(
       response => {
         setSubmissions(response);
@@ -58,8 +56,6 @@ export const StatsComponent = (props: IStatsProps) => {
   }, [props.allSubmissions, props.latestSubmissions]);
 
   React.useEffect(() => {
-    console.log("###### USERS #######")
-    console.log(props);
     getUsers(props.lecture).then(response => {
       setUsers(response);
     });
