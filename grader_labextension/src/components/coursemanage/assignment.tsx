@@ -14,18 +14,20 @@ import {
   Typography
 } from '@mui/material';
 
-import { Assignment } from '../../model/assignment';
+import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { getAssignment } from '../../services/assignments.service';
-import { AssignmentModalComponent } from './assignment-modal';
-import { DeadlineComponent } from '../util/deadline';
-import { blue } from '@mui/material/colors';
-import { getFiles } from '../../services/file.service';
-import { openBrowser } from './overview-view/util';
-import { CardDescriptor } from '../util/card-descriptor';
-import { enqueueSnackbar } from 'notistack';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions, getProperties} from '../../services/submissions.service';
+import {getAssignment, getAssignmentProperties} from '../../services/assignments.service';
+import {AssignmentModalComponent} from './assignment-modal';
+import {DeadlineComponent} from '../util/deadline';
+import {blue} from '@mui/material/colors';
+import {getFiles} from '../../services/file.service';
+import {openBrowser} from './overview-view/util';
+import {CardDescriptor} from '../util/card-descriptor';
+import {enqueueSnackbar} from 'notistack';
+import {GradeBook} from "../../services/gradebook";
+import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
 
 /**
  * Props for AssignmentComponent.
@@ -45,10 +47,13 @@ export interface IAssignmentComponentProps {
  */
 export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
-  const [displaySubmissions, setDisplaySubmissions] = React.useState(false);
+  const [displaySubmissions, setDisplaySubmissions] = React.useState(
+    loadNumber("cm-opened-assignment") === props.assignment.id || false
+  );
   const [files, setFiles] = React.useState([]);
   const onSubmissionClose = async () => {
     setDisplaySubmissions(false);
+    deleteKey("cm-opened-assignment");
     setAssignment(await getAssignment(props.lecture.id, assignment.id));
     props.onDeleted();
   };
@@ -103,23 +108,24 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   }, [assignment]);
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{height: '100%'}}>
       <Card
-        sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
+        sx={{maxWidth: 225, minWidth: 225, height: '100%', m: 1.5}}
         onClick={async () => {
           await openBrowser(`source/${props.lecture.code}/${assignment.id}`);
           setDisplaySubmissions(true);
+          storeNumber("cm-opened-assignment", assignment.id)
         }}
       >
         <CardActionArea
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
-          <CardContent sx={{ flexGrow: 1 }}>
+          <CardContent sx={{flexGrow: 1}}>
             <Typography variant="h5" component="div">
               {assignment.name}
             </Typography>
             <Typography
-              sx={{ fontSize: 14 }}
+              sx={{fontSize: 14}}
               color="text.secondary"
               gutterBottom
             >
@@ -135,7 +141,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 {assignment.status}
               </Typography>
             </Typography>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{mt: 1, mb: 1}}/>
 
             <CardDescriptor
               descriptor={'Point'}

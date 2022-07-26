@@ -9,15 +9,8 @@ hub:
     JupyterHub:
       admin_access: true
       authenticator_class: dummy
-  cookieSecret:
-  concurrentSpawnLimit: 64
-  consecutiveFailureLimit: 5
   db:
-    type: sqlite-pvc
-    pvc:
-      accessModes:
-        - ReadWriteOnce
-      storage: 1Gi
+    type: sqlite-memory
   allowNamedServers: true
   namedServerLimitPerUser: 2
   serviceAccount:
@@ -26,6 +19,8 @@ hub:
     default: |
       c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
       c.Authenticator.admin_users = {'admin', 'instructor'}
+      c.JupyterHub.tornado_settings = { 'headers': {'Content-Security-Policy': "frame-ancestors localhost 127.0.0.1 'self'"} }
+
       c.JupyterHub.services.append(
           {
               'name': 'grader',
@@ -45,45 +40,23 @@ rbac:
 # proxy relates to the proxy pod, the proxy-public service, and the autohttps
 # pod and proxy-http service.
 proxy:
-  secretToken:
   service:
-    type: LoadBalancer
+    type: ClusterIP
   # chp relates to the proxy pod, which is responsible for routing traffic based
   # on dynamic configuration sent from JupyterHub to CHP's REST API.
 
 # singleuser relates to the configuration of KubeSpawner which runs in the hub
 # pod, and its spawning of user pods such as jupyter-myusername.
 singleuser:
-  networkPolicy:
-    enabled: true
-    ingress: []
-    egress: []
-    egressAllowRules:
-      cloudMetadataServer: false
-      dnsPortsPrivateIPs: true
-      nonPrivateIPs: true
-      privateIPs: false
-    interNamespaceAccessLabels: ignore
-    allowedIngressPorts: []
   events: true
-  extraLabels:
-    hub.jupyter.org/network-access-hub: "true"
   storage:
-    type: dynamic
-    capacity: 10Gi
-    homeMountPath: /home/jovyan
-    dynamic:
-      pvcNameTemplate: claim-{username}{servername}
-      volumeNameTemplate: volume-{username}{servername}
-      storageAccessModes: [ReadWriteOnce]
-  startTimeout: 300
+    type: none
   defaultUrl: /lab
   image:
-    name: grader-user
-    tag: "dev"
-  profileList: []
+    name: ghcr.io/tu-wien-datalab/grader-service-labextension
+    tag: "latest"
   extraEnv:
-    GRADER_HOST_URL: http://grader-service:4010
+    GRADER_HOST_URL: http://proxy-public
 
 # scheduling relates to the user-scheduler pods and user-placeholder pods.
 scheduling:
@@ -95,6 +68,8 @@ scheduling:
 # prePuller relates to the hook|continuous-image-puller DaemonsSets
 prePuller:
   hook:
+    enabled: false
+  continuous:
     enabled: false
 
 ingress:
@@ -109,11 +84,11 @@ ingress:
 #
 cull:
   enabled: true
-  users: false # --cull-users
+  users: true # --cull-users
   adminUsers: true # --cull-admin-users
-  removeNamedServers: false # --remove-named-servers
-  timeout: 3600 # --timeout
-  every: 600 # --cull-every
+  removeNamedServers: true # --remove-named-servers
+  timeout: 360 # --timeout
+  every: 60 # --cull-every
   concurrency: 10 # --concurrency
   maxAge: 0 # --max-age
 

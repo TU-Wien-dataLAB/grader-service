@@ -27,12 +27,8 @@ Grader Convert
     :target: https://pypi.org/project/grader-convert/
     :alt: PyPI - Python Version
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/build_convert.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
-
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml
-
 
 Grader Service
 
@@ -44,12 +40,8 @@ Grader Service
     :target: https://pypi.org/project/grader-service/
     :alt: PyPI - Python Version
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/build_service.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
-
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml
-
 
 Grader Labextension
 
@@ -65,7 +57,7 @@ Grader Labextension
     :target: https://www.npmjs.com/package/grader-labextension
     :alt: npm
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml/badge.svg?branch=main
+.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/build_labextension.yml/badge.svg?branch=main
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml
 
 
