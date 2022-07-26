@@ -24,7 +24,7 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
     const d = getData(props.gb);
     console.log(d);
     setData(d);
-  }, [props]);
+  }, [props.gb]);
 
   return (
     <Card sx={{height: 300, width: "100%"}}>

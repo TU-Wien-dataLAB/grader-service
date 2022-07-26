@@ -61,7 +61,7 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
     const d = getData(props.allSubmissions);
     console.log(d);
     setData(d);
-  }, [])
+  }, [props.allSubmissions])
 
   return (
     <Card sx={{height: 300, width: "100%"}}>

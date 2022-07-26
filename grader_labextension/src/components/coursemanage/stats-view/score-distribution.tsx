@@ -50,7 +50,7 @@ export const ScoreDistribution = (props: IStatsProps) => {
     const d = getData(props.latestSubmissions, props.assignment, startBuckets);
     console.log(d);
     setData(d);
-  }, [])
+  }, [props.latestSubmissions, props.assignment])
 
   return (
     <Card sx={{height: 300, width: "100%"}}>

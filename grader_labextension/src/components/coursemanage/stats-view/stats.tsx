@@ -35,7 +35,16 @@ export const StatsComponent = (props: IStatsProps) => {
   const [gb, setGb] = React.useState(null as GradeBook);
   const [users, setUsers] = React.useState(props.users);
 
-  const updateSubmissions = () => {
+  const updateSubmissions = async () => {
+    setSubmissions(await getAllSubmissions(props.lecture, props.assignment, "none", true));
+    setLatestSubmissions(await getAllSubmissions(props.lecture, props.assignment, "latest", true));
+    setUsers(await getUsers(props.lecture));
+    setGb(new GradeBook(await getAssignmentProperties(props.lecture.id, props.assignment.id)));
+  };
+
+  React.useEffect(() => {
+    console.log("###### SUBS #######")
+    console.log(props);
     getAllSubmissions(props.lecture, props.assignment, "none", true).then(
       response => {
         setSubmissions(response);
@@ -46,20 +55,21 @@ export const StatsComponent = (props: IStatsProps) => {
         setLatestSubmissions(response);
       }
     );
+  }, [props.allSubmissions, props.latestSubmissions]);
+
+  React.useEffect(() => {
+    console.log("###### USERS #######")
+    console.log(props);
     getUsers(props.lecture).then(response => {
       setUsers(response);
     });
-
-    getAssignmentProperties(props.lecture.id, props.assignment.id).then(properties => {
-      setGb(new GradeBook(properties));
-    })
-  };
+  }, [props.users]);
 
   React.useEffect(() => {
     getAssignmentProperties(props.lecture.id, props.assignment.id).then(properties => {
       setGb(new GradeBook(properties));
     })
-  }, [props.lecture, props.assignment]);
+  }, []);
 
   return (
     <Box>

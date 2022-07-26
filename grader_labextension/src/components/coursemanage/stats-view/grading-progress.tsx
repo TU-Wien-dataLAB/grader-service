@@ -49,7 +49,7 @@ export const GradingProgress = (props: IStatsProps) => {
     ];
     console.log(a);
     setData(a);
-  }, [])
+  }, [props.latestSubmissions, props.users])
 
   return (
     <Card sx={{height: 300, width: "100%"}}>

@@ -20,7 +20,7 @@ export const StudentSubmissions = (props: IStatsProps) => {
     const d = getData(props.latestSubmissions, props.users);
     console.log(d);
     setData(d);
-  }, [])
+  }, [props.latestSubmissions, props.users])
 
   return (
     <Card sx={{height: 300, width: "100%"}}>
