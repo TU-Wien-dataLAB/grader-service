@@ -59,7 +59,6 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
 
   React.useEffect(() => {
     const d = getData(props.allSubmissions);
-    console.log(d);
     setData(d);
   }, [props.allSubmissions])
 

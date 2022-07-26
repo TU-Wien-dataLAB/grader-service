@@ -22,7 +22,6 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
 
   React.useEffect(() => {
     const d = getData(props.gb);
-    console.log(d);
     setData(d);
   }, [props.gb]);
 

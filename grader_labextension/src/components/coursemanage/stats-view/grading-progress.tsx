@@ -47,7 +47,6 @@ export const GradingProgress = (props: IStatsProps) => {
       {name: "Manual", value: d.manual, fill: '#0088FE'},
       {name: "Auto", value: d.auto, fill: '#FFBB28'},
     ];
-    console.log(a);
     setData(a);
   }, [props.latestSubmissions, props.users])
 

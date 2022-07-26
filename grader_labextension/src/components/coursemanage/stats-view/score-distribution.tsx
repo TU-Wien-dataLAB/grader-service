@@ -34,7 +34,9 @@ const getData = (
   numBuckets: number
 ): { name: string, count: number }[] => {
   const getBaseLog = (x: number, y: number) => Math.log(y) / Math.log(x);
-  const decimalPlaces = -Math.floor(getBaseLog(10, assignment.points / numBuckets)) + 1
+  let decimalPlaces = -Math.floor(getBaseLog(10, assignment.points / numBuckets)) + 1
+  decimalPlaces = Math.max(decimalPlaces, 0);
+  decimalPlaces = Math.min(decimalPlaces, 3);
   const data = submissions.map(s => (s.score || 0));
   const buckets = binData(data, 0, assignment.points, numBuckets);
   return buckets.map(v => {
@@ -48,7 +50,6 @@ export const ScoreDistribution = (props: IStatsProps) => {
 
   React.useEffect(() => {
     const d = getData(props.latestSubmissions, props.assignment, startBuckets);
-    console.log(d);
     setData(d);
   }, [props.latestSubmissions, props.assignment])
 

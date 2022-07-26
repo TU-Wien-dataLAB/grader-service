@@ -18,7 +18,6 @@ export const StudentSubmissions = (props: IStatsProps) => {
 
   React.useEffect(() => {
     const d = getData(props.latestSubmissions, props.users);
-    console.log(d);
     setData(d);
   }, [props.latestSubmissions, props.users])
 
