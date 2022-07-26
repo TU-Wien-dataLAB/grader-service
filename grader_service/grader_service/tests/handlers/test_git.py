@@ -266,7 +266,7 @@ def test_git_lookup_push_feedback_student_error():
 
 
 def test_git_lookup_pull_autograde_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/autograde"
+    path = "services/grader/git/iv21s/1/autograde/1"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -277,9 +277,13 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
     # orm mocks
     sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
+    role_mock = Mock()
+    role_mock.role = Scope.instructor
+    handler_mock.get_role = Mock(return_value=role_mock)
     constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="autograde",
                                                            lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+                                                           assignment=sf(Assignment).filter().one(),
+                                                           submission=sf(Submission).get())
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -311,7 +315,7 @@ def test_git_lookup_pull_autograde_student_error():
 
 
 def test_git_lookup_pull_feedback_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/feedback"
+    path = "services/grader/git/iv21s/1/feedback/1"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
