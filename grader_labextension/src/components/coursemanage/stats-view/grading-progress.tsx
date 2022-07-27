@@ -2,7 +2,9 @@ import {filterUserSubmissions, IStatsProps} from "./stats";
 import React from "react";
 import {Submission} from "../../../model/submission";
 import {Card, CardContent, CardHeader} from "@mui/material";
-import {Legend, PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer} from "recharts";
+import {Legend, PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip, TooltipProps} from "recharts";
+import {NameType, ValueType} from "recharts/types/component/DefaultTooltipContent";
+import moment from "moment";
 
 interface GradingProgressData {
   auto: number,
@@ -10,10 +12,28 @@ interface GradingProgressData {
   feedback: number
 }
 
+const CustomTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
+  if (active && payload && payload.length) {
+    const action = (payload[0].payload.name === "Feedback" ? "Generated" : "Graded")
+    return (
+      <div className="custom-tooltip">
+        <p className="recharts-tooltip-label" style={{color: payload[0].payload.fill}}>
+          {payload[0].payload.name}
+        </p>
+        <p className="recharts-tooltip-label">{`${(+payload[0].value * 100).toFixed(0)}% ${action}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const getData = (
   submissions: Submission[],
   users: { students: string[]; tutors: string[]; instructors: string[] }
 ): GradingProgressData => {
+  if (users === null) {
+    return {auto: 0, manual: 0, feedback: 0}
+  }
   const subs = filterUserSubmissions(submissions, users.instructors.concat(users.tutors));
   let totalCounts = subs.reduce((acc, v) => {
     if (v.auto_status === "automatically_graded") acc.a++;
@@ -60,6 +80,7 @@ export const GradingProgress = (props: IStatsProps) => {
           <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" barSize={15} data={data}>
             <PolarAngleAxis type="number" domain={[0, 1]} angleAxisId={0} tick={false}/>
             <RadialBar background dataKey='value' angleAxisId={0}/>
+            <Tooltip content={<CustomTooltip/>}/>
             <Legend layout="horizontal" verticalAlign="bottom" align="center"/>
           </RadialBarChart>
         </ResponsiveContainer>
