@@ -12,7 +12,7 @@ interface GradingProgressData {
   feedback: number
 }
 
-const CustomTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
+const GradingProgressTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
     const action = (payload[0].payload.name === "Feedback" ? "Generated" : "Graded")
     return (
@@ -80,7 +80,7 @@ export const GradingProgress = (props: IStatsProps) => {
           <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" barSize={15} data={data}>
             <PolarAngleAxis type="number" domain={[0, 1]} angleAxisId={0} tick={false}/>
             <RadialBar background dataKey='value' angleAxisId={0}/>
-            <Tooltip content={<CustomTooltip/>}/>
+            <Tooltip content={<GradingProgressTooltip/>}/>
             <Legend layout="horizontal" verticalAlign="bottom" align="center"/>
           </RadialBarChart>
         </ResponsiveContainer>

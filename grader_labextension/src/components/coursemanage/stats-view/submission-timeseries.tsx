@@ -15,7 +15,7 @@ import {Submission} from "../../../model/submission";
 import {NameType, ValueType} from "recharts/types/component/DefaultTooltipContent";
 import {loadNumber, storeNumber} from "../../../services/storage.service";
 
-const CustomTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
+const SubmissionTimeSeriesTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
     return (
       <div className="custom-tooltip">
@@ -89,7 +89,7 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
               </defs>
               <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD. MMM')}/>
               <YAxis dataKey="n"/>
-              <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
+              <Tooltip label={"Number of Submissions"} content={<SubmissionTimeSeriesTooltip/>}/>
               <Area type="monotone" dataKey="n" stroke={"#0088FE"} strokeWidth={2} fillOpacity={1}
                     fill="url(#gradient)"/>
               <Brush

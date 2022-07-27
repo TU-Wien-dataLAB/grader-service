@@ -1,12 +1,27 @@
 import {IStatsProps} from "./stats";
 import React from "react";
 import {Card, CardContent, CardHeader} from "@mui/material";
-import {PolarAngleAxis, RadialBar, PieChart, ResponsiveContainer, Pie, Tooltip} from "recharts";
+import {PolarAngleAxis, RadialBar, PieChart, ResponsiveContainer, Pie, Tooltip, TooltipProps} from "recharts";
 import {GradeBook} from "../../../services/gradebook";
+import {NameType, ValueType} from "recharts/types/component/DefaultTooltipContent";
 
 export interface IAssignmentScoreProps {
   gb: GradeBook
 }
+
+const AssignmentScoreTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip">
+        <p className="recharts-tooltip-label">
+          <span>File: </span><span style={{color: payload[0].payload.fill}}>{payload[0].payload.notebook}</span>
+        </p>
+        <p className="recharts-tooltip-label">{`${payload[0].value} Point${payload[0].value === 1 ? '' : 's'}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -36,7 +51,7 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
             <text fontSize={40} x={"50%"} y={"50%"} dy={12} textAnchor="middle">
               {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(1)}`}
             </text>
-            <Tooltip/>
+            <Tooltip content={<AssignmentScoreTooltip/>}/>
             <Pie data={data} dataKey='points' nameKey='notebook' innerRadius={"65%"} outerRadius={"80%"}
                  paddingAngle={5}/>
           </PieChart>

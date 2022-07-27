@@ -3,9 +3,10 @@ import React from "react";
 import {Submission} from "../../../model/submission";
 import {Assignment} from "../../../model/assignment";
 import {Button, Card, CardContent, CardHeader, TextField, Typography} from "@mui/material";
-import {Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from "recharts";
+import {Bar, BarChart, ResponsiveContainer, Tooltip, TooltipProps, XAxis, YAxis} from "recharts";
 import moment from "moment";
 import {loadNumber, storeNumber} from "../../../services/storage.service";
+import {NameType, ValueType} from "recharts/types/component/DefaultTooltipContent";
 
 interface Bucket {
   start: number,
@@ -43,6 +44,20 @@ const getData = (
     return {name: `${v.start.toFixed(decimalPlaces)}-${v.end.toFixed(decimalPlaces)}`, count: v.count}
   })
 }
+
+const ScoreDistributionTooltip = ({active, payload, label}: TooltipProps<ValueType, NameType>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip">
+        <p className="recharts-tooltip-label" style={{color: "#0088FE"}}>
+          {payload[0].payload.name + " Points"}
+        </p>
+        <p className="recharts-tooltip-label">{`${payload[0].value} Submission${payload[0].value === 1 ? '' : 's'}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const ScoreDistribution = (props: IStatsProps) => {
   const [data, setData] = React.useState([] as { name: string, count: number }[]);
@@ -93,7 +108,7 @@ export const ScoreDistribution = (props: IStatsProps) => {
             >
               <XAxis dataKey="name"/>
               <YAxis dataKey="count"/>
-              <Tooltip/>
+              <Tooltip content={<ScoreDistributionTooltip/>}/>
               <Bar dataKey="count" fill={"#0088FE"}/>
             </BarChart>
           </ResponsiveContainer>
