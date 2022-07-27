@@ -184,10 +184,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             notebookPanel,
             notebook
           );
-          /*(
-            (notebookPanel.layout as PanelLayout).widgets[0]
-              .layout as PanelLayout
-          ).insertWidget(10, switcher);*/
 
           tracker.currentWidget.toolbar.insertItem(10, 'Mode', switcher);
 
@@ -200,11 +196,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             'Deadline',
             deadlineWidget
           );
-
-          /*(
-            (notebookPanel.layout as PanelLayout).widgets[0]
-              .layout as PanelLayout
-          ).insertWidget(11, deadlineWidget);*/
         });
       }, this);
 
@@ -271,7 +262,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     command = AssignmentsCommandIDs.create;
     app.commands.addCommand(command, {
       execute: () => {
-        // Create a blank content widget inside of a MainAreaWidget
+        // Create a blank content widget inside a MainAreaWidget
         const assignmentList = new AssignmentList();
         const assignmentWidget = new MainAreaWidget<AssignmentList>({
           content: assignmentList
