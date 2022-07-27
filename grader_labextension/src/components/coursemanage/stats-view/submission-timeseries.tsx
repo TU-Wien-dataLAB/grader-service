@@ -90,14 +90,13 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
               <XAxis dataKey="time" tickFormatter={(unixTime) => moment(unixTime).format('DD. MMM')}/>
               <YAxis dataKey="n"/>
               <Tooltip label={"Number of Submissions"} content={<CustomTooltip/>}/>
-              <Area type="monotone" dataKey="n" stroke={"#0088FE"} strokeWidth={2} fillOpacity={1} fill="url(#gradient)"/>
+              <Area type="monotone" dataKey="n" stroke={"#0088FE"} strokeWidth={2} fillOpacity={1}
+                    fill="url(#gradient)"/>
               <Brush
                 height={15}
                 startIndex={loadNumber("stats-sub-brush-start", null, props.assignment) || 0}
-                endIndex={loadNumber("stats-sub-brush-end", null, props.assignment) || data.length-1}
                 onChange={e => {
                   storeNumber("stats-sub-brush-start", (e as any).startIndex, null, props.assignment);
-                  storeNumber("stats-sub-brush-end", (e as any).endIndex, null, props.assignment);
                 }}/>
             </AreaChart>
           </ResponsiveContainer>
