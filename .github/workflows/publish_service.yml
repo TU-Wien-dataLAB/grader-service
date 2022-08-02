@@ -10,9 +10,6 @@ name: Upload Grader Service Package
 
 on:
   workflow_call:
-    secrets:
-      PYPI_SETUP_TOKEN:
-        required: true
 
 permissions:
   contents: read
@@ -27,17 +24,13 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.8'
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install twine
     - name: Download a labextension artifact
       uses: actions/download-artifact@v3
       with:
         name: dist-service
         path: grader_service
     - name: Publish package
-      working-directory: grader_service
+      working-directory: ./grader_service
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}

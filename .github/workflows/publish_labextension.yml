@@ -10,9 +10,6 @@ name: Upload Grader Labextension Package
 
 on:
   workflow_call:
-    secrets:
-      PYPI_SETUP_TOKEN:
-        required: true
 
 permissions:
   contents: read

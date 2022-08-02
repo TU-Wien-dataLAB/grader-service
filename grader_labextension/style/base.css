@@ -8,6 +8,7 @@
 @import url('components/lecturecard.css');
 @import url('components/file-view.css');
 @import url('components/grading.css');
+@import url('components/stats.css');
 :root {
     --text-color: #2e373d;
     --accent-color: rgb(243, 114, 0);

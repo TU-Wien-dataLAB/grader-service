@@ -298,7 +298,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
     """
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """
         Returns a specific submission.
@@ -314,6 +314,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
             lecture_id, assignment_id, submission_id
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        if self.get_role(lecture_id).role == Scope.student and submission.username != self.user.name:
+            raise HTTPError(HTTPStatus.NOT_FOUND)
         self.write_json(submission)
 
     @authorize([Scope.tutor, Scope.instructor])
@@ -354,7 +356,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     {submission_id}/properties.
     """
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """
         Returns the properties of a submission,
@@ -372,7 +374,14 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
         if submission.properties is not None:
-            self.write(submission.properties)
+            # delete source cells from properties if user is student
+            if self.get_role(lecture_id).role == Scope.student:
+                model = GradeBookModel.from_dict(json.loads(submission.properties))
+                for notebook in model.notebooks.values():
+                    notebook.source_cells_dict = {}
+                self.write(json.dumps(model.to_dict()))
+            else:
+                self.write(submission.properties)
         else:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
 

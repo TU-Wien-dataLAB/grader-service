@@ -154,7 +154,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         return os.path.join(app.grader_service_dir, "git")
 
     def construct_git_dir(self, repo_type: str, lecture: Lecture, assignment: Assignment,
-                          group_name: Optional[str] = None) -> Optional[str]:
+                          group_name: Optional[str] = None, submission: Optional[Submission] = None) -> Optional[str]:
         """Helper method for every handler that needs to access git directories which returns
         the path of the repository based on the inputs or None if the repo_type is not recognized.
         """
@@ -166,7 +166,12 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         elif repo_type in ["autograde", "feedback"]:
             type_path = os.path.join(assignment_path, repo_type, assignment.type)
             if assignment.type == "user":
-                path = os.path.join(type_path, self.user.name)
+                if repo_type == "autograde":
+                    if submission is None or self.get_role(lecture.id).role < Scope.tutor:
+                        raise HTTPError(403)
+                    path = os.path.join(type_path, submission.username)
+                else:
+                    path = os.path.join(type_path, self.user.name)
             else:
                 group = self.session.query(Group).get((self.user.name, lecture.id))
                 if group is None:

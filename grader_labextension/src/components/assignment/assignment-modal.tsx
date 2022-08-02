@@ -5,17 +5,19 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Lecture } from '../../model/lecture';
-import { Assignment } from '../../model/assignment';
-import { Submission } from '../../model/submission';
-import { ModalTitle } from '../util/modal-title';
-import { Box, Typography } from '@mui/material';
-import { SubmissionList } from './submission-list';
+import {Lecture} from '../../model/lecture';
+import {Assignment} from '../../model/assignment';
+import {Submission} from '../../model/submission';
+import {ModalTitle} from '../util/modal-title';
+import {Box, Typography} from '@mui/material';
+import {SubmissionList} from './submission-list';
 import LoadingOverlay from '../util/overlay';
-import { Feedback } from './feedback';
-import { AssignmentStatus } from './assignment-status';
-import { AssignmentFilesComponent } from './assignment-files';
-import { DeadlineComponent } from '../util/deadline';
+import {Feedback} from './feedback';
+import {AssignmentStatus} from './assignment-status';
+import {AssignmentFilesComponent} from './assignment-files';
+import {DeadlineComponent} from '../util/deadline';
+import {getAllSubmissions} from "../../services/submissions.service";
+
 /**
  * Props for AssignmentModalComponent.
  */
@@ -43,11 +45,15 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
     setShowFeedback(true);
   };
 
+  React.useEffect(() => {
+    setSubmissions(props.submissions);
+  }, [props.submissions])
+
   return (
-    <div style={{ overflow: 'scroll', height: '100%' }}>
-      <ModalTitle title={props.assignment.name} />
-      <Box sx={{ mt: 10 }}>
-        <Typography variant={'h6'} sx={{ ml: 2 }}>
+    <div style={{overflow: 'scroll', height: '100%'}}>
+      <ModalTitle title={props.assignment.name}/>
+      <Box sx={{mt: 10}}>
+        <Typography variant={'h6'} sx={{ml: 2}}>
           Status
         </Typography>
         <AssignmentStatus
@@ -56,10 +62,10 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           submissions={submissions}
         />
 
-        <Typography variant={'h6'} sx={{ ml: 2 }}>
+        <Typography variant={'h6'} sx={{ml: 2}}>
           Files
           <DeadlineComponent
-            sx={{ ml: 1 }}
+            sx={{ml: 1}}
             due_date={props.assignment.due_date}
             compact={false}
             component={'chip'}
@@ -71,13 +77,13 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           setSubmissions={setSubmissions}
         />
 
-        <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>
+        <Typography variant={'h6'} sx={{ml: 2, mt: 3}}>
           Submissions
         </Typography>
         <SubmissionList
           submissions={submissions}
           openFeedback={openFeedback}
-          sx={{ m: 2, mt: 1 }}
+          sx={{m: 2, mt: 1}}
         />
       </Box>
       <LoadingOverlay

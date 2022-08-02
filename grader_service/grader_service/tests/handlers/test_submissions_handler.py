@@ -612,7 +612,7 @@ async def test_get_submission_unauthorized(
             url, method="GET", headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
-    assert e.code == 403
+    assert e.code == 404
 
 
 async def test_put_submission(

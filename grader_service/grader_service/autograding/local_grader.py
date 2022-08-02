@@ -213,6 +213,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :return: Coroutine
         """
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
+        self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
