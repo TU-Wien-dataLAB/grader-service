@@ -20,6 +20,10 @@ export function getAssignment(lectureId: number, assignmentId: number): Promise<
   return request<Assignment>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}`)
 }
 
+export function getAssignmentProperties(lectureId: number, assignmentId: number): Promise<any> {
+  return request<any>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}/properties`)
+}
+
 export function updateAssignment(lectureId: number, assignment: Assignment): Promise<Assignment> {
   return request<Assignment, Assignment>(HTTPMethod.PUT, `/lectures/${lectureId}/assignments/${assignment.id}`, assignment)
 }

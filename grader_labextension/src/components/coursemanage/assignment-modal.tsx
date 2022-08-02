@@ -12,13 +12,18 @@ import {
   Box,
   Paper
 } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Assignment } from '../../model/assignment';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { GradingComponent } from './grading-view/grading';
-import { OverviewComponent } from './overview-view/overview';
-import { Submission } from '../../model/submission';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import {Assignment} from '../../model/assignment';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions} from '../../services/submissions.service';
+import {GradingComponent} from './grading-view/grading';
+import {OverviewComponent} from './overview-view/overview';
+import {Submission} from '../../model/submission';
+import {StatsComponent} from "./stats-view/stats";
+import {GradeBook} from "../../services/gradebook";
+import {loadNumber, storeNumber} from "../../services/storage.service";
 
 export interface IAssignmentModalProps {
   lecture: Lecture;
@@ -34,7 +39,9 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const [latestSubmissions, setSubmissions] = React.useState(
     props.latestSubmissions
   );
-  const [navigation, setNavigation] = React.useState(0);
+  const [navigation, setNavigation] = React.useState(
+    loadNumber("cm-navigation", null, props.assignment) || 0
+  );
 
   return (
     <Box>
@@ -67,10 +74,20 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             root={props.root}
           />
         )}
+        {navigation === 2 && (
+          <StatsComponent
+            lecture={props.lecture}
+            assignment={props.assignment}
+            allSubmissions={props.allSubmissions}
+            latestSubmissions={props.latestSubmissions}
+            users={props.users}
+            root={props.root}
+          />
+        )}
       </Box>
 
       <Paper
-        sx={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
+        sx={{position: 'absolute', bottom: 0, left: 0, right: 0}}
         elevation={3}
       >
         <BottomNavigation
@@ -78,6 +95,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           value={navigation}
           onChange={(event, newValue) => {
             console.log(newValue);
+            storeNumber("cm-navigation", newValue, null, props.assignment);
             setNavigation(newValue);
             getAllSubmissions(
               props.lecture,
@@ -89,7 +107,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             });
           }}
         >
-          <BottomNavigationAction label="Overview" icon={<MoreVertIcon />} />
+          <BottomNavigationAction label="Overview" icon={<DashboardIcon/>}/>
           <BottomNavigationAction
             label="Submissions"
             icon={
@@ -98,10 +116,11 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
                 badgeContent={props.latestSubmissions?.length}
                 showZero={props.latestSubmissions !== null}
               >
-                <MoreVertIcon />
+                <FormatListNumberedIcon/>
               </Badge>
             }
           />
+          <BottomNavigationAction label="Stats" icon={<QueryStatsIcon/>}/>
         </BottomNavigation>
       </Paper>
     </Box>

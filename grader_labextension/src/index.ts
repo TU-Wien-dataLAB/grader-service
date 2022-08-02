@@ -184,10 +184,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             notebookPanel,
             notebook
           );
-          /*(
-            (notebookPanel.layout as PanelLayout).widgets[0]
-              .layout as PanelLayout
-          ).insertWidget(10, switcher);*/
 
           tracker.currentWidget.toolbar.insertItem(10, 'Mode', switcher);
 
@@ -196,15 +192,10 @@ const extension: JupyterFrontEndPlugin<void> = {
             tracker.currentWidget.context.path
           );
           tracker.currentWidget.toolbar.insertItem(
-            10,
+            11,
             'Deadline',
             deadlineWidget
           );
-
-          /*(
-            (notebookPanel.layout as PanelLayout).widgets[0]
-              .layout as PanelLayout
-          ).insertWidget(11, deadlineWidget);*/
         });
       }, this);
 
@@ -224,8 +215,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (notebookPaths[0] === 'manualgrade') {
           return;
         }
-        const switcher: any = (notebookPanel.toolbar.layout as PanelLayout)
-          .widgets[10];
+
+        let switcher: any = null;
+        (notebookPanel.toolbar.layout as PanelLayout).widgets.map(w => {
+          if (w instanceof NotebookModeSwitch) {
+            switcher = w;
+          }
+        });
 
         const cell: Cell = notebook.activeCell;
 
@@ -233,10 +229,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (
           switcher.mode &&
           (cell.layout as PanelLayout).widgets.every(w => {
-            if (w instanceof CreationWidget) {
-              return false;
-            }
-            return true;
+            return !(w instanceof CreationWidget);
           })
         ) {
           (cell.layout as PanelLayout).insertWidget(
@@ -269,7 +262,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     command = AssignmentsCommandIDs.create;
     app.commands.addCommand(command, {
       execute: () => {
-        // Create a blank content widget inside of a MainAreaWidget
+        // Create a blank content widget inside a MainAreaWidget
         const assignmentList = new AssignmentList();
         const assignmentWidget = new MainAreaWidget<AssignmentList>({
           content: assignmentList
@@ -285,73 +278,80 @@ const extension: JupyterFrontEndPlugin<void> = {
     });
 
     // If the user has no instructor roles in any lecture we do not display the course management
-    UserPermissions.loadPermissions().then(() => {
-      const permissions = UserPermissions.getPermissions();
-      let sum = 0;
-      for (const el in permissions) {
-        if (permissions.hasOwnProperty(el)) {
-          sum += permissions[el];
+    UserPermissions.loadPermissions()
+      .then(() => {
+        const permissions = UserPermissions.getPermissions();
+        let sum = 0;
+        for (const el in permissions) {
+          if (permissions.hasOwnProperty(el)) {
+            sum += permissions[el];
+          }
         }
-      }
-      if (sum !== 0) {
-        console.log(
-          'Non-student permissions found! Adding coursemanage launcher and connecting creation mode'
-        );
-        connectTrackerSignals(tracker);
+        if (sum !== 0) {
+          console.log(
+            'Non-student permissions found! Adding coursemanage launcher and connecting creation mode'
+          );
+          connectTrackerSignals(tracker);
 
-        command = CourseManageCommandIDs.open;
+          command = CourseManageCommandIDs.open;
+          app.commands.addCommand(command, {
+            label: 'Course Management',
+            execute: async () => {
+              const gradingWidget = await app.commands.execute(
+                CourseManageCommandIDs.create
+              );
+
+              if (!gradingWidget.isAttached) {
+                // Attach the widget to the main work area if it's not there
+                app.shell.add(gradingWidget, 'main');
+              }
+              // Activate the widget
+              app.shell.activateById(gradingWidget.id);
+            },
+            icon: checkIcon
+          });
+
+          // Add the command to the launcher
+          console.log('Add course management launcher');
+          launcher.add({
+            command: command,
+            category: 'Assignments',
+            rank: 0
+          });
+        }
+
+        // only add assignment list if user permissions can be loaded
+        command = AssignmentsCommandIDs.open;
         app.commands.addCommand(command, {
-          label: 'Course Management',
+          label: 'Assignments',
           execute: async () => {
-            const gradingWidget = await app.commands.execute(
-              CourseManageCommandIDs.create
-            );
+            const assignmentWidget: MainAreaWidget<AssignmentList> =
+              await app.commands.execute(AssignmentsCommandIDs.create);
 
-            if (!gradingWidget.isAttached) {
+            if (!assignmentWidget.isAttached) {
               // Attach the widget to the main work area if it's not there
-              app.shell.add(gradingWidget, 'main');
+              app.shell.add(assignmentWidget, 'main');
             }
             // Activate the widget
-            app.shell.activateById(gradingWidget.id);
+            app.shell.activateById(assignmentWidget.id);
           },
-          icon: checkIcon
+          icon: editIcon
         });
 
         // Add the command to the launcher
-        console.log('Add course management launcher');
+        console.log('Add assignment launcher');
         launcher.add({
           command: command,
           category: 'Assignments',
           rank: 0
         });
-      }
-
-      // only add assignment list if user permissions can be loaded
-      command = AssignmentsCommandIDs.open;
-      app.commands.addCommand(command, {
-        label: 'Assignments',
-        execute: async () => {
-          const assignmentWidget: MainAreaWidget<AssignmentList> =
-            await app.commands.execute(AssignmentsCommandIDs.create);
-
-          if (!assignmentWidget.isAttached) {
-            // Attach the widget to the main work area if it's not there
-            app.shell.add(assignmentWidget, 'main');
-          }
-          // Activate the widget
-          app.shell.activateById(assignmentWidget.id);
-        },
-        icon: editIcon
-      });
-
-      // Add the command to the launcher
-      console.log('Add assignment launcher');
-      launcher.add({
-        command: command,
-        category: 'Assignments',
-        rank: 0
-      });
-    });
+      })
+      .catch(_ =>
+        showErrorMessage(
+          'Grader Service Unavailable',
+          'Could not connect to the grader service! Please contact your system administrator!'
+        )
+      );
 
     command = NotebookExecuteIDs.run;
     app.commands.addCommand(command, {
@@ -366,9 +366,15 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.commands.addCommand(command, {
       label: 'Revert cell',
       isVisible: () => {
+        if (tracker.activeCell === null) {
+          return false;
+        }
         return tracker.activeCell.model.metadata.has('revert');
       },
       isEnabled: () => {
+        if (tracker.activeCell === null) {
+          return false;
+        }
         return tracker.activeCell.model.metadata.has('revert');
       },
       execute: () => {
@@ -394,9 +400,15 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.commands.addCommand(command, {
       label: 'Show hint',
       isVisible: () => {
+        if (tracker.activeCell === null) {
+          return false;
+        }
         return tracker.activeCell.model.metadata.has('hint');
       },
       isEnabled: () => {
+        if (tracker.activeCell === null) {
+          return false;
+        }
         return tracker.activeCell.model.metadata.has('hint');
       },
       execute: () => {

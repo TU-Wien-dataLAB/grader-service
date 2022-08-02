@@ -72,7 +72,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
             <ListItemText
               primary={utcToLocalFormat(value.submitted_at)}
               secondary={
-                value.score
+                value.feedback_available
                   ? `${value.score} Point` + (value.score === 1 ? '' : 's')
                   : null
               }

@@ -204,3 +204,33 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
         shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{assignment["id"]}'), ignore_errors=True)
         self.write("OK")
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?"
+)
+class AssignmentPropertiesHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/properties.
+    """
+
+    async def get(self, lecture_id: int, assignment_id: int):
+        """Sends a GET-request to the grader service and returns the properties of an assignment
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        """
+
+        try:
+            response = await self.request_service.request(
+                method="GET",
+                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/properties",
+                header=self.grader_authentication_header,
+            )
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
+        self.write(json.dumps(response))
+
