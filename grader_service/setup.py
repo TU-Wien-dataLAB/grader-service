@@ -14,7 +14,7 @@ from grader_service.migrate.migrate import main as migrate_main
 from grader_service._version import __version__
 
 source_root = Path(__file__).parent
-# Read the requirements
+# Read the requirements file
 with (source_root / "requirements.txt").open(encoding="utf8") as f:
     requirements = f.readlines()
 

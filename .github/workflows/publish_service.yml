@@ -34,5 +34,6 @@ jobs:
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
+      # skip existing to allow helm push if service version did not change
       run: |
-        twine upload dist-service/*
+        twine upload --skip-existing dist-service/*
