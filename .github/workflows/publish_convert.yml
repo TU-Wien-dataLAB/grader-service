@@ -30,9 +30,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: dist-convert
+        path: grader_convert
     - name: Publish package
+      working-directory: ./grader_convert
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       run: |
-        twine upload dist/*
+        twine upload dist-convert/*
