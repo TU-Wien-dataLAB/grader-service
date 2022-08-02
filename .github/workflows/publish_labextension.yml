@@ -30,14 +30,13 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: dist-labextension
-        path: grader_labextension
+        path: grader_labextension/dist
     - name: Publish the Python package
       working-directory: ./grader_labextension
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
-      # skip existing for possible npm release and allow helm push if labextension version did not change
+      # skip existing for possible npm release
       run: |
-        ls
-        ls ..
-        twine upload --skip-existing dist-labextension/*
+        ls ./dist
+        twine upload --skip-existing dist/*

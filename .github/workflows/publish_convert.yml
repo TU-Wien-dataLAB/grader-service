@@ -30,14 +30,12 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: dist-convert
-        path: grader_convert
+        path: grader_convert/dist
     - name: Publish package
       working-directory: ./grader_convert
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
-      # skip existing to allow helm push if convert version did not change
       run: |
-        ls
-        ls ..
-        twine upload --skip-existing dist-convert/*
+        ls ./dist
+        twine upload dist/*
