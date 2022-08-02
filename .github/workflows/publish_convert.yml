@@ -36,5 +36,8 @@ jobs:
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
+      # skip existing to allow helm push if convert version did not change
       run: |
-        twine upload dist-convert/*
+        ls
+        ls ..
+        twine upload --skip-existing dist-convert/*

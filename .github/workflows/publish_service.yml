@@ -40,4 +40,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       # skip existing to allow helm push if service version did not change
       run: |
+        ls
+        ls ..
         twine upload --skip-existing dist-service/*

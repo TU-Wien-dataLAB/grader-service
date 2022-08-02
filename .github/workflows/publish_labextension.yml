@@ -38,4 +38,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       # skip existing for possible npm release and allow helm push if labextension version did not change
       run: |
+        ls
+        ls ..
         twine upload --skip-existing dist-labextension/*
