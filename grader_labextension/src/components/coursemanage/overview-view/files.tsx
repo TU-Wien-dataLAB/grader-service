@@ -142,13 +142,12 @@ export const Files = (props: IFilesProps) => {
           });
           setGenerateTimestamp(moment().valueOf());
           setSelectedDir(dir);
-        },
+        }).catch(
         error => {
           enqueueSnackbar(error.message, {
             variant: 'error'
           });
-        }
-      );
+        });
     } else {
       setSelectedDir(dir);
     }
