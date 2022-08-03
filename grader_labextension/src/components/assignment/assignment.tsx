@@ -17,24 +17,24 @@ import {
   Stack,
   Typography
 } from '@mui/material';
-import { red } from '@mui/material/colors';
+import {red} from '@mui/material/colors';
 
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
-import { Assignment } from '../../model/assignment';
+import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
+import {Lecture} from '../../model/lecture';
+import {getAllSubmissions} from '../../services/submissions.service';
 import {
   getAssignment,
   pullAssignment
 } from '../../services/assignments.service';
-import { DeadlineComponent } from '../util/deadline';
-import { AssignmentModalComponent } from './assignment-modal';
-import { Submission } from '../../model/submission';
-import { getFiles } from '../../services/file.service';
-import { CardDescriptor } from '../util/card-descriptor';
+import {DeadlineComponent} from '../util/deadline';
+import {AssignmentModalComponent} from './assignment-modal';
+import {Submission} from '../../model/submission';
+import {getFiles} from '../../services/file.service';
+import {CardDescriptor} from '../util/card-descriptor';
 import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
 
 /**
@@ -73,6 +73,10 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       }
     );
     getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
+      if (files.length === 0) {
+        pullAssignment(props.lecture.id, assignment.id, 'assignment')
+          .then(_ => console.log("No Files found! Pulled assignment."));
+      }
       setFiles(files);
     });
 
@@ -102,7 +106,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   };
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{height: '100%'}}>
       <Card
         sx={{
           maxWidth: 200,
@@ -112,17 +116,14 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
           bgcolor: assignment.status === 'complete' ? '#F1F1F1' : 'white'
         }}
         onClick={async () => {
-          if (files.length === 0) {
-            await pullAssignment(props.lecture.id, assignment.id, 'assignment');
-          }
           setDisplayAssignment(true);
           storeNumber("a-opened-assignment", assignment.id);
         }}
       >
         <CardActionArea
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
-          <CardContent sx={{ flexGrow: 1 }}>
+          <CardContent sx={{flexGrow: 1}}>
             <Typography
               variant="h5"
               component="div"
@@ -135,7 +136,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
               {assignment.name}
             </Typography>
             <Typography
-              sx={{ fontSize: 14 }}
+              sx={{fontSize: 14}}
               color="text.secondary"
               gutterBottom
             >
@@ -155,23 +156,23 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 </Typography>
               )}
             </Typography>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{mt: 1, mb: 1}}/>
 
             <CardDescriptor
               descriptor={'Submission'}
               value={submissions.length}
             />
             <CardDescriptor
-              sx={{ mt: 0.25 }}
+              sx={{mt: 0.25}}
               descriptor={(hasFeedback ? 'Has' : 'No') + ' Feedback'}
               value={
                 hasFeedback ? (
                   <CheckCircleOutlineOutlinedIcon
-                    sx={{ fontSize: 16, mr: -0.25, mb: -0.35 }}
+                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
                   />
                 ) : (
                   <CancelOutlinedIcon
-                    sx={{ fontSize: 16, mr: -0.25, mb: -0.35 }}
+                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
                   />
                 )
               }
