@@ -2,7 +2,7 @@ import shutil
 from unittest.mock import patch
 
 from . import _create_input_output_dirs
-from converters import GenerateSolution
+from grader_convert.converters import GenerateSolution
 
 
 def test_generate_solution(tmp_path):

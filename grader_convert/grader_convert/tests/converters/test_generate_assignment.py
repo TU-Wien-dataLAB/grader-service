@@ -1,5 +1,5 @@
 from . import _create_input_output_dirs
-from converters import GenerateAssignment
+from grader_convert.converters import GenerateAssignment
 
 
 def test_generate_assignment(tmp_path):

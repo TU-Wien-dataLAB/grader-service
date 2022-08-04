@@ -2,7 +2,7 @@ import shutil
 from unittest.mock import patch
 
 from . import _create_input_output_dirs
-from converters import GenerateAssignment, Autograde, GenerateFeedback
+from grader_convert.converters import GenerateAssignment, Autograde, GenerateFeedback
 
 
 def test_generate_feedback(tmp_path):
