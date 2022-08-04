@@ -259,7 +259,7 @@ def get_osusername():
 
 
 def get_username():
-    """ Get the username, use os user name but override if username is jovyan ."""
+    """ Get the username, use os username but override if username is jovyan ."""
     osname = get_osusername()
     if osname == "jovyan":
         return os.environ.get("JUPYTERHUB_USER", "jovyan")
