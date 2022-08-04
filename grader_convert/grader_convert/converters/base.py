@@ -1,9 +1,8 @@
-
-
 import glob
 import importlib
 import os
 import re
+import shutil
 import traceback
 import typing
 from textwrap import dedent
@@ -36,9 +35,7 @@ class GraderConvertException(Exception):
 
 
 class BaseConverter(LoggingConfigurable):
-
     notebooks = List([])
-    assignments = Dict({})
     writer = Instance(FilesWriter)
     exporter = Instance(Exporter)
     exporter_class = Type(NotebookExporter, klass=Exporter).tag(config=True)
@@ -57,7 +54,7 @@ class BaseConverter(LoggingConfigurable):
             """
             List of file names or file globs.
             Upon copying directories recursively, matching files and
-            directories will be ignored with a debug message.
+            directories will be ignored.
             """
         ),
     ).tag(config=True)
@@ -136,12 +133,13 @@ class BaseConverter(LoggingConfigurable):
         return value
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: typing.Any
+            self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: typing.Any
     ) -> None:
         super(BaseConverter, self).__init__(**kwargs)
         self._input_directory = os.path.abspath(os.path.expanduser(input_dir))
         self._output_directory = os.path.abspath(os.path.expanduser(output_dir))
         self._file_pattern = file_pattern
+        self._copy_files = copy_files
         if self.parent and hasattr(self.parent, "logfile"):
             self.logfile = self.parent.logfile
         else:
@@ -193,7 +191,7 @@ class BaseConverter(LoggingConfigurable):
             self.log.warning("No notebooks were matched by '%s'", notebook_glob)
 
     def init_single_notebook_resources(
-        self, notebook_filename: str
+            self, notebook_filename: str
     ) -> typing.Dict[str, typing.Any]:
         resources = {}
         resources["unique_key"] = os.path.splitext(os.path.basename(notebook_filename))[
@@ -227,13 +225,25 @@ class BaseConverter(LoggingConfigurable):
         if self.force:
             return True
 
-        # if files exist in in the destination and force is not specified return false
+        # if files exist in the destination and force is not specified return false
         src_files = glob.glob(self._format_source())
         for src in src_files:
             file_name = os.path.join(dest, os.path.relpath(src, source))
             if os.path.exists(os.path.join(dest, file_name)):
                 return False
         return True
+
+    def copy_unmatched_files(self):
+        """
+        Copy the files from source to the output directory that were not matched by the file pattern.
+        :return: None
+        """
+        dst = self._output_directory
+        src = self._input_directory
+
+        self.log.info(f"Copying unmatched files from {src} to {dst}")
+        ignore = shutil.ignore_patterns(*self.ignore + [self._file_pattern])
+        shutil.copytree(src, dst, ignore=ignore, dirs_exist_ok=True)
 
     def set_permissions(self) -> None:
         self.log.info("Setting destination file permissions to %s", self.permissions)
@@ -285,6 +295,9 @@ class BaseConverter(LoggingConfigurable):
             # set assignment permissions
             self.set_permissions()
             self.run_post_convert_hook()
+
+            if self._copy_files:
+                self.copy_unmatched_files()
 
         except UnresponsiveKernelError as e:
             self.log.error(
