@@ -22,6 +22,8 @@ volumePermissions:
 autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
 
 # pvc
+# If storageClassName is not defined or commented as below, the default storageClass from your cluster will be used.
+
 #storageClassName: "csi-cinder-sc-delete"
 accessMode: "ReadWriteOnce"
 capacity: "5G"
