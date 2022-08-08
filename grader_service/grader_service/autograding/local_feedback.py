@@ -89,7 +89,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.properties)
 
-        autograder = GenerateFeedback(self.input_path, self.output_path, "*.ipynb")
+        autograder = GenerateFeedback(self.input_path, self.output_path, "*.ipynb", copy_files=False)
         autograder.force = True
 
         log_stream = io.StringIO()

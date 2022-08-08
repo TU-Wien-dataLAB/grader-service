@@ -96,7 +96,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
-        self.assignment = self.submission.assignment
         self.lecture = self.assignment.lecture
 
         if self.kube_context is None:
@@ -140,7 +139,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         command = f'{self.convert_executable} autograde ' \
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb" --log-level=INFO'
+                  f'-p "*.ipynb"' \
+                  f'--copy_files={self.assignment.allow_files} --log-level=INFO'
         # command = "sleep 10000"
         pod = make_pod(
             name=self.submission.commit_hash,

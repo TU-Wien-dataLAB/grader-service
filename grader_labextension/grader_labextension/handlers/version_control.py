@@ -56,6 +56,7 @@ class GenerateHandler(ExtensionBaseHandler):
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
             output_dir=f"{self.root_dir}/release/{code}/{a_id}",
             file_pattern="*.ipynb",
+            copy_files=assignment["allow_files"]
         )
         generator.force = True
         self.log.info("Starting GenerateAssignment converter")
@@ -289,7 +290,10 @@ class PushHandler(ExtensionBaseHandler):
 
             # call nbconvert before pushing
             generator = GenerateAssignment(
-                input_dir=src_path, output_dir=git_service.path, file_pattern="*.ipynb"
+                input_dir=src_path,
+                output_dir=git_service.path,
+                file_pattern="*.ipynb",
+                copy_files=assignment["allow_files"]
             )
             generator.force = True
             self.log.info("Starting GenerateAssignment converter")

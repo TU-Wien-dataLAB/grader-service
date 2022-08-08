@@ -15,7 +15,7 @@ class Assignment(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, type=None, due_date=None, status=None, points=None, automatic_grading=None, max_submissions=None):  # noqa: E501
+    def __init__(self, id=None, name=None, type=None, due_date=None, status=None, points=None, automatic_grading=None, max_submissions=None, allow_files=None):  # noqa: E501
         """Assignment - a model defined in OpenAPI
 
         :param id: The id of this Assignment.  # noqa: E501
@@ -34,6 +34,8 @@ class Assignment(Model):
         :type automatic_grading: str
         :param max_submissions: The max_submissions of this Assignment.  # noqa: E501
         :type max_submissions: int
+        :param allow_files: The allow_files of this Assignment.  # noqa: E501
+        :type allow_files: bool
         """
         self.openapi_types = {
             'id': int,
@@ -43,7 +45,8 @@ class Assignment(Model):
             'status': str,
             'points': float,
             'automatic_grading': str,
-            'max_submissions': int
+            'max_submissions': int,
+            'allow_files': bool
         }
 
         self.attribute_map = {
@@ -54,7 +57,8 @@ class Assignment(Model):
             'status': 'status',
             'points': 'points',
             'automatic_grading': 'automatic_grading',
-            'max_submissions': 'max_submissions'
+            'max_submissions': 'max_submissions',
+            'allow_files': 'allow_files'
         }
 
         self._id = id
@@ -65,6 +69,7 @@ class Assignment(Model):
         self._points = points
         self._automatic_grading = automatic_grading
         self._max_submissions = max_submissions
+        self._allow_files = allow_files
 
     @classmethod
     def from_dict(cls, dikt) -> 'Assignment':
@@ -262,3 +267,24 @@ class Assignment(Model):
         """
 
         self._max_submissions = max_submissions
+
+    @property
+    def allow_files(self):
+        """Gets the allow_files of this Assignment.
+
+
+        :return: The allow_files of this Assignment.
+        :rtype: bool
+        """
+        return self._allow_files
+
+    @allow_files.setter
+    def allow_files(self, allow_files):
+        """Sets the allow_files of this Assignment.
+
+
+        :param allow_files: The allow_files of this Assignment.
+        :type allow_files: bool
+        """
+
+        self._allow_files = allow_files
