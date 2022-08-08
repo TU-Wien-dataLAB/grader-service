@@ -93,6 +93,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                 "If the context is None (default), the incluster config will be used.").tag(config=True)
     volumes = List(default_value=[], allow_none=False).tag(config=True)
     volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
+    convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
