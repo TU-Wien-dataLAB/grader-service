@@ -66,6 +66,7 @@ jupyter server extension enable grader_labextension
 jlpm build
 ```
 
+
 You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
 
 ```bash
