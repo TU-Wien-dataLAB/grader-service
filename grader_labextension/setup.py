@@ -18,7 +18,7 @@ HERE = Path(__file__).parent.resolve()
 # Get the package info from package.json
 pkg_json = json.loads((HERE / "package.json").read_bytes())
 
-# The package name of the project
+# The name of the project
 name = "grader_labextension"
 
 lab_path = (HERE / pkg_json["jupyterlab"]["outputDir"])

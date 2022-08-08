@@ -135,8 +135,8 @@ export const Files = (props: IFilesProps) => {
       dir === 'release' &&
       (generateTimestamp === null || generateTimestamp < srcChangedTimestamp)
     ) {
-      await generateAssignment(lecture.id, assignment).then(
-        () => {
+      await generateAssignment(lecture.id, assignment)
+        .then(() => {
           enqueueSnackbar('Generated Student Version Notebooks', {
             variant: 'success'
           });
