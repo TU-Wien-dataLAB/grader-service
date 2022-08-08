@@ -94,6 +94,8 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignment.deleted = DeleteState.active
         assignment.automatic_grading = assignment_model.automatic_grading
         assignment.max_submissions = assignment_model.max_submissions
+        assignment.allow_files = assignment_model.allow_files if assignment_model.allow_files is not None else False
+
         self.session.add(assignment)
         try:
             self.session.commit()
@@ -146,6 +148,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment.type = assignment_model.type
         assignment.automatic_grading = assignment_model.automatic_grading
         assignment.max_submissions = assignment_model.max_submissions
+        assignment.allow_files = assignment_model.allow_files if assignment_model.allow_files is not None else False
 
         if assignment.automatic_grading == AutoGradingBehaviour.full_auto.name and assignment.properties is not None:
             model = GradeBookModel.from_dict(json.loads(assignment.properties))

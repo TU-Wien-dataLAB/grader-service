@@ -94,7 +94,8 @@ export const EditDialog = (props: IEditDialogProps) => {
           : null,
       type: props.assignment.type,
       automatic_grading: props.assignment.automatic_grading,
-      max_submissions: (props.assignment.max_submissions || null)
+      max_submissions: (props.assignment.max_submissions || null),
+      allow_files: (props.assignment.allow_files || false)
     },
     validationSchema: validationSchema,
     onSubmit: values => {
@@ -211,7 +212,7 @@ export const EditDialog = (props: IEditDialogProps) => {
                 name="max_submissions"
                 placeholder="Submissions"
                 value={(formik.values.max_submissions || null)}
-                InputProps={{ inputProps: { min: 1} }}
+                InputProps={{inputProps: {min: 1}}}
                 onChange={e => {
                   formik.setFieldValue('max_submissions', +e.target.value);
                 }}
@@ -245,6 +246,19 @@ export const EditDialog = (props: IEditDialogProps) => {
                 <MenuItem value={'auto'}>Automatic Grading</MenuItem>
                 <MenuItem value={'full_auto'}>Fully Automatic Grading</MenuItem>
               </TextField>
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formik.values.allow_files}
+                    onChange={async e => {
+                      console.log(e.target.checked);
+                      await formik.setFieldValue('allow_files', e.target.checked);
+                    }}
+                  />
+                }
+                label="Allow Non-Gradable Files"
+              />
 
               {/* Not included in release 1.0
               <InputLabel id="demo-simple-select-label">Type</InputLabel>
@@ -459,7 +473,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
       due_date: null,
       type: 'user',
       automatic_grading: 'unassisted' as AutomaticGradingEnum,
-      max_submissions: undefined as number
+      max_submissions: undefined as number,
+      allow_files: false
     },
     validationSchema: validationSchema,
     onSubmit: values => {
@@ -468,7 +483,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         due_date: values.due_date,
         type: values.type as TypeEnum,
         automatic_grading: values.automatic_grading as AutomaticGradingEnum,
-        max_submissions: +values.max_submissions
+        max_submissions: +values.max_submissions,
+        allow_files: values.allow_files
       };
       createAssignment(props.lecture.id, updatedAssignment).then(
         a => console.log(a),
@@ -618,19 +634,34 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 <MenuItem value={'full_auto'}>Fully Automatic Grading</MenuItem>
               </TextField>
 
-              <InputLabel id="demo-simple-select-label">Type</InputLabel>
-              <Select
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formik.values.allow_files}
+                    onChange={async e => {
+                      console.log(e.target.checked);
+                      await formik.setFieldValue('allow_files', e.target.checked);
+                    }}
+                  />
+                }
+                label="Allow Non-Gradable Files"
+              />
+
+              {/* Not included in release 1.0
+                <InputLabel id="demo-simple-select-label">Type</InputLabel>
+                <Select
                 labelId="assignment-type-select-label"
                 id="assignment-type-select"
                 value={formik.values.type}
                 label="Type"
                 onChange={e => {
-                  formik.setFieldValue('type', e.target.value);
-                }}
-              >
+                formik.setFieldValue('type', e.target.value);
+              }}
+                >
                 <MenuItem value={'user'}>User</MenuItem>
                 <MenuItem value={'group'}>Group</MenuItem>
-              </Select>
+                </Select>
+              */}
             </Stack>
           </DialogContent>
           <DialogActions>

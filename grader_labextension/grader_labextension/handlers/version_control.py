@@ -6,6 +6,7 @@
 
 import json
 import os
+import shutil
 from http import HTTPStatus
 from urllib.parse import unquote, quote
 from tornado.web import HTTPError
@@ -52,13 +53,24 @@ class GenerateHandler(ExtensionBaseHandler):
         code = lecture["code"]
         a_id = assignment["id"]
 
+        output_dir = f"{self.root_dir}/release/{code}/{a_id}"
         generator = GenerateAssignment(
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
-            output_dir=f"{self.root_dir}/release/{code}/{a_id}",
+            output_dir=output_dir,
             file_pattern="*.ipynb",
             copy_files=assignment["allow_files"]
         )
         generator.force = True
+
+        try:
+            # delete contents of output directory since we might have chosen to disallow files
+            self.log.info("Deleting files in release directory")
+            shutil.rmtree(output_dir)
+            os.mkdir(output_dir)
+        except Exception as e:
+            self.log.error(e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
+
         self.log.info("Starting GenerateAssignment converter")
         try:
             generator.start()
@@ -296,6 +308,16 @@ class PushHandler(ExtensionBaseHandler):
                 copy_files=assignment["allow_files"]
             )
             generator.force = True
+
+            try:
+                # delete contents of output directory since we might have chosen to disallow files
+                self.log.info("Deleting files in release directory")
+                shutil.rmtree(git_service.path)
+                os.mkdir(git_service.path)
+            except Exception as e:
+                self.log.error(e)
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
+
             self.log.info("Starting GenerateAssignment converter")
             try:
                 generator.start()
