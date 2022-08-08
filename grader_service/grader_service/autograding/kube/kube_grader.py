@@ -94,6 +94,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     volumes = List(default_value=[], allow_none=False).tag(config=True)
     volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
+    namespace = Unicode(default_value="default", allow_none=False).tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
@@ -156,7 +157,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             tolerations=None,
         )
         self.log.info(f"Starting pod {pod.metadata.name} with command: {command}")
-        pod = self.client.create_namespaced_pod(namespace="default", body=pod)
+        pod = self.client.create_namespaced_pod(namespace=self.namespace, body=pod)
         return GraderPod(pod, self.client, config=self.config)
 
     async def _run(self):
