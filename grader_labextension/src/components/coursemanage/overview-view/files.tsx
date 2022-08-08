@@ -135,20 +135,19 @@ export const Files = (props: IFilesProps) => {
       dir === 'release' &&
       (generateTimestamp === null || generateTimestamp < srcChangedTimestamp)
     ) {
-      await generateAssignment(lecture.id, assignment).then(
-        () => {
+      await generateAssignment(lecture.id, assignment)
+        .then(() => {
           enqueueSnackbar('Generated Student Version Notebooks', {
             variant: 'success'
           });
           setGenerateTimestamp(moment().valueOf());
           setSelectedDir(dir);
-        },
-        error => {
+        })
+        .catch(error => {
           enqueueSnackbar(error.message, {
             variant: 'error'
           });
-        }
-      );
+        });
     } else {
       setSelectedDir(dir);
     }
