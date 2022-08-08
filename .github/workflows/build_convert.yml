@@ -6,21 +6,20 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Grader Convert Package
+name: Build Convert
 
 on:
-  release:
-    types: [published]
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  publish:
-
+  build:
     runs-on: ubuntu-latest
-
     steps:
+
+    # BUILD
     - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v3
@@ -35,10 +34,29 @@ jobs:
     - name: Build package
       working-directory: ./grader_convert
       run: python -m build -n
-    - name: Publish package
+
+    # TEST
+    - name: Install test dependencies
       working-directory: ./grader_convert
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
       run: |
-        twine upload dist/*
+        python -m venv venv
+        source venv/bin/activate
+        pip install ipykernel
+        python -m ipykernel install --user --name=python3
+        pip install -r requirements.txt
+        pip install -r ../requirements-test.txt
+    - name: Run tests
+      working-directory: ./grader_convert
+      run: |
+        source venv/bin/activate
+        pytest ./grader_convert/tests
+
+    # Upload Artifacts
+    - name: Archive convert artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist-convert
+        retention-days: 1
+        path: |
+          grader_convert/dist
+          !grader_convert/dist/**/*.md

@@ -17,14 +17,17 @@ import {
 import {Assignment} from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
 import {Lecture} from '../../model/lecture';
-import {getAllSubmissions} from '../../services/submissions.service';
-import {getAssignment} from '../../services/assignments.service';
+import {getAllSubmissions, getProperties} from '../../services/submissions.service';
+import {getAssignment, getAssignmentProperties} from '../../services/assignments.service';
 import {AssignmentModalComponent} from './assignment-modal';
 import {DeadlineComponent} from '../util/deadline';
 import {blue} from '@mui/material/colors';
 import {getFiles} from '../../services/file.service';
 import {openBrowser} from './overview-view/util';
-import {CardDescriptor} from "../util/card-descriptor";
+import {CardDescriptor} from '../util/card-descriptor';
+import {enqueueSnackbar} from 'notistack';
+import {GradeBook} from "../../services/gradebook";
+import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
 
 /**
  * Props for AssignmentComponent.
@@ -34,7 +37,6 @@ export interface IAssignmentComponentProps {
   assignment: Assignment;
   root: HTMLElement;
   users: any;
-  showAlert: (severity: string, msg: string) => void;
   onDeleted: () => void;
 }
 
@@ -45,11 +47,14 @@ export interface IAssignmentComponentProps {
  */
 export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
-  const [displaySubmissions, setDisplaySubmissions] = React.useState(false);
+  const [displaySubmissions, setDisplaySubmissions] = React.useState(
+    loadNumber("cm-opened-assignment") === props.assignment.id || false
+  );
   const [files, setFiles] = React.useState([]);
   const onSubmissionClose = async () => {
     setDisplaySubmissions(false);
-    setAssignment(await getAssignment(props.lecture.id, assignment));
+    deleteKey("cm-opened-assignment");
+    setAssignment(await getAssignment(props.lecture.id, assignment.id));
     props.onDeleted();
   };
 
@@ -66,11 +71,17 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         let manual = 0;
         const manualUserSet = new Set<string>();
         for (const submission of response) {
-          if (submission.auto_status === 'automatically_graded' && !autoUserSet.has(submission.username)) {
+          if (
+            submission.auto_status === 'automatically_graded' &&
+            !autoUserSet.has(submission.username)
+          ) {
             autoUserSet.add(submission.username);
             auto++;
           }
-          if (submission.manual_status === 'manually_graded' && !manualUserSet.has(submission.username)) {
+          if (
+            submission.manual_status === 'manually_graded' &&
+            !manualUserSet.has(submission.username)
+          ) {
             manualUserSet.add(submission.username);
             manual++;
           }
@@ -79,7 +90,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         setNumManualGraded(manual);
       },
       (error: Error) => {
-        props.showAlert('error', error.message);
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        });
       }
     );
 
@@ -99,11 +112,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       <Card
         sx={{maxWidth: 225, minWidth: 225, height: '100%', m: 1.5}}
         onClick={async () => {
-          await openBrowser(
-            `source/${props.lecture.code}/${assignment.id}`,
-            props.showAlert
-          );
+          await openBrowser(`source/${props.lecture.code}/${assignment.id}`);
           setDisplaySubmissions(true);
+          storeNumber("cm-opened-assignment", assignment.id)
         }}
       >
         <CardActionArea
@@ -132,12 +143,28 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
             </Typography>
             <Divider sx={{mt: 1, mb: 1}}/>
 
-            <CardDescriptor descriptor={"Point"} value={assignment.points} fontSizeDescriptor={13}/>
-            <CardDescriptor descriptor={"Submission"} value={latestSubmissions.length} fontSizeDescriptor={13}/>
-            <CardDescriptor descriptor={"Autograded Submission"} value={numAutoGraded}
-                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
-            <CardDescriptor descriptor={"Manualgraded Submission"} value={numManualGraded}
-                            ofTotal={latestSubmissions.length} fontSizeDescriptor={13}/>
+            <CardDescriptor
+              descriptor={'Point'}
+              value={assignment.points}
+              fontSizeDescriptor={13}
+            />
+            <CardDescriptor
+              descriptor={'Submission'}
+              value={latestSubmissions.length}
+              fontSizeDescriptor={13}
+            />
+            <CardDescriptor
+              descriptor={'Autograded Submission'}
+              value={numAutoGraded}
+              ofTotal={latestSubmissions.length}
+              fontSizeDescriptor={13}
+            />
+            <CardDescriptor
+              descriptor={'Manualgraded Submission'}
+              value={numManualGraded}
+              ofTotal={latestSubmissions.length}
+              fontSizeDescriptor={13}
+            />
           </CardContent>
           <DeadlineComponent
             due_date={assignment.due_date}
@@ -159,11 +186,9 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
           latestSubmissions={latestSubmissions}
           root={props.root}
           users={props.users}
-          showAlert={props.showAlert}
           onClose={onSubmissionClose}
         />
       </LoadingOverlay>
     </Box>
-  )
-    ;
+  );
 };

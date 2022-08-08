@@ -149,7 +149,7 @@ class GradingManualHandler(ExtensionBaseHandler):
 
         if not git_service.is_git():
             git_service.init()
-        git_service.set_remote("autograde")
+        git_service.set_remote("autograde", sub_id=sub_id)
         # we just need to fetch --all and switch branch (otherwise for pull we get "fatal: refusing to merge unrelated histories")
         git_service.switch_branch(branch=f"submission_{submission['commit_hash']}")
 
@@ -248,4 +248,5 @@ class PullFeedbackHandler(ExtensionBaseHandler):
         git_service.set_remote("feedback", sub_id=sub_id)
         # we just need to fetch --all and switch branch (otherwise for pull we get "fatal: refusing to merge unrelated histories")
         git_service.switch_branch(branch=f"feedback_{submission['commit_hash']}")
+        git_service.pull("feedback", branch=f"feedback_{submission['commit_hash']}", force=True)
         self.write("Pulled Feedback")

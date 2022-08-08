@@ -6,16 +6,16 @@
 
 import * as React from 'react';
 import moment from 'moment';
-import {CardContent, Chip, Typography} from '@mui/material';
+import { CardContent, Chip, Typography } from '@mui/material';
 import AccessAlarmRoundedIcon from '@mui/icons-material/AccessAlarmRounded';
-import {SxProps} from '@mui/system';
-import {Theme} from '@mui/material/styles';
-import {red, orange, grey} from "@mui/material/colors";
+import { SxProps } from '@mui/system';
+import { Theme } from '@mui/material/styles';
+import { red, orange, grey } from '@mui/material/colors';
 
 export interface IDeadlineProps {
   due_date: string | null;
   compact: boolean;
-  component: "chip" | "card"
+  component: 'chip' | 'card';
   sx?: SxProps<Theme>;
 }
 
@@ -72,7 +72,7 @@ const calculateTimeLeft = (date: Date) => {
 
 function getDisplayDate(date: Date, compact: boolean): string {
   if (date === undefined) {
-    return 'No Deadline 😁'
+    return 'No Deadline 😁';
   }
   const time: ITimeSpec = calculateTimeLeft(date);
   if (time.weeks === 0) {
@@ -160,18 +160,22 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
     setNewInterval(newInterval);
   };
 
-  return props.component === "chip" ? (
+  return props.component === 'chip' ? (
     <Chip
       sx={props.sx}
       size="small"
-      icon={<AccessAlarmRoundedIcon/>}
+      icon={<AccessAlarmRoundedIcon />}
       label={displayDate}
       color={color}
     />
   ) : (
-    <CardContent sx={{backgroundColor: getCardColor(color), p: 1, width: "100%"}}>
-      <Typography variant="overline" align="left" sx={{fontSize: 9, ml: 1}}>Deadline</Typography>
-      <Typography align="center" sx={{fontSize: 12, m: 0, mt: -1}}>
+    <CardContent
+      sx={{ backgroundColor: getCardColor(color), p: 1, width: '100%' }}
+    >
+      <Typography variant="overline" align="left" sx={{ fontSize: 9, ml: 1 }}>
+        Deadline
+      </Typography>
+      <Typography align="center" sx={{ fontSize: 12, m: 0, mt: -1 }}>
         {displayDate}
       </Typography>
     </CardContent>

@@ -27,11 +27,6 @@ Grader Convert
     :target: https://pypi.org/project/grader-convert/
     :alt: PyPI - Python Version
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-build.yml
-
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/convert-tests.yml
 
 
 Grader Service
@@ -44,11 +39,6 @@ Grader Service
     :target: https://pypi.org/project/grader-service/
     :alt: PyPI - Python Version
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-build.yml
-
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/service-tests.yml
 
 
 Grader Labextension
@@ -65,8 +55,6 @@ Grader Labextension
     :target: https://www.npmjs.com/package/grader-labextension
     :alt: npm
 
-.. image:: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml/badge.svg?branch=main
-    :target: https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/labextension-build.yml
 
 
 **Disclaimer**: *Grader Service is still in the early development stages. You may encounter issues while using the service.*
@@ -275,11 +263,14 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 .. code-block:: python
 
+    from jupyterhub import orm
+    import sqlalchemy
+
     def post_auth_hook(authenticator, handler, authentication):
         db: sqlalchemy.orm.session.Session = authenticator.db
         log = authenticator.log
 
-        course_id = authentication["auth_state"]["course_id"]
+        course_id = authentication["auth_state"]["course_id"].replace(" ","")
         user_role = authentication["auth_state"]["user_role"]
         user_name = authentication["name"]
 
@@ -289,6 +280,11 @@ To automatically add the groups for the grader service from the LTI authenticato
         elif user_role == "Instructor":
             user_role = "instructor"
         user_model: orm.User = orm.User.find(db, user_name)
+        if user_model is None:
+            user_model = orm.User()
+            user_model.name = user_name
+            db.add(user_model)
+            db.commit()
 
         group_name = f"{course_id}:{user_role}"
         group = orm.Group.find(db, group_name)

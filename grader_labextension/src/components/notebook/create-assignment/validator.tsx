@@ -86,10 +86,10 @@ export const Validator = (props: ValidatorProps) => {
   return (
     <Box>
       <Button
-        className="nbgrader-validate-button"
+        className="jp-ToolbarButtonComponent grader-toolbar-button"
         onClick={validateNotebook}
         icon="automatic-updates"
-        outlined
+        minimal
         intent="success"
         small={true}
       >

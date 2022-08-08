@@ -4,14 +4,15 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Button, Switch } from '@blueprintjs/core';
-import { Cell } from '@jupyterlab/cells';
-import { Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import { PanelLayout } from '@lumino/widgets';
+import {Cell} from '@jupyterlab/cells';
+import {Notebook, NotebookPanel} from '@jupyterlab/notebook';
+import {PanelLayout} from '@lumino/widgets';
 import React from 'react';
-import { IModeSwitchProps } from '../slider';
-import { CreationWidget } from './creation-widget';
-import { ErrorWidget } from './error-widget';
+import {IModeSwitchProps} from '../slider';
+import {CreationWidget} from './creation-widget';
+import {ErrorWidget} from './error-widget';
+import {Switch} from "@blueprintjs/core";
+
 
 export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
   public state = {
@@ -31,7 +32,7 @@ export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
   }
 
   protected handleChange = async () => {
-    this.setState({ mode: !this.state.mode }, () => {
+    this.setState({mode: !this.state.mode}, () => {
       const ids = new Set();
       this.onChange(this.state.mode);
       this.notebook.widgets.map((c: Cell) => {
@@ -51,11 +52,13 @@ export class CreationModeSwitch extends React.Component<IModeSwitchProps> {
 
   public render() {
     return (
-      <Switch
-        checked={this.state.mode}
-        label="Creationmode"
-        onChange={this.handleChange}
-      />
+      <span>
+        <Switch className={"jp-Toolbar-item"}
+                style={{marginTop: "-1px"}}
+                checked={this.state.mode}
+                label="Creation Mode"
+                onChange={this.handleChange}/>
+      </span>
     );
   }
 }

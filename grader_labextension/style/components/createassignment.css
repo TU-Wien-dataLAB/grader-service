@@ -1,11 +1,9 @@
-.nbgrader-validate-button {
-    margin-top: 0px;
+.grader-toolbar-button {
     min-height: 8px;
-    font-size: 9pt;
-    background-color: white;
+    font-size: var(--jp-ui-font-size1) !important;
 }
 
-.nbgrader-validate-button svg {
+.grader-toolbar-button svg {
     width: 9pt;
     height: 9pt;
 }

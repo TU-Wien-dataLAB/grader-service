@@ -34,7 +34,8 @@ import {DeadlineComponent} from '../util/deadline';
 import {AssignmentModalComponent} from './assignment-modal';
 import {Submission} from '../../model/submission';
 import {getFiles} from '../../services/file.service';
-import {CardDescriptor} from "../util/card-descriptor";
+import {CardDescriptor} from '../util/card-descriptor';
+import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
 
 /**
  * Props for AssignmentComponent.
@@ -43,7 +44,6 @@ interface IAssignmentComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   root: HTMLElement;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -52,11 +52,13 @@ interface IAssignmentComponentProps {
  */
 export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
-  const [displayAssignment, setDisplayAssignment] = React.useState(false);
+  const [displayAssignment, setDisplayAssignment] = React.useState(
+    loadNumber("a-opened-assignment") === props.assignment.id || false
+  );
   const [submissions, setSubmissions] = React.useState([] as Submission[]);
   const [hasFeedback, setHasFeedback] = React.useState(false);
   const [files, setFiles] = React.useState([]);
-  const [bestScore, setBestScore] = React.useState("-");
+  const [bestScore, setBestScore] = React.useState('-');
 
   React.useEffect(() => {
     getAllSubmissions(props.lecture, assignment, 'none', false).then(
@@ -71,14 +73,20 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       }
     );
     getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
+      if (files.length === 0) {
+        pullAssignment(props.lecture.id, assignment.id, 'assignment')
+          .then(_ => console.log("No Files found! Pulled assignment."));
+      }
       setFiles(files);
     });
 
-    getAllSubmissions(props.lecture, props.assignment, "best", false).then(submissions => {
-      if (submissions.length > 0 && submissions[0].score) {
-        setBestScore(submissions[0].score.toString())
+    getAllSubmissions(props.lecture, props.assignment, 'best', false).then(
+      submissions => {
+        if (submissions.length > 0 && submissions[0].score) {
+          setBestScore(submissions[0].score.toString());
+        }
       }
-    })
+    );
   }, [props]);
 
   /**
@@ -86,7 +94,8 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
    */
   const onAssignmentClose = async () => {
     setDisplayAssignment(false);
-    setAssignment(await getAssignment(props.lecture.id, assignment));
+    deleteKey("a-opened-assignment");
+    setAssignment(await getAssignment(props.lecture.id, assignment.id));
     const submissions = await getAllSubmissions(
       props.lecture,
       assignment,
@@ -104,21 +113,26 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
           minWidth: 200,
           height: '100%',
           m: 1.5,
-          bgcolor: (assignment.status === "complete" ? "#F1F1F1" : "white")
+          bgcolor: assignment.status === 'complete' ? '#F1F1F1' : 'white'
         }}
         onClick={async () => {
-          if (files.length === 0) {
-            await pullAssignment(props.lecture.id, assignment.id, 'assignment');
-          }
           setDisplayAssignment(true);
+          storeNumber("a-opened-assignment", assignment.id);
         }}
       >
         <CardActionArea
           sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
         >
           <CardContent sx={{flexGrow: 1}}>
-            <Typography variant="h5" component="div"
-                        color={(assignment.status === "complete" ? "text.disabled" : "text.primary")}>
+            <Typography
+              variant="h5"
+              component="div"
+              color={
+                assignment.status === 'complete'
+                  ? 'text.disabled'
+                  : 'text.primary'
+              }
+            >
               {assignment.name}
             </Typography>
             <Typography
@@ -136,23 +150,38 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                     float: 'right'
                   }}
                 >
-                  {(assignment.status === "complete" ? "Completed" : "Not Released")}
+                  {assignment.status === 'complete'
+                    ? 'Completed'
+                    : 'Not Released'}
                 </Typography>
               )}
             </Typography>
             <Divider sx={{mt: 1, mb: 1}}/>
 
-            <CardDescriptor descriptor={"Submission"} value={submissions.length}/>
-            <CardDescriptor sx={{mt: 0.25}} descriptor={(hasFeedback ? 'Has' : 'No') + ' Feedback'} value={
-              hasFeedback ? (
-                <CheckCircleOutlineOutlinedIcon
-                  sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
-                />
-              ) : (
-                <CancelOutlinedIcon sx={{fontSize: 16, mr: -0.25, mb: -0.35}}/>
-              )
-            }/>
-            <CardDescriptor descriptor={"Point"} value={bestScore} ofTotal={assignment.points} />
+            <CardDescriptor
+              descriptor={'Submission'}
+              value={submissions.length}
+            />
+            <CardDescriptor
+              sx={{mt: 0.25}}
+              descriptor={(hasFeedback ? 'Has' : 'No') + ' Feedback'}
+              value={
+                hasFeedback ? (
+                  <CheckCircleOutlineOutlinedIcon
+                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
+                  />
+                ) : (
+                  <CancelOutlinedIcon
+                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
+                  />
+                )
+              }
+            />
+            <CardDescriptor
+              descriptor={'Point'}
+              value={bestScore}
+              ofTotal={assignment.points}
+            />
           </CardContent>
           <DeadlineComponent
             due_date={assignment.due_date}
@@ -172,7 +201,6 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
           assignment={assignment}
           submissions={submissions}
           root={props.root}
-          showAlert={props.showAlert}
         />
       </LoadingOverlay>
     </Box>

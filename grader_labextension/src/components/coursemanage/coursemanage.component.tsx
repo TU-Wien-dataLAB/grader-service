@@ -9,7 +9,7 @@ import { Lecture } from '../../model/lecture';
 import { getAllLectures } from '../../services/lectures.service';
 import { Scope, UserPermissions } from '../../services/permission.service';
 import { LectureComponent } from './lecture';
-import { Alert, AlertProps, AlertTitle, Portal, Snackbar } from '@mui/material';
+import { enqueueSnackbar } from 'notistack';
 
 export interface ICourseManageProps {
   // lectures: Array<Lecture>;
@@ -17,37 +17,21 @@ export interface ICourseManageProps {
 }
 
 export const CourseManageComponent = (props: ICourseManageProps) => {
-  const [alert, setAlert] = React.useState(false);
-  const [severity, setSeverity] = React.useState('success');
-  const [alertMessage, setAlertMessage] = React.useState('');
-
-  const showAlert = (severity: string, msg: string) => {
-    setSeverity(severity);
-    setAlertMessage(msg);
-    setAlert(true);
-  };
-
-  const handleAlertClose = (
-    event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setAlert(false);
-  };
-
   const [lectures, setLectures] = React.useState([] as Lecture[]);
   const [completedLectures, setCompletedLectures] = React.useState(
     [] as Lecture[]
   );
   React.useEffect(() => {
-    UserPermissions.loadPermissions()
-      .then(() => {
+    UserPermissions.loadPermissions().then(
+      () => {
         getAllLectures().then(l => setLectures(l));
         getAllLectures(true).then(l => setCompletedLectures(l));
-      })
-      .catch(() => showAlert('error', 'Error Loading Permissions'));
+      },
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
   }, [props]);
 
   return (
@@ -58,40 +42,13 @@ export const CourseManageComponent = (props: ICourseManageProps) => {
       {lectures
         .filter(el => UserPermissions.getScope(el) > Scope.student)
         .map((el, index) => (
-          <LectureComponent
-            lecture={el}
-            root={props.root}
-            showAlert={showAlert}
-            expanded={true}
-          />
+          <LectureComponent lecture={el} root={props.root} expanded={true} />
         ))}
       {completedLectures
         .filter(el => UserPermissions.getScope(el) > Scope.student)
         .map((el, index) => (
-          <LectureComponent
-            lecture={el}
-            root={props.root}
-            showAlert={showAlert}
-            expanded={false}
-          />
+          <LectureComponent lecture={el} root={props.root} expanded={false} />
         ))}
-      <Portal container={document.body}>
-        {alert && (
-          <Snackbar
-            open={alert}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            autoHideDuration={6000}
-            onClose={handleAlertClose}
-          >
-            <Alert
-              onClose={handleAlertClose}
-              severity={severity as AlertProps['severity']}
-            >
-              <AlertTitle>{alertMessage}</AlertTitle>
-            </Alert>
-          </Snackbar>
-        )}
-      </Portal>
     </div>
   );
 };

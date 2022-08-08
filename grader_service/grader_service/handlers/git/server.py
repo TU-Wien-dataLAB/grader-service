@@ -123,7 +123,15 @@ class GitBaseHandler(GraderBaseHandler):
         if not os.path.exists(assignment_path):
             os.mkdir(assignment_path)
 
-        path = self.construct_git_dir(repo_type, lecture, assignment)
+        submission = None
+        if repo_type in ["autograde", "feedback"]:
+            try:
+                sub_id = int(pathlets[3])
+            except (ValueError, IndexError):
+                raise HTTPError(403)
+            submission = self.session.query(Submission).get(sub_id)
+
+        path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
         if path is None:
             return None
 

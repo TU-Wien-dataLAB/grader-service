@@ -4,14 +4,14 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Assignment } from '../../../model/assignment';
+import {Assignment} from '../../../model/assignment';
 import {
   Box,
   Button,
   Paper,
   Step,
   StepLabel,
-  Stepper,
+  Stepper, Tooltip,
   Typography
 } from '@mui/material';
 import * as React from 'react';
@@ -20,12 +20,14 @@ import TaskIcon from '@mui/icons-material/Task';
 import UndoIcon from '@mui/icons-material/Undo';
 import TerminalIcon from '@mui/icons-material/Terminal';
 
-import { AgreeDialog, ReleaseDialog } from '../../util/dialog';
+import {AgreeDialog, ReleaseDialog} from '../../util/dialog';
 import {
   pushAssignment,
   updateAssignment
 } from '../../../services/assignments.service';
-import { Lecture } from '../../../model/lecture';
+import {Lecture} from '../../../model/lecture';
+import {enqueueSnackbar} from 'notistack';
+
 /**
  * Props for AssignmentStatusComponent.
  */
@@ -33,7 +35,6 @@ export interface IAssignmentStatusProps {
   lecture: Lecture;
   assignment: Assignment;
   onAssignmentChange: (assignment: Assignment) => void;
-  showAlert: (severity: string, msg: string) => void;
 }
 
 /**
@@ -83,9 +84,13 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
       a = await updateAssignment(props.lecture.id, a);
       setAssignment(a);
       props.onAssignmentChange(a);
-      props.showAlert('success', success);
+      enqueueSnackbar(success, {
+        variant: 'success'
+      });
     } catch (err) {
-      props.showAlert('error', error);
+      enqueueSnackbar(error, {
+        variant: 'error'
+      });
     }
   };
   /**
@@ -114,7 +119,9 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
         commitMessage
       );
     } catch (err) {
-      props.showAlert('error', 'Error Pushing Assignment');
+      enqueueSnackbar('Error Pushing Assignment', {
+        variant: 'error'
+      });
       return;
     }
     await updateAssignmentStatus(
@@ -131,12 +138,12 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
       label: 'Edit',
       description: (
         <Box>
-          <Typography sx={{ fontSize }}>
+          <Typography sx={{fontSize}}>
             The assignment has been created and files can now be added to be
             pushed. You can commit and pull changes from the remote file
             repository through the file view or can work directly with the
             underlying git repositories by opening the assignment in the
-            terminal (<TerminalIcon color={'primary'} fontSize={'inherit'} />
+            terminal (<TerminalIcon color={'primary'} fontSize={'inherit'}/>
             ). After you are done working on the files you can release the
             assignment, which makes a final commit with the current state of the
             assignment.
@@ -146,10 +153,12 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
             handleCommit={handlePushAssignment}
             handleRelease={handleReleaseAssignment}
           >
-            <Button sx={{ mt: 1 }} variant="outlined" size="small">
-              <NewReleasesRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-              Release
-            </Button>
+            <Tooltip title={"Release Assignment for Students"}>
+              <Button sx={{mt: 1}} variant="outlined" size="small">
+                <NewReleasesRoundedIcon fontSize="small" sx={{mr: 1}}/>
+                Release
+              </Button>
+            </Tooltip>
           </ReleaseDialog>
         </Box>
       )
@@ -158,7 +167,7 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
       label: 'Released',
       description: (
         <Box>
-          <Typography sx={{ fontSize }}>
+          <Typography sx={{fontSize}}>
             The assignment has been released to students and it is not advised
             to push further changes to the repository. If the assignment is over
             you can mark it as complete in the edit menu or right here. Undoing
@@ -168,30 +177,34 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
             will be made and you will have to instruct users to reset their
             progress thus far or work with separate versions later on.
           </Typography>
-          <Button
-            sx={{ mt: 1, mr: 1 }}
-            onClick={() =>
-              updateAssignmentStatus(
-                'pushed',
-                'Successfully Revoked Assignment',
-                'Error Revoking Assignment'
-              )
-            }
-            variant="outlined"
-            size="small"
-          >
-            <UndoIcon fontSize="small" sx={{ mr: 1 }} />
-            Undo Release
-          </Button>
-          <Button
-            sx={{ mt: 1 }}
-            onClick={() => completeAssignment()}
-            variant="outlined"
-            size="small"
-          >
-            <TaskIcon fontSize="small" sx={{ mr: 1 }} />
-            Complete
-          </Button>
+          <Tooltip title={"Hide Released Assignment from Students"}>
+            <Button
+              sx={{mt: 1, mr: 1}}
+              onClick={() =>
+                updateAssignmentStatus(
+                  'pushed',
+                  'Successfully Revoked Assignment',
+                  'Error Revoking Assignment'
+                )
+              }
+              variant="outlined"
+              size="small"
+            >
+              <UndoIcon fontSize="small" sx={{mr: 1}}/>
+              Undo Release
+            </Button>
+          </Tooltip>
+          <Tooltip title={"Mark Assignment as Complete"}>
+            <Button
+              sx={{mt: 1}}
+              onClick={() => completeAssignment()}
+              variant="outlined"
+              size="small"
+            >
+              <TaskIcon fontSize="small" sx={{mr: 1}}/>
+              Complete
+            </Button>
+          </Tooltip>
         </Box>
       )
     },
@@ -199,27 +212,29 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
       label: 'Assignment Completed',
       description: (
         <Box>
-          <Typography sx={{ fontSize }}>
+          <Typography sx={{fontSize}}>
             The assignment has been completed and is not visible to students
             anymore but all their progress will be saved. When re-activating the
             assignment it will again show up in the assignment view and new
             submissions can be made given the deadline is set accordingly.
           </Typography>
-          <Button
-            sx={{ mt: 1 }}
-            onClick={() =>
-              updateAssignmentStatus(
-                'released',
-                'Successfully Released Assignment',
-                'Error Releasing Assignment'
-              )
-            }
-            variant="outlined"
-            size="small"
-          >
-            <UndoIcon fontSize="small" sx={{ mr: 1 }} />
-            Undo Complete
-          </Button>
+          <Tooltip title={"Undo Complete and Release Assignment"}>
+            <Button
+              sx={{mt: 1}}
+              onClick={() =>
+                updateAssignmentStatus(
+                  'released',
+                  'Successfully Released Assignment',
+                  'Error Releasing Assignment'
+                )
+              }
+              variant="outlined"
+              size="small"
+            >
+              <UndoIcon fontSize="small" sx={{mr: 1}}/>
+              Undo Complete
+            </Button>
+          </Tooltip>
         </Box>
       )
     }
@@ -247,7 +262,7 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
 
   return (
     <Paper elevation={3}>
-      <Box sx={{ overflowX: 'auto', p: 3 }}>
+      <Box sx={{overflowX: 'auto', p: 3}}>
         <Stepper
           activeStep={getActiveStep(assignment.status)}
           orientation="horizontal"

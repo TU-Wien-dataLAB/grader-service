@@ -16,8 +16,12 @@ export function getAllAssignments(lectureId: number): Promise<Assignment[]> {
   return request<Assignment[]>(HTTPMethod.GET, `/lectures/${lectureId}/assignments`)
 }
 
-export function getAssignment(lectureId: number, assignment: Assignment): Promise<Assignment> {
-  return request<Assignment>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignment.id}`)
+export function getAssignment(lectureId: number, assignmentId: number): Promise<Assignment> {
+  return request<Assignment>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}`)
+}
+
+export function getAssignmentProperties(lectureId: number, assignmentId: number): Promise<any> {
+  return request<any>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}/properties`)
 }
 
 export function updateAssignment(lectureId: number, assignment: Assignment): Promise<Assignment> {

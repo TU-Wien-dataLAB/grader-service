@@ -27,7 +27,6 @@ export interface IOverviewProps {
   allSubmissions: any[];
   latest_submissions: any;
   users: any;
-  showAlert: (severity: string, msg: string) => void;
   onClose: () => void;
 }
 
@@ -49,7 +48,6 @@ export const OverviewComponent = (props: IOverviewProps) => {
           <EditDialog
             lecture={props.lecture}
             assignment={assignment}
-            showAlert={props.showAlert}
             onSubmit={updatedAssignment =>
               updateAssignment(props.lecture.id, updatedAssignment).then(
                 response => {
@@ -68,7 +66,6 @@ export const OverviewComponent = (props: IOverviewProps) => {
               lecture={props.lecture}
               assignment={assignment}
               onAssignmentChange={onAssignmentChange}
-              showAlert={props.showAlert}
             />
           </Grid>
 
@@ -86,7 +83,6 @@ export const OverviewComponent = (props: IOverviewProps) => {
               lecture={props.lecture}
               assignment={assignment}
               onAssignmentChange={onAssignmentChange}
-              showAlert={props.showAlert}
             />
           </Grid>
 

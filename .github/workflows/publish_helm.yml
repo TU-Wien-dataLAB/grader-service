@@ -1,0 +1,66 @@
+name: Release Charts
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.8.1
+
+      - name: Install chart-releaser
+        run : |
+          # Download chart releaser
+          curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/v1.4.0/chart-releaser_1.4.0_linux_amd64.tar.gz"
+          tar -xzf cr.tar.gz
+          rm -f cr.tar.gz
+
+      - name: Run chart-releaser
+        env:
+          CR_SKIP_EXISTING: true
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-{{ .Version }}"
+          CR_INDEX_PATH: "index.yaml"
+        run: |
+          repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
+          owner=$(cut -d '/' -f 1 <<< "$GITHUB_REPOSITORY")
+
+          echo "Creating release..."
+          # package chart
+          ./cr package 'charts/grader-service'
+
+          # upload chart to github releases
+          ./cr upload \
+              --owner "$owner" \
+              --git-repo "$repo" \
+
+          # Update index and push to github pages
+          ./cr index \
+              --owner "$owner" \
+              --git-repo "$repo" \
+              --push
+#
+#      - name: Run chart-releaser
+#        uses: helm/chart-releaser-action@v1.4.0
+#        with:
+#          charts_dir: charts
+#        env:
+#          CR_SKIP_EXISTING: true
+#          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+#          CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-{{ .Version }}"

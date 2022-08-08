@@ -5,8 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Assignment } from '../../model/assignment';
-import { Lecture } from '../../model/lecture';
+import {Assignment} from '../../model/assignment';
+import {Lecture} from '../../model/lecture';
 import {
   pullAssignment,
   pushAssignment,
@@ -16,15 +16,16 @@ import {
   getAllSubmissions,
   submitAssignment
 } from '../../services/submissions.service';
-import { Button, Stack } from '@mui/material';
-import { FilesList } from '../util/file-list';
+import {Button, Stack, Tooltip} from '@mui/material';
+import {FilesList} from '../util/file-list';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
-import { AgreeDialog } from '../util/dialog';
+import {AgreeDialog} from '../util/dialog';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
-import { Submission } from '../../model/submission';
-import { RepoType } from '../util/repo-type';
+import {Submission} from '../../model/submission';
+import {RepoType} from '../util/repo-type';
+import {enqueueSnackbar} from 'notistack';
 
 /**
  * Props for AssignmentFilesComponent.
@@ -32,7 +33,6 @@ import { RepoType } from '../util/repo-type';
 export interface IAssignmentFilesComponentProps {
   lecture: Lecture;
   assignment: Assignment;
-  showAlert: (severity: string, msg: string) => void;
   setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
 }
 
@@ -57,8 +57,14 @@ export const AssignmentFilesComponent = (
    */
   const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
     await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
-      () => props.showAlert('success', 'Successfully Pulled Repo'),
-      error => props.showAlert('error', error.message)
+      () =>
+        enqueueSnackbar('Successfully Pulled Repo', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
     );
   };
   /**
@@ -84,9 +90,13 @@ export const AssignmentFilesComponent = (
             props.assignment.id,
             'assignment'
           );
-          props.showAlert('success', 'Successfully Reset Assignment');
+          enqueueSnackbar('Successfully Reset Assignment', {
+            variant: 'success'
+          });
         } catch (e) {
-          props.showAlert('error', 'Error Reseting Assignment');
+          enqueueSnackbar('Error Reset Assignment', {
+            variant: 'error'
+          });
         }
         setDialog(false);
       },
@@ -107,10 +117,14 @@ export const AssignmentFilesComponent = (
       handleAgree: async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
-            props.showAlert('success', 'Successfully Submitted Assignment');
+            enqueueSnackbar('Successfully Submitted Assignment', {
+              variant: 'success'
+            });
           },
           error => {
-            props.showAlert('error', error.message);
+            enqueueSnackbar(error.message, {
+              variant: 'error'
+            });
           }
         );
         await getAllSubmissions(
@@ -123,7 +137,9 @@ export const AssignmentFilesComponent = (
             props.setSubmissions(submissions);
           },
           error => {
-            props.showAlert('error', error.message);
+            enqueueSnackbar(error, {
+              variant: 'error'
+            });
           }
         );
         setDialog(false);
@@ -139,56 +155,79 @@ export const AssignmentFilesComponent = (
       props.assignment.id,
       RepoType.ASSIGNMENT
     ).then(
-      () => props.showAlert('success', 'Successfully Submitted Assignment'),
-      error => props.showAlert('error', error.message)
+      () =>
+        enqueueSnackbar('Successfully Pushed Assignment', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
     );
+  };
+
+  const isDeadlineOver = () => {
+    if (props.assignment.due_date === null) {
+      return false;
+    }
+    const time = new Date(props.assignment.due_date).getTime();
+    return time < Date.now();
   };
 
   return (
     <div>
-      <FilesList path={path} showAlert={props.showAlert} sx={{ m: 2, mt: 1 }} />
+      <FilesList path={path} sx={{m: 2, mt: 1}}/>
 
-      <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
+      <Stack direction={'row'} spacing={1} sx={{m: 1, ml: 2}}>
         {props.assignment.type === 'group' && (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={pushAssignmentHandler}
-          >
-            <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-            Push
-          </Button>
+          <Tooltip title={"Push Changes"}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={pushAssignmentHandler}
+            >
+              <PublishRoundedIcon fontSize="small" sx={{mr: 1}}/>
+              Push
+            </Button>
+          </Tooltip>
         )}
 
         {props.assignment.type === 'group' && (
+          <Tooltip title={"Pull from Remote"}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => fetchAssignmentHandler('assignment')}
+            >
+              <GetAppRoundedIcon fontSize="small" sx={{mr: 1}}/>
+              Pull
+            </Button>
+          </Tooltip>
+        )}
+        <Tooltip title={"Submit Files in Assignment"}>
+          <Button
+            variant="outlined"
+            color="success"
+            size="small"
+            disabled={isDeadlineOver()}
+            onClick={() => submitAssignmentHandler()}
+          >
+            <GradingIcon fontSize="small" sx={{mr: 1}}/>
+            Submit
+          </Button>
+        </Tooltip>
+
+        <Tooltip title={"Reset Assignment to Released Version"}>
           <Button
             variant="outlined"
             size="small"
-            onClick={() => fetchAssignmentHandler('assignment')}
+            color="error"
+            onClick={() => resetAssignmentHandler()}
           >
-            <GetAppRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-            Pull
+            <RestartAltIcon fontSize="small" sx={{mr: 1}}/>
+            Reset
           </Button>
-        )}
-        <Button
-          variant="outlined"
-          color="success"
-          size="small"
-          onClick={() => submitAssignmentHandler()}
-        >
-          <GradingIcon fontSize="small" sx={{ mr: 1 }} />
-          Submit
-        </Button>
-
-        <Button
-          variant="outlined"
-          size="small"
-          color="error"
-          onClick={() => resetAssignmentHandler()}
-        >
-          <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
-          Reset
-        </Button>
+        </Tooltip>
       </Stack>
 
       <AgreeDialog open={dialog} {...dialogContent} />

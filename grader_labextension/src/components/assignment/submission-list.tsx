@@ -16,9 +16,9 @@ import {
   Paper,
   Typography
 } from '@mui/material';
-import {SxProps} from '@mui/system';
-import {Theme} from '@mui/material/styles';
-import {Submission} from '../../model/submission';
+import { SxProps } from '@mui/system';
+import { Theme } from '@mui/material/styles';
+import { Submission } from '../../model/submission';
 import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
 import {
   utcToLocalFormat,
@@ -57,7 +57,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
             secondaryAction={
               value.feedback_available ? (
                 <Button
-                  startIcon={<ChatRoundedIcon/>}
+                  startIcon={<ChatRoundedIcon />}
                   size="small"
                   onClick={() => props.openFeedback(value)}
                 >
@@ -67,10 +67,16 @@ export const SubmissionList = (props: ISubmissionListProps) => {
             }
           >
             <ListItemIcon>
-              <CloudDoneRoundedIcon sx={{ml: 1}}/>
+              <CloudDoneRoundedIcon sx={{ ml: 1 }} />
             </ListItemIcon>
-            <ListItemText primary={utcToLocalFormat(value.submitted_at)}
-                          secondary={(value.score) ? `${value.score} Point` + (value.score === 1 ? '' : 's'): null}/>
+            <ListItemText
+              primary={utcToLocalFormat(value.submitted_at)}
+              secondary={
+                value.feedback_available
+                  ? `${value.score} Point` + (value.score === 1 ? '' : 's')
+                  : null
+              }
+            />
           </ListItem>
         </Box>
       ));
@@ -78,9 +84,9 @@ export const SubmissionList = (props: ISubmissionListProps) => {
 
   return (
     <Paper elevation={0} sx={props.sx}>
-      <Card sx={{mt: 1}} variant="outlined">
+      <Card sx={{ mt: 1 }} variant="outlined">
         {props.submissions.length === 0 ? (
-          <Typography variant={'body1'} sx={{ml: 1}}>
+          <Typography variant={'body1'} sx={{ ml: 1 }}>
             No Submissions Yet
           </Typography>
         ) : (
