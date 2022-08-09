@@ -5,9 +5,15 @@ metadata:
   name: {{ include "grader-service.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
- storageClassName: {{ .Values.storageClassName | default "default" | quote }}
- accessModes:
+{{- if .Values.storageClassName }}
+  storageClassName: {{ .Values.storageClassName | quote }}
+{{- end }}
+  accessModes:
     - {{ .Values.accessMode | quote }}
- resources:
-   requests:
-     storage: {{ .Values.capacity | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.capacity | quote }}
+{{- if .Values.volume }}
+  volumeName: {{ .Values.volume | quote }}
+  volumeMode: "Filesystem"
+{{- end }}

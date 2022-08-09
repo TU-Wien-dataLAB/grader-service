@@ -50,14 +50,18 @@ gitConfig:
   gitEmail: "grader-service@mail.com"
 
 volumePermissions:
-  enabled: false
+  enabled: true
 
-autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
+autogradeExecutorClass: KubeAutogradeExecutor
+kubeAutogradeExecutor:
+  namespace: default
 
 # pvc
 storageClassName: ""
-accessMode: "ReadWriteOnce"
+accessMode: "ReadWriteMany"
 capacity: "10G"
+volume: ""
+subPath: ""
 
 ingress:
   enabled: false

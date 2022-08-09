@@ -17,6 +17,7 @@ spec:
       {{- end }}
       labels:
         {{- include "grader-service.selectorLabels" . | nindent 8 }}
+        hub.jupyter.org/network-access-hub: "true"
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -68,6 +69,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
             - name: config
               mountPath: /etc/grader-service/grader_service_config.py
               subPath: grader_service_config.py
@@ -84,6 +88,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
     {{ end }}
 
       volumes:
