@@ -5,6 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
+  Alert,
   Button,
   Card,
   CardActions,
@@ -15,11 +16,11 @@ import {
   Typography
 } from '@mui/material';
 import * as React from 'react';
-import {Assignment} from '../../model/assignment';
-import {Lecture} from '../../model/lecture';
-import {getAllAssignments} from '../../services/assignments.service';
-import {AssignmentComponent} from './assignment';
-import {loadBoolean, storeBoolean} from "../../services/storage.service";
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
+import { getAllAssignments } from '../../services/assignments.service';
+import { AssignmentComponent } from './assignment';
+import { loadBoolean, storeBoolean } from '../../services/storage.service';
 
 /**
  * Props for LectureComponent.
@@ -37,8 +38,8 @@ interface ILectureComponentProps {
 export const LectureComponent = (props: ILectureComponentProps) => {
   const [assignments, setAssignments] = React.useState(null as Assignment[]);
   const [expanded, setExpanded] = React.useState(
-    loadBoolean("a-expanded", props.lecture) !== null
-      ? loadBoolean("a-expanded", props.lecture)
+    loadBoolean('a-expanded', props.lecture) !== null
+      ? loadBoolean('a-expanded', props.lecture)
       : props.open
   );
 
@@ -51,30 +52,27 @@ export const LectureComponent = (props: ILectureComponentProps) => {
    * Toggles collapsable in the card body.
    */
   const handleExpandClick = () => {
-    storeBoolean("a-expanded", !expanded, props.lecture);
+    storeBoolean('a-expanded', !expanded, props.lecture);
     setExpanded(!expanded);
   };
   if (assignments === null) {
     return (
       <div>
         <Card>
-          <LinearProgress/>
+          <LinearProgress />
         </Card>
       </div>
     );
   }
-  if (assignments.length === 0) {
-    return null;
-  }
   return (
     <div>
       <Card
-        sx={{backgroundColor: expanded ? '#fafafa' : 'background.paper'}}
+        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
         elevation={expanded ? 0 : 2}
         className="lecture-card"
       >
-        <CardContent sx={{mb: -1, display: 'flex'}}>
-          <Typography variant={'h5'} sx={{mr: 2}}>
+        <CardContent sx={{ mb: -1, display: 'flex' }}>
+          <Typography variant={'h5'} sx={{ mr: 2 }}>
             {props.lecture.name}
           </Typography>
         </CardContent>
@@ -101,10 +99,15 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                 </Grid>
               ))}
             </Grid>
+            {assignments.length === 0 ? (
+                <Alert sx={{ m: 3 }} severity="info">
+                  No active assignments
+                </Alert>
+              ) : null}
           </CardContent>
         </Collapse>
         <CardActions>
-          <Button size="small" sx={{ml: 'auto'}} onClick={handleExpandClick}>
+          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
             {(expanded ? 'Hide' : 'Show') + ' Assignments'}
           </Button>
         </CardActions>
