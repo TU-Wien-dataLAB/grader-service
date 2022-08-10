@@ -55,6 +55,8 @@ volumePermissions:
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   namespace: default
+  image: ghcr.io/tu-wien-datalab/grader-service-labextension
+  tag: latest
 
 # pvc
 storageClassName: ""
