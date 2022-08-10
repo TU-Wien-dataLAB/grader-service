@@ -47,19 +47,12 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
-            - name: JUPYTERHUB_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: grader-service
-                  key: hub.services.grader.apiToken
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}
             - name: GRADER_SERVICE_PORT
               value: {{ .Values.port | quote }}
             - name: JUPYTERHUB_BASE_URL
               value: {{ .Values.jupyterhub.baseUrl }}
-            - name: JUPYTERHUB_SERVICE_NAME
-              value: {{ .Values.jupyterhub.serviceName}}
             - name: GRADER_SERVICE_DIRECTORY
               value: /var/lib/grader-service
             - name: GRADER_DB_DIALECT
