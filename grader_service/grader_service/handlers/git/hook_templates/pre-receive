@@ -3,9 +3,9 @@
 # from: https://gist.github.com/nauar/826f85d25d692d9bc009312cb71577dd
 
 # TEMPLATING VALUES
-MAX_SIZE_MB="20"
-FILE_ALLOW_PATTERN=".+\.(ipynb|csv)"
-MAX_FILE_COUNT="256"
+MAX_SIZE_MB="$tpl_max_file_size"
+FILE_ALLOW_PATTERN=".+\.($tpl_file_extensions)"
+MAX_FILE_COUNT="$tpl_max_file_count"
 
 MAX_BYTES=$((MAX_SIZE_MB * 1000000))
 GITCMD="git"
