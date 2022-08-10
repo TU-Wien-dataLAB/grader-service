@@ -9,6 +9,7 @@ EMPTY_TREE_SHA=$($GITCMD hash-object -t tree /dev/null) # SHA1: "4b825dc642cb6eb
 MAX_SIZE_MB="20"
 MAX_BYTES=$((MAX_SIZE_MB * 1048576 ))
 FILE_ALLOW_PATTERN="*.(ipynb|csv)"
+MAX_FILE_COUNT=256
 
 LOGFILE="/tmp/git_private.log"
 
@@ -39,11 +40,20 @@ while read -r sha1_old sha1_new refname; do
     # Ignore case
     shopt -s nocaseglob
 
+    # get the total number of files that are in the new commit (sha1_new)
+    total_files_count=$($GITCMD ls-tree --full-tree -r --name-only "$sha1_new" | wc -l)
+    echo_log "Number of files in repo: $total_files_count"
+
+    if [[ ${total_files_count} -gt ${MAX_FILE_COUNT} ]]; then
+      echo_log "Exceeded maximum number of files! The maximum was set to $MAX_FILE_COUNT but the commit contains $total_files_count!"
+      exit 1
+    fi
+
     newFiles=$($GITCMD diff --stat --name-only --diff-filter=ACMRT "${sha1_old}".."${sha1_new}")
 
     if [[ $? -ne 0 ]]; then
         echo_log "Could not read files! Cancelling push..."
-        exit 1;
+        exit 1
     fi
 
     old_IFS=$IFS
