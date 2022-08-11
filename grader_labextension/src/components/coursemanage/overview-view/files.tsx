@@ -352,7 +352,7 @@ export const Files = (props: IFilesProps) => {
               color={isCommitOverwrite() ? 'error' : 'primary'}
             >
               <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-              Commit
+              Push
             </Button>
           </Tooltip>
         </CommitDialog>
