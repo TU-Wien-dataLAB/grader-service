@@ -52,6 +52,11 @@ class GenerateHandler(ExtensionBaseHandler):
         code = lecture["code"]
         a_id = assignment["id"]
 
+        os.makedirs(
+            os.path.expanduser(f"{self.root_dir}/release/{code}/{a_id}"),
+            exist_ok=True,
+        )
+
         generator = GenerateAssignment(
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
             output_dir=f"{self.root_dir}/release/{code}/{a_id}",
