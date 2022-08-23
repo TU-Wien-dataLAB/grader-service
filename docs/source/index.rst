@@ -18,6 +18,7 @@ Contents
 
    installation
    get_started
+   user_guide
    grader_service/index
    grader_labextension/index
    grader_convert/index
