@@ -23,14 +23,15 @@ sphinx:
 #  configuration: mkdocs.yml
 
 # Optionally set the version of Python and requirements required to build your docs
-#python:
-#  install:
-#    - requirements: ./requirements-docs.txt
+python:
+  install:
+    - requirements: ./requirements-docs.txt
+    - method: pip
 #    - requirements: ./grader_convert/requirements.txt
 #    - requirements: ./grader_service/requirements.txt
 #    - path: grader_convert
-#      method: setuptools
+#      method: pip
 #    - path: grader_service
-#      method: setuptools
+#      method: pip
 #    - path: grader_labextension
 #      method: pip
