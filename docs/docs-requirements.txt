@@ -2,4 +2,3 @@ sphinx
 pydata-sphinx-theme
 myst-parser
 numpydoc
-dateutil
