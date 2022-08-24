@@ -43,8 +43,3 @@ By switching between source and release file viewer the extension will convert t
 
 The grader service and labextension use git to support collaborative creation of assignments. Also it provides a simple way to distribute the files to the students.
 Notebooks can be added by either using the "Create a new notebook" button or by copying files directly in the correct source directory via the filebrowser.
-
-
-
-
-
