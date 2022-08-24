@@ -15,6 +15,7 @@ interface Bucket {
 }
 
 const binData = (data: number[], min: number, max: number, numBuckets: number): Bucket[] => {
+  if (max <= 0.0) return [];
   const bucketSize = (max - min) / numBuckets;
   let currBucket = min;
   const buckets = new Array<number>(numBuckets).fill(0).map(v => {

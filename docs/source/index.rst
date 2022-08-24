@@ -18,9 +18,7 @@ Contents
 
    installation
    get_started
-   grader_service/index
-   grader_labextension/index
-   grader_convert/index
+   user_guide
    about
 
 Structure
