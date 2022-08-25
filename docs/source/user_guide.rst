@@ -16,7 +16,7 @@ a tutor in one lecture.
 
 .. note::
     If you do not see the launcher items, it may be the case that extensions might be disabled in JupyterLab.
-    You can find how to enable extension it `here <https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager>`_.
+    You can find how to enable extensions `here <https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager>`_.
     Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 
 
@@ -149,6 +149,44 @@ An assignment can have 3 states that can be switched between and represent the l
 - Completed
     The assignment is over and cannot be worked on anymore and new submissions will be rejected, but it is still visible.
     This state can be revoked without any consideration and will return to a released state.
+
+
+Grading Assignments
+=====================================
+
+Student submissions can be graded when switching to the Submissions tab at the bottom of the overview window.
+
+.. image:: _static/assets/images/submission_grading.png
+    :alt: submission grading
+
+Submissions can be selected from the list and actions can be performed on the submissions.
+Grader Service supports batch auto-grading and batch feedback generation of several submissions.
+Naturally, submissions have to be manually graded individually.
+
+Generally, submissions have to be auto-graded first before anything else can be done.
+If manual grading is not needed or not wanted, it can be skipped.
+The last step is feedback generation, at which point students will see their results.
+
+
+Auto-Grading Behavior
+-----------------------
+
+In the edit and creation menu for an assignment, it is possible to select the auto-grading behavior for the assignment.
+It specifies the action taken when a user submits an assignment.
+
+- No Automatic Grading
+    No action is taken when users submit the assignment.
+- Automatic Grading (Recommended)
+    The assignment is being auto-graded as soon as the user submits the assignment.
+    This means that submissions in the grading view are always auto-graded.
+- Fully Automatic Grading
+    The assignment is auto-graded and feedback is generated as soon as the student submits their assignment.
+    This requires that no manually graded cells are part of the assignment.
+
+.. image:: _static/assets/images/autograding_behavior.png
+    :width: 350
+    :alt: autograding behavior
+    :align: center
 
 
 Student Guide
