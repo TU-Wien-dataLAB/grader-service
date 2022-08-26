@@ -19,6 +19,7 @@ Contents
    installation
    get_started
    user_guide
+   grader_service/grader_service_rest_api
    about
 
 Structure
