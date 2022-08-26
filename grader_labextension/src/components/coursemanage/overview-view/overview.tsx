@@ -48,6 +48,7 @@ export const OverviewComponent = (props: IOverviewProps) => {
           <EditDialog
             lecture={props.lecture}
             assignment={assignment}
+            submissions={props.allSubmissions}
             onSubmit={updatedAssignment =>
               updateAssignment(props.lecture.id, updatedAssignment).then(
                 response => {
