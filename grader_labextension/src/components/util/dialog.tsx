@@ -77,7 +77,7 @@ const validationSchema = yup.object({
 export interface IEditDialogProps {
   lecture: Lecture;
   assignment: Assignment;
-  submissions: Submission[];
+  submissions: any[];
   onSubmit?: (updatedAssignment: Assignment) => void;
   onClose: () => void;
 }
