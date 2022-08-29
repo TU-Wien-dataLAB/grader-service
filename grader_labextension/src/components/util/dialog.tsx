@@ -102,7 +102,9 @@ export const EditDialog = (props: IEditDialogProps) => {
     },
     validationSchema: validationSchema,
     onSubmit: values => {
-      values.max_submissions = +values.max_submissions;
+      if (values.max_submissions !== null) {
+        values.max_submissions = +values.max_submissions;
+      }
       const updatedAssignment: Assignment = Object.assign(
         props.assignment,
         values
@@ -473,12 +475,15 @@ export const CreateDialog = (props: ICreateDialogProps) => {
     },
     validationSchema: validationSchema,
     onSubmit: values => {
+      if (values.max_submissions !== null) {
+        values.max_submissions = +values.max_submissions;
+      }
       const updatedAssignment: Assignment = {
         name: values.name,
         due_date: values.due_date,
         type: values.type as TypeEnum,
         automatic_grading: values.automatic_grading as AutomaticGradingEnum,
-        max_submissions: +values.max_submissions
+        max_submissions: values.max_submissions
       };
       createAssignment(props.lecture.id, updatedAssignment).then(
         a => console.log(a),
