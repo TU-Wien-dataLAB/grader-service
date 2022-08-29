@@ -21,13 +21,6 @@ hub:
       c.Authenticator.admin_users = {'admin', 'instructor'}
       c.JupyterHub.tornado_settings = { 'headers': {'Content-Security-Policy': "frame-ancestors localhost 127.0.0.1 'self'"} }
 
-      c.JupyterHub.services.append(
-          {
-              'name': 'grader',
-              'url': 'http://grader-service:4010',
-              'api_token': '7e272a9df62444de9d2d111b5ff6e70f'
-          }
-      )
       c.JupyterHub.load_groups = {
         "lect1:instructor": ["instructor"],
         "lect1:tutor": ["tutor"],
@@ -73,7 +66,7 @@ prePuller:
     enabled: false
 
 ingress:
-  enabled: false
+  enabled: true
 
 # cull relates to the jupyterhub-idle-culler service, responsible for evicting
 # inactive singleuser pods.
