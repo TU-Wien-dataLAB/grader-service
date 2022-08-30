@@ -310,3 +310,50 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 
 Make sure that the ``course_id`` does not contain any spaces or special characters!
+
+Optional Configuration of JupyterLab >=3.4
+==========================================
+
+The grader labextension also uses the embedded cell toolbar of JupyterLab for further cell manipulation.
+These optional features include:
+
+* ``Run Cell``: This command simply run the current cell without advancing.
+
+* ``Revert Cell``: In the conversion process new metadata is set to allow students to revert every answer cell to their original state.
+
+* ``Show Hint``: Students can access a hint to a task if one is specified.
+
+To access these commands buttons have to be added to the JupyterLab cell toolbar by editing the `overrides.json file <https://jupyterlab.readthedocs.io/en/stable/user/directories.html#overridesjson>`_.
+We also recommend that all other built in cell toolbar buttons should be disabled in the config because they might enable unwanted cell manipulation by students.
+
+A sample overrides.json file could look like this:
+
+.. code-block:: json
+
+    {
+        "@jupyterlab/cell-toolbar-extension:plugin": {
+            "toolbar": [
+                {
+                    "args": {},
+                    "command": "notebookplugin:run-cell",
+                    "disabled": false,
+                    "rank": 501,
+                    "name": "run-cell"
+                },
+                {
+                    "args": {},
+                    "command": "notebookplugin:revert-cell",
+                    "disabled": false,
+                    "rank": 502,
+                    "name": "revert-cell"
+                },
+                {
+                    "args": {},
+                    "command": "notebookplugin:show-hint",
+                    "disabled": false,
+                    "rank": 503,
+                    "name": "show-hint"
+                }
+            ]
+        }
+    }
