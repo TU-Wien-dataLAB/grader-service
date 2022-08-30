@@ -86,6 +86,9 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
         if assignment_with_name is not None:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
+        if assignment_model.max_submissions is not None and assignment_model.max_submissions < 1:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Maximum number of submissions cannot be smaller than 1!")
+
         assignment.lectid = lecture_id
         assignment.duedate = assignment_model.due_date
         assignment.status = assignment_model.status
@@ -139,7 +142,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         if assignment_with_name is not None and assignment_with_name.id != assignment_id:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Assignment name is already being used")
-        if assignment_model.max_submissions and assignment_model.max_submissions < 1:
+        if assignment_model.max_submissions is not None and assignment_model.max_submissions < 1:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Maximum number of submissions cannot be smaller than 1!")
 
         assignment.name = assignment_model.name

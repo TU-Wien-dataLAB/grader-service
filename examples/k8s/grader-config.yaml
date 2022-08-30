@@ -27,4 +27,4 @@ accessMode: "ReadWriteOnce"
 capacity: "5G"
 
 ingress:
-  enabled: false
+  enabled: true
