@@ -311,8 +311,8 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 Make sure that the ``course_id`` does not contain any spaces or special characters!
 
-Optional Configuration of JupyterLab
-========================================
+Optional Configuration of JupyterLab >=3.4
+==========================================
 
 The grader labextension also uses the embedded cell toolbar of JupyterLab for further cell manipulation.
 These optional features include:
