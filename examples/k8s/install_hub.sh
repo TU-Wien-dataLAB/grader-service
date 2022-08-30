@@ -7,6 +7,6 @@ helm upgrade --cleanup-on-fail \
   --install my-jupyterhub jupyterhub/jupyterhub \
   --namespace jupyter \
   --create-namespace \
-  --version=1.1.3-n634.hcda1b211 \
+  --version=2.0.0-beta.1 \
   --values hub-config.yaml
   

@@ -129,8 +129,6 @@ spec:
             value: "4010"
           - name: JUPYTERHUB_BASE_URL
             value: '/'
-          - name: JUPYTERHUB_SERVICE_NAME
-            value: 'grader'
       volumes:
         - name: data
           persistentVolumeClaim:

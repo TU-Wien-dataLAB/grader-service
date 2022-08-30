@@ -5,8 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import {Assignment} from '../../model/assignment';
-import {Lecture} from '../../model/lecture';
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
 import {
   pullAssignment,
   pushAssignment,
@@ -16,16 +16,16 @@ import {
   getAllSubmissions,
   submitAssignment
 } from '../../services/submissions.service';
-import {Button, Stack, Tooltip} from '@mui/material';
-import {FilesList} from '../util/file-list';
+import { Button, Stack, Tooltip } from '@mui/material';
+import { FilesList } from '../util/file-list';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
-import {AgreeDialog} from '../util/dialog';
+import { AgreeDialog } from '../util/dialog';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
-import {Submission} from '../../model/submission';
-import {RepoType} from '../util/repo-type';
-import {enqueueSnackbar} from 'notistack';
+import { Submission } from '../../model/submission';
+import { RepoType } from '../util/repo-type';
+import { enqueueSnackbar } from 'notistack';
 
 /**
  * Props for AssignmentFilesComponent.
@@ -33,6 +33,7 @@ import {enqueueSnackbar} from 'notistack';
 export interface IAssignmentFilesComponentProps {
   lecture: Lecture;
   assignment: Assignment;
+  submissions: Submission[];
   setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
 }
 
@@ -174,57 +175,68 @@ export const AssignmentFilesComponent = (
     return time < Date.now();
   };
 
+  const isMaxSubmissionReached = () => {
+    if (props.assignment.max_submissions === null) {
+      return false;
+    } else {
+      return props.assignment.max_submissions <= props.submissions.length;
+    }
+  };
+
   return (
     <div>
-      <FilesList path={path} sx={{m: 2, mt: 1}}/>
+      <FilesList path={path} sx={{ m: 2, mt: 1 }} />
 
-      <Stack direction={'row'} spacing={1} sx={{m: 1, ml: 2}}>
+      <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
         {props.assignment.type === 'group' && (
-          <Tooltip title={"Push Changes"}>
+          <Tooltip title={'Push Changes'}>
             <Button
               variant="outlined"
               size="small"
               onClick={pushAssignmentHandler}
             >
-              <PublishRoundedIcon fontSize="small" sx={{mr: 1}}/>
+              <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
               Push
             </Button>
           </Tooltip>
         )}
 
         {props.assignment.type === 'group' && (
-          <Tooltip title={"Pull from Remote"}>
+          <Tooltip title={'Pull from Remote'}>
             <Button
               variant="outlined"
               size="small"
               onClick={() => fetchAssignmentHandler('assignment')}
             >
-              <GetAppRoundedIcon fontSize="small" sx={{mr: 1}}/>
+              <GetAppRoundedIcon fontSize="small" sx={{ mr: 1 }} />
               Pull
             </Button>
           </Tooltip>
         )}
-        <Tooltip title={"Submit Files in Assignment"}>
+        <Tooltip title={'Submit Files in Assignment'}>
           <Button
             variant="outlined"
             color="success"
             size="small"
-            disabled={isDeadlineOver()}
+            disabled={
+              isDeadlineOver() ||
+              isMaxSubmissionReached()
+            }
             onClick={() => submitAssignmentHandler()}
           >
-            <GradingIcon fontSize="small" sx={{mr: 1}}/>
+            <GradingIcon fontSize="small" sx={{ mr: 1 }} />
             Submit
           </Button>
         </Tooltip>
 
-        <Tooltip title={"Reset Assignment to Released Version"}>
+        <Tooltip title={'Reset Assignment to Released Version'}>
           <Button
             variant="outlined"
             size="small"
             color="error"
             onClick={() => resetAssignmentHandler()}
           >
-            <RestartAltIcon fontSize="small" sx={{mr: 1}}/>
+            <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
             Reset
           </Button>
         </Tooltip>

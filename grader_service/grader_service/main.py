@@ -211,14 +211,7 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
-            os.mkdir(os.path.join(self.grader_service_dir, "git"))
-        # check if git config exits so that git commits don't fail
-        subprocess.run(shlex.split("git config --global init.defaultBranch main"))
-        if subprocess.check_output(shlex.split("git config user.name")).decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global user.name "{self.service_git_username}"'))
-        if subprocess.check_output(shlex.split("git config user.email")).decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global user.email "{self.service_git_email}"'))
+        await self._setup_environment()
 
         # pass config to DataBaseManager and GraderExecutor
         GraderExecutor.config = self.config
@@ -258,6 +251,16 @@ class GraderService(config.Application):
 
         # finish start
         self._start_future.set_result(None)
+
+    async def _setup_environment(self):
+        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
+            os.mkdir(os.path.join(self.grader_service_dir, "git"))
+        # check if git config exits so that git commits don't fail
+        subprocess.run(shlex.split("git config --global init.defaultBranch main"))
+        if subprocess.check_output(shlex.split("git config user.name")).decode("utf-8").strip() == "":
+            subprocess.run(shlex.split(f'git config --global user.name "{self.service_git_username}"'))
+        if subprocess.check_output(shlex.split("git config user.email")).decode("utf-8").strip() == "":
+            subprocess.run(shlex.split(f'git config --global user.email "{self.service_git_email}"'))
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""

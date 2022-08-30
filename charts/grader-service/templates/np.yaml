@@ -13,7 +13,11 @@ spec:
         matchLabels:
           app: jupyterhub
           component: hub
-          release: jupyterhub
+  - to:
+    - podSelector:
+          matchLabels:
+            app: jupyterhub
+            component: singleuser-server
   - ports:
     - port: 53
       protocol: UDP
@@ -28,15 +32,23 @@ spec:
     - from:
       - podSelector:
           matchLabels:
-            hub.jupyter.org/network-access-singleuser: "true"
+            app: jupyterhub
+            component: hub
       ports:
-        - port: service-port
+        - port: 4010
+          protocol: TCP
+    - from:
+      - podSelector:
+          matchLabels:
+            app: jupyterhub
+            component: singleuser-server
+      ports:
+        - port: 4010
           protocol: TCP
   podSelector:
     matchLabels:
-      app: jupyterhub
-      component: grader-service
-      release: jupyterhub
+      app.kubernetes.io/name: grader-service
   policyTypes:
     - Ingress
     - Egress
+---

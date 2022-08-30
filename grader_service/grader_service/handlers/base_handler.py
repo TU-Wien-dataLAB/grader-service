@@ -16,7 +16,8 @@ import traceback
 from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
 
-from traitlets import Type
+from traitlets import Type, Integer, TraitType, Unicode
+from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
@@ -352,3 +353,10 @@ class RequestHandlerConfig(SingletonConfigurable):
     autograde_executor_class = Type(default_value=LocalAutogradeExecutor,
                                     klass=object,  # TODO: why does using LocalAutogradeExecutor give subclass error?
                                     allow_none=False, config=True)
+
+    # Git server file policy defaults
+    git_max_file_size_mb = Integer(20, allow_none=False, config=True)
+    git_max_file_count = Integer(512, allow_none=False, config=True)
+    # empty list allows everything
+    git_allowed_file_extensions = ListTrait(TraitType(Unicode), default_value=[], allow_none=False,
+                                            config=True)

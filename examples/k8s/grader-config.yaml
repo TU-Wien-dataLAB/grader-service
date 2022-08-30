@@ -4,9 +4,7 @@ service:
 port: 4010
 jupyterhub:
   apiUrl: http://proxy-public/hub/api
-  apiToken: "7e272a9df62444de9d2d111b5ff6e70f"
   baseUrl: /
-  serviceName: grader
 
 db:
   dialect: sqlite
@@ -29,4 +27,4 @@ accessMode: "ReadWriteOnce"
 capacity: "5G"
 
 ingress:
-  enabled: false
+  enabled: true

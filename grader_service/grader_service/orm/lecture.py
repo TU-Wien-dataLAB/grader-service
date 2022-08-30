@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
+from datetime import datetime
 
 from grader_service.api.models import lecture
-from sqlalchemy import Column, Enum, Integer, String
+from sqlalchemy import Column, Enum, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 
 from grader_service.orm.base import Base, DeleteState, Serializable
@@ -25,6 +26,9 @@ class Lecture(Base, Serializable):
     code = Column(String(255), nullable=True, unique=True)
     state = Column(Enum(LectureState), nullable=False, unique=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     assignments = relationship("Assignment", back_populates="lecture")
     roles = relationship("Role", back_populates="lecture")

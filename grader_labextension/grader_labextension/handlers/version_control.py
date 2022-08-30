@@ -54,11 +54,16 @@ class GenerateHandler(ExtensionBaseHandler):
         a_id = assignment["id"]
 
         output_dir = f"{self.root_dir}/release/{code}/{a_id}"
+        os.makedirs(
+            os.path.expanduser(output_dir),
+            exist_ok=True,
+        )
+
         generator = GenerateAssignment(
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
             output_dir=output_dir,
             file_pattern="*.ipynb",
-            copy_files=assignment["allow_files"]
+            copy_files=True  # Always copy files from source to release
         )
         generator.force = True
 
@@ -305,7 +310,7 @@ class PushHandler(ExtensionBaseHandler):
                 input_dir=src_path,
                 output_dir=git_service.path,
                 file_pattern="*.ipynb",
-                copy_files=assignment["allow_files"]
+                copy_files=True  # Always copy files from source to release
             )
             generator.force = True
 

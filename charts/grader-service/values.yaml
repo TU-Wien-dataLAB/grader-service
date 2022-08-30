@@ -35,11 +35,10 @@ service:
   type: ClusterIP
   port: 4010
 port: 4010
+
 jupyterhub:
   apiUrl: http://hub:8081/hub/api
-  apiToken: "7e272a9df62444de9d2d111b5ff6e70f"
   baseUrl: /
-  serviceName: grader
 
 db:
   dialect: sqlite
@@ -50,14 +49,20 @@ gitConfig:
   gitEmail: "grader-service@mail.com"
 
 volumePermissions:
-  enabled: false
+  enabled: true
 
-autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
+autogradeExecutorClass: KubeAutogradeExecutor
+kubeAutogradeExecutor:
+  namespace: default
+  image: ghcr.io/tu-wien-datalab/grader-service-labextension
+  tag: latest
 
 # pvc
 storageClassName: ""
-accessMode: "ReadWriteOnce"
+accessMode: "ReadWriteMany"
 capacity: "10G"
+volume: ""
+subPath: ""
 
 ingress:
   enabled: false

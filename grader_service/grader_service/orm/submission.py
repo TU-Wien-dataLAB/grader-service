@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+from datetime import datetime
 
 from grader_service.api.models import submission
 from sqlalchemy import (
@@ -37,6 +38,7 @@ class Submission(Base, Serializable):
     properties = Column(Text, nullable=True, unique=False)
     feedback_available = Column(Boolean, nullable=False)
     logs = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
