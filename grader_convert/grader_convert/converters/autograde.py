@@ -104,9 +104,9 @@ class Autograde(BaseConverter):
         super(Autograde, self)._load_config(cfg, **kwargs)
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: Any
+        self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: Any
     ) -> None:
-        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, **kwargs)
+        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, copy_files, **kwargs)
         self.force = True  # always overwrite generated assignments
 
     def start(self) -> None:
