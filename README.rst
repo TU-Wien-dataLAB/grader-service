@@ -311,8 +311,8 @@ To automatically add the groups for the grader service from the LTI authenticato
 
 Make sure that the ``course_id`` does not contain any spaces or special characters!
 
-Optional Configuration of JupyterLab
-========================================
+Optional Configuration of JupyterLab >=3.4
+==========================================
 
 The grader labextension also uses the embedded cell toolbar of JupyterLab for further cell manipulation.
 These optional features include:
@@ -324,7 +324,7 @@ These optional features include:
 * ``Show Hint``: Students can access a hint to a task if one is specified.
 
 To access these commands buttons have to be added to the JupyterLab cell toolbar by editing the `overrides.json file <https://jupyterlab.readthedocs.io/en/stable/user/directories.html#overridesjson>`_.
-We also recommend that all other built in cell toolbar buttons should be removed in the config because they might enable unwanted cell manipulation by students.
+We also recommend that all other built in cell toolbar buttons should be disabled in the config because they might enable unwanted cell manipulation by students.
 
 A sample overrides.json file could look like this:
 
