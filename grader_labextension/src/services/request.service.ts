@@ -20,16 +20,14 @@ export function request<T, B = any>(
   method: HTTPMethod,
   endPoint: string,
   body: B = null,
-  headers: HeadersInit = null
+  reload: boolean = false
 ): Promise<T> {
   const options: RequestInit = {};
   options.method = method;
   if (body) {
     options.body = JSON.stringify(body);
   }
-  if (headers) {
-    options.headers = headers;
-  }
+
   const settings = ServerConnection.makeSettings();
   let requestUrl = '';
 
@@ -39,6 +37,13 @@ export function request<T, B = any>(
     '/grader_labextension', // API Namespace
     endPoint
   );
+
+  // set cache always to default,
+  // otherwise ServerConnection.makeRequest puts the timestamp as a query parameter resulting in no cache hits
+  options.cache = "default";
+  if (reload) {
+    options.cache = "reload";
+  }
 
   return ServerConnection.makeRequest(requestUrl, options, settings).then(
     async response => {

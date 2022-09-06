@@ -11,7 +11,7 @@ from tornado.httpclient import HTTPClientError
 from tornado.web import HTTPError
 
 from grader_labextension.registry import register_handler
-from grader_labextension.handlers.base_handler import ExtensionBaseHandler
+from grader_labextension.handlers.base_handler import ExtensionBaseHandler, cache
 from grader_labextension.services.request import RequestService
 import tornado
 import os
@@ -23,6 +23,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments.
     """
 
+    @cache(max_age=30)
     async def get(self, lecture_id: int):
         """Sends a GET request to the grader service and returns assignments of the lecture
 
@@ -135,6 +136,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
             raise HTTPError(e.code, reason=e.response.reason)
         self.write(json.dumps(response))
 
+    @cache(max_age=30)
     async def get(self, lecture_id: int, assignment_id: int):
         """Sends a GET-request to the grader service to get a specific assignment
 
@@ -191,7 +193,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 f"{self.service_base_url}/lectures/{lecture_id}",
                 header=self.grader_authentication_header,
             )
-            response = await self.request_service.request(
+            await self.request_service.request(
                 method="DELETE",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}",
                 header=self.grader_authentication_header,

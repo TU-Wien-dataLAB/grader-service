@@ -9,7 +9,7 @@ import json
 from tornado.httpclient import HTTPClientError
 
 from grader_labextension.registry import register_handler
-from grader_labextension.handlers.base_handler import ExtensionBaseHandler
+from grader_labextension.handlers.base_handler import ExtensionBaseHandler, cache
 from grader_labextension.services.request import RequestService
 from tornado.web import HTTPError
 
@@ -21,6 +21,7 @@ class SubmissionHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
     """
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int):
         """ Sends a GET-request to the grader service and returns submissions of a assignment
 
@@ -106,6 +107,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
     """
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """Sends a GET-request to the grader service and returns the properties of a submission
 

@@ -51,7 +51,7 @@ export const OverviewCard = (props: IOverviewCardProps) => {
         }}
       >
         <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users.students.length}
+          {props.users?.students.length}
           <Typography
             color="text.secondary"
             sx={{
@@ -60,12 +60,12 @@ export const OverviewCard = (props: IOverviewCardProps) => {
               fontSize: 13
             }}
           >
-            {'Student' + (props.users.students.length === 1 ? '' : 's')}
+            {'Student' + (props.users?.students.length === 1 ? '' : 's')}
           </Typography>
         </Typography>
 
         <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users.tutors.length}
+          {props.users?.tutors.length}
           <Typography
             color="text.secondary"
             sx={{
@@ -74,12 +74,12 @@ export const OverviewCard = (props: IOverviewCardProps) => {
               fontSize: 13
             }}
           >
-            {'Tutor' + (props.users.tutors.length === 1 ? '' : 's')}
+            {'Tutor' + (props.users?.tutors.length === 1 ? '' : 's')}
           </Typography>
         </Typography>
 
         <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users.instructors.length}
+          {props.users?.instructors.length}
           <Typography
             color="text.secondary"
             sx={{
@@ -88,7 +88,7 @@ export const OverviewCard = (props: IOverviewCardProps) => {
               fontSize: 13
             }}
           >
-            {'Instructor' + (props.users.instructors.length === 1 ? '' : 's')}
+            {'Instructor' + (props.users?.instructors.length === 1 ? '' : 's')}
           </Typography>
         </Typography>
 
