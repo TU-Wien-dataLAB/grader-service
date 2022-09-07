@@ -56,7 +56,7 @@ export function pushAssignment(lectureId: number, assignmentId: number, repoType
   let url = `/lectures/${lectureId}/assignments/${assignmentId}/push/${repoType}`;
   if (commitMessage) {
     let searchParams = new URLSearchParams({
-      "commit-message": commitMessage
+      'commit-message': commitMessage
     })
     url += '?' + searchParams;
   }

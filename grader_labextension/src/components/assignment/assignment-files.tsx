@@ -95,7 +95,7 @@ export const AssignmentFilesComponent = (
             variant: 'success'
           });
         } catch (e) {
-          enqueueSnackbar('Error Reset Assignment', {
+          enqueueSnackbar('Error Reset Assignment: '+ e.message, {
             variant: 'error'
           });
         }
