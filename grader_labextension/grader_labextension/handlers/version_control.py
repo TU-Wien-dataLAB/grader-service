@@ -13,7 +13,7 @@ from tornado.web import HTTPError
 
 from grader_convert.converters.base import GraderConvertException
 from grader_convert.converters.generate_assignment import GenerateAssignment
-from .base_handler import ExtensionBaseHandler
+from .base_handler import ExtensionBaseHandler, cache
 from ..api.models.submission import Submission
 from ..registry import register_handler
 from ..services.git import GitError, GitService
@@ -100,6 +100,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/remote_status/{repo}.
     """
 
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         if repo not in {"assignment", "source", "release"}:
             self.log.error(HTTPStatus.NOT_FOUND)
@@ -135,6 +136,7 @@ class GitLogHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/log/{repo}.
     """
 
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         """
         Sends a GET request to the grader service to get the logs of a given repo.

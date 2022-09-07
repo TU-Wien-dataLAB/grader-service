@@ -109,12 +109,12 @@ export const Files = (props: IFilesProps) => {
       this
     );
 
-    getRemoteStatus(lecture, assignment, RepoType.SOURCE).then(status => {
+    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE).then(status => {
       setRepoStatus(
         status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
       );
     });
-  }, [props]);
+  }, [props.assignment, props.lecture]);
   /**
    * Reload file view.
    */

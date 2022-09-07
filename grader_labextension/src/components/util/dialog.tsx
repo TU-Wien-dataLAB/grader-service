@@ -266,7 +266,7 @@ export const EditDialog = (props: IEditDialogProps) => {
                     }}
                   />
                 }
-                label="Allow Non-Gradable Files"
+                label="Allow file upload by students"
               />
 
               {/* Not included in release 1.0
@@ -659,7 +659,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                     }}
                   />
                 }
-                label="Allow Non-Gradable Files"
+                label="Allow file upload by students"
               />
 
               {/* Not included in release 1.0

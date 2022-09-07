@@ -6,7 +6,7 @@
 
 import json
 from grader_labextension.registry import register_handler
-from grader_labextension.handlers.base_handler import ExtensionBaseHandler
+from grader_labextension.handlers.base_handler import ExtensionBaseHandler, cache
 import tornado
 from tornado import web
 from grader_labextension.services.request import RequestService
@@ -19,6 +19,7 @@ class LectureBaseHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures.
     """
     @web.authenticated
+    @cache(max_age=60)
     async def get(self):
         """Sends a GET-request to the grader service and returns the autorized lectures
         """
@@ -81,6 +82,7 @@ class LectureObjectHandler(ExtensionBaseHandler):
         self.write(json.dumps(response_data))
 
     @web.authenticated
+    @cache(max_age=60)
     async def get(self, lecture_id: int):
         """Sends a GET-request to the grader service and returns the lecture
 
@@ -125,6 +127,7 @@ class LectureStudentsHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/users.
     """
+    @cache(max_age=60)
     async def get(self, lecture_id: int):
         """
         Sends a GET request to the grader service and returns attendants of lecture
