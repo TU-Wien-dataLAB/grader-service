@@ -17,7 +17,6 @@ import os
 import posixpath
 import shlex
 from datetime import datetime
-import getpass
 import shutil
 import sys
 
