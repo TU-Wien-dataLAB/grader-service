@@ -411,6 +411,7 @@ class PushHandler(ExtensionBaseHandler):
                     header=self.grader_authentication_header,
                 )
                 self.write(json.dumps(response))
+                return
             except (KeyError, IndexError) as e:
                 self.log.error(e)
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
