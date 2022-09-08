@@ -21,7 +21,7 @@ export function submitAssignment(
     });
     url += '?' + searchParams;
   }
-  return request<void>(HTTPMethod.PUT, url);
+  return request<Submission>(HTTPMethod.PUT, url);
 }
 
 export async function pullFeedback(

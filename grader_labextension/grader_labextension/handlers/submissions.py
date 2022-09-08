@@ -109,7 +109,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
     """
     @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Sends a GET-request to the grader service and returns the properties of a submission
+        """Sends a GET-request to the grader service and returns a submission
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -131,7 +131,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """ Sends a PUT-request to the grader service to update the properties of a submission
+        """ Sends a PUT-request to the grader service to update the a submission
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
