@@ -118,7 +118,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.fetch_all()
             status = git_service.check_remote_status(f"grader_{repo}", "main")
@@ -176,7 +176,7 @@ class GitLogHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.fetch_all()
             if git_service.local_branch_exists("main"):  # at least main should exist
@@ -237,7 +237,7 @@ class PullHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.pull(f"grader_{repo}", force=True)
             self.write("OK")
@@ -380,7 +380,7 @@ class PushHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
                 # TODO: create .gitignore file
             git_service.set_remote(f"grader_{repo}")
         except GitError as e:
@@ -494,7 +494,7 @@ class NotebookAccessHandler(ExtensionBaseHandler):
         if not git_service.is_git():
             try:
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
                 git_service.set_remote(f"grader_release")
                 git_service.pull(f"grader_release", force=True)
                 self.write("OK")

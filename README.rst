@@ -88,7 +88,7 @@ The grader service has only been tested on Unix/macOS operating systems.
 This repository contains all the necessary packages for a full installation of the grader service.
 
 
-* ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service.
+* ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
 
 .. code-block::
 

@@ -73,6 +73,10 @@ class ExtensionBaseHandler(APIHandler):
 
         return dict(Authorization="Token " + HandlerConfig.instance().hub_api_token)
 
+    @property
+    def user_name(self):
+        return self.current_user["name"]
+
     async def get_lecture(self, lecture_id) -> dict:
         try:
             lecture = await self.request_service.request(
