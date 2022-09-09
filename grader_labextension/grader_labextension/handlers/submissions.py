@@ -41,6 +41,7 @@ class SubmissionHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions{query_params}",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
@@ -71,6 +72,7 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/properties",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
@@ -124,6 +126,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)

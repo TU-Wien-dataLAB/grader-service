@@ -26,6 +26,7 @@ class PermissionBaseHandler(ExtensionBaseHandler):
                 "GET",
                 f"{self.service_base_url}/permissions",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
