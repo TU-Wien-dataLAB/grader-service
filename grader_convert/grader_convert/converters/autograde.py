@@ -82,8 +82,7 @@ class Autograde(BaseConverter):
         # check for missing notebooks and give them a score of zero if they do not exist
         json_path = os.path.join(self._output_directory, "gradebook.json")
         with Gradebook(json_path) as gb:
-            if self._copy_files:
-                self.copy_unmatched_files()
+            self.copy_unmatched_files(gb)
 
             glob_notebooks = {
                 self.init_single_notebook_resources(n)["unique_key"]: n
