@@ -9,11 +9,13 @@ spec:
     - port: 8081
       protocol: TCP
     to:
+    - namespaceSelector: {}
     - podSelector:
         matchLabels:
           app: jupyterhub
           component: hub
   - to:
+    - namespaceSelector: {}
     - podSelector:
           matchLabels:
             app: jupyterhub
@@ -30,14 +32,11 @@ spec:
         - 169.254.169.254/32
   ingress:
     - from:
+      - namespaceSelector: {}
       - podSelector:
           matchLabels:
             app: jupyterhub
             component: hub
-      ports:
-        - port: 4010
-          protocol: TCP
-    - from:
       - podSelector:
           matchLabels:
             app: jupyterhub

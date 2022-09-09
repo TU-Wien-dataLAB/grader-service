@@ -164,7 +164,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                 <CreateDialog
                   lecture={lecture}
                   handleSubmit={() => {
-                    getAllAssignments(lecture.id).then(response => {
+                    getAllAssignments(lecture.id, true).then(response => {
                       setAssignments(response);
                     });
                     setExpanded(true);

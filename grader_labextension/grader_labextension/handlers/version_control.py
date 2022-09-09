@@ -404,12 +404,14 @@ class PushHandler(ExtensionBaseHandler):
             try:
                 latest_commit_hash = git_service.get_log(history_count=1)[0]["commit"]
                 submission = Submission(commit_hash=latest_commit_hash)
-                await self.request_service.request(
+                response = await self.request_service.request(
                     "POST",
                     f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions",
                     body=submission.to_dict(),
                     header=self.grader_authentication_header,
                 )
+                self.write(json.dumps(response))
+                return
             except (KeyError, IndexError) as e:
                 self.log.error(e)
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
