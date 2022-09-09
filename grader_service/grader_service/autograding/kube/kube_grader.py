@@ -14,13 +14,13 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from kubernetes.client import V1Pod, CoreV1Api, V1ObjectMeta, V1PodStatus, ApiException
-from traitlets import Callable, Unicode, Integer, Dict, List
+from traitlets import Callable, Unicode, Integer, List
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
 from grader_service.autograding.kube.util import make_pod
 from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
-from kubernetes import config, client
+from kubernetes import config
 
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
@@ -169,7 +169,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
-        os.mkdir(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self.submission.assignment.properties)
 
         grader_pod = None
