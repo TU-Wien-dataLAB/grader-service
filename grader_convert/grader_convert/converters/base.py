@@ -25,6 +25,7 @@ from traitlets import (
 )
 from traitlets.config import Config, LoggingConfigurable
 
+from grader_convert.gradebook.gradebook import Gradebook
 from grader_convert.nbgraderformat import SchemaTooNewError, SchemaTooOldError
 from grader_convert.nbgraderformat.common import ValidationError
 from grader_convert.preprocessors.execute import UnresponsiveKernelError
@@ -49,6 +50,7 @@ class BaseConverter(LoggingConfigurable):
             "*.pyc",
             "__pycache__",
             "feedback",
+            ".git"
         ],
         help=dedent(
             """
@@ -233,7 +235,7 @@ class BaseConverter(LoggingConfigurable):
                 return False
         return True
 
-    def copy_unmatched_files(self):
+    def copy_unmatched_files(self, gb: Gradebook):
         """
         Copy the files from source to the output directory that were not matched by the file pattern.
         :return: None
@@ -241,9 +243,30 @@ class BaseConverter(LoggingConfigurable):
         dst = self._output_directory
         src = self._input_directory
 
-        self.log.info(f"Copying unmatched files from {src} to {dst}")
-        ignore = shutil.ignore_patterns(*self.ignore + [self._file_pattern])
-        shutil.copytree(src, dst, ignore=ignore, dirs_exist_ok=True)
+        if self._copy_files:
+            copied_files = []
+
+            def save_copy2(src_c, dst_c, *, follow_symlinks=True):
+                shutil.copy2(src_c, dst_c, follow_symlinks=follow_symlinks)
+                rel_file_name = os.path.relpath(src_c, src)
+                copied_files.append(rel_file_name)
+
+            self.log.info(f"Copying unmatched files from {src} to {dst}")
+            ignore = shutil.ignore_patterns(*self.ignore + [self._file_pattern])
+            shutil.copytree(src, dst, copy_function=save_copy2, ignore=ignore, dirs_exist_ok=True)
+            gb.set_extra_files(copied_files)
+        else:
+            for rel_path in gb.get_extra_files():
+                src_file = os.path.join(src, rel_path)
+                if not os.path.isfile(src_file):
+                    self.log.warning(f"The file {rel_path} cannot be copied because it does not exist in {src}!")
+
+                # make sure the subdirectories of the file exists before copying
+                rel_dir = os.path.dirname(rel_path)
+                os.makedirs(os.path.join(dst, rel_dir), exist_ok=True)
+
+                dst_file = os.path.join(dst, rel_path)
+                shutil.copy2(src_file, dst_file)
 
     def set_permissions(self) -> None:
         self.log.info("Setting destination file permissions to %s", self.permissions)
@@ -296,8 +319,9 @@ class BaseConverter(LoggingConfigurable):
             self.set_permissions()
             self.run_post_convert_hook()
 
-            if self._copy_files:
-                self.copy_unmatched_files()
+            json_path = os.path.join(self._output_directory, "gradebook.json")
+            with Gradebook(json_path) as gb:
+                self.copy_unmatched_files(gb)
 
         except UnresponsiveKernelError as e:
             self.log.error(
