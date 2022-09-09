@@ -6,7 +6,6 @@
 
 import logging, json
 
-from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import AsyncHTTPClient, HTTPResponse
 from traitlets.config.configurable import LoggingConfigurable, SingletonConfigurable
 from typing import Dict, Union, Callable, Optional
@@ -21,8 +20,7 @@ class RequestService(SingletonConfigurable):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # self.http_client = AsyncHTTPClient()
-        self.http_client = CurlAsyncHTTPClient()
+        self.http_client = AsyncHTTPClient()
         self._service_cookie = None
 
     async def request(
