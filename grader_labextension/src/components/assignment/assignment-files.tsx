@@ -179,6 +179,10 @@ export const AssignmentFilesComponent = (
     return time < Date.now();
   };
 
+  const isAssignmentCompleted = () => {
+    return props.assignment.status === 'complete';
+  };
+
   const isMaxSubmissionReached = () => {
     if (props.assignment.max_submissions === null) {
       return false;
@@ -222,7 +226,11 @@ export const AssignmentFilesComponent = (
             variant="outlined"
             color="success"
             size="small"
-            disabled={isDeadlineOver() || isMaxSubmissionReached()}
+            disabled={
+              isDeadlineOver() ||
+              isMaxSubmissionReached() ||
+              isAssignmentCompleted()
+            }
             onClick={() => submitAssignmentHandler()}
           >
             <GradingIcon fontSize="small" sx={{ mr: 1 }} />

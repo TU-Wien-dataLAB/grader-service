@@ -12,12 +12,12 @@ export function createAssignment(lectureId: number, assignment: Assignment): Pro
   return request<Assignment, Assignment>(HTTPMethod.POST, `/lectures/${lectureId}/assignments`, assignment)
 }
 
-export function getAllAssignments(lectureId: number): Promise<Assignment[]> {
-  return request<Assignment[]>(HTTPMethod.GET, `/lectures/${lectureId}/assignments`)
+export function getAllAssignments(lectureId: number, reload = false): Promise<Assignment[]> {
+  return request<Assignment[]>(HTTPMethod.GET, `/lectures/${lectureId}/assignments`, reload)
 }
 
-export function getAssignment(lectureId: number, assignmentId: number): Promise<Assignment> {
-  return request<Assignment>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}`)
+export function getAssignment(lectureId: number, assignmentId: number, reload = false): Promise<Assignment> {
+  return request<Assignment>(HTTPMethod.GET, `/lectures/${lectureId}/assignments/${assignmentId}`, reload)
 }
 
 export function getAssignmentProperties(lectureId: number, assignmentId: number): Promise<any> {

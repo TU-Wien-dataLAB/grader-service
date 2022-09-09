@@ -38,7 +38,8 @@ export async function pullFeedback(
 export function getSubmissions(
   lecture: Lecture,
   assignment: Assignment,
-  filter = 'none'
+  filter = 'none',
+  reload = false
 ): Promise<Submission[]> {
   let url = `/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;
   if (filter) {
@@ -47,14 +48,15 @@ export function getSubmissions(
     });
     url += '?' + searchParams;
   }
-  return request<any>(HTTPMethod.GET, url);
+  return request<any>(HTTPMethod.GET, url, reload);
 }
 
 export function getAllSubmissions(
   lecture: Lecture,
   assignment: Assignment,
   filter: 'none' | 'latest' | 'best' = 'none',
-  instructor = true
+  instructor = true,
+  reload = false
 ): Promise<Submission[]> {
   let url = `/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;
 
@@ -65,7 +67,7 @@ export function getAllSubmissions(
     });
     url += '?' + searchParams;
   }
-  return request<Submission[]>(HTTPMethod.GET, url);
+  return request<Submission[]>(HTTPMethod.GET, url, reload);
 }
 
 export function getFeedback(
@@ -88,10 +90,11 @@ export function getFeedback(
 export function getProperties(
   lectureId: number,
   assignmentId: number,
-  submissionId: number
-): Promise<object> {
+  submissionId: number,
+  reload = false
+): Promise<any> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/properties`;
-  return request<object>(HTTPMethod.GET, url);
+  return request<any>(HTTPMethod.GET, url, reload);
 }
 
 export function updateProperties(

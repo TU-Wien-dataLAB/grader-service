@@ -36,8 +36,8 @@ export function generateFeedback(lecture_id: number, assignment_id: number, subm
 
 //response is not a schema => any
 //TODO: should prob be changed
-export function getStudentSubmissions(lecture: Lecture, assignment: Assignment): Promise<any> {
-  return request<any>(HTTPMethod.GET, `/lectures/${lecture.id}/assignements/${assignment.id}/grading`)
+export function getStudentSubmissions(lecture: Lecture, assignment: Assignment, reload = false): Promise<any> {
+  return request<any>(HTTPMethod.GET, `/lectures/${lecture.id}/assignements/${assignment.id}/grading`, reload)
 }
 
 export function getManualFeedback(lecture: Lecture, assignment: Assignment, student: User): Promise<object> {
