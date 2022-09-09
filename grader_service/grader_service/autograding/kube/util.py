@@ -7,14 +7,9 @@
 import copy
 import hashlib
 
-from kubernetes.client.models import V1Container
-from kubernetes.client.models import V1ObjectMeta
-from kubernetes.client.models import V1Pod
-from kubernetes.client.models import V1PodSpec
-from kubernetes.client.models import V1ResourceRequirements
-from kubernetes.client.models import V1Toleration
-from kubernetes.client.models import V1Volume
-from kubernetes.client.models import V1VolumeMount
+from kubernetes.client.models import V1Container, V1ObjectMeta, V1Pod, V1PodSpec, V1ResourceRequirements, V1Toleration, V1SecurityContext, V1Volume, V1VolumeMount
+
+
 
 
 def generate_hashed_slug(slug, limit=63, hash_length=6):
@@ -232,6 +227,7 @@ def make_pod(
         args=cmd,
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
+        security_context=V1SecurityContext.run_as_user,
         volume_mounts=[
             get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
         ],

@@ -4,7 +4,7 @@
 
 # TEMPLATING VALUES
 MAX_SIZE_MB="$tpl_max_file_size"
-FILE_ALLOW_PATTERN=".+\.($tpl_file_extensions)"
+FILE_ALLOW_PATTERN=".+($tpl_file_extensions)"
 MAX_FILE_COUNT="$tpl_max_file_count"
 
 MAX_BYTES=$((MAX_SIZE_MB * 1000000))

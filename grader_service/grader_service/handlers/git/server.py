@@ -185,8 +185,8 @@ class GitBaseHandler(GraderBaseHandler):
         if extensions is None:
             extensions = RequestHandlerConfig.instance().git_allowed_file_extensions
         if len(extensions) == 0:
-            return ".*"
-        return "|".join([s.strip(".").replace(".", "\\.") for s in extensions])
+            return ""
+        return "|".join(["\\." + s.strip(".").replace(".", "\\.") for s in extensions])
 
     @staticmethod
     def _get_hook_max_file_size():

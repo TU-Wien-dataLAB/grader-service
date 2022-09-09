@@ -155,9 +155,12 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             labels=None,
             annotations=None,
             tolerations=None,
+
         )
+
         self.log.info(f"Starting pod {pod.metadata.name} with command: {command}")
         pod = self.client.create_namespaced_pod(namespace=self.namespace, body=pod)
+        V1SecurityContext.run_as_user
         return GraderPod(pod, self.client, config=self.config)
 
     async def _run(self):
