@@ -475,7 +475,7 @@ export default function NewAssignmentCard(props: INewAssignmentCardProps) {
 
 interface ICreateDialogProps {
   lecture: Lecture;
-  handleSubmit: () => void;
+  handleSubmit: (assigment: Assignment) => void;
 }
 
 export const CreateDialog = (props: ICreateDialogProps) => {
@@ -489,11 +489,10 @@ export const CreateDialog = (props: ICreateDialogProps) => {
       allow_files: false
     },
     validationSchema: validationSchema,
-    onSubmit: values => {
-      if (values.max_submissions !== null) {
+    onSubmit: values => {if (values.max_submissions !== null) {
         values.max_submissions = +values.max_submissions;
       }
-      const updatedAssignment: Assignment = {
+      const newAssignment: Assignment = {
         name: values.name,
         due_date: values.due_date,
         type: values.type as TypeEnum,
@@ -501,8 +500,9 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         max_submissions: values.max_submissions,
         allow_files: values.allow_files
       };
-      createAssignment(props.lecture.id, updatedAssignment).then(
-        a => console.log(a),
+      createAssignment(props.lecture.id, newAssignment).then(
+        a => props.handleSubmit(a),
+
         error => {
           enqueueSnackbar(error.message, {
             variant: 'error'
@@ -510,7 +510,6 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         }
       );
       setOpen(false);
-      props.handleSubmit();
     }
   });
 
