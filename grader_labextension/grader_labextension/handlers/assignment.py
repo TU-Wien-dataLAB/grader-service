@@ -35,6 +35,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
 
             lecture = await self.request_service.request(
@@ -157,6 +158,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}{query_params}",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
             lecture = await self.request_service.request(
                 "GET",
@@ -230,6 +232,7 @@ class AssignmentPropertiesHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/properties",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)

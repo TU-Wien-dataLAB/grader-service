@@ -15,7 +15,7 @@ from grader_labextension.api.models.error_message import ErrorMessage
 from grader_labextension.services.request import RequestService
 from jupyter_server.base.handlers import APIHandler
 import os
-from tornado.httpclient import HTTPClient, HTTPClientError
+from tornado.httpclient import HTTPClientError, HTTPResponse
 from traitlets.config.configurable import SingletonConfigurable
 from traitlets.traitlets import Unicode
 
@@ -51,9 +51,11 @@ class ExtensionBaseHandler(APIHandler):
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
-    request_service = RequestService()
-    http_client = HTTPClient()
-    # base_url = "/services/grader"
+    def set_service_headers(self, response: HTTPResponse):
+        for header in response.headers.get_list("Cache-Control"):
+            self.set_header("Cache-Control", header)
+
+    request_service = RequestService.instance()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
