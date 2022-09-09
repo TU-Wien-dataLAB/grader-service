@@ -50,7 +50,6 @@ def tuple_to_submission(t):
     ) = t
     return s
 
-
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
     version_specifier=VersionSpecifier.ALL,
