@@ -146,7 +146,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         command = f'{self.convert_executable} autograde ' \
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb"' \
+                  f'-p "*.ipynb" ' \
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
         # command = "sleep 10000"
         pod = make_pod(
