@@ -12,7 +12,9 @@ data:
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
     c.KubeAutogradeExecutor.kube_context = None
+{{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
+{{- end }}
     c.KubeAutogradeExecutor.base_input_path = "/var/lib/grader-service/convert_in"
     c.KubeAutogradeExecutor.base_output_path = "/var/lib/grader-service/convert_out"
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"

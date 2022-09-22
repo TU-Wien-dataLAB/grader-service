@@ -6,11 +6,21 @@
 
 import copy
 import hashlib
+import os
+from kubernetes import config
 
-from kubernetes.client.models import V1Container, V1ObjectMeta, V1Pod, V1PodSpec, V1ResourceRequirements, V1Toleration, V1SecurityContext, V1Volume, V1VolumeMount
+from kubernetes.client.models import V1Container, V1ObjectMeta, V1Pod, V1PodSpec, V1ResourceRequirements, V1Toleration, V1SecurityContext, V1Volume, V1VolumeMount, V1PodSecurityContext
 
-
-
+def get_current_namespace():
+    ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    if os.path.exists(ns_path):
+        with open(ns_path) as f:
+            return f.read().strip()
+    try:
+        _, active_context = config.list_kube_config_contexts()
+        return active_context["context"]["namespace"]
+    except KeyError:
+        return "default"
 
 def generate_hashed_slug(slug, limit=63, hash_length=6):
     """
@@ -206,6 +216,7 @@ def make_pod(
         labels=None,
         annotations=None,
         tolerations=None,
+        run_as_user=None,
 ) -> V1Pod:
     pod = V1Pod()
     pod.kind = "Pod"
@@ -217,8 +228,11 @@ def make_pod(
         annotations=(annotations or {}).copy(),
     )
 
-    pod.spec = V1PodSpec(containers=[])
-    pod.spec.restart_policy = 'Never'
+    pod.spec = V1PodSpec(
+        containers=[],
+        security_context=V1PodSecurityContext(),
+        restart_policy='Never'
+    )
 
     autograde_container = V1Container(
         name='autograde',
@@ -227,7 +241,9 @@ def make_pod(
         args=cmd,
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
-        security_context=V1SecurityContext.run_as_user,
+        security_context=V1SecurityContext(
+            run_as_user=run_as_user #TODO maybe get userid of jupyterhub user
+        ),
         volume_mounts=[
             get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
         ],
