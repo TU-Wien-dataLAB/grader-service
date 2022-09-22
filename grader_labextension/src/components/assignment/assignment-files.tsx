@@ -132,21 +132,6 @@ export const AssignmentFilesComponent = (
             });
           }
         );
-        await getAllSubmissions(
-          props.lecture,
-          props.assignment,
-          'none',
-          false
-        ).then(
-          submissions => {
-            props.setSubmissions(submissions);
-          },
-          error => {
-            enqueueSnackbar(error, {
-              variant: 'error'
-            });
-          }
-        );
         setDialog(false);
       },
       handleDisagree: () => setDialog(false)
