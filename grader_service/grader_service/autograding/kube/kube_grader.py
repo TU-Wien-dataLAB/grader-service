@@ -18,13 +18,12 @@ from traitlets import Callable, Unicode, Integer, List
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
-from grader_service.autograding.kube.util import make_pod
+from grader_service.autograding.kube.util import make_pod, get_current_namespace
 from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
 from kubernetes import config
 
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
-
 
 class GraderPod(LoggingConfigurable):
     """
@@ -94,7 +93,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     volumes = List(default_value=[], allow_none=False).tag(config=True)
     volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
-    namespace = Unicode(default_value="default", allow_none=False).tag(config=True)
+    namespace = Unicode(default_value=None, allow_none=True,
+                        help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
@@ -108,6 +108,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 f"Loading cluster config '{self.kube_context}' for kube executor of submission {self.submission.id}")
             config.load_kube_config(context=self.kube_context)
         self.client = CoreV1Api()
+
+        if self.namespace is None:
+            self.log.info(f"Setting Namespace for submission {self.submission.id}")
+            self.namespace = get_current_namespace()
 
     def get_image(self) -> str:
         """

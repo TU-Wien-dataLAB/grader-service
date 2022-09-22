@@ -6,11 +6,21 @@
 
 import copy
 import hashlib
+import os
+from kubernetes import config
 
 from kubernetes.client.models import V1Container, V1ObjectMeta, V1Pod, V1PodSpec, V1ResourceRequirements, V1Toleration, V1SecurityContext, V1Volume, V1VolumeMount, V1PodSecurityContext
 
-
-
+def get_current_namespace():
+    ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    if os.path.exists(ns_path):
+        with open(ns_path) as f:
+            return f.read().strip()
+    try:
+        _, active_context = config.list_kube_config_contexts()
+        return active_context["context"]["namespace"]
+    except KeyError:
+        return "default"
 
 def generate_hashed_slug(slug, limit=63, hash_length=6):
     """
