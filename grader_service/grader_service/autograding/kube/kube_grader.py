@@ -95,6 +95,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
     namespace = Unicode(default_value=None, allow_none=True,
                         help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
+    uid = Unicode(default_value=1000, allow_none=False, help="The User ID for the grader container").tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
@@ -159,6 +160,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             labels=None,
             annotations=None,
             tolerations=None,
+            run_as_user=self.uid,
         )
 
         self.log.info(f"Starting pod {pod.metadata.name} with command: {command}")

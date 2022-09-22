@@ -216,6 +216,7 @@ def make_pod(
         labels=None,
         annotations=None,
         tolerations=None,
+        run_as_user=None,
 ) -> V1Pod:
     pod = V1Pod()
     pod.kind = "Pod"
@@ -241,8 +242,7 @@ def make_pod(
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
         security_context=V1SecurityContext(
-            run_as_non_root=True,
-            run_as_user="1000" #TODO maybe get userid of jupyterhub user
+            run_as_user=run_as_user #TODO maybe get userid of jupyterhub user
         ),
         volume_mounts=[
             get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
