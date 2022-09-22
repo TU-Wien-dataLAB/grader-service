@@ -230,7 +230,10 @@ def make_pod(
         args=cmd,
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
-        security_context=V1SecurityContext(),
+        security_context=V1SecurityContext(
+            run_as_non_root=True,
+            run_as_user="1000" #TODO maybe get userid of jupyterhub user
+        ),
         volume_mounts=[
             get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
         ],
