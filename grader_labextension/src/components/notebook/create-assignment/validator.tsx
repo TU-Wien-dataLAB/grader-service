@@ -40,7 +40,6 @@ export const Validator = (props: ValidatorProps) => {
     //check duplicate ids
     const ids = new Set();
     const result: ReportItem[] = [];
-    console.log('started validation');
     props.notebook.widgets.map((c: Cell) => {
       (c.layout as PanelLayout).widgets.map((w: Widget) => {
         if (w instanceof ErrorWidget) {
@@ -56,7 +55,6 @@ export const Validator = (props: ValidatorProps) => {
       if (metadata !== null) {
         if (metadata.grade_id !== null) {
           if (ids.has(metadata.grade_id)) {
-            console.log('duplicate id found');
             const layout = c.layout as PanelLayout;
             layout.insertWidget(0, new ErrorWidget(c, 'Duplicate ID found'));
             result.push({

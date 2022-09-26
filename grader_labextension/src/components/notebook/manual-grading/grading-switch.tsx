@@ -75,7 +75,6 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
     this.notebookpanel.context.saveState.connect((sender, saveState) => {
       if (saveState === 'started') {
         this.saveProperties();
-        console.log('Saved');
       }
     });
   }
@@ -96,7 +95,6 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
         this.gradeBook.properties
       );
       this.setState({saveButtonText: 'Saved'});
-      //console.log("saved")
       setTimeout(
         () => this.setState({saveButtonText: 'Save'}),
         2000
@@ -106,7 +104,6 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
         this.assignment.id,
         this.subID
       );
-      console.log(submission);
       submission.manual_status = 'being_edited';
       updateSubmission(
         this.lecture.id,

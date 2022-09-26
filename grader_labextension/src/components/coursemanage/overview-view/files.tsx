@@ -103,7 +103,6 @@ export const Files = (props: IFilesProps) => {
         const modified = moment(newValue.last_modified).valueOf();
         if (srcChangedTimestamp === null || srcChangedTimestamp < modified) {
           setSrcChangeTimestamp(modified);
-          console.log('New source file changed timestamp: ' + modified);
         }
       },
       this
@@ -292,7 +291,6 @@ export const Files = (props: IFilesProps) => {
   };
 
   const newUntitled = async () => {
-    console.log('Creating untitled notebook');
     const res = await GlobalObjects.docManager.newUntitled({
       type: 'notebook',
       path: `source/${lecture.code}/${assignment.id}`

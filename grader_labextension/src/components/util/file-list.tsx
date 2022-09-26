@@ -38,7 +38,6 @@ export const FilesList = (props: IFileListProps) => {
   }, [props]);
 
   const openFile = async (path: string) => {
-    console.log('Opening file: ' + path);
     GlobalObjects.commands
       .execute('docmanager:open', {
         path: path,
@@ -50,7 +49,6 @@ export const FilesList = (props: IFileListProps) => {
         enqueueSnackbar(error, {
           variant: 'error'
         });
-        console.log(error);
       });
   };
 

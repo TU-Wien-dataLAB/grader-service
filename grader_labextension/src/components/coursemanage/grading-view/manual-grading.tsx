@@ -54,7 +54,6 @@ export const ManualGrading = (props: IManualGradingProps) => {
       props.submission.id
     ).then(() => {
       const manualPath = `manualgrade/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`;
-      console.log('Successfully pulled autograde repo into ' + manualPath);
       setPath(manualPath);
     });
   }, [props.lecture, props.assignment, props.submission]);

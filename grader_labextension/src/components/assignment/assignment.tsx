@@ -17,25 +17,29 @@ import {
   Stack,
   Typography
 } from '@mui/material';
-import {red} from '@mui/material/colors';
+import { red } from '@mui/material/colors';
 
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 
-import {Assignment} from '../../model/assignment';
+import { Assignment } from '../../model/assignment';
 import LoadingOverlay from '../util/overlay';
-import {Lecture} from '../../model/lecture';
-import {getAllSubmissions} from '../../services/submissions.service';
+import { Lecture } from '../../model/lecture';
+import { getAllSubmissions } from '../../services/submissions.service';
 import {
   getAssignment,
   pullAssignment
 } from '../../services/assignments.service';
-import {DeadlineComponent} from '../util/deadline';
-import {AssignmentModalComponent} from './assignment-modal';
-import {Submission} from '../../model/submission';
-import {getFiles} from '../../services/file.service';
-import {CardDescriptor} from '../util/card-descriptor';
-import {deleteKey, loadNumber, storeNumber} from "../../services/storage.service";
+import { DeadlineComponent } from '../util/deadline';
+import { AssignmentModalComponent } from './assignment-modal';
+import { Submission } from '../../model/submission';
+import { getFiles } from '../../services/file.service';
+import { CardDescriptor } from '../util/card-descriptor';
+import {
+  deleteKey,
+  loadNumber,
+  storeNumber
+} from '../../services/storage.service';
 
 /**
  * Props for AssignmentComponent.
@@ -53,7 +57,7 @@ interface IAssignmentComponentProps {
 export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
   const [displayAssignment, setDisplayAssignment] = React.useState(
-    loadNumber("a-opened-assignment") === props.assignment.id || false
+    loadNumber('a-opened-assignment') === props.assignment.id || false
   );
   const [submissions, setSubmissions] = React.useState([] as Submission[]);
   const [hasFeedback, setHasFeedback] = React.useState(false);
@@ -74,8 +78,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
     );
     getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
       if (files.length === 0) {
-        pullAssignment(props.lecture.id, assignment.id, 'assignment')
-          .then(_ => console.log("No Files found! Pulled assignment."));
+        pullAssignment(props.lecture.id, assignment.id, 'assignment');
       }
       setFiles(files);
     });
@@ -94,7 +97,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
    */
   const onAssignmentClose = async () => {
     setDisplayAssignment(false);
-    deleteKey("a-opened-assignment");
+    deleteKey('a-opened-assignment');
     setAssignment(await getAssignment(props.lecture.id, assignment.id));
     const submissions = await getAllSubmissions(
       props.lecture,
@@ -106,7 +109,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   };
 
   return (
-    <Box sx={{height: '100%'}}>
+    <Box sx={{ height: '100%' }}>
       <Card
         sx={{
           maxWidth: 200,
@@ -117,13 +120,13 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         }}
         onClick={async () => {
           setDisplayAssignment(true);
-          storeNumber("a-opened-assignment", assignment.id);
+          storeNumber('a-opened-assignment', assignment.id);
         }}
       >
         <CardActionArea
-          sx={{height: '100%', display: 'flex', flexDirection: 'column'}}
+          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          <CardContent sx={{flexGrow: 1}}>
+          <CardContent sx={{ flexGrow: 1 }}>
             <Typography
               variant="h5"
               component="div"
@@ -136,7 +139,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
               {assignment.name}
             </Typography>
             <Typography
-              sx={{fontSize: 14}}
+              sx={{ fontSize: 14 }}
               color="text.secondary"
               gutterBottom
             >
@@ -156,23 +159,23 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
                 </Typography>
               )}
             </Typography>
-            <Divider sx={{mt: 1, mb: 1}}/>
+            <Divider sx={{ mt: 1, mb: 1 }} />
 
             <CardDescriptor
               descriptor={'Submission'}
               value={submissions.length}
             />
             <CardDescriptor
-              sx={{mt: 0.25}}
+              sx={{ mt: 0.25 }}
               descriptor={(hasFeedback ? 'Has' : 'No') + ' Feedback'}
               value={
                 hasFeedback ? (
                   <CheckCircleOutlineOutlinedIcon
-                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
+                    sx={{ fontSize: 16, mr: -0.25, mb: -0.35 }}
                   />
                 ) : (
                   <CancelOutlinedIcon
-                    sx={{fontSize: 16, mr: -0.25, mb: -0.35}}
+                    sx={{ fontSize: 16, mr: -0.25, mb: -0.35 }}
                   />
                 )
               }

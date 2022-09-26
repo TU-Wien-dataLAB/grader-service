@@ -111,7 +111,6 @@ export const GradingComponent = (props: IGradingProps) => {
               props.assignment,
               getSubmissionFromRow(row)
             );
-            console.log('Autograded submission');
           });
         } catch (err) {
           console.error(err);
@@ -143,7 +142,6 @@ export const GradingComponent = (props: IGradingProps) => {
                 props.assignment.id,
                 row.id
               );
-              console.log('Autograded submission');
             })
           );
           getAllSubmissions(props.lecture, props.assignment, option, true).then(
@@ -179,9 +177,6 @@ export const GradingComponent = (props: IGradingProps) => {
    * @param submissions submissions which are used to generate row objects
    */
   const generateRows = (submissions: Submission[]) => {
-    console.log('Submissions');
-    console.log(submissions);
-    console.log('option: ' + option);
     const rows: IRowValues[] = [];
     let id = 1;
     submissions.forEach((sub: Submission) => {
@@ -198,7 +193,6 @@ export const GradingComponent = (props: IGradingProps) => {
         score: sub.score
       });
     });
-    console.log(rows);
     return rows;
   };
 
@@ -331,7 +325,6 @@ export const GradingComponent = (props: IGradingProps) => {
     }
     const id = row.id;
     const submission = submissions.find(s => s.id === id);
-    console.log(submission);
     return submission === undefined ? null : submission;
   };
 
@@ -358,7 +351,6 @@ export const GradingComponent = (props: IGradingProps) => {
   };
 
   const openFile = async (path: string) => {
-    console.log('Opening file: ' + path);
     GlobalObjects.commands
       .execute('docmanager:open', {
         path: path,
@@ -370,7 +362,6 @@ export const GradingComponent = (props: IGradingProps) => {
         enqueueSnackbar(error.message, {
           variant: 'error'
         });
-        console.log(error);
       });
   };
   /**
@@ -384,7 +375,6 @@ export const GradingComponent = (props: IGradingProps) => {
         variant: 'success'
       });
     } catch (err) {
-      console.log(err);
       enqueueSnackbar('Error Exporting Submissions', {
         variant: 'error'
       });

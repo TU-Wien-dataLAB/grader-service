@@ -94,7 +94,6 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           showLabels
           value={navigation}
           onChange={(event, newValue) => {
-            console.log(newValue);
             storeNumber('cm-navigation', newValue, null, props.assignment);
             setNavigation(newValue);
             getAllSubmissions(

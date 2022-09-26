@@ -358,7 +358,6 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
     validationSchema: validationSchemaLecture,
     onSubmit: values => {
       const updatedLecture: Lecture = Object.assign(props.lecture, values);
-      console.log(updatedLecture);
       props.handleSubmit(updatedLecture);
       setOpen(false);
     }
@@ -486,7 +485,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         max_submissions: values.max_submissions
       };
       createAssignment(props.lecture.id, updatedAssignment).then(
-        a => console.log(a),
+        _ => {},
         error => {
           enqueueSnackbar(error.message, {
             variant: 'error'
@@ -535,13 +534,11 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                     <Checkbox
                       value={false}
                       onChange={async e => {
-                        console.log('Before: ' + formik.values.due_date);
                         if (e.target.checked) {
                           await formik.setFieldValue('due_date', new Date());
                         } else {
                           await formik.setFieldValue('due_date', null);
                         }
-                        console.log('After: ' + formik.values.due_date);
                       }}
                     />
                   }
@@ -578,7 +575,6 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                   <Checkbox
                     value={Boolean(formik.values.max_submissions)}
                     onChange={async e => {
-                      console.log('Before: ' + formik.values.max_submissions);
                       if (e.target.checked) {
                         await formik.setFieldValue('max_submissions', 1);
                       } else {
@@ -587,7 +583,6 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                           undefined
                         );
                       }
-                      console.log('After: ' + formik.values.max_submissions);
                     }}
                   />
                 }

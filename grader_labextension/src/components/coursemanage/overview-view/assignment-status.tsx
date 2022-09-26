@@ -78,7 +78,6 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
     error: string
   ) => {
     try {
-      console.log('releasing assignment');
       let a = assignment;
       a.status = status;
       a = await updateAssignment(props.lecture.id, a);
@@ -110,7 +109,6 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
   const handlePushAssignment = async (commitMessage: string) => {
     try {
       // Note: has to be in this order (release -> source)
-      console.log('pushing assignment');
       await pushAssignment(props.lecture.id, assignment.id, 'release');
       await pushAssignment(
         props.lecture.id,
