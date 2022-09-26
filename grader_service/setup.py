@@ -22,7 +22,7 @@ setup(
     name='grader-service',
     version=__version__,
     packages=find_packages(".", exclude=["grader_service.tests", "grader_service.tests.*"]),
-    package_data={'grader_service.migrate': ['alembic.ini']},
+    include_package_data=True,  # use MANIFEST.in
     url="https://github.com/TU-Wien-dataLAB/Grader-Service",
     license="BSD-3-Clause",
     author='Elias Wimmer, Florian Jäger & Matthias Matt',

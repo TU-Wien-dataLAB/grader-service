@@ -324,7 +324,7 @@ These optional features include:
 * ``Show Hint``: Students can access a hint to a task if one is specified.
 
 To access these commands buttons have to be added to the JupyterLab cell toolbar by editing the `overrides.json file <https://jupyterlab.readthedocs.io/en/stable/user/directories.html#overridesjson>`_.
-We also recommend that all other built in cell toolbar buttons should be removed in the config because they might enable unwanted cell manipulation by students.
+We also recommend that all other built in cell toolbar buttons should be disabled in the config because they might enable unwanted cell manipulation by students.
 
 A sample overrides.json file could look like this:
 

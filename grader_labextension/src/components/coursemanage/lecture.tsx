@@ -15,19 +15,26 @@ import {
   Typography
 } from '@mui/material';
 import * as React from 'react';
-import {Assignment} from '../../model/assignment';
-import {Lecture} from '../../model/lecture';
-import {getAllAssignments} from '../../services/assignments.service';
-import {AssignmentComponent} from './assignment';
-import {CreateDialog, EditLectureDialog} from '../util/dialog';
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
+import {
+  createAssignment,
+  getAllAssignments
+} from '../../services/assignments.service';
+import { AssignmentComponent } from './assignment';
+import { CreateDialog, EditLectureDialog } from '../util/dialog';
 import {
   getLecture,
   getUsers,
   updateLecture
 } from '../../services/lectures.service';
-import {red} from '@mui/material/colors';
-import {enqueueSnackbar} from 'notistack';
-import {deleteKey, loadBoolean, storeBoolean} from "../../services/storage.service";
+import { red } from '@mui/material/colors';
+import { enqueueSnackbar } from 'notistack';
+import {
+  deleteKey,
+  loadBoolean,
+  storeBoolean
+} from '../../services/storage.service';
 
 interface ILectureComponentProps {
   lecture: Lecture;
@@ -37,13 +44,13 @@ interface ILectureComponentProps {
 
 export const LectureComponent = (props: ILectureComponentProps) => {
   const [lecture, setLecture] = React.useState(props.lecture);
-  const [assignments, setAssignments] = React.useState(null);
+  const [assignments, setAssignments] = React.useState([]);
   const [expanded, setExpanded] = React.useState(
-    loadBoolean("cm-expanded", lecture) !== null
-      ? loadBoolean("cm-expanded", lecture)
+    loadBoolean('cm-expanded', lecture) !== null
+      ? loadBoolean('cm-expanded', lecture)
       : props.expanded === undefined
-        ? false
-        : props.expanded
+      ? false
+      : props.expanded
   );
   const [users, setUsers] = React.useState(null);
 
@@ -61,18 +68,18 @@ export const LectureComponent = (props: ILectureComponentProps) => {
     getAllAssignments(lecture.id).then(response => {
       setAssignments(response);
     });
-    deleteKey("cm-opened-assignment");
+    deleteKey('cm-opened-assignment');
   };
 
   const handleExpandClick = () => {
-    storeBoolean("cm-expanded", !expanded, lecture);
+    storeBoolean('cm-expanded', !expanded, lecture);
     setExpanded(!expanded);
   };
   if (assignments === null) {
     return (
       <div>
         <Card>
-          <LinearProgress/>
+          <LinearProgress />
         </Card>
       </div>
     );
@@ -80,12 +87,12 @@ export const LectureComponent = (props: ILectureComponentProps) => {
   return (
     <div>
       <Card
-        sx={{backgroundColor: expanded ? '#fafafa' : 'background.paper'}}
+        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
         elevation={expanded ? 0 : 2}
         className="lecture-card"
       >
-        <CardContent sx={{mb: -1, display: 'flex'}}>
-          <Typography variant={'h5'} sx={{mr: 2}}>
+        <CardContent sx={{ mb: -1, display: 'flex' }}>
+          <Typography variant={'h5'} sx={{ mr: 2 }}>
             <Typography
               color={'text.secondary'}
               sx={{
@@ -163,10 +170,11 @@ export const LectureComponent = (props: ILectureComponentProps) => {
               >
                 <CreateDialog
                   lecture={lecture}
-                  handleSubmit={() => {
-                    getAllAssignments(lecture.id).then(response => {
-                      setAssignments(response);
-                    });
+                  handleSubmit={assigment => {
+                    setAssignments((oldAssignments: Assignment[]) => [
+                      ...oldAssignments,
+                      assigment
+                    ]);
                     setExpanded(true);
                   }}
                 />
@@ -175,7 +183,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           </CardContent>
         </Collapse>
         <CardActions>
-          <Button size="small" sx={{ml: 'auto'}} onClick={handleExpandClick}>
+          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
             {(expanded ? 'Hide' : 'Show') + ' Assignments'}
           </Button>
         </CardActions>

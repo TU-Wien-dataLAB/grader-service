@@ -63,7 +63,8 @@ def test_assignment_serialization():
         'type': None,
         'points': 0,
         'automatic_grading': AutoGradingBehaviour.unassisted,
-        'max_submissions': 1
+        'max_submissions': 1,
+        'allow_files': None
     }
     a = Assignment(
         id=d["id"],

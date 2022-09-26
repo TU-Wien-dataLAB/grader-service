@@ -17,7 +17,6 @@ import os
 import posixpath
 import shlex
 from datetime import datetime
-import getpass
 import shutil
 import sys
 
@@ -184,7 +183,7 @@ class GitService(Configurable):
         self.log.info(f"Adding all files and committing in {self.path}")
         self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{m}"\'', cwd=self.path)
 
-    def set_author(self, author=getpass.getuser()):
+    def set_author(self, author):
         # TODO: maybe ask user to specify their own choices
         self._run_command(f'git config user.name "{author}"', cwd=self.path)
         self._run_command(f'git config user.email "sample@mail.com"', cwd=self.path)

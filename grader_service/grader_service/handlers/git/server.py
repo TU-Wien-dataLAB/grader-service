@@ -7,9 +7,11 @@
 import os
 import shlex
 import subprocess
-from typing import List
+from pathlib import Path
+from string import Template
+from typing import List, Optional
 
-from grader_service.handlers.base_handler import GraderBaseHandler
+from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
@@ -139,6 +141,7 @@ class GitBaseHandler(GraderBaseHandler):
         is_git = self.is_base_git_dir(path)
         # return git repo
         if os.path.exists(path) and is_git:
+            self.write_pre_receive_hook(path)
             return path
         else:
             os.mkdir(path)
@@ -157,7 +160,47 @@ class GitBaseHandler(GraderBaseHandler):
                                             assignment=assignment, message="Initialize with Release",
                                             checkout_main=True)
 
+            self.write_pre_receive_hook(path)
             return path
+
+    def write_pre_receive_hook(self, path: str):
+        hook_dir = os.path.join(path, "hooks")
+        if not os.path.exists(hook_dir):
+            os.mkdir(hook_dir)
+
+        hook_file = os.path.join(hook_dir, "pre-receive")
+        if not os.path.exists(hook_file):
+            tpl = Template(self._read_hook_template())
+            hook = tpl.safe_substitute({
+                "tpl_max_file_size": self._get_hook_max_file_size(),
+                "tpl_file_extensions": self._get_hook_file_allow_pattern(),
+                "tpl_max_file_count": self._get_hook_max_file_count()
+            })
+            with open(hook_file, "wt") as f:
+                os.chmod(hook_file, 0o755)
+                f.write(hook)
+
+    @staticmethod
+    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:
+        if extensions is None:
+            extensions = RequestHandlerConfig.instance().git_allowed_file_extensions
+        if len(extensions) == 0:
+            return ""
+        return "|".join(["\\." + s.strip(".").replace(".", "\\.") for s in extensions])
+
+    @staticmethod
+    def _get_hook_max_file_size():
+        return RequestHandlerConfig.instance().git_max_file_size_mb
+
+    @staticmethod
+    def _get_hook_max_file_count():
+        return RequestHandlerConfig.instance().git_max_file_count
+
+    @staticmethod
+    def _read_hook_template() -> str:
+        file_path = Path(__file__).parent / "hook_templates" / "pre-receive"
+        with open(file_path, mode="rt") as f:
+            return f.read()
 
     @staticmethod
     def _create_path(path):

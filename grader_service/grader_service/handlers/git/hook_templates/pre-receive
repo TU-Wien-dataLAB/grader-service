@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# from: https://gist.github.com/nauar/826f85d25d692d9bc009312cb71577dd
+
+# TEMPLATING VALUES
+MAX_SIZE_MB="$tpl_max_file_size"
+FILE_ALLOW_PATTERN=".+($tpl_file_extensions)"
+MAX_FILE_COUNT="$tpl_max_file_count"
+
+MAX_BYTES=$((MAX_SIZE_MB * 1000000))
+GITCMD="git"
+NULL_SHA="0000000000000000000000000000000000000000"
+EMPTY_TREE_SHA=$($GITCMD hash-object -t tree /dev/null) # SHA1: "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+LOGFILE="/tmp/git_private.log"
+
+function file_log() {
+    moment=$(date '+%d/%m/%Y %H:%M:%S')
+    echo "[ $moment ] [ POLICY CHECK ] $1" >> $LOGFILE
+}
+
+function echo_log() {
+    echo "[ POLICY CHECK ] $1"
+}
+
+echo_log "Starting validation..."
+while read -r sha1_old sha1_new refname; do
+
+    file_log "old: $sha1_old new: $sha1_new refname: $refname"
+
+    # Avoid removed branches
+    if [ "${sha1_new}" = "${NULL_SHA}" ]; then
+        continue
+    fi
+
+    # Set sha1_old properly if this is branch creation.
+    if [ "${sha1_old}" = "${NULL_SHA}" ]; then
+        sha1_old=$EMPTY_TREE_SHA
+    fi
+
+    # Ignore case
+    shopt -s nocaseglob
+
+    # get the total number of files that are in the new commit (sha1_new) |  xargs to trim whitespace
+    total_files_count=$($GITCMD ls-tree --full-tree -r --name-only "$sha1_new" | wc -l |  xargs)
+
+    if [[ ${total_files_count} -gt ${MAX_FILE_COUNT} ]]; then
+      echo_log "ERROR: Exceeded maximum number of files! The maximum was set to $MAX_FILE_COUNT but the commit contains $total_files_count!"
+      exit 1
+    fi
+
+    newFiles=$($GITCMD diff --stat --name-only --diff-filter=ACMRT "${sha1_old}".."${sha1_new}")
+
+    if [[ $? -ne 0 ]]; then
+        echo_log "ERROR: Could not read files! Cancelling push..."
+        exit 1
+    fi
+
+    old_IFS=$IFS
+    IFS='
+    '
+    for filename in $newFiles; do
+        file_log "Filename: $filename"
+        filesize=$($GITCMD cat-file -s "${sha1_new}:${filename}")
+
+        if [[ -z $filesize  ]]; then filesize=0; fi
+
+        if [ "${filesize}" -gt "${MAX_BYTES}" ]; then
+            filesize_mb=$((filesize / 1000000))
+            echo_log "ERROR: The file $filename is larger than $MAX_SIZE_MB MB. Its size is $filesize_mb MB."
+            exit 1
+        fi
+
+        if ! [[ "$filename" =~ ${FILE_ALLOW_PATTERN} ]]; then
+            echo_log "ERROR: The file $filename has a file extension that has been disallowed!"
+            exit 1
+        fi
+
+    done
+    IFS=$old_IFS
+done
+echo_log "Validation successful!"

@@ -5,17 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging, json
+
 from tornado.httpclient import AsyncHTTPClient, HTTPResponse
-from traitlets.config.configurable import LoggingConfigurable
-from typing import Dict, Union
+from traitlets.config.configurable import LoggingConfigurable, SingletonConfigurable
+from typing import Dict, Union, Callable, Optional
 from tornado.escape import json_decode
 from traitlets.traitlets import Int, TraitError, Unicode, validate
-import socket
 from urllib.parse import urlencode, quote_plus, urlparse, ParseResultBytes
 import os
 
 
-class RequestService(LoggingConfigurable):
+class RequestService(SingletonConfigurable):
     url = Unicode(os.environ.get("GRADER_HOST_URL", "http://127.0.0.1:4010"))
 
     def __init__(self, **kwargs):
@@ -30,8 +30,9 @@ class RequestService(LoggingConfigurable):
         body: Union[dict, str] = None,
         header: Dict[str, str] = None,
         decode_response: bool = True,
+        response_callback: Optional[Callable[[HTTPResponse], None]] = None
     ) -> Union[dict, list, HTTPResponse]:
-        logging.getLogger(str(self.__class__)).info(self.url + endpoint)
+        self.log.info(self.url + endpoint)
         if self._service_cookie:
             header["Cookie"] = self._service_cookie
         if body:
@@ -55,6 +56,10 @@ class RequestService(LoggingConfigurable):
                 continue
             if cookie.startswith(token):
                 self._service_cookie = cookie
+
+        if response_callback:
+            response_callback(response)
+
         if decode_response:
             return json_decode(response.body)
         else:
@@ -69,7 +74,7 @@ class RequestService(LoggingConfigurable):
         return url
 
     @staticmethod
-    def get_query_string(params: dict) -> dict:
+    def get_query_string(params: dict) -> str:
         d = {k: v for k, v in params.items() if v is not None}
         query_params: str = urlencode(d, quote_via=quote_plus)
         return "?" + query_params if query_params != "" else ""

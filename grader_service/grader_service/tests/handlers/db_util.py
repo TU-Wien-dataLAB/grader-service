@@ -7,6 +7,13 @@
 import secrets
 from datetime import datetime
 
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker, Session
+
+from grader_service.orm import Lecture, Assignment, Submission
+from grader_service.orm.assignment import AutoGradingBehaviour
+from grader_service.orm.base import DeleteState
+
 
 def insert_users(session):
     session.execute('INSERT INTO "user" ("name") VALUES ("user1")')
@@ -15,26 +22,68 @@ def insert_users(session):
     session.execute('INSERT INTO "user" ("name") VALUES ("user4")')
 
 
-def insert_lectures(session):
-    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture1","21wle1","active","active")')
-    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture1","21sle1","active","active")')
-    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture2","20wle2","active","active")')
-    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture3","22sle3","active","active")')
-    session.execute('INSERT INTO "lecture" ("name","code", "state", "deleted") VALUES ("lecture4","21sle4","active","active")')
+def _get_lecture(name, code):
+    l = Lecture()
+    l.name = name
+    l.code = code
+    l.state = "active"
+    l.deleted = "active"
+    return l
+
+
+def insert_lectures(session: Engine):
+    session: Session = sessionmaker(session)()
+    session.add(_get_lecture("lecture1", "21wle1"))
+    session.add(_get_lecture("lecture1", "21sle1"))
+    session.add(_get_lecture("lecture2", "20wle2"))
+    session.add(_get_lecture("lecture3", "22sle3"))
+    session.add(_get_lecture("lecture4", "21sle4"))
+    session.commit()
+    session.flush()
+
+
+def _get_assignment(name, lectid, due_date, points, status):
+    a = Assignment()
+    a.name = name
+    a.lectid = lectid
+    a.duedate = datetime.fromisoformat(due_date)
+    a.points = points
+    a.status = status
+    a.allow_files = False
+    a.automatic_grading = AutoGradingBehaviour.unassisted
+    a.deleted = DeleteState.active
+    a.max_submissions = None
+    a.properties = None
+    return a
 
 
 def insert_assignments(ex, lecture_id=1):
-    ex.execute(
-        f'INSERT INTO "assignment" ("name","lectid","duedate","points","status","automatic_grading") VALUES ("assignment_1",{lecture_id},"2055-06-06 23:59:00.000",20,"released","unassisted")')
-    ex.execute(
-        f'INSERT INTO "assignment" ("name","lectid","duedate","points","status","automatic_grading") VALUES ("assignment_2",{lecture_id},"2055-07-07 23:59:00.000",10,"created","unassisted")')
+    session: Session = sessionmaker(ex)()
+    session.add(_get_assignment("assignment_1", lecture_id, "2055-06-06 23:59:00.000", 20, "released"))
+    session.add(_get_assignment("assignment_2", lecture_id, "2055-07-07 23:59:00.000", 10, "created"))
+    session.commit()
+    session.flush()
     num_inserts = 2
     return num_inserts
 
 
+def _get_submission(assignment_id, username):
+    s = Submission()
+    s.date = datetime.now()
+    s.auto_status = "not_graded"
+    s.manual_status = "not_graded"
+    s.assignid = assignment_id
+    s.username = username
+    s.commit_hash = secrets.token_hex(20)
+    s.feedback_available = False
+    return s
+
+
 def insert_submission(ex, assignment_id=1, username="ubuntu"):
-    ex.execute(
-        f'INSERT INTO "submission" ("date","auto_status","manual_status","assignid","username","commit_hash","feedback_available") VALUES ("{datetime.now().isoformat(" ", "milliseconds")}","not_graded","not_graded",{assignment_id},"{username}", "{secrets.token_hex(20)}",0)')
+    session: Session = sessionmaker(ex)()
+    session.add(_get_submission(assignment_id, username))
+    session.commit()
+    session.flush()
 
 
 def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):

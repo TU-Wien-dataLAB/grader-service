@@ -11,6 +11,8 @@ Revises:
 Create Date: 2021-05-05 11:42:24.126371
 
 """
+from datetime import datetime
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import UniqueConstraint
@@ -30,6 +32,9 @@ def upgrade():
                     sa.Column('code', sa.String(length=255), nullable=True, unique=True),
                     sa.Column('state', sa.Enum('active', 'complete'), nullable=False),
                     sa.Column('deleted', sa.Enum('active', 'deleted'), server_default='active', nullable=False),
+                    sa.Column('created_at', sa.DateTime(), default=datetime.utcnow, nullable=False),
+                    sa.Column('updated_at', sa.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow,
+                              nullable=False),
 
                     sa.PrimaryKeyConstraint('id')
                     )
@@ -50,7 +55,12 @@ def upgrade():
                               nullable=True),
                     sa.Column('deleted', sa.Enum('active', 'deleted'), server_default='active', nullable=False),
                     sa.Column('max_submissions', sa.Integer(), nullable=True, default=None, unique=False),
+                    sa.Column('allow_files', sa.Boolean(), nullable=False, default=False),
                     sa.Column('properties', sa.Text(), nullable=True, unique=False),
+
+                    sa.Column('created_at', sa.DateTime(), default=datetime.utcnow, nullable=False),
+                    sa.Column('updated_at', sa.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow,
+                              nullable=False),
 
                     sa.ForeignKeyConstraint(['lectid'], ['lecture.id'], ),
                     sa.PrimaryKeyConstraint('id'),
@@ -69,7 +79,7 @@ def upgrade():
                     sa.Column('name', sa.String(length=255), nullable=False),
                     sa.Column('lectid', sa.Integer(), nullable=False),
                     sa.ForeignKeyConstraint(['lectid'], ['lecture.id'], ),
-                    sa.PrimaryKeyConstraint('name','lectid')
+                    sa.PrimaryKeyConstraint('name', 'lectid')
                     )
     op.create_table('partof',
                     sa.Column('username', sa.String(length=255), nullable=False),
@@ -93,6 +103,8 @@ def upgrade():
                     sa.Column('properties', sa.Text(), nullable=True, unique=False),
                     sa.Column('feedback_available', sa.Boolean(), nullable=False, server_default="false"),
                     sa.Column('logs', sa.Text(), nullable=True),
+                    sa.Column('updated_at', sa.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow,
+                              nullable=False),
                     sa.ForeignKeyConstraint(['assignid'], ['assignment.id'], ),
                     sa.ForeignKeyConstraint(['username'], ['user.name'], ),
                     sa.PrimaryKeyConstraint('id')

@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
+from datetime import datetime
 
 from grader_service.api.models import assignment
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, Boolean
@@ -36,7 +37,11 @@ class Assignment(Base, Serializable):
     automatic_grading = Column(Enum(AutoGradingBehaviour), nullable=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
     max_submissions = Column(Integer, nullable=True, default=None, unique=False)
+    allow_files = Column(Boolean, nullable=False, default=False)
     properties = Column(Text, nullable=True, unique=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
@@ -53,6 +58,7 @@ class Assignment(Base, Serializable):
             type=self.type,
             points=self.points,
             automatic_grading=self.automatic_grading.name,
-            max_submissions=self.max_submissions
+            max_submissions=self.max_submissions,
+            allow_files=self.allow_files
         )
         return assignment_model

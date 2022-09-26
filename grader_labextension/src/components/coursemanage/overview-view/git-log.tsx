@@ -51,7 +51,7 @@ export const GitLog = (props: IGitLogProps) => {
     getGitLog(props.lecture, props.assignment, props.repoType, 10).then(logs =>
       setGitLogs(logs)
     );
-  }, [props]);
+  }, [props.lecture, props.assignment, props.repoType]);
 
   return (
     <Card elevation={3}>

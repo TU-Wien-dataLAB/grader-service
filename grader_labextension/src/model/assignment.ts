@@ -20,6 +20,7 @@ export interface Assignment {
     points?: number;
     automatic_grading?: Assignment.AutomaticGradingEnum;
     max_submissions?: number;
+    allow_files?: boolean;
 }
 export namespace Assignment {
     export type TypeEnum = 'user' | 'group';

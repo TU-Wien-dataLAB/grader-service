@@ -28,6 +28,29 @@ class MissingEntry(ValueError):
     pass
 
 
+def write_access(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            self: "Gradebook" = args[0]
+            if not isinstance(self, Gradebook):
+                raise RuntimeError(
+                    "This decorator can only be used on methods inside Gradebook instances!"
+                )
+        except IndexError:
+            raise RuntimeError(
+                "This decorator can only be used on methods inside Gradebook instances!"
+            )
+        self.dirty = True
+        result = fn(*args, **kwargs)
+        if not self.is_in_context:
+            self.write_model()
+            self.dirty = False
+        return result
+
+    return wrapper
+
+
 # TODO: add decorator to functions that sets dirty flag for methods and checks on __enter__
 class Gradebook:
     """
@@ -86,28 +109,6 @@ class Gradebook:
                 f"Writing {len(json_str.encode('utf-8'))} bytes to {self.json_file}"
             )
             f.write(json_str)
-
-    def write_access(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            try:
-                self = args[0]
-                if not isinstance(self, Gradebook):
-                    raise RuntimeError(
-                        "This decorator can only be used on methods inside Gradebook instances!"
-                    )
-            except IndexError:
-                raise RuntimeError(
-                    "This decorator can only be used on methods inside Gradebook instances!"
-                )
-            self.dirty = True
-            result = fn(*args, **kwargs)
-            if not self.is_in_context:
-                self.write_model()
-                self.dirty = False
-            return result
-
-        return wrapper
 
     # Notebooks
     @write_access
@@ -469,3 +470,12 @@ class Gradebook:
             return nb.comments_dict[solution_cell]
         except KeyError:
             return Comment.from_dict(Comment.empty_dict())
+
+    def get_extra_files(self):
+        if self.model.extra_files is None:
+            return []
+        return self.model.extra_files
+
+    @write_access
+    def set_extra_files(self, extra_files):
+        self.model.extra_files = extra_files

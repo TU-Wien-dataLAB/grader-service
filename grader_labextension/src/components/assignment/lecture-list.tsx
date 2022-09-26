@@ -37,6 +37,11 @@ export const LectureListComponent = (props: ILectureListProps): JSX.Element => {
       {lectures.map((el, index) => (
         <LectureComponent lecture={el} root={props.root} open={true} />
       ))}
+      {lectures.length === 0 ? (
+        <Alert sx={{ m: 3 }} severity="info">
+          No active lectures found
+        </Alert>
+      ) : null}
     </div>
   );
 };

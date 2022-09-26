@@ -9,7 +9,7 @@ import json
 from tornado.httpclient import HTTPClientError
 
 from grader_labextension.registry import register_handler
-from grader_labextension.handlers.base_handler import ExtensionBaseHandler
+from grader_labextension.handlers.base_handler import ExtensionBaseHandler, cache
 from grader_labextension.services.request import RequestService
 from tornado.web import HTTPError
 
@@ -21,6 +21,7 @@ class SubmissionHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
     """
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int):
         """ Sends a GET-request to the grader service and returns submissions of a assignment
 
@@ -40,6 +41,7 @@ class SubmissionHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions{query_params}",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
@@ -70,6 +72,7 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/properties",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
@@ -106,8 +109,9 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
     """
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Sends a GET-request to the grader service and returns the properties of a submission
+        """Sends a GET-request to the grader service and returns a submission
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -122,6 +126,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
                 method="GET",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)
@@ -129,7 +134,7 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
         self.write(json.dumps(response))
 
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """ Sends a PUT-request to the grader service to update the properties of a submission
+        """ Sends a PUT-request to the grader service to update the a submission
 
         :param lecture_id: id of the lecture
         :type lecture_id: int

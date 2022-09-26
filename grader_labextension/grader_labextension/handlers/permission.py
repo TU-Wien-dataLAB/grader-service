@@ -6,7 +6,7 @@
 
 import json
 from grader_labextension.registry import register_handler
-from grader_labextension.handlers.base_handler import ExtensionBaseHandler
+from grader_labextension.handlers.base_handler import ExtensionBaseHandler, cache
 from tornado import web
 from tornado.httpclient import HTTPClientError
 
@@ -17,6 +17,7 @@ class PermissionBaseHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /permissions.
     """
     @web.authenticated
+    @cache(max_age=10)
     async def get(self):
         """ Sends a GET-request to the grader service and returns the permissions of a user
         """
@@ -25,6 +26,7 @@ class PermissionBaseHandler(ExtensionBaseHandler):
                 "GET",
                 f"{self.service_base_url}/permissions",
                 header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
             )
         except HTTPClientError as e:
             self.log.error(e.response)

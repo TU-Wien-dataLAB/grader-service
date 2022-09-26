@@ -91,6 +91,8 @@ components:
             - "full_auto"
         max_submissions:
           type: integer
+        allow_files:
+          type: boolean
       example:
         id: 1
         name: "assignment_1"
