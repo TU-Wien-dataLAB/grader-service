@@ -14,9 +14,8 @@ regex = '''
   (?P<minor>\d+)
   \.
   (?P<patch>\d+)
-  (?P<pre>((a|b|rc)\d+)|)
-  \.?
-  (?P<dev>(?<=\.)dev\d*|)
+  \?-
+  (?P<pre>(alpha|beta|rc|dev)?)
   '''
 
 [tool.tbump.git]
