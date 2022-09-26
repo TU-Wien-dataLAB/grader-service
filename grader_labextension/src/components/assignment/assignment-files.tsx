@@ -95,7 +95,7 @@ export const AssignmentFilesComponent = (
             variant: 'success'
           });
         } catch (e) {
-          enqueueSnackbar('Error Reset Assignment', {
+          enqueueSnackbar('Error Reset Assignment: ' + e.message, {
             variant: 'error'
           });
         }
@@ -118,27 +118,16 @@ export const AssignmentFilesComponent = (
       handleAgree: async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
+            props.setSubmissions(oldSubmissions => [
+              ...oldSubmissions,
+              response
+            ]);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
           },
           error => {
             enqueueSnackbar(error.message, {
-              variant: 'error'
-            });
-          }
-        );
-        await getAllSubmissions(
-          props.lecture,
-          props.assignment,
-          'none',
-          false
-        ).then(
-          submissions => {
-            props.setSubmissions(submissions);
-          },
-          error => {
-            enqueueSnackbar(error, {
               variant: 'error'
             });
           }
@@ -173,6 +162,10 @@ export const AssignmentFilesComponent = (
     }
     const time = new Date(props.assignment.due_date).getTime();
     return time < Date.now();
+  };
+
+  const isAssignmentCompleted = () => {
+    return props.assignment.status === 'complete';
   };
 
   const isMaxSubmissionReached = () => {
@@ -220,7 +213,8 @@ export const AssignmentFilesComponent = (
             size="small"
             disabled={
               isDeadlineOver() ||
-              isMaxSubmissionReached()
+              isMaxSubmissionReached() ||
+              isAssignmentCompleted()
             }
             onClick={() => submitAssignmentHandler()}
           >

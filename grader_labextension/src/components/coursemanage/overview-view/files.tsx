@@ -109,12 +109,12 @@ export const Files = (props: IFilesProps) => {
       this
     );
 
-    getRemoteStatus(lecture, assignment, RepoType.SOURCE).then(status => {
+    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE).then(status => {
       setRepoStatus(
         status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
       );
     });
-  }, [props]);
+  }, [props.assignment, props.lecture]);
   /**
    * Reload file view.
    */
@@ -142,8 +142,8 @@ export const Files = (props: IFilesProps) => {
           });
           setGenerateTimestamp(moment().valueOf());
           setSelectedDir(dir);
-        })
-        .catch(error => {
+        }).catch(
+        error => {
           enqueueSnackbar(error.message, {
             variant: 'error'
           });
@@ -352,7 +352,7 @@ export const Files = (props: IFilesProps) => {
               color={isCommitOverwrite() ? 'error' : 'primary'}
             >
               <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-              Commit
+              Push
             </Button>
           </Tooltip>
         </CommitDialog>

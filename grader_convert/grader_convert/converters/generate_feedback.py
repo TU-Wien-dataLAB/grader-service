@@ -5,7 +5,7 @@ from typing import Any
 
 from nbconvert.exporters import HTMLExporter
 from nbconvert.preprocessors import CSSHTMLHeaderPreprocessor
-from traitlets import List, default
+from traitlets import List, default, Bool
 from traitlets.config import Config
 
 from grader_convert.converters.baseapp import ConverterApp
@@ -57,10 +57,13 @@ class GenerateFeedback(BaseConverter):
 class GenerateFeedbackApp(ConverterApp):
     version = ConverterApp.__version__
 
+    copy_files = Bool(False, allow_none=False).tag(config=False)
+
     def start(self):
         GenerateFeedback(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
+            copy_files=self.copy_files,
             config=self.config
         ).start()

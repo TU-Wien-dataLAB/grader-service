@@ -6,13 +6,14 @@
 
 import json
 import os
+import shutil
 from http import HTTPStatus
 from urllib.parse import unquote, quote
 from tornado.web import HTTPError
 
 from grader_convert.converters.base import GraderConvertException
 from grader_convert.converters.generate_assignment import GenerateAssignment
-from .base_handler import ExtensionBaseHandler
+from .base_handler import ExtensionBaseHandler, cache
 from ..api.models.submission import Submission
 from ..registry import register_handler
 from ..services.git import GitError, GitService
@@ -52,17 +53,29 @@ class GenerateHandler(ExtensionBaseHandler):
         code = lecture["code"]
         a_id = assignment["id"]
 
+        output_dir = f"{self.root_dir}/release/{code}/{a_id}"
         os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/release/{code}/{a_id}"),
+            os.path.expanduser(output_dir),
             exist_ok=True,
         )
 
         generator = GenerateAssignment(
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
-            output_dir=f"{self.root_dir}/release/{code}/{a_id}",
+            output_dir=output_dir,
             file_pattern="*.ipynb",
+            copy_files=True  # Always copy files from source to release
         )
         generator.force = True
+
+        try:
+            # delete contents of output directory since we might have chosen to disallow files
+            self.log.info("Deleting files in release directory")
+            shutil.rmtree(output_dir)
+            os.mkdir(output_dir)
+        except Exception as e:
+            self.log.error(e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
+
         self.log.info("Starting GenerateAssignment converter")
         try:
             generator.start()
@@ -87,6 +100,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/remote_status/{repo}.
     """
 
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         if repo not in {"assignment", "source", "release"}:
             self.log.error(HTTPStatus.NOT_FOUND)
@@ -104,7 +118,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.fetch_all()
             status = git_service.check_remote_status(f"grader_{repo}", "main")
@@ -122,6 +136,7 @@ class GitLogHandler(ExtensionBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/log/{repo}.
     """
 
+    @cache(max_age=15)
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         """
         Sends a GET request to the grader service to get the logs of a given repo.
@@ -161,7 +176,7 @@ class GitLogHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.fetch_all()
             if git_service.local_branch_exists("main"):  # at least main should exist
@@ -222,7 +237,7 @@ class PullHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
             git_service.set_remote(f"grader_{repo}")
             git_service.pull(f"grader_{repo}", force=True)
             self.write("OK")
@@ -294,9 +309,22 @@ class PushHandler(ExtensionBaseHandler):
 
             # call nbconvert before pushing
             generator = GenerateAssignment(
-                input_dir=src_path, output_dir=git_service.path, file_pattern="*.ipynb"
+                input_dir=src_path,
+                output_dir=git_service.path,
+                file_pattern="*.ipynb",
+                copy_files=True  # Always copy files from source to release
             )
             generator.force = True
+
+            try:
+                # delete contents of output directory since we might have chosen to disallow files
+                self.log.info("Deleting files in release directory")
+                shutil.rmtree(git_service.path)
+                os.mkdir(git_service.path)
+            except Exception as e:
+                self.log.error(e)
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
+
             self.log.info("Starting GenerateAssignment converter")
             try:
                 generator.start()
@@ -352,7 +380,7 @@ class PushHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
                 # TODO: create .gitignore file
             git_service.set_remote(f"grader_{repo}")
         except GitError as e:
@@ -376,12 +404,14 @@ class PushHandler(ExtensionBaseHandler):
             try:
                 latest_commit_hash = git_service.get_log(history_count=1)[0]["commit"]
                 submission = Submission(commit_hash=latest_commit_hash)
-                await self.request_service.request(
+                response = await self.request_service.request(
                     "POST",
                     f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions",
                     body=submission.to_dict(),
                     header=self.grader_authentication_header,
                 )
+                self.write(json.dumps(response))
+                return
             except (KeyError, IndexError) as e:
                 self.log.error(e)
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
@@ -466,7 +496,7 @@ class NotebookAccessHandler(ExtensionBaseHandler):
         if not git_service.is_git():
             try:
                 git_service.init()
-                git_service.set_author()
+                git_service.set_author(author=self.user_name)
                 git_service.set_remote(f"grader_release")
                 git_service.pull(f"grader_release", force=True)
                 self.write("OK")

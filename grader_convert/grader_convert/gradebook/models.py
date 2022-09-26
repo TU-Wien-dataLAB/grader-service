@@ -344,6 +344,7 @@ class Notebook(BaseModel, IDMixin, NameMixin):
 @dataclass
 class GradeBookModel(BaseModel):
     notebooks: Dict[str, Notebook]
+    extra_files: List[str]
 
     @property
     def score(self) -> float:
@@ -366,11 +367,16 @@ class GradeBookModel(BaseModel):
     @classmethod
     def from_dict(cls: Type["GradeBookModel"], d: dict) -> "GradeBookModel":
         ns = {id: Notebook.from_dict(v) for id, v in d["notebooks"].items()}
-        return GradeBookModel(notebooks=ns)
+        try:
+            extra_files = d["extra_files"]
+        except KeyError:
+            extra_files = []
+        return GradeBookModel(notebooks=ns, extra_files=extra_files)
 
     def to_dict(self) -> dict:
         return {
             "notebooks": {k: v.to_dict() for k, v in self.notebooks.items()},
+            "extra_files": self.extra_files,
             "_type": self._type,
             "schema_version": "1",
         }

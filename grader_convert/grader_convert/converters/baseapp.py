@@ -6,7 +6,7 @@ import sys
 
 from jupyter_core.application import JupyterApp
 from traitlets.config.application import Application
-from traitlets.traitlets import Unicode, validate, TraitError
+from traitlets.traitlets import Unicode, validate, TraitError, Bool
 
 from .._version import __version__
 
@@ -18,6 +18,7 @@ base_converter_aliases = {
     "input_directory": "ConverterApp.input_directory",
     "output_directory": "ConverterApp.output_directory",
     "file_pattern": "ConverterApp.file_pattern",
+    "copy_files": "ConverterApp.copy_files"
 }
 base_converter_flags = {
     "debug": (
@@ -43,6 +44,7 @@ class ConverterApp(Application):
     input_directory = Unicode(None, allow_none=False).tag(config=True)
     output_directory = Unicode(None, allow_none=False).tag(config=True)
     file_pattern = Unicode("*.ipynb", allow_none=False).tag(config=True)
+    copy_files = Bool(False, allow_none=False).tag(config=True)
 
     def _log_level_default(self):
         return logging.INFO

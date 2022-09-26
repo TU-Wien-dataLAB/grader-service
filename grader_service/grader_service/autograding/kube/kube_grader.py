@@ -14,17 +14,16 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from kubernetes.client import V1Pod, CoreV1Api, V1ObjectMeta, V1PodStatus, ApiException
-from traitlets import Callable, Unicode, Integer, Dict, List
+from traitlets import Callable, Unicode, Integer, List
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
-from grader_service.autograding.kube.util import make_pod
+from grader_service.autograding.kube.util import make_pod, get_current_namespace
 from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
-from kubernetes import config, client
+from kubernetes import config
 
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
-
 
 class GraderPod(LoggingConfigurable):
     """
@@ -94,11 +93,12 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     volumes = List(default_value=[], allow_none=False).tag(config=True)
     volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
-    namespace = Unicode(default_value="default", allow_none=False).tag(config=True)
+    namespace = Unicode(default_value=None, allow_none=True,
+                        help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
+    uid = Integer(default_value=1000, allow_none=False, help="The User ID for the grader container").tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
-        self.assignment = self.submission.assignment
         self.lecture = self.assignment.lecture
 
         if self.kube_context is None:
@@ -109,6 +109,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 f"Loading cluster config '{self.kube_context}' for kube executor of submission {self.submission.id}")
             config.load_kube_config(context=self.kube_context)
         self.client = CoreV1Api()
+
+        if self.namespace is None:
+            self.log.info(f"Setting Namespace for submission {self.submission.id}")
+            self.namespace = get_current_namespace()
 
     def get_image(self) -> str:
         """
@@ -142,7 +146,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         command = f'{self.convert_executable} autograde ' \
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb" --log-level=INFO'
+                  f'-p "*.ipynb" ' \
+                  f'--copy_files={self.assignment.allow_files} --log-level=INFO'
         # command = "sleep 10000"
         pod = make_pod(
             name=self.submission.commit_hash,
@@ -155,7 +160,9 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             labels=None,
             annotations=None,
             tolerations=None,
+            run_as_user=self.uid,
         )
+
         self.log.info(f"Starting pod {pod.metadata.name} with command: {command}")
         pod = self.client.create_namespaced_pod(namespace=self.namespace, body=pod)
         return GraderPod(pod, self.client, config=self.config)
@@ -169,7 +176,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
-        os.mkdir(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self.submission.assignment.properties)
 
         grader_pod = None

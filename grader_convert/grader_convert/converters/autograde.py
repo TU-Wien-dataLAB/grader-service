@@ -82,6 +82,8 @@ class Autograde(BaseConverter):
         # check for missing notebooks and give them a score of zero if they do not exist
         json_path = os.path.join(self._output_directory, "gradebook.json")
         with Gradebook(json_path) as gb:
+            self.copy_unmatched_files(gb)
+
             glob_notebooks = {
                 self.init_single_notebook_resources(n)["unique_key"]: n
                 for n in self.notebooks
@@ -104,9 +106,9 @@ class Autograde(BaseConverter):
         super(Autograde, self)._load_config(cfg, **kwargs)
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: Any
+        self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: Any
     ) -> None:
-        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, **kwargs)
+        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, copy_files, **kwargs)
         self.force = True  # always overwrite generated assignments
 
     def start(self) -> None:
@@ -121,5 +123,6 @@ class AutogradeApp(ConverterApp):
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
+            copy_files=self.copy_files,
             config=self.config
         ).start()

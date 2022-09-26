@@ -11,7 +11,7 @@ export function createLecture(lecture: Lecture): Promise<Lecture> {
   return request<Lecture>(HTTPMethod.POST, '/lectures', lecture);
 }
 
-export function getAllLectures(complete: boolean = false): Promise<Lecture[]> {
+export function getAllLectures(complete: boolean = false, reload = false): Promise<Lecture[]> {
   let url = '/lectures'
   if (complete) {
       let searchParams = new URLSearchParams({
@@ -19,15 +19,15 @@ export function getAllLectures(complete: boolean = false): Promise<Lecture[]> {
       })
       url += '?' + searchParams;
     }
-  return request<Lecture[]>(HTTPMethod.GET, url);
+  return request<Lecture[]>(HTTPMethod.GET, url, reload);
 }
 
 export function updateLecture(lecture: Lecture): Promise<Lecture> {
   return request<Lecture, Lecture>(HTTPMethod.PUT, `/lectures/${lecture.id}`, lecture);
 }
 
-export function getLecture(lectureId: number): Promise<Lecture> {
-  return request<Lecture>(HTTPMethod.GET, `/lectures/${lectureId}`);
+export function getLecture(lectureId: number, reload = false): Promise<Lecture> {
+  return request<Lecture>(HTTPMethod.GET, `/lectures/${lectureId}`, reload);
 }
 
 export function deleteLecture(lectureId: number): void {

@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import functools
 import json
 import traceback
 from typing import Optional, Awaitable
@@ -14,11 +15,23 @@ from grader_labextension.api.models.error_message import ErrorMessage
 from grader_labextension.services.request import RequestService
 from jupyter_server.base.handlers import APIHandler
 import os
-from tornado.httpclient import HTTPClient, HTTPClientError
+from tornado.httpclient import HTTPClientError, HTTPResponse
 from traitlets.config.configurable import SingletonConfigurable
 from traitlets.traitlets import Unicode
 
-# test_token: ebce9dfa2a694fb9bb06883bd8bb6012
+
+def cache(max_age: int):
+    if max_age < 0:
+        raise ValueError("max_age must be larger than 0!")
+
+    def wrapper(handler_method):
+        @functools.wraps(handler_method)
+        async def request_handler_wrapper(self: "ExtensionBaseHandler", *args, **kwargs):
+            self.set_header("Cache-Control", f"max-age={max_age}, must-revalidate, private")
+            return await handler_method(self, *args, **kwargs)
+        return request_handler_wrapper
+    return wrapper
+
 
 class HandlerConfig(SingletonConfigurable):
     hub_api_url = Unicode(os.environ.get("JUPYTERHUB_API_URL"), help="The url of the hubs api.").tag(config=True)
@@ -38,9 +51,11 @@ class ExtensionBaseHandler(APIHandler):
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
-    request_service = RequestService()
-    http_client = HTTPClient()
-    # base_url = "/services/grader"
+    def set_service_headers(self, response: HTTPResponse):
+        for header in response.headers.get_list("Cache-Control"):
+            self.set_header("Cache-Control", header)
+
+    request_service = RequestService.instance()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
@@ -59,6 +74,10 @@ class ExtensionBaseHandler(APIHandler):
         """
 
         return dict(Authorization="Token " + HandlerConfig.instance().hub_api_token)
+
+    @property
+    def user_name(self):
+        return self.current_user["name"]
 
     async def get_lecture(self, lecture_id) -> dict:
         try:

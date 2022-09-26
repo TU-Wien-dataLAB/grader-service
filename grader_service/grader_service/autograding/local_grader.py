@@ -70,6 +70,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         super(LocalAutogradeExecutor, self).__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.submission = submission
+        self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
         self.close_session = close_session  # close session after grading (might need session later)
 
@@ -193,7 +194,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.assignment.properties)
 
-        autograder = Autograde(self.input_path, self.output_path, "*.ipynb")
+        autograder = Autograde(self.input_path, self.output_path, "*.ipynb", copy_files=self.assignment.allow_files)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -388,7 +389,11 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.assignment.properties)
 
-        command = f'{self.convert_executable} autograde -i "{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
+        command = f'{self.convert_executable} autograde ' \
+                  f'-i "{self.input_path}" ' \
+                  f'-o "{self.output_path}" ' \
+                  f'-p "*.ipynb" ' \
+                  f'--copy_files={self.assignment.allow_files}'
         self.log.info(f"Running {command}")
         process = await self._run_subprocess(command, None)
         if process.returncode == 0:
