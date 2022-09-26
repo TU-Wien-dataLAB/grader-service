@@ -222,7 +222,7 @@ export const GradingComponent = (props: IGradingProps) => {
    * Updates submissions and rows.
    */
   const updateSubmissions = () => {
-    getAllSubmissions(props.lecture, props.assignment, option, true).then(
+    getAllSubmissions(props.lecture, props.assignment, option, true, true).then(
       response => {
         setRows(generateRows(response));
         setSubmissions(response);

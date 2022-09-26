@@ -67,7 +67,7 @@ export function getAllSubmissions(
     });
     url += '?' + searchParams;
   }
-  return request<Submission[]>(HTTPMethod.GET, url, reload);
+  return request<Submission[]>(HTTPMethod.GET, url, null, reload);
 }
 
 export function getFeedback(

@@ -27,12 +27,12 @@ from grader_convert.gradebook.models import GradeBookModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 
 
-def tuple_to_submission(t):
+def tuple_to_submission(t, student=False):
     """
     Transforms tuple with values into a submission entity.
 
+    :param student: does the tuple contain submissions for the student
     :param t: tuple with values
-    :type t: tuple
     :return: submission entity
     """
     s = Submission()
@@ -48,6 +48,12 @@ def tuple_to_submission(t):
         s.logs,
         s.date,
     ) = t
+
+    if student:
+        s.logs = None
+        s.commit_hash = None
+        s.score = s.score if s.feedback_available else 0
+
     return s
 
 @register_handler(
@@ -159,7 +165,7 @@ class SubmissionHandler(GraderBaseHandler):
                         .group_by(Submission.username)
                         .all()
                 )
-                submissions = [tuple_to_submission(t) for t in submissions]
+                submissions = [tuple_to_submission(t, True) for t in submissions]
             elif submission_filter == 'best':
                 submissions = (
                     self.session.query(
@@ -181,7 +187,7 @@ class SubmissionHandler(GraderBaseHandler):
                         .group_by(Submission.username)
                         .all()
                 )
-                submissions = [tuple_to_submission(t) for t in submissions]
+                submissions = [tuple_to_submission(t, True) for t in submissions]
             else:
                 submissions = (
                     self.session.query(
