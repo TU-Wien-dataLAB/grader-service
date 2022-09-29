@@ -108,11 +108,13 @@ export const Files = (props: IFilesProps) => {
       this
     );
 
-    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE).then(status => {
-      setRepoStatus(
-        status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
-      );
-    });
+    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE).then(
+      status => {
+        setRepoStatus(
+          status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
+        );
+      }
+    );
   }, [props.assignment, props.lecture]);
   /**
    * Reload file view.
@@ -141,11 +143,14 @@ export const Files = (props: IFilesProps) => {
           });
           setGenerateTimestamp(moment().valueOf());
           setSelectedDir(dir);
-        }).catch(
-        error => {
-          enqueueSnackbar(error.message, {
-            variant: 'error'
-          });
+        })
+        .catch(error => {
+          enqueueSnackbar(
+            'Error Generating Student Version Notebooks: ' + error.message,
+            {
+              variant: 'error'
+            }
+          );
         });
     } else {
       setSelectedDir(dir);

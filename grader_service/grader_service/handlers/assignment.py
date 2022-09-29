@@ -49,6 +49,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
                     Assignment.lectid == role.lecture.id,
                     Assignment.deleted == DeleteState.active,
                     Assignment.status != "created",
+                    Assignment.status != "pushed"
                 )
                 .all()
             )
