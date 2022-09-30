@@ -144,7 +144,7 @@ export const GradingComponent = (props: IGradingProps) => {
               );
             })
           );
-          getAllSubmissions(props.lecture, props.assignment, option, true).then(
+          getAllSubmissions(props.lecture, props.assignment, option, true, true).then(
             response => {
               setRows(generateRows(response));
               enqueueSnackbar(
