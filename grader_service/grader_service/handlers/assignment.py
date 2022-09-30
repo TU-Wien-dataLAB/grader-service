@@ -181,7 +181,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         if (
                 assignment is None
                 or assignment.deleted == DeleteState.deleted
-                or (role.role == Scope.student and assignment.status == "created")
+                or (role.role == Scope.student and (assignment.status == "created" or assignment.status == "pushed"))
                 or assignment.lectid != lecture_id
         ):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
