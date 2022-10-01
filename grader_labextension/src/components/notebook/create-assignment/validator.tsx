@@ -53,7 +53,6 @@ export const Validator = (props: ValidatorProps) => {
     let wrongTypeSolution = 0;
     let wrongTypeTest = 0;
     let noEndSolution = 0;
-    let noBEGINSolution = 0;
     let noEndTest = 0;
 
     props.notebook.widgets.map((c: Cell) => {
@@ -67,7 +66,7 @@ export const Validator = (props: ValidatorProps) => {
         if (metadata.grade_id !== null) {
           //check if the cell id was already found
           if (ids.has(metadata.grade_id)) {
-            layout.insertWidget(0, new ErrorWidget(c, 'Duplicate ID found'));
+            layout.addWidget(new ErrorWidget(c, 'Duplicate ID found'));
             duplicate += 1;
           } else {
             ids.add(metadata.grade_id);
@@ -90,20 +89,20 @@ export const Validator = (props: ValidatorProps) => {
         /#+\s?END\sHIDDEN\sTESTS/gim.test(cellText) === false
       ) {
         noEndTest += 1;
-        layout.insertWidget(0, new ErrorWidget(c, 'No end hidden tests found'));
+        layout.addWidget(new ErrorWidget(c, 'No end hidden tests found'));
       }
       //check if ### BEGIN/END SOLUTION is placed in a cell with the wrong cell type
       if (toolData.type !== 'solution' && toolData.type !== 'manual') {
         if (/#+\s?[BEGIN|END]{1,}\sSOLUTION/gim.test(cellText)) {
           wrongTypeSolution += 1;
-          layout.insertWidget(0, new ErrorWidget(c, 'Solution region must be in solution cell'));
+          layout.addWidget(new ErrorWidget(c, 'Solution region must be in solution cell'));
         }
       }
       //check if ### BEGIN/END HIDDEN TESTS is placed wrong
       if (toolData.type !== 'tests') {
         if (/#+\s?[BEGIN|END]{1,}\sHIDDEN\stest/gim.test(cellText)) {
           wrongTypeTest += 1;
-          layout.insertWidget(0, new ErrorWidget(c, 'Hidden test region must be in autograded test cell'));
+          layout.addWidget(new ErrorWidget(c, 'Hidden test region must be in autograded test cell'));
         }
       }
     });

@@ -19,7 +19,7 @@ export const ErrorComponent = (props: IErrorComponentProps) => {
   //const alertStyle = { width: 250 };
 
   return (
-    <Alert variant="filled" severity="error">
+    <Alert sx={{ mt: 1 }} variant="filled" severity="error">
       {props.err}
     </Alert>
   );
