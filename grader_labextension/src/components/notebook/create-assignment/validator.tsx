@@ -47,33 +47,118 @@ export const Validator = (props: ValidatorProps) => {
         }
       });
     });
+
+    let duplicate = 0;
+    let noType = 0;
+    let wrongTypeSolution = 0;
+    let wrongTypeTest = 0;
+    let noEndSolution = 0;
+    let noBEGINSolution = 0;
+    let noEndTest = 0;
+
     props.notebook.widgets.map((c: Cell) => {
       const metadata: NbgraderData = CellModel.getNbgraderData(
         c.model.metadata
       );
+      const cellText = c.model.value.text;
+      const layout = c.layout as PanelLayout;
       const toolData: ToolData = CellModel.newToolData(metadata, c.model.type);
       if (metadata !== null) {
         if (metadata.grade_id !== null) {
+          //check if the cell id was already found
           if (ids.has(metadata.grade_id)) {
-            const layout = c.layout as PanelLayout;
             layout.insertWidget(0, new ErrorWidget(c, 'Duplicate ID found'));
-            result.push({
-              id: metadata.grade_id,
-              type: 'error',
-              msg: 'Duplicate ID found'
-            });
+            duplicate += 1;
           } else {
             ids.add(metadata.grade_id);
           }
         }
       } else {
-        result.push({
-          id: 'Warning',
-          type: 'warning',
-          msg: 'Cell with no type found'
-        });
+        noType += 1;
+      }
+
+      if (
+        /#+\s?BEGIN\sSOLUTION/gim.test(cellText) &&
+        /#+\s?END\sSOLUTION/gim.test(cellText) === false
+      ) {
+        noEndSolution += 1;
+        layout.addWidget(new ErrorWidget(c, 'No end solution found'));
+      }
+
+      if (
+        /#+\s?BEGIN\sHIDDEN\sTESTS/gim.test(cellText) &&
+        /#+\s?END\sHIDDEN\sTESTS/gim.test(cellText) === false
+      ) {
+        noEndTest += 1;
+        layout.insertWidget(0, new ErrorWidget(c, 'No end hidden tests found'));
+      }
+      //check if ### BEGIN/END SOLUTION is placed in a cell with the wrong cell type
+      if (toolData.type !== 'solution' && toolData.type !== 'manual') {
+        if (/#+\s?[BEGIN|END]{1,}\sSOLUTION/gim.test(cellText)) {
+          wrongTypeSolution += 1;
+          layout.insertWidget(0, new ErrorWidget(c, 'Solution region must be in solution cell'));
+        }
+      }
+      //check if ### BEGIN/END HIDDEN TESTS is placed wrong
+      if (toolData.type !== 'tests') {
+        if (/#+\s?[BEGIN|END]{1,}\sHIDDEN\stest/gim.test(cellText)) {
+          wrongTypeTest += 1;
+          layout.insertWidget(0, new ErrorWidget(c, 'Hidden test region must be in autograded test cell'));
+        }
       }
     });
+
+    if (duplicate > 0) {
+      result.push({
+        id: 'Duplicated ID',
+        type: 'error',
+        msg: duplicate + 'x Duplicate ID found'
+      });
+    }
+
+    if (noEndSolution > 0) {
+      result.push({
+        id: 'No End Solution',
+        type: 'error',
+        msg: noEndSolution + 'x No end solution found'
+      });
+    }
+
+    if (noEndTest > 0) {
+      result.push({
+        id: 'No End Tests',
+        type: 'error',
+        msg: noEndTest + 'x No end hidden tests found'
+      });
+    }
+
+    if (wrongTypeSolution > 0) {
+      result.push({
+        id: 'Wrong Solution Region Placement',
+        type: 'error',
+        msg:
+          wrongTypeSolution +
+          'x Solution regions can only be placed in solution cells'
+      });
+    }
+
+    if (wrongTypeTest > 0) {
+      result.push({
+        id: 'Wrong Test Region Placement',
+        type: 'error',
+        msg:
+          wrongTypeTest +
+          'x Hidden test regions can only be placed in autograded test cells'
+      });
+    }
+
+    if (noType > 0) {
+      result.push({
+        id: 'No Type Cell',
+        type: 'warning',
+        msg: noType + 'x Cell with no type found'
+      });
+    }
     setResult(result);
     setDialog(true);
   };
