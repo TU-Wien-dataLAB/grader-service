@@ -144,9 +144,10 @@ export const CreationComponent = (props: ICreationComponentProps) => {
               {props.cell.model.type === 'code' && (
                 <MenuItem value="tests">Autograded tests</MenuItem>
               )}
-
               <MenuItem value="manual">Manual graded answer</MenuItem>
-              <MenuItem value="task">Manual graded task</MenuItem>
+              {props.cell.model.type === 'markdown' && (
+                  <MenuItem value="task">Manual graded task</MenuItem>
+              )}
             </TextField>
           </Grid>
 
