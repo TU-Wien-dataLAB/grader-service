@@ -178,7 +178,7 @@ export const Files = (props: IFilesProps) => {
             commitMessage
           );
         } catch (err) {
-          enqueueSnackbar('Error Pushing Assignment', {
+          enqueueSnackbar('Error Pushing Assignment: ' + err.message, {
             variant: 'error'
           });
           closeDialog();

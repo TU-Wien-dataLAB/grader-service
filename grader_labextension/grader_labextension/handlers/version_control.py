@@ -331,12 +331,8 @@ class PushHandler(ExtensionBaseHandler):
                 self.log.info("GenerateAssignment conversion done")
             except GraderConvertException as e:
                 self.log.error("Converting failed: Error converting notebook!", exc_info=True)
-                try:
-                    msg = e.args[0]
-                    assert isinstance(msg, str)
-                except (KeyError, AssertionError):
-                    msg = "Converting release version failed!"
-                raise HTTPError(500, message=msg)
+
+                raise HTTPError(409, reason=str(e))
             try:
                 gradebook_path = os.path.join(git_service.path, "gradebook.json")
                 self.log.info(f"Reading gradebook file: {gradebook_path}")
