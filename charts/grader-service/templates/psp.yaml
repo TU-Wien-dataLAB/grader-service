@@ -2,7 +2,7 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: grader-run-as-root-psp
+  name: { .Release.Name }-grader-run-as-root-psp
 spec:
   allowPrivilegeEscalation: false
   fsGroup:
