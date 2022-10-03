@@ -47,7 +47,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { GlobalObjects } from '../../../index';
 import { enqueueSnackbar } from 'notistack';
 import { loadString, storeString } from '../../../services/storage.service';
-
+import CloudSyncIcon from '@mui/icons-material/CloudSync';
 /**
  * Props for GradingComponent.
  */
@@ -144,17 +144,18 @@ export const GradingComponent = (props: IGradingProps) => {
               );
             })
           );
-          getAllSubmissions(props.lecture, props.assignment, option, true, true).then(
-            response => {
-              setRows(generateRows(response));
-              enqueueSnackbar(
-                `Generating Feedback for ${numSubs} Submissions`,
-                {
-                  variant: 'success'
-                }
-              );
-            }
-          );
+          getAllSubmissions(
+            props.lecture,
+            props.assignment,
+            option,
+            true,
+            true
+          ).then(response => {
+            setRows(generateRows(response));
+            enqueueSnackbar(`Generating Feedback for ${numSubs} Submissions`, {
+              variant: 'success'
+            });
+          });
         } catch (err) {
           console.error(err);
           enqueueSnackbar('Error Generating Feedback', {
@@ -381,6 +382,19 @@ export const GradingComponent = (props: IGradingProps) => {
     }
   };
 
+  const handleSyncSubmission = async () => {
+    setDialogContent({
+      title: 'LTI Sync Submission',
+      message: 'Do you wish to sync Submissions?',
+      handleAgree: async () => {
+
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  }
+
   return (
     <div>
       <ModalTitle title="Grading">
@@ -502,6 +516,11 @@ export const GradingComponent = (props: IGradingProps) => {
           variant="outlined"
         >
           {`Export ${optionName()} Submissions`}
+        </Button>
+
+        <Button startIcon={<CloudSyncIcon />} sx={{ m: 3 }}>
+          onClick={handleSyncSubmission}
+          {'Sync selected Submission'}
         </Button>
       </span>
 

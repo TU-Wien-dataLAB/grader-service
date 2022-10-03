@@ -145,6 +145,7 @@ export const Files = (props: IFilesProps) => {
           setSelectedDir(dir);
         })
         .catch(error => {
+          console.log(error);
           enqueueSnackbar(
             'Error Generating Student Version Notebooks: ' + error.message,
             {
