@@ -408,11 +408,24 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
         properties_string: str = self.request.body.decode("utf-8")
+
         try:
-            score = GradeBookModel.from_dict(json.loads(properties_string)).score
+            gradebook = GradeBookModel.from_dict(json.loads(properties_string))
+
+            score = gradebook.score + self.get_extra_credit(gradebook)
+
         except:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
         submission.score = score
         submission.properties = properties_string
         self.session.commit()
         self.write_json(submission)
+
+    def get_extra_credit(self, gradebook):
+        extra_credit = 0
+        for notebook in gradebook.notebooks.values():
+            for grades in notebook.grades:
+                extra_credit += grades.extra_credit if grades.extra_credit is not None else 0
+        # TODO change score to float
+        self.log.info("Extra credit is " + str(extra_credit))
+        return int(extra_credit)

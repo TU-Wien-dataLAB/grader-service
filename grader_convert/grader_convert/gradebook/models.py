@@ -79,7 +79,7 @@ class Grade(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
         elif self.manual_score is None:
             return self.auto_score
         elif self.auto_score is None:
-            return self.manual_score
+            return self.manual_score + self.extra_credit
         else:
             return self.manual_score
 

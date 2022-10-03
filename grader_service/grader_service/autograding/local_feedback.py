@@ -169,15 +169,8 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         self.log.info("Pushing complete")
 
     def _set_properties(self):
-        with open(os.path.join(self.output_path, "gradebook.json"), "r") as f:
-            gradebook_str = f.read()
-        gradebook_dict = json.loads(gradebook_str)
-        book = GradeBookModel.from_dict(gradebook_dict)
-        score = 0
-        for id, n in book.notebooks.items():
-            score += n.score
-        self.submission.score = score
-        self.session.commit()
+        # No need to set properties
+        pass
 
     def _set_db_state(self, success=True):
         self.submission.feedback_available = True
