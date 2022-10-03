@@ -2,7 +2,7 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: { .Release.Name }-grader-run-as-root-psp
+  name: {{ .Release.Name }}-grader-run-as-root-psp
 spec:
   allowPrivilegeEscalation: false
   fsGroup:
@@ -36,12 +36,12 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: { .Release.Name }-grader-run-as-root-psp
+  name: {{ .Release.Name }}-grader-run-as-root-psp
 rules:
 - apiGroups:
   - policy
   resourceNames:
-  - grader-run-as-root-psp
+  - {{ .Release.Name }}-grader-run-as-root-psp
   resources:
   - podsecuritypolicies
   verbs:
@@ -52,11 +52,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: { .Release.Name }-psp:binding:grader-run-as-root-psp
+  name: {{ .Release.Name }}-psp:binding:grader-run-as-root-psp
 roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: grader-run-as-root-psp
+    name: {{ .Release.Name }}-grader-run-as-root-psp
 subjects:
   - kind: ServiceAccount
     name: {{ include "grader-service.serviceAccountName" . }}
