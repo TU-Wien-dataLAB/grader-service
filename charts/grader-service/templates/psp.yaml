@@ -36,7 +36,7 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: grader-run-as-root-psp
+  name: { .Release.Name }-grader-run-as-root-psp
 rules:
 - apiGroups:
   - policy
@@ -52,7 +52,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: psp:binding:grader-run-as-root-psp
+  name: { .Release.Name }-psp:binding:grader-run-as-root-psp
 roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
