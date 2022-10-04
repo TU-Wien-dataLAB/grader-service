@@ -151,7 +151,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
 
         # combine volume and extra_volumes
-        volumes = self.extra_volumes.append(self.volume)
+        volumes = self.extra_volumes + [self.volume]
 
         # combine volume mounts
         volume_mount = [{"name": "data", "mountpath": self.input_path}, {"name": "data", "mountpath": self.output_path}]
