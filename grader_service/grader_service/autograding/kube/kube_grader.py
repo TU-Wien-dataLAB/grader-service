@@ -154,7 +154,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         volumes = self.extra_volumes + [self.volume]
 
         # combine volume mounts
-        volume_mount = [{"name": "data", "mountpath": self.input_path}, {"name": "data", "mountpath": self.output_path}]
+        volume_mount = [{"name": "data", "mountPath": self.input_path}, {"name": "data", "mountPath": self.output_path}]
         volume_mounts = volume_mount + self.extra_volume_mounts
 
         pod = make_pod(
