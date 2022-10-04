@@ -15,8 +15,8 @@ data:
 {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
 {{- end }}
-    c.KubeAutogradeExecutor.base_input_path = "/var/lib/grader-service/convert_in"
-    c.KubeAutogradeExecutor.base_output_path = "/var/lib/grader-service/convert_out"
+    c.KubeAutogradeExecutor.base_input_path = "/var/lib/grader-service{{- if .Values.subPath }}/{{ .Values.subPath | quote }}{{- end -}}/convert_in"
+    c.KubeAutogradeExecutor.base_output_path = "/var/lib/grader-service{{- if .Values.subPath }}/{{ .Values.subPath | quote }}{{- end -}}/convert_out"
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
     c.KubeAutogradeExecutor.extra_volume_mounts = []
     c.KubeAutogradeExecutor.volume = {"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}
