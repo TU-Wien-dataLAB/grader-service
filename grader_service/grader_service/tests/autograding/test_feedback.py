@@ -53,4 +53,3 @@ async def test_feedback(
 
     submission = session.query(Submission).get(s_id)
     assert submission.feedback_available
-    assert submission.score == 0
