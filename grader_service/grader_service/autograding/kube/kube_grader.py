@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from kubernetes.client import V1Pod, CoreV1Api, V1ObjectMeta, V1PodStatus, ApiException
-from traitlets import Callable, Unicode, Integer, List
+from traitlets import Callable, Unicode, Integer, List, Dict
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
@@ -90,8 +90,9 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     kube_context = Unicode(default_value=None, allow_none=True,
                            help="Kubernetes context to load config from. " +
                                 "If the context is None (default), the incluster config will be used.").tag(config=True)
-    volumes = List(default_value=[], allow_none=False).tag(config=True)
-    volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
+    volume = Dict(default_value={}, allow_none=False).tag(config=True)
+    extra_volumes = List(default_value=[], allow_none=False).tag(config=True)
+    extra_volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
     namespace = Unicode(default_value=None, allow_none=True,
                         help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
@@ -148,15 +149,22 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                   f'-o "{self.output_path}" ' \
                   f'-p "*.ipynb" ' \
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
-        # command = "sleep 10000"
+
+        # combine volume and extra_volumes
+        volumes = self.extra_volumes.append(self.volume)
+
+        # combine volume mounts
+        volume_mount = [{"name": "data", "mountpath": self.input_path}, {"name": "data", "mountpath": self.output_path}]
+        volume_mounts = volume_mount + self.extra_volume_mounts
+
         pod = make_pod(
             name=self.submission.commit_hash,
             cmd=shlex.split(command),
             image=self.get_image(),
             image_pull_policy=None,
             working_dir="/",
-            volumes=self.volumes,
-            volume_mounts=self.volume_mounts,
+            volumes=volumes,
+            volume_mounts=volume_mounts,
             labels=None,
             annotations=None,
             tolerations=None,
