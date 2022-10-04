@@ -151,10 +151,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
 
         # combine volume and extra_volumes
-        volumes = self.extra_volumes + [self.volume]
+        volumes = [self.volume] + self.extra_volumes
 
         # combine volume mounts
-        volume_mount = [{"name": "data", "mountPath": self.input_path}, {"name": "data", "mountPath": self.output_path}]
+        volume_mount = [{"name": "data", "mountPath": "var/lib/grader-service"}]
         volume_mounts = volume_mount + self.extra_volume_mounts
 
         pod = make_pod(
