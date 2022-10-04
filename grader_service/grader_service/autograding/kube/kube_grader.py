@@ -148,6 +148,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                   f'-o "{self.output_path}" ' \
                   f'-p "*.ipynb" ' \
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
+
+        self.log.info("Volumes: " + str(self.volumes) + " Volume Mounts: " + str(self.volume_mounts))
         # command = "sleep 10000"
         pod = make_pod(
             name=self.submission.commit_hash,
