@@ -154,7 +154,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         volumes = [self.volume] + self.extra_volumes
 
         # combine volume mounts
-        convert_volume_mounts = [{"name": "data", "subPath": "jaas20/grader-service", "mountPath": "/var/lib/grader-service"}]
+        convert_volume_mounts = [{"name": "data", "mountPath": self.input_path}, {"name": "data", "mountPath": self.output_path}]
         volume_mounts = convert_volume_mounts + self.extra_volume_mounts
         self.log.info("Volumes: " + str(volumes) + "\n Volume Mounts: " + str(volume_mounts))
         pod = make_pod(
