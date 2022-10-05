@@ -18,7 +18,8 @@ data:
     c.KubeAutogradeExecutor.base_input_path = "/var/lib/grader-service/convert_in"
     c.KubeAutogradeExecutor.base_output_path = "/var/lib/grader-service/convert_out"
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
-    c.KubeAutogradeExecutor.volume_mounts = [{"name": "data",{{- if .Values.subPath }} "subPath": {{ .Values.subPath | quote }},{{- end -}} "mountPath": "/var/lib/grader-service"}]
+    c.KubeAutogradeExecutor.volume_mounts = [{"name": "data",{{- if .Values.subPath }} "subPath": "{{ .Values.subPath }}/convert_in",{{- end -}} "mountPath": "/var/lib/grader-service/convert_in"},
+    {"name": "data",{{- if .Values.subPath }} "subPath": "{{ .Values.subPath }}/convert_out",{{- end -}} "mountPath": "/var/lib/grader-service/convert_in"}]
     c.KubeAutogradeExecutor.volumes = [{"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}]
 {{ else }}
   grader_service_config.py: |
