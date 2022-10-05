@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from kubernetes.client import V1Pod, CoreV1Api, V1ObjectMeta, V1PodStatus, ApiException
-from traitlets import Callable, Unicode, Integer, List, Dict
+from traitlets import Callable, Unicode, Integer, List
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
@@ -90,9 +90,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     kube_context = Unicode(default_value=None, allow_none=True,
                            help="Kubernetes context to load config from. " +
                                 "If the context is None (default), the incluster config will be used.").tag(config=True)
-    volume = Dict(default_value={}, allow_none=False).tag(config=True)
-    extra_volumes = List(default_value=[], allow_none=False).tag(config=True)
-    extra_volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
+    volumes = List(default_value=[], allow_none=False).tag(config=True)
+    volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
     namespace = Unicode(default_value=None, allow_none=True,
                         help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
@@ -137,7 +136,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         except KeyError:
             return self.default_image_name(self.lecture, self.assignment)
 
-
     def start_pod(self) -> GraderPod:
         """
         Starts a pod in the default namespace with the commit hash as the name of the pod. The image is
@@ -152,22 +150,14 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                   f'--copy_files={self.assignment.allow_files} --log-level=INFO'
         # command = "sleep 10000"
 
-        volumes = [self.volume] + self.extra_volumes
-        convert_in_mount = {"name": "data", "mountPath": self.input_path}
-        convert_out_mount = {"name": "data", "mountPath": self.output_path}
-
-        volume_mounts = [convert_in_mount, convert_out_mount] + self.extra_volume_mounts
-
-        self.log.info("Volumes: " + str(volumes) + " Mounts: " + str(volume_mounts))
-
         pod = make_pod(
             name=self.submission.commit_hash,
             cmd=shlex.split(command),
             image=self.get_image(),
             image_pull_policy=None,
             working_dir="/",
-            volumes=volumes,
-            volume_mounts=volume_mounts,
+            volumes=self.volumes,
+            volume_mounts=self.volume_mounts,
             labels=None,
             annotations=None,
             tolerations=None,
@@ -177,7 +167,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         self.log.info(f"Starting pod {pod.metadata.name} with command: {command}")
         pod = self.client.create_namespaced_pod(namespace=self.namespace, body=pod)
         return GraderPod(pod, self.client, config=self.config)
-
 
     async def _run(self):
         """
