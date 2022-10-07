@@ -85,7 +85,7 @@ spec:
               subPath: {{ .Values.subPath }}
 {{- end }}
         - name: db-migration
-          image: busybox
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: ["/bin/sh","-c", "grader-service-migrate"]
           volumeMounts:
             - name: data
