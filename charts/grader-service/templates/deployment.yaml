@@ -84,6 +84,16 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
+        #TODO: This should not be needed
+        - name: install-grader-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: [ "/bin/sh","-c", "pip install grader-service=={{ .Chart.AppVersion }}" ]
+          volumeMounts:
+              - name: data
+                mountPath: /var/lib/grader-service
+        {{- if .Values.subPath }}
+                subPath: {{ .Values.subPath }}
+        {{- end }}
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: ["/bin/sh","-c", "grader-service-migrate"]
