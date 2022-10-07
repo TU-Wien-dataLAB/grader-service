@@ -54,10 +54,10 @@ export function getGitLog(lecture: Lecture, assignment: Assignment, repo: RepoTy
     "n": String(nCommits)
   })
   url += '?' + searchParams;
-  return request<IGitLogObject[]>(HTTPMethod.GET, url);
+  return request<IGitLogObject[]>(HTTPMethod.GET, url, null, true);
 }
 
-export function getRemoteStatus(lecture: Lecture, assignment: Assignment, repo: RepoType): Promise<string> {
-  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/remote-status/${repo}/`
-  return request<string>(HTTPMethod.GET, url);
+export function getRemoteStatus(lecture: Lecture, assignment: Assignment, repo: RepoType, reload= false): Promise<string> {
+  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/remote-status/${repo}/`;
+  return request<string>(HTTPMethod.GET, url, null, reload);
 }

@@ -20,6 +20,7 @@ import {
 } from '../../../services/assignments.service';
 import { AssignmentStatus } from './assignment-status';
 import { RepoType } from '../../util/repo-type';
+import {getGitLog, IGitLogObject} from "../../../services/file.service";
 
 export interface IOverviewProps {
   assignment: Assignment;
@@ -32,13 +33,20 @@ export interface IOverviewProps {
 
 export const OverviewComponent = (props: IOverviewProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
+  const [gitLogs, setGitLog] = React.useState([] as IGitLogObject[]);
 
   const onAssignmentChange = (assignment: Assignment) => {
     setAssignment(assignment);
   };
 
+  const updateGitLog = () => {
+    getGitLog(props.lecture, props.assignment, RepoType.SOURCE, 10).then(logs =>
+      setGitLog(logs)
+    );
+  };
+
   React.useEffect(() => {
-    console.log('Updating');
+    updateGitLog();
   }, [assignment]);
 
   return (
@@ -84,14 +92,13 @@ export const OverviewComponent = (props: IOverviewProps) => {
               lecture={props.lecture}
               assignment={assignment}
               onAssignmentChange={onAssignmentChange}
+              updateGitLog={updateGitLog}
             />
           </Grid>
 
           <Grid item xs={12} md={6} lg={4}>
             <GitLog
-              lecture={props.lecture}
-              assignment={assignment}
-              repoType={RepoType.SOURCE}
+              gitLogs={gitLogs}
             />
           </Grid>
         </Grid>

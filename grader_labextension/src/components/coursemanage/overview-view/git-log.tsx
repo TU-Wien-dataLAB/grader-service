@@ -25,9 +25,7 @@ import { utcToLocalFormat } from '../../../services/datetime.service';
 import { RepoType } from '../../util/repo-type';
 
 interface IGitLogProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  repoType: RepoType;
+  gitLogs: IGitLogObject[];
 }
 
 const getTimelineItem = (logItem: IGitLogObject) => {
@@ -46,12 +44,10 @@ const getTimelineItem = (logItem: IGitLogObject) => {
 };
 
 export const GitLog = (props: IGitLogProps) => {
-  const [gitLogs, setGitLogs] = React.useState([] as IGitLogObject[]);
+  const [gitLogs, setGitLogs] = React.useState(props.gitLogs);
   React.useEffect(() => {
-    getGitLog(props.lecture, props.assignment, props.repoType, 10).then(logs =>
-      setGitLogs(logs)
-    );
-  }, [props.lecture, props.assignment, props.repoType]);
+    setGitLogs(props.gitLogs);
+  }, [props.gitLogs]);
 
   return (
     <Card elevation={3}>

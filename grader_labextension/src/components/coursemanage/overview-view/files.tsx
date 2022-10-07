@@ -56,6 +56,7 @@ export interface IFilesProps {
   lecture: Lecture;
   assignment: Assignment;
   onAssignmentChange: (assignment: Assignment) => void;
+  updateGitLog: () => void;
 }
 
 /**
@@ -288,7 +289,18 @@ export const Files = (props: IFilesProps) => {
             variant: 'error'
           });
         }
+        props.updateGitLog();
         reloadFiles();
+        getRemoteStatus(
+          props.lecture,
+          props.assignment,
+          RepoType.SOURCE,
+          true
+        ).then(status => {
+          setRepoStatus(
+            status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
+          );
+        });
         closeDialog();
       },
       handleDisagree: () => closeDialog()
