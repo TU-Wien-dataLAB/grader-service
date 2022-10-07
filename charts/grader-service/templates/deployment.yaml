@@ -84,6 +84,15 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
+        - name: db-migration
+          image: busybox
+          command: ["/bin/sh","-c", "grader-service-migrate"]
+          volumeMounts:
+            - mountPath: /var/lib/grader-service
+              name: data
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
     {{ end }}
 
       volumes:
