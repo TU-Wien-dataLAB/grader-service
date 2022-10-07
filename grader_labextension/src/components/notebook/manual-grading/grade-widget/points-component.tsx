@@ -33,18 +33,19 @@ export const PointsComponent = (props: IPointsComponentProps) => {
         type="number"
         value={points}
         onChange={e => {
-          setPoints(parseInt(e.target.value));
+          setPoints(parseFloat(e.target.value));
           props.metadata.set('updated', true);
           props.gradebook.setManualScore(
             props.nbname,
             props.toolData.id,
-            parseInt(e.target.value)
+            parseFloat(e.target.value)
           );
         }}
         InputProps={{
           inputProps: {
             max: props.toolData.points,
-            min: 0
+            min: 0,
+            step: 0.25
           }
         }}
       />
@@ -65,18 +66,19 @@ export const ExtraCreditComponent = (props: IPointsComponentProps) => {
         type="number"
         value={extraCredit}
         onChange={e => {
-          setExtraCredit(parseInt(e.target.value));
+          setExtraCredit(parseFloat(e.target.value));
           props.metadata.set('updated', true);
           props.gradebook.setExtraCredit(
             props.nbname,
             props.toolData.id,
-            parseInt(e.target.value)
+            parseFloat(e.target.value)
           );
         }}
         InputProps={{
           inputProps: {
             max: 10000,
-            min: 0
+            min: 0,
+            step: 0.25
           }
         }}
       />

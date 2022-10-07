@@ -146,7 +146,7 @@ export const CreationComponent = (props: ICreationComponentProps) => {
               )}
               <MenuItem value="manual">Manual graded answer</MenuItem>
               {props.cell.model.type === 'markdown' && (
-                  <MenuItem value="task">Manual graded task</MenuItem>
+                <MenuItem value="task">Manual graded task</MenuItem>
               )}
             </TextField>
           </Grid>
@@ -171,11 +171,12 @@ export const CreationComponent = (props: ICreationComponentProps) => {
                 label="Points"
                 value={points}
                 type="number"
-                onChange={e => setPoints(parseInt(e.target.value))}
+                onChange={e => setPoints(parseFloat(e.target.value))}
                 InputProps={{
                   inputProps: {
                     max: 10000,
-                    min: 0
+                    min: 0,
+                    step: 0.25
                   }
                 }}
                 error={points === undefined}
@@ -187,7 +188,7 @@ export const CreationComponent = (props: ICreationComponentProps) => {
           {solutionCell && (
             <Grid item>
               <AntSwitch
-                sx={{mt: 2, ml: 1}}
+                sx={{ mt: 2, ml: 1 }}
                 checked={hintChecked}
                 onChange={handleHintChange}
                 inputProps={{'aria-label': 'controlled'}}
