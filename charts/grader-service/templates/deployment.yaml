@@ -88,8 +88,8 @@ spec:
           image: busybox
           command: ["/bin/sh","-c", "grader-service-migrate"]
           volumeMounts:
-            - mountPath: /var/lib/grader-service
-              name: data
+            - name: data
+              mountPath: /var/lib/grader-service
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
