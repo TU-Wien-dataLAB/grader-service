@@ -517,11 +517,15 @@ export const GradingComponent = (props: IGradingProps) => {
         >
           {`Export ${optionName()} Submissions`}
         </Button>
-
-        <Button startIcon={<CloudSyncIcon />} sx={{ m: 3 }}>
-          onClick={handleSyncSubmission}
-          {'Sync selected Submission'}
+        {/*
+        <Button
+          variant="outlined"
+          startIcon={<CloudSyncIcon />}
+          sx={{ m: 3 }}
+          onClick={handleSyncSubmission}>
+          {'LTI Sync Grades'}
         </Button>
+        */}
       </span>
 
       <LoadingOverlay
