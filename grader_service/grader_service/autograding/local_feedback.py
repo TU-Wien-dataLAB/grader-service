@@ -28,11 +28,11 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
     @property
     def input_path(self):
-        return os.path.join(self.base_input_path, f"feedback_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_input_path, f"feedback_{self.submission.id}")
 
     @property
     def output_path(self):
-        return os.path.join(self.base_output_path, f"feedback_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}")
 
     async def _pull_submission(self):
         if not os.path.exists(self.input_path):

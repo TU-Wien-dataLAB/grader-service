@@ -22,9 +22,9 @@ from sqlalchemy.orm import sessionmaker
 
 
 async def test_feedback(
-    default_user,
-    sql_alchemy_db,
-    tmpdir
+        default_user,
+        sql_alchemy_db,
+        tmpdir
 ):
     default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
     a_id = 1
@@ -32,7 +32,7 @@ async def test_feedback(
 
     engine: Engine = sql_alchemy_db.engine
     insert_submission(engine, a_id, default_user["name"])
-    
+
     session: Session = sessionmaker(bind=engine)()
     submission = session.query(Submission).get(s_id)
     assert submission is not None
@@ -46,8 +46,10 @@ async def test_feedback(
 
     with patch.object(GenerateFeedbackExecutor, "_run_subprocess", return_value=None):
         executor = GenerateFeedbackExecutor(service_dir, submission)
-        executor.base_input_path = str(tmpdir.mkdir("in"))
-        executor.base_output_path = str(tmpdir.mkdir("out"))
+        tmpdir.mkdir("grader_service/in")
+        tmpdir.mkdir("grader_service/out")
+        executor.relative_input_path = "in"
+        executor.base_output_path = "out"
 
         await executor.start()
 
