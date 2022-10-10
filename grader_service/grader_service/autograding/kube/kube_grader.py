@@ -153,8 +153,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
         volumes = [self.volume] + self.extra_volumes
 
-        volume_mounts = [{"name": "data", "mountPath": self.input_path},
-                         {"name": "data", "mountPath": self.output_path}]
+        volume_mounts = [{"name": "data", "mountPath": self.input_path, "subPath": self.relative_input_path + "/submission_" + str(self.submission.id)},
+                         {"name": "data", "mountPath": self.output_path, "subPath": self.relative_output_path + "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
 
         pod = make_pod(
