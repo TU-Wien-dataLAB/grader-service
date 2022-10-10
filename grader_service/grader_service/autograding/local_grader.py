@@ -350,15 +350,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             raise e
         return process
 
-    @validate("base_input_path", "base_output_path")
+    @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
-        if not os.path.isabs(path):
-            raise TraitError("The path specified has to be absolute")
-        if not os.path.exists(path):
+        if not os.path.exists(self.grader_service_dir + "/" + path):
             self.log.info(f"Path {path} not found, creating new directories.")
             Path(path).mkdir(parents=True, exist_ok=True, mode=0o700)
-        if not os.path.isdir(path):
+        if not os.path.isdir(self.grader_service_dir + "/" + path):
             raise TraitError("The path has to be an existing directory")
         return path
 
