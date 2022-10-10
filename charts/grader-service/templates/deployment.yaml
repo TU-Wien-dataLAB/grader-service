@@ -85,9 +85,9 @@ spec:
               subPath: {{ .Values.subPath }}
 {{- end }}
         #TODO: This should not be needed
-        - name: install-grader-service
+        - name: uninstall-grader-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: [ "/bin/sh","-c", "pip install grader-service=={{ .Chart.AppVersion }}" ]
+          command: [ "/bin/sh","-c", "pip uninstall grader-service" ]
           volumeMounts:
               - name: data
                 mountPath: /var/lib/grader-service

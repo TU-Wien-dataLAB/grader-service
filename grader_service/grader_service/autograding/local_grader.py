@@ -27,7 +27,7 @@ from grader_service.orm.submission import Submission
 from sqlalchemy.orm import Session
 from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import TraitError, Unicode, validate
+from traitlets.traitlets import TraitError, Unicode, validate, default
 
 
 def rm_error(func, path, exc_info):
@@ -50,8 +50,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     """Runs an autograde job on the local machine with the current Python environment.
     Sets up the necessary directories and the gradebook JSON file used by :mod:`grader_convert`.
     """
-    base_input_path = Unicode(os.getenv("GRADER_AUTOGRADE_IN_PATH"), allow_none=False).tag(config=True)
-    base_output_path = Unicode(os.getenv("GRADER_AUTOGRADE_OUT_PATH"), allow_none=False).tag(config=True)
+    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
+    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
 
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
@@ -106,11 +106,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     @property
     def input_path(self):
-        return os.path.join(self.base_input_path, f"submission_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}")
 
     @property
     def output_path(self):
-        return os.path.join(self.base_output_path, f"submission_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}")
 
     def _write_gradebook(self, gradebook_str: str):
         """

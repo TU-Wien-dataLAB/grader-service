@@ -92,7 +92,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                 "If the context is None (default), the incluster config will be used.").tag(config=True)
     volume = Dict(default_value={}, allow_none=False).tag(config=True)
     extra_volumes = List(default_value=[], allow_none=False).tag(config=True)
-    volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     extra_volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
     namespace = Unicode(default_value=None, allow_none=True,
@@ -154,7 +153,9 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
         volumes = [self.volume] + self.extra_volumes
 
-        volume_mounts = self.volume_mounts + self.extra_volume_mounts
+        volume_mounts = [{"name": "data", "mountPath": self.input_path, "subPath": self.relative_input_path + "/submission_" + str(self.submission.id)},
+                         {"name": "data", "mountPath": self.output_path, "subPath": self.relative_output_path + "/submission_" + str(self.submission.id)}]
+        volume_mounts = volume_mounts + self.extra_volume_mounts
 
         pod = make_pod(
             name=self.submission.commit_hash,

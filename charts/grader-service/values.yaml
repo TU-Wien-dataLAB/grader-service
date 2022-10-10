@@ -55,13 +55,13 @@ autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
   tag: latest
-
+  extraVolumes: ""
+  extraVolumeMounts: ""
 # pvc
 storageClassName: ""
 accessMode: "ReadWriteMany"
 capacity: "10G"
 volume: ""
-subPath: ""
 
 ingress:
   enabled: false
