@@ -45,15 +45,17 @@ async def test_auto_grading(
 
     with patch.object(LocalAutogradeExecutor, "_run_subprocess", return_value=None):
         executor = LocalAutogradeExecutor(service_dir, submission)
-        executor.base_input_path = str(tmpdir.mkdir("in"))
-        executor.base_output_path = str(tmpdir.mkdir("out"))
+        tmpdir.mkdir("grader_service/in")
+        tmpdir.mkdir("grader_service/out")
+        executor.relative_input_path = "in"
+        executor.relative_output_path = "out"
 
         await executor.start()
 
     submission = session.query(Submission).get(s_id)
     assert submission.properties == gradebook_content  # because no actual autograding this is the same as assignment properties
     assert submission.auto_status == "automatically_graded"
-    assert submission.score == 0  # we do not get any scores because of dummy gradebook but it is set to 0
+    assert submission.score == 0  # we do not get any scores because of dummy gradebook, but it is set to 0
 
 
 @pytest.mark.asyncio
@@ -82,10 +84,10 @@ async def test_auto_grading_pending(
 
     with patch.object(LocalAutogradeExecutor, "_run_subprocess", return_value=None):
         executor = LocalAutogradeExecutor(service_dir, submission)
-        tmpdir.mkdir("in")
-        tmpdir.mkdir("out")
-        executor.base_input_path = str("in")
-        executor.base_output_path = str("out")
+        tmpdir.mkdir("grader_service/in")
+        tmpdir.mkdir("grader_service/out")
+        executor.relative_input_path = "in"
+        executor.relative_output_path = "out"
 
         await executor._pull_submission()
 
