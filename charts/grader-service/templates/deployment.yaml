@@ -84,16 +84,6 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
-        #TODO: This is only temporary til the home dirs are cleaned
-        - name: uninstall-grader-service
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: [ "/bin/sh","-c", "pip uninstall -y grader-service" ]
-          volumeMounts:
-              - name: data
-                mountPath: /var/lib/grader-service
-        {{- if .Values.subPath }}
-                subPath: {{ .Values.subPath }}
-        {{- end }}
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: ["/bin/sh","-c", "grader-service-migrate"]
