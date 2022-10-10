@@ -17,9 +17,9 @@ data:
 {{- end }}
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
     c.KubeAutogradeExecutor.volume = {"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}
-    c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default [] }}
-    c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default [] }}
-    {{ else }}
+    c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
+    c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
+{{ else }}
   grader_service_config.py: |
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
