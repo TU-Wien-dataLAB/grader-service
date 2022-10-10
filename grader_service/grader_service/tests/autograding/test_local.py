@@ -19,24 +19,24 @@ from sqlalchemy.orm import sessionmaker
 
 
 async def test_auto_grading(
-    default_user,
-    sql_alchemy_db,
-    tmpdir
+        default_user,
+        sql_alchemy_db,
+        tmpdir
 ):
-    l_id = 3 # default user is instructor
+    l_id = 3  # default user is instructor
     a_id = 3
     s_id = 1
 
     engine: Engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user["name"])
-    
+
     session: Session = sessionmaker(bind=engine)()
     submission = session.query(Submission).get(s_id)
     assert submission is not None
     assignment: Assignment = submission.assignment
     gradebook_content = '{"notebooks":{}}'
-    assignment.properties = gradebook_content # we do not actually run convert so the gradebook can be empty
+    assignment.properties = gradebook_content  # we do not actually run convert so the gradebook can be empty
     session.commit()
 
     assert submission.score is None
@@ -51,38 +51,41 @@ async def test_auto_grading(
         await executor.start()
 
     submission = session.query(Submission).get(s_id)
-    assert submission.properties == gradebook_content # because no actual autograding this is the same as assignment properties
+    assert submission.properties == gradebook_content  # because no actual autograding this is the same as assignment properties
     assert submission.auto_status == "automatically_graded"
-    assert submission.score == 0 # we do not get any scores because of dummy gradebook but it is set to 0
+    assert submission.score == 0  # we do not get any scores because of dummy gradebook but it is set to 0
+
 
 @pytest.mark.asyncio
 async def test_auto_grading_pending(
-    default_user,
-    sql_alchemy_db,
-    tmpdir
+        default_user,
+        sql_alchemy_db,
+        tmpdir
 ):
-    l_id = 3 # default user is instructor
+    l_id = 3  # default user is instructor
     a_id = 3
     s_id = 1
 
     engine: Engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user["name"])
-    
+
     session: Session = sessionmaker(bind=engine)()
     submission = session.query(Submission).get(s_id)
     assert submission is not None
     assignment: Assignment = submission.assignment
     gradebook_content = '{"notebooks":{}}'
-    assignment.properties = gradebook_content # we do not actually run convert so the gradebook can be empty
+    assignment.properties = gradebook_content  # we do not actually run convert so the gradebook can be empty
     session.commit()
 
     service_dir = str(tmpdir.mkdir("grader_service"))
 
     with patch.object(LocalAutogradeExecutor, "_run_subprocess", return_value=None):
         executor = LocalAutogradeExecutor(service_dir, submission)
-        executor.base_input_path = str(tmpdir.mkdir("in"))
-        executor.base_output_path = str(tmpdir.mkdir("out"))
+        tmpdir.mkdir("in")
+        tmpdir.mkdir("out")
+        executor.base_input_path = str("in")
+        executor.base_output_path = str("out")
 
         await executor._pull_submission()
 
