@@ -25,6 +25,7 @@ from kubernetes import config
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
 
+
 class GraderPod(LoggingConfigurable):
     """
     Wrapper for a kubernetes pod that supports polling of the pod's status.
@@ -95,7 +96,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     extra_volume_mounts = List(default_value=[], allow_none=False).tag(config=True)
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
     namespace = Unicode(default_value=None, allow_none=True,
-                        help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(config=True)
+                        help="Namespace to deploy grader pods into. If changed, correct Roles to Serviceaccount need to be applied.").tag(
+        config=True)
     uid = Integer(default_value=1000, allow_none=False, help="The User ID for the grader container").tag(config=True)
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
@@ -144,22 +146,23 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         :return:
         """
         # The output path will not exist in the pod
-        command = f'{self.convert_executable} autograde ' \
-                  f'-i "{self.input_path}" ' \
-                  f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb" ' \
-                  f'--copy_files={self.assignment.allow_files} --log-level=INFO'
+        command = [self.convert_executable, "autograde", "-i", self.input_path, "-o", self.output_path,
+                   "-p", "*.ipynb", f"--copy_files={self.assignment.allow_files}", f"--log-level=INFO",
+                   "--ExecutePreprocessor.timeout=360"]
+
         # command = "sleep 10000"
 
         volumes = [self.volume] + self.extra_volumes
 
-        volume_mounts = [{"name": "data", "mountPath": self.input_path, "subPath": self.relative_input_path + "/submission_" + str(self.submission.id)},
-                         {"name": "data", "mountPath": self.output_path, "subPath": self.relative_output_path + "/submission_" + str(self.submission.id)}]
+        volume_mounts = [{"name": "data", "mountPath": self.input_path,
+                          "subPath": self.relative_input_path + "/submission_" + str(self.submission.id)},
+                         {"name": "data", "mountPath": self.output_path,
+                          "subPath": self.relative_output_path + "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
 
         pod = make_pod(
             name=self.submission.commit_hash,
-            cmd=shlex.split(command),
+            cmd=command,
             image=self.get_image(),
             image_pull_policy=None,
             working_dir="/",
