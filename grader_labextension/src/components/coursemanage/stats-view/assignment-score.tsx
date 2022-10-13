@@ -89,7 +89,7 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart cx="50%" cy="50%">
             <text fontSize={40} x={'50%'} y={'50%'} dy={12} textAnchor="middle">
-              {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(1)}`}
+              {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(2)}`}
             </text>
             <Tooltip content={<AssignmentScoreTooltip />} />
             <Pie
