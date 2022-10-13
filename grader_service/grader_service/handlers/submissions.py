@@ -426,6 +426,5 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         for notebook in gradebook.notebooks.values():
             for grades in notebook.grades:
                 extra_credit += grades.extra_credit if grades.extra_credit is not None else 0
-        # TODO change score to float
         self.log.info("Extra credit is " + str(extra_credit))
-        return int(extra_credit)
+        return extra_credit
