@@ -3,6 +3,8 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import shutil
+
 from grader_labextension import RequestService
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
@@ -144,8 +146,11 @@ class GradingManualHandler(ExtensionBaseHandler):
             str(sub_id),
         )
         self.log.info(f"Path: {git_service.path}")
-        if not os.path.exists(git_service.path):
-            os.makedirs(git_service.path, exist_ok=True)
+        if os.path.exists(git_service.path):
+            shutil.rmtree(git_service.path, ignore_errors=True)
+
+
+        os.makedirs(git_service.path, exist_ok=True)
 
         if not git_service.is_git():
             git_service.init()
