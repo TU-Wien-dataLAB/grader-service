@@ -21,12 +21,13 @@ import {
 import { AssignmentStatus } from './assignment-status';
 import { RepoType } from '../../util/repo-type';
 import {getGitLog, IGitLogObject} from "../../../services/file.service";
+import {Submission} from "../../../model/submission";
 
 export interface IOverviewProps {
   assignment: Assignment;
   lecture: Lecture;
-  allSubmissions: any[];
-  latest_submissions: any;
+  allSubmissions: Submission[];
+  latest_submissions: Submission[];
   users: any;
   onClose: () => void;
 }
@@ -83,6 +84,7 @@ export const OverviewComponent = (props: IOverviewProps) => {
               lecture={props.lecture}
               assignment={assignment}
               allSubmissions={props.allSubmissions}
+              latestSubmissions={props.latest_submissions}
               users={props.users}
             />
           </Grid>

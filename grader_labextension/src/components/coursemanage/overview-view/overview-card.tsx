@@ -23,6 +23,7 @@ export interface IOverviewCardProps {
   lecture: Lecture;
   assignment: Assignment;
   allSubmissions: Submission[];
+  latestSubmissions: Submission[];
   users: { students: string[]; tutors: string[]; instructors: string[] };
 }
 
@@ -102,7 +103,20 @@ export const OverviewCard = (props: IOverviewCardProps) => {
               fontSize: 13
             }}
           >
-            {'Submission' + (props.allSubmissions.length === 1 ? '' : 's')}
+            {'Submissions Total'}
+          </Typography>
+        </Typography>
+        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+          {props.latestSubmissions.length}
+          <Typography
+            color="text.secondary"
+            sx={{
+              display: 'inline-block',
+              ml: 0.75,
+              fontSize: 13
+            }}
+          >
+            {'Users that submitted at least once'}
           </Typography>
         </Typography>
         <Divider sx={{ mt: 1, mb: 1 }} />
@@ -117,7 +131,7 @@ export const OverviewCard = (props: IOverviewCardProps) => {
         >
           Grading Behaviour:
         </Typography>
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+        <Typography sx={{ fontSize: 15, ml: 0.5 }}>
           {gradingBehaviour}
         </Typography>
 
@@ -126,14 +140,14 @@ export const OverviewCard = (props: IOverviewCardProps) => {
           sx={{
             display: 'inline-block',
             fontSize: 13,
-            mt: 2,
+            mt: 1,
             mb: -1,
             ml: 0.5
           }}
         >
           Assignment Type:
         </Typography>
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
+        <Typography sx={{ fontSize: 15, ml: 0.5 }}>
           {props.assignment.type === 'user' ? 'User' : 'Group'}
         </Typography>
       </CardContent>
