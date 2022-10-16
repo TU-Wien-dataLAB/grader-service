@@ -355,7 +355,7 @@ class RequestHandlerConfig(SingletonConfigurable):
                                     allow_none=False, config=True)
 
     # Git server file policy defaults
-    git_max_file_size_mb = Integer(20, allow_none=False, config=True)
+    git_max_file_size_mb = Integer(80, allow_none=False, config=True)
     git_max_file_count = Integer(512, allow_none=False, config=True)
     # empty list allows everything
     git_allowed_file_extensions = ListTrait(TraitType(Unicode), default_value=[], allow_none=False,
