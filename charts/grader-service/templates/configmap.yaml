@@ -11,6 +11,7 @@ data:
   grader_service_config.py: |
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
+    c.RequestHandlerConfig.git_max_file_size_mb = {{.Values.requestHandlerConfig.git_max_file_mb | default 20 }}
     c.KubeAutogradeExecutor.kube_context = None
 {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
@@ -19,7 +20,7 @@ data:
     c.KubeAutogradeExecutor.volume = {"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
-{{ else }}
+    {{ else }}
   grader_service_config.py: |
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
