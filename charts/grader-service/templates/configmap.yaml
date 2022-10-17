@@ -11,7 +11,9 @@ data:
   grader_service_config.py: |
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
-    c.RequestHandlerConfig.git_max_file_size_mb = {{.Values.requestHandlerConfig.git_max_file_mb | default 80 }}
+{{- if .Values.requestHandlerConfig.git_max_file_mb }}
+    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
+{{- end }}
     c.KubeAutogradeExecutor.kube_context = None
 {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
