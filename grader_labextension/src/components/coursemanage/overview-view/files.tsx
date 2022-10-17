@@ -285,7 +285,7 @@ export const Files = (props: IFilesProps) => {
             variant: 'success'
           });
         } catch (err) {
-          enqueueSnackbar('Error Pulling Assignment', {
+          enqueueSnackbar('Error Pulling Assignment: ' + err.message, {
             variant: 'error'
           });
         }
