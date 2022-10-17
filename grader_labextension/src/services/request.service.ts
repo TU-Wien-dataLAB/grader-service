@@ -48,7 +48,9 @@ export function request<T, B = any>(
   return ServerConnection.makeRequest(requestUrl, options, settings).then(
     async response => {
       if (!response.ok) {
-        throw new ServerConnection.ResponseError(response, response.statusText);
+        return response.text().then(text => {
+          throw new Error(JSON.parse(text)['message']);
+        });
       }
       let data: any = await response.text();
       if (data.length > 0) {

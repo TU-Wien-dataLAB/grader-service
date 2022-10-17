@@ -46,7 +46,7 @@ export const FilesList = (props: IFileListProps) => {
         }
       })
       .catch(error => {
-        enqueueSnackbar(error, {
+        enqueueSnackbar(error.message, {
           variant: 'error'
         });
       });
