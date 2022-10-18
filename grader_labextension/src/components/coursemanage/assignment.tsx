@@ -159,18 +159,18 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
               fontSizeDescriptor={13}
             />
             <CardDescriptor
-              descriptor={'User with Submissions'}
+              descriptor={'User with Submission'}
               value={latestSubmissions.length}
               fontSizeDescriptor={13}
             />
             <CardDescriptor
-              descriptor={'Autograded Submissions'}
+              descriptor={'Autograded Submission'}
               value={numAutoGraded}
               ofTotal={latestSubmissions.length}
               fontSizeDescriptor={13}
             />
             <CardDescriptor
-              descriptor={'Manualgraded Submissions'}
+              descriptor={'Manualgraded Submission'}
               value={numManualGraded}
               ofTotal={latestSubmissions.length}
               fontSizeDescriptor={13}
