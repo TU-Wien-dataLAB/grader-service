@@ -359,14 +359,16 @@ class GitService(Configurable):
         Returns:
             str: command output
         """
+        ret = None
         try:
             self.log.info(f"Running: {command}")
-            ret = subprocess.run(shlex.split(command), check=check, cwd=cwd, capture_output=True)
+            ret = subprocess.run(shlex.split(command), cwd=cwd, capture_output=True, text=True)
+            ret.check_returncode()
             if capture_output:
-                return str(ret.stdout, 'utf-8')
+                return ret.stdout
             else:
                 return ret
         except subprocess.CalledProcessError as e:
-            raise GitError(str(e.stdout, 'utf-8') + str(e.stderr, 'utf-8'))
+            raise GitError(ret.stderr.replace("\n", ""))
         except FileNotFoundError as e:
             raise GitError(e.strerror)

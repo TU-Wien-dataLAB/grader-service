@@ -186,7 +186,7 @@ class GitLogHandler(ExtensionBaseHandler):
         except GitError as e:
             self.log.error(e)
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
-            return
+
         self.write(json.dumps(logs))
 
 
@@ -342,7 +342,6 @@ class PushHandler(ExtensionBaseHandler):
                 self.log.error(f"Cannot find gradebook file: {gradebook_path}")
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
                                 reason=f"Cannot find gradebook file: {gradebook_path}")
-                return
 
             self.log.info(f"Setting properties of assignment from {gradebook_path}")
             response: HTTPResponse = await self.request_service.request(
@@ -368,7 +367,6 @@ class PushHandler(ExtensionBaseHandler):
                 )
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
                                 reason=f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!")
-                return
 
         self.log.info(f"File contents of {repo}: {git_service.path}")
         self.log.info(",".join(os.listdir(git_service.path)))
@@ -393,7 +391,7 @@ class PushHandler(ExtensionBaseHandler):
             git_service.push(f"grader_{repo}", force=True)
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e.error))
 
         if submit and repo == "assignment":
             self.log.info(f"Submitting assignment {assignment_id}!")
