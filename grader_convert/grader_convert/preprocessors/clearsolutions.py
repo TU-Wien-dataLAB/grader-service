@@ -22,6 +22,7 @@ class ClearSolutions(NbGraderPreprocessor):
             octave="% YOUR CODE HERE\nerror('No Answer Given!')",
             sas="/* YOUR CODE HERE */\n %notImplemented;",
             java="// YOUR CODE HERE",
+            r="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
         ),
         help="The code snippet that will replace code solutions",
     ).tag(config=True)
