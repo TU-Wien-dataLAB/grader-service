@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
-from tornado.web import HTTPError, RequestHandler
-from tornado_sqlalchemy import SessionMixin
+from tornado.web import HTTPError
 
 from grader_service.orm.lecture import LectureState, Lecture
 from grader_service.registry import VersionSpecifier, register_handler
