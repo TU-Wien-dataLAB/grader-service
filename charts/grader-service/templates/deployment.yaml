@@ -71,6 +71,16 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
+        - name: liveness
+          image: registry.k8s.io/liveness
+          args:
+          - /server
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.port }}
+              path: services/grader/health #TODO should be configurable
+            initialDelaySeconds: 60
+            periodSeconds: 60
   
     {{ if .Values.volumePermissions.enabled }}
       initContainers:
