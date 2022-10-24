@@ -33,14 +33,14 @@ class OverwriteCells(NbGraderPreprocessor):
             cell.cell_type = "code"
             cell.outputs = []
             cell.execution_count = None
-            validate(cell, "code_cell")
+
         elif cell_type == "markdown":
             cell.cell_type = "markdown"
             if "outputs" in cell:
                 del cell["outputs"]
             if "execution_count" in cell:
                 del cell["execution_count"]
-            validate(cell, "markdown_cell")
+
 
     def report_change(self, name: str, attr: str, old: Any, new: Any) -> None:
         self.log.warning(
@@ -62,7 +62,7 @@ class OverwriteCells(NbGraderPreprocessor):
             source_cell = self.gradebook.find_source_cell(grade_id, self.notebook_id)
         except MissingEntry:
             self.log.warning(
-                "Cell '{}' does not exist in the database".format(grade_id)
+                "Cell '{}' does not exist in the properties".format(grade_id)
             )
             del cell.metadata.nbgrader["grade_id"]
             return cell, resources
