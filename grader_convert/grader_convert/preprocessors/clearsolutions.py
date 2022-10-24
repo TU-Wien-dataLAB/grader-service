@@ -16,13 +16,14 @@ from grader_convert.preprocessors.base import NbGraderPreprocessor
 class ClearSolutions(NbGraderPreprocessor):
 
     code_stub = Dict(
-        dict(
+        default_value=dict(
             python="# YOUR CODE HERE\nraise NotImplementedError()",
             matlab="% YOUR CODE HERE\nerror('No Answer Given!')",
             octave="% YOUR CODE HERE\nerror('No Answer Given!')",
             sas="/* YOUR CODE HERE */\n %notImplemented;",
             java="// YOUR CODE HERE",
-            r="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
+            r="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
+            R="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
         ),
         help="The code snippet that will replace code solutions",
     ).tag(config=True)
