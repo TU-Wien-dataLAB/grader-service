@@ -114,8 +114,8 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         pass
 
     async def prepare(self) -> Optional[Awaitable[None]]:
-
-        if self.request.path.strip("/") != self.application.base_url.strip("/"):
+        if self.request.path.strip("/") != self.application.base_url.strip("/") and \
+                self.request.path.strip("/") != self.application.base_url.strip("/") + "/health":
             authenticator = self.application.auth_cls(config=self.application.config)
             await authenticator.authenticate_user(self)
         return super().prepare()
