@@ -125,3 +125,11 @@ export function updateSubmission(
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`;
   return request<Submission>(HTTPMethod.PUT, url, sub);
 }
+
+export function ltiSyncSubmissions(
+  lectureId: number,
+  assignmentId: number
+): Promise<any[]> {
+  const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/lti`;
+  return request<any[]>(HTTPMethod.PUT, url);
+}

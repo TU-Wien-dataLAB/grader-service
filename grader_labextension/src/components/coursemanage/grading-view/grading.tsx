@@ -29,7 +29,10 @@ import {
   IconButton
 } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import { getAllSubmissions } from '../../../services/submissions.service';
+import {
+  getAllSubmissions,
+  ltiSyncSubmissions
+} from '../../../services/submissions.service';
 import { AgreeDialog } from '../../util/dialog';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -387,13 +390,24 @@ export const GradingComponent = (props: IGradingProps) => {
       title: 'LTI Sync Submission',
       message: 'Do you wish to sync Submissions?',
       handleAgree: async () => {
-
-        closeDialog();
+        await ltiSyncSubmissions(props.lecture.id, props.assignment.id)
+          .then(response => {
+            enqueueSnackbar(
+              'Successfully synced latest ' + response.length + ' submissions',
+              { variant: 'success' }
+            );
+          })
+          .catch(error => {
+            enqueueSnackbar(
+              'Error while trying to sync submissions:' + error.message,
+              { variant: 'error' }
+            );
+          });
       },
       handleDisagree: () => closeDialog()
     });
     setShowDialog(true);
-  }
+  };
 
   return (
     <div>
@@ -517,15 +531,15 @@ export const GradingComponent = (props: IGradingProps) => {
         >
           {`Export ${optionName()} Submissions`}
         </Button>
-        {/*
+
         <Button
           variant="outlined"
           startIcon={<CloudSyncIcon />}
           sx={{ m: 3 }}
-          onClick={handleSyncSubmission}>
+          onClick={handleSyncSubmission}
+        >
           {'LTI Sync Grades'}
         </Button>
-        */}
       </span>
 
       <LoadingOverlay
