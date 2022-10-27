@@ -31,7 +31,7 @@ def tuple_to_submission(t, student=False):
     """
     Transforms tuple with values into a submission entity.
 
-    :param student: does the tuple contain submissions for the student
+    :param student: if True, get submissions for student where some data is not needed
     :param t: tuple with values
     :return: submission entity
     """
@@ -428,3 +428,23 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
                 extra_credit += grades.extra_credit if grades.extra_credit is not None else 0
         self.log.info("Extra credit is " + str(extra_credit))
         return extra_credit
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/scores\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class LtiSyncHandler(GraderBaseHandler):
+    def get(self, lecture_id: int, assignment_id: int):
+        submissions = (
+            self.session.query(
+                Submission.id,
+                Submission.username,
+                Submission.score,
+                func.max(Submission.date)
+            )
+            .filter(Submission.assignid == assignment_id, Submission.auto_status == "automatically_graded",
+                    Submission.feedback_available == True)
+            .group_by(Submission.username)
+            .all()
+        )
+        self.write_json([{"id": s[0], "username": s[1], "score": s[2]} for s in submissions])
