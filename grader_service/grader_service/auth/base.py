@@ -13,6 +13,8 @@ from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from tornado.web import HTTPError
 
+from grader_service.orm.takepart import Scope
+
 
 class Authenticator(LoggingConfigurable):
     use_cookies = Bool(True, help="Whether to store cookies when authenticating users.", config=True, allow_none=False)
@@ -82,11 +84,13 @@ class Authenticator(LoggingConfigurable):
             )
             if lecture is None:
                 raise HTTPError(500, f"Could not find lecture with code: {lecture_code}. Inconsistent database state!")
-            role = Role()
-            role.username = user.name
-            role.lectid = lecture.id
-            role.role = obj["role"]
-            handler.session.add(role)
+            scopes = [role.name for role in Scope]
+            if obj["role"] in scopes:
+                role = Role()
+                role.username = user.name
+                role.lectid = lecture.id
+                role.role = obj["role"]
+                handler.session.add(role)
         handler.session.commit()
 
     def get_or_create_user_model(self, handler: GraderBaseHandler, user_name: str) -> User:
