@@ -6,15 +6,22 @@
 
 import datetime
 import json
+import time
+
+import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
+
+from traitlets import Unicode, Bytes
 
 from grader_service.autograding.grader_executor import GraderExecutor
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 import tornado
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
@@ -25,6 +32,7 @@ from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
+from datetime import datetime
 
 
 def tuple_to_submission(t, student=False):
@@ -55,6 +63,7 @@ def tuple_to_submission(t, student=False):
         s.score = s.score if s.feedback_available else 0
 
     return s
+
 
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
@@ -117,9 +126,9 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         func.max(Submission.date),
                     )
-                        .filter(Submission.assignid == assignment_id)
-                        .group_by(Submission.username)
-                        .all()
+                    .filter(Submission.assignid == assignment_id)
+                    .group_by(Submission.username)
+                    .all()
                 )
                 submissions = [tuple_to_submission(t) for t in submissions]
             elif submission_filter == 'best':
@@ -136,9 +145,9 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         Submission.date,
                     )
-                        .filter(Submission.assignid == assignment_id)
-                        .group_by(Submission.username)
-                        .all()
+                    .filter(Submission.assignid == assignment_id)
+                    .group_by(Submission.username)
+                    .all()
                 )
                 submissions = [tuple_to_submission(t) for t in submissions]
             else:
@@ -158,12 +167,12 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         func.max(Submission.date),
                     )
-                        .filter(
+                    .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
-                        .group_by(Submission.username)
-                        .all()
+                    .group_by(Submission.username)
+                    .all()
                 )
                 submissions = [tuple_to_submission(t, True) for t in submissions]
             elif submission_filter == 'best':
@@ -180,12 +189,12 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         Submission.date,
                     )
-                        .filter(
+                    .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
-                        .group_by(Submission.username)
-                        .all()
+                    .group_by(Submission.username)
+                    .all()
                 )
                 submissions = [tuple_to_submission(t, True) for t in submissions]
             else:
@@ -193,11 +202,11 @@ class SubmissionHandler(GraderBaseHandler):
                     self.session.query(
                         Submission
                     )
-                        .filter(
+                    .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
-                        .all()
+                    .all()
                 )
         if response_format == "csv":
             # csv format does not include logs
@@ -429,12 +438,17 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         self.log.info("Extra credit is " + str(extra_credit))
         return extra_credit
 
+
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/scores\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
-    def get(self, lecture_id: int, assignment_id: int):
+
+    lti_client_id = "fgnM4rkwnbHYrmg"
+    lti_token_url = "https://tuwel.tuwien.ac.at/mod/lti/token.php"
+
+    async def get(self, lecture_id: int, assignment_id: int):
         submissions = (
             self.session.query(
                 Submission.id,
@@ -447,4 +461,46 @@ class LtiSyncHandler(GraderBaseHandler):
             .group_by(Submission.username)
             .all()
         )
-        self.write_json([{"id": s[0], "username": s[1], "score": s[2]} for s in submissions])
+
+        assignment = self.get_assignment(lecture_id, assignment_id)
+
+        scores = [{"id": s[0], "username": s[1], "score": s[2]} for s in submissions]
+
+        token = await self.request_bearer_token()
+        self.log.info("TOKEN: " + token)
+        scores = {"assignment": assignment, "scores": scores, "token": token}
+
+        self.write_json(scores)
+
+
+    async def request_bearer_token(self):
+        private_key = b"""-----BEGIN RSA PRIVATE KEY-----
+MIICXAIBAAKBgQC+GWN0Dc1M9H9ovg3DFyLjN4iXlRVb9Gr7xDRT6t+oSmg2Q7EN
+ytZ+cEa2iGG6j6vfoLF1yQH/ExFESW7elBYtUGmmlsoUJYA0TH+/q1L0IB++8cnu
+MhnZK+88cpavX58YMjBKq5olevUZfeX7tWEJc+ZUcXe0iqlkr6PE8LuIZwIDAQAB
+AoGBALgKLFa25gOS0aa+GOS/CW+g3ASkuMEFqG2GToLP6SgsoSen8UnBDlfqqwsc
+jkDnxyYBlMzLhbtE4nqR/VxPUgdxpGTkzaOgqf9CNFJ3ewKNj7ooLKPIWawCGiDt
+PHd6VYXHHN4MQ0TLIrf1uby6C7Rr8ItXZYBOgzS7KjquZDwBAkEA3PDjM+oKaRRp
+oDxcezzVrAH2ETY8xTGtf5BQmI6wl4wli1mn8hAhlFcaA6aNbHbD9cePoiO0nzIe
+fQ4yQjDuJwJBANxDo44NrY5FxJ6xHXvB1PQPCNp7LYQHTTpGLw7RIp2LDiqe1nZl
+DV1nVpAX6YIs3jQFbuKQCejvHF8RbxODO8ECQEwaNUh2fyt+untVD03rwHXFHysC
+kaAi4m4kGX7S94Tb4zrCoRTB9a8Q6YcEYYZQymLoYFMrFVYYf2P39dvS2tUCQB+p
+xYAtLS7PjrU1RsS8l21CIAawQFnDZvGily8tFynIjI/J55B7dFFiAoqSNWoWIxcd
+VNRS2mnWvaBY9Du82MECQCBym+M9OHI9bFfGo/tbHeK8/9an7v5u/RlV8HtAvLjY
+LjZU2zw/OqjQpcGpEOO89P31HKk6laPi6SsjOLUccXQ=
+-----END RSA PRIVATE KEY-----"""
+        payload = {"iss": "grader-service", "sub": LtiSyncHandler.lti_client_id, "aud": [LtiSyncHandler.lti_token_url],
+                   "ist": str(int(time.time())), "exp": str(int(time.time())+60), "jti": str(int(time.time()))+ "123"}
+        encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        scopes = [
+            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem"
+        ]
+        scopes = url_escape(" ".join(scopes))
+        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes}"
+        httpclient = AsyncHTTPClient()
+        response = await httpclient.fetch(HTTPRequest(url="https://tuwel.tuwien.ac.at/mod/lti/token.php", method="POST"
+                                                      , body=data,
+                                                      headers={"Content-Type": "application/x-www-form-urlencoded"}))
+        return json_decode(response.body)["access_token"]
+
