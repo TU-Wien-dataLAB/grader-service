@@ -24,7 +24,7 @@ from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
-from grader_service.orm.base import Serializable
+from grader_service.orm.base import Serializable, DeleteState
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
 from grader_service.orm.user import User
@@ -64,9 +64,9 @@ def authorize(scopes: List[Scope]):
                     data = json_decode(self.request.body)
                     lect_id = (
                         self.session.query(Lecture)
-                            .filter(Lecture.code == data["code"])
-                            .one()
-                            .id
+                        .filter(Lecture.code == data["code"])
+                        .one()
+                        .id
                     )
                 except MultipleResultsFound:
                     raise HTTPError(403)
@@ -135,7 +135,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
 
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
         assignment = self.session.query(Assignment).get(assignment_id)
-        if assignment is None or assignment.deleted == 1 or assignment.lectid != lecture_id:
+        if assignment is None or assignment.deleted == DeleteState.deleted or int(assignment.lectid) != int(lecture_id):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment with id " + str(assignment_id) + " was not found")
         return assignment
 
