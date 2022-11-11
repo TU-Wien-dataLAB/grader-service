@@ -4,16 +4,17 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import datetime
 import json
 import time
 
+import cachetools.func
 import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
 
-from traitlets import Unicode, Bytes
+from traitlets import Unicode
+from traitlets.config import LoggingConfigurable, Configurable
 
 from grader_service.autograding.grader_executor import GraderExecutor
 
@@ -245,7 +246,7 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
-        submission_ts = datetime.datetime.utcnow()
+        submission_ts = datetime.utcnow()
         if assignment.duedate is not None and submission_ts > assignment.duedate:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Submission after due date of assignment!")
         if assignment.max_submissions and len(assignment.submissions) >= assignment.max_submissions:
@@ -443,10 +444,16 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/scores\/?",
     version_specifier=VersionSpecifier.ALL,
 )
-class LtiSyncHandler(GraderBaseHandler):
+class LtiSyncHandler(GraderBaseHandler, LoggingConfigurable):
+    # lti_client_id = "fgnM4rkwnbHYrmg"
+    # lti_token_url = "https://tuwel.tuwien.ac.at/mod/lti/token.php"
+    # lti_token_private_key = ""
 
-    lti_client_id = "fgnM4rkwnbHYrmg"
-    lti_token_url = "https://tuwel.tuwien.ac.at/mod/lti/token.php"
+    lti_client_id = Unicode("fgnM4rkwnbHYrmg").tag(config=True)
+    lti_token_url = Unicode("https://tuwel.tuwien.ac.at/mod/lti/token.php").tag(config=True)
+    lti_token_private_key = Unicode("").tag(config=True)
+
+    cache_token = {"token": None, "ttl": 0}
 
     async def get(self, lecture_id: int, assignment_id: int):
         submissions = (
@@ -472,25 +479,12 @@ class LtiSyncHandler(GraderBaseHandler):
 
         self.write_json(scores)
 
-
+    @cachetools.func.ttl_cache(maxsize=1, ttl=60*60)
     async def request_bearer_token(self):
-        private_key = b"""-----BEGIN RSA PRIVATE KEY-----
-MIICXAIBAAKBgQC+GWN0Dc1M9H9ovg3DFyLjN4iXlRVb9Gr7xDRT6t+oSmg2Q7EN
-ytZ+cEa2iGG6j6vfoLF1yQH/ExFESW7elBYtUGmmlsoUJYA0TH+/q1L0IB++8cnu
-MhnZK+88cpavX58YMjBKq5olevUZfeX7tWEJc+ZUcXe0iqlkr6PE8LuIZwIDAQAB
-AoGBALgKLFa25gOS0aa+GOS/CW+g3ASkuMEFqG2GToLP6SgsoSen8UnBDlfqqwsc
-jkDnxyYBlMzLhbtE4nqR/VxPUgdxpGTkzaOgqf9CNFJ3ewKNj7ooLKPIWawCGiDt
-PHd6VYXHHN4MQ0TLIrf1uby6C7Rr8ItXZYBOgzS7KjquZDwBAkEA3PDjM+oKaRRp
-oDxcezzVrAH2ETY8xTGtf5BQmI6wl4wli1mn8hAhlFcaA6aNbHbD9cePoiO0nzIe
-fQ4yQjDuJwJBANxDo44NrY5FxJ6xHXvB1PQPCNp7LYQHTTpGLw7RIp2LDiqe1nZl
-DV1nVpAX6YIs3jQFbuKQCejvHF8RbxODO8ECQEwaNUh2fyt+untVD03rwHXFHysC
-kaAi4m4kGX7S94Tb4zrCoRTB9a8Q6YcEYYZQymLoYFMrFVYYf2P39dvS2tUCQB+p
-xYAtLS7PjrU1RsS8l21CIAawQFnDZvGily8tFynIjI/J55B7dFFiAoqSNWoWIxcd
-VNRS2mnWvaBY9Du82MECQCBym+M9OHI9bFfGo/tbHeK8/9an7v5u/RlV8HtAvLjY
-LjZU2zw/OqjQpcGpEOO89P31HKk6laPi6SsjOLUccXQ=
------END RSA PRIVATE KEY-----"""
-        payload = {"iss": "grader-service", "sub": LtiSyncHandler.lti_client_id, "aud": [LtiSyncHandler.lti_token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time())+60), "jti": str(int(time.time()))+ "123"}
+        private_key = b""""""
+        payload = {"iss": "grader-service", "sub": self.lti_client_id, "aud": [self.lti_token_url],
+                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
+                   "jti": str(int(time.time())) + "123"}
         encoded = jwt.encode(payload, private_key, algorithm="RS256")
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
@@ -498,9 +492,9 @@ LjZU2zw/OqjQpcGpEOO89P31HKk6laPi6SsjOLUccXQ=
         ]
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes}"
+
         httpclient = AsyncHTTPClient()
-        response = await httpclient.fetch(HTTPRequest(url="https://tuwel.tuwien.ac.at/mod/lti/token.php", method="POST"
+        response = await httpclient.fetch(HTTPRequest(url=self.lti_token_url, method="POST"
                                                       , body=data,
                                                       headers={"Content-Type": "application/x-www-form-urlencoded"}))
         return json_decode(response.body)["access_token"]
-
