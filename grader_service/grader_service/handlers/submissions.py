@@ -7,14 +7,14 @@
 import json
 import time
 
-import cachetools.func
 import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
-
-from traitlets import Unicode
-from traitlets.config import LoggingConfigurable, Configurable
+import cachetools.func
+from traitlets import Unicode, Callable, Union
+from traitlets.config import LoggingConfigurable, SingletonConfigurable, Configurable
+from functools import lru_cache
 
 from grader_service.autograding.grader_executor import GraderExecutor
 
@@ -33,7 +33,7 @@ from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
-from datetime import datetime
+import datetime
 
 
 def tuple_to_submission(t, student=False):
@@ -246,7 +246,7 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
-        submission_ts = datetime.utcnow()
+        submission_ts = datetime.datetime.utcnow()
         if assignment.duedate is not None and submission_ts > assignment.duedate:
             raise HTTPError(HTTPStatus.CONFLICT, reason="Submission after due date of assignment!")
         if assignment.max_submissions and len(assignment.submissions) >= assignment.max_submissions:
@@ -439,3 +439,73 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         self.log.info("Extra credit is " + str(extra_credit))
         return extra_credit
 
+
+class LTIHandlerConfig(Configurable):
+    lti_client_id = Unicode(None, config=True)
+    lti_token_url = Unicode(None, config=True)
+    lti_token_private_key = Union([Unicode(os.environ.get("LTI_PRIVATE_KEY")), Callable()], config=True)
+
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/scores\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class LtiSyncHandler(GraderBaseHandler):
+    lti_client_id = Unicode(None, config=True)
+    lti_token_url = Unicode(None, config=True)
+    lti_token_private_key = Union([Unicode(os.environ.get("LTI_PRIVATE_KEY")), Callable()], config=True)
+
+    cache_token = {"token": None, "ttl": datetime.datetime.now()}
+
+    async def get(self, lecture_id: int, assignment_id: int):
+        submissions = (
+            self.session.query(
+                Submission.id,
+                Submission.username,
+                Submission.score,
+                func.max(Submission.date)
+            )
+            .filter(Submission.assignid == assignment_id, Submission.auto_status == "automatically_graded",
+                    Submission.feedback_available == True)
+            .group_by(Submission.username)
+            .all()
+        )
+
+        assignment = self.get_assignment(lecture_id, assignment_id)
+
+        scores = [{"id": s[0], "username": s[1], "score": s[2]} for s in submissions]
+        stamp = datetime.datetime.now()
+        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(minutes=50):
+            token = LtiSyncHandler.cache_token["token"]
+        else:
+            token = await self.request_bearer_token()
+            LtiSyncHandler.cache_token["token"] = token
+        self.log.info("TOKEN: " + token)
+        scores = {"assignment": assignment, "scores": scores, "token": token}
+
+        self.write_json(scores)
+
+    async def request_bearer_token(self):
+        lti_client_id = RequestHandlerConfig.instance().lti_client_id
+        lti_token_url = RequestHandlerConfig.instance().lti_token_url
+        private_key = RequestHandlerConfig.instance().lti_token_private_key
+        if callable(private_key):
+            private_key = private_key()
+        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
+                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
+                   "jti": str(int(time.time())) + "123"}
+        encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        scopes = [
+            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem"
+        ]
+        scopes = url_escape(" ".join(scopes))
+        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
+               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
+
+        httpclient = AsyncHTTPClient()
+        response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST"
+                                                      , body=data,
+                                                      headers={"Content-Type": "application/x-www-form-urlencoded"}))
+        return json_decode(response.body)["access_token"]
