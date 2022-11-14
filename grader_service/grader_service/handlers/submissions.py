@@ -481,7 +481,6 @@ class LtiSyncHandler(GraderBaseHandler):
         else:
             token = await self.request_bearer_token()
             LtiSyncHandler.cache_token["token"] = token
-        self.log.info("TOKEN: " + token)
         scores = {"assignment": assignment, "scores": scores, "token": token}
 
         self.write_json(scores)
