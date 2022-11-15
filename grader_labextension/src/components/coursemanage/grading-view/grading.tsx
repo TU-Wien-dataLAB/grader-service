@@ -392,12 +392,14 @@ export const GradingComponent = (props: IGradingProps) => {
       handleAgree: async () => {
         await ltiSyncSubmissions(props.lecture.id, props.assignment.id)
           .then(response => {
+            closeDialog();
             enqueueSnackbar(
-              'Successfully synced latest ' + response.length + ' submissions',
+              'Successfully synced latest submissions',
               { variant: 'success' }
             );
           })
           .catch(error => {
+            closeDialog();
             enqueueSnackbar(
               'Error while trying to sync submissions:' + error.message,
               { variant: 'error' }
