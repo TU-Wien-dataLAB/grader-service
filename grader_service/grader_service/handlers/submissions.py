@@ -481,6 +481,8 @@ class LtiSyncHandler(GraderBaseHandler):
         else:
             token = await self.request_bearer_token()
             LtiSyncHandler.cache_token["token"] = token
+            LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
+        self.log.info("TOKEN: " + token)
         scores = {"assignment": assignment, "scores": scores, "token": token}
 
         self.write_json(scores)
@@ -497,7 +499,8 @@ class LtiSyncHandler(GraderBaseHandler):
         encoded = jwt.encode(payload, private_key, algorithm="RS256")
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
-            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem"
+            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
         ]
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
