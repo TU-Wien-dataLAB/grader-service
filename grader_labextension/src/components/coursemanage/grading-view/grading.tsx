@@ -51,6 +51,7 @@ import { GlobalObjects } from '../../../index';
 import { enqueueSnackbar } from 'notistack';
 import { loadString, storeString } from '../../../services/storage.service';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
+import { getConfig } from '../../../services/config.service';
 /**
  * Props for GradingComponent.
  */
@@ -79,6 +80,7 @@ export const GradingComponent = (props: IGradingProps) => {
   );
   const [showDialog, setShowDialog] = React.useState(false);
   const [showLogs, setShowLogs] = React.useState(false);
+  const [showSyncGrades, setSyncGrades] = React.useState(false);
   const [logs, setLogs] = React.useState(undefined);
   const [dialogContent, setDialogContent] = React.useState({
     title: '',
@@ -172,6 +174,13 @@ export const GradingComponent = (props: IGradingProps) => {
     });
     setShowDialog(true);
   };
+
+  const getConfigFromService = () => {
+    getConfig().then(response => {
+      setSyncGrades(response['enable_lti_features']);
+    });
+  };
+
   /**
    * Closes dialog window.
    */
@@ -236,6 +245,7 @@ export const GradingComponent = (props: IGradingProps) => {
 
   React.useEffect(() => {
     updateSubmissions();
+    getConfigFromService();
   }, [option, displayManualGrading]);
   /**
    * Calculates chip color based on submission status.
@@ -546,9 +556,12 @@ export const GradingComponent = (props: IGradingProps) => {
           variant="outlined"
           startIcon={<CloudSyncIcon />}
           sx={{ m: 3 }}
+          disabled={!showSyncGrades}
           onClick={handleSyncSubmission}
         >
-          {'LTI Sync Grades'}
+          {showSyncGrades
+            ? 'LTI Sync Grades'
+            : 'LTI Sync Grades (disabled by grader service)'}
         </Button>
       </span>
 

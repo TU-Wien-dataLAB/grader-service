@@ -464,13 +464,13 @@ class LtiSyncHandler(GraderBaseHandler):
 
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        lti_username_match = RequestHandlerConfig.instance().lti_username_match
+        lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
 
-        if lti_username_match is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Unable to match users: lti_username_match is not set in grader "
+        if lti_username_convert is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Unable to match users: lti_username_convert is not set in grader "
                                                   "config")
 
-        scores = [{"id": s[0], "username": lti_username_match(s[1]), "score": s[2]} for s in submissions]
+        scores = [{"id": s[0], "username": lti_username_convert(s[1]), "score": s[2]} for s in submissions]
         stamp = datetime.datetime.now()
         if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
                 minutes=50):

@@ -53,7 +53,7 @@ def authorize(scopes: List[Scope]):
         @functools.wraps(handler_method)
         async def request_handler_wrapper(self: "GraderBaseHandler", *args, **kwargs):
             lect_id = self.path_kwargs.get("lecture_id", None)
-            if "/permissions" in self.request.path:
+            if "/permissions" in self.request.path or "/config" in self.request.path:
                 return await handler_method(self, *args, **kwargs)
             if (
                     lect_id is None
