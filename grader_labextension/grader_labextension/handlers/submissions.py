@@ -192,31 +192,31 @@ class LtiSyncHandler(ExtensionBaseHandler):
         return request
 
     async def put(self, lecture_id: int, assignment_id: int):
+        # get submissions with score and lti customized username
         try:
             scores = await self.request_service.request(
                 method="GET",
-                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/scores",
+                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/lti",
                 header=self.grader_authentication_header)
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
 
         grades = []
-        self.log.info(scores)
 
         # Get lineitems URL
         instructor = requests.get(HandlerConfig.instance().hub_api_url + "/users/" + self.user_name,
                                   headers={"Authorization": "token " + HandlerConfig.instance().hub_api_token})
 
         instructor = self.raise_status(instructor)
-        self.log.info(instructor)
         if instructor["auth_state"] is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, "Auth state of current user could not be found! Please logout and "
                                                   "login again and check if enable_auth_state is enabled in JupyterHub!")
 
         lineitems_url = instructor["auth_state"]["course_lineitems"]
         if lineitems_url is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, "Lineitems URL could not be found! Do you use the LTI13Authenticator?")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            "Lineitems URL could not be found! Do you use the LTI13Authenticator?")
         membership_url = instructor["auth_state"]["membership_url"]
         members = requests.get(membership_url, headers={"Authorization": "Bearer " + scores["token"],
                                                         "Accept": "application/vnd.ims.lti-nrps.v2"
@@ -224,48 +224,31 @@ class LtiSyncHandler(ExtensionBaseHandler):
 
         members = self.raise_status(members)
 
-        self.log.info(members)
-
+        # match username with lti sourced id
         syncable_user_count = 0
         for score in scores["scores"]:
             for member in members["members"]:
-                if member["lis_person_sourcedid"] == (score["username"].replace("e", "")):
-                    self.log.info("Found:")
-                    self.log.info(score["username"])
+                if member["lis_person_sourcedid"] == score["username"]:
                     syncable_user_count += 1
                     grades.append(build_grade_publish_body(member["user_id"], score["score"],
-                                                  scores["assignment"]["points"]))
+                                                           scores["assignment"]["points"]))
 
-            # try:
-            #     response.raise_for_status()
-            #     user = response.json()
-            # except Exception as e:
-            #     self.log.error(user["message"])
-            #     raise HTTPError(user["status"], reason=user["message"])
-
-            # if user["auth_state"]:
-            #     if user["auth_state"]["user_role"] == "Learner":
-            #         grades.append(
-            #             build_grade_publish_body(user["auth_state"]["lms_user_id"], score["score"],
-            #                                      scores["assignment"]["points"]))
-
-        # create lineitem
-        self.log.info("URL: " + str(lineitems_url))
-        self.log.info(scores["assignment"])
-        self.log.info(scores["token"])
+        # get lineitem if not found, create new lineitem
         assignment = scores["assignment"]
 
         lineitems = requests.get(lineitems_url,
                                  headers={"Authorization": "Bearer " + scores["token"],
                                           "Accept": "application/vnd.ims.lis.v2.lineitemcontainer+json"})
 
-
         lineitems = self.raise_status(lineitems)
         lineitem = None
         for item in lineitems:
             if item["label"] == assignment["name"]:
+                # lineitem found
                 lineitem = item
+                break
 
+        # create lineitem
         if lineitem is None:
             lineitem_body = {"scoreMaximum": int(assignment["points"]), "label": assignment["name"],
                              "resourceId": assignment["id"],
@@ -281,7 +264,7 @@ class LtiSyncHandler(ExtensionBaseHandler):
         url_parsed = urlparse(lineitem["id"])
         lineitem = url_parsed._replace(path=url_parsed.path + "/scores").geturl()
 
-        self.log.info(lineitem)
+        # send score to learning tool
         synced_user = 0
         for grade in grades:
             response = requests.post(lineitem, json=grade,
@@ -289,8 +272,5 @@ class LtiSyncHandler(ExtensionBaseHandler):
                                               "Content-Type": "application/vnd.ims.lis.v1.score+json"})
             if response.ok:
                 synced_user += 1
-
-        self.log.info(grades)
-        self.log.info(scores)
 
         self.write({"syncable_users": syncable_user_count, "synced_user": synced_user})
