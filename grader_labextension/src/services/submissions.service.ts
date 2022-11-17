@@ -129,7 +129,10 @@ export function updateSubmission(
 export function ltiSyncSubmissions(
   lectureId: number,
   assignmentId: number
-): Promise<any[]> {
+): Promise<{ syncable_users: number; synced_user: number }> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/lti`;
-  return request<any[]>(HTTPMethod.PUT, url);
+  return request<{ syncable_users: number; synced_user: number }>(
+    HTTPMethod.PUT,
+    url
+  );
 }

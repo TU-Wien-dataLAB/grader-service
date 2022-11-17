@@ -394,7 +394,15 @@ export const GradingComponent = (props: IGradingProps) => {
           .then(response => {
             closeDialog();
             enqueueSnackbar(
-              'Successfully synced latest submissions',
+              'Successfully matched ' +
+                response.syncable_users +
+                ' submissions with learning platform',
+              { variant: 'success' }
+            );
+            enqueueSnackbar(
+              'Successfully synced latest submissions with feedback of ' +
+                response.synced_user +
+                ' users',
               { variant: 'success' }
             );
           })
