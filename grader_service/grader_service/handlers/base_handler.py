@@ -364,7 +364,8 @@ class RequestHandlerConfig(SingletonConfigurable):
     lti_client_id = Unicode(None, config=True, allow_none=True)
     lti_token_url = Unicode(None, config=True, allow_none=True)
     # function used to change the hub username to the lti sourcedid value
-    lti_username_match = CallableTrait(None, config=True, allow_none=True)
+    lti_username_convert = CallableTrait(None, config=True, allow_none=True, help="""
+    Converts the grader service username to the lti sourced id.""")
     lti_token_private_key = Union(
         [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)), CallableTrait(None)],
         allow_none=True,
