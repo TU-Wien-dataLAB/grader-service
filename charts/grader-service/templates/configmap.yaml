@@ -35,6 +35,7 @@ data:
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | default "None" }}
     c.RequestHandlerConfig.lti_username_convert = {{ .Values.requestHandlerConfig.lti_username_convert | default "None"}}
 {{- end }}
+{{- end }}
 
   .gitconfig: |
     [user]
