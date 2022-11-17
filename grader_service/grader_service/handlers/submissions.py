@@ -447,6 +447,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 class LtiSyncHandler(GraderBaseHandler):
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
+    @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         submissions = (
             self.session.query(

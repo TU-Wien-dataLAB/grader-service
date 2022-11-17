@@ -16,7 +16,7 @@ import traceback
 from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
 
-from traitlets import Type, Integer, TraitType, Unicode, Union
+from traitlets import Type, Integer, TraitType, Unicode, Union, Bool
 from traitlets import Callable as CallableTrait
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
@@ -361,6 +361,8 @@ class RequestHandlerConfig(SingletonConfigurable):
     # empty list allows everything
     git_allowed_file_extensions = ListTrait(TraitType(Unicode), default_value=[], allow_none=False,
                                             config=True)
+
+    enable_lti_features = Bool(False, config=True)
     lti_client_id = Unicode(None, config=True, allow_none=True)
     lti_token_url = Unicode(None, config=True, allow_none=True)
     # function used to change the hub username to the lti sourcedid value
