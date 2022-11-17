@@ -6,6 +6,7 @@
 
 import json
 import datetime
+from http import HTTPStatus
 
 import requests
 from tornado.httpclient import HTTPClientError
@@ -181,6 +182,15 @@ def build_grade_publish_body(uid: str, score: float, max_score: float):
 )
 class LtiSyncHandler(ExtensionBaseHandler):
 
+    def raise_status(self, request):
+        try:
+            request.raise_for_status()
+            request = request.json()
+        except Exception as e:
+            self.log.error(request["message"])
+            raise HTTPError(request["status"], reason=request["message"])
+        return request
+
     async def put(self, lecture_id: int, assignment_id: int):
         try:
             scores = await self.request_service.request(
@@ -191,34 +201,38 @@ class LtiSyncHandler(ExtensionBaseHandler):
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
 
-        lineitems_url = None
         grades = []
         self.log.info(scores)
 
         # Get lineitems URL
         instructor = requests.get(HandlerConfig.instance().hub_api_url + "/users/" + self.user_name,
-                                  headers={"Authorization": "token " + HandlerConfig.instance().hub_api_token}).json()
-        lineitems_url = instructor["auth_state"]["course_lineitems"]
+                                  headers={"Authorization": "token " + HandlerConfig.instance().hub_api_token})
 
+        instructor = self.raise_status(instructor)
+        self.log.info(instructor)
+        if instructor["auth_state"] is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, "Auth state of current user could not be found! Please logout and "
+                                                  "login again and check if enable_auth_state is enabled in JupyterHub!")
+
+        lineitems_url = instructor["auth_state"]["course_lineitems"]
+        if lineitems_url is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, "Lineitems URL could not be found! Do you use the LTI13Authenticator?")
         membership_url = instructor["auth_state"]["membership_url"]
         members = requests.get(membership_url, headers={"Authorization": "Bearer " + scores["token"],
                                                         "Accept": "application/vnd.ims.lti-nrps.v2"
                                                                   ".membershipcontainer+json"})
 
-        try:
-            members.raise_for_status()
-            members = members.json()
-        except Exception as e:
-            self.log.error(members["message"])
-            raise HTTPError(members["status"], reason=members["message"])
+        members = self.raise_status(members)
 
         self.log.info(members)
 
+        syncable_user_count = 0
         for score in scores["scores"]:
             for member in members["members"]:
                 if member["lis_person_sourcedid"] == (score["username"].replace("e", "")):
                     self.log.info("Found:")
                     self.log.info(score["username"])
+                    syncable_user_count += 1
                     grades.append(build_grade_publish_body(member["user_id"], score["score"],
                                                   scores["assignment"]["points"]))
 
@@ -245,8 +259,8 @@ class LtiSyncHandler(ExtensionBaseHandler):
                                  headers={"Authorization": "Bearer " + scores["token"],
                                           "Accept": "application/vnd.ims.lis.v2.lineitemcontainer+json"})
 
-        lineitems.raise_for_status()
-        lineitems = lineitems.json()
+
+        lineitems = self.raise_status(lineitems)
         lineitem = None
         for item in lineitems:
             if item["label"] == assignment["name"]:
@@ -260,19 +274,23 @@ class LtiSyncHandler(ExtensionBaseHandler):
 
             lineitem = requests.post(lineitems_url, json=lineitem_body,
                                      headers={"Authorization": "Bearer " + scores["token"],
-                                              "Content-Type": "application/vnd.ims.lis.v2.lineitem+json"}).json()
+                                              "Content-Type": "application/vnd.ims.lis.v2.lineitem+json"})
+            lineitem = self.raise_status(lineitem)
 
         # add scores endpoint to lineitem url
         url_parsed = urlparse(lineitem["id"])
         lineitem = url_parsed._replace(path=url_parsed.path + "/scores").geturl()
 
         self.log.info(lineitem)
-
+        synced_user = 0
         for grade in grades:
             response = requests.post(lineitem, json=grade,
                                      headers={"Authorization": "Bearer " + scores["token"],
                                               "Content-Type": "application/vnd.ims.lis.v1.score+json"})
+            if response.ok:
+                synced_user += 1
+
         self.log.info(grades)
         self.log.info(scores)
 
-        self.write(json.dumps(scores))
+        self.write({"syncable_users": syncable_user_count, "synced_user": synced_user})
