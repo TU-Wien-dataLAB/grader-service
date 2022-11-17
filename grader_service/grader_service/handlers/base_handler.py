@@ -363,8 +363,10 @@ class RequestHandlerConfig(SingletonConfigurable):
                                             config=True)
     lti_client_id = Unicode(None, config=True)
     lti_token_url = Unicode(None, config=True)
+    # function used to change the hub username to the lti sourcedid value
+    lti_username_match = CallableTrait(None, config=True)
     lti_token_private_key = Union(
-        [Unicode(os.environ.get('LTI_PRIVATE_KEY', '')), CallableTrait()],
+        [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)), CallableTrait(None)],
         config=True,
         help="""
         Private Key used to encrypt bearer token request
