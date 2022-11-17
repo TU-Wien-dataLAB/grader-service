@@ -33,7 +33,7 @@ data:
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id }}
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key }}
-    c.RequestHandlerConfig.lti_username_convert = {{ .Values.requestHandlerConfig.lti_username_convert }}
+    c.RequestHandlerConfig.lti_username_convert = {{ .Values.requestHandlerConfig.lti_username_convert | default "None"}}
 {{- end }}
 
   .gitconfig: |

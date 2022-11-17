@@ -60,10 +60,10 @@ kubeAutogradeExecutor:
 
 requestHandlerConfig:
   enable_lti_features: false
-  lti_client_id: {}
-  lti_token_url: {}
-  lti_username_convert: {}
-  lti_token_private_key: {}
+  lti_client_id: ""
+  lti_token_url: ""
+  lti_username_convert: ""
+  lti_token_private_key: ""
 
 
 # pvc
