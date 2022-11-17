@@ -361,12 +361,13 @@ class RequestHandlerConfig(SingletonConfigurable):
     # empty list allows everything
     git_allowed_file_extensions = ListTrait(TraitType(Unicode), default_value=[], allow_none=False,
                                             config=True)
-    lti_client_id = Unicode(None, config=True)
-    lti_token_url = Unicode(None, config=True)
+    lti_client_id = Unicode(None, config=True, allow_none=True)
+    lti_token_url = Unicode(None, config=True, allow_none=True)
     # function used to change the hub username to the lti sourcedid value
-    lti_username_match = CallableTrait(None, config=True)
+    lti_username_match = CallableTrait(None, config=True, allow_none=True)
     lti_token_private_key = Union(
         [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)), CallableTrait(None)],
+        allow_none=True,
         config=True,
         help="""
         Private Key used to encrypt bearer token request

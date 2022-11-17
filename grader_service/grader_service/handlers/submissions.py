@@ -21,7 +21,7 @@ from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 import tornado
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
 from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.orm.assignment import AutoGradingBehaviour
@@ -440,22 +440,11 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         return extra_credit
 
 
-class LTIHandlerConfig(Configurable):
-    lti_client_id = Unicode(None, config=True)
-    lti_token_url = Unicode(None, config=True)
-    lti_token_private_key = Union([Unicode(os.environ.get("LTI_PRIVATE_KEY")), Callable()], config=True)
-
-
-
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/scores\/?",
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
-    lti_client_id = Unicode(None, config=True)
-    lti_token_url = Unicode(None, config=True)
-    lti_token_private_key = Union([Unicode(os.environ.get("LTI_PRIVATE_KEY")), Callable()], config=True)
-
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
     async def get(self, lecture_id: int, assignment_id: int):
@@ -474,25 +463,43 @@ class LtiSyncHandler(GraderBaseHandler):
 
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        scores = [{"id": s[0], "username": s[1], "score": s[2]} for s in submissions]
+        lti_username_match = RequestHandlerConfig.instance().lti_username_match
+
+        if lti_username_match is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Unable to match users: lti_username_match is not set in grader "
+                                                  "config")
+
+        scores = [{"id": s[0], "username": lti_username_match(s[1]), "score": s[2]} for s in submissions]
         stamp = datetime.datetime.now()
-        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(minutes=50):
+        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
+                minutes=50):
             token = LtiSyncHandler.cache_token["token"]
         else:
             token = await self.request_bearer_token()
             LtiSyncHandler.cache_token["token"] = token
             LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
-        self.log.info("TOKEN: " + token)
+
         scores = {"assignment": assignment, "scores": scores, "token": token}
 
         self.write_json(scores)
 
     async def request_bearer_token(self):
+        # get config variables
         lti_client_id = RequestHandlerConfig.instance().lti_client_id
+        if lti_client_id is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
         lti_token_url = RequestHandlerConfig.instance().lti_token_url
+        if lti_token_url is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
         private_key = RequestHandlerConfig.instance().lti_token_private_key
+        if private_key is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
         if callable(private_key):
             private_key = private_key()
+
         payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
                    "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
@@ -507,7 +514,11 @@ class LtiSyncHandler(GraderBaseHandler):
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
 
         httpclient = AsyncHTTPClient()
-        response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST"
-                                                      , body=data,
-                                                      headers={"Content-Type": "application/x-www-form-urlencoded"}))
+        try:
+            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
+                                                          headers={
+                                                              "Content-Type": "application/x-www-form-urlencoded"}))
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
         return json_decode(response.body)["access_token"]
