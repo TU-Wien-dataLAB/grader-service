@@ -231,8 +231,11 @@ class GraderService(config.Application):
                 config=self.config,
                 db=SQLAlchemy(self.db_url),
                 parent=self,
+
             ),
             # ssl_options=ssl_context,
+            max_buffer_size=10485760000,
+            max_body_size=10485760000,
             xheaders=True,
         )
         self.log.info(f"Database - {self.db_url}")
