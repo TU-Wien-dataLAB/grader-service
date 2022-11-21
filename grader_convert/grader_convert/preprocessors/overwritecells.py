@@ -40,6 +40,8 @@ class OverwriteCells(NbGraderPreprocessor):
                 del cell["outputs"]
             if "execution_count" in cell:
                 del cell["execution_count"]
+        elif cell_type == "raw":
+            cell.cell_type = "raw"
 
 
     def report_change(self, name: str, attr: str, old: Any, new: Any) -> None:
