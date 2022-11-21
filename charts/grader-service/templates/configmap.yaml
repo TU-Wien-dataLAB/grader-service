@@ -23,11 +23,11 @@ data:
     c.KubeAutogradeExecutor.volume = {"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
-{{- if eq .Values.requestHandlerConfig.enable_lti_features "true" }}
+{{- if .Values.requestHandlerConfig.enable_lti_features }}
     c.RequestHandlerConfig.enable_lti_features = True
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url }}
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id }}
-{{- if eq .Values.requestHandlerConfig.lti_username_convert "null" }}
+{{- if .Values.requestHandlerConfig.lti_username_convert }}
     c.RequestHandlerConfig.lti_username_convert = None
 {{ else }}
     c.RequestHandlerConfig.lti_username_convert = {{ .Values.requestHandlerConfig.lti_username_convert }}
