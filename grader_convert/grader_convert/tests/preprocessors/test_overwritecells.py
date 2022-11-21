@@ -143,6 +143,32 @@ class TestOverwriteCells(BaseTestPreprocessor):
 
         assert cell.cell_type == "code"
 
+    def test_overwrite_solution_cell_type_raw(self, preprocessors, resources):
+        """Is the cell type overwritten for solution cells?"""
+        cell = create_solution_cell("hello", "markdown", "foo")
+        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        nb = new_notebook()
+        nb.cells.append(cell)
+        nb, resources = preprocessors[0].preprocess(nb, resources)
+
+        cell.cell_type = "raw"
+        nb, resources = preprocessors[1].preprocess(nb, resources)
+
+        assert cell.cell_type == "markdown"
+
+    def test_overwrite_locked_cell_type_raw(self, preprocessors, resources):
+        """Is the cell type overwritten for solution cells?"""
+        cell = create_grade_cell("hello", "code", "foo", 2)
+        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        nb = new_notebook()
+        nb.cells.append(cell)
+        nb, resources = preprocessors[0].preprocess(nb, resources)
+
+        cell.cell_type = "raw"
+        nb, resources = preprocessors[1].preprocess(nb, resources)
+
+        assert cell.cell_type == "code"
+
     def test_overwrite_locked_cell_type(self, preprocessors, resources):
         """Is the cell type overwritten for locked cells?"""
         cell = create_locked_cell("hello", "code", "foo")
