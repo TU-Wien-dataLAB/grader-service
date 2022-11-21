@@ -62,7 +62,7 @@ requestHandlerConfig:
   enable_lti_features: false
   lti_client_id: ""
   lti_token_url: ""
-  lti_username_convert: ""
+  lti_username_convert: null
   lti_token_private_key: ""
 
 
