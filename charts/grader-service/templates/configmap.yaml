@@ -9,7 +9,7 @@ data:
 {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
   grader_service_config.py: |
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
-    {{ .Values.extraConfig }}
+    {{ .Values.extraConfig | default "#"}}
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
 {{- if .Values.requestHandlerConfig }}
 {{- if .Values.requestHandlerConfig.git_max_file_mb }}
