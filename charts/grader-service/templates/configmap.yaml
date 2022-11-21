@@ -9,7 +9,6 @@ data:
 {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
   grader_service_config.py: |
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
-    {{ .Values.extraConfig | default "#"}}
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
 {{- if .Values.requestHandlerConfig }}
 {{- if .Values.requestHandlerConfig.git_max_file_mb }}
@@ -30,7 +29,6 @@ data:
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
 {{ end }}
-
     {{ else }}
   grader_service_config.py: |
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
