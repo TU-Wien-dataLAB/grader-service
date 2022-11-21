@@ -26,6 +26,8 @@ RUN apt-get update \
     python3-pip \
     git \
     vim \
+    nano \
+    sqlitebrowser \
     iputils-ping \
     tini && \
     apt-get clean && \
