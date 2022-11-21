@@ -28,11 +28,6 @@ data:
     c.RequestHandlerConfig.enable_lti_features = True
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url | quote }}
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
-{{- if .Values.requestHandlerConfig.lti_username_convert }}
-    c.RequestHandlerConfig.lti_username_convert = {{ .Values.requestHandlerConfig.lti_username_convert }}
-{{ else }}
-    c.RequestHandlerConfig.lti_username_convert = None
-{{ end }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
 {{ end }}
 
