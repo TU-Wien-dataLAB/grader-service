@@ -27,7 +27,7 @@ RUN apt-get update \
     git \
     vim \
     nano \
-    sqlitebrowser \
+    sqlite3 \
     iputils-ping \
     tini && \
     apt-get clean && \
