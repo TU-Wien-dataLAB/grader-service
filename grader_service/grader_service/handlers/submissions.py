@@ -490,10 +490,13 @@ class LtiSyncHandler(GraderBaseHandler):
         if lti_client_id is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Unable to request bearer token: lti_client_id is not set in grader config")
+        self.log.info("lti_client_id: " + str(lti_client_id))
         lti_token_url = RequestHandlerConfig.instance().lti_token_url
         if lti_token_url is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Unable to request bearer token: lti_token_url is not set in grader config")
+        self.log.info("lti_token_url: " + str(lti_token_url))
+
         private_key = RequestHandlerConfig.instance().lti_token_private_key
         if private_key is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
@@ -504,7 +507,9 @@ class LtiSyncHandler(GraderBaseHandler):
         payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
                    "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
+
         encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        self.log.info("encoded: " + encoded)
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
@@ -513,6 +518,7 @@ class LtiSyncHandler(GraderBaseHandler):
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
+        self.log.info("data: " + data)
 
         httpclient = AsyncHTTPClient()
         try:
