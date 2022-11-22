@@ -527,5 +527,5 @@ class LtiSyncHandler(GraderBaseHandler):
                                                               "Content-Type": "application/x-www-form-urlencoded"}))
         except HTTPClientError as e:
             self.log.error(e.response)
-            raise HTTPError(e.code, reason=e.response.reason)
+            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
         return json_decode(response.body)["access_token"]
