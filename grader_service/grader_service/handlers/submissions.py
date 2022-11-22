@@ -504,6 +504,7 @@ class LtiSyncHandler(GraderBaseHandler):
         if callable(private_key):
             private_key = private_key()
 
+        private_key = bytes(private_key)
         payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
                    "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
