@@ -11,10 +11,6 @@ import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
-import cachetools.func
-from traitlets import Unicode, Callable, Union
-from traitlets.config import LoggingConfigurable, SingletonConfigurable, Configurable
-from functools import lru_cache
 
 from grader_service.autograding.grader_executor import GraderExecutor
 
@@ -504,7 +500,6 @@ class LtiSyncHandler(GraderBaseHandler):
         if callable(private_key):
             private_key = private_key()
 
-        private_key = bytes(private_key)
         payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
                    "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
