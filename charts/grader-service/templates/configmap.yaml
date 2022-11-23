@@ -29,6 +29,9 @@ data:
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
 {{ end }}
+    c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size }}
+    c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
+
     {{ else }}
   grader_service_config.py: |
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
