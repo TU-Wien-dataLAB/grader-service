@@ -62,6 +62,10 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
+    max_body_size = Int(104857600, help="Sets the max buffer size, default to 100mb").tag(config=True)
+
+    max_buffer_size = Int(104857600, help="Sets the max body size, default to 100mb").tag(config=True)
+
     @default('db_url')
     def _default_username(self):
         service_dir_url = f'sqlite:///{os.path.join(self.grader_service_dir, "grader.db")}'
@@ -234,8 +238,8 @@ class GraderService(config.Application):
 
             ),
             # ssl_options=ssl_context,
-            max_buffer_size=10485760000,
-            max_body_size=10485760000,
+            max_buffer_size=self.max_buffer_size,
+            max_body_size=self.max_body_size,
             xheaders=True,
         )
         self.log.info(f"Database - {self.db_url}")
