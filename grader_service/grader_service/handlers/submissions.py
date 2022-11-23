@@ -486,12 +486,10 @@ class LtiSyncHandler(GraderBaseHandler):
         if lti_client_id is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Unable to request bearer token: lti_client_id is not set in grader config")
-        self.log.info("lti_client_id: " + str(lti_client_id))
         lti_token_url = RequestHandlerConfig.instance().lti_token_url
         if lti_token_url is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Unable to request bearer token: lti_token_url is not set in grader config")
-        self.log.info("lti_token_url: " + str(lti_token_url))
 
         private_key = RequestHandlerConfig.instance().lti_token_private_key
         if private_key is None:
