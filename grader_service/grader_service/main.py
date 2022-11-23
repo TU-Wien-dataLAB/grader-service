@@ -62,9 +62,9 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
-    max_body_size = Int(104857600, help="Sets the max buffer size, default to 100mb").tag(config=True)
+    max_body_size = Int(104857600, help="Sets the max buffer size in bytes, default to 100mb").tag(config=True)
 
-    max_buffer_size = Int(104857600, help="Sets the max body size, default to 100mb").tag(config=True)
+    max_buffer_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(config=True)
 
     @default('db_url')
     def _default_username(self):
