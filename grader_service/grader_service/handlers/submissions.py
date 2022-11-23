@@ -503,8 +503,10 @@ class LtiSyncHandler(GraderBaseHandler):
         payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
                    "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
-
-        encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        try:
+            encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        except Exception as e:
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}" )
         self.log.info("encoded: " + encoded)
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
