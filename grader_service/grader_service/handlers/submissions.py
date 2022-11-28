@@ -142,7 +142,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         Submission.date,
                     )
-                    .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_available == True)
                     .group_by(Submission.username)
                     .all()
                 )
