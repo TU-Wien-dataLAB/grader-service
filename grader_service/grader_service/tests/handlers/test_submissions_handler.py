@@ -383,8 +383,8 @@ async def test_get_submissions_best_instructor_version(
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=best"
 
-    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
-    insert_submission(engine, assignment_id=a_id, username=default_user["name"])
+    insert_submission(engine, assignment_id=a_id, username=default_user["name"], feedback=True)
+    insert_submission(engine, assignment_id=a_id, username=default_user["name"], feedback=False)
     insert_submission(engine, assignment_id=a_id, username="user1")
     insert_submission(engine, assignment_id=a_id, username="user1")
 
@@ -394,7 +394,7 @@ async def test_get_submissions_best_instructor_version(
     assert response.code == 200
     submissions = json.loads(response.body.decode())
     assert isinstance(submissions, list)
-    assert len(submissions) == 2
+    assert len(submissions) == 1
     # Submissions of first user
     user_submission = submissions[0:1]
 
@@ -402,18 +402,6 @@ async def test_get_submissions_best_instructor_version(
     user_name = user_submission[0]["username"]
     assert user_name in possible_users
     possible_users.remove(user_name)
-
-    assert isinstance(user_submission, list)
-    assert len(user_submission) == 1
-    assert all([isinstance(s, dict) for s in user_submission])
-    [Submission.from_dict(s) for s in user_submission]
-
-    user_submission = submissions[1:2]
-
-    user_name = user_submission[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
-    assert len(possible_users) == 0
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1

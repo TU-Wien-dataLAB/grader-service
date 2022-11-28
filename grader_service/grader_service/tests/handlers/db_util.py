@@ -67,7 +67,7 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username):
+def _get_submission(assignment_id, username, feedback=False):
     s = Submission()
     s.date = datetime.now()
     s.auto_status = "not_graded"
@@ -75,13 +75,13 @@ def _get_submission(assignment_id, username):
     s.assignid = assignment_id
     s.username = username
     s.commit_hash = secrets.token_hex(20)
-    s.feedback_available = False
+    s.feedback_available = feedback
     return s
 
 
-def insert_submission(ex, assignment_id=1, username="ubuntu"):
+def insert_submission(ex, assignment_id=1, username="ubuntu", feedback=False):
     session: Session = sessionmaker(ex)()
-    session.add(_get_submission(assignment_id, username))
+    session.add(_get_submission(assignment_id, username, feedback=feedback))
     session.commit()
     session.flush()
 
