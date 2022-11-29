@@ -194,7 +194,9 @@ export const ManualGrading = (props: IManualGradingProps) => {
         </Stack>
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
-      <FilesList path={path} sx={{ m: 2 }} />
+      <Box maxHeight={200} sx={{ overflowY: 'auto' }}>
+        <FilesList path={path} sx={{ m: 2 }} />
+      </Box>
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
         <Tooltip title="Reload">
