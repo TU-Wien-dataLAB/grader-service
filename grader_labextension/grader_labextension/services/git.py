@@ -130,6 +130,10 @@ class GitService(Configurable):
         self.log.info(f"Fetching all at path {self.path}")
         self._run_command(f"git fetch --all", cwd=self.path)
 
+    def go_to_commit(self, commit_hash):
+        self.log.info(f"Show commit with hash {commit_hash}")
+        self._run_command(f"git checkout {commit_hash}", cwd=self.path)
+
     def pull(self, origin: str, branch="main", force=False):
         """Pulls a repository
 
