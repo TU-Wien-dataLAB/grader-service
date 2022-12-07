@@ -420,7 +420,8 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
             score = gradebook.score + self.get_extra_credit(gradebook)
 
-        except:
+        except Exception as e:
+            self.log.info(e)
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
         submission.score = score
         submission.properties = properties_string
