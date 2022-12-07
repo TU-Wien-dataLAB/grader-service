@@ -29,6 +29,7 @@ export const CommentComponent = (props: ICommentComponentProps) => {
       <TextField
         label="Comment"
         size="small"
+        multiline={true}
         value={comment}
         onChange={e => {
           setComment(e.target.value);
