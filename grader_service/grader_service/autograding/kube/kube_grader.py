@@ -188,7 +188,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.makedirs(self.output_path, exist_ok=True)
-        self._write_gradebook(self.submission.assignment.properties)
+        if self.submission.manual_status == "not_graded":
+            self._write_gradebook(self.submission.assignment.properties)
+        else:
+            self._write_gradebook(self.submission.properties)
 
         grader_pod = None
         try:
