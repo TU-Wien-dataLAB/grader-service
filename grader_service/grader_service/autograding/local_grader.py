@@ -192,7 +192,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.mkdir(self.output_path)
-        self._write_gradebook(self.submission.assignment.properties)
+        if (self.submission.manual_status == "not_graded"):
+            self._write_gradebook(self.submission.assignment.properties)
+        else:
+            self._write_gradebook(self.submission.properties)
 
         autograder = Autograde(self.input_path, self.output_path, "*.ipynb", copy_files=self.assignment.allow_files)
         autograder.force = True
