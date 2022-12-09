@@ -77,14 +77,16 @@ class Grade(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
         if self.manual_score is None and self.auto_score is None:
             return 0.0
         elif self.manual_score is None:
-            return self.auto_score
-        elif self.auto_score is None:
+            if self.extra_credit is None:
+                return self.auto_score
+            else:
+                return self.auto_score + self.extra_credit
+        else:
             if self.extra_credit is None:
                 return self.manual_score
             else:
                 return self.manual_score + self.extra_credit
-        else:
-            return self.manual_score
+
 
     @property
     def max_score(self):
