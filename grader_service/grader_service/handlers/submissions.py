@@ -418,7 +418,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         try:
             gradebook = GradeBookModel.from_dict(json.loads(properties_string))
 
-            score = gradebook.score + self.get_extra_credit(gradebook)
+            score = gradebook.score
 
         except Exception as e:
             self.log.info(e)
