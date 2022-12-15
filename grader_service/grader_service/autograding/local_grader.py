@@ -185,17 +185,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     async def _run(self):
         """
         Runs the autograding in the current interpreter and captures the output.
-
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.mkdir(self.output_path)
-        if (self.submission.manual_status == "not_graded"):
-            self._write_gradebook(self.submission.assignment.properties)
-        else:
-            self._write_gradebook(self.submission.properties)
+        self._write_gradebook(self._put_grades_in_gradebook())
 
         autograder = Autograde(self.input_path, self.output_path, "*.ipynb", copy_files=self.assignment.allow_files)
         autograder.force = True
@@ -209,6 +205,30 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         finally:
             self.grading_logs = log_stream.getvalue()
             autograder.log.removeHandler(log_handler)
+
+    def _put_grades_in_gradebook(self) -> str:
+        """
+        Checks assignment was already graded and return updated properties
+        :return: str
+        """
+        if self.submission.manual_status == "not_graded":
+            return self.assignment.properties
+
+        assignment_properties = json.loads(self.assignment.properties)
+        submission_properties = json.loads(self.submission.properties)
+        for notebook in assignment_properties["notebooks"].keys():
+            if "notebooks" in submission_properties:
+                if notebook in submission_properties["notebooks"].keys():
+                    # Set grades
+                    assignment_properties["notebooks"][notebook]["grades_dict"] = \
+                        submission_properties["notebooks"][notebook]["grades_dict"]
+                    # Set comments
+                    assignment_properties["notebooks"][notebook]["comments_dict"] = \
+                        submission_properties["notebooks"][notebook]["comments_dict"]
+
+        properties_str = json.dumps(assignment_properties)
+        self.log.info("Added grades dict to properties")
+        return properties_str
 
     async def _push_results(self):
         """

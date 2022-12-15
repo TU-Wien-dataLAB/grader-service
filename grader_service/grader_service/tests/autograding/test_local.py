@@ -57,7 +57,6 @@ async def test_auto_grading(
     assert submission.auto_status == "automatically_graded"
     assert submission.score == 0  # we do not get any scores because of dummy gradebook, but it is set to 0
 
-
 @pytest.mark.asyncio
 async def test_auto_grading_pending(
         default_user,
