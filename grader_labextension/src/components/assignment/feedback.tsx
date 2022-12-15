@@ -5,7 +5,14 @@
 // LICENSE file in the root directory of this source tree.
 
 import { ModalTitle } from '../util/modal-title';
-import { Box, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography
+} from '@mui/material';
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
@@ -16,6 +23,9 @@ import {
 } from '../../services/submissions.service';
 import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
+import { openBrowser } from '../coursemanage/overview-view/util';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 /**
  * Props for FeedbackComponent.
  */
@@ -128,7 +138,22 @@ export const Feedback = (props: IFeedbackProps) => {
           </Stack>
         </Stack>
       </Box>
-      <Typography sx={{ m: 2, mb: 0 }}>Feedback Files</Typography>
+      <Typography sx={{ m: 2, mb: 0 }}>
+        Feedback Files
+        {path !== null && (
+          <Button
+            sx={{ mt: -1, ml: 2 }}
+            variant="outlined"
+            size="small"
+            color={'primary'}
+            onClick={() => openBrowser(path)}
+          >
+            <OpenInBrowserIcon fontSize="small" sx={{ mr: 1 }} />
+            Show in Filebrowser
+          </Button>
+        )}
+      </Typography>
+
       <FilesList path={path} sx={{ m: 2 }} />
     </Box>
   );
