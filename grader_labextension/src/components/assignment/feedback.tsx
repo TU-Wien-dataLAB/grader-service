@@ -8,9 +8,7 @@ import { ModalTitle } from '../util/modal-title';
 import {
   Box,
   Button,
-  IconButton,
   Stack,
-  Tooltip,
   Typography
 } from '@mui/material';
 import * as React from 'react';
@@ -25,7 +23,6 @@ import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
 import { openBrowser } from '../coursemanage/overview-view/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
-import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 /**
  * Props for FeedbackComponent.
  */

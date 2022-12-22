@@ -179,6 +179,11 @@ export const Files = (props: IFilesProps) => {
             'source',
             commitMessage
           );
+
+          enqueueSnackbar('Successfully Pushed Assignment', {
+            variant: 'success'
+          });
+          closeDialog();
         } catch (err) {
           enqueueSnackbar('Error Pushing Assignment: ' + err.message, {
             variant: 'error'
@@ -186,22 +191,6 @@ export const Files = (props: IFilesProps) => {
           closeDialog();
           return;
         }
-        const a = assignment;
-        a.status = 'pushed';
-        updateAssignment(lecture.id, a).then(
-          assignment => {
-            setAssignment(assignment);
-            enqueueSnackbar('Success Pushing Assignment', {
-              variant: 'success'
-            });
-            props.onAssignmentChange(assignment);
-          },
-          error =>
-            enqueueSnackbar(error.message, {
-              variant: 'error'
-            })
-        );
-        closeDialog();
       },
       handleDisagree: () => closeDialog()
     });
