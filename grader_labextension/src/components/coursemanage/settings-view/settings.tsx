@@ -17,7 +17,10 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
-import { deleteAssignment } from '../../../services/assignments.service';
+import {
+  deleteAssignment,
+  updateAssignment
+} from '../../../services/assignments.service';
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
@@ -79,6 +82,18 @@ export const SettingsComponent = (props: ISettingsProps) => {
       const updatedAssignment: Assignment = Object.assign(
         props.assignment,
         values
+      );
+      updateAssignment(props.lecture.id, updatedAssignment).then(
+        response => {
+          enqueueSnackbar('Successfully Updated Assignment', {
+            variant: 'success'
+          });
+        },
+        (error: Error) => {
+          enqueueSnackbar(error.message, {
+            variant: 'error'
+          });
+        }
       );
     }
   });
@@ -251,7 +266,9 @@ export const SettingsComponent = (props: ISettingsProps) => {
                 props.assignment.id
               ).then(
                 response => {
-                  return;
+                  enqueueSnackbar('Successfully Deleted Assignment', {
+                    variant: 'success'
+                  });
                 },
                 (error: Error) => {
                   enqueueSnackbar(error.message, {
