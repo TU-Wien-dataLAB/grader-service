@@ -17,15 +17,9 @@
     "rootDir": "src",
     "strict": false,
     "strictNullChecks": false,
-    "skipLibCheck": true,
+    "skipLibCheck": true  ,
     "target": "es2017",
     "types": []
   },
-  "typedocOptions": {
-    "entryPoints": [
-      "src/components/coursemanage/assignment.tsx",
-      "src/components/coursemanage/assignment-modal.tsx"
-    ],
-    "out": "../docs/typedoc"
-  }
+  "exclude": ["ui-tests/**"]
 }
