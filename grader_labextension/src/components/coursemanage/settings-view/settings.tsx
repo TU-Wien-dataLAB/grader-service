@@ -99,7 +99,7 @@ export const SettingsComponent = (props: ISettingsProps) => {
   });
 
   return (
-    <Box ml={'20px'} mr={'20px'}>
+    <Box ml={'50px'} mr={'50px'}>
       <ModalTitle title="Settings" />
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
@@ -141,9 +141,6 @@ export const SettingsComponent = (props: ISettingsProps) => {
                     {...props}
                     error={
                       formik.touched.due_date && Boolean(formik.errors.due_date)
-                    }
-                    helperText={
-                      formik.touched.due_date && String(formik.errors.due_date)
                     }
                   />
                 );
