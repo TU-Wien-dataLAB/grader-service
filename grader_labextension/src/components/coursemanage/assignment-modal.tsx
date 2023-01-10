@@ -15,6 +15,7 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
 import { getAllSubmissions } from '../../services/submissions.service';
@@ -24,6 +25,7 @@ import { Submission } from '../../model/submission';
 import { StatsComponent } from './stats-view/stats';
 import { GradeBook } from '../../services/gradebook';
 import { loadNumber, storeNumber } from '../../services/storage.service';
+import { SettingsComponent } from './settings-view/settings';
 
 export interface IAssignmentModalProps {
   lecture: Lecture;
@@ -84,6 +86,13 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             root={props.root}
           />
         )}
+        {navigation === 3 && (
+          <SettingsComponent
+            assignment={props.assignment}
+            lecture={props.lecture}
+            submissions={props.latestSubmissions}
+          />
+        )}
       </Box>
 
       <Paper
@@ -120,6 +129,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             }
           />
           <BottomNavigationAction label="Stats" icon={<QueryStatsIcon />} />
+          <BottomNavigationAction label="Settings" icon={<SettingsIcon />} />
         </BottomNavigation>
       </Paper>
     </Box>

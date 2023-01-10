@@ -8,20 +8,15 @@ import * as React from 'react';
 
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
-import { EditDialog } from '../../util/dialog';
 import { ModalTitle } from '../../util/modal-title';
 import { OverviewCard } from './overview-card';
 import { Box, Grid } from '@mui/material';
 import { Files } from './files';
 import { GitLog } from './git-log';
-import {
-  getAssignment,
-  updateAssignment
-} from '../../../services/assignments.service';
 import { AssignmentStatus } from './assignment-status';
 import { RepoType } from '../../util/repo-type';
-import {getGitLog, IGitLogObject} from "../../../services/file.service";
-import {Submission} from "../../../model/submission";
+import { getGitLog, IGitLogObject } from '../../../services/file.service';
+import { Submission } from '../../../model/submission';
 
 export interface IOverviewProps {
   assignment: Assignment;
@@ -52,23 +47,7 @@ export const OverviewComponent = (props: IOverviewProps) => {
 
   return (
     <Box>
-      <ModalTitle title={assignment.name}>
-        <Box sx={{ ml: 2 }} display="inline-block">
-          <EditDialog
-            lecture={props.lecture}
-            assignment={assignment}
-            submissions={props.allSubmissions}
-            onSubmit={updatedAssignment =>
-              updateAssignment(props.lecture.id, updatedAssignment).then(
-                response => {
-                  setAssignment(response);
-                }
-              )
-            }
-            onClose={props.onClose}
-          />
-        </Box>
-      </ModalTitle>
+      <ModalTitle title={assignment.name}></ModalTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
         <Grid container spacing={2} alignItems="stretch">
           <Grid item xs={12} md={12} lg={12}>
@@ -99,9 +78,7 @@ export const OverviewComponent = (props: IOverviewProps) => {
           </Grid>
 
           <Grid item xs={12} md={6} lg={4}>
-            <GitLog
-              gitLogs={gitLogs}
-            />
+            <GitLog gitLogs={gitLogs} />
           </Grid>
         </Grid>
       </Box>
