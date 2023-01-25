@@ -20,7 +20,7 @@ data:
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
 {{- end }}
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
-    c.KubeAutogradeExecutor.volume = {"name": "data", "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}}
+    c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
 {{- if .Values.requestHandlerConfig.enable_lti_features }}
