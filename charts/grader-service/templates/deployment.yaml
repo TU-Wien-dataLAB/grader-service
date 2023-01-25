@@ -108,7 +108,7 @@ spec:
       volumes:
         - name: data
 {{- if .Values.hostpath }}
-          hostpath:
+          hostPath:
             path: {{ .Values.hostpath }}
             type: DirectoryOrCreate
 {{- else }}        
