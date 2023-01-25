@@ -1,4 +1,5 @@
 ---
+{{- if not .Values.hostpath }}
 apiVersion: "v1"
 kind: PersistentVolumeClaim
 metadata:
@@ -16,4 +17,5 @@ spec:
 {{- if .Values.volume }}
   volumeName: {{ .Values.volume | quote }}
   volumeMode: "Filesystem"
+{{- end }}
 {{- end }}

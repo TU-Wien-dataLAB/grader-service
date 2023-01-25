@@ -107,9 +107,15 @@ spec:
 
       volumes:
         - name: data
+{{- if .Values.hostpath }}
+          hostpath:
+            path: {{ .Values.hostpath }}
+            type: DirectoryOrCreate
+{{- else }}        
           persistentVolumeClaim:
             claimName: grader-service
             readOnly: false
+{{- end }}
         - name: config
           configMap:
             defaultMode: 444
