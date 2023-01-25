@@ -1,5 +1,5 @@
 ---
-{{- if not .Values.hostpath }}
+{{- if eq .Values.hostpath "" }}
 apiVersion: "v1"
 kind: PersistentVolumeClaim
 metadata:
