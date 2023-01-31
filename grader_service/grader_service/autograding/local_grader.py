@@ -150,14 +150,24 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 raise ValueError()
             repo_name = group.name
 
-        git_repo_path = os.path.join(
-            self.grader_service_dir,
-            "git",
-            lecture.code,
-            str(assignment.id),
-            assignment.type,
-            repo_name,
-        )
+        if self.submission.edited:
+            git_repo_path = os.path.join(
+                self.grader_service_dir,
+                "git",
+                lecture.code,
+                str(assignment.id),
+                "edit",
+                str(self.submission.id)
+            )
+        else:
+            git_repo_path = os.path.join(
+                self.grader_service_dir,
+                "git",
+                lecture.code,
+                str(assignment.id),
+                assignment.type,
+                repo_name,
+            )
 
         if os.path.exists(self.input_path):
             shutil.rmtree(self.input_path, onerror=rm_error)

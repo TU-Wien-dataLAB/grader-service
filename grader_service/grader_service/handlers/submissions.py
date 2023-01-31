@@ -438,6 +438,148 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
 
 @register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class SubmissionFilesHandler(GraderBaseHandler):
+
+    async def _run_subprocess(self, command: str, cwd: str) -> Subprocess:
+        """
+        Execute the command as a subprocess.
+        :param command: The command to execute as a string.
+        :param cwd: The working directory the subprocess should run in.
+        :return: Coroutine which resolves to a Subprocess object which resulted from the execution.
+        """
+        try:
+            process = Subprocess(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
+            await process.wait_for_exit()
+        except subprocess.CalledProcessError as e:
+            error = process.stderr.read().decode("utf-8")
+            self.log.error(error)
+            self.log.error(e)
+            raise HTTPError(500, reason="Could not create repository")
+        return process
+    @authorize([Scope.tutor, Scope.instructor])
+    async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
+        '''
+        Create or overwrites the repository which stores changes of submissions files
+        :param lecture_id: lecture id
+        :param assignment_id: assignment id
+        :param submission_id: submission id
+        :return:
+        '''
+        lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+        self.validate_parameters()
+
+        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        assignment = submission.assignment
+        lecture = assignment.lecture
+
+        # Path to repository which will store edited submission files
+        git_repo_path = os.path.join(
+            self.gitbase,
+            lecture.code,
+            str(assignment.id),
+            "edit",
+            str(submission_id),
+        )
+
+        # Path to repository of student which contains the submitted files
+        submission_repo_path = os.path.join(
+            self.gitbase,
+            lecture.code,
+            str(assignment.id),
+            assignment.type,
+            submission.username
+        )
+
+        # Creating bare repository
+        if not os.path.exists(git_repo_path):
+            os.makedirs(git_repo_path, exist_ok=True)
+            await self._run_subprocess(f'git init --bare', submission_repo_path)
+
+        # Create temporary paths to copy the submission files in the edit repository
+        tmp_path = os.path.join(
+            self.application.grader_service_dir,
+            "tmp",
+            lecture.code,
+            str(assignment.id),
+            "edit",
+            str(submission.id)
+        )
+
+        tmp_input_path = os.path.join(
+            tmp_path,
+            "input"
+        )
+
+        tmp_output_path = os.path.join(
+            tmp_path,
+            "output"
+        )
+
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path, ignore_errors=True)
+
+        os.makedirs(tmp_input_path, exist_ok=True)
+
+        # Init local repository
+        command = f"git init"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_input_path)
+
+        # Pull user repository
+        command = f'git pull "{submission_repo_path}" main'
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_input_path)
+        self.log.info("Successfully cloned repo")
+
+        # Checkout to correct submission commit
+        command = f"git checkout {submission.commit_hash}"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_input_path)
+        self.log.info(f"Now at commit {submission.commit_hash}")
+
+        # Copy files to output directory
+        shutil.copytree(tmp_input_path,tmp_output_path, ignore = shutil.ignore_patterns(".git"))
+
+        # Init local repository
+        command = f"git init"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+
+        # Add edit remote
+        command = f"git remote add edit {git_repo_path}"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+        self.log.info("Successfully added edit remote")
+
+        # Pull from repo (because we need to pull the empty repo for the branch)
+        command = f"git pull edit main"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+        self.log.info("Successfully pull repo")
+
+        # Add files to staging
+        command = f"git add -A"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+        self.log.info("Successfully added files to staging")
+
+        # Commit Files
+        command = f'git commit -m "Initial commit" '
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+        self.log.info("Successfully commited files")
+
+        # Push copied files
+        command = f"git push edit main"
+        self.log.info(f"Running {command}")
+        await self._run_subprocess(command, tmp_output_path)
+        self.log.info("Successfully pushed copied files")
+
+
+@register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
     version_specifier=VersionSpecifier.ALL,
 )
