@@ -52,6 +52,7 @@ import { enqueueSnackbar } from 'notistack';
 import { loadString, storeString } from '../../../services/storage.service';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { getConfig } from '../../../services/config.service';
+import { EditSubmission } from './edit-submission';
 /**
  * Props for GradingComponent.
  */
@@ -90,9 +91,16 @@ export const GradingComponent = (props: IGradingProps) => {
   });
 
   const [displayManualGrading, setDisplayManualGrading] = React.useState(false);
+  const [displayEditSubmission, setDisplayEditSubmission] = React.useState(false);
+
   const onManualGradingClose = async () => {
     setDisplayManualGrading(false);
   };
+
+  const onEditSubmissionClose = async () => {
+    setDisplayEditSubmission(false);
+  };
+
   /**
    * Removes row selection.
    */
@@ -475,6 +483,21 @@ export const GradingComponent = (props: IGradingProps) => {
             <MenuItem value={'best'}>Best Submissions of Users</MenuItem>
           </Select>
         </FormControl>
+        
+        <Button
+            disabled={
+              selectedRowsData.length !== 1
+            }
+            sx={{ m: 3 }}
+            onClick={() => {
+              setDisplayEditSubmission(true);
+              cleanSelectedRows();
+            }}
+            variant="outlined"
+          >
+            {'Edit Submission'}
+          </Button>
+
         <Tooltip
           title={`Run Autograde Tests for ${selectedRows.length} Submission${
             selectedRows.length === 1 ? '' : 's'
@@ -577,6 +600,21 @@ export const GradingComponent = (props: IGradingProps) => {
           submission={getSubmissionFromRow(selectedRowsData[0])}
           username={selectedRowsData[0]?.username}
           onClose={onManualGradingClose}
+        />
+      </LoadingOverlay>
+
+      <LoadingOverlay
+        onClose={onEditSubmissionClose}
+        open={displayEditSubmission}
+        container={props.root}
+        transition="zoom"
+      >
+        <EditSubmission
+          lecture={props.lecture}
+          assignment={props.assignment}
+          submission={getSubmissionFromRow(selectedRowsData[0])}
+          username={selectedRowsData[0]?.username}
+          onClose={onEditSubmissionClose}
         />
       </LoadingOverlay>
 
