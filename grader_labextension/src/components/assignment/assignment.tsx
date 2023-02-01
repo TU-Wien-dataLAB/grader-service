@@ -40,7 +40,7 @@ import {
   loadNumber,
   storeNumber
 } from '../../services/storage.service';
-import {openBrowser} from "../coursemanage/overview-view/util";
+import {openBrowser} from "../coursemanage/overview/util";
 
 /**
  * Props for AssignmentComponent.

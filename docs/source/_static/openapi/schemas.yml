@@ -133,6 +133,8 @@ components:
           type: string
         feedback_available:
           type: boolean
+        edited:
+          type: boolean
         logs:
           type: string
       example:

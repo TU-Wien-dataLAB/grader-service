@@ -21,7 +21,7 @@ import {
 } from '../../services/submissions.service';
 import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
-import { openBrowser } from '../coursemanage/overview-view/util';
+import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 /**
  * Props for FeedbackComponent.

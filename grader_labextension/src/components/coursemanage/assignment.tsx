@@ -29,7 +29,7 @@ import { AssignmentModalComponent } from './assignment-modal';
 import { DeadlineComponent } from '../util/deadline';
 import { blue } from '@mui/material/colors';
 import { getFiles } from '../../services/file.service';
-import { openBrowser } from './overview-view/util';
+import { openBrowser } from './overview/util';
 import { CardDescriptor } from '../util/card-descriptor';
 import { enqueueSnackbar } from 'notistack';
 import { GradeBook } from '../../services/gradebook';

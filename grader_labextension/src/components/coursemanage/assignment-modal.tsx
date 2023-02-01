@@ -19,13 +19,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
 import { getAllSubmissions } from '../../services/submissions.service';
-import { GradingComponent } from './grading-view/grading';
-import { OverviewComponent } from './overview-view/overview';
+import { GradingComponent } from './grading/grading';
+import { OverviewComponent } from './overview/overview';
 import { Submission } from '../../model/submission';
-import { StatsComponent } from './stats-view/stats';
+import { StatsComponent } from './stats/stats';
 import { GradeBook } from '../../services/gradebook';
 import { loadNumber, storeNumber } from '../../services/storage.service';
-import { SettingsComponent } from './settings-view/settings';
+import { SettingsComponent } from './settings/settings';
 
 export interface IAssignmentModalProps {
   lecture: Lecture;

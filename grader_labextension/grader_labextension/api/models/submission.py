@@ -15,7 +15,7 @@ class Submission(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, score=None, commit_hash=None, feedback_available=None, logs=None):  # noqa: E501
+    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, score=None, commit_hash=None, feedback_available=None, edited=None, logs=None):  # noqa: E501
         """Submission - a model defined in OpenAPI
 
         :param id: The id of this Submission.  # noqa: E501
@@ -34,6 +34,8 @@ class Submission(Model):
         :type commit_hash: str
         :param feedback_available: The feedback_available of this Submission.  # noqa: E501
         :type feedback_available: bool
+        :param edited: The edited of this Submission.  # noqa: E501
+        :type edited: bool
         :param logs: The logs of this Submission.  # noqa: E501
         :type logs: str
         """
@@ -46,6 +48,7 @@ class Submission(Model):
             'score': float,
             'commit_hash': str,
             'feedback_available': bool,
+            'edited': bool,
             'logs': str
         }
 
@@ -58,6 +61,7 @@ class Submission(Model):
             'score': 'score',
             'commit_hash': 'commit_hash',
             'feedback_available': 'feedback_available',
+            'edited': 'edited',
             'logs': 'logs'
         }
 
@@ -69,6 +73,7 @@ class Submission(Model):
         self._score = score
         self._commit_hash = commit_hash
         self._feedback_available = feedback_available
+        self._edited = edited
         self._logs = logs
 
     @classmethod
@@ -261,6 +266,27 @@ class Submission(Model):
         """
 
         self._feedback_available = feedback_available
+
+    @property
+    def edited(self):
+        """Gets the edited of this Submission.
+
+
+        :return: The edited of this Submission.
+        :rtype: bool
+        """
+        return self._edited
+
+    @edited.setter
+    def edited(self, edited):
+        """Sets the edited of this Submission.
+
+
+        :param edited: The edited of this Submission.
+        :type edited: bool
+        """
+
+        self._edited = edited
 
     @property
     def logs(self):

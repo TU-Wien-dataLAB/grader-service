@@ -27,6 +27,9 @@ from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
+from subprocess import PIPE, CalledProcessError
+from tornado.process import Subprocess
+    
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 import datetime
@@ -505,8 +508,10 @@ class SubmissionFilesHandler(GraderBaseHandler):
             lecture.code,
             str(assignment.id),
             "edit",
-            str(submission.id)
+            str(submission.id),
+
         )
+    
 
         tmp_input_path = os.path.join(
             tmp_path,

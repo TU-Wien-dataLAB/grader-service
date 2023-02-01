@@ -20,6 +20,7 @@ export interface Submission {
     score?: number;
     commit_hash?: string;
     feedback_available?: boolean;
+    edited?: boolean;
     logs?: string;
 }
 export namespace Submission {

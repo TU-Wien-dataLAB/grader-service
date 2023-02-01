@@ -37,6 +37,7 @@ class Submission(Base, Serializable):
     commit_hash = Column(String(length=40), nullable=False)
     properties = Column(Text, nullable=True, unique=False)
     feedback_available = Column(Boolean, nullable=False)
+    edited = Column(Boolean, nullable=False)
     logs = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -56,5 +57,6 @@ class Submission(Base, Serializable):
             score=self.score,
             commit_hash=self.commit_hash,
             feedback_available=self.feedback_available,
+            edited=self.edited,
             logs=self.logs
         )
