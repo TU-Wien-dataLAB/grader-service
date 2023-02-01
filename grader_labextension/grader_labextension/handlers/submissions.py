@@ -111,7 +111,7 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?"
 )
-class SubmissionEditHandler(GraderBaseHandler):
+class SubmissionEditHandler(ExtensionBaseHandler):
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
         """ Sends a PUT-request to the grader service to create or overide a edit repository of the submission
 
@@ -127,7 +127,7 @@ class SubmissionEditHandler(GraderBaseHandler):
                 method="PUT",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/edit",
                 header=self.grader_authentication_header,
-                body={},
+                body=self.request.body.decode("utf-8"),
                 decode_response=False
             )
         except HTTPClientError as e:

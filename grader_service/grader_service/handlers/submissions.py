@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+import shlex
 import shutil
 import time
 
@@ -497,6 +498,9 @@ class SubmissionEditHandler(GraderBaseHandler):
             assignment.type,
             submission.username
         )
+
+        if os.path.exists(git_repo_path):
+            shutil.rmtree(git_repo_path)
 
         # Creating bare repository
         if not os.path.exists(git_repo_path):

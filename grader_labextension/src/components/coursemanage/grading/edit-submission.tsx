@@ -105,7 +105,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
         });
       },
       err => {
-        enqueueSnackbar(err.message, {
+        enqueueSnackbar('Could Not Create Edit Repository Logs:' + err.message, {
           variant: 'error'
         });
       }
@@ -166,7 +166,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
             setLoading(false);
           }}
         >
-          Pull Edited Submission
+          Create Edit Repository
         </LoadingButton>
 
         <LoadingButton

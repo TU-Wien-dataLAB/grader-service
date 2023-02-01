@@ -35,6 +35,28 @@ export async function pullFeedback(
   );
 }
 
+export async function pullSubmissionFiles(
+  lecture: Lecture,
+  assignment: Assignment,
+  submission: Submission
+) {
+  return request<void>(
+    HTTPMethod.GET,
+    `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/pull/edit`
+  );
+}
+
+export async function pushSubmissionFiles(
+  lecture: Lecture,
+  assignment: Assignment,
+  submission: Submission
+) {
+  return request<void>(
+    HTTPMethod.PUT,
+    `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/push/edit`
+  );
+}
+
 export function getSubmissions(
   lecture: Lecture,
   assignment: Assignment,
