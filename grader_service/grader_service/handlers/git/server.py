@@ -80,15 +80,13 @@ class GitBaseHandler(GraderBaseHandler):
     def gitlookup(self, rpc: str):
         pathlets = self.request.path.strip("/").split("/")
         # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_id', 'repo_type', ...]
-        if len(pathlets) < 8:
+        if len(pathlets) < 6:
             return None
         pathlets = pathlets[3:]
         lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, pathlets[0], pathlets[1])
         )
-
-        self.log.info('1')
 
         repo_type = pathlets[2]
         if repo_type not in {
@@ -136,14 +134,9 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(403)
             submission = self.session.query(Submission).get(sub_id)
 
-        self.log.info('2')
-
         path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
         if path is None:
             return None
-
-        self.log.info('3')
-
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         is_git = self.is_base_git_dir(path)

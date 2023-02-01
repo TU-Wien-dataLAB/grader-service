@@ -300,6 +300,7 @@ class PushHandler(ExtensionBaseHandler):
             assignment_id=assignment["id"],
             repo_type=repo,
             config=self.config,
+            sub_id=sub_id
         )
 
         if repo == "release":
