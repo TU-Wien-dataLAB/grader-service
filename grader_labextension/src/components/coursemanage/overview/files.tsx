@@ -67,6 +67,9 @@ export const Files = (props: IFilesProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
+  
+  openBrowser(`${selectedDir}/${lecture.code}/${assignment.id}`)
+
   const [showDialog, setShowDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
     title: '',

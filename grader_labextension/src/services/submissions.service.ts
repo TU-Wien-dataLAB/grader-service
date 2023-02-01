@@ -97,6 +97,14 @@ export function getProperties(
   return request<any>(HTTPMethod.GET, url, reload);
 }
 
+export function createOrOverrideEditRepository(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number): Promise<string> {
+  const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/edit`;
+  return request<string>(HTTPMethod.PUT, url, {});
+}
+
 export function updateProperties(
   lectureId: number,
   assignmentId: number,

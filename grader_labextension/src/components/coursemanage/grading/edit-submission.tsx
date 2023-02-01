@@ -12,6 +12,7 @@ import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import {
+  createOrOverrideEditRepository,
   getProperties,
   updateSubmission
 } from '../../../services/submissions.service';
@@ -23,6 +24,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
+import { pullAssignment, pushAssignment } from '../../../services/assignments.service';
 
 export interface IEditSubmissionProps {
   lecture: Lecture;
@@ -33,7 +35,6 @@ export interface IEditSubmissionProps {
 }
 
 export const EditSubmission = (props: IEditSubmissionProps) => {
-  const [gradeBook, setGradeBook] = React.useState(null);
 
   const [path, setPath] = React.useState(
     `edit/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`
@@ -50,11 +51,13 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
     handleDisagree: null
   });
 
-  const openFinishDialog = () => {
+  const openFinishEditing = () => {
     setDialogContent({
-      title: 'Confirm Grading',
-      message: 'Do you want to save the assignment grading?',
-      handleAgree: finishEditing,
+      title: 'Edit Submission',
+      message: 'Do you want to push your submission changes?',
+      handleAgree: async () => { 
+        await pushEditedFiles();
+      },
       handleDisagree: () => {
         setShowDialog(false);
       }
@@ -62,17 +65,27 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
     setShowDialog(true);
   };
 
-  const finishEditing = () => {
-    props.submission.manual_status = 'manually_graded';
-    updateSubmission(
-      props.lecture.id,
-      props.assignment.id,
-      props.submission.id,
-      props.submission
-    ).then(
+  const pushEditedFiles = async () => {
+    await pushAssignment(props.lecture.id, props.assignment.id, 'edited').then(
       response => {
-        props.onClose();
-        enqueueSnackbar('Successfully Graded Submission', {
+        enqueueSnackbar('Successfully Pushed Edited Submission', {
+          variant: 'success'
+        });
+      },
+      err => {
+        enqueueSnackbar(err.message, {
+          variant: 'error'
+        });
+      }
+    );
+    props.onClose();
+  };
+
+
+  const handlePullEditedSubmission = async () => {
+    await pullAssignment(props.lecture.id, props.assignment.id, 'edited').then(
+      response => {
+        enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
         });
       },
@@ -84,10 +97,20 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
     );
   };
 
-
-  const handlePullEditedSubmission = async () => {
-
-  };
+  const setEditRepository = async () => {
+    await createOrOverrideEditRepository(props.lecture.id, props.assignment.id, props.submission.id).then(
+      response => {
+        enqueueSnackbar('Successfully Created Edit Repository', {
+          variant: 'success'
+        });
+      },
+      err => {
+        enqueueSnackbar(err.message, {
+          variant: 'error'
+        });
+      }
+    );
+  }
 
   return (
     <Box sx={{ overflow: 'scroll', height: '100%' }}>
@@ -107,28 +130,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
               color="text.secondary"
               sx={{ fontSize: 12, height: 35 }}
             >
-              Lecture
-            </Typography>
-            <Typography
-              textAlign="right"
-              color="text.secondary"
-              sx={{ fontSize: 12, height: 35 }}
-            >
               Assignment
-            </Typography>
-            <Typography
-              textAlign="right"
-              color="text.secondary"
-              sx={{ fontSize: 12, height: 35 }}
-            >
-              Points
-            </Typography>
-            <Typography
-              textAlign="right"
-              color="text.secondary"
-              sx={{ fontSize: 12, height: 35 }}
-            >
-              Extra Credit
             </Typography>
           </Stack>
           <Stack>
@@ -138,46 +140,12 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
             >
               {props.username}
             </Typography>
-            <Typography
-              color="text.primary"
-              sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
-            >
-              {props.lecture.name}
-            </Typography>
+
             <Typography
               color="text.primary"
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
               {props.assignment.name}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  fontSize: 14,
-                  ml: 2,
-                  height: 35
-                }}
-              >
-                {props.assignment.type}
-              </Typography>
-            </Typography>
-            <Typography
-              color="text.primary"
-              sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
-            >
-              {gradeBook?.getPoints()}
-              <Typography
-                color="text.secondary"
-                sx={{ display: 'inline-block', fontSize: 14, ml: 0.25 }}
-              >
-                /{gradeBook?.getMaxPoints()}
-              </Typography>
-            </Typography>
-            <Typography
-              color="text.primary"
-              sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
-            >
-              {gradeBook?.getExtraCredits()}
             </Typography>
           </Stack>
         </Stack>
@@ -188,6 +156,18 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
       </Box>
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
+      <LoadingButton
+          loading={loading}
+          color="primary"
+          variant="outlined"
+          onClick={async () => {
+            setLoading(true);
+            await setEditRepository();
+            setLoading(false);
+          }}
+        >
+          Pull Edited Submission
+        </LoadingButton>
 
         <LoadingButton
           loading={loading}
@@ -205,10 +185,14 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
         <Button
           variant="outlined"
           color="success"
-          onClick={openFinishDialog}
+          onClick={async () => {
+            setLoading(true);
+            await openFinishEditing();
+            setLoading(false);
+          }}
           sx={{ ml: 2 }}
         >
-
+            Push Edited Submission
         </Button>
       </Stack>
 

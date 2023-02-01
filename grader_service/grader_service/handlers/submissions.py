@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+import shutil
 import time
 
 import jwt
@@ -29,7 +30,7 @@ from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
 from subprocess import PIPE, CalledProcessError
 from tornado.process import Subprocess
-    
+
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 import datetime
@@ -444,7 +445,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?",
     version_specifier=VersionSpecifier.ALL,
 )
-class SubmissionFilesHandler(GraderBaseHandler):
+class SubmissionEditHandler(GraderBaseHandler):
 
     async def _run_subprocess(self, command: str, cwd: str) -> Subprocess:
         """
@@ -462,6 +463,7 @@ class SubmissionFilesHandler(GraderBaseHandler):
             self.log.error(e)
             raise HTTPError(500, reason="Could not create repository")
         return process
+        
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
         '''
@@ -509,7 +511,6 @@ class SubmissionFilesHandler(GraderBaseHandler):
             str(assignment.id),
             "edit",
             str(submission.id),
-
         )
     
 
