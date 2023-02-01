@@ -59,7 +59,7 @@ class GitBaseHandler(GraderBaseHandler):
         if role.role == Scope.student:
             # 1. no source or release interaction with the source repo for students
             # 2. no pull allowed for autograde for students
-            if (repo_type in ["source", "release"]) or \
+            if (repo_type in ["source", "release", "edit"]) or \
                     (repo_type == "autograde" and rpc == "upload-pack"):
                 raise HTTPError(403)
 
@@ -80,13 +80,15 @@ class GitBaseHandler(GraderBaseHandler):
     def gitlookup(self, rpc: str):
         pathlets = self.request.path.strip("/").split("/")
         # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_id', 'repo_type', ...]
-        if len(pathlets) < 6:
+        if len(pathlets) < 8:
             return None
         pathlets = pathlets[3:]
         lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, pathlets[0], pathlets[1])
         )
+
+        self.log.info('1')
 
         repo_type = pathlets[2]
         if repo_type not in {
@@ -95,6 +97,7 @@ class GitBaseHandler(GraderBaseHandler):
             "assignment",
             "autograde",
             "feedback",
+            "edit"
         }:
             return None
 
@@ -126,16 +129,21 @@ class GitBaseHandler(GraderBaseHandler):
             os.mkdir(assignment_path)
 
         submission = None
-        if repo_type in ["autograde", "feedback"]:
+        if repo_type in ["autograde", "feedback", "edit"]:
             try:
                 sub_id = int(pathlets[3])
             except (ValueError, IndexError):
                 raise HTTPError(403)
             submission = self.session.query(Submission).get(sub_id)
 
+        self.log.info('2')
+
         path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
         if path is None:
             return None
+
+        self.log.info('3')
+
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         is_git = self.is_base_git_dir(path)

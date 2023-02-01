@@ -14,6 +14,8 @@ import { Submission } from '../../../model/submission';
 import {
   createOrOverrideEditRepository,
   getProperties,
+  pullSubmissionFiles,
+  pushSubmissionFiles,
   updateSubmission
 } from '../../../services/submissions.service';
 import { GradeBook } from '../../../services/gradebook';
@@ -25,6 +27,7 @@ import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
 import { pullAssignment, pushAssignment } from '../../../services/assignments.service';
+import { sub } from 'date-fns';
 
 export interface IEditSubmissionProps {
   lecture: Lecture;
@@ -39,6 +42,8 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   const [path, setPath] = React.useState(
     `edit/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`
   );
+
+  const [submission, setSubmission] = React.useState(props.submission);
 
   openBrowser(path);
 
@@ -66,7 +71,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   };
 
   const pushEditedFiles = async () => {
-    await pushAssignment(props.lecture.id, props.assignment.id, 'edited').then(
+    await pushSubmissionFiles(props.lecture, props.assignment, submission).then(
       response => {
         enqueueSnackbar('Successfully Pushed Edited Submission', {
           variant: 'success'
@@ -83,7 +88,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
 
 
   const handlePullEditedSubmission = async () => {
-    await pullAssignment(props.lecture.id, props.assignment.id, 'edited').then(
+    await pullSubmissionFiles(props.lecture, props.assignment, submission).then(
       response => {
         enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
@@ -98,14 +103,15 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   };
 
   const setEditRepository = async () => {
-    await createOrOverrideEditRepository(props.lecture.id, props.assignment.id, props.submission.id).then(
+    await createOrOverrideEditRepository(props.lecture.id, props.assignment.id, submission.id).then(
       response => {
         enqueueSnackbar('Successfully Created Edit Repository', {
           variant: 'success'
         });
+        setSubmission(response);
       },
       err => {
-        enqueueSnackbar('Could Not Create Edit Repository Logs:' + err.message, {
+        enqueueSnackbar(err.message, {
           variant: 'error'
         });
       }
@@ -158,7 +164,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
       <LoadingButton
           loading={loading}
-          color="primary"
+          color={submission.edited ? "error" : "primary"}
           variant="outlined"
           onClick={async () => {
             setLoading(true);
@@ -166,25 +172,28 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
             setLoading(false);
           }}
         >
-          Create Edit Repository
+          {submission.edited ? "Reset " : "Create " }
+          Edit Repository
         </LoadingButton>
 
         <LoadingButton
           loading={loading}
           color="primary"
           variant="outlined"
+          disabled={!submission.edited}
           onClick={async () => {
             setLoading(true);
             await handlePullEditedSubmission();
             setLoading(false);
           }}
         >
-          Pull Edited Submission
+          Pull Submission
         </LoadingButton>
 
         <Button
           variant="outlined"
           color="success"
+          disabled={!submission.edited}
           onClick={async () => {
             setLoading(true);
             await openFinishEditing();

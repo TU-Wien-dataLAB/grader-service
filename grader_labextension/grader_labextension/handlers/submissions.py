@@ -123,17 +123,16 @@ class SubmissionEditHandler(ExtensionBaseHandler):
         :type submission_id: int
         """
         try:
-            await self.request_service.request(
+            response = await self.request_service.request(
                 method="PUT",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/edit",
                 header=self.grader_authentication_header,
-                body=self.request.body.decode("utf-8"),
-                decode_response=False
+                body=self.request.body.decode("utf-8")
             )
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
-        self.write("OK")
+        self.write(json.dumps(response))
 
 
 @register_handler(

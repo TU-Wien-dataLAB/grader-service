@@ -46,7 +46,7 @@ class GitService(Configurable):
         allow_none=False).tag(config=True)
 
     def __init__(self, server_root_dir: str, lecture_code: str, assignment_id: int, repo_type: str,
-                 force_user_repo=False, *args, **kwargs):
+                 force_user_repo=False, sub_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log = logging.getLogger(str(self.__class__))
         self._git_version = None
@@ -56,8 +56,11 @@ class GitService(Configurable):
         self.repo_type = repo_type
         if self.repo_type == "assignment" or force_user_repo:
             self.path = os.path.join(self.git_root_dir, self.lecture_code, str(self.assignment_id))
+        elif self.repo_type == "edit":
+            self.path = os.path.join(self.git_root_dir, self.repo_type, self.lecture_code, str(self.assignment_id), str(sub_id))
         else:
             self.path = os.path.join(self.git_root_dir, self.repo_type, self.lecture_code, str(self.assignment_id))
+            
         self.log.info(f"New git service working in {self.path}")
         os.makedirs(self.path, exist_ok=True)
 

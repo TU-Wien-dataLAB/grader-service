@@ -163,8 +163,11 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
-        if repo_type == "source" or repo_type == "release":
+        if repo_type == "source" or repo_type == "release" or repo_type == "edit":
             path = os.path.join(assignment_path, repo_type)
+            if repo_type == "edit":
+                path = os.path.join(path,str(submission.id))
+                self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
             type_path = os.path.join(assignment_path, repo_type, assignment.type)
             if assignment.type == "user":

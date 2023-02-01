@@ -505,7 +505,8 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Creating bare repository
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
-            await self._run_subprocess(f'git init --bare', submission_repo_path)
+        
+        await self._run_subprocess(f'git init --bare', git_repo_path)
 
         # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
@@ -564,11 +565,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         await self._run_subprocess(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
-        # Pull from repo (because we need to pull the empty repo for the branch)
-        command = f"git pull edit main"
-        self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
-        self.log.info("Successfully pull repo")
+        
 
         # Add files to staging
         command = f"git add -A"
@@ -587,6 +584,11 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.log.info(f"Running {command}")
         await self._run_subprocess(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
+
+        submission.edited = True
+        self.session.commit()
+        self.write_json(submission)
+        
 
 
 @register_handler(

@@ -40,9 +40,15 @@ export async function pullSubmissionFiles(
   assignment: Assignment,
   submission: Submission
 ) {
+  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/pull/edit`
+
+  const searchParams = new URLSearchParams({
+    subid: String(submission.id)
+  });
+  url += '?' + searchParams;
   return request<void>(
     HTTPMethod.GET,
-    `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/pull/edit`
+    url
   );
 }
 
@@ -51,9 +57,14 @@ export async function pushSubmissionFiles(
   assignment: Assignment,
   submission: Submission
 ) {
+  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/push/edit`
+  const searchParams = new URLSearchParams({
+    subid: String(submission.id)
+  });
+  url += '?' + searchParams;
   return request<void>(
     HTTPMethod.PUT,
-    `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/push/edit`
+    url
   );
 }
 
@@ -122,9 +133,9 @@ export function getProperties(
 export function createOrOverrideEditRepository(
   lectureId: number,
   assignmentId: number,
-  submissionId: number): Promise<string> {
+  submissionId: number): Promise<Submission> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/edit`;
-  return request<string>(HTTPMethod.PUT, url, {});
+  return request<Submission>(HTTPMethod.PUT, url, {});
 }
 
 export function updateProperties(

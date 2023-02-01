@@ -208,9 +208,13 @@ class PullHandler(ExtensionBaseHandler):
         :param repo: type of the repository
         :type repo: str
         """
-        if repo not in {"assignment", "source", "release"}:
+        if repo not in {"assignment", "source", "release", "edit"}:
             self.log.error(HTTPStatus.NOT_FOUND)
             raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
+        
+        # Submission id needed for edit repository
+        sub_id = self.get_argument("subid", None)
+
         try:
             lecture = await self.request_service.request(
                 "GET",
@@ -233,12 +237,13 @@ class PullHandler(ExtensionBaseHandler):
             repo_type=repo,
             config=self.config,
             force_user_repo=repo == "release",
+            sub_id=sub_id
         )
         try:
             if not git_service.is_git():
                 git_service.init()
                 git_service.set_author(author=self.user_name)
-            git_service.set_remote(f"grader_{repo}")
+            git_service.set_remote(f"grader_{repo}",sub_id=sub_id)
             git_service.pull(f"grader_{repo}", force=True)
             self.write("OK")
         except GitError as e:
@@ -265,8 +270,9 @@ class PushHandler(ExtensionBaseHandler):
         :param repo: type of the repository
         :type repo: str
         """
-        if repo not in {"assignment", "source", "release"}:
+        if repo not in {"assignment", "source", "release", "edit"}:
             self.write_error(404)
+        sub_id = self.get_argument("subid", None)
         commit_message = self.get_argument("commit-message", None)
         submit = self.get_argument("submit", "false") == "true"
         if repo == "source" and (commit_message is None or commit_message == ""):
@@ -376,7 +382,7 @@ class PushHandler(ExtensionBaseHandler):
                 git_service.init()
                 git_service.set_author(author=self.user_name)
                 # TODO: create .gitignore file
-            git_service.set_remote(f"grader_{repo}")
+            git_service.set_remote(f"grader_{repo}", sub_id=sub_id)
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e.error)
