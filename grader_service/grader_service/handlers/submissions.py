@@ -519,18 +519,15 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Init local repository
         command = f"git init"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_input_path)
 
         # Pull user repository
         command = f'git pull "{submission_repo_path}" main'
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_input_path)
         self.log.info("Successfully cloned repo")
 
         # Checkout to correct submission commit
         command = f"git checkout {submission.commit_hash}"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_input_path)
         self.log.info(f"Now at commit {submission.commit_hash}")
 
@@ -539,32 +536,31 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Init local repository
         command = f"git init"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_output_path)
 
         # Add edit remote
         command = f"git remote add edit {git_repo_path}"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
+         # Switch to main
+        command = f"git switch -c main"
+        self._run_command(command, tmp_output_path)
+        self.log.info("Successfully switched to branch main")
         
 
         # Add files to staging
         command = f"git add -A"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully added files to staging")
 
         # Commit Files
         command = f'git commit -m "Initial commit" '
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully commited files")
 
         # Push copied files
         command = f"git push edit main"
-        self.log.info(f"Running {command}")
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
 
