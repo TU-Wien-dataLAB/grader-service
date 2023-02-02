@@ -45,8 +45,6 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
 
   const [submission, setSubmission] = React.useState(props.submission);
 
-  openBrowser(path);
-
   const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -90,6 +88,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   const handlePullEditedSubmission = async () => {
     await pullSubmissionFiles(props.lecture, props.assignment, submission).then(
       response => {
+        openBrowser(path);
         enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
         });

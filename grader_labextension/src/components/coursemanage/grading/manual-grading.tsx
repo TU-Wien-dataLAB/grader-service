@@ -39,8 +39,6 @@ export const ManualGrading = (props: IManualGradingProps) => {
     `manualgrade/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`
   );
 
-  openBrowser(path);
-
   const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -98,6 +96,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
   const handlePullSubmission = async () => {
     await createManualFeedback(props.lecture.id, props.assignment.id, props.submission.id).then(
       response => {
+        openBrowser(path);
         enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
         });
