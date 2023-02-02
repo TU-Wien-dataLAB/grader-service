@@ -43,6 +43,7 @@ class RequestService(SingletonConfigurable):
                 method=method,
                 headers=header,
                 body=body,
+                
             )
         else:
             response: HTTPResponse = await self.http_client.fetch(
