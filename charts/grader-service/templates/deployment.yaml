@@ -94,7 +94,15 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
-        
+        - name: db-migration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["/bin/sh","-c", "grader-service-migrate"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
     {{ end }}
 
       volumes:
