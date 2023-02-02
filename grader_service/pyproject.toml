@@ -3,7 +3,7 @@
 github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
 
 [tool.tbump.version]
-current = "0.1.26a4"
+current = "0.1.26a5"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
