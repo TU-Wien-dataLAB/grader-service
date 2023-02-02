@@ -200,7 +200,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
-        os.mkdir(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_gradebook())
 
         autograder = Autograde(self.input_path, self.output_path, "*.ipynb", copy_files=self.assignment.allow_files)
