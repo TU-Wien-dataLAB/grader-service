@@ -115,7 +115,7 @@ class GitBaseHandler(GraderBaseHandler):
         try:
             assignment = self.get_assignment(lecture.id, int(pathlets[1]))
         except ValueError:
-            raise HTTPError(404)
+            raise HTTPError(404, "Assignment not found")
 
         if repo_type == "assignment":
             repo_type: str = assignment.type

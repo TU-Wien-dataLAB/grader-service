@@ -72,7 +72,7 @@ def authorize(scopes: List[Scope]):
                 except MultipleResultsFound:
                     raise HTTPError(403)
                 except NoResultFound:
-                    raise HTTPError(404)
+                    raise HTTPError(404, "Lecture not found")
                 except json.decoder.JSONDecodeError:
                     raise HTTPError(403)
             elif (
@@ -269,10 +269,10 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                 return str(ret.stdout, 'utf-8')
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
-            raise HTTPError(500)
+            raise HTTPError(500, reason="Subprocess Error")
         except FileNotFoundError as e:
             self.log.error(e)
-            raise HTTPError(404)
+            raise HTTPError(404, reason="File not found")
 
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")

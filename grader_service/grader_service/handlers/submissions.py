@@ -447,23 +447,6 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionEditHandler(GraderBaseHandler):
-
-    async def _run_subprocess(self, command: str, cwd: str) -> Subprocess:
-        """
-        Execute the command as a subprocess.
-        :param command: The command to execute as a string.
-        :param cwd: The working directory the subprocess should run in.
-        :return: Coroutine which resolves to a Subprocess object which resulted from the execution.
-        """
-        try:
-            process = Subprocess(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
-            await process.wait_for_exit()
-        except subprocess.CalledProcessError as e:
-            error = process.stderr.read().decode("utf-8")
-            self.log.error(error)
-            self.log.error(e)
-            raise HTTPError(500, reason="Could not create repository")
-        return process
         
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
@@ -506,7 +489,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
         
-        await self._run_subprocess(f'git init --bare', git_repo_path)
+        self._run_command(f'git init --bare', git_repo_path)
 
         # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
@@ -537,18 +520,18 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Init local repository
         command = f"git init"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_input_path)
+        self._run_command(command, tmp_input_path)
 
         # Pull user repository
         command = f'git pull "{submission_repo_path}" main'
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_input_path)
+        self._run_command(command, tmp_input_path)
         self.log.info("Successfully cloned repo")
 
         # Checkout to correct submission commit
         command = f"git checkout {submission.commit_hash}"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_input_path)
+        self._run_command(command, tmp_input_path)
         self.log.info(f"Now at commit {submission.commit_hash}")
 
         # Copy files to output directory
@@ -557,12 +540,12 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Init local repository
         command = f"git init"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
+        self._run_command(command, tmp_output_path)
 
         # Add edit remote
         command = f"git remote add edit {git_repo_path}"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
+        self._run_command(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
         
@@ -570,19 +553,19 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Add files to staging
         command = f"git add -A"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
+        self._run_command(command, tmp_output_path)
         self.log.info("Successfully added files to staging")
 
         # Commit Files
         command = f'git commit -m "Initial commit" '
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
+        self._run_command(command, tmp_output_path)
         self.log.info("Successfully commited files")
 
         # Push copied files
         command = f"git push edit main"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, tmp_output_path)
+        self._run_command(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
 
         submission.edited = True
