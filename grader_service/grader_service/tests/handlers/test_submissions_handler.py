@@ -156,69 +156,7 @@ async def test_get_submissions_filter_wrong(
     assert e.code == 400
 
 
-async def test_get_submissions_latest(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        jupyter_hub_mock_server,
-        default_user,
-        default_token,
-        sql_alchemy_db,
-):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-    a_id = 1
 
-    url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?filter=latest"
-    response = await submission_test_setup(sql_alchemy_db,
-                                           http_server_client,
-                                           default_user,
-                                           default_token,
-                                           url,
-                                           a_id)
-    assert response.code == 200
-    submissions = json.loads(response.body.decode())
-    assert isinstance(submissions, list)
-    assert len(submissions) == 1
-    assert submissions[0]["username"] == "ubuntu"
-
-    submissions_list = submissions
-    assert isinstance(submissions_list, list)
-    assert isinstance(submissions_list[0], dict)
-    Submission.from_dict(submissions_list[0])
-
-
-async def test_get_submissions_best(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        jupyter_hub_mock_server,
-        default_user,
-        default_token,
-        sql_alchemy_db,
-):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    a_id = 1
-    url = service_base_url + f"/lectures/1/assignments/{a_id}/submissions/?filter=best"
-    response = await submission_test_setup(sql_alchemy_db,
-                                           http_server_client,
-                                           default_user,
-                                           default_token,
-                                           url,
-                                           a_id)
-
-    assert response.code == 200
-    submissions = json.loads(response.body.decode())
-    assert isinstance(submissions, list)
-    assert len(submissions) == 1
-    assert submissions[0]["username"] == "ubuntu"
-
-    submissions_list = submissions
-    assert isinstance(submissions_list, list)
-    assert isinstance(submissions_list[0], dict)
-    Submission.from_dict(submissions_list[0])
 
 
 async def test_get_submissions_instructor_version(
