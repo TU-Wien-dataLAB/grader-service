@@ -55,6 +55,7 @@ def tuple_to_submission(t, student=False):
         s.assignid,
         s.commit_hash,
         s.feedback_available,
+        s.edited,
         s.logs,
         s.date,
     ) = t
@@ -125,6 +126,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.assignid,
                         Submission.commit_hash,
                         Submission.feedback_available,
+                        Submission.edited,
                         Submission.logs,
                         func.max(Submission.date),
                     )
@@ -144,6 +146,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.assignid,
                         Submission.commit_hash,
                         Submission.feedback_available,
+                        Submission.edited,
                         Submission.logs,
                         Submission.date,
                     )
