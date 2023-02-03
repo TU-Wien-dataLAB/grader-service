@@ -6,7 +6,7 @@
 
 import logging, json
 
-from tornado.httpclient import AsyncHTTPClient, HTTPResponse
+from tornado.httpclient import AsyncHTTPClient, HTTPResponse, HTTPRequest
 from traitlets.config.configurable import LoggingConfigurable, SingletonConfigurable
 from typing import Dict, Union, Callable, Optional
 from tornado.escape import json_decode
@@ -30,25 +30,31 @@ class RequestService(SingletonConfigurable):
         body: Union[dict, str] = None,
         header: Dict[str, str] = None,
         decode_response: bool = True,
+        request_timeout: float = 20.0,
+        connect_timeout: float = 20.0,
         response_callback: Optional[Callable[[HTTPResponse], None]] = None
     ) -> Union[dict, list, HTTPResponse]:
         self.log.info(self.url + endpoint)
         if self._service_cookie:
             header["Cookie"] = self._service_cookie
+
+        if isinstance(body, dict):
+            body = json.dumps(body)
+
+        # Build HTTPRequest
+        request = HTTPRequest(url=self.url + endpoint,
+                            method=method,
+                            headers=header,
+                            request_timeout=request_timeout,
+                            connect_timeout=connect_timeout                       
+                            )
+        # Add body if exists
         if body:
-            if isinstance(body, dict):
-                body = json.dumps(body)
-            response: HTTPResponse = await self.http_client.fetch(
-                self.url + endpoint,
-                method=method,
-                headers=header,
-                body=body,
-                
-            )
-        else:
-            response: HTTPResponse = await self.http_client.fetch(
-                self.url + endpoint, method=method, headers=header, body=body
-            )
+            request.body = body
+
+        # Sent HTTPRequest 
+        response: HTTPResponse = await self.http_client.fetch(request=request)
+
         for cookie in response.headers.get_list("Set-Cookie"):
             token = header.get("Authorization", None)
             if token and token.startswith("Token "):
