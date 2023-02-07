@@ -75,7 +75,10 @@ class Grade(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
         for the score
         """
         if self.manual_score is None and self.auto_score is None:
-            return 0.0
+            if self.extra_credit is None:
+                return 0.0
+            else:
+                return self.extra_credit
         elif self.manual_score is None:
             if self.extra_credit is None:
                 return self.auto_score
