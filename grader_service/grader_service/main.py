@@ -242,7 +242,6 @@ class GraderService(config.Application):
             max_body_size=self.max_body_size,
             xheaders=True,
         )
-        self.log.info(f"Database - {self.db_url}")
         self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.bind(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
         self.http_server.start()
