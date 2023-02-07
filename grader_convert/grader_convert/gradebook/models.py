@@ -1,5 +1,4 @@
 
-
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Set, Type, Union
