@@ -29,7 +29,7 @@ export const GradeComponent = (props: GradeComponentProps) => {
   const gradableCell =
     props.toolData.type !== 'readonly' &&
     props.toolData.type !== 'solution' &&
-    props.toolData.type !== '';
+     props.toolData.type !== '';
   const showCommment =
     props.toolData.type === 'task' ||
     props.toolData.type === 'manual' ||

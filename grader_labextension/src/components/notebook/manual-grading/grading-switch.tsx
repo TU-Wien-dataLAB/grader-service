@@ -124,6 +124,10 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
       this.subID
     );
     this.gradeBook = new GradeBook(properties);
+
+    // TODO This is a dirty bugfix which generates grade dict entries for task cells which should exist
+    this.gradeBook.getMaxPoints()
+
     this.setState({mode: !this.state.mode}, () => {
       this.onChange(this.state.mode);
       this.notebook.widgets.map((c: Cell) => {

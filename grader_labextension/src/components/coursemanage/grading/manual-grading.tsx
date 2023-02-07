@@ -48,6 +48,10 @@ export const ManualGrading = (props: IManualGradingProps) => {
     handleDisagree: null
   });
 
+  React.useEffect(() => {
+    reloadProperties();
+  },[]);
+
   const openFinishDialog = () => {
     setDialogContent({
       title: 'Confirm Grading',
