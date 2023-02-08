@@ -131,7 +131,7 @@ class SubmissionHandler(GraderBaseHandler):
                         func.max(Submission.date),
                     )
                     .filter(Submission.assignid == assignment_id)
-                    .group_by(Submission.username)
+                    .group_by(Submission.username, Submission.id)
                     .all()
                 )
                 submissions = [tuple_to_submission(t) for t in submissions]
@@ -177,7 +177,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
-                    .group_by(Submission.username)
+                    .group_by(Submission.username, Submission.id)
                     .all()
                 )
                 submissions = [tuple_to_submission(t, True) for t in submissions]
@@ -200,7 +200,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
-                    .group_by(Submission.username)
+                    .group_by(Submission.username, Submission.id)
                     .all()
                 )
                 submissions = [tuple_to_submission(t, True) for t in submissions]
