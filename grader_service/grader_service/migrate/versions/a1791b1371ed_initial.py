@@ -30,8 +30,9 @@ def upgrade():
                     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('name', sa.String(length=255), nullable=True),
                     sa.Column('code', sa.String(length=255), nullable=True, unique=True),
-                    sa.Column('state', sa.Enum('active', 'complete'), nullable=False),
-                    sa.Column('deleted', sa.Enum('active', 'deleted'), server_default='active', nullable=False),
+                    sa.Column('state', sa.Enum('active', 'complete', name='lecture_state'), nullable=False),
+                    sa.Column('deleted', sa.Enum('active', 'deleted', name='deleted'), server_default='active',
+                              nullable=False),
                     sa.Column('created_at', sa.DateTime(), default=datetime.utcnow, nullable=False),
                     sa.Column('updated_at', sa.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow,
                               nullable=False),
@@ -45,15 +46,17 @@ def upgrade():
     op.create_table('assignment',
                     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('name', sa.String(length=255), nullable=False),
-                    sa.Column('type', sa.Enum("user", "group"), nullable=False, server_default="user"),
+                    sa.Column('type', sa.Enum("user", "group", name='assignment_type'), nullable=False, server_default="user"),
                     sa.Column('lectid', sa.Integer(), nullable=True),
                     sa.Column('duedate', sa.DateTime(), nullable=True),
-                    sa.Column('automatic_grading', sa.Enum('unassisted', 'auto', 'full_auto'),
+                    sa.Column('automatic_grading', sa.Enum('unassisted', 'auto', 'full_auto', name='automatic_grading'),
                               server_default='unassisted', nullable=False),
                     sa.Column('points', sa.Integer(), nullable=False),
-                    sa.Column('status', sa.Enum('created', 'pushed', 'released', 'fetching', 'fetched', 'complete'),
+                    sa.Column('status', sa.Enum('created', 'pushed', 'released', 'fetching', 'fetched', 'complete',
+                                                name='assignment_status'),
                               nullable=True),
-                    sa.Column('deleted', sa.Enum('active', 'deleted'), server_default='active', nullable=False),
+                    sa.Column('deleted', sa.Enum('active', 'deleted', name='deleted'), server_default='active',
+                              nullable=False),
                     sa.Column('max_submissions', sa.Integer(), nullable=True, default=None, unique=False),
                     sa.Column('allow_files', sa.Boolean(), nullable=False, default=False),
                     sa.Column('properties', sa.Text(), nullable=True, unique=False),
@@ -76,25 +79,27 @@ def upgrade():
                     )
 
     op.create_table('group',
+                    sa.Column('id', sa.Integer(), autoincrement=True),
                     sa.Column('name', sa.String(length=255), nullable=False),
                     sa.Column('lectid', sa.Integer(), nullable=False),
                     sa.ForeignKeyConstraint(['lectid'], ['lecture.id'], ),
-                    sa.PrimaryKeyConstraint('name', 'lectid')
+                    sa.PrimaryKeyConstraint('id')
                     )
     op.create_table('partof',
                     sa.Column('username', sa.String(length=255), nullable=False),
-                    sa.Column('groupname', sa.String(length=255), nullable=False),
-                    sa.ForeignKeyConstraint(['groupname'], ['group.name'], ),
+                    sa.Column('group_id', sa.Integer(), nullable=False),
+                    sa.ForeignKeyConstraint(['group_id'], ['group.id'], ),
                     sa.ForeignKeyConstraint(['username'], ['user.name'], ),
-                    sa.PrimaryKeyConstraint('username', 'groupname')
+                    sa.PrimaryKeyConstraint('username', 'group_id')
                     )
 
     op.create_table('submission',
                     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('date', sa.DateTime(), nullable=True),
-                    sa.Column('auto_status', sa.Enum('pending', 'not_graded', 'automatically_graded', 'grading_failed'),
+                    sa.Column('auto_status', sa.Enum('pending', 'not_graded', 'automatically_graded', 'grading_failed'
+                                                     , name='auto_status'),
                               nullable=False),
-                    sa.Column('manual_status', sa.Enum('not_graded', 'manually_graded', 'being_edited'),
+                    sa.Column('manual_status', sa.Enum('not_graded', 'manually_graded', 'being_edited', name='manual_status'),
                               nullable=False),
                     sa.Column('score', sa.Integer(), nullable=True),
                     sa.Column('assignid', sa.Integer(), nullable=True),
@@ -113,7 +118,7 @@ def upgrade():
 
 
 def downgrade():
-    # ### commands auto generated by Alembic - please adjust! ###
+    # TODO This does not drop enum types which are required when using postgresql
     op.drop_table('submission')
     op.drop_table('takepart')
     op.drop_table('assignment')

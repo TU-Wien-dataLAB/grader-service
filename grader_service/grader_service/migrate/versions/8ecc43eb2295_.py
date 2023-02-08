@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('submission',sa.Column('edited', sa.Boolean, default=False))
+    op.add_column('submission', sa.Column('edited', sa.Boolean, default=False))
 
 
 def downgrade():
