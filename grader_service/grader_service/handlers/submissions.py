@@ -25,6 +25,8 @@ from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
+from grader_service.orm.submission_logs import SubmissionLogs
+from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func, distinct, text
@@ -35,40 +37,6 @@ from tornado.process import Subprocess
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 import datetime
-
-
-def tuple_to_submission(t, student=False):
-    """
-    Transforms tuple with values into a submission entity.
-
-    :param student: if True, get submissions for student where some data is not needed
-    :param t: tuple with values
-    :return: submission entity
-    """
-
-
-
-    s = Submission()
-    (
-        s.id,
-        s.auto_status,
-        s.manual_status,
-        s.score,
-        s.username,
-        s.assignid,
-        s.commit_hash,
-        s.feedback_available,
-        s.edited,
-        s.logs,
-        s.date,
-    ) = t
-
-    if student:
-        s.logs = None
-        s.commit_hash = None
-        s.score = s.score if s.feedback_available else 0
-
-    return s
 
 
 @register_handler(
@@ -121,96 +89,66 @@ class SubmissionHandler(GraderBaseHandler):
             if submission_filter == 'latest':
 
                 # build the subquery
+                subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                            .group_by(Submission.username)
+                            .subquery())
+
+                # build the main query
+                submissions = (
+                    self.session.query(Submission)
+                    .join(subquery,
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date))
+                    .all())
+
+            elif submission_filter == 'best':
+
+                # build the subquery
                 subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
                             .group_by(Submission.username)
                             .subquery())
 
                 # build the main query
-                result = (
-                    self.session.query(Submission.id, Submission.auto_status, Submission.manual_status, Submission.score,
-                                  Submission.username, Submission.assignid, Submission.commit_hash)
+                submissions = (
+                    self.session.query(Submission)
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score))
                     .all())
 
-                submissions = [dict(t) for t in result]
-            elif submission_filter == 'best':
-
-                submissions = (
-                    self.session.query(
-                        Submission.id,
-                        Submission.auto_status,
-                        Submission.manual_status,
-                        func.max(Submission.score),
-                        Submission.username,
-                        Submission.assignid,
-                        Submission.commit_hash,
-                        Submission.feedback_available,
-                        Submission.edited,
-                        Submission.logs,
-                        Submission.date,
-                    )
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username,
-                    )
-                    .group_by(Submission.username)
-                    .all()
-                )
-
-                submissions = [dict(row) for row in submissions]
-
-                self.log.info(submissions)
             else:
                 submissions = assignment.submissions
         else:
             if submission_filter == 'latest':
-                submissions = (
-                    self.session.query(
-                        Submission.id,
-                        Submission.auto_status,
-                        Submission.manual_status,
-                        Submission.score,
-                        Submission.username,
-                        Submission.assignid,
-                        Submission.commit_hash,
-                        Submission.feedback_available,
-                        Submission.edited,
-                        Submission.logs,
-                        func.max(Submission.date),
-                    )
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username,
-                    )
-                    .group_by(Submission.username, Submission.id)
-                    .all()
-                )
-                submissions = [tuple_to_submission(t, True) for t in submissions]
-            elif submission_filter == 'best':
-                submissions = (
-                    self.session.query(
-                        Submission.id,
-                        Submission.auto_status,
-                        Submission.manual_status,
-                        func.max(Submission.score),
-                        Submission.username,
-                        Submission.assignid,
-                        Submission.commit_hash,
-                        Submission.feedback_available,
-                        Submission.edited,
-                        Submission.logs,
-                        Submission.date,
-                    )
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username,
-                    )
-                    .group_by(Submission.username, Submission.id)
-                    .all()
-                )
+                # build the subquery
+                subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                            .group_by(Submission.username)
+                            .subquery())
 
-                submissions = [tuple_to_submission(t, True) for t in submissions]
+                # build the main query
+                submissions = (
+                    self.session.query(Submission)
+                    .join(subquery,
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date))
+                    .filter(
+                        Submission.assignid == assignment_id,
+                        Submission.username == role.username,)
+                    .all())
+
+            elif submission_filter == 'best':
+
+                # build the subquery
+                subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                            .group_by(Submission.username)
+                            .subquery())
+
+                # build the main query
+                submissions = (
+                    self.session.query(Submission)
+                    .join(subquery,
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score))
+                    .filter(
+                        Submission.assignid == assignment_id,
+                        Submission.username == role.username, )
+                    .all())
             else:
                 submissions = (
                     self.session.query(
@@ -375,6 +313,35 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/("
+         r"?P<submission_id>\d*)\/logs\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class SubmissionLogsHandler(GraderBaseHandler):
+    @authorize([Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
+        """
+        Returns logs of a submission.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        :param submission_id: id of the submission
+        :type submission_id: int
+        :raises HTTPError: throws err if the submission logs are not found
+        """
+        lecture_id, assignment_id, submission_id = parse_ids(
+            lecture_id, assignment_id, submission_id
+        )
+        logs = self.session.query(SubmissionLogs).get(submission_id)
+        if logs is not None:
+            self.write_json(logs.logs)
+        else:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
+
+
+@register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/properties\/?",
     version_specifier=VersionSpecifier.ALL,
 )
@@ -400,16 +367,16 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if submission.properties is not None:
+        properties = self.session.query(SubmissionProperties).get(submission_id)
+        if properties is not None and properties.properties is not None:
             # delete source cells from properties if user is student
             if self.get_role(lecture_id).role == Scope.student:
-                model = GradeBookModel.from_dict(json.loads(submission.properties))
+                model = GradeBookModel.from_dict(json.loads(properties))
                 for notebook in model.notebooks.values():
                     notebook.source_cells_dict = {}
                 self.write(json.dumps(model.to_dict()))
             else:
-                self.write(submission.properties)
+                self.write(properties.properties)
         else:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
 
@@ -440,8 +407,13 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         except Exception as e:
             self.log.info(e)
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
+
         submission.score = score
-        submission.properties = properties_string
+
+        properties = SubmissionProperties(properties=properties_string, sub_id=submission.id)
+
+        self.session.merge(properties)
+
         self.session.commit()
         self.write_json(submission)
 

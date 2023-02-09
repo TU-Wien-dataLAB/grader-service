@@ -53,7 +53,7 @@ async def test_auto_grading(
         await executor.start()
 
     submission = session.query(Submission).get(s_id)
-    assert submission.properties == gradebook_content  # because no actual autograding this is the same as assignment properties
+    assert submission.properties.properties == gradebook_content  # because no actual autograding this is the same as assignment properties
     assert submission.auto_status == "automatically_graded"
     assert submission.score == 0  # we do not get any scores because of dummy gradebook, but it is set to 0
 
