@@ -15,6 +15,7 @@ from sqlalchemy import (
     Float,
     Integer,
     String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -42,8 +43,8 @@ class Submission(Base, Serializable):
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
 
-    logs = relationship("SubmissionLogs", back_populates="submission")
-    properties = relationship("SubmissionProperties", back_populates="submission")
+    logs = relationship("SubmissionLogs", back_populates="submission", uselist=False)
+    properties = relationship("SubmissionProperties", back_populates="submission", uselist=False)
 
 
     @property
