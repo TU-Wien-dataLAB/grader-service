@@ -31,6 +31,7 @@ import {
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import {
   getAllSubmissions,
+  getLogs,
   ltiSyncSubmissions
 } from '../../../services/submissions.service';
 import { AgreeDialog } from '../../util/dialog';
@@ -278,18 +279,17 @@ export const GradingComponent = (props: IGradingProps) => {
    * @param params row which is needed to find selected submission
    */
   const openLogs = (params: GridRenderCellParams<string>) => {
-    const submission: Submission = getSubmissionFromRow(
-      params.row as IRowValues
+    getLogs(props.lecture.id,props.assignment.id,params.row.id).then(
+        logs => {
+          setLogs(logs);
+          setShowLogs(true);
+        },
+        error => {
+          enqueueSnackbar('No logs for submission', {
+            variant: 'error'
+          });
+        }
     );
-    const logs = submission.logs;
-    if (logs === undefined || logs === null || logs === '') {
-      enqueueSnackbar('No logs for submission', {
-        variant: 'error'
-      });
-      return;
-    }
-    setLogs(logs);
-    setShowLogs(true);
   };
 
   const columns = [

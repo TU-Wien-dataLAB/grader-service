@@ -130,6 +130,16 @@ export function getProperties(
   return request<any>(HTTPMethod.GET, url, reload);
 }
 
+export function getLogs(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  reload = false
+): Promise<string> {
+  const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/logs`;
+  return request<string>(HTTPMethod.GET, url, reload);
+}
+
 export function createOrOverrideEditRepository(
   lectureId: number,
   assignmentId: number,
