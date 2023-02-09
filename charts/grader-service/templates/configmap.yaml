@@ -29,7 +29,8 @@ data:
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
 {{ end }}
-    c.GraderService.db_url = {{ .Values.db.url }}
+
+    c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
 
