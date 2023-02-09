@@ -29,6 +29,9 @@ from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import TraitError, Unicode, validate, default
 
+from grader_service.orm.submission_logs import SubmissionLogs
+from grader_service.orm.submission_properties import SubmissionProperties
+
 
 def rm_error(func, path, exc_info):
     if not os.access(path, os.W_OK):
@@ -328,7 +331,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         with open(os.path.join(self.output_path, "gradebook.json"), "r") as f:
             gradebook_str = f.read()
-        self.submission.properties = gradebook_str
+
+        properties = SubmissionProperties(properties=gradebook_str, sub_id=self.submission.id)
+
+        self.session.merge(properties)
+
         gradebook_dict = json.loads(gradebook_str)
         book = GradeBookModel.from_dict(gradebook_dict)
         score = 0
@@ -347,7 +354,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.submission.auto_status = "automatically_graded"
         else:
             self.submission.auto_status = "grading_failed"
-        self.submission.logs = self.grading_logs
+
+        logs = SubmissionLogs(logs=self.grading_logs, sub_id=self.submission.id)
+
+        self.session.merge(logs)
+
         self.session.commit()
 
     def _cleanup(self):

@@ -87,7 +87,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.makedirs(self.output_path, exist_ok=True)
-        self._write_gradebook(self.submission.properties)
+        self._write_gradebook(self.submission.properties.properties)
 
         autograder = GenerateFeedback(self.input_path, self.output_path, "*.ipynb", copy_files=False)
         autograder.force = True
