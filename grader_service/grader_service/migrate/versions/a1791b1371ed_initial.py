@@ -118,7 +118,7 @@ def upgrade():
 
     op.create_table('submission_logs',
                     sa.Column('sub_id', sa.Integer(), nullable=False),
-                    sa.Column('logs', sa.Text()),
+                    sa.Column('logs', sa.Text(), nullable=True),
                     sa.ForeignKeyConstraint(['sub_id'], ['submission.id'], ),
                     sa.PrimaryKeyConstraint('sub_id')
                     )
