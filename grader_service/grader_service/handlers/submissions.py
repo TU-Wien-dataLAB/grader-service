@@ -8,6 +8,7 @@ import json
 import shlex
 import shutil
 import time
+from _decimal import Decimal
 
 import jwt
 import os.path
@@ -26,12 +27,11 @@ from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.sql.expression import func
+from sqlalchemy.sql.expression import func, distinct, text
 from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
 from subprocess import PIPE, CalledProcessError
 from tornado.process import Subprocess
-
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
 import datetime
@@ -45,6 +45,9 @@ def tuple_to_submission(t, student=False):
     :param t: tuple with values
     :return: submission entity
     """
+
+
+
     s = Submission()
     (
         s.id,
@@ -116,26 +119,23 @@ class SubmissionHandler(GraderBaseHandler):
 
         if instructor_version:
             if submission_filter == 'latest':
-                submissions = (
-                    self.session.query(
-                        Submission.id,
-                        Submission.auto_status,
-                        Submission.manual_status,
-                        Submission.score,
-                        Submission.username,
-                        Submission.assignid,
-                        Submission.commit_hash,
-                        Submission.feedback_available,
-                        Submission.edited,
-                        Submission.logs,
-                        func.max(Submission.date),
-                    )
-                    .filter(Submission.assignid == assignment_id)
-                    .group_by(Submission.username, Submission.id)
-                    .all()
-                )
-                submissions = [tuple_to_submission(t) for t in submissions]
+
+                # build the subquery
+                subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                            .group_by(Submission.username)
+                            .subquery())
+
+                # build the main query
+                result = (
+                    self.session.query(Submission.id, Submission.auto_status, Submission.manual_status, Submission.score,
+                                  Submission.username, Submission.assignid, Submission.commit_hash)
+                    .join(subquery,
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score))
+                    .all())
+
+                submissions = [dict(t) for t in result]
             elif submission_filter == 'best':
+
                 submissions = (
                     self.session.query(
                         Submission.id,
@@ -150,11 +150,17 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.logs,
                         Submission.date,
                     )
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_available == True)
+                    .filter(
+                        Submission.assignid == assignment_id,
+                        Submission.username == role.username,
+                    )
                     .group_by(Submission.username)
                     .all()
                 )
-                submissions = [tuple_to_submission(t) for t in submissions]
+
+                submissions = [dict(row) for row in submissions]
+
+                self.log.info(submissions)
             else:
                 submissions = assignment.submissions
         else:
@@ -203,6 +209,7 @@ class SubmissionHandler(GraderBaseHandler):
                     .group_by(Submission.username, Submission.id)
                     .all()
                 )
+
                 submissions = [tuple_to_submission(t, True) for t in submissions]
             else:
                 submissions = (
@@ -452,7 +459,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionEditHandler(GraderBaseHandler):
-        
+
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
         '''
@@ -493,7 +500,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Creating bare repository
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
-        
+
         self._run_command(f'git init --bare', git_repo_path)
 
         # Create temporary paths to copy the submission files in the edit repository
@@ -505,7 +512,6 @@ class SubmissionEditHandler(GraderBaseHandler):
             "edit",
             str(submission.id),
         )
-    
 
         tmp_input_path = os.path.join(
             tmp_path,
@@ -537,7 +543,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.log.info(f"Now at commit {submission.commit_hash}")
 
         # Copy files to output directory
-        shutil.copytree(tmp_input_path,tmp_output_path, ignore = shutil.ignore_patterns(".git"))
+        shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
 
         # Init local repository
         command = f"git init"
@@ -548,11 +554,10 @@ class SubmissionEditHandler(GraderBaseHandler):
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
-         # Switch to main
+        # Switch to main
         command = f"git switch -c main"
         self._run_command(command, tmp_output_path)
         self.log.info("Successfully switched to branch main")
-        
 
         # Add files to staging
         command = f"git add -A"
@@ -572,7 +577,6 @@ class SubmissionEditHandler(GraderBaseHandler):
         submission.edited = True
         self.session.commit()
         self.write_json(submission)
-        
 
 
 @register_handler(
@@ -602,8 +606,9 @@ class LtiSyncHandler(GraderBaseHandler):
         lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
 
         if lti_username_convert is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Unable to match users: lti_username_convert is not set in grader "
-                                                  "config")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to match users: lti_username_convert is not set in grader "
+                                   "config")
 
         scores = [{"id": s[0], "username": lti_username_convert(s[1]), "score": s[2]} for s in submissions]
         stamp = datetime.datetime.now()
@@ -643,7 +648,7 @@ class LtiSyncHandler(GraderBaseHandler):
         try:
             encoded = jwt.encode(payload, private_key, algorithm="RS256")
         except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}" )
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
         self.log.info("encoded: " + encoded)
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
