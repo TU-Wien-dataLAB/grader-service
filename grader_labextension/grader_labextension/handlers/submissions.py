@@ -277,7 +277,7 @@ class LtiSyncHandler(ExtensionBaseHandler):
 
         # create lineitem
         if lineitem is None:
-            lineitem_body = {"scoreMaximum": int(assignment["points"]), "label": assignment["name"],
+            lineitem_body = {"scoreMaximum": assignment["points"], "label": assignment["name"],
                              "resourceId": assignment["id"],
                              "tag": "grade", "startDateTime": str(datetime.datetime.now()),
                              "endDateTime": str(datetime.date.today() + datetime.timedelta(days=1, hours=1))}
