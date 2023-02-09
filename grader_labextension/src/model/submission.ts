@@ -22,6 +22,7 @@ export interface Submission {
     feedback_available?: boolean;
     edited?: boolean;
     logs?: string;
+    properties?: string;
 }
 export namespace Submission {
     export type AutoStatusEnum = 'not_graded' | 'pending' | 'automatically_graded' | 'grading_failed';

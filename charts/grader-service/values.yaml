@@ -43,6 +43,7 @@ jupyterhub:
 db:
   dialect: sqlite
   host: /var/lib/grader-service/grader.db
+  url: "sqlite:///grader.db"
 
 gitConfig:
   gitUser: "grader-service"

@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from grader_service.orm import Lecture, Assignment, Submission
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.base import DeleteState
+from grader_service.orm.submission_properties import SubmissionProperties
 
 
 def insert_users(session):
@@ -67,22 +68,33 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username, feedback=False):
+def _get_submission(assignment_id, username, feedback=False, score=None):
     s = Submission()
     s.date = datetime.now()
     s.auto_status = "not_graded"
     s.manual_status = "not_graded"
     s.assignid = assignment_id
     s.username = username
+    s.score = score
     s.commit_hash = secrets.token_hex(20)
     s.feedback_available = feedback
     return s
 
 
-def insert_submission(ex, assignment_id=1, username="ubuntu", feedback=False):
+def _get_submission_properties(submission_id, properties=None):
+    s = SubmissionProperties(sub_id=submission_id, properties=properties)
+    return s
+
+
+def insert_submission(ex, assignment_id=1, username="ubuntu", feedback=False, with_properties=True, score=None):
+    # TODO Allows only one submission with properties per user because we do not have the submission id
     session: Session = sessionmaker(ex)()
-    session.add(_get_submission(assignment_id, username, feedback=feedback))
+    session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
     session.commit()
+    if with_properties:
+        id = session.query(Submission).filter(Submission.assignid==assignment_id,Submission.username==username).first().id
+        session.add(_get_submission_properties(id))
+        session.commit()
     session.flush()
 
 
@@ -92,4 +104,3 @@ def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):
 
 def insert_grading(session):
     pass
-

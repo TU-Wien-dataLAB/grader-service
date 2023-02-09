@@ -55,6 +55,36 @@ class SubmissionHandler(ExtensionBaseHandler):
 
 
 @register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/("
+         r"?P<submission_id>\d*)\/logs\/?")
+class SubmissionLogsHandler(ExtensionBaseHandler):
+    @cache(max_age=15)
+    async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
+        """Sends a GET-request to the grader service and returns the logs of a submission
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        :param submission_id: id of the submission
+        :type submission_id: int
+        """
+
+        try:
+            response = await self.request_service.request(
+                method="GET",
+                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/logs",
+                header=self.grader_authentication_header,
+                response_callback=self.set_service_headers
+            )
+            self.log.info(response)
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
+        self.write(response)
+
+
+@register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/properties\/?"
 )
 class SubmissionPropertiesHandler(ExtensionBaseHandler):
@@ -108,6 +138,7 @@ class SubmissionPropertiesHandler(ExtensionBaseHandler):
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
         self.write("OK")
+
 
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?"

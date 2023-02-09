@@ -135,8 +135,6 @@ components:
           type: boolean
         edited:
           type: boolean
-        logs:
-          type: string
       example:
         id: 2
         submitted_at: "2021-07-21T11:53:07Z"

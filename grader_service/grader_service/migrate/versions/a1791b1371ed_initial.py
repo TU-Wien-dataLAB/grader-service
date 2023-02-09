@@ -46,12 +46,13 @@ def upgrade():
     op.create_table('assignment',
                     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('name', sa.String(length=255), nullable=False),
-                    sa.Column('type', sa.Enum("user", "group", name='assignment_type'), nullable=False, server_default="user"),
+                    sa.Column('type', sa.Enum("user", "group", name='assignment_type'), nullable=False,
+                              server_default="user"),
                     sa.Column('lectid', sa.Integer(), nullable=True),
                     sa.Column('duedate', sa.DateTime(), nullable=True),
                     sa.Column('automatic_grading', sa.Enum('unassisted', 'auto', 'full_auto', name='automatic_grading'),
                               server_default='unassisted', nullable=False),
-                    sa.Column('points', sa.Integer(), nullable=False),
+                    sa.Column('points', sa.DECIMAL(10, 3), nullable=False),
                     sa.Column('status', sa.Enum('created', 'pushed', 'released', 'fetching', 'fetched', 'complete',
                                                 name='assignment_status'),
                               nullable=True),
@@ -99,26 +100,43 @@ def upgrade():
                     sa.Column('auto_status', sa.Enum('pending', 'not_graded', 'automatically_graded', 'grading_failed'
                                                      , name='auto_status'),
                               nullable=False),
-                    sa.Column('manual_status', sa.Enum('not_graded', 'manually_graded', 'being_edited', name='manual_status'),
+                    sa.Column('manual_status',
+                              sa.Enum('not_graded', 'manually_graded', 'being_edited', name='manual_status'),
                               nullable=False),
-                    sa.Column('score', sa.Integer(), nullable=True),
+                    sa.Column('edited', sa.Boolean(), default=False),
+                    sa.Column('score', sa.DECIMAL(10, 3), nullable=True),
                     sa.Column('assignid', sa.Integer(), nullable=True),
                     sa.Column('username', sa.String(length=255), nullable=True),
                     sa.Column('commit_hash', sa.String(length=40), nullable=False),
-                    sa.Column('properties', sa.Text(), nullable=True, unique=False),
                     sa.Column('feedback_available', sa.Boolean(), nullable=False, server_default="false"),
-                    sa.Column('logs', sa.Text(), nullable=True),
                     sa.Column('updated_at', sa.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow,
                               nullable=False),
                     sa.ForeignKeyConstraint(['assignid'], ['assignment.id'], ),
                     sa.ForeignKeyConstraint(['username'], ['user.name'], ),
                     sa.PrimaryKeyConstraint('id')
                     )
+
+    op.create_table('submission_logs',
+                    sa.Column('sub_id', sa.Integer(), nullable=False),
+                    sa.Column('logs', sa.Text(), nullable=True),
+                    sa.ForeignKeyConstraint(['sub_id'], ['submission.id'], ),
+                    sa.PrimaryKeyConstraint('sub_id')
+                    )
+
+    op.create_table('submission_properties',
+                    sa.Column('sub_id', sa.Integer(), nullable=False),
+                    sa.Column('properties', sa.Text(), nullable=True, unique=False),
+                    sa.ForeignKeyConstraint(['sub_id'], ['submission.id'], ),
+                    sa.PrimaryKeyConstraint('sub_id')
+                    )
+
     # ### end Alembic commands ###
 
 
 def downgrade():
     # TODO This does not drop enum types which are required when using postgresql
+    op.drop_table('submission_logs')
+    op.drop_table('submission_properties')
     op.drop_table('submission')
     op.drop_table('takepart')
     op.drop_table('assignment')

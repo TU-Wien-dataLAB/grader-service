@@ -20,6 +20,8 @@ from ..handlers.tornado_test_utils import *
 from ..handlers.db_util import insert_submission
 from sqlalchemy.orm import sessionmaker
 
+from ...orm.submission_properties import SubmissionProperties
+
 
 async def test_feedback(
         default_user,
@@ -35,9 +37,11 @@ async def test_feedback(
 
     session: Session = sessionmaker(bind=engine)()
     submission = session.query(Submission).get(s_id)
+    submission_properties = session.query(SubmissionProperties).get(s_id)
     assert submission is not None
+    assert submission_properties is not None
     gradebook_content = '{"notebooks":{}}'
-    submission.properties = gradebook_content  # we do not actually run convert so the gradebook can be empty
+    submission_properties.properties = gradebook_content  # we do not actually run convert so the gradebook can be empty
     session.commit()
 
     assert submission.score is None

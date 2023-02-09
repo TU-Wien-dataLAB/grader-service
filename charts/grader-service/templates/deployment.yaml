@@ -59,6 +59,8 @@ spec:
               value: {{ .Values.db.dialect }}
             - name: GRADER_DB_HOST
               value: {{ .Values.db.host }}
+            - name: GRADER_DB_URL
+              value: { { .Values.db.url } }
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
