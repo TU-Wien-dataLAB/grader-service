@@ -84,17 +84,20 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 60
   
-    {{ if .Values.volumePermissions.enabled }}
       initContainers:
+{{ if .Values.volumePermissions.enabled }}
         - name: volume-permissions
           image: busybox
           command: ["/bin/sh","-c"]
-          args: ["chown -R 1000:1000 /var/lib/grader-service;"]
+          args: ["chown 1000:1000 /var/lib/grader-service;"]
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
+{{ end }}
+{{ end }}
+
 {{- end }}
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -105,7 +108,6 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
-    {{ end }}
 
       volumes:
         - name: data
