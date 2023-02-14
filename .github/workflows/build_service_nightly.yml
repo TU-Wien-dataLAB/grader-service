@@ -2,8 +2,6 @@ name: Build and Deploy Service Nightly
 
 on:
   workflow_dispatch:
-    inputs:
-      git-ref: Nightly
   schedule:
     - cron: '0 2 * * *'
 
