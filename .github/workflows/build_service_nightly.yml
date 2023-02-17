@@ -126,9 +126,16 @@ jobs:
         commit_hash=${GITHUB_SHA::8}
         
         
+        echo "Change AppVersion"
+        sed -i "s/^appVersion:.*/appVersion: $commit_hash/" charts/grader-service/Chart.yaml
+        
+        echo "Change Version"
+        og_version=$(yq eval '.version' charts/grader-service/Chart.yaml)
+        sed -i "s/^version:.*/version: $og_version-$commit_hash/" charts/grader-service/Chart.yaml
+        
         echo "Creating release..."
         # package chart
-        ./cr package 'charts/grader-service' --version $(yq eval '.version' charts/grader-service/Chart.yaml)-nightly-$commit_hash --set appVersion=$commit_hash
+        ./cr package 'charts/grader-service'
 
         # upload chart to github releases
         ./cr upload \
