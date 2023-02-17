@@ -131,7 +131,7 @@ jobs:
         
         echo "Change Version"
         og_version=$(yq eval '.version' my-chart/Chart.yaml)
-        echo "version: $og_version-$commit_hash" > my-chart/Chart.yaml
+        echo "version: $og_version-nightly-$commit_hash" > my-chart/Chart.yaml
         
         echo "Creating release..."
         # package chart
