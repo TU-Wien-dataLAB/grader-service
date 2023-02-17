@@ -125,8 +125,13 @@ jobs:
         owner=$(cut -d '/' -f 1 <<< "$GITHUB_REPOSITORY")
         commit_hash=${GITHUB_SHA::8}
         
+        
         echo "Change AppVersion"
         sed -i "s/^appVersion:.*/appVersion: $commit_hash/" charts/grader-service/Chart.yaml
+        
+        echo "Change Version"
+        og_version=$(yq eval '.version' my-chart/Chart.yaml)
+        echo "version: $og_version-$commit_hash" > my-chart/Chart.yaml
         
         echo "Creating release..."
         # package chart
