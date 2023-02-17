@@ -118,7 +118,7 @@ jobs:
       env:
         CR_SKIP_EXISTING: true
         CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-nightly-{{ .Version }}"
+        CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-{{ .Version }}-nightly-{{ .AppVersion }}"
         CR_INDEX_PATH: "index.yaml"
       run: |
         repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
