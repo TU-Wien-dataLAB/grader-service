@@ -130,7 +130,7 @@ jobs:
         sed -i "s/^appVersion:.*/appVersion: $commit_hash/" charts/grader-service/Chart.yaml
         
         echo "Change Version"
-        og_version=$(yq eval '.version' my-chart/Chart.yaml)
+        og_version=$(yq eval '.version' charts/grader-service/Chart.yaml)
         echo "version: $og_version-nightly-$commit_hash" > charts/grader-service/Chart.yaml
         
         echo "Creating release..."
