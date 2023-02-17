@@ -123,7 +123,11 @@ jobs:
       run: |
         repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
         owner=$(cut -d '/' -f 1 <<< "$GITHUB_REPOSITORY")
-
+        commit_hash=${GITHUB_SHA::8}
+        
+        echo "Change AppVersion"
+        sed -i "s/^appVersion:.*/appVersion: $commit_hash/" charts/grader-service/Chart.yaml
+        
         echo "Creating release..."
         # package chart
         ./cr package 'charts/grader-service'
