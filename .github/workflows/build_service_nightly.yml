@@ -128,7 +128,7 @@ jobs:
         
         echo "Creating release..."
         # package chart
-        ./cr package 'charts/grader-service' --version $(yq eval '.version' my-chart/Chart.yaml)-nightly-$commit_hash --set appVersion=$commit_hash
+        ./cr package 'charts/grader-service' --version $(yq eval '.version' charts/grader-service/Chart.yaml)-nightly-$commit_hash --set appVersion=$commit_hash
 
         # upload chart to github releases
         ./cr upload \
