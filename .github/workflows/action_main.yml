@@ -42,9 +42,19 @@ jobs:
   build_labextension:
     uses: ./.github/workflows/build_labextension.yml
     needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_labextension')
+    if: ${{ !contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_labextension') }}
+
+  build_labextension_dev:
+    uses: ./.github/workflows/build_labextension_dev.yml
+    needs: init
+    if: ${{ contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_labextension') }}
+
   dockerize_labextension:
     needs: build_labextension
+    uses: ./.github/workflows/docker_labextension.yml
+
+  dockerize_labextension_dev:
+    needs: build_labextension_dev
     uses: ./.github/workflows/docker_labextension.yml
 
   build_convert:
@@ -95,8 +105,8 @@ jobs:
     secrets: inherit
 
   release_labextension_dev:
-    needs: dockerize_labextension
-    if: ${{ !contains(github.event.head_commit.message, '[dev]') }}
+    needs: dockerize_labextension_dev
+    if: ${{ contains(github.event.head_commit.message, '[dev]') }}
     uses: ./.github/workflows/publish_labextension_dev.yml
     secrets: inherit
 
