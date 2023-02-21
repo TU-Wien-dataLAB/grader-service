@@ -48,7 +48,7 @@ jobs:
       
     - name: Build package
       working-directory: ./grader_labextension
-      run: python -m build -n --version $(python -c "from setuptools_scm import get_version; print(get_version())+'.$(echo ${{ steps.commit_hash.outputs.hash }})'")
+      run: python -m build -n --version $(tbump current-version)-$commit_hash
 
     # Upload Artifacts
     - name: Archive labextension artifacts

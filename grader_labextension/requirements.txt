@@ -4,4 +4,4 @@ tornado>=6.1
 jupyter-server>=1.17.0
 grader-convert>=0.1.9
 
-setuptools_scm
+tbump
