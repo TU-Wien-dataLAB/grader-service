@@ -159,7 +159,9 @@ class SubmissionEditHandler(ExtensionBaseHandler):
                 method="PUT",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/edit",
                 header=self.grader_authentication_header,
-                body=self.request.body.decode("utf-8")
+                body=self.request.body.decode("utf-8"),
+                request_timeout=300.0,
+                connect_timeout=300.0
             )
         except HTTPClientError as e:
             self.log.error(e.response)
