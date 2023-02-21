@@ -1,9 +1,7 @@
 name: Build and Deploy Service Nightly
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * *'
+  workflow_call:
 
 permissions:
   contents: write
