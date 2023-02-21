@@ -62,6 +62,11 @@ jobs:
     if: contains(needs.init.outputs.changeDirs, 'grader_convert')
     uses: ./.github/workflows/build_convert.yml
 
+  build_and_release_grader_service_dev:
+    uses: ./.github/workflows/build_and_release_service_dev.yml
+    needs: init
+    if: ${{ contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_service') }}
+
   release_helm:
     needs: init
     if: contains(needs.init.outputs.changeDirs, 'charts/grader-service') && startsWith(github.ref, 'refs/tags/grader-service') && !startsWith(github.ref, 'refs/tags/grader-service-helm')
