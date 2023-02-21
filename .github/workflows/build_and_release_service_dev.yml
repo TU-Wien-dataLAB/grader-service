@@ -1,4 +1,4 @@
-name: Build and Deploy Service Nightly
+name: Build and Deploy Service Dev
 
 on:
   workflow_call:
