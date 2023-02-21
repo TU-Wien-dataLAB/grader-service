@@ -3,14 +3,13 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
+import asyncio
+import subprocess
 import datetime
 import functools
 import json
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import traceback
 from http import HTTPStatus
@@ -166,7 +165,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         if repo_type == "source" or repo_type == "release" or repo_type == "edit":
             path = os.path.join(assignment_path, repo_type)
             if repo_type == "edit":
-                path = os.path.join(path,str(submission.id))
+                path = os.path.join(path, str(submission.id))
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
             type_path = os.path.join(assignment_path, repo_type, assignment.type)
@@ -207,7 +206,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             is_git = False
         return is_git
 
-    def duplicate_release_repo(self, repo_path_release: str, repo_path_user: str, assignment: Assignment, message: str,
+    async def duplicate_release_repo(self, repo_path_release: str, repo_path_user: str, assignment: Assignment, message: str,
                                checkout_main: bool = False):
         tmp_path_base = os.path.join(self.application.grader_service_dir, "tmp", assignment.lecture.code,
                                      str(assignment.id), self.user.name)
@@ -223,12 +222,12 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         self.log.info(f"Temporary path used for copying: {tmp_path_base}")
 
         try:
-            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
+            await self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
             if checkout_main:
-                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-                self._run_command(f"git checkout -b main", cwd=tmp_path_user)
+                await self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
+                await self._run_command(f"git checkout -b main", cwd=tmp_path_user)
             else:
-                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
+                await self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
 
             self.log.info(f"Copying repository contents from {tmp_path_release} to {tmp_path_user}")
             ignore = shutil.ignore_patterns(".git", "__pycache__")
@@ -243,36 +242,28 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                     else:
                         shutil.copy2(s, d)
 
-            self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{message}"\'', tmp_path_user)
-            self._run_command("git push -u origin main", tmp_path_user)
+            await self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{message}"\'', tmp_path_user)
+            await self._run_command("git push -u origin main", tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 
-    def _run_command(self, command, cwd=None, capture_output=False):
-        """Starts a sub process and runs an cmd command
+    async def _run_command(self, command, cwd=None):
+        """Starts a sub process and runs a cmd command
 
         Args:
             command str: command that is getting run.
             cwd (str, optional): states where the command is getting run. Defaults to None.
-            capture_output (bool, optional): states if output is getting saved. Defaults to False.
 
         Raises:
             GitError: returns appropriate git error 
 
-        Returns:
-            str: command output
         """
-        try:
-            self.log.info(f"Running: {command}")
-            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
-            if capture_output:
-                return str(ret.stdout, 'utf-8')
-        except subprocess.CalledProcessError as e:
-            self.log.error(e.stderr)
-            raise HTTPError(500, reason="Subprocess Error")
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise HTTPError(404, reason="File not found")
+        self.log.info(f"Running: {command}")
+        ret = await asyncio.create_subprocess_shell(command,
+                                                    stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.PIPE,
+                                                    cwd=cwd)
+        await ret.wait()
 
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
@@ -346,6 +337,7 @@ class VersionHandler(GraderBaseHandler):
 
 def lti_username_convert(username):
     return username.replace("e", "")
+
 
 @register_handler(r"\/", VersionSpecifier.V1)
 class VersionHandlerV1(GraderBaseHandler):
