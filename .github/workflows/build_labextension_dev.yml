@@ -45,10 +45,15 @@ jobs:
     - name: Get commit hash
       id: commit_hash
       run: echo "::set-output name=hash::$(git rev-parse --short HEAD)"
+
+    - name: Get current version
+      id: current
+      working-directory: ./grader_labextension
+      run: tbump current-version
       
     - name: Build package
       working-directory: ./grader_labextension
-      run: python -m build -n --version $(tbump current-version)-$commit_hash
+      run: python -m build -n --version $current-$commit_hash
 
     # Upload Artifacts
     - name: Archive labextension artifacts
