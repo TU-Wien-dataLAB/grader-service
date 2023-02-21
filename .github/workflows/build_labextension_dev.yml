@@ -33,7 +33,7 @@ jobs:
       working-directory: ./grader_labextension
       run: |
         python -m pip install --upgrade pip
-        pip install jupyter_packaging~=0.12.0 jupyterlab~=3.1 packaging setuptools twine build
+        pip install jupyter_packaging~=0.12.0 jupyterlab~=3.1 packaging setuptools twine build tbump
     - name: Install dependencies
       working-directory: ./grader_labextension
       run: |
@@ -46,14 +46,19 @@ jobs:
       id: commit_hash
       run: echo "::set-output name=hash::$(git rev-parse --short HEAD)"
 
-    - name: Get current version
+    - name: get current tbump version
       id: current
       working-directory: ./grader_labextension
       run: tbump current-version
+
+    - name: tbump version
+      id: current
+      working-directory: ./grader_labextension
+      run: tbump $current-$commit_hash --no-push --no-tag --only-patch --non-interactive
       
     - name: Build package
       working-directory: ./grader_labextension
-      run: python -m build -n --version $current-$commit_hash
+      run: python -m build -n
 
     # Upload Artifacts
     - name: Archive labextension artifacts
