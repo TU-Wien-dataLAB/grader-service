@@ -54,7 +54,7 @@ jobs:
     - name: tbump version
       id: current_version
       working-directory: ./grader_labextension
-      run: tbump $(current_version)-dev$commit_hash --no-push --no-tag --only-patch --non-interactive
+      run: tbump $current_version-dev$commit_hash --no-push --no-tag --only-patch --non-interactive
       
     - name: Build package
       working-directory: ./grader_labextension
