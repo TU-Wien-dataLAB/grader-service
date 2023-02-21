@@ -34,8 +34,9 @@ regex = '''
   (?P<minor>\d+)
   \.
   (?P<patch>\d+)
-  \-?
-  (?P<pre>((a|b|rc|dev)\d+)?)
+  (\-?
+    (?P<extra>.+)
+  )?
   '''
 
 [tool.tbump.git]
