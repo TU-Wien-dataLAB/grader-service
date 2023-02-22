@@ -36,7 +36,7 @@ jobs:
       env:
         CURRENT_VERSION: ${{ steps.current_version.outputs.version }}
         COMMIT_HASH: ${{ github.sha }}
-      run: tbump ${CURRENT_VERSION}-${COMMIT_HASH} --non-interactive --only-patch
+      run: tbump ${CURRENT_VERSION}-dev-${COMMIT_HASH} --non-interactive --only-patch
       
   checkout-only:
     if: ${{ startsWith(github.ref, 'refs/tags/grader-labextension') }}
@@ -49,8 +49,6 @@ jobs:
     needs: ['checkout-only','update-version']
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-
     - name: Setup node
       uses: actions/setup-node@v1
       with:
