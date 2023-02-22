@@ -26,12 +26,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install tbump
 
+    - name: Get current version
+      id: get_current_version
+      working-directory: ./grader_labextension
+      run: echo "$(tbump current-version)"
+
     - name: Bump Version
       working-directory: ./grader_labextension
       env:
-        current-version: ${{ tbump current-version }}
-        commit-hash: ${{ git rev-parse --short HEAD }}
-      run: tbump $current-version-$commit-hash --non-interactive --only-patch
+        CURRENT_VERSION: ${{ steps.get_current_version.outputs.current_version }}
+        COMMIT_HASH: ${{ github.sha }}
+      run: tbump ${CURRENT_VERSION}-${COMMIT_HASH} --non-interactive --only-patch
       
 
   build:
