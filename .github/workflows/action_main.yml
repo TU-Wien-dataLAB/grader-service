@@ -26,7 +26,6 @@ jobs:
         dir_names: true
         files: |
           **/*
-
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
@@ -42,30 +41,15 @@ jobs:
   build_labextension:
     uses: ./.github/workflows/build_labextension.yml
     needs: init
-    if: ${{ !contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_labextension') }}
-
-  build_labextension_dev:
-    uses: ./.github/workflows/build_labextension_dev.yml
-    needs: init
-    if: ${{ contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_labextension') }}
-
+    if: contains(needs.init.outputs.changeDirs, 'grader_labextension')
   dockerize_labextension:
     needs: build_labextension
-    uses: ./.github/workflows/docker_labextension.yml
-
-  dockerize_labextension_dev:
-    needs: build_labextension_dev
     uses: ./.github/workflows/docker_labextension.yml
 
   build_convert:
     needs: init
     if: contains(needs.init.outputs.changeDirs, 'grader_convert')
     uses: ./.github/workflows/build_convert.yml
-
-  build_and_release_grader_service_dev:
-    uses: ./.github/workflows/build_and_release_service_dev.yml
-    needs: init
-    if: ${{ contains(github.event.head_commit.message, '[dev]') && contains(needs.init.outputs.changeDirs, 'grader_service') }}
 
   release_helm:
     needs: init
@@ -101,12 +85,6 @@ jobs:
     needs: dockerize_labextension
     if: startsWith(github.ref, 'refs/tags/grader-labextension')
     uses: ./.github/workflows/publish_labextension.yml
-    secrets: inherit
-
-  release_labextension_dev:
-    needs: dockerize_labextension_dev
-    if: ${{ contains(github.event.head_commit.message, '[dev]') }}
-    uses: ./.github/workflows/publish_labextension_dev.yml
     secrets: inherit
 
   release_convert:
