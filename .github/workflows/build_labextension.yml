@@ -15,6 +15,29 @@ permissions:
   contents: read
 
 jobs:
+  update-version:
+    if: !startsWith(github.ref, 'refs/tags/grader-labextension')
+    run-on: ubuntu-latest
+    steps:
+    - name: Install tbump
+      run: |
+        python -m pip install --upgrade pip
+        pip install tbump
+
+    - name: Get commit hash
+      id: commit_hash
+      run: echo "::set-output name=hash::$(git rev-parse --short HEAD)"
+
+    - name: Get current version
+      id: current_version
+      working-directory: ./grader_labextension
+      run: echo "$(tbump current-version)"
+
+    - name: Bump Version
+      working-directory: ./grader_labextension
+      run: tbump $current_version-$commit_hash --only-patch
+      
+
   build:
     runs-on: ubuntu-latest
     steps:
