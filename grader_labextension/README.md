@@ -84,7 +84,6 @@ By default, the `jlpm build` command generates the source maps for this extensio
 jupyter lab build --minimize=False
 ```
 
-
 ### Development uninstall
 
 ```bash

@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   update-version:
-    if: !startsWith(github.ref, 'refs/tags/grader-labextension')
+    if: ${{ !startsWith(github.ref, 'refs/tags/grader-labextension') }}
     runs-on: ubuntu-latest
     steps:
     - name: Install tbump
@@ -35,7 +35,7 @@ jobs:
 
     - name: Bump Version
       working-directory: ./grader_labextension
-      run: tbump $current_version-$commit_hash --only-patch
+      run: tbump $current_version-$commit_hash --non-interactive --only-patch
       
 
   build:
