@@ -27,7 +27,6 @@ To remove the extension, execute:
 pip uninstall grader_labextension
 ```
 
-
 ## Troubleshoot
 
 If you are seeing the frontend extension, but it is not working, check
