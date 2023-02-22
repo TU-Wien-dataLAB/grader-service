@@ -48,4 +48,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Send gitlab trigger request
-        run: curl -X POST --fail -F token={{ secrets.LABEXTENSION_DEPLOY_TRIGGER }} -F tag={{ steps.meta.outputs.tags }} https://gitlab.tuwien.ac.at/api/v4/projects/718/trigger/pipeline
+        env:
+          TRIGGER: ${{ secrets.LABEXTENSION_DEPLOY_TRIGGER }}
+        run: curl -X POST --fail -F token=$TRIGGER -F ref=jaas https://gitlab.tuwien.ac.at/api/v4/projects/718/trigger/pipeline
