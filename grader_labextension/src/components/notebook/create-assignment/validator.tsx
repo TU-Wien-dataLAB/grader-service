@@ -5,7 +5,6 @@
 // LICENSE file in the root directory of this source tree.
 
 import { Notebook } from '@jupyterlab/notebook';
-import { Button } from '@blueprintjs/core';
 import { Cell } from '@jupyterlab/cells';
 import * as React from 'react';
 import { CellModel, NbgraderData, ToolData } from '../model';
@@ -167,16 +166,16 @@ export const Validator = (props: ValidatorProps) => {
   };
   return (
     <Box>
-      <Button
-        className="jp-ToolbarButtonComponent grader-toolbar-button"
+      <MuiButton
+        className="grader-toolbar-button"
         onClick={validateNotebook}
-        icon="automatic-updates"
-        minimal
-        intent="success"
-        small={true}
+        variant="outlined"
+        color="success"
+        size="small"
+        sx={{ fontSize: '0.1rem' }}
       >
         Validate
-      </Button>
+      </MuiButton>
       <Dialog
         open={dialogOpen}
         onClose={handleClose}

@@ -5,8 +5,6 @@
 // LICENSE file in the root directory of this source tree.
 
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Button, Intent, Divider, Switch } from '@blueprintjs/core';
-import { IconNames } from '@blueprintjs/icons';
 import React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { Notebook, NotebookPanel } from '@jupyterlab/notebook';

@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import {Cell} from '@jupyterlab/cells';
-import {CommandPalette, ContextMenu, PanelLayout} from '@lumino/widgets';
+import {PanelLayout} from '@lumino/widgets';
 import {GradeBook} from '../../../services/gradebook';
 import {
   getProperties,
@@ -15,22 +15,19 @@ import {
 } from '../../../services/submissions.service';
 import {IModeSwitchProps} from '../slider';
 import {showErrorMessage} from '@jupyterlab/apputils';
-import {Button, Intent, Switch} from '@blueprintjs/core';
 import * as React from 'react';
 import {Notebook, NotebookPanel} from '@jupyterlab/notebook';
 import {Lecture} from '../../../model/lecture';
 import {Assignment} from '../../../model/assignment';
-import {IconNames} from '@blueprintjs/icons';
 import {
-  getAllAssignments,
   getAssignment
 } from '../../../services/assignments.service';
 import {getAllLectures} from '../../../services/lectures.service';
 import {DataWidget} from './data-widget/data-widget';
 import {GradeWidget} from './grade-widget/grade-widget';
 import {GlobalObjects} from '../../..';
-import {Box, Grid} from "@mui/material";
-import {CreationModeSwitch} from "../create-assignment/creation-switch";
+import {Box, Button, Grid, Stack, Typography} from "@mui/material";
+import {AntSwitch} from "../create-assignment/creation-switch";
 import {Validator} from "../create-assignment/validator";
 
 export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
@@ -162,30 +159,19 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
 
   public render() {
     return (
-      <Grid container spacing={2}>
-        <Grid item>
-          <Switch
-            style={{marginTop: "-1px"}}
-            checked={this.state.mode}
-            label="Grading Mode"
-            onChange={this.handleChange}
-          />
-        </Grid>
-        <Grid item>
-          <Box>
-            <Button
-              className="jp-ToolbarButtonComponent grader-toolbar-button"
+        <Stack direction="row" spacing={1}  alignItems={"center"} >
+          <AntSwitch checked={this.state.mode} onChange={this.handleChange}/>
+          <Typography variant="caption" >Grading Mode</Typography>
+          <Button
+              className="grader-toolbar-button"
               onClick={() => this.saveProperties()}
-              icon={(this.state.saveButtonText === "Saved" ? IconNames.SAVED : IconNames.FLOPPY_DISK)}
-              minimal
-              intent="success"
-              small={true}
-            >
-              {this.state.saveButtonText}
-            </Button>
-          </Box>
-        </Grid>
-      </Grid>
+              variant="outlined"
+              color="success"
+              size="small"
+          >
+            {this.state.saveButtonText}
+          </Button>
+      </Stack>
     )
       ;
   }

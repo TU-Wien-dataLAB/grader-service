@@ -39,19 +39,14 @@ export class SwitchModeFactory {
         );
       case 'source':
         return (
-          <Grid container spacing={2}>
-            <Grid item>
+
               <CreationModeSwitch
                 notebook={props.notebook}
                 notebookpanel={props.notebookpanel}
                 mode={props.mode}
                 onChange={props.onChange}
               />
-            </Grid>
-            <Grid item>
-              <Validator notebook={props.notebook} />
-            </Grid>
-          </Grid>
+
         );
       default:
         return null;
