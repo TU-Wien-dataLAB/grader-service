@@ -98,3 +98,4 @@ folder is located. Then you can remove the symlink named `grader-labextension` w
 ### Packaging the extension
 
 See [RELEASE](RELEASE.md)
+
