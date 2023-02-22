@@ -28,7 +28,7 @@ current = "0.1.29"
 # Example of a semver regexp.
 # Make sure this matches current_version before
 # using tbump
-regex = """
+regex = '''
    v?
     (?:
         (?:(?P<epoch>[0-9]+)!)?                           # epoch
@@ -56,8 +56,8 @@ regex = """
             (?P<dev_n>[0-9]+)?
         )?
     )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
-  """
+    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?
+  '''
 
 [tool.tbump.git]
 message_template = "Bump labextension to {new_version}"
