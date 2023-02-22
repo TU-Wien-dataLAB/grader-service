@@ -29,12 +29,12 @@ jobs:
     - name: Get current version
       id: current_version
       working-directory: ./grader_labextension
-      run: tbump current-version
+      run: echo "::set-output name=version::$(tbump current-version)"
 
     - name: Bump Version
       working-directory: ./grader_labextension
       env:
-        CURRENT_VERSION: ${{ steps.current_version.outputs.stdout }}
+        CURRENT_VERSION: ${{ steps.current_version.outputs.version }}
         COMMIT_HASH: ${{ github.sha }}
       run: tbump ${CURRENT_VERSION}-${COMMIT_HASH} --non-interactive --only-patch
       
