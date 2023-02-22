@@ -31,7 +31,7 @@ jobs:
       env:
         current-version: ${{ echo "$(tbump current-version)" }}
         commit-hash: ${{ echo "::set-output name=hash::$(git rev-parse --short HEAD)" }}
-      run: tbump $current_version-$commit_hash --non-interactive --only-patch
+      run: tbump $current-version-$commit-hash --non-interactive --only-patch
       
 
   build:
