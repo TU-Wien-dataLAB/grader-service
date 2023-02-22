@@ -34,7 +34,7 @@ jobs:
     - name: Bump Version
       working-directory: ./grader_labextension
       env:
-        CURRENT_VERSION: ${{ steps.current_version.outputs.current_version }}
+        CURRENT_VERSION: ${{ steps.current_version.outputs.stdout }}
         COMMIT_HASH: ${{ github.sha }}
       run: tbump ${CURRENT_VERSION}-${COMMIT_HASH} --non-interactive --only-patch
       

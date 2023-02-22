@@ -23,6 +23,7 @@ pip install grader_labextension
 
 To remove the extension, execute:
 
+
 ```bash
 pip uninstall grader_labextension
 ```
