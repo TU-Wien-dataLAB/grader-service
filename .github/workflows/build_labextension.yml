@@ -29,8 +29,8 @@ jobs:
     - name: Bump Version
       working-directory: ./grader_labextension
       env:
-        current-version: ${{ echo "$(tbump current-version)" }}
-        commit-hash: ${{ echo "::set-output name=hash::$(git rev-parse --short HEAD)" }}
+        current-version: ${{ tbump current-version }}
+        commit-hash: ${{ git rev-parse --short HEAD }}
       run: tbump $current-version-$commit-hash --non-interactive --only-patch
       
 
