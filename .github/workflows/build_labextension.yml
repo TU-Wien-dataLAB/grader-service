@@ -29,7 +29,7 @@ jobs:
     - name: Get current version
       id: get_current_version
       working-directory: ./grader_labextension
-      run: echo "$(tbump current-version)"
+      run: tbump current-version
 
     - name: Bump Version
       working-directory: ./grader_labextension
@@ -38,10 +38,15 @@ jobs:
         COMMIT_HASH: ${{ github.sha }}
       run: tbump ${CURRENT_VERSION}-${COMMIT_HASH} --non-interactive --only-patch
       
+  checkout-only:
+    if: ${{ !startsWith(github.ref, 'refs/tags/grader-labextension') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
   build:
     if: ${{ always() }}
-    needs: update-version
+    needs: ['checkout-only','update-version']
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
