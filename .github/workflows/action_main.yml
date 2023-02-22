@@ -1,7 +1,6 @@
 name: MAIN
 
 on:
-  push:
   pull_request:
     branches:
       - main
