@@ -1,9 +1,7 @@
-name: Build and Deploy Service Nightly
+name: Build and Deploy Service Dev
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * *'
+  workflow_call:
 
 permissions:
   contents: write
@@ -118,7 +116,7 @@ jobs:
       env:
         CR_SKIP_EXISTING: true
         CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-nightly-{{ .Version }}"
+        CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-helm-dev-{{ .Version }}"
         CR_INDEX_PATH: "index.yaml"
       run: |
         repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
@@ -131,7 +129,7 @@ jobs:
         
         echo "Change Version"
         og_version=$(yq eval '.version' charts/grader-service/Chart.yaml)
-        sed -i "s/^version:.*/version: $og_version-$commit_hash/" charts/grader-service/Chart.yaml
+        sed -i "s/^version:.*/version: $og_version-dev-$commit_hash/" charts/grader-service/Chart.yaml
         
         echo "Creating release..."
         # package chart

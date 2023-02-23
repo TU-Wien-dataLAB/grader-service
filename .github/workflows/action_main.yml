@@ -2,11 +2,12 @@ name: MAIN
 
 on:
   push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
-    types:
-      - closed
+    types: [opened, synchronize, reopened]
 
 jobs:
   init:
@@ -26,7 +27,6 @@ jobs:
         dir_names: true
         files: |
           **/*
-
     - id: outputStep
       run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
@@ -43,9 +43,11 @@ jobs:
     uses: ./.github/workflows/build_labextension.yml
     needs: init
     if: contains(needs.init.outputs.changeDirs, 'grader_labextension')
+
   dockerize_labextension:
     needs: build_labextension
     uses: ./.github/workflows/docker_labextension.yml
+    secrets: inherit
 
   build_convert:
     needs: init

@@ -10,7 +10,6 @@ import tornado
 # run __init__.py to register handlers
 import grader_labextension
 
-
 def main():
   """
   Runs the GraderExtensionHandler tornado server locally without being attached to a jupyter_server.

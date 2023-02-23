@@ -1,11 +1,13 @@
 .grader-toolbar-button {
-    min-height: 8px;
-    font-size: var(--jp-ui-font-size1) !important;
+    text-transform: none !important;
+    font-size: 9px !important;
+    padding: 2px 3px !important;
+    font-family: var(--jp-ui-font-family) !important;
 }
 
 .grader-toolbar-button svg {
-    width: 9pt;
-    height: 9pt;
+    width: 7pt;
+    height: 7pt;
 }
 
 
