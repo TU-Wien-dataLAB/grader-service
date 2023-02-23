@@ -2,6 +2,10 @@ name: MAIN
 
 on:
   push:
+    tags:
+      - grader-service-*
+      - grader-convert-*
+      - grader-labextension-*
     branches:
       - main
   pull_request:
