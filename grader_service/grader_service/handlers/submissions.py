@@ -473,7 +473,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
 
-        await self._run_command(f'git init --bare', git_repo_path)
+        await self._run_command_async(f'git init --bare', git_repo_path)
 
         # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
@@ -502,16 +502,16 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Init local repository
         command = f"git init"
-        await self._run_command(command, tmp_input_path)
+        await self._run_command_async(command, tmp_input_path)
 
         # Pull user repository
         command = f'git pull "{submission_repo_path}" main'
-        await self._run_command(command, tmp_input_path)
+        await self._run_command_async(command, tmp_input_path)
         self.log.info("Successfully cloned repo")
 
         # Checkout to correct submission commit
         command = f"git checkout {submission.commit_hash}"
-        await self._run_command(command, tmp_input_path)
+        await self._run_command_async(command, tmp_input_path)
         self.log.info(f"Now at commit {submission.commit_hash}")
 
         # Copy files to output directory
@@ -519,31 +519,31 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Init local repository
         command = f"git init"
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
 
         # Add edit remote
         command = f"git remote add edit {git_repo_path}"
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
         # Switch to main
         command = f"git switch -c main"
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully switched to branch main")
 
         # Add files to staging
         command = f"git add -A"
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully added files to staging")
 
         # Commit Files
         command = f'git commit -m "Initial commit" '
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully commited files")
 
         # Push copied files
         command = f"git push edit main"
-        await self._run_command(command, tmp_output_path)
+        await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
 
         submission.edited = True

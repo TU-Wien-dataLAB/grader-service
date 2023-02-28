@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import asyncio
+import shlex
 import subprocess
 import datetime
 import functools
@@ -206,7 +207,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             is_git = False
         return is_git
 
-    async def duplicate_release_repo(self, repo_path_release: str, repo_path_user: str, assignment: Assignment, message: str,
+    def duplicate_release_repo(self, repo_path_release: str, repo_path_user: str, assignment: Assignment, message: str,
                                checkout_main: bool = False):
         tmp_path_base = os.path.join(self.application.grader_service_dir, "tmp", assignment.lecture.code,
                                      str(assignment.id), self.user.name)
@@ -222,12 +223,12 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         self.log.info(f"Temporary path used for copying: {tmp_path_base}")
 
         try:
-            await self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
+            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
             if checkout_main:
-                await self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-                await self._run_command(f"git checkout -b main", cwd=tmp_path_user)
+                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
+                self._run_command(f"git checkout -b main", cwd=tmp_path_user)
             else:
-                await self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
+                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
 
             self.log.info(f"Copying repository contents from {tmp_path_release} to {tmp_path_user}")
             ignore = shutil.ignore_patterns(".git", "__pycache__")
@@ -242,12 +243,27 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                     else:
                         shutil.copy2(s, d)
 
-            await self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{message}"\'', tmp_path_user)
-            await self._run_command("git push -u origin main", tmp_path_user)
+            self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{message}"\'', tmp_path_user)
+            self._run_command("git push -u origin main", tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 
-    async def _run_command(self, command, cwd=None):
+    def _run_command(self, command, cwd=None, capture_output=False):
+        # TODO currently there a two run_command functions,
+        #  because duplicate_release_repo does not work with the _run_command_async
+        try:
+            self.log.info(f"Running: {command}")
+            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
+            if capture_output:
+                return str(ret.stdout, 'utf-8')
+        except subprocess.CalledProcessError as e:
+            self.log.error(e.stderr)
+            raise HTTPError(500, reason="Subprocess Error")
+        except FileNotFoundError as e:
+            self.log.error(e)
+            raise HTTPError(404, reason="File not found")
+
+    async def _run_command_async(self, command, cwd=None):
         """Starts a sub process and runs a cmd command
 
         Args:
