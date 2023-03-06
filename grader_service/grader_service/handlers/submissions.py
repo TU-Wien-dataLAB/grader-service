@@ -90,6 +90,7 @@ class SubmissionHandler(GraderBaseHandler):
 
                 # build the subquery
                 subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                            .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -104,6 +105,7 @@ class SubmissionHandler(GraderBaseHandler):
 
                 # build the subquery
                 subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                            .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -120,6 +122,7 @@ class SubmissionHandler(GraderBaseHandler):
             if submission_filter == 'latest':
                 # build the subquery
                 subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                            .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -137,6 +140,7 @@ class SubmissionHandler(GraderBaseHandler):
 
                 # build the subquery
                 subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                            .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
 
