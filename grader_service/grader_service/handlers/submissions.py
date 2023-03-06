@@ -97,7 +97,7 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date))
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (Submission.assignid == assignment_id))
                     .all())
 
             elif submission_filter == 'best':
@@ -111,7 +111,7 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score))
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (Submission.assignid == assignment_id))
                     .all())
 
             else:
@@ -127,7 +127,7 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date))
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,)
@@ -144,7 +144,7 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score))
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
