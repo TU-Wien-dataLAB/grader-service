@@ -53,10 +53,12 @@ class AssignmentBaseHandler(GraderBaseHandler):
                 )
                 .all()
             )
+
         else:
             assignments = [
                 a for a in role.lecture.assignments if a.deleted == DeleteState.active
             ]
+        assignments = sorted(assignments, key=lambda o: o.id)
         self.write_json(assignments)
 
     @authorize([Scope.instructor])
