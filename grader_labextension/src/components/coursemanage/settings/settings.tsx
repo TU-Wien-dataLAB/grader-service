@@ -25,6 +25,8 @@ import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { ModalTitle } from '../../util/modal-title';
+import {autogradeSubmission} from "../../../services/grading.service";
+import {AgreeDialog} from "../../util/dialog";
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -70,6 +72,36 @@ export const SettingsComponent = (props: ISettingsProps) => {
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(props.assignment.max_submissions)
   );
+
+  const handleDeleteAssignment = () => {
+    setDialogContent({
+      title: 'Delete Assignment',
+      message: 'Do you wish to delete this assignment?',
+      handleAgree: async () => {
+        await deleteAssignment(
+                props.lecture.id,
+                props.assignment.id
+              ).then(
+                response => {
+                  enqueueSnackbar('Successfully Deleted Assignment', {
+                    variant: 'success'
+                  });
+                },
+                (error: Error) => {
+                  enqueueSnackbar(error.message, {
+                    variant: 'error'
+                  });
+                }
+              );
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  };
+
+   const closeDialog = () => setShowDialog(false);
+
   const formik = useFormik({
     initialValues: {
       name: props.assignment.name,
@@ -260,23 +292,7 @@ export const SettingsComponent = (props: ISettingsProps) => {
           <Button
             color="error"
             variant="contained"
-            onClick={async () => {
-              await deleteAssignment(
-                props.lecture.id,
-                props.assignment.id
-              ).then(
-                response => {
-                  enqueueSnackbar('Successfully Deleted Assignment', {
-                    variant: 'success'
-                  });
-                },
-                (error: Error) => {
-                  enqueueSnackbar(error.message, {
-                    variant: 'error'
-                  });
-                }
-              );
-            }}
+            onClick={handleDeleteAssignment}
           >
             Delete Assignment
           </Button>
@@ -284,6 +300,7 @@ export const SettingsComponent = (props: ISettingsProps) => {
             Save changes
           </Button>
         </Stack>
+        <AgreeDialog open={showDialog} {...dialogContent} />
       </form>
     </Box>
   );
