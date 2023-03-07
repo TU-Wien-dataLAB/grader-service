@@ -56,6 +56,14 @@ export interface ISettingsProps {
   submissions: any[];
 }
 export const SettingsComponent = (props: ISettingsProps) => {
+  // Agree dialog states for assignment deletion
+  const [showDialog, setShowDialog] = React.useState(false);
+  const [dialogContent, setDialogContent] = React.useState({
+    title: '',
+    message: '',
+    handleAgree: null,
+    handleDisagree: null
+  });
   const [checked, setChecked] = React.useState(
     props.assignment.due_date !== null
   );
@@ -229,7 +237,7 @@ export const SettingsComponent = (props: ISettingsProps) => {
             label="Allow file upload by students"
           />
 
-          {/* Not included in release 1.0
+          {/* Not included in release 0.1
               <InputLabel id="demo-simple-select-label">Type</InputLabel>
               <Select
                 labelId="assignment-type-select-label"
@@ -252,11 +260,6 @@ export const SettingsComponent = (props: ISettingsProps) => {
           <Button
             color="error"
             variant="contained"
-            disabled={
-              props.assignment.status === 'released' ||
-              props.assignment.status === 'complete' ||
-              props.submissions.length > 0
-            }
             onClick={async () => {
               await deleteAssignment(
                 props.lecture.id,
