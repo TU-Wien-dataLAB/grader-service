@@ -228,7 +228,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             return self.assignment.properties
 
         assignment_properties = json.loads(self.assignment.properties)
-        submission_properties = json.loads(self.submission.properties)
+        submission_properties = json.loads(self.submission.properties.properties)
         for notebook in assignment_properties["notebooks"].keys():
             if "notebooks" in submission_properties:
                 if notebook in submission_properties["notebooks"].keys():
