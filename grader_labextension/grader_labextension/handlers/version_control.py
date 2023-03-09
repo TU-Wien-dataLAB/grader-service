@@ -63,7 +63,6 @@ class GenerateHandler(ExtensionBaseHandler):
             input_dir=f"{self.root_dir}/source/{code}/{a_id}",
             output_dir=output_dir,
             file_pattern="*.ipynb",
-            config=f"{self.root_dir}/grader_convert_config.py",
             copy_files=True  # Always copy files from source to release
         )
         generator.force = True

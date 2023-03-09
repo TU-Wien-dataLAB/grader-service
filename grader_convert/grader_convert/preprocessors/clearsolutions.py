@@ -1,5 +1,4 @@
 
-
 import re
 from textwrap import dedent
 from typing import Any, Tuple
@@ -16,15 +15,16 @@ from grader_convert.preprocessors.base import NbGraderPreprocessor
 class ClearSolutions(NbGraderPreprocessor):
 
     code_stub = Dict(
-        default_value=dict(
-            python="# YOUR CODE HERE\nraise NotImplementedError()",
-            matlab="% YOUR CODE HERE\nerror('No Answer Given!')",
-            octave="% YOUR CODE HERE\nerror('No Answer Given!')",
-            sas="/* YOUR CODE HERE */\n %notImplemented;",
-            java="// YOUR CODE HERE",
-            r="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
-            R="# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
-        ),
+        default_value={
+            'python': "# YOUR CODE HERE\nraise NotImplementedError()",
+            'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",
+            'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",
+            'sas': "/* YOUR CODE HERE */\n %notImplemented;",
+            'java': "// YOUR CODE HERE",
+            'C++11': "// YOUR CODE HERE",
+            'C++14': "// YOUR CODE HERE",
+            'C++17': "// YOUR CODE HERE",
+        },
         help="The code snippet that will replace code solutions",
     ).tag(config=True)
 
