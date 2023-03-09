@@ -591,7 +591,7 @@ class LtiSyncHandler(GraderBaseHandler):
                             reason="Unable to match users: lti_username_convert is not set in grader "
                                    "config")
 
-        scores = [{"id": s[0], "username": lti_username_convert(s[1]), "score": s[2]} for s in submissions]
+        scores = [{"id": s.id, "username": lti_username_convert(s.username), "score": s.score} for s in submissions]
         stamp = datetime.datetime.now()
         if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
                 minutes=50):
