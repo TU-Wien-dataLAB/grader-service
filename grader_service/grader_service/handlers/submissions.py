@@ -98,7 +98,8 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
+                                      Submission.assignid == assignment_id))
                     .all())
 
             elif submission_filter == 'best':
@@ -113,7 +114,8 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (
+                                      Submission.assignid == assignment_id))
                     .all())
 
             else:
@@ -130,10 +132,11 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
+                                      Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
-                        Submission.username == role.username,)
+                        Submission.username == role.username, )
                     .all())
 
             elif submission_filter == 'best':
@@ -148,7 +151,8 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (
+                                      Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -564,18 +568,19 @@ class LtiSyncHandler(GraderBaseHandler):
 
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
+        # build the subquery
+        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_available)
+                    .group_by(Submission.username)
+                    .subquery())
+
+        # build the main query
         submissions = (
-            self.session.query(
-                Submission.id,
-                Submission.username,
-                Submission.score,
-                func.max(Submission.date)
-            )
-            .filter(Submission.assignid == assignment_id, Submission.auto_status == "automatically_graded",
-                    Submission.feedback_available == True)
-            .group_by(Submission.username)
-            .all()
-        )
+            self.session.query(Submission)
+            .join(subquery,
+                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
+                          Submission.assignid == assignment_id) & Submission.feedback_available)
+            .all())
 
         assignment = self.get_assignment(lecture_id, assignment_id)
 
