@@ -375,7 +375,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         if properties is not None and properties.properties is not None:
             # delete source cells from properties if user is student
             if self.get_role(lecture_id).role == Scope.student:
-                model = GradeBookModel.from_dict(json.loads(properties))
+                model = GradeBookModel.from_dict(json.loads(properties.properties))
                 for notebook in model.notebooks.values():
                     notebook.source_cells_dict = {}
                 self.write(json.dumps(model.to_dict()))

@@ -187,10 +187,12 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         await self._run_subprocess(command, self.input_path)
         self.log.info("Successfully cloned repo")
 
-        command = f"{self.git_executable} checkout {self.submission.commit_hash}"
-        self.log.info(f"Running {command}")
-        await self._run_subprocess(command, self.input_path)
-        self.log.info(f"Now at commit {self.submission.commit_hash}")
+        # Checkout to commit of submission except when it was manually edited
+        if not self.submission.edited:
+            command = f"{self.git_executable} checkout {self.submission.commit_hash}"
+            self.log.info(f"Running {command}")
+            await self._run_subprocess(command, self.input_path)
+            self.log.info(f"Now at commit {self.submission.commit_hash}")
 
         self.submission.auto_status = "pending"
         self.session.commit()
