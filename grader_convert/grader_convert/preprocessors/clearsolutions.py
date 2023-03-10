@@ -24,6 +24,8 @@ class ClearSolutions(NbGraderPreprocessor):
             'C++11': "// YOUR CODE HERE",
             'C++14': "// YOUR CODE HERE",
             'C++17': "// YOUR CODE HERE",
+            'r': "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
+            'R': "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
         },
         help="The code snippet that will replace code solutions",
     ).tag(config=True)
