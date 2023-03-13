@@ -13,6 +13,7 @@ import os
 import shutil
 import sys
 import traceback
+from _decimal import Decimal
 from http import HTTPStatus
 from typing import Any, Awaitable, Callable, List, Optional
 
@@ -317,6 +318,8 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             return obj
         if isinstance(obj, datetime.datetime):
             return str(obj)
+        if isinstance(obj, Decimal):
+            return float(obj)
         if isinstance(obj, Model):
             return cls._serialize(obj.to_dict())
         return None

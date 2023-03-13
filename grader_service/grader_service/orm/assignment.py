@@ -8,7 +8,7 @@ import enum
 from datetime import datetime
 
 from grader_service.api.models import assignment
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, Boolean
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, Boolean, DECIMAL
 from sqlalchemy.orm import relationship
 
 from grader_service.orm.base import Base, DeleteState, Serializable
@@ -29,7 +29,7 @@ class Assignment(Base, Serializable):
     """Type of the assignment"""
     lectid = Column(Integer, ForeignKey("lecture.id"))
     duedate = Column(DateTime, nullable=False)
-    points = Column(Integer, nullable=True)
+    points = Column(DECIMAL(10, 3), nullable=True)
     status = Column(
         Enum("created", "pushed", "released", "complete"),
         default="created",
