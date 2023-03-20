@@ -1,6 +1,7 @@
 
 
 from .base import NbGraderPreprocessor
+from .clearhiddenutils import ClearHiddenUtils
 from .headerfooter import IncludeHeaderFooter
 from .lockcells import LockCells
 from .clearsolutions import ClearSolutions
@@ -36,5 +37,6 @@ __all__ = [
     "ClearHiddenTests",
     "ClearMarkScheme",
     "OverwriteKernelspec",
-    "AddRevert"
+    "AddRevert",
+    "ClearHiddenUtils"
 ]
