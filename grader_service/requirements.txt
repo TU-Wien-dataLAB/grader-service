@@ -10,7 +10,7 @@ json5>=0.9.6
 jsonschema>=3.2.0
 setuptools
 kubernetes>=17.17.0
-grader-convert>=0.1.11
+grader-convert>=0.1.13
 PyJWT>=2.4.0
 cryptography>=38.0.3
 psycopg2-binary>= 2.9.5
