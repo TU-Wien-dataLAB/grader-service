@@ -52,11 +52,11 @@ class ClearAlwaysHiddenTests(NbGraderPreprocessor):
             # begin the test area
             if self.begin_util_delimeter in line:
 
-                # check to make sure this isn't a nested BEGIN HIDDEN UTILS
+                # check to make sure this isn't a nested BEGIN ALWAYS HIDDEN UTILS
                 # region
                 if in_util:
                     raise RuntimeError(
-                        "Encountered nested begin hidden utils statements"
+                        "Encountered nested begin always hidden statements"
                     )
                 in_util = True
                 removed_util = True
@@ -72,7 +72,7 @@ class ClearAlwaysHiddenTests(NbGraderPreprocessor):
         # we finished going through all the lines, but didn't find a
         # matching END HIDDEN UTILS statment
         if in_util:
-            raise RuntimeError("No end hidden utils statement found")
+            raise RuntimeError("No end always hidden utils statement found")
 
         # replace the cell source
         cell.source = "\n".join(new_lines)
@@ -82,7 +82,7 @@ class ClearAlwaysHiddenTests(NbGraderPreprocessor):
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
     ) -> Tuple[NotebookNode, ResourcesDict]:
-        nb, resources = super(ClearHiddenUtils, self).preprocess(nb, resources)
+        nb, resources = super(ClearAlwaysHiddenTests, self).preprocess(nb, resources)
         if "celltoolbar" in nb.metadata:
             del nb.metadata["celltoolbar"]
         return nb, resources
