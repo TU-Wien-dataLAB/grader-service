@@ -16,7 +16,7 @@ from grader_convert.preprocessors import (
     IncludeHeaderFooter,
     LockCells,
     SaveCells,
-    ClearHiddenUtils
+    ClearAlwaysHiddenTests
 )
 from traitlets import Bool, List, default
 from traitlets.config.loader import Config
@@ -46,7 +46,7 @@ class GenerateAssignment(BaseConverter):
             ComputeChecksums,
             SaveCells,
             ClearHiddenTests,
-            ClearHiddenUtils,
+            ClearAlwaysHiddenTests,
             ClearMarkScheme,
             ComputeChecksums,
             AddRevert,

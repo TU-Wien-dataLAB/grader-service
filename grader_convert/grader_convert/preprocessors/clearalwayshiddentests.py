@@ -11,15 +11,15 @@ from grader_convert import utils
 from grader_convert.preprocessors.base import NbGraderPreprocessor
 
 
-class ClearHiddenUtils(NbGraderPreprocessor):
+class ClearAlwaysHiddenTests(NbGraderPreprocessor):
 
     begin_util_delimeter = Unicode(
-        "BEGIN HIDDEN UTILS",
+        "BEGIN ALWAYS HIDDEN TESTS",
         help="The delimiter marking the beginning of hidden util code",
     ).tag(config=True)
 
     end_util_delimeter = Unicode(
-        "END HIDDEN UTILS", help="The delimiter marking the end of hidden tests cases"
+        "END ALWAYS HIDDEN TESTS", help="The delimiter marking the end of hidden tests cases"
     ).tag(config=True)
 
     enforce_metadata = Bool(

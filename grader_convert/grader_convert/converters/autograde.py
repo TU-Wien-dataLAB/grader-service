@@ -18,7 +18,7 @@ from grader_convert.preprocessors import (
     OverwriteCells,
     OverwriteKernelspec,
     SaveAutoGrades,
-    ClearHiddenUtils
+    ClearAlwaysHiddenTests
 )
 from grader_convert.converters.base import BaseConverter
 from grader_convert.converters.baseapp import ConverterApp
@@ -37,7 +37,7 @@ class Autograde(BaseConverter):
         ]
     ).tag(config=True)
     autograde_preprocessors = List(
-        [Execute, LimitOutput, SaveAutoGrades, CheckCellMetadata, ClearHiddenUtils]
+        [Execute, LimitOutput, SaveAutoGrades, CheckCellMetadata, ClearAlwaysHiddenTests]
     ).tag(config=True)
 
     preprocessors = List([])
