@@ -41,6 +41,8 @@ data:
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
 {{ end }}
 
+  {{ .Values.extraConfig }}
+
   .gitconfig: |
     [user]
       name = {{ .Values.gitConfig.gitUser }}

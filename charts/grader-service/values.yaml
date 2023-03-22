@@ -59,6 +59,8 @@ kubeAutogradeExecutor:
   extraVolumes: ""
   extraVolumeMounts: ""
 
+extraConfig: ""
+
 requestHandlerConfig:
   enable_lti_features: false
   lti_client_id: ""
@@ -108,3 +110,4 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
