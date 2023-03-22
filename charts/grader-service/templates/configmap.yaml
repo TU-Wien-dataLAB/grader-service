@@ -6,42 +6,50 @@ metadata:
   labels:
     {{- include "grader-service.labels" . | nindent 4 }}
 data:
-
   grader_service_config.py: |
-{{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
+    {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
-{{- if .Values.requestHandlerConfig }}
-{{- if .Values.requestHandlerConfig.git_max_file_mb }}
+    
+    {{- if .Values.requestHandlerConfig }}
+    {{- if .Values.requestHandlerConfig.git_max_file_mb }}
     c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
-{{- end }}
-{{- end }}
+    {{- end }}
+    {{- end }}
+    
     c.KubeAutogradeExecutor.kube_context = None
-{{- if .Values.kubeAutogradeExecutor.namespace }}
+    
+    {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
-{{- end }}
+    {{- end }}
+    
     c.KubeAutogradeExecutor.default_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
 
-{{ else }}
+    {{ else }}
+    
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
-{{ end }}
+    
+    {{ end }}
 
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
+    
+{{ .Values.extraConfig | indent 4 }}
 
-{{- if .Values.requestHandlerConfig.enable_lti_features }}
+
+    {{- if .Values.requestHandlerConfig.enable_lti_features }}
     c.RequestHandlerConfig.enable_lti_features = True
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url | quote }}
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
-{{ end }}
+    {{ end }}
 
-    {{ .Values.extraConfig }}
+
 
   .gitconfig: |
     [user]
