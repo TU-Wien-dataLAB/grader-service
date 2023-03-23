@@ -321,9 +321,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-#grading npm/yarn
-grader_labextension/yarn.lock
-grader_labextension/package-lock.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
