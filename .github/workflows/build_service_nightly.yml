@@ -2,8 +2,10 @@ name: Build and Deploy Service Nightly
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * 1-5'
+  # FIXME It works but it is kinda useless because we currently do not use the nightly charts often and
+  # the versions stack up in the releases and charts, therefore it is disabled
+  #schedule:
+  #  - cron: '0 2 * * 1-5'
 
 permissions:
   contents: write
