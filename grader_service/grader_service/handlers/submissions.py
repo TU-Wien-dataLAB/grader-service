@@ -39,6 +39,13 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize, R
 import datetime
 
 
+def remove_points_from_submission(submissions):
+    for s in submissions:
+        if not s.feedback_available:
+            s.score = None
+    return submissions
+
+
 @register_handler(
     path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
     version_specifier=VersionSpecifier.ALL,
@@ -177,6 +184,9 @@ class SubmissionHandler(GraderBaseHandler):
                     self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
                 self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
         else:
+            if not instructor_version:
+                submissions = remove_points_from_submission(submissions)
+
             self.write_json(submissions)
         self.session.close()  # manually close here because on_finish overwrite
 
