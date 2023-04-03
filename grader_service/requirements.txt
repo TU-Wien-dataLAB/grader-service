@@ -1,6 +1,6 @@
 alembic>=1.6.4
 SQLAlchemy==1.4.46
-tornado==6.1
+tornado>=6.2
 six==1.16.0
 traitlets>=5.0.5
 tornado_sqlalchemy>=0.7.0

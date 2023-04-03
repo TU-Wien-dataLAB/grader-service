@@ -141,9 +141,6 @@ class GraderService(config.Application):
         stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
-        root_logger.removeHandler(
-            root_logger.handlers[0]
-        )  # remove root handler to prevent duplicate logging
         fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
         formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
 
@@ -238,7 +235,6 @@ class GraderService(config.Application):
                 config=self.config,
                 db=SQLAlchemy(self.db_url, engine_options={} if isSQLite else {"pool_size": 50, "max_overflow": -1}),
                 parent=self,
-
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,
