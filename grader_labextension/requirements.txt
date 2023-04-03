@@ -2,4 +2,4 @@ urllib3>=1.26.6
 traitlets>=5.0.5
 tornado>=6.2
 jupyter_server>=2.0.0
-grader-convert>=0.1.13
+grader-convert>=0.1.14
