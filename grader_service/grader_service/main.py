@@ -233,7 +233,7 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=SQLAlchemy(self.db_url, engine_options={"pool_size": 50, "max_overflow": -1}),
+                db=SQLAlchemy(self.db_url),
                 parent=self,
 
             ),
