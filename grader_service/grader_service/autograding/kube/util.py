@@ -9,7 +9,12 @@ import hashlib
 import os
 from kubernetes import config
 
-from kubernetes.client.models import V1Container, V1ObjectMeta, V1Pod, V1PodSpec, V1ResourceRequirements, V1Toleration, V1SecurityContext, V1Volume, V1VolumeMount, V1PodSecurityContext
+from kubernetes.client.models import (V1Container, V1ObjectMeta, V1Pod,
+                                      V1PodSpec, V1ResourceRequirements,
+                                      V1Toleration, V1SecurityContext,
+                                      V1Volume, V1VolumeMount,
+                                      V1PodSecurityContext)
+
 
 def get_current_namespace():
     ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
@@ -21,6 +26,7 @@ def get_current_namespace():
         return active_context["context"]["namespace"]
     except KeyError:
         return "default"
+
 
 def generate_hashed_slug(slug, limit=63, hash_length=6):
     """
@@ -47,7 +53,8 @@ def generate_hashed_slug(slug, limit=63, hash_length=6):
     ).lower()
 
 
-def update_k8s_model(target, changes, logger=None, target_name=None, changes_name=None):
+def update_k8s_model(target, changes, logger=None,
+                     target_name=None, changes_name=None):
     """
     Takes a model instance such as V1PodSpec() and updates it with another
     model, which is allowed to be a dict or another model instance of the same
@@ -60,13 +67,15 @@ def update_k8s_model(target, changes, logger=None, target_name=None, changes_nam
     model_type = type(target)
     if not hasattr(target, 'attribute_map'):
         raise AttributeError(
-            "Attribute 'target' ({}) must be an object (such as 'V1PodSpec') with an attribute 'attribute_map'.".format(
+            "Attribute 'target' ({}) must be an object (such as 'V1PodSpec') "
+            "with an attribute 'attribute_map'.".format(
                 model_type.__name__
             )
         )
     if not isinstance(changes, model_type) and not isinstance(changes, dict):
         raise AttributeError(
-            "Attribute 'changes' ({}) must be an object of the same type as 'target' ({}) or a 'dict'.".format(
+            "Attribute 'changes' ({}) must be an object of the same type "
+            "as 'target' ({}) or a 'dict'.".format(
                 type(changes).__name__, model_type.__name__
             )
         )
@@ -75,22 +84,27 @@ def update_k8s_model(target, changes, logger=None, target_name=None, changes_nam
     for key, value in changes_dict.items():
         if key not in target.attribute_map:
             raise ValueError(
-                "The attribute 'changes' ({}) contained '{}' not modeled by '{}'.".format(
+                "The attribute 'changes' ({}) contained '{}' "
+                "not modeled by '{}'.".format(
                     type(changes).__name__, key, model_type.__name__
                 )
             )
 
         # If changes are passed as a dict, they will only have a few keys/value
-        # pairs representing the specific changes. If the changes parameter is a
-        # model instance on the other hand, the changes parameter will have a
-        # lot of default values as well. These default values, which are also
-        # falsy, should not use to override the target's values.
+        # pairs representing the specific changes.
+        # If the changes parameter is a model instance on the other hand,
+        # the changes parameter will have a lot of default values as well.
+        # These default values, which are also falsy,
+        # should not use to override the target's values.
         if isinstance(changes, dict) or value:
             if getattr(target, key):
                 if logger and changes_name:
-                    warning = "'{}.{}' current value: '{}' is overridden with '{}', which is the value of '{}.{}'.".format(
-                        target_name, key, getattr(target, key), value, changes_name, key
-                    )
+                    warning = "'{}.{}' current value: '{}' " \
+                              "is overridden with '{}', " \
+                              "which is the value of '{}.{}'.".format(
+                                target_name, key, getattr(target, key),
+                                value, changes_name, key
+                                )
                     logger.warning(warning)
             setattr(target, key, value)
 
@@ -139,8 +153,9 @@ def _get_k8s_model_dict(model_type, model):
 
 def _map_dict_keys_to_model_attributes(model_type, model_dict):
     """
-    Maps a dict's keys to the provided models attributes using its attribute_map
-    attribute. This is (always?) the same as converting camelCase to snake_case.
+    Maps a dict's keys to the provided models attributes
+    using its attribute_map attribute.
+    This is (always?) the same as converting camelCase to snake_case.
     Note that the function will not influence nested object's keys.
     """
 
@@ -233,7 +248,7 @@ def make_pod(
         security_context=V1PodSecurityContext(),
         restart_policy='Never'
     )
-
+    # TODO maybe get userid of jupyterhub user
     autograde_container = V1Container(
         name='autograde',
         image=image,
@@ -242,7 +257,7 @@ def make_pod(
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
         security_context=V1SecurityContext(
-            run_as_user=run_as_user #TODO maybe get userid of jupyterhub user
+            run_as_user=run_as_user
         ),
         volume_mounts=[
             get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
@@ -251,7 +266,8 @@ def make_pod(
 
     pod.spec.containers.append(autograde_container)
     if tolerations:
-        pod.spec.tolerations = [get_k8s_model(V1Toleration, obj) for obj in tolerations]
+        pod.spec.tolerations = [get_k8s_model(V1Toleration, obj)
+                                for obj in tolerations]
     if volumes:
         pod.spec.volumes = [get_k8s_model(V1Volume, obj) for obj in volumes]
 
