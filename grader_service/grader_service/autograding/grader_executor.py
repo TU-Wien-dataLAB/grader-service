@@ -6,9 +6,6 @@
 
 import asyncio
 import inspect
-import logging
-import sys
-import traceback
 import typing
 from traitlets import Integer, TraitError, validate, Bool, Callable
 from traitlets.config import SingletonConfigurable
@@ -16,9 +13,15 @@ from asyncio import Queue
 
 
 class GraderExecutor(SingletonConfigurable):
-    n_concurrent_tasks = Integer(default_value=5, allow_none=False).tag(config=True)
-    resubmit_cancelled_tasks = Bool(default_value=False, allow_none=False).tag(config=True)
-    get_event_loop = Callable(default_value=asyncio.get_event_loop, allow_none=False).tag(config=True)
+
+    n_concurrent_tasks = Integer(default_value=5,
+                                 allow_none=False).tag(config=True)
+
+    resubmit_cancelled_tasks = Bool(default_value=False,
+                                    allow_none=False).tag(config=True)
+
+    get_event_loop = Callable(default_value=asyncio.get_event_loop,
+                              allow_none=False).tag(config=True)
 
     async def task_executor(self):
         coro, on_finish = (None, None)
@@ -33,10 +36,11 @@ class GraderExecutor(SingletonConfigurable):
                         else:
                             on_finish()
                 except asyncio.CancelledError:
-                    raise  # raise the asyncio.CancelledError on the outside when it happens while executing coro
+                    raise
                 except Exception as e:
                     self.log.error(
-                        f"An exception ({e.__class__.__name__}) was raised when executing task {coro.__name__}!",
+                        f"An exception ({e.__class__.__name__}) \
+                        was raised when executing task {coro.__name__}!",
                         exc_info=e)
                 self.queue.task_done()
         except asyncio.CancelledError:
@@ -48,29 +52,28 @@ class GraderExecutor(SingletonConfigurable):
         self.running = True
         self.queue = Queue()
         self.loop = self.get_event_loop()
-        self.workers = [self.loop.create_task(self.task_executor()) for _ in range(self.n_concurrent_tasks)]
+        self.workers = [self.loop.create_task(self.task_executor())
+                        for _ in range(self.n_concurrent_tasks)]
 
     def submit(self, task: typing.Callable, on_finish: typing.Callable = None):
-        """
-        Submit a task to be processed by the executor.
-
+        """Submit a task to be processed by the executor.
         :param task: The task to be executed.
-        :param on_finish: Callable that is executed when submitted task finishes.
-            Can be synchronous or asynchronous call.
+        :param on_finish: Callable that is executed
+                        when submitted task finishes.
+                        Can be synchronous or asynchronous call.
         """
         self.queue.put_nowait((task, on_finish))
 
     def cancel_tasks(self):
-        """
-        Immediately cancel all tasks being executed.
+        """Immediately cancel all tasks being executed.
         """
         for worker in self.workers:
             worker.cancel()
         self.running = False
 
     async def stop(self, timeout=5):
-        """
-        Wait for tasks to finish within the timout and cancel remaining tasks.
+        """Wait for tasks to finish within the timout
+        and cancel remaining tasks.
 
         :param timeout: Timeout in seconds.
         """
@@ -81,13 +84,14 @@ class GraderExecutor(SingletonConfigurable):
         self.workers = None
 
     def start(self):
-        """
-        Restart the executor. If it is already running this has no effect.
+        """Restart the executor.
+        If it is already running this has no effect.
         """
         if self.running:
             return
         self.running = True
-        self.workers = [self.loop.create_task(self.task_executor()) for _ in range(self.n_concurrent_tasks)]
+        self.workers = [self.loop.create_task(self.task_executor())
+                        for _ in range(self.n_concurrent_tasks)]
 
     def remove_queued_tasks(self):
         """
@@ -99,7 +103,7 @@ class GraderExecutor(SingletonConfigurable):
     def _validate_n_tasks(self, proposal):
         n = proposal.value
         if n <= 0:
-            raise TraitError(f"Number of concurrent tasks has to be larger than 0, got: {n}")
+            raise TraitError(f"Num concurrent tasks has to be > 0, got: {n}")
         return n
 
 
@@ -120,14 +124,16 @@ if __name__ == "__main__":
                     # self.log = logging.getLogger()  # THIS WORKS?!?!
 
                     log: logging.Logger = self.log
-                    print(f"name: {log.name}, handlers: {log.handlers}, disabled: {log.disabled}, parent: {log.parent}")
+                    print(f"name: {log.name}, handlers: {log.handlers},"
+                          f"disabled: {log.disabled}, parent: {log.parent}")
 
                 async def wait_task(self):
                     wait_time = randint(1, 3)
-                    raise ValueError()
                     sys.stdout.flush()
-                    self.log.error('running {} will take {} second(s)'.format(code, wait_time))
-                    await asyncio.sleep(wait_time)  # I/O, context will switch to main function
+                    self.log.error('running {} will take {} second(s)'
+                                   .format(code, wait_time))
+                    # I/O, context will switch to main function
+                    await asyncio.sleep(wait_time)
                     self.log.error('ran {}'.format(code))
 
                 def _setup_logger(self):
@@ -138,7 +144,8 @@ if __name__ == "__main__":
                     traitlets_handler = stream_handler(stream=sys.stdout)
                     traitlets_handler.setFormatter(
                         logging.Formatter(
-                            "[%(asctime)s] %(levelname)-8s %(name)-13s %(module)-15s %(message)s"
+                            "[%(asctime)s] %(levelname)-8s "
+                            "%(name)-13s %(module)-15s %(message)s"
                         )
                     )
                     traitlet_logger.addHandler(traitlets_handler)
