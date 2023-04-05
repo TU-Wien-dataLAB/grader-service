@@ -44,8 +44,8 @@ def remove_points_from_submission(submissions):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
-    /(?P<assignment_id>\d*)\/submissions\/?""",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    r'\/(?P<assignment_id>\d*)\/submissions\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionHandler(GraderBaseHandler):
@@ -311,8 +311,8 @@ class SubmissionHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
-    /(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?""",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionObjectHandler(GraderBaseHandler):
@@ -372,9 +372,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
-    /(?P<assignment_id>\d*)\/submissions\/("""
-         r"?P<submission_id>\d*)\/logs\/?",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/logs\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionLogsHandler(GraderBaseHandler):
@@ -403,9 +402,9 @@ class SubmissionLogsHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
-    /(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\
-    /properties\/?""",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/' +
+    r'properties\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionPropertiesHandler(GraderBaseHandler):
@@ -498,9 +497,8 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments
-    \/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)
-    \/edit\/?""",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionEditHandler(GraderBaseHandler):
@@ -629,8 +627,8 @@ class SubmissionEditHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments
-    \/(?P<assignment_id>\d*)\/submissions\/lti\/?""",
+    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    r'(?P<assignment_id>\d*)\/submissions\/lti\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
