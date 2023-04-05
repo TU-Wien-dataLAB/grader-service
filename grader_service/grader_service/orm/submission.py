@@ -15,7 +15,6 @@ from sqlalchemy import (
     Float,
     Integer,
     String,
-    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -27,25 +26,27 @@ class Submission(Base, Serializable):
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
     auto_status = Column(
-        Enum("pending", "not_graded", "automatically_graded", "grading_failed"),
+        Enum("pending", "not_graded",
+             "automatically_graded", "grading_failed"),
         default="not_graded",
         nullable=False,
     )
-    manual_status = Column(Enum("not_graded", "manually_graded","being_edited"))
+    manual_status = Column(Enum("not_graded", "manually_graded",
+                                "being_edited"))
     score = Column(Float, nullable=True)
     assignid = Column(Integer, ForeignKey("assignment.id"))
     username = Column(String(255), ForeignKey("user.name"))
     commit_hash = Column(String(length=40), nullable=False)
     feedback_available = Column(Boolean, nullable=False)
     edited = Column(Boolean, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow, nullable=False)
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
-
-    logs = relationship("SubmissionLogs", back_populates="submission", uselist=False)
-    properties = relationship("SubmissionProperties", back_populates="submission", uselist=False)
-
+    logs = relationship("SubmissionLogs",
+                        back_populates="submission", uselist=False)
+    properties = relationship("SubmissionProperties",
+                              back_populates="submission", uselist=False)
 
     @property
     def model(self) -> submission.Submission:

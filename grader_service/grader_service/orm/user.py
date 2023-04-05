@@ -17,7 +17,8 @@ class User(Base, Serializable):
 
     roles = relationship("Role", back_populates="user")
     submissions = relationship("Submission", back_populates="user")
-    groups = relationship("Group", secondary=group_assignment_table, back_populates="users")
+    groups = relationship("Group", secondary=group_assignment_table,
+                          back_populates="users")
 
     def serialize(self):
         return {"name": self.name}
