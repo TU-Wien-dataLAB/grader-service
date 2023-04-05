@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import shlex
 import shutil
 import time
-from _decimal import Decimal
 
 import jwt
 import os.path
@@ -29,13 +27,12 @@ from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.sql.expression import func, distinct, text
+from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
-from subprocess import PIPE, CalledProcessError
-from tornado.process import Subprocess
 
-from grader_service.handlers.base_handler import GraderBaseHandler, authorize, RequestHandlerConfig
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize,\
+    RequestHandlerConfig
 import datetime
 
 
@@ -47,82 +44,94 @@ def remove_points_from_submission(submissions):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/?",
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
+    /(?P<assignment_id>\d*)\/submissions\/?""",
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionHandler(GraderBaseHandler):
-    """
-    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
+    """Tornado Handler class for http requests to
+    /lectures/{lecture_id}/assignments/{assignment_id}/submissions.
     """
 
     def on_finish(self):
         # we do not close the session we just commit because we might run
-        # LocalAutogradeExecutor or GenerateFeedbackExecutor in POST which still need it
+        # LocalAutogradeExecutor or GenerateFeedbackExecutor in POST which
+        # still need it
         pass
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
-        """
-        Return the submissions of an assignment.
+        """Return the submissions of an assignment.
 
         Two query parameter: latest, instructor-version.
 
         latest: only get the latest submissions of users.
-        instructor-version: if true, get the submissions of all users in lecture if false, get own submissions.
+        instructor-version: if true, get the submissions of all users in
+        lecture if false, get own submissions.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
-        :raises HTTPError: throws err if user is not authorized or the assignment was not found
+        :raises HTTPError: throws err if user is not authorized or
+        the assignment was not found
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters("filter", "instructor-version", "format")
         submission_filter = self.get_argument("filter", "none")
         if submission_filter not in ["none", "latest", "best"]:
-            raise HTTPError(HTTPStatus.BAD_REQUEST,
-                            reason="Filter parameter has to be either 'none', 'latest' or 'best'")
-        instructor_version = self.get_argument("instructor-version", None) == "true"
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Filter parameter \
+            has to be either 'none', 'latest' or 'best'")
+        instr_version = self.get_argument("instructor-version", None) == "true"
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format \
+            can either be 'json' or 'csv'")
 
         role: Role = self.get_role(lecture_id)
-        if instructor_version and role.role < Scope.tutor:
+        if instr_version and role.role < Scope.tutor:
             raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        if instructor_version:
+        if instr_version:
             if submission_filter == 'latest':
 
                 # build the subquery
-                subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                            .filter(Submission.assignid == assignment_id)
-                            .group_by(Submission.username)
-                            .subquery())
+                subquery = (
+                    self.session.query(Submission.username,
+                                       func.max(Submission.date).label(
+                                           "max_date"))
+                    .filter(Submission.assignid == assignment_id)
+                    .group_by(Submission.username)
+                    .subquery())
 
                 # build the main query
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                                      Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (
+                                  Submission.date == subquery.c.max_date) & (
+                                  Submission.assignid == assignment_id))
                     .all())
 
             elif submission_filter == 'best':
 
                 # build the subquery
-                subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
-                            .filter(Submission.assignid == assignment_id)
-                            .group_by(Submission.username)
-                            .subquery())
+                subquery = (
+                    self.session.query(Submission.username,
+                                       func.max(Submission.score).label(
+                                           "max_score"))
+                    .filter(Submission.assignid == assignment_id)
+                    .group_by(Submission.username)
+                    .subquery())
 
                 # build the main query
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (
-                                      Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (
+                                  Submission.score == subquery.c.max_score) & (
+                                  Submission.assignid == assignment_id))
                     .all())
 
             else:
@@ -130,7 +139,9 @@ class SubmissionHandler(GraderBaseHandler):
         else:
             if submission_filter == 'latest':
                 # build the subquery
-                subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                subquery = (self.session.query(Submission.username,
+                                               func.max(Submission.date).label(
+                                                   "max_date"))
                             .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
@@ -139,8 +150,9 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                                      Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (
+                                  Submission.date == subquery.c.max_date) & (
+                                  Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -149,7 +161,8 @@ class SubmissionHandler(GraderBaseHandler):
             elif submission_filter == 'best':
 
                 # build the subquery
-                subquery = (self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                subquery = (self.session.query(Submission.username, func.max(
+                    Submission.score).label("max_score"))
                             .filter(Submission.assignid == assignment_id)
                             .group_by(Submission.username)
                             .subquery())
@@ -158,8 +171,9 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = (
                     self.session.query(Submission)
                     .join(subquery,
-                          (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score) & (
-                                      Submission.assignid == assignment_id))
+                          (Submission.username == subquery.c.username) & (
+                                  Submission.score == subquery.c.max_score) & (
+                                  Submission.assignid == assignment_id))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -181,10 +195,12 @@ class SubmissionHandler(GraderBaseHandler):
             for i, s in enumerate(submissions):
                 d = s.model.to_dict()
                 if i == 0:
-                    self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
-                self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
+                    self.write(
+                        ",".join((k for k in d.keys() if k != "logs")) + "\n")
+                self.write(",".join(
+                    (str(v) for k, v in d.items() if k != "logs")) + "\n")
         else:
-            if not instructor_version:
+            if not instr_version:
                 submissions = remove_points_from_submission(submissions)
 
             self.write_json(submissions)
@@ -192,14 +208,14 @@ class SubmissionHandler(GraderBaseHandler):
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def post(self, lecture_id: int, assignment_id: int):
-        """
-        Create submission based on commit hash.
+        """Create submission based on commit hash.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
-        :raises HTTPError: throws err if user is not authorized or the assignment was not found
+        :raises HTTPError: throws err if user is not authorized or
+        the assignment was not found
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters()
@@ -212,17 +228,22 @@ class SubmissionHandler(GraderBaseHandler):
         role = self.get_role(lecture_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
         if assignment.status == "complete":
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot submit completed assignment!")
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
         submission_ts = datetime.datetime.utcnow()
-        if assignment.duedate is not None and submission_ts > assignment.duedate:
-            raise HTTPError(HTTPStatus.CONFLICT, reason="Submission after due date of assignment!")
+        if assignment.duedate is not None \
+                and submission_ts > assignment.duedate:
+            raise HTTPError(HTTPStatus.CONFLICT,
+                            reason="Submission after due date of assignment!")
         if assignment.max_submissions:
             submissions = assignment.submissions
-            usersubmissions = [s for s in submissions if s.username == role.username]
+            usersubmissions = [s for s in submissions if
+                               s.username == role.username]
             if len(usersubmissions) >= assignment.max_submissions:
-                raise HTTPError(HTTPStatus.CONFLICT, reason="Maximum number of submissions reached!")
+                raise HTTPError(HTTPStatus.CONFLICT, reason="Maximum number \
+                of submissions reached!")
 
         submission = Submission()
         submission.assignid = assignment.id
@@ -230,17 +251,22 @@ class SubmissionHandler(GraderBaseHandler):
         submission.username = self.user.name
         submission.feedback_available = False
 
-        if assignment.duedate is not None and submission.date > assignment.duedate:
+        if assignment.duedate is not None \
+                and submission.date > assignment.duedate:
             self.write({"message": "Cannot submit assignment: Past due date!"})
             self.write_error(HTTPStatus.FORBIDDEN)
 
-        git_repo_path = self.construct_git_dir(repo_type=assignment.type, lecture=assignment.lecture,
-                                               assignment=assignment)
+        git_repo_path = self.construct_git_dir(
+            repo_type=assignment.type, lecture=assignment.lecture,
+            assignment=assignment)
         if git_repo_path is None or not os.path.exists(git_repo_path):
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Git repository not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Git repository not found")
 
         try:
-            subprocess.run(["git", "branch", "main", "--contains", commit_hash], cwd=git_repo_path, capture_output=True)
+            subprocess.run(
+                ["git", "branch", "main", "--contains", commit_hash],
+                cwd=git_repo_path, capture_output=True)
         except subprocess.CalledProcessError:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
@@ -253,42 +279,52 @@ class SubmissionHandler(GraderBaseHandler):
         self.set_status(HTTPStatus.CREATED)
         self.write_json(submission)
 
-        # If the assignment has automatic grading or fully automatic grading perform necessary operations
-        if assignment.automatic_grading in [AutoGradingBehaviour.auto, AutoGradingBehaviour.full_auto]:
+        # If the assignment has automatic grading or fully
+        # automatic grading perform necessary operations
+        if assignment.automatic_grading in [AutoGradingBehaviour.auto,
+                                            AutoGradingBehaviour.full_auto]:
             self.set_status(HTTPStatus.ACCEPTED)
-            executor = RequestHandlerConfig.instance().autograde_executor_class(
-                self.application.grader_service_dir, submission, close_session=False, config=self.application.config
+            executor = RequestHandlerConfig.instance()\
+                .autograde_executor_class(
+                    self.application.grader_service_dir, submission,
+                    close_session=False, config=self.application.config
             )
             if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
                 feedback_executor = GenerateFeedbackExecutor(
-                    self.application.grader_service_dir, submission, config=self.application.config
+                    self.application.grader_service_dir, submission,
+                    config=self.application.config
                 )
                 GraderExecutor.instance().submit(
                     executor.start,
-                    on_finish=lambda: GraderExecutor.instance().submit(feedback_executor.start)
+                    on_finish=lambda: GraderExecutor.instance().submit(
+                        feedback_executor.start)
                 )
             else:
                 GraderExecutor.instance().submit(
                     executor.start,
-                    lambda: self.log.info(f"Autograding task of submission {submission.id} exited!")
+                    lambda: self.log.info(
+                        f"Autograding task of submission \
+                        {submission.id} exited!")
                 )
         if assignment.automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?",
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
+    /(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?""",
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionObjectHandler(GraderBaseHandler):
-    """
-    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}.
+    """Tornado Handler class for http requests to
+    /lectures/{lecture_id}/assignments/{assignment_id}/submissions
+    /{submission_id}.
     """
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
-    async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Returns a specific submission.
+    async def get(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Returns a specific submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -300,15 +336,17 @@ class SubmissionObjectHandler(GraderBaseHandler):
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if self.get_role(lecture_id).role == Scope.student and submission.username != self.user.name:
+        submission = self.get_submission(lecture_id, assignment_id,
+                                         submission_id)
+        if self.get_role(lecture_id).role == Scope.student \
+                and submission.username != self.user.name:
             raise HTTPError(HTTPStatus.NOT_FOUND)
         self.write_json(submission)
 
     @authorize([Scope.tutor, Scope.instructor])
-    async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Updates a specific submission and returns the updated entity.
+    async def put(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Updates a specific submission and returns the updated entity.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -334,15 +372,16 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/("
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
+    /(?P<assignment_id>\d*)\/submissions\/("""
          r"?P<submission_id>\d*)\/logs\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionLogsHandler(GraderBaseHandler):
     @authorize([Scope.tutor, Scope.instructor])
-    async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Returns logs of a submission.
+    async def get(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Returns logs of a submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -359,23 +398,26 @@ class SubmissionLogsHandler(GraderBaseHandler):
         if logs is not None:
             self.write_json(logs.logs)
         else:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Properties of submission were not found")
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/properties\/?",
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments\
+    /(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\
+    /properties\/?""",
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionPropertiesHandler(GraderBaseHandler):
-    """
-    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/
+    """Tornado Handler class for http requests to
+    /lectures/{lecture_id}/assignments/{assignment_id}/submissions/
     {submission_id}/properties.
     """
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
-    async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Returns the properties of a submission,
+    async def get(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Returns the properties of a submission,
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -383,28 +425,32 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         :type assignment_id: int
         :param submission_id: id of the submission
         :type submission_id: int
-        :raises HTTPError: throws err if the submission or their properties are not found
+        :raises HTTPError: throws err if the submission or
+        their properties are not found
         """
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        properties = self.session.query(SubmissionProperties).get(submission_id)
+        properties = self.session.query(SubmissionProperties).get(
+            submission_id)
         if properties is not None and properties.properties is not None:
             # delete source cells from properties if user is student
             if self.get_role(lecture_id).role == Scope.student:
-                model = GradeBookModel.from_dict(json.loads(properties.properties))
+                model = GradeBookModel.from_dict(
+                    json.loads(properties.properties))
                 for notebook in model.notebooks.values():
                     notebook.source_cells_dict = {}
                 self.write(json.dumps(model.to_dict()))
             else:
                 self.write(properties.properties)
         else:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Properties of submission were not found")
 
     @authorize([Scope.tutor, Scope.instructor])
-    async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Updates the properties of a submission.
+    async def put(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Updates the properties of a submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -417,7 +463,8 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        submission = self.get_submission(lecture_id, assignment_id,
+                                         submission_id)
         properties_string: str = self.request.body.decode("utf-8")
 
         try:
@@ -427,11 +474,13 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         except Exception as e:
             self.log.info(e)
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Cannot parse properties file!")
 
         submission.score = score
 
-        properties = SubmissionProperties(properties=properties_string, sub_id=submission.id)
+        properties = SubmissionProperties(properties=properties_string,
+                                          sub_id=submission.id)
 
         self.session.merge(properties)
 
@@ -442,21 +491,25 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         extra_credit = 0
         for notebook in gradebook.notebooks.values():
             for grades in notebook.grades:
-                extra_credit += grades.extra_credit if grades.extra_credit is not None else 0
+                extra_credit += grades.extra_credit if \
+                    grades.extra_credit is not None else 0
         self.log.info("Extra credit is " + str(extra_credit))
         return extra_credit
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?",
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments
+    \/(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)
+    \/edit\/?""",
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionEditHandler(GraderBaseHandler):
 
     @authorize([Scope.tutor, Scope.instructor])
-    async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """
-        Create or overwrites the repository which stores changes of submissions files
+    async def put(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Create or overwrites the repository which stores changes of
+        submissions files
         :param lecture_id: lecture id
         :param assignment_id: assignment id
         :param submission_id: submission id
@@ -465,7 +518,8 @@ class SubmissionEditHandler(GraderBaseHandler):
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters()
 
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        submission = self.get_submission(lecture_id, assignment_id,
+                                         submission_id)
         assignment = submission.assignment
         lecture = assignment.lecture
 
@@ -494,9 +548,10 @@ class SubmissionEditHandler(GraderBaseHandler):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
 
-        await self._run_command_async(f'git init --bare', git_repo_path)
+        await self._run_command_async('git init --bare', git_repo_path)
 
-        # Create temporary paths to copy the submission files in the edit repository
+        # Create temporary paths to copy the submission
+        # files in the edit repository
         tmp_path = os.path.join(
             self.application.grader_service_dir,
             "tmp",
@@ -522,7 +577,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         os.makedirs(tmp_input_path, exist_ok=True)
 
         # Init local repository
-        command = f"git init"
+        command = "git init"
         await self._run_command_async(command, tmp_input_path)
 
         # Pull user repository
@@ -536,10 +591,11 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.log.info(f"Now at commit {submission.commit_hash}")
 
         # Copy files to output directory
-        shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
+        shutil.copytree(tmp_input_path, tmp_output_path,
+                        ignore=shutil.ignore_patterns(".git"))
 
         # Init local repository
-        command = f"git init"
+        command = "git init"
         await self._run_command_async(command, tmp_output_path)
 
         # Add edit remote
@@ -548,22 +604,22 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.log.info("Successfully added edit remote")
 
         # Switch to main
-        command = f"git switch -c main"
+        command = "git switch -c main"
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully switched to branch main")
 
         # Add files to staging
-        command = f"git add -A"
+        command = "git add -A"
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully added files to staging")
 
         # Commit Files
-        command = f'git commit -m "Initial commit" '
+        command = 'git commit -m "Initial commit" '
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully commited files")
 
         # Push copied files
-        command = f"git push edit main"
+        command = "git push edit main"
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
 
@@ -573,7 +629,8 @@ class SubmissionEditHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
+    path=r"""\/lectures\/(?P<lecture_id>\d*)\/assignments
+    \/(?P<assignment_id>\d*)\/submissions\/lti\/?""",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
@@ -582,8 +639,11 @@ class LtiSyncHandler(GraderBaseHandler):
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         # build the subquery
-        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_available)
+        subquery = (self.session.query(Submission.username,
+                                       func.max(Submission.date).label(
+                                           "max_date"))
+                    .filter(Submission.assignid == assignment_id,
+                            Submission.feedback_available)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -591,22 +651,27 @@ class LtiSyncHandler(GraderBaseHandler):
         submissions = (
             self.session.query(Submission)
             .join(subquery,
-                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_available)
+                  (Submission.username == subquery.c.username) & (
+                              Submission.date == subquery.c.max_date) & (
+                          Submission.assignid == assignment_id) & Submission
+                  .feedback_available)
             .all())
 
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
+        lti_username_convert = RequestHandlerConfig.instance()\
+            .lti_username_convert
 
         if lti_username_convert is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to match users: lti_username_convert is not set in grader "
-                                   "config")
+                            reason="Unable to match users: \
+                            lti_username_convert is not set in grader config")
 
-        scores = [{"id": s.id, "username": lti_username_convert(s.username), "score": s.score} for s in submissions]
+        scores = [{"id": s.id, "username": lti_username_convert(s.username),
+                   "score": s.score} for s in submissions]
         stamp = datetime.datetime.now()
-        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
+        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token[
+            "ttl"] > stamp - datetime.timedelta(
                 minutes=50):
             token = LtiSyncHandler.cache_token["token"]
         else:
@@ -623,43 +688,56 @@ class LtiSyncHandler(GraderBaseHandler):
         lti_client_id = RequestHandlerConfig.instance().lti_client_id
         if lti_client_id is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
+                            reason="Unable to request bearer token: \
+                            lti_client_id is not set in grader config")
         lti_token_url = RequestHandlerConfig.instance().lti_token_url
         if lti_token_url is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
+                            reason="Unable to request bearer token: \
+                            lti_token_url is not set in grader config")
 
         private_key = RequestHandlerConfig.instance().lti_token_private_key
         if private_key is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
+                            reason="Unable to request bearer token: \
+                            lti_token_private_key is not set in grader config")
         if callable(private_key):
             private_key = private_key()
 
-        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
+        payload = {"iss": "grader-service", "sub": lti_client_id,
+                   "aud": [lti_token_url],
+                   "ist": str(int(time.time())),
+                   "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
         try:
             encoded = jwt.encode(payload, private_key, algorithm="RS256")
         except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY,
+                            f"Unable to encode payload: {str(e)}")
         self.log.info("encoded: " + encoded)
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+            "https://purl.imsglobal.org/spec/lti-nrps/scope/\
+            contextmembership.readonly"
         ]
         scopes = url_escape(" ".join(scopes))
-        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
+        data = f"grant_type=client_credentials&\
+        client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
         self.log.info("data: " + data)
 
         httpclient = AsyncHTTPClient()
         try:
-            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
-                                                          headers={
-                                                              "Content-Type": "application/x-www-form-urlencoded"}))
+            response = await httpclient.fetch(
+                HTTPRequest(
+                    url=lti_token_url, method="POST", body=data,
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }))
         except HTTPClientError as e:
             self.log.error(e.response)
-            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
+            raise HTTPError(e.code,
+                            reason="Unable to request token:" +
+                                   e.response.reason)
         return json_decode(response.body)["access_token"]

@@ -10,7 +10,10 @@ from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
-@register_handler(path=r"\/permissions\/?", version_specifier=VersionSpecifier.ALL)
+@register_handler(
+    path=r"\/permissions\/?",
+    version_specifier=VersionSpecifier.ALL
+)
 class PermissionHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /permissions.

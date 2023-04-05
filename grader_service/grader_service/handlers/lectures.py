@@ -12,7 +12,8 @@ from grader_service.orm.lecture import Lecture, LectureState
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound, ObjectDeletedError
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound, \
+    ObjectDeletedError
 from tornado.web import HTTPError
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
@@ -34,9 +35,9 @@ class LectureBaseHandler(GraderBaseHandler):
         state = LectureState.complete if complete else LectureState.active
         lectures = [
             role.lecture
-            for role in self.user.roles
-            if role.lecture.state == state
-               and role.lecture.deleted == DeleteState.active
+            for role in self.user.roles if
+            role.lecture.state == state and
+            role.lecture.deleted == DeleteState.active
         ]
 
         self.write_json(lectures)
@@ -54,16 +55,18 @@ class LectureBaseHandler(GraderBaseHandler):
 
         lecture = (
             self.session.query(Lecture)
-                .filter(Lecture.code == lecture_model.code)
-                .one_or_none()
+            .filter(Lecture.code == lecture_model.code)
+            .one_or_none()
         )
         if lecture is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Lecture template not found")
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
         lecture.state = (
-            LectureState.complete if lecture_model.complete else LectureState.active
+            LectureState.complete if lecture_model.complete else
+            LectureState.active
         )
         lecture.deleted = DeleteState.active
 
@@ -92,7 +95,8 @@ class LectureObjectHandler(GraderBaseHandler):
 
         lecture.name = lecture_model.name
         lecture.state = (
-            LectureState.complete if lecture_model.complete else LectureState.active
+            LectureState.complete if lecture_model.complete else
+            LectureState.active
         )
 
         self.session.commit()
@@ -108,7 +112,8 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Lecture was not found")
 
         self.write_json(role.lecture)
 
@@ -116,11 +121,13 @@ class LectureObjectHandler(GraderBaseHandler):
     async def delete(self, lecture_id: int):
         """
         "Soft"-delete a lecture.
-        Softdeleting: lecture is still saved in the datastore but the users have not access to it.
+        Softdeleting: lecture is still saved in the datastore
+        but the users have not access to it.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises HTTPError: throws err if lecture was already deleted or was not found
+        :raises HTTPError: throws err if lecture was already deleted
+        or was not found
 
         """
         self.validate_parameters()
@@ -133,15 +140,18 @@ class LectureObjectHandler(GraderBaseHandler):
             for a in lecture.assignments:
                 if (len(a.submissions)) > 0:
                     self.session.rollback()
-                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions")
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete \
+                    assignment because it has submissions")
                 if a.status in ["released", "complete"]:
                     self.session.rollback()
-                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete assignment because its status is not created")
+                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete \
+                    assignment because its status is not created")
 
                 a.deleted = 1
             self.session.commit()
         except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Lecture was not found")
         self.write("OK")
 
 
@@ -160,10 +170,12 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: user, tutor and instructor list in a json object
         """
-        roles = self.session.query(Role).filter(Role.lectid == lecture_id).all()
+        roles = self.session.query(Role).filter(Role.lectid == lecture_id)\
+            .all()
         students = [r.username for r in roles if r.role == Scope.student]
         tutors = [r.username for r in roles if r.role == Scope.tutor]
         instructors = [r.username for r in roles if r.role == Scope.instructor]
 
-        counts = {"instructors": instructors, "tutors": tutors, "students": students}
+        counts = {"instructors": instructors, "tutors": tutors,
+                  "students": students}
         self.write_json(counts)
