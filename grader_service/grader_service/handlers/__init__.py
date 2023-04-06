@@ -5,4 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 # import handlers
-from grader_service.handlers import assignment, grading, lectures, submissions, git, permission, health, config
+from grader_service.handlers import (assignment, grading, lectures,
+                                     submissions, git,
+                                     permission, health, config)
+
+__all__ = ["assignment", "grading", "lectures", "submissions",
+           "git", "permission", "health", "config"]

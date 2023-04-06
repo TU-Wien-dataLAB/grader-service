@@ -11,7 +11,8 @@ from pathlib import Path
 from string import Template
 from typing import List, Optional
 
-from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
+from grader_service.handlers.base_handler import (GraderBaseHandler,
+                                                  RequestHandlerConfig)
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
@@ -30,13 +31,14 @@ class GitBaseHandler(GraderBaseHandler):
     def write_error(self, status_code: int, **kwargs) -> None:
         self.clear()
         if status_code == 401:
-            self.set_header("WWW-Authenticate", 'Basic realm="User Visible Realm"')
+            self.set_header("WWW-Authenticate",
+                            'Basic realm="User Visible Realm"')
         self.set_status(status_code)
 
     def on_finish(self):
         if hasattr(
                 self, "process"
-        ):  # if we exit from super prepare (authentication) the process is not created
+        ):  # if we exit super prepare (authentication) process is not created
             if self.process.stdin is not None:
                 self.process.stdin.close()
             if self.process.stdout is not None:
@@ -47,24 +49,27 @@ class GitBaseHandler(GraderBaseHandler):
 
     async def git_response(self):
         try:
-            while data := await self.process.stdout.read_bytes(8192, partial=True):
+            while data := await self.process.stdout.read_bytes(8192,
+                                                               partial=True):
                 self.write(data)
                 await self.flush()
-        except:
-            pass
+        except Exception as e:
+            print(f"Error from git response {e}")
 
-    def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
+    def _check_git_repo_permissions(self, rpc: str, role: Role,
+                                    pathlets: List[str]):
         repo_type = pathlets[2]
 
         if role.role == Scope.student:
-            # 1. no source or release interaction with the source repo for students
+            # 1. no source or release interaction with source repo for students
             # 2. no pull allowed for autograde for students
-            if (repo_type in ["source", "release", "edit"]) or \
-                    (repo_type == "autograde" and rpc == "upload-pack"):
+            if ((repo_type in ["source", "release", "edit"])
+                    or (repo_type == "autograde" and rpc == "upload-pack")):
                 raise HTTPError(403)
 
-            # 3. students should not be able to pull other submissions -> add query param for sub_id
-            if repo_type == "feedback" and rpc == "upload-pack":
+            # 3. students should not be able to pull other submissions
+            #    -> add query param for sub_id
+            if (repo_type == "feedback") and (rpc == "upload-pack"):
                 try:
                     sub_id = int(pathlets[3])
                 except (ValueError, IndexError):
@@ -73,13 +78,16 @@ class GitBaseHandler(GraderBaseHandler):
                 if submission is None or submission.username != self.user.name:
                     raise HTTPError(403)
 
-        # 4. no push allowed for autograde and feedback -> the autograder executor can push locally (will bypass this)
-        if repo_type in ["autograde", "feedback"] and rpc in ["send-pack", "receive-pack"]:
+        # 4. no push allowed for autograde and feedback
+        #    -> the autograder executor can push locally (will bypass this)
+        if ((repo_type in ["autograde", "feedback"])
+                and (rpc in ["send-pack", "receive-pack"])):
             raise HTTPError(403)
 
     def gitlookup(self, rpc: str):
         pathlets = self.request.path.strip("/").split("/")
-        # pathlets = ['services', 'grader', 'git', 'lecture_code', 'assignment_id', 'repo_type', ...]
+        # pathlets = ['services', 'grader', 'git',
+        #             'lecture_code', 'assignment_id', 'repo_type', ...]
         if len(pathlets) < 6:
             return None
         pathlets = pathlets[3:]
@@ -102,7 +110,7 @@ class GitBaseHandler(GraderBaseHandler):
         # get lecture and assignment if they exist
         try:
             lecture = (
-                self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()
+                self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()  # noqa
             )
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
@@ -134,7 +142,8 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(403)
             submission = self.session.query(Submission).get(sub_id)
 
-        path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
+        path = self.construct_git_dir(repo_type, lecture, assignment,
+                                      submission=submission)
         if path is None:
             return None
 
@@ -154,12 +163,20 @@ class GitBaseHandler(GraderBaseHandler):
                 return None
 
             if repo_type in ["user", "group"]:
-                repo_path_release = self.construct_git_dir('release', assignment.lecture, assignment)
-                if not os.path.exists(repo_path_release):
+                repo_path_release = self.construct_git_dir('release',
+                                                           assignment.lecture,
+                                                           assignment)
+                safe_repo_path_release = repo_path_release
+                err_msg = "Error: expceted path or str, got None"
+                assert safe_repo_path_release is not None, err_msg
+                if not os.path.exists(safe_repo_path_release):
                     return None
-                self.duplicate_release_repo(repo_path_release=repo_path_release, repo_path_user=path,
-                                            assignment=assignment, message="Initialize with Release",
-                                            checkout_main=True)
+                self.duplicate_release_repo(
+                        repo_path_release=safe_repo_path_release,
+                        repo_path_user=path,
+                        assignment=assignment,
+                        message="Initialize with Release",
+                        checkout_main=True)
 
             self.write_pre_receive_hook(path)
             return path
@@ -182,12 +199,15 @@ class GitBaseHandler(GraderBaseHandler):
                 f.write(hook)
 
     @staticmethod
-    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:
+    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:  # noqa E501
+        pattern = ""
         if extensions is None:
-            extensions = RequestHandlerConfig.instance().git_allowed_file_extensions
-        if len(extensions) == 0:
-            return ""
-        return "|".join(["\\." + s.strip(".").replace(".", "\\.") for s in extensions])
+            req_handler_conf = RequestHandlerConfig.instance()
+            extensions = req_handler_conf.git_allowed_file_extensions
+        elif len(extensions) > 0:
+            allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]  # noqa E501
+            pattern = "|".join(allow_patterns)
+        return pattern
 
     @staticmethod
     def _get_hook_max_file_size():
@@ -223,7 +243,8 @@ class GitBaseHandler(GraderBaseHandler):
 class RPCHandler(GitBaseHandler):
     """Request handler for RPC calls
 
-    Use this handler to handle example.git/git-upload-pack and example.git/git-receive-pack URLs"""
+    Use this handler to handle example.git/git-upload-pack
+    and example.git/git-receive-pack URLs"""
 
     async def prepare(self):
         await super().prepare()
@@ -247,7 +268,8 @@ class RPCHandler(GitBaseHandler):
         await self.finish()
 
 
-@register_handler(path="/.*/info/refs", version_specifier=VersionSpecifier.NONE)
+@register_handler(path="/.*/info/refs",
+                  version_specifier=VersionSpecifier.NONE)
 class InfoRefsHandler(GitBaseHandler):
     """Request handler for info/refs
 
@@ -258,7 +280,7 @@ class InfoRefsHandler(GitBaseHandler):
         if self.get_status() != 200:
             return
         self.rpc = self.get_argument("service")[4:]
-        self.cmd = f'git {self.rpc} --stateless-rpc --advertise-refs "{self.get_gitdir(self.rpc)}"'
+        self.cmd = f'git {self.rpc} --stateless-rpc --advertise-refs "{self.get_gitdir(self.rpc)}"'  # noqa E501
         self.log.info(f"Running command: {self.cmd}")
         self.process = Subprocess(
             shlex.split(self.cmd),
@@ -268,7 +290,8 @@ class InfoRefsHandler(GitBaseHandler):
         )
 
     async def get(self):
-        self.set_header("Content-Type", "application/x-git-%s-advertisement" % self.rpc)
+        self.set_header("Content-Type",
+                        "application/x-git-%s-advertisement" % self.rpc)
         self.set_header(
             "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
         )

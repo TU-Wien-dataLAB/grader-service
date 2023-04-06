@@ -5,3 +5,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from grader_service.handlers.git.server import RPCHandler, InfoRefsHandler
+
+__all__ = ['RPCHandler', 'InfoRefsHandler']
