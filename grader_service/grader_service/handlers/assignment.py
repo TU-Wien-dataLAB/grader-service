@@ -120,7 +120,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.write_json(assignment)
 
 
-def get_allow_files(assignment_model: AssignmentModel) -> list | bool:
+def get_allow_files(assignment_model: AssignmentModel): 
     """Extract the allow files from field in assignment table.
 
     Return false if field is None, else a list."""
