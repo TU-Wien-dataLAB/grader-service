@@ -58,6 +58,7 @@ kubeAutogradeExecutor:
   tag: latest
   extraVolumes: ""
   extraVolumeMounts: ""
+  cell_timeout: 360
 
 extraConfig: ""
 
