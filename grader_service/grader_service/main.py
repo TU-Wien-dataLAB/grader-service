@@ -67,7 +67,7 @@ class GraderService(config.Application):
         help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
-    service_dir = Unicode(
+    grader_service_dir = Unicode(
         os.getenv("GRADER_SERVICE_DIRECTORY"),
         allow_none=False
     ).tag(config=True)
@@ -75,8 +75,8 @@ class GraderService(config.Application):
     db_url = Unicode(allow_none=False).tag(config=True)
 
     @default('db_url')
-    def _default_username(self):
-        db_path = os.path.join(self.service_dir, "grader.db")
+    def _default_db_url(self):
+        db_path = os.path.join(self.grader_service_dir, "grader.db")
         service_dir_url = f'sqlite:///{db_path}'
         return os.getenv("GRADER_DB_URL", service_dir_url)
 
@@ -272,7 +272,7 @@ class GraderService(config.Application):
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
             GraderServer(
-                grader_service_dir=self.service_dir,
+                grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
                 auth_cls=self.authenticator_class,
                 handlers=handlers,
@@ -291,7 +291,7 @@ class GraderService(config.Application):
             max_body_size=self.max_body_size,
             xheaders=True,
         )
-        self.log.info(f"Service directory - {self.service_dir}")
+        self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.bind(self.service_port, address=self.service_host,
                               reuse_port=self.reuse_port)
         self.http_server.start()
@@ -309,8 +309,8 @@ class GraderService(config.Application):
         self._start_future.set_result(None)
 
     async def _setup_environment(self):
-        if not os.path.exists(os.path.join(self.service_dir, "git")):
-            os.mkdir(os.path.join(self.service_dir, "git"))
+        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
+            os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
         subprocess.run(
             shlex.split("git config --global init.defaultBranch main"))
