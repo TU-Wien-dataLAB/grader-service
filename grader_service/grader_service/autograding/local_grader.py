@@ -26,7 +26,9 @@ from grader_service.orm.submission import Submission
 from sqlalchemy.orm import Session
 from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
+
 from traitlets.traitlets import TraitError, Unicode, validate
+
 
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -59,7 +61,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                                   allow_none=True).tag(config=True)
     relative_output_path = Unicode("convert_out",
                                    allow_none=True).tag(config=True)
-
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
     def __init__(self, grader_service_dir: str,
