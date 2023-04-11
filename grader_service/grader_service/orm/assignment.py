@@ -8,16 +8,17 @@ import enum
 from datetime import datetime
 
 from grader_service.api.models import assignment
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, Boolean, DECIMAL
+from sqlalchemy import (Column, DateTime, Enum, ForeignKey,
+                        Integer, String, Text, Boolean, DECIMAL)
 from sqlalchemy.orm import relationship
 
 from grader_service.orm.base import Base, DeleteState, Serializable
 
 
 class AutoGradingBehaviour(enum.Enum):
-    unassisted = 0  # assignments are not automatically graded
-    auto = 1  # assignments are automatically graded when submitted
-    full_auto = 2  # assignments are automatically graded and feedback is generated when submitted
+    unassisted = 0  # assignments not automatically graded
+    auto = 1        # assignments auto graded when submitted
+    full_auto = 2   # assignments auto graded, feedback generated on submit
 
 
 class Assignment(Base, Serializable):
@@ -36,13 +37,13 @@ class Assignment(Base, Serializable):
     )
     automatic_grading = Column(Enum(AutoGradingBehaviour), nullable=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
-    max_submissions = Column(Integer, nullable=True, default=None, unique=False)
+    max_submissions = Column(Integer, nullable=True,
+                             default=None, unique=False)
     allow_files = Column(Boolean, nullable=False, default=False)
     properties = Column(Text, nullable=True, unique=False)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow, nullable=False)
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
 

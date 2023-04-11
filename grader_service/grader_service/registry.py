@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 from tornado.web import RequestHandler
 
@@ -15,7 +15,8 @@ class Singleton(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton, cls).__call__(*args,
+                                                                 **kwargs)
         return cls._instances[cls]
 
 
@@ -29,7 +30,7 @@ class HandlerPathRegistry(object, metaclass=Singleton):
         return list(
             zip(
                 [
-                    base_url.replace("/", "\/") + path
+                    base_url.replace("/", "\\/") + path
                     for path in HandlerPathRegistry.registry.values()
                 ],
                 HandlerPathRegistry.registry.keys(),
@@ -48,9 +49,10 @@ class HandlerPathRegistry(object, metaclass=Singleton):
     def add(cls, path: str):
         # check if class inherits from tornado RequestHandler
         if RequestHandler not in cls.__mro__:
-            raise ValueError(
-                "Incorrect base class. Class has to be extended from tornado 'RequestHandler' in order to be registered."
-            )
+            err = "Incorrect base class. "
+            err += "Class must be extended from tornado 'RequestHandler' "
+            err += "to be registered."
+            raise ValueError(err)
         HandlerPathRegistry.registry[cls] = path
 
 
@@ -65,11 +67,12 @@ def register_handler(
 ):
     if version_specifier == VersionSpecifier.ALL:
         # only supports single digit versions
-        regex_versions = "".join(
-            [v.value for v in VersionSpecifier if v.value not in ["all", "none"]]
-        )
+        excludes = ["all", "none"]
+        values = [v.value for v in VersionSpecifier if v.value not in excludes]
+        regex_versions = "".join(values)
         v = r"(?:\/v[{}])?".format(regex_versions)
-    elif version_specifier == VersionSpecifier.NONE or version_specifier is None:
+    elif ((version_specifier == VersionSpecifier.NONE)
+            or (version_specifier is None)):
         v = ""
     else:
         v = r"\/" + f"v{version_specifier.value}"

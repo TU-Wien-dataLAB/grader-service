@@ -40,21 +40,21 @@ from tornado_sqlalchemy import SessionMixin
 
 
 def authorize(scopes: List[Scope]):
-    """
-    Checks if user is authorized.
+    """Checks if user is authorized.
     :param scopes: the user's roles
     :return: wrapper function
     """
-    if not set(scopes).issubset({Scope.student, Scope.tutor, Scope.instructor}):
+    if not set(scopes).issubset({Scope.student, Scope.tutor,
+                                 Scope.instructor}):
         return ValueError("Invalid scopes")
-
-    # needs_auth = set(scopes) != {Scope.student, Scope.tutor, Scope.instructor}
 
     def wrapper(handler_method):
         @functools.wraps(handler_method)
-        async def request_handler_wrapper(self: "GraderBaseHandler", *args, **kwargs):
+        async def request_handler_wrapper(self: "GraderBaseHandler", *args,
+                                          **kwargs):
             lect_id = self.path_kwargs.get("lecture_id", None)
-            if "/permissions" in self.request.path or "/config" in self.request.path:
+            if (("/permissions" in self.request.path)
+                    or ("/config" in self.request.path)):
                 return await handler_method(self, *args, **kwargs)
             if (
                     lect_id is None
@@ -84,10 +84,10 @@ def authorize(scopes: List[Scope]):
                 return await handler_method(self, *args, **kwargs)
 
             role = self.session.query(Role).get((self.user.name, lect_id))
-            if role is None or not role.role in scopes:
-                self.log.warn(
-                    f"User {self.user.name} tried to access {self.request.path} with insufficient privileges"
-                )
+            if (role is None) or (role.role not in scopes):
+                msg = f"User {self.user.name} tried to access "
+                msg += f"{self.request.path} with insufficient privileges"
+                self.log.warn(msg)
                 raise HTTPError(403)
             return await handler_method(self, *args, **kwargs)
 
@@ -97,9 +97,9 @@ def authorize(scopes: List[Scope]):
 
 
 class GraderBaseHandler(SessionMixin, web.RequestHandler):
-    """
-    Base class of all handler classes that implements validation and request functions
-    """
+    """Base class of all handler classes
+
+    Implements validation and request functions"""
 
     def __init__(
             self,
@@ -108,26 +108,29 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             **kwargs: Any,
     ) -> None:
         super().__init__(application, request, **kwargs)
-
-        self.application: GraderServer = self.application  # add type hint for application
+        # add type hint for application
+        self.application: GraderServer = self.application
         self.log = self.application.log
 
     def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
         pass
 
     async def prepare(self) -> Optional[Awaitable[None]]:
-        if self.request.path.strip("/") != self.application.base_url.strip("/") and \
-                self.request.path.strip("/") != self.application.base_url.strip("/") + "/health":
-            authenticator = self.application.auth_cls(config=self.application.config)
+        if ((self.request.path.strip("/")
+             != self.application.base_url.strip("/"))
+            and (self.request.path.strip("/")
+                 != self.application.base_url.strip("/") + "/health")):
+            app_config = self.application.config
+            authenticator = self.application.auth_cls(config=app_config)
             await authenticator.authenticate_user(self)
         return super().prepare()
 
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
-        unknown_arguments = set(self.request.query_arguments.keys()) - set(args)
-        if len(unknown_arguments) != 0:
-            raise HTTPError(400, reason=f"Unknown arguments: {unknown_arguments}")
+        unknown_args = set(self.request.query_arguments.keys()) - set(args)
+        if len(unknown_args) != 0:
+            raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
     def get_role(self, lecture_id: int) -> Role:
         role = self.session.query(Role).get((self.user.name, lecture_id))
@@ -135,20 +138,26 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             raise HTTPError(403)
         return role
 
-    def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
+    def get_assignment(self, lecture_id: int,
+                       assignment_id: int) -> Assignment:
         assignment = self.session.query(Assignment).get(assignment_id)
-        if assignment is None or assignment.deleted == DeleteState.deleted or int(assignment.lectid) != int(lecture_id):
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment with id " + str(assignment_id) + " was not found")
+        if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
+                or (int(assignment.lectid) != int(lecture_id))):
+            msg = "Assignment with id " + str(assignment_id) + " was not found"
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason=msg)
         return assignment
 
-    def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
+    def get_submission(self, lecture_id: int, assignment_id: int,
+                       submission_id: int) -> Submission:
         submission = self.session.query(Submission).get(submission_id)
         if (
                 submission is None
                 or submission.assignid != assignment_id
                 or submission.assignment.lectid != lecture_id
         ):
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Submission was not found")
         return submission
 
     @property
@@ -156,30 +165,38 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         app: GraderServer = self.application
         return os.path.join(app.grader_service_dir, "git")
 
-    def construct_git_dir(self, repo_type: str, lecture: Lecture, assignment: Assignment,
-                          group_name: Optional[str] = None, submission: Optional[Submission] = None) -> Optional[str]:
-        """Helper method for every handler that needs to access git directories which returns
-        the path of the repository based on the inputs or None if the repo_type is not recognized.
-        """
+    def construct_git_dir(self, repo_type: str, lecture: Lecture,
+                          assignment: Assignment,
+                          group_name: Optional[str] = None,
+                          submission: Optional[Submission] = None
+                          ) -> Optional[str]:
+        """Helper method for every handler that needs to access git
+        directories which returns the path of the repository based on
+        the inputs or None if the repo_type is not recognized."""
+        # TODO: refactor
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
-        if repo_type == "source" or repo_type == "release" or repo_type == "edit":
+        allowed_types = set(["source", "release", "edit"])
+        if (repo_type in allowed_types):
             path = os.path.join(assignment_path, repo_type)
             if repo_type == "edit":
                 path = os.path.join(path, str(submission.id))
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
-            type_path = os.path.join(assignment_path, repo_type, assignment.type)
+            type_path = os.path.join(assignment_path, repo_type,
+                                     assignment.type)
             if assignment.type == "user":
                 if repo_type == "autograde":
-                    if submission is None or self.get_role(lecture.id).role < Scope.tutor:
+                    if ((submission is None)
+                            or (self.get_role(lecture.id).role < Scope.tutor)):
                         raise HTTPError(403)
                     path = os.path.join(type_path, submission.username)
                 else:
                     path = os.path.join(type_path, self.user.name)
             else:
-                group = self.session.query(Group).get((self.user.name, lecture.id))
+                group = self.session.query(Group).get((self.user.name,
+                                                       lecture.id))
                 if group is None:
                     raise HTTPError(404, reason="User is not in a group")
                 path = os.path.join(type_path, group.name)
@@ -202,39 +219,53 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     @staticmethod
     def is_base_git_dir(path: str) -> bool:
         try:
-            out = subprocess.run(["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True)
-            is_git = out.returncode == 0 and "true" in out.stdout.decode("utf-8")
+            out = subprocess.run(["git", "rev-parse", "--is-bare-repository"],
+                                 cwd=path, capture_output=True)
+            is_git = ((out.returncode == 0)
+                      and ("true" in out.stdout.decode("utf-8")))
         except FileNotFoundError:
             is_git = False
         return is_git
 
-    def duplicate_release_repo(self, repo_path_release: str, repo_path_user: str, assignment: Assignment, message: str,
+    def duplicate_release_repo(self, repo_path_release: str,
+                               repo_path_user: str,
+                               assignment: Assignment, message: str,
                                checkout_main: bool = False):
-        tmp_path_base = os.path.join(self.application.grader_service_dir, "tmp", assignment.lecture.code,
-                                     str(assignment.id), self.user.name)
+        tmp_path_base = os.path.join(
+                self.application.grader_service_dir,
+                "tmp",
+                assignment.lecture.code,
+                str(assignment.id),
+                str(self.user.name))
+
         # Deleting dir
         if os.path.exists(tmp_path_base):
             shutil.rmtree(tmp_path_base)
 
         os.makedirs(tmp_path_base, exist_ok=True)
-        tmp_path_release = os.path.join(tmp_path_base, "release")
-        tmp_path_user = os.path.join(tmp_path_base, self.user.name)
+        tmp_path_release = tmp_path_base.joinpath("release")
+        tmp_path_user = tmp_path_base.joinpath(self.user.name)
 
         self.log.info(f"Duplicating release repository {repo_path_release}")
         self.log.info(f"Temporary path used for copying: {tmp_path_base}")
 
         try:
-            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
+            self._run_command(f"git clone -b main '{repo_path_release}'",
+                              cwd=tmp_path_base)
             if checkout_main:
-                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-                self._run_command(f"git checkout -b main", cwd=tmp_path_user)
+                self._run_command(f"git clone '{repo_path_user}'",
+                                  cwd=tmp_path_base)
+                self._run_command("git checkout -b main", cwd=tmp_path_user)
             else:
-                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
+                self._run_command(f"git clone -b main '{repo_path_user}'",
+                                  cwd=tmp_path_base)
 
-            self.log.info(f"Copying repository contents from {tmp_path_release} to {tmp_path_user}")
+            msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
+            self.log.info(msg)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
-            if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-                shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
+            if (sys.version_info.major == 3) and (sys.version_info.minor >= 8):
+                shutil.copytree(tmp_path_release, tmp_path_user,
+                                ignore=ignore, dirs_exist_ok=True)
             else:
                 for item in os.listdir(tmp_path_release):
                     s = os.path.join(tmp_path_release, item)
@@ -243,18 +274,21 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                         shutil.copytree(s, d, ignore=ignore)
                     else:
                         shutil.copy2(s, d)
-
-            self._run_command(f'sh -c \'git add -A && git commit --allow-empty -m "{message}"\'', tmp_path_user)
+            cmd = 'sh -c \'git add -A'
+            cmd += f'&& git commit --allow-empty -m "{message}"\''
+            self._run_command(cmd, tmp_path_user)
             self._run_command("git push -u origin main", tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 
     def _run_command(self, command, cwd=None, capture_output=False):
         # TODO currently there a two run_command functions,
-        #  because duplicate_release_repo does not work with the _run_command_async
+        #  because duplicate_release_repo does not work
+        #  with the _run_command_async
         try:
             self.log.info(f"Running: {command}")
-            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
+            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd,
+                                 capture_output=True)
             if capture_output:
                 return str(ret.stdout, 'utf-8')
         except subprocess.CalledProcessError as e:
@@ -269,17 +303,17 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
 
         Args:
             command str: command that is getting run.
-            cwd (str, optional): states where the command is getting run. Defaults to None.
+            cwd (str, optional): states where the command is getting run.
+                                 Defaults to None.
 
         Raises:
-            GitError: returns appropriate git error 
-
-        """
+            GitError: returns appropriate git error"""
         self.log.info(f"Running: {command}")
-        ret = await asyncio.create_subprocess_shell(command,
-                                                    stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.PIPE,
-                                                    cwd=cwd)
+        ret = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=cwd)
         await ret.wait()
 
     def write_json(self, obj) -> None:
@@ -300,9 +334,12 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             for line in traceback.format_exception(*kwargs["exc_info"]):
                 lines.append(line)
             self.finish(json.dumps(
-                ErrorMessage(status_code, error, self.request.path, reason, traceback=json.dumps(lines)).to_dict()))
+                ErrorMessage(status_code, error, self.request.path, reason,
+                             traceback=json.dumps(lines)).to_dict()))
         else:
-            self.finish(json.dumps(ErrorMessage(status_code, error, self.request.path, reason).to_dict()))
+            self.finish(json.dumps(ErrorMessage(status_code, error,
+                                                self.request.path,
+                                                reason).to_dict()))
 
     @classmethod
     def _serialize(cls, obj: object):
@@ -334,7 +371,8 @@ def authenticated(
 ) -> Callable[..., Optional[Awaitable[None]]]:
     """Decorate methods with this to require that the user be logged in.
 
-    If the user is not logged in, an `tornado.web.HTTPError` with cod 403 will be raised.
+    If the user is not logged in `tornado.web.HTTPError`
+    with code 403 will be raised.
     """
 
     @functools.wraps(method)
@@ -364,29 +402,39 @@ class VersionHandlerV1(GraderBaseHandler):
         self.write("1.0")
 
 
-# This class exists to not avoid all request handlers to inherit from traitlets.config.Configurable
-# and making all requests super slow. If a request handler needs configurable values, they can be accessed
-# from this object.
 class RequestHandlerConfig(SingletonConfigurable):
+    """This class exists to not avoid all request handlers to inherit
+    from traitlets.config.Configurable and making all requests super
+    slow. If a request handler needs configurable values, they can be
+    accessed from this object."""
     autograde_executor_class = Type(default_value=LocalAutogradeExecutor,
-                                    klass=object,  # TODO: why does using LocalAutogradeExecutor give subclass error?
+                                    # TODO: why does using
+                                    # LocalAutogradeExecutor give
+                                    # subclass error?
+                                    klass=object,
                                     allow_none=False, config=True)
 
     # Git server file policy defaults
     git_max_file_size_mb = Integer(80, allow_none=False, config=True)
     git_max_file_count = Integer(512, allow_none=False, config=True)
     # empty list allows everything
-    git_allowed_file_extensions = ListTrait(TraitType(Unicode), default_value=[], allow_none=False,
+    git_allowed_file_extensions = ListTrait(TraitType(Unicode),
+                                            default_value=[],
+                                            allow_none=False,
                                             config=True)
 
     enable_lti_features = Bool(False, config=True)
     lti_client_id = Unicode(None, config=True, allow_none=True)
     lti_token_url = Unicode(None, config=True, allow_none=True)
     # function used to change the hub username to the lti sourcedid value
-    lti_username_convert = CallableTrait(default_value=lti_username_convert, config=True, allow_none=True, help="""
-    Converts the grader service username to the lti sourced id.""")
+    help_msg = "Converts the grader service username to the lti sourced id."
+    lti_username_convert = CallableTrait(default_value=lti_username_convert,
+                                         config=True,
+                                         allow_none=True,
+                                         help=help_msg)
     lti_token_private_key = Union(
-        [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)), CallableTrait(None)],
+        [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)),
+         CallableTrait(None)],
         allow_none=True,
         config=True,
         help="""

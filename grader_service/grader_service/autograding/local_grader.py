@@ -14,7 +14,6 @@ import stat
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from re import S
 from subprocess import PIPE, CalledProcessError
 from typing import Optional
 
@@ -27,7 +26,9 @@ from grader_service.orm.submission import Submission
 from sqlalchemy.orm import Session
 from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import TraitError, Unicode, validate, default, Integer
+
+from traitlets.traitlets import TraitError, Unicode, validate
+
 
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -50,25 +51,35 @@ class AutogradingStatus:
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
-    """Runs an autograde job on the local machine with the current Python environment.
-    Sets up the necessary directories and the gradebook JSON file used by :mod:`grader_convert`.
     """
-    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
-    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
-    cell_timeout = Integer(default_value=360,
-                           allow_none=False).tag(config=True)
+    Runs an autograde job on the local machine
+    with the current Python environment.
+    Sets up the necessary directories
+    and the gradebook JSON file used by :mod:`grader_convert`.
+    """
+    relative_input_path = Unicode("convert_in",
+                                  allow_none=True).tag(config=True)
+    relative_output_path = Unicode("convert_out",
+                                   allow_none=True).tag(config=True)
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
-    def __init__(self, grader_service_dir: str, submission: Submission, close_session=True, **kwargs):
-        """Creates the executor in the input and output directories that are specified
+    def __init__(self, grader_service_dir: str,
+                 submission: Submission, close_session=True, **kwargs):
+        """
+        Creates the executor in the input
+        and output directories that are specified
         by :attr:`base_input_path` and :attr:`base_output_path`.
-        The grader service directory is used for accessing the git repositories to push the grading results.
+        The grader service directory is used for accessing
+        the git repositories to push the grading results.
         The database session is retrieved from the submission object.
-        The associated session of the submission has to be available and must not be closed beforehand.
+        The associated session of the submission has to be available
+        and must not be closed beforehand.
 
-        :param grader_service_dir: The base directory of the whole grader service specified in the configuration.
+        :param grader_service_dir: The base directory of the whole
+        grader service specified in the configuration.
         :type grader_service_dir: str
-        :param submission: The submission object which should be graded by the executor.
+        :param submission: The submission object
+        which should be graded by the executor.
         :type submission: Submission
         """
         super(LocalAutogradeExecutor, self).__init__(**kwargs)
@@ -76,7 +87,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.submission = submission
         self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
-        self.close_session = close_session  # close session after grading (might need session later)
+        # close session after grading (might need session later)
+        self.close_session = close_session
 
         self.autograding_start: Optional[datetime] = None
         self.autograding_finished: Optional[datetime] = None
@@ -84,10 +96,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.grading_logs: Optional[str] = None
 
     async def start(self):
-        """Starts the autograding job. This is the only method that is exposed to the client.
+        """
+        Starts the autograding job.
+        This is the only method that is exposed to the client.
         It re-raises all exceptions that happen while running.
         """
-        self.log.info(f"Starting autograding job for submission {self.submission.id} in {self.__class__.__name__}")
+        self.log.info(f"Starting autograding job for submission "
+                      f"{self.submission.id} in {self.__class__.__name__}")
         try:
             await self._pull_submission()
             self.autograding_start = datetime.now()
@@ -96,25 +111,30 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self._set_properties()
             await self._push_results()
             self._set_db_state()
-            ts = round((self.autograding_finished - self.autograding_start).total_seconds())
+            ts = round((self.autograding_finished - self.autograding_start)
+                       .total_seconds())
             self.log.info(
-                f"Successfully completed autograding job for submission {self.submission.id} in {self.__class__.__name__};"
+                f"Successfully completed autograding job for submission "
+                f"{self.submission.id} in {self.__class__.__name__};"
                 + f" took {ts // 60}min {ts % 60}s")
         except Exception:
-            self.log.error(f"Failed autograding job for submission {self.submission.id} in {self.__class__.__name__}",
-                           exc_info=True)
+            self.log.error(
+                f"Failed autograding job for submission "
+                f"{self.submission.id} in {self.__class__.__name__}",
+                exc_info=True)
             self._set_db_state(success=False)
-            # raise
         finally:
             self._cleanup()
 
     @property
     def input_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_input_path,
+                            f"submission_{self.submission.id}")
 
     @property
     def output_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}")
+        return os.path.join(self.grader_service_dir, self.relative_output_path,
+                            f"submission_{self.submission.id}")
 
     def _write_gradebook(self, gradebook_str: str):
         """
@@ -133,8 +153,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     async def _pull_submission(self):
         """
-        Pulls the submission repository into the input path based on the assignment type.
-
+        Pulls the submission repository into the input path
+        based on the assignment type.
         :return: Coroutine
         """
         if not os.path.exists(self.input_path):
@@ -190,7 +210,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         # Checkout to commit of submission except when it was manually edited
         if not self.submission.edited:
-            command = f"{self.git_executable} checkout {self.submission.commit_hash}"
+            command = f"{self.git_executable} checkout " \
+                      f"{self.submission.commit_hash}"
             self.log.info(f"Running {command}")
             await self._run_subprocess(command, self.input_path)
             self.log.info(f"Now at commit {self.submission.commit_hash}")
@@ -200,16 +221,18 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     async def _run(self):
         """
-        Runs the autograding in the current interpreter and captures the output.
+        Runs the autograding in the current interpreter
+        and captures the output.
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.makedirs(self.output_path, exist_ok=True)
-        self._write_gradebook(self._put_grades_in_gradebook())
+        self._write_gradebook(self._put_grades_in_assignment_properties())
 
-        autograder = Autograde(self.input_path, self.output_path, "*.ipynb", copy_files=self.assignment.allow_files)
+        autograder = Autograde(self.input_path, self.output_path, "*.ipynb",
+                               copy_files=self.assignment.allow_files)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -222,25 +245,28 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.grading_logs = log_stream.getvalue()
             autograder.log.removeHandler(log_handler)
 
-    def _put_grades_in_gradebook(self) -> str:
+    def _put_grades_in_assignment_properties(self) -> str:
         """
-        Checks assignment was already graded and return updated properties
+        Checks if assignment was already graded and returns updated properties.
         :return: str
         """
         if self.submission.manual_status == "not_graded":
             return self.assignment.properties
 
         assignment_properties = json.loads(self.assignment.properties)
-        submission_properties = json.loads(self.submission.properties.properties)
-        for notebook in assignment_properties["notebooks"].keys():
-            if "notebooks" in submission_properties:
-                if notebook in submission_properties["notebooks"].keys():
-                    # Set grades
-                    assignment_properties["notebooks"][notebook]["grades_dict"] = \
-                        submission_properties["notebooks"][notebook]["grades_dict"]
-                    # Set comments
-                    assignment_properties["notebooks"][notebook]["comments_dict"] = \
-                        submission_properties["notebooks"][notebook]["comments_dict"]
+        submission_properties = json.loads(
+            self.submission.properties.properties)
+        notebooks = set.intersection(
+            set(assignment_properties["notebooks"].keys()),
+            set(submission_properties["notebooks"].keys()))
+        for notebook in notebooks:
+            # Set grades
+            #
+            assignment_properties["notebooks"][notebook]["grades_dict"] = \
+                submission_properties["notebooks"][notebook]["grades_dict"]
+            # Set comments
+            assignment_properties["notebooks"][notebook]["comments_dict"] = \
+                submission_properties["notebooks"][notebook]["comments_dict"]
 
         properties_str = json.dumps(assignment_properties)
         self.log.info("Added grades dict to properties")
@@ -248,8 +274,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     async def _push_results(self):
         """
-        Pushes the results to the autograde repository as a separate branch named after the commit hash of
-        the submission. Removes the gradebook.json file before doing so.
+        Pushes the results to the autograde repository
+        as a separate branch named after the commit hash of the submission.
+        Removes the gradebook.json file before doing so.
         :return: Coroutine
         """
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
@@ -294,15 +321,18 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         except CalledProcessError:
             pass
 
-        self.log.info(f"Creating new branch submission_{self.submission.commit_hash}")
+        self.log.info(f"Creating new branch "
+                      f"submission_{self.submission.commit_hash}")
         command = (
-            f"{self.git_executable} switch -c submission_{self.submission.commit_hash}"
+            f"{self.git_executable} switch -c "
+            f"submission_{self.submission.commit_hash}"
         )
         try:
             await self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
-        self.log.info(f"Now at branch submission_{self.submission.commit_hash}")
+        self.log.info(f"Now at branch "
+                      f"submission_{self.submission.commit_hash}")
 
         self.log.info(f"Commiting all files in {self.output_path}")
         try:
@@ -310,16 +340,19 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 f"{self.git_executable} add -A", self.output_path
             )
             await self._run_subprocess(
-                f'{self.git_executable} commit -m "{self.submission.commit_hash}"',
+                f'{self.git_executable} commit -m '
+                f'"{self.submission.commit_hash}"',
                 self.output_path,
             )
         except CalledProcessError:
-            raise RuntimeError(f"Failed to commit changes")
+            raise RuntimeError("Failed to commit changes")
 
         self.log.info(
-            f"Pushing to {git_repo_path} at branch submission_{self.submission.commit_hash}"
+            f"Pushing to {git_repo_path} at branch "
+            f"submission_{self.submission.commit_hash}"
         )
-        command = f'{self.git_executable} push -uf "{git_repo_path}" submission_{self.submission.commit_hash}'
+        command = f'{self.git_executable} push -uf ' \
+                  f'"{git_repo_path}" submission_{self.submission.commit_hash}'
         try:
             await self._run_subprocess(command, self.output_path)
         except CalledProcessError:
@@ -328,14 +361,17 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     def _set_properties(self):
         """
-        Loads the contents of the gradebook.json file and sets them as the submission properties.
-        Also calculates the score of the submission after autograding based on the updated properties.
+        Loads the contents of the gradebook.json file
+        and sets them as the submission properties.
+        Also calculates the score of the submission
+        after autograding based on the updated properties.
         :return: None
         """
         with open(os.path.join(self.output_path, "gradebook.json"), "r") as f:
             gradebook_str = f.read()
 
-        properties = SubmissionProperties(properties=gradebook_str, sub_id=self.submission.id)
+        properties = SubmissionProperties(properties=gradebook_str,
+                                          sub_id=self.submission.id)
 
         self.session.merge(properties)
 
@@ -349,7 +385,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     def _set_db_state(self, success=True):
         """
-        Sets the submission autograding status based on the success parameter and sets the logs from autograding.
+        Sets the submission autograding status based on the success parameter
+        and sets the logs from autograding.
         :param success: Whether the grading process was a success or failure.
         :return: None
         """
@@ -358,7 +395,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             self.submission.auto_status = "grading_failed"
 
-        logs = SubmissionLogs(logs=self.grading_logs, sub_id=self.submission.id)
+        logs = SubmissionLogs(logs=self.grading_logs,
+                              sub_id=self.submission.id)
 
         self.session.merge(logs)
 
@@ -366,8 +404,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     def _cleanup(self):
         """
-        Removes all files from the input and output directories and closes the session if
-        specified by self.close_session.
+        Removes all files from the input and output directories
+        and closes the session if specified by self.close_session.
         :return: None
         """
         try:
@@ -383,10 +421,12 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Execute the command as a subprocess.
         :param command: The command to execute as a string.
         :param cwd: The working directory the subprocess should run in.
-        :return: Coroutine which resolves to a Subprocess object which resulted from the execution.
+        :return: Coroutine which resolves to a Subprocess object
+        which resulted from the execution.
         """
         try:
-            process = Subprocess(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
+            process = Subprocess(shlex.split(command),
+                                 stdout=PIPE, stderr=PIPE, cwd=cwd)
             await process.wait_for_exit()
         except CalledProcessError:
             self.grading_logs = process.stderr.read().decode("utf-8")
@@ -416,15 +456,19 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
 
 class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
-    """Runs an autograde job on the local machine with the default Python environment in a separate process.
-    Sets up the necessary directories and the gradebook JSON file used by :mod:`grader_convert`.
+    """Runs an autograde job on the local machine
+    with the default Python environment in a separate process.
+    Sets up the necessary directories
+    and the gradebook JSON file used by :mod:`grader_convert`.
     """
 
-    convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
+    convert_executable = Unicode("grader-convert",
+                                 allow_none=False).tag(config=True)
 
     async def _run(self):
         """
-        Runs the autograding in a separate python interpreter as a sub-process and captures the output.
+        Runs the autograding in a separate python interpreter
+        as a sub-process and captures the output.
 
         :return: Coroutine
         """

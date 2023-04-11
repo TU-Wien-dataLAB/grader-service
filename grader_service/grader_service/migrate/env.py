@@ -9,6 +9,7 @@ import os
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
+import grader_service.orm
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,10 +20,10 @@ config = context.config
 fileConfig(config.config_file_name)
 
 if not config.get_main_option('sqlalchemy.url'):
-    config.set_main_option('sqlalchemy.url', os.getenv("GRADER_DB_URL", "sqlite:///grader.db"))
+    config.set_main_option('sqlalchemy.url',
+                           os.getenv("GRADER_DB_URL", "sqlite:///grader.db"))
 
 
-import grader_service.orm
 # edit this line and pass metadata
 target_metadata = grader_service.orm.Base.metadata
 
@@ -79,10 +80,10 @@ def run_migrations_online():
             prefix='sqlalchemy.',
             poolclass=pool.NullPool)
 
-
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, render_as_batch=True
+            connection=connection,
+            target_metadata=target_metadata, render_as_batch=True
         )
 
         with context.begin_transaction():

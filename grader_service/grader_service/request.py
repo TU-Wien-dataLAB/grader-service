@@ -12,7 +12,7 @@ from urllib.parse import quote_plus, urlencode
 from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPResponse
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Int, TraitError, Unicode, validate
+from traitlets.traitlets import TraitError, validate
 
 
 class RequestService(LoggingConfigurable):
@@ -53,9 +53,8 @@ class RequestService(LoggingConfigurable):
             socket.gethostbyname(proposal["value"])
             return proposal["value"]
         except socket.error:
-            raise TraitError(
-                "Host adress has to resolve. Invalid hostname %s" % proposal["value"]
-            )
+            err = f'Unable to resolve hostname: {proposal["value"]}'
+            raise TraitError(err)
 
     @validate("port")
     def _validate_port(self, proposal):

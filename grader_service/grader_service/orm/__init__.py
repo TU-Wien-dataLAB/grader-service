@@ -11,3 +11,6 @@ from grader_service.orm.submission import Submission
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import Base
 from grader_service.orm.group import Group
+
+__all__ = ['Lecture', 'User', 'Role', 'Submission',
+           'Assignment', 'Base', 'Group']

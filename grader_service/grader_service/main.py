@@ -20,12 +20,11 @@ from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
 from traitlets import config, Bool, Type
 from traitlets import log as traitlets_log
-from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default, HasTraits
+from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
+    default, HasTraits
 
 # run __init__.py to register handlers
-import grader_service.handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -37,9 +36,9 @@ class GraderService(config.Application):
     name = "grader-service"
     version = __version__
 
-    description = """Starts the grader service, which can be used to create and distribute assignments,
-  collect submissions and grade them.
-  """
+    description = """Starts the grader service, which can be used to create
+    and distribute assignments, collect submissions and grade them.
+    """
 
     examples = """
   generate default config file:
@@ -48,39 +47,72 @@ class GraderService(config.Application):
       grader-service -f /etc/grader/grader_service_config.py
   """
 
-    generate_config = Bool(False, help="Generate config file based on defaults.").tag(config=True)
+    generate_config = Bool(
+        False,
+        help="Generate config file based on defaults."
+    ).tag(config=True)
 
-    service_host = Unicode(os.getenv("GRADER_SERVICE_HOST", "0.0.0.0"), help="The host address of the service").tag(
-        config=True
-    )
-    service_port = Int(int(os.getenv("GRADER_SERVICE_PORT", "4010")), help="The port the service runs on").tag(
-        config=True)
+    service_host = Unicode(
+        os.getenv("GRADER_SERVICE_HOST", "0.0.0.0"),
+        help="The host address of the service"
+    ).tag(config=True)
 
-    reuse_port = Bool(False, help="Whether to allow for the specified service port to be reused.").tag(config=True)
+    service_port = Int(
+        int(os.getenv("GRADER_SERVICE_PORT", "4010")),
+        help="The port the service runs on"
+    ).tag(config=True)
 
-    grader_service_dir = Unicode(os.getenv("GRADER_SERVICE_DIRECTORY"), allow_none=False).tag(config=True)
+    reuse_port = Bool(
+        False,
+        help="Whether to allow for the specified service port to be reused."
+    ).tag(config=True)
+
+    service_dir = Unicode(
+        os.getenv("GRADER_SERVICE_DIRECTORY"),
+        allow_none=False
+    ).tag(config=True)
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
-    max_body_size = Int(104857600, help="Sets the max buffer size in bytes, default to 100mb").tag(config=True)
-
-    max_buffer_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(config=True)
-
     @default('db_url')
     def _default_username(self):
-        service_dir_url = f'sqlite:///{os.path.join(self.grader_service_dir, "grader.db")}'
+        db_path = os.path.join(self.service_dir, "grader.db")
+        service_dir_url = f'sqlite:///{db_path}'
         return os.getenv("GRADER_DB_URL", service_dir_url)
 
-    service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
-    service_git_email = Unicode("", allow_none=False).tag(config=True)
+    max_body_size = Int(
+        104857600,
+        help="Sets the max buffer size in bytes, default to 100mb"
+    ).tag(config=True)
+
+    max_buffer_size = Int(
+        104857600,
+        help="Sets the max body size in bytes, default to 100mb"
+    ).tag(config=True)
+
+    service_git_username = Unicode(
+        "grader-service",
+        allow_none=False
+    ).tag(config=True)
+
+    service_git_email = Unicode(
+        "",
+        allow_none=False
+    ).tag(config=True)
 
     config_file = Unicode(
         "grader_service_config.py", help="The config file to load"
     ).tag(config=True)
 
-    base_url_path = Unicode("/services/grader", allow_none=False).tag(config=True)
+    base_url_path = Unicode(
+        "/services/grader",
+        allow_none=False
+    ).tag(config=True)
 
-    authenticator_class = Type(default_value=JupyterHubGroupAuthenticator, klass=object, allow_none=False, config=True)
+    authenticator_class = Type(
+        default_value=JupyterHubGroupAuthenticator,
+        klass=object, allow_none=False, config=True
+    )
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
@@ -132,16 +164,19 @@ class GraderService(config.Application):
     }
 
     log_level = Enum(
-        ["CRITICAL", "FATAL", "ERROR", "WARNING", "WARN", "INFO", "DEBUG", "NOTSET"],
+        ["CRITICAL", "FATAL", "ERROR", "WARNING",
+         "WARN", "INFO", "DEBUG", "NOTSET"],
         "INFO",
     ).tag(config=True)
 
     def setup_loggers(self, log_level: str):  # pragma: no cover
-        """Handles application, Tornado, and SQLAlchemy logging configuration."""
+        """Handles application, Tornado, and
+        SQLAlchemy logging configuration."""
         stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
-        fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
+        fmt = "%(color)s%(levelname)-8s %(asctime)s " \
+              "%(module)-13s |%(end_color)s %(message)s"
         formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
 
         for log in ("access", "application", "general"):
@@ -168,15 +203,24 @@ class GraderService(config.Application):
         traitlet_logger.addHandler(traitlets_handler)
 
     def write_config_file(self):
-        self.log.info(f"Writing config file {os.path.abspath(self.config_file)}")
+        self.log.info(
+            f"Writing config file {os.path.abspath(self.config_file)}"
+        )
         config_file_dir = os.path.dirname(os.path.abspath(self.config_file))
         if not os.path.isdir(config_file_dir):
-            self.exit(f"The directory to write the config file has to exist. {config_file_dir} not found")
+            self.exit(
+                f"The directory to write the config file has to exist. "
+                f"{config_file_dir} not found"
+            )
         if os.path.isfile(os.path.abspath(self.config_file)):
-            self.exit(f"Config file {os.path.abspath(self.config_file)} already exists!")
+            self.exit(f"Config file {os.path.abspath(self.config_file)} \
+                already exists!")
 
-        config_classes = [x[1] for x in inspect.getmembers(sys.modules[__name__],
-                                                           lambda x: inspect.isclass(x) and issubclass(x, HasTraits))]
+        members = inspect.getmembers(
+            sys.modules[__name__],
+            lambda x: inspect.isclass(x) and issubclass(x, HasTraits))
+        config_classes = [x[1] for x in members]
+
         config_text = self.generate_config_file(classes=config_classes)
         if isinstance(config_text, bytes):
             config_text = config_text.decode('utf8')
@@ -191,9 +235,12 @@ class GraderService(config.Application):
         self._start_future = asyncio.Future()
 
         if sys.version_info.major < 3 or sys.version_info.minor < 8:
-            raise RuntimeError("Grader Service needs Python version 3.8 or above to run!")
+            msg = "Grader Service needs Python version 3.8 or above to run!"
+            raise RuntimeError(msg)
         if shutil.which("git") is None:
-            raise RuntimeError("No git executable found! Git is necessary to run Grader Service!")
+            msg = "No git executable found! " \
+                  "Git is necessary to run Grader Service!"
+            raise RuntimeError(msg)
 
         self.parse_command_line(argv)
         self.log.info("Loading config file...")
@@ -225,7 +272,7 @@ class GraderService(config.Application):
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
             GraderServer(
-                grader_service_dir=self.grader_service_dir,
+                grader_service_dir=self.service_dir,
                 base_url=self.base_url_path,
                 auth_cls=self.authenticator_class,
                 handlers=handlers,
@@ -233,7 +280,10 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=SQLAlchemy(self.db_url, engine_options={} if isSQLite else {"pool_size": 50, "max_overflow": -1}),
+                db=SQLAlchemy(
+                    self.db_url, engine_options={} if isSQLite else
+                    {"pool_size": 50, "max_overflow": -1}
+                ),
                 parent=self,
             ),
             # ssl_options=ssl_context,
@@ -241,46 +291,55 @@ class GraderService(config.Application):
             max_body_size=self.max_body_size,
             xheaders=True,
         )
-        self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.bind(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
+        self.log.info(f"Service directory - {self.service_dir}")
+        self.http_server.bind(self.service_port, address=self.service_host,
+                              reuse_port=self.reuse_port)
         self.http_server.start()
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda s=s: asyncio.ensure_future(self.shutdown_cancel_tasks(s))
+                s, lambda s=s: asyncio.ensure_future(
+                    self.shutdown_cancel_tasks(s))
             )
 
-        self.log.info(
-            f"Grader service running at {self.service_host}:{self.service_port}"
-        )
+        self.log.info(f"Grader service running at \
+            {self.service_host}:{self.service_port}")
 
         # finish start
         self._start_future.set_result(None)
 
     async def _setup_environment(self):
-        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
-            os.mkdir(os.path.join(self.grader_service_dir, "git"))
+        if not os.path.exists(os.path.join(self.service_dir, "git")):
+            os.mkdir(os.path.join(self.service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        subprocess.run(shlex.split("git config --global init.defaultBranch main"))
-        if subprocess.check_output(shlex.split("git config user.name")).decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global user.name "{self.service_git_username}"'))
-        if subprocess.check_output(shlex.split("git config user.email")).decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global user.email "{self.service_git_email}"'))
+        subprocess.run(
+            shlex.split("git config --global init.defaultBranch main"))
+        if subprocess.check_output(shlex.split("git config user.name"))\
+                .decode("utf-8").strip() == "":
+            subprocess.run(shlex.split(f'git config --global \
+            user.name "{self.service_git_username}"'))
+        if subprocess.check_output(shlex.split("git config user.email"))\
+                .decode("utf-8").strip() == "":
+            subprocess.run(shlex.split(f'git config --global \
+            user.email "{self.service_git_email}"'))
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""
-        self.log.critical("Received signal %s, initiating shutdown...", sig.name)
+        self.log.critical(
+            "Received signal %s, initiating shutdown...", sig.name)
 
         # For compatibility with python versions 3.6 or earlier.
-        # asyncio.Task.all_tasks() is fully moved to asyncio.all_tasks() starting with 3.9. Also applies to current_task.
+        # asyncio.Task.all_tasks() is fully moved to asyncio.all_tasks()
+        # starting with 3.9. Also applies to current_task.
         try:
             asyncio_all_tasks = asyncio.all_tasks
             asyncio_current_task = asyncio.current_task
-        except AttributeError as e:
+        except AttributeError:
             asyncio_all_tasks = asyncio.Task.all_tasks
             asyncio_current_task = asyncio.Task.current_task
 
-        tasks = [t for t in asyncio_all_tasks() if t is not asyncio_current_task()]
+        tasks = [t for t in asyncio_all_tasks() if
+                 t is not asyncio_current_task()]
 
         if tasks:
             self.log.debug("Cancelling pending tasks")
@@ -288,10 +347,11 @@ class GraderService(config.Application):
 
             try:
                 await asyncio.wait(tasks)
-            except asyncio.CancelledError as e:
+            except asyncio.CancelledError:
                 self.log.debug("Caught Task CancelledError. Ignoring")
-            except StopAsyncIteration as e:
-                self.log.error("Caught StopAsyncIteration Exception", exc_info=True)
+            except StopAsyncIteration:
+                msg = "Caught StopAsyncIteration Exception"
+                self.log.error(msg, exc_info=True)
 
             tasks = [t for t in asyncio_all_tasks()]
             for t in tasks:

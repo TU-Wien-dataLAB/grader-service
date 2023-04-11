@@ -1,4 +1,6 @@
-from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig, authorize
+from grader_service.handlers.base_handler import (GraderBaseHandler,
+                                                  RequestHandlerConfig,
+                                                  authorize)
 from grader_service.orm.takepart import Scope
 from grader_service.registry import register_handler, VersionSpecifier
 
