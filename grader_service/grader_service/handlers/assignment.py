@@ -1,6 +1,7 @@
 import json
 import shutil
 from http import HTTPStatus
+from pathlib import Path
 
 import tornado
 import os
@@ -266,12 +267,13 @@ class AssignmentResetHandler(GraderBaseHandler):
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        git_path_base = self.application.grader_service_dir.joinpath(
+        grader_service_dir = Path(self.application.grader_service_dir)
+        git_path_base = grader_service_dir.joinpath(
                 "tmp",
                 assignment.lecture.code,
                 assignment.name,
                 self.user.name)
-        assert git_path_base.exists(), "Error: git path base does not exist"
+        self.log.info(git_path_base)
         # Deleting dir
         if os.path.exists(git_path_base):
             shutil.rmtree(git_path_base)

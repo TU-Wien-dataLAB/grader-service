@@ -15,6 +15,7 @@ import sys
 import traceback
 from _decimal import Decimal
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
 
 from traitlets import Type, Integer, TraitType, Unicode, Union, Bool
@@ -231,7 +232,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                                repo_path_user: str,
                                assignment: Assignment, message: str,
                                checkout_main: bool = False):
-        tmp_path_base = os.path.join(
+        tmp_path_base = Path(
                 self.application.grader_service_dir,
                 "tmp",
                 assignment.lecture.code,
