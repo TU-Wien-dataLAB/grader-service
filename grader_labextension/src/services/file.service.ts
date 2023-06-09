@@ -30,7 +30,7 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
   }
   const items = model.items();
   const files = [];
-  let f: IModel = items.next();
+  let f = items.next();
   while (f !== undefined) {
     files.push(f);
     f = items.next();

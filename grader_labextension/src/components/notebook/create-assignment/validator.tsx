@@ -58,7 +58,9 @@ export const Validator = (props: ValidatorProps) => {
       const metadata: NbgraderData = CellModel.getNbgraderData(
         c.model.metadata
       );
-      const cellText = c.model.value.text;
+      // FIXME: Find the replacement for deprecated command c.model.value.text
+      // validator will not work correctly without it
+      const cellText = "c.model.value.text";
       const layout = c.layout as PanelLayout;
       const toolData: ToolData = CellModel.newToolData(metadata, c.model.type);
       if (metadata !== null) {

@@ -5,7 +5,7 @@ import { expect, test } from '@jupyterlab/galata';
  * This is required to ensure we capture all log messages.
  */
 test.use({ autoGoto: false });
-/*
+
 test('should emit an activation console message', async ({ page }) => {
   const logs: string[] = [];
 
@@ -19,4 +19,3 @@ test('should emit an activation console message', async ({ page }) => {
     logs.filter(s => s === 'JupyterLab extension grader-labextension is activated!')
   ).toHaveLength(1);
 });
-*/

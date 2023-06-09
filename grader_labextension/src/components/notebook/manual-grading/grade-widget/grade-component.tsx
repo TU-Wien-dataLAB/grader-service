@@ -22,10 +22,11 @@ export interface GradeComponentProps {
 }
 
 export const GradeComponent = (props: GradeComponentProps) => {
-  const metadata = props.notebook.model.metadata;
-  if (!metadata.has('updated')) {
-    metadata.set('updated', false);
+  const model = props.notebook.model;
+  if (model.getMetadata('updated') != null) {
+    model.setMetadata('updated', false);
   }
+  const metadata = model.metadata
   const gradableCell =
     props.toolData.type !== 'readonly' &&
     props.toolData.type !== 'solution' &&

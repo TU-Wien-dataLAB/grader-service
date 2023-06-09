@@ -101,7 +101,7 @@ namespace DeadlineCommandIDs {
 export class GlobalObjects {
   static commands: CommandRegistry;
   static docRegistry: DocumentRegistry;
-  static serviceManager: ServiceManager;
+  static serviceManager: ServiceManager.IManager;
   static docManager: IDocumentManager;
   static browserFactory: IFileBrowserFactory;
   static tracker: INotebookTracker;
@@ -369,13 +369,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('revert');
+        return tracker.activeCell.model.getMetadata('revert') != null;
       },
       isEnabled: () => {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('revert');
+        return tracker.activeCell.model.getMetadata('revert') != null;
       },
       execute: () => {
         showDialog({
@@ -386,11 +386,13 @@ const extension: JupyterFrontEndPlugin<void> = {
           if (!result.button.accept) {
             return;
           }
-          tracker.activeCell.model.value.clear();
+          //FIXME: Need replacement for model.value
+          /*tracker.activeCell.model.value
+          //tracker.activeCell.model.value.clear();
           tracker.activeCell.model.value.insert(
             0,
             tracker.activeCell.model.metadata.get('revert').toString()
-          );
+          );*/
         });
       },
       icon: undoIcon
@@ -403,13 +405,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('hint');
+        return tracker.activeCell.model.getMetadata('hint') != null;
       },
       isEnabled: () => {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('hint');
+        return tracker.activeCell.model.getMetadata('hint') != null;
       },
       execute: () => {
         let hintWidget: HintWidget = null;
@@ -422,13 +424,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (hintWidget === null) {
           (tracker.activeCell.layout as PanelLayout).addWidget(
             new HintWidget(
-              tracker.activeCell.model.metadata.get('hint').toString()
+              tracker.activeCell.model.getMetadata('hint').toString()
             )
           );
         } else {
           hintWidget.toggleShowAlert();
           hintWidget.setHint(
-            tracker.activeCell.model.metadata.get('hint').toString()
+            tracker.activeCell.model.getMetadata('hint').toString()
           );
           hintWidget.update();
         }

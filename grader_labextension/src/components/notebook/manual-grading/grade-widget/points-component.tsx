@@ -13,7 +13,7 @@ import { Notebook } from '@jupyterlab/notebook';
 import { IObservableJSON } from '@jupyterlab/observables';
 
 export interface IPointsComponentProps {
-  metadata: IObservableJSON;
+  metadata: any;
   gradebook: GradeBook;
   nbname: string;
   nbgraderData: NbgraderData;

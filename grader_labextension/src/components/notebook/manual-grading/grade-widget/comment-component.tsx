@@ -12,7 +12,7 @@ import { GradeBook } from '../../../../services/gradebook';
 import { IObservableJSON } from '@jupyterlab/observables';
 
 export interface ICommentComponentProps {
-  metadata: IObservableJSON;
+  metadata: any;
   gradebook: GradeBook;
   nbname: string;
   nbgraderData: NbgraderData;

@@ -7,7 +7,7 @@
 import {
   DataGrid,
   GridRenderCellParams,
-  GridSelectionModel
+  GridRowSelectionModel
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { Assignment } from '../../../model/assignment';
@@ -221,7 +221,7 @@ export const GradingComponent = (props: IGradingProps) => {
   const [submissions, setSubmissions] = React.useState(props.allSubmissions);
   const [rows, setRows] = React.useState([]);
 
-  const [selectedRows, setSelectedRows] = React.useState<GridSelectionModel>(
+  const [selectedRows, setSelectedRows] = React.useState<GridRowSelectionModel>(
     []
   );
   const [selectedRowsData, setSelectedRowsData] = React.useState(
@@ -278,7 +278,7 @@ export const GradingComponent = (props: IGradingProps) => {
    * Opens log dialog which contain autograded logs from grader service.
    * @param params row which is needed to find selected submission
    */
-  const openLogs = (params: GridRenderCellParams<string>) => {
+  const openLogs = (params: GridRenderCellParams<any>) => {
     getLogs(props.lecture.id,props.assignment.id,params.row.id).then(
         logs => {
           setLogs(logs);
@@ -300,7 +300,7 @@ export const GradingComponent = (props: IGradingProps) => {
       field: 'auto_status',
       headerName: 'Autograde-Status',
       width: 200,
-      renderCell: (params: GridRenderCellParams<string>) => (
+      renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
           variant="outlined"
           label={params.value}
@@ -314,7 +314,7 @@ export const GradingComponent = (props: IGradingProps) => {
       field: 'manual_status',
       headerName: 'Manualgrade-Status',
       width: 170,
-      renderCell: (params: GridRenderCellParams<string>) => (
+      renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
           variant="outlined"
           label={params.value}
@@ -326,7 +326,7 @@ export const GradingComponent = (props: IGradingProps) => {
       field: 'feedback_available',
       headerName: 'Feedback generated',
       width: 170,
-      renderCell: (params: GridRenderCellParams<boolean>) => (
+      renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
           variant="outlined"
           label={params.value ? 'Generated' : 'Not Generated'}
@@ -455,9 +455,9 @@ export const GradingComponent = (props: IGradingProps) => {
             columns={columns}
             rows={rows}
             checkboxSelection
-            disableSelectionOnClick
-            selectionModel={selectedRows}
-            onSelectionModelChange={e => {
+            disableRowSelectionOnClick
+            rowSelectionModel={selectedRows}
+            onRowSelectionModelChange={e => {
               const selectedIDs = new Set(e);
               const selectedRowData = rows.filter(row =>
                 selectedIDs.has(row.id)

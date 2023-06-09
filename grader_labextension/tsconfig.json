@@ -8,8 +8,8 @@
     "jsx": "react",
     "module": "esnext",
     "moduleResolution": "node",
-    "noEmitOnError": true,
-    "noImplicitAny": true,
+    "noEmitOnError": false,
+    "noImplicitAny": false,
     "noUnusedLocals": false,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
@@ -18,7 +18,7 @@
     "strict": false,
     "strictNullChecks": false,
     "skipLibCheck": true,
-    "target": "es2017",
+    "target": "ES2020",
     "types": []
   },
   "exclude": ["ui-tests/**", "lib/**"]

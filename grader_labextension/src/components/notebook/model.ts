@@ -61,7 +61,7 @@ export namespace CellModel {
    *
    * @returns The nbgrader data, or null if it doesn't exist.
    */
-  export function getNbgraderData(cellMetadata: IObservableJSON): NbgraderData {
+  export function getNbgraderData(cellMetadata: any): NbgraderData {
     if (cellMetadata == null) {
       return null;
     }
@@ -155,7 +155,7 @@ export namespace CellModel {
    */
   export function setNbgraderData(
     data: NbgraderData,
-    cellMetadata: IObservableJSON
+    cellMetadata: any
   ): void {
     if (data == null) {
       if (cellMetadata.has(NBGRADER_KEY)) {

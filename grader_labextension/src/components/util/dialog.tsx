@@ -287,20 +287,6 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 <DateTimePicker
                   ampm={false}
                   disabled={formik.values.due_date === null}
-                  renderInput={(props: TextFieldProps) => {
-                    return (
-                      <TextField
-                        {...props}
-                        error={
-                          formik.touched.due_date &&
-                          Boolean(formik.errors.due_date)
-                        }
-                        helperText={
-                          formik.touched.due_date &&
-                          String(formik.errors.due_date)}
-                      />
-                    );
-                  }}
                   label="DateTimePicker"
                   value={formik.values.due_date}
                   onChange={(date: Date) => {

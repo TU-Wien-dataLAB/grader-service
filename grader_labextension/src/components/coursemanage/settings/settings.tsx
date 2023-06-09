@@ -175,16 +175,6 @@ export const SettingsComponent = (props: ISettingsProps) => {
             <DateTimePicker
               ampm={false}
               disabled={!checked}
-              renderInput={(props: TextFieldProps) => {
-                return (
-                  <TextField
-                    {...props}
-                    error={
-                      formik.touched.due_date && Boolean(formik.errors.due_date)
-                    }
-                  />
-                );
-              }}
               label="DateTimePicker"
               value={formik.values.due_date}
               onChange={(date: Date) => {
