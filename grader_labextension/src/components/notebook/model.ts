@@ -6,7 +6,7 @@
 
 import * as nbformat from '@jupyterlab/nbformat';
 
-import { IObservableJSON } from '@jupyterlab/observables';
+import { ICellMetadata } from '@jupyterlab/nbformat';
 
 import { JSONObject, ReadonlyJSONObject } from '@lumino/coreutils';
 
@@ -24,7 +24,7 @@ export namespace CellModel {
    * @returns Whether cleaning occurred.
    */
   export function cleanNbgraderData(
-    cellMetadata: IObservableJSON,
+    cellMetadata: Partial<ICellMetadata>,
     cellType: nbformat.CellType
   ): boolean {
     const data = CellModel.getNbgraderData(cellMetadata);
@@ -45,15 +45,15 @@ export namespace CellModel {
   /**
    * Removes the "cell_type" property from the nbgrader data.
    */
-  export function clearCellType(cellMetadata: IObservableJSON): void {
-    const data = cellMetadata.get(NBGRADER_KEY) as JSONObject;
+  export function clearCellType(cellMetadata: Partial<ICellMetadata>): void {
+    const data = cellMetadata[NBGRADER_KEY];
     if (data == null) {
       return;
     }
     if ('cell_type' in data) {
       data['cell_type'] = undefined;
     }
-    cellMetadata.set(NBGRADER_KEY, data);
+    cellMetadata[NBGRADER_KEY] = data;
   }
 
   /**
@@ -61,11 +61,11 @@ export namespace CellModel {
    *
    * @returns The nbgrader data, or null if it doesn't exist.
    */
-  export function getNbgraderData(cellMetadata: any): NbgraderData {
+  export function getNbgraderData(cellMetadata: Partial<ICellMetadata>): NbgraderData {
     if (cellMetadata == null) {
       return null;
     }
-    const nbgraderValue = cellMetadata.get('nbgrader');
+    const nbgraderValue = cellMetadata[NBGRADER_KEY];
     if (nbgraderValue == null) {
       return null;
     }
@@ -158,18 +158,18 @@ export namespace CellModel {
     cellMetadata: any
   ): void {
     if (data == null) {
-      if (cellMetadata.has(NBGRADER_KEY)) {
-        cellMetadata.delete(NBGRADER_KEY);
+      if (cellMetadata[NBGRADER_KEY] != undefined) {
+        cellMetadata[NBGRADER_KEY] = undefined;
       }
       return;
     }
-    const currentDataJson = cellMetadata.get(NBGRADER_KEY);
+    const currentDataJson = cellMetadata[NBGRADER_KEY];
     const currentData =
       currentDataJson == null
         ? null
         : (currentDataJson.valueOf() as NbgraderData);
     if (currentData != data) {
-      cellMetadata.set(NBGRADER_KEY, data.toJson());
+      cellMetadata[NBGRADER_KEY] = data.toJson();
     }
   }
 }
