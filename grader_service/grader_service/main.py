@@ -292,9 +292,8 @@ class GraderService(config.Application):
             xheaders=True,
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.bind(self.service_port, address=self.service_host,
+        self.http_server.listen(self.service_port, address=self.service_host,
                               reuse_port=self.reuse_port)
-        self.http_server.start()
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
