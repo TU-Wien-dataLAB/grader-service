@@ -112,6 +112,7 @@ class SubmissionHandler(GraderBaseHandler):
                           (Submission.username == subquery.c.username) & (
                                   Submission.date == subquery.c.max_date) & (
                                   Submission.assignid == assignment_id))
+                    .order_by(Submission.id)
                     .all())
 
             elif submission_filter == 'best':
@@ -132,6 +133,7 @@ class SubmissionHandler(GraderBaseHandler):
                           (Submission.username == subquery.c.username) & (
                                   Submission.score == subquery.c.max_score) & (
                                   Submission.assignid == assignment_id))
+                    .order_by(Submission.id)
                     .all())
 
             else:
@@ -156,6 +158,7 @@ class SubmissionHandler(GraderBaseHandler):
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
+                    .order_by(Submission.id)
                     .all())
 
             elif submission_filter == 'best':
@@ -177,6 +180,7 @@ class SubmissionHandler(GraderBaseHandler):
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
+                    .order_by(Submission.id)
                     .all())
             else:
                 submissions = (
@@ -187,6 +191,7 @@ class SubmissionHandler(GraderBaseHandler):
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
                     )
+                    .order_by(Submission.id)
                     .all()
                 )
         if response_format == "csv":
