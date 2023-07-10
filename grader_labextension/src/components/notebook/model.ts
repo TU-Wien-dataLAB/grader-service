@@ -50,9 +50,7 @@ export namespace CellModel {
     if (data == null) {
       return;
     }
-    if ('cell_type' in data) {
-      data['cell_type'] = undefined;
-    }
+    data['cell_type'] = undefined;
     cellMetadata[NBGRADER_KEY] = data;
   }
 
