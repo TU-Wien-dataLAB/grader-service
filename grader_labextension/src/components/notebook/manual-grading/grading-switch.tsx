@@ -110,7 +110,11 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
       );
     } catch (err) {
       this.setState({saveButtonText: 'Save'});
-      showErrorMessage('Error saving properties', err);
+      if (err instanceof Error) {
+        showErrorMessage('Error saving properties', err);
+      } else {
+          console.error('Error while trying to interpret type unknown as error', err);
+      }
     }
   }
 

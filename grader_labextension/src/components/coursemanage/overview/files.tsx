@@ -188,9 +188,13 @@ export const Files = (props: IFilesProps) => {
           });
           closeDialog();
         } catch (err) {
-          enqueueSnackbar('Error Pushing Assignment: ' + err.message, {
-            variant: 'error'
-          });
+            if (err instanceof Error) {
+              enqueueSnackbar('Error Pushing Assignment: ' + err.message, {
+                variant: 'error'
+              });
+            } else {
+                console.error("Error cannot interpret unknown as error", err);
+            }
           closeDialog();
           return;
         }
@@ -277,9 +281,13 @@ export const Files = (props: IFilesProps) => {
             variant: 'success'
           });
         } catch (err) {
-          enqueueSnackbar('Error Pulling Assignment: ' + err.message, {
-            variant: 'error'
-          });
+            if (err instanceof Error) {
+              enqueueSnackbar('Error Pulling Assignment: ' + err.message, {
+                variant: 'error'
+              });
+            } else {
+                console.error('Error cannot intepret unkown as error', err);
+            }
         }
         props.updateGitLog();
         reloadFiles();

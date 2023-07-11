@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "outDir": "lib",
     "rootDir": "src",
-    "strict": false,
+    "strict": true,
     "strictNullChecks": false,
     "skipLibCheck": true,
     "target": "ES2020",

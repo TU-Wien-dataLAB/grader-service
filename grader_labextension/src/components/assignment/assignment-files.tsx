@@ -95,9 +95,13 @@ export const AssignmentFilesComponent = (
             variant: 'success'
           });
         } catch (e) {
-          enqueueSnackbar('Error Reset Assignment: ' + e.message, {
-            variant: 'error'
-          });
+            if (e instanceof Error) {
+              enqueueSnackbar('Error Reset Assignment: ' + e.message, {
+                variant: 'error'
+              });
+            } else {
+                console.error("Error: cannot interpret type unkown as error", e);
+              }
         }
         setDialog(false);
       },
