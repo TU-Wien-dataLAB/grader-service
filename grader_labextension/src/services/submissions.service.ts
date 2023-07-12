@@ -85,13 +85,13 @@ export function getSubmissions(
 }
 
 export function getAllSubmissions(
-  lecture: Lecture,
-  assignment: Assignment,
+  lectureId: number,
+  assignmentId: number,
   filter: 'none' | 'latest' | 'best' = 'none',
   instructor = true,
   reload = false
 ): Promise<Submission[]> {
-  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;
+  let url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions`;
 
   if (filter || instructor) {
     const searchParams = new URLSearchParams({

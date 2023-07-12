@@ -26,32 +26,39 @@ import { StatsComponent } from './stats/stats';
 import { GradeBook } from '../../services/gradebook';
 import { loadNumber, storeNumber } from '../../services/storage.service';
 import { SettingsComponent } from './settings/settings';
+import { useRouteLoaderData } from 'react-router-dom';
 
 export interface IAssignmentModalProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  allSubmissions: any[];
-  latestSubmissions: Submission[];
   root: HTMLElement;
-  users: any;
-  onClose: () => void;
 }
 
 export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
-  const [latestSubmissions, setSubmissions] = React.useState(
-    props.latestSubmissions
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const [latestSubmissionsState, setSubmissions] = React.useState(
+    latestSubmissions
   );
   const [navigation, setNavigation] = React.useState(
-    loadNumber('cm-navigation', null, props.assignment) || 0
+    loadNumber('cm-navigation', null, assignment) || 0
   );
-
+   // TODO: fix layout of content and navigation! The absolute positioning of the boxes leads to unresponsive breadcrumbs because the box is at top:0
+   //  no magic numbers anymore!
   return (
     <Box>
       <Box
         sx={{
           position: 'absolute',
           bottom: 58,
-          top: 0,
+          top: 25,
           left: 0,
           right: 0,
           overflowY: 'auto'
@@ -59,38 +66,38 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
       >
         {navigation === 0 && (
           <OverviewComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
-            latest_submissions={latestSubmissions}
-            users={props.users}
-            onClose={props.onClose}
+            lecture={lecture}
+            assignment={assignment}
+            allSubmissions={allSubmissions}
+            latest_submissions={latestSubmissionsState}
+            users={users}
+            onClose={() => undefined}
           />
         )}
 
         {navigation === 1 && (
           <GradingComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
+            lecture={lecture}
+            assignment={assignment}
+            allSubmissions={allSubmissions}
             root={props.root}
           />
         )}
         {navigation === 2 && (
           <StatsComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
-            latestSubmissions={props.latestSubmissions}
-            users={props.users}
+            lecture={lecture}
+            assignment={assignment}
+            allSubmissions={allSubmissions}
+            latestSubmissions={latestSubmissions}
+            users={users}
             root={props.root}
           />
         )}
         {navigation === 3 && (
           <SettingsComponent
-            assignment={props.assignment}
-            lecture={props.lecture}
-            submissions={props.latestSubmissions}
+            assignment={assignment}
+            lecture={lecture}
+            submissions={latestSubmissions}
           />
         )}
       </Box>
@@ -103,11 +110,11 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           showLabels
           value={navigation}
           onChange={(event, newValue) => {
-            storeNumber('cm-navigation', newValue, null, props.assignment);
+            storeNumber('cm-navigation', newValue, null, assignment);
             setNavigation(newValue);
             getAllSubmissions(
-              props.lecture,
-              props.assignment,
+              lecture.id,
+              assignment.id,
               'latest',
               true
             ).then((response: any) => {
@@ -115,21 +122,21 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             });
           }}
         >
-          <BottomNavigationAction label="Overview" icon={<DashboardIcon />} />
+          <BottomNavigationAction label='Overview' icon={<DashboardIcon />} />
           <BottomNavigationAction
-            label="Submissions"
+            label='Submissions'
             icon={
               <Badge
-                color="secondary"
-                badgeContent={props.latestSubmissions?.length}
-                showZero={props.latestSubmissions !== null}
+                color='secondary'
+                badgeContent={latestSubmissions?.length}
+                showZero={latestSubmissions !== null}
               >
                 <FormatListNumberedIcon />
               </Badge>
             }
           />
-          <BottomNavigationAction label="Stats" icon={<QueryStatsIcon />} />
-          <BottomNavigationAction label="Settings" icon={<SettingsIcon />} />
+          <BottomNavigationAction label='Stats' icon={<QueryStatsIcon />} />
+          <BottomNavigationAction label='Settings' icon={<SettingsIcon />} />
         </BottomNavigation>
       </Paper>
     </Box>

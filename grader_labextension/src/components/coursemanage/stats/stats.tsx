@@ -41,10 +41,10 @@ export const StatsComponent = (props: IStatsProps) => {
 
   const updateSubmissions = async () => {
     setSubmissions(
-      await getAllSubmissions(props.lecture, props.assignment, 'none', true)
+      await getAllSubmissions(props.lecture.id, props.assignment.id, 'none', true)
     );
     setLatestSubmissions(
-      await getAllSubmissions(props.lecture, props.assignment, 'latest', true)
+      await getAllSubmissions(props.lecture.id, props.assignment.id, 'latest', true)
     );
     setUsers(await getUsers(props.lecture));
     setGb(
@@ -55,12 +55,12 @@ export const StatsComponent = (props: IStatsProps) => {
   };
 
   React.useEffect(() => {
-    getAllSubmissions(props.lecture, props.assignment, 'none', true).then(
+    getAllSubmissions(props.lecture.id, props.assignment.id, 'none', true).then(
       response => {
         setSubmissions(response);
       }
     );
-    getAllSubmissions(props.lecture, props.assignment, 'latest', true).then(
+    getAllSubmissions(props.lecture.id, props.assignment.id, 'latest', true).then(
       response => {
         setLatestSubmissions(response);
       }

@@ -8,8 +8,10 @@ import { CourseManageComponent } from './coursemanage.component';
 import { UserPermissions } from '../../services/permission.service';
 import { getAllLectures, getLecture, getUsers } from '../../services/lectures.service';
 import { enqueueSnackbar } from 'notistack';
-import { getAllAssignments } from '../../services/assignments.service';
+import { getAllAssignments, getAssignment } from '../../services/assignments.service';
 import { LectureComponent } from './lecture';
+import { getAllSubmissions } from '../../services/submissions.service';
+import { AssignmentModalComponent } from './assignment-modal';
 
 const loadPermissions = async () => {
   try {
@@ -40,14 +42,17 @@ const loadLecture = async (lectureId: number) => {
 };
 
 // TODO: remove test code
-const testFetchAssignment = async (lectureId: number, assignmentId: number) => {
-  console.log(lectureId, assignmentId);
-  const { lecture } = await loadLecture(lectureId);
-  // throw lecture;
-  return {
-    assignment: { id: assignmentId, name: 'Introduction to Python' },
-    lecture: lecture
-  };
+const loadAssignment = async (lectureId: number, assignmentId: number) => {
+  try {
+    const assignment = await getAssignment(lectureId, assignmentId);
+    const allSubmissions = await getAllSubmissions(lectureId, assignmentId, 'none', true);
+    const latestSubmissions = await getAllSubmissions(lectureId, assignmentId, 'latest', true);
+    return { assignment, allSubmissions, latestSubmissions };
+  } catch (error: any) {
+    enqueueSnackbar(error.message, {
+      variant: 'error'
+    });
+  }
 };
 
 function ExamplePage({ to }) {
@@ -82,7 +87,7 @@ export const getRoutes = (root: HTMLElement) => {
         loader={loadPermissions}
         handle={{
           crumb: (data) => 'Lectures',
-          link: (data) => '/'
+          link: (params) => '/'
         }}
       >
         <Route index element={<CourseManageComponent root={root} />}></Route>
@@ -93,7 +98,7 @@ export const getRoutes = (root: HTMLElement) => {
           handle={{
             // functions in handle have to handle undefined data (error page is displayed afterwards)
             crumb: (data) => data?.lecture.name,
-            link: (data) => `lecture/${data?.lecture.id}/`
+            link: (params) => `lecture/${params?.lid}/`
           }}
         >
           <Route
@@ -103,15 +108,15 @@ export const getRoutes = (root: HTMLElement) => {
           <Route
             id={'assignment'}
             path={'assignment/:aid/*'}
-            loader={({ params }) => testFetchAssignment(+params.lid, +params.aid)}
+            loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
             handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => data?.assignment.name,
-              link: (data) =>
-                `${data?.lecture.id}/assignment/${data?.assignment.id}`
+              link: (params) =>
+                `assignment/${params.aid}`
             }}
           >
-            <Route index element={<ExamplePage to={'/'} />}></Route>
+            <Route index element={<AssignmentModalComponent root={root} />}></Route>
           </Route>
         </Route>
       </Route>

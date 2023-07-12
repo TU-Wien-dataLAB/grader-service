@@ -66,7 +66,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [bestScore, setBestScore] = React.useState('-');
 
   React.useEffect(() => {
-    getAllSubmissions(props.lecture, assignment, 'none', false).then(
+    getAllSubmissions(props.lecture.id, assignment.id, 'none', false).then(
       response => {
         setSubmissions(response);
         const feedback = response.reduce(
@@ -84,7 +84,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       setFiles(files);
     });
 
-    getAllSubmissions(props.lecture, props.assignment, 'best', false).then(
+    getAllSubmissions(props.lecture.id, props.assignment.id, 'best', false).then(
       submissions => {
         if (submissions.length > 0 && submissions[0].score) {
           setBestScore(submissions[0].score.toString());
@@ -101,8 +101,8 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
     deleteKey('a-opened-assignment');
     setAssignment(await getAssignment(props.lecture.id, assignment.id));
     const submissions = await getAllSubmissions(
-      props.lecture,
-      assignment,
+      props.lecture.id,
+      assignment.id,
       'none',
       false
     );
