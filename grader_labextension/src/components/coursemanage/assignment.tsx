@@ -130,7 +130,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
         <CardActionArea
           sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
           component={Link as any}
-          to={`/lecture/${props.lecture.id}/assignment/${props.assignment.id}`}
+          to={`/lecture/${props.lecture.id}/assignment/${props.assignment.id}/`}
         >
           <CardContent sx={{ flexGrow: 1 }}>
             <Typography variant='h5' component='div'>

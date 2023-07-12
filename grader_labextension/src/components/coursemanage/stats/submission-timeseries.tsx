@@ -10,7 +10,7 @@ import {
   Brush
 } from 'recharts';
 import { Card, CardContent, CardHeader, Typography } from '@mui/material';
-import { IStatsProps } from './stats';
+import { IStatsProps, IStatsSubComponentProps } from './stats';
 import moment from 'moment';
 import { Submission } from '../../../model/submission';
 import {
@@ -68,7 +68,7 @@ const getData = (submissions: Submission[]): { time: number; n: number }[] => {
   });
 };
 
-export const SubmissionTimeSeries = (props: IStatsProps) => {
+export const SubmissionTimeSeries = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState([] as { time: number; n: number }[]);
 
   React.useEffect(() => {

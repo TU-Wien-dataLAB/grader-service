@@ -1,4 +1,4 @@
-import { IStatsProps } from './stats';
+import { IStatsProps, IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
 import { Assignment } from '../../../model/assignment';
@@ -99,7 +99,7 @@ const ScoreDistributionTooltip = ({
   return null;
 };
 
-export const ScoreDistribution = (props: IStatsProps) => {
+export const ScoreDistribution = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState(
     [] as { name: string; count: number }[]
   );

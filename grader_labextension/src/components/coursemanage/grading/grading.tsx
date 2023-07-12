@@ -54,13 +54,12 @@ import { loadString, storeString } from '../../../services/storage.service';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { getConfig } from '../../../services/config.service';
 import { EditSubmission } from './edit-submission';
+import { useRouteLoaderData } from 'react-router-dom';
+
 /**
  * Props for GradingComponent.
  */
 export interface IGradingProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  allSubmissions: Submission[];
   root: HTMLElement;
 }
 
@@ -76,8 +75,19 @@ interface IRowValues extends Submission {
  * @param props Props of the grading component
  */
 export const GradingComponent = (props: IGradingProps) => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
   const [option, setOption] = React.useState(
-    (loadString('grading-submission-option', null, props.assignment) ||
+    (loadString('grading-submission-option', null, assignment) ||
       'none') as 'none' | 'latest' | 'best'
   );
   const [showDialog, setShowDialog] = React.useState(false);
@@ -121,8 +131,8 @@ export const GradingComponent = (props: IGradingProps) => {
           selectedRowsData.map(async row => {
             row.auto_status = 'pending';
             await autogradeSubmission(
-              props.lecture,
-              props.assignment,
+              lecture,
+              assignment,
               getSubmissionFromRow(row)
             );
           });
@@ -152,15 +162,15 @@ export const GradingComponent = (props: IGradingProps) => {
           await Promise.all(
             selectedRowsData.map(async row => {
               await generateFeedback(
-                props.lecture.id,
-                props.assignment.id,
+                lecture.id,
+                assignment.id,
                 row.id
               );
             })
           );
           getAllSubmissions(
-            props.lecture.id,
-            props.assignment.id,
+            lecture.id,
+            assignment.id,
             option,
             true,
             true
@@ -218,7 +228,7 @@ export const GradingComponent = (props: IGradingProps) => {
     return rows;
   };
 
-  const [submissions, setSubmissions] = React.useState(props.allSubmissions);
+  const [submissions, setSubmissions] = React.useState(allSubmissions);
   const [rows, setRows] = React.useState([]);
 
   const [selectedRows, setSelectedRows] = React.useState<GridRowSelectionModel>(
@@ -237,14 +247,14 @@ export const GradingComponent = (props: IGradingProps) => {
       'grading-submission-option',
       event.target.value,
       null,
-      props.assignment
+      assignment
     );
   };
   /**
    * Updates submissions and rows.
    */
   const updateSubmissions = () => {
-    getAllSubmissions(props.lecture.id, props.assignment.id, option, true, true).then(
+    getAllSubmissions(lecture.id, assignment.id, option, true, true).then(
       response => {
         setRows(generateRows(response));
         setSubmissions(response);
@@ -279,16 +289,16 @@ export const GradingComponent = (props: IGradingProps) => {
    * @param params row which is needed to find selected submission
    */
   const openLogs = (params: GridRenderCellParams<any>) => {
-    getLogs(props.lecture.id,props.assignment.id,params.row.id).then(
-        logs => {
-          setLogs(logs);
-          setShowLogs(true);
-        },
-        error => {
-          enqueueSnackbar('No logs for submission', {
-            variant: 'error'
-          });
-        }
+    getLogs(lecture.id, assignment.id, params.row.id).then(
+      logs => {
+        setLogs(logs);
+        setShowLogs(true);
+      },
+      error => {
+        enqueueSnackbar('No logs for submission', {
+          variant: 'error'
+        });
+      }
     );
   };
 
@@ -302,7 +312,7 @@ export const GradingComponent = (props: IGradingProps) => {
       width: 200,
       renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
-          variant="outlined"
+          variant='outlined'
           label={params.value}
           color={getColor(params.value)}
           clickable={true}
@@ -316,7 +326,7 @@ export const GradingComponent = (props: IGradingProps) => {
       width: 170,
       renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
-          variant="outlined"
+          variant='outlined'
           label={params.value}
           color={getColor(params.value)}
         />
@@ -328,7 +338,7 @@ export const GradingComponent = (props: IGradingProps) => {
       width: 170,
       renderCell: (params: GridRenderCellParams<any>) => (
         <Chip
-          variant="outlined"
+          variant='outlined'
           label={params.value ? 'Generated' : 'Not Generated'}
           color={params.value ? 'success' : 'error'}
         />
@@ -391,8 +401,8 @@ export const GradingComponent = (props: IGradingProps) => {
    */
   const handleExportSubmissions = async () => {
     try {
-      await saveSubmissions(props.lecture, props.assignment, option);
-      await openFile(`${props.lecture.code}/submissions.csv`);
+      await saveSubmissions(lecture, assignment, option);
+      await openFile(`${lecture.code}/submissions.csv`);
       enqueueSnackbar('Successfully exported submissions', {
         variant: 'success'
       });
@@ -408,19 +418,19 @@ export const GradingComponent = (props: IGradingProps) => {
       title: 'LTI Sync Submission',
       message: 'Do you wish to sync Submissions?',
       handleAgree: async () => {
-        await ltiSyncSubmissions(props.lecture.id, props.assignment.id)
+        await ltiSyncSubmissions(lecture.id, assignment.id)
           .then(response => {
             closeDialog();
             enqueueSnackbar(
               'Successfully matched ' +
-                response.syncable_users +
-                ' submissions with learning platform',
+              response.syncable_users +
+              ' submissions with learning platform',
               { variant: 'success' }
             );
             enqueueSnackbar(
               'Successfully synced latest submissions with feedback of ' +
-                response.synced_user +
-                ' users',
+              response.synced_user +
+              ' users',
               { variant: 'success' }
             );
           })
@@ -439,10 +449,10 @@ export const GradingComponent = (props: IGradingProps) => {
 
   return (
     <div>
-      <ModalTitle title="Grading">
-        <Box sx={{ ml: 2 }} display="inline-block">
-          <Tooltip title="Reload">
-            <IconButton aria-label="reload" onClick={updateSubmissions}>
+      <ModalTitle title='Grading'>
+        <Box sx={{ ml: 2 }} display='inline-block'>
+          <Tooltip title='Reload'>
+            <IconButton aria-label='reload' onClick={updateSubmissions}>
               <ReplayIcon />
             </IconButton>
           </Tooltip>
@@ -470,12 +480,12 @@ export const GradingComponent = (props: IGradingProps) => {
       </div>
       <span style={{ height: '15vh' }}>
         <FormControl sx={{ m: 3 }}>
-          <InputLabel id="submission-select-label">View</InputLabel>
+          <InputLabel id='submission-select-label'>View</InputLabel>
           <Select
-            labelId="submission-select-label"
-            id="submission-select"
+            labelId='submission-select-label'
+            id='submission-select'
             value={option}
-            label="Age"
+            label='Age'
             onChange={handleChange}
           >
             <MenuItem value={'none'}>All Submissions</MenuItem>
@@ -485,16 +495,16 @@ export const GradingComponent = (props: IGradingProps) => {
         </FormControl>
         
         <Button
-            disabled={
-              selectedRowsData.length !== 1
-            }
-            sx={{ m: 3 }}
-            onClick={() => {
-              setDisplayEditSubmission(true);
-              cleanSelectedRows();
-            }}
-            variant="outlined"
-          >
+          disabled={
+            selectedRowsData.length !== 1
+          }
+          sx={{ m: 3 }}
+          onClick={() => {
+            setDisplayEditSubmission(true);
+            cleanSelectedRows();
+          }}
+          variant='outlined'
+        >
             {'Edit Submission'}
           </Button>
 
@@ -506,7 +516,7 @@ export const GradingComponent = (props: IGradingProps) => {
           <Button
             disabled={selectedRows.length === 0}
             sx={{ m: 3 }}
-            variant="outlined"
+            variant='outlined'
             onClick={handleAutogradeSubmissions}
           >
             {`Autograde (${selectedRows.length})`}
@@ -518,9 +528,9 @@ export const GradingComponent = (props: IGradingProps) => {
             selectedRowsData[0]?.auto_status !== 'automatically_graded'
               ? 'error'
               : selectedRowsData.length !== 1 ||
-                selectedRowsData[0]?.auto_status !== 'automatically_graded'
-              ? 'disabled'
-              : 'primary'
+              selectedRowsData[0]?.auto_status !== 'automatically_graded'
+                ? 'disabled'
+                : 'primary'
           }
           sx={{ mb: -1 }}
         />
@@ -535,7 +545,7 @@ export const GradingComponent = (props: IGradingProps) => {
               cleanSelectedRows();
               setDisplayManualGrading(true);
             }}
-            variant="outlined"
+            variant='outlined'
           >
             {'Manualgrade'}
           </Button>
@@ -545,9 +555,9 @@ export const GradingComponent = (props: IGradingProps) => {
             selectedRows.length === 0
               ? 'disabled'
               : allManualGraded(selectedRowsData) ||
-                props.assignment.automatic_grading === 'full_auto'
-              ? 'primary'
-              : 'error'
+              assignment.automatic_grading === 'full_auto'
+                ? 'primary'
+                : 'error'
           }
           sx={{ mb: -1 }}
         />
@@ -555,12 +565,12 @@ export const GradingComponent = (props: IGradingProps) => {
           <Button
             disabled={
               selectedRows.length === 0 ||
-              (props.assignment.automatic_grading !== 'full_auto' &&
+              (assignment.automatic_grading !== 'full_auto' &&
                 !allAutoGraded(selectedRowsData))
             }
             sx={{ m: 3 }}
             onClick={handleGenerateFeedback}
-            variant="outlined"
+            variant='outlined'
           >
             {`Generate Feedback (${selectedRows.length})`}
           </Button>
@@ -570,13 +580,13 @@ export const GradingComponent = (props: IGradingProps) => {
           startIcon={<FileDownloadIcon />}
           sx={{ m: 3 }}
           onClick={handleExportSubmissions}
-          variant="outlined"
+          variant='outlined'
         >
           {`Export ${optionName()} Submissions`}
         </Button>
 
         <Button
-          variant="outlined"
+          variant='outlined'
           startIcon={<CloudSyncIcon />}
           sx={{ m: 3 }}
           disabled={!showSyncGrades}
@@ -592,11 +602,11 @@ export const GradingComponent = (props: IGradingProps) => {
         onClose={onManualGradingClose}
         open={displayManualGrading}
         container={props.root}
-        transition="zoom"
+        transition='zoom'
       >
         <ManualGrading
-          lecture={props.lecture}
-          assignment={props.assignment}
+          lecture={lecture}
+          assignment={assignment}
           submission={getSubmissionFromRow(selectedRowsData[0])}
           username={selectedRowsData[0]?.username}
           onClose={onManualGradingClose}
@@ -607,11 +617,11 @@ export const GradingComponent = (props: IGradingProps) => {
         onClose={onEditSubmissionClose}
         open={displayEditSubmission}
         container={props.root}
-        transition="zoom"
+        transition='zoom'
       >
         <EditSubmission
-          lecture={props.lecture}
-          assignment={props.assignment}
+          lecture={lecture}
+          assignment={assignment}
           submission={getSubmissionFromRow(selectedRowsData[0])}
           username={selectedRowsData[0]?.username}
           onClose={onEditSubmissionClose}
@@ -623,14 +633,14 @@ export const GradingComponent = (props: IGradingProps) => {
       <Dialog
         open={showLogs}
         onClose={() => setShowLogs(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        aria-labelledby='alert-dialog-title'
+        aria-describedby='alert-dialog-description'
       >
-        <DialogTitle id="alert-dialog-title">{'Logs'}</DialogTitle>
+        <DialogTitle id='alert-dialog-title'>{'Logs'}</DialogTitle>
         <DialogContent>
           <Typography
-            id="alert-dialog-description"
-            sx={{ fontSize: 10, fontFamily: "'Roboto Mono', monospace" }}
+            id='alert-dialog-description'
+            sx={{ fontSize: 10, fontFamily: '\'Roboto Mono\', monospace' }}
           >
             {logs}
           </Typography>

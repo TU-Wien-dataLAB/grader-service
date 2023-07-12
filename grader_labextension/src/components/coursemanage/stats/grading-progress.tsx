@@ -1,4 +1,4 @@
-import { filterUserSubmissions, IStatsProps } from './stats';
+import { filterUserSubmissions, IStatsProps, IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
 import { Card, CardContent, CardHeader } from '@mui/material';
@@ -89,7 +89,7 @@ const getData = (
   };
 };
 
-export const GradingProgress = (props: IStatsProps) => {
+export const GradingProgress = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState([]);
 
   React.useEffect(() => {

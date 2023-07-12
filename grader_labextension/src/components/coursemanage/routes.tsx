@@ -12,6 +12,9 @@ import { getAllAssignments, getAssignment } from '../../services/assignments.ser
 import { LectureComponent } from './lecture';
 import { getAllSubmissions } from '../../services/submissions.service';
 import { AssignmentModalComponent } from './assignment-modal';
+import { OverviewComponent } from './overview/overview';
+import { GradingComponent } from './grading/grading';
+import { StatsComponent } from './stats/stats';
 
 const loadPermissions = async () => {
   try {
@@ -108,15 +111,35 @@ export const getRoutes = (root: HTMLElement) => {
           <Route
             id={'assignment'}
             path={'assignment/:aid/*'}
+            element={<AssignmentModalComponent root={root} />}
             loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
             handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => data?.assignment.name,
               link: (params) =>
-                `assignment/${params.aid}`
+                `assignment/${params.aid}/`
             }}
           >
-            <Route index element={<AssignmentModalComponent root={root} />}></Route>
+            <Route index path={''} element={<OverviewComponent />} handle={{
+              // functions in handle have to handle undefined data (error page is displayed afterwards)
+              crumb: (data) => 'Overview',
+              link: (params) => 'overview/'
+            }}></Route>
+            <Route path={'submissions'} element={<GradingComponent root={root} />} handle={{
+              // functions in handle have to handle undefined data (error page is displayed afterwards)
+              crumb: (data) => 'Submissions',
+              link: (params) => 'submissions/'
+            }}></Route>
+            <Route path={'stats'} element={<StatsComponent root={root} />} handle={{
+              // functions in handle have to handle undefined data (error page is displayed afterwards)
+              crumb: (data) => 'Stats',
+              link: (params) => 'stats/'
+            }}></Route>
+            <Route path={'settings'} element={< ExamplePage to={'/4'} />} handle={{
+              // functions in handle have to handle undefined data (error page is displayed afterwards)
+              crumb: (data) => 'Settings',
+              link: (params) => 'settings/'
+            }}></Route>
           </Route>
         </Route>
       </Route>

@@ -14,6 +14,7 @@ import { getUsers } from '../../../services/lectures.service';
 import { GradeBook } from '../../../services/gradebook';
 import { AssignmentScore } from './assignment-score';
 import { getAssignmentProperties } from '../../../services/assignments.service';
+import { useRouteLoaderData } from 'react-router-dom';
 
 export const filterUserSubmissions = (
   submissions: Submission[],
@@ -23,6 +24,10 @@ export const filterUserSubmissions = (
 };
 
 export interface IStatsProps {
+  root: HTMLElement;
+}
+
+export interface IStatsSubComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   allSubmissions: Submission[];
@@ -32,49 +37,58 @@ export interface IStatsProps {
 }
 
 export const StatsComponent = (props: IStatsProps) => {
-  const [submissions, setSubmissions] = React.useState(props.allSubmissions);
-  const [latestSubmissions, setLatestSubmissions] = React.useState(
-    props.latestSubmissions
-  );
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const [allSubmissionsState, setAllSubmissionsState] = React.useState(allSubmissions);
+  const [latestSubmissionsState, setLatestSubmissionsState] = React.useState(latestSubmissions);
   const [gb, setGb] = React.useState(null as GradeBook);
-  const [users, setUsers] = React.useState(props.users);
+  const [usersState, setUsersState] = React.useState(users);
 
   const updateSubmissions = async () => {
-    setSubmissions(
-      await getAllSubmissions(props.lecture.id, props.assignment.id, 'none', true)
+    setAllSubmissionsState(
+      await getAllSubmissions(lecture.id, assignment.id, 'none', true)
     );
-    setLatestSubmissions(
-      await getAllSubmissions(props.lecture.id, props.assignment.id, 'latest', true)
+    setLatestSubmissionsState(
+      await getAllSubmissions(lecture.id, assignment.id, 'latest', true)
     );
-    setUsers(await getUsers(props.lecture));
+    setUsersState(await getUsers(lecture));
     setGb(
       new GradeBook(
-        await getAssignmentProperties(props.lecture.id, props.assignment.id)
+        await getAssignmentProperties(lecture.id, assignment.id)
       )
     );
   };
 
   React.useEffect(() => {
-    getAllSubmissions(props.lecture.id, props.assignment.id, 'none', true).then(
+    getAllSubmissions(lecture.id, assignment.id, 'none', true).then(
       response => {
-        setSubmissions(response);
+        setAllSubmissionsState(response);
       }
     );
-    getAllSubmissions(props.lecture.id, props.assignment.id, 'latest', true).then(
+    getAllSubmissions(lecture.id, assignment.id, 'latest', true).then(
       response => {
-        setLatestSubmissions(response);
+        setLatestSubmissionsState(response);
       }
     );
-  }, [props.allSubmissions, props.latestSubmissions]);
+  }, [allSubmissions, latestSubmissions]);
 
   React.useEffect(() => {
-    getUsers(props.lecture).then(response => {
-      setUsers(response);
+    getUsers(lecture).then(response => {
+      setUsersState(response);
     });
-  }, [props.users]);
+  }, [users]);
 
   React.useEffect(() => {
-    getAssignmentProperties(props.lecture.id, props.assignment.id).then(
+    getAssignmentProperties(lecture.id, assignment.id).then(
       properties => {
         setGb(new GradeBook(properties));
       }
@@ -83,44 +97,44 @@ export const StatsComponent = (props: IStatsProps) => {
 
   return (
     <Box>
-      <ModalTitle title={`${props.assignment.name} Stats`}>
-        <Box sx={{ ml: 2 }} display="inline-block">
-          <Tooltip title="Reload">
-            <IconButton aria-label="reload" onClick={updateSubmissions}>
+      <ModalTitle title={`${assignment.name} Stats`}>
+        <Box sx={{ ml: 2 }} display='inline-block'>
+          <Tooltip title='Reload'>
+            <IconButton aria-label='reload' onClick={updateSubmissions}>
               <ReplayIcon />
             </IconButton>
           </Tooltip>
         </Box>
       </ModalTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid container spacing={2} alignItems='stretch'>
           <Grid item xs={12}>
             <SubmissionTimeSeries
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
               root={props.root}
             />
           </Grid>
           <Grid item xs={4}>
             <GradingProgress
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
               root={props.root}
             />
           </Grid>
           <Grid item xs={4}>
             <StudentSubmissions
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
               root={props.root}
             />
           </Grid>
@@ -129,11 +143,11 @@ export const StatsComponent = (props: IStatsProps) => {
           </Grid>
           <Grid item xs={12}>
             <ScoreDistribution
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
               root={props.root}
             />
           </Grid>

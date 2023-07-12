@@ -17,61 +17,65 @@ import { AssignmentStatus } from './assignment-status';
 import { RepoType } from '../../util/repo-type';
 import { getGitLog, IGitLogObject } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
+import { useRouteLoaderData } from 'react-router-dom';
 
-export interface IOverviewProps {
-  assignment: Assignment;
-  lecture: Lecture;
-  allSubmissions: Submission[];
-  latest_submissions: Submission[];
-  users: any;
-  onClose: () => void;
-}
 
-export const OverviewComponent = (props: IOverviewProps) => {
-  const [assignment, setAssignment] = React.useState(props.assignment);
+export const OverviewComponent = () => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const [assignmentState, setAssignmentState] = React.useState(assignment);
   const [gitLogs, setGitLog] = React.useState([] as IGitLogObject[]);
 
   const onAssignmentChange = (assignment: Assignment) => {
-    setAssignment(assignment);
+    setAssignmentState(assignment);
   };
 
   const updateGitLog = () => {
-    getGitLog(props.lecture, props.assignment, RepoType.SOURCE, 10).then(logs =>
+    getGitLog(lecture, assignment, RepoType.SOURCE, 10).then(logs =>
       setGitLog(logs)
     );
   };
 
   React.useEffect(() => {
     updateGitLog();
-  }, [assignment]);
+  }, [assignmentState]);
 
   return (
     <Box>
-      <ModalTitle title={assignment.name}></ModalTitle>
+      <ModalTitle title={assignmentState.name}></ModalTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid container spacing={2} alignItems='stretch'>
           <Grid item xs={12} md={12} lg={12}>
             <AssignmentStatus
-              lecture={props.lecture}
-              assignment={assignment}
+              lecture={lecture}
+              assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
 
           <Grid item xs={12} md={6} lg={3}>
             <OverviewCard
-              lecture={props.lecture}
-              assignment={assignment}
-              allSubmissions={props.allSubmissions}
-              latestSubmissions={props.latest_submissions}
-              users={props.users}
+              lecture={lecture}
+              assignment={assignmentState}
+              allSubmissions={allSubmissions}
+              latestSubmissions={latestSubmissions}
+              users={users}
             />
           </Grid>
 
           <Grid item xs={12} md={6} lg={5}>
             <Files
-              lecture={props.lecture}
-              assignment={assignment}
+              lecture={lecture}
+              assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
               updateGitLog={updateGitLog}
             />

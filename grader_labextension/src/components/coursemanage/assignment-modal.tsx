@@ -26,7 +26,16 @@ import { StatsComponent } from './stats/stats';
 import { GradeBook } from '../../services/gradebook';
 import { loadNumber, storeNumber } from '../../services/storage.service';
 import { SettingsComponent } from './settings/settings';
-import { useRouteLoaderData } from 'react-router-dom';
+import {
+  useRouteLoaderData,
+  Outlet,
+  Link,
+  matchPath,
+  useLocation,
+  useParams,
+  useMatch,
+  useMatches
+} from 'react-router-dom';
 
 export interface IAssignmentModalProps {
   root: HTMLElement;
@@ -44,14 +53,31 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
     latestSubmissions: Submission[]
   };
 
-  const [latestSubmissionsState, setSubmissions] = React.useState(
-    latestSubmissions
-  );
-  const [navigation, setNavigation] = React.useState(
-    loadNumber('cm-navigation', null, assignment) || 0
-  );
-   // TODO: fix layout of content and navigation! The absolute positioning of the boxes leads to unresponsive breadcrumbs because the box is at top:0
-   //  no magic numbers anymore!
+  const params = useParams();
+  const match = useMatch(`/lecture/${params.lid}/assignment/${params.aid}/*`);
+  const tab = match.params['*'];
+  console.log(tab)
+
+  // const [navigation, setNavigation] = React.useState(0);
+  // Note: maybe this should be done with handles as well
+  let navigation = -1;
+  if (tab === "") {
+    navigation = 0;
+  } else if (tab.indexOf('submissions') !== -1) {
+    navigation = 1;
+  } else if (tab.indexOf('stats') !== -1) {
+    navigation = 2;
+  } else if (tab.indexOf('settings') !== -1) {
+    navigation = 3;
+  } else {
+    throw 'incorrect tab name';
+  }
+
+  console.log(navigation)
+
+
+  // TODO: fix layout of content and navigation! The absolute positioning of the boxes leads to unresponsive breadcrumbs because the box is at top:0
+  //  no magic numbers anymore!
   return (
     <Box>
       <Box
@@ -64,35 +90,10 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           overflowY: 'auto'
         }}
       >
-        {navigation === 0 && (
-          <OverviewComponent
-            lecture={lecture}
-            assignment={assignment}
-            allSubmissions={allSubmissions}
-            latest_submissions={latestSubmissionsState}
-            users={users}
-            onClose={() => undefined}
-          />
-        )}
+        <Outlet />
+        { /*
 
-        {navigation === 1 && (
-          <GradingComponent
-            lecture={lecture}
-            assignment={assignment}
-            allSubmissions={allSubmissions}
-            root={props.root}
-          />
-        )}
-        {navigation === 2 && (
-          <StatsComponent
-            lecture={lecture}
-            assignment={assignment}
-            allSubmissions={allSubmissions}
-            latestSubmissions={latestSubmissions}
-            users={users}
-            root={props.root}
-          />
-        )}
+
         {navigation === 3 && (
           <SettingsComponent
             assignment={assignment}
@@ -100,6 +101,8 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
             submissions={latestSubmissions}
           />
         )}
+        */}
+
       </Box>
 
       <Paper
@@ -109,20 +112,8 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
         <BottomNavigation
           showLabels
           value={navigation}
-          onChange={(event, newValue) => {
-            storeNumber('cm-navigation', newValue, null, assignment);
-            setNavigation(newValue);
-            getAllSubmissions(
-              lecture.id,
-              assignment.id,
-              'latest',
-              true
-            ).then((response: any) => {
-              setSubmissions(response);
-            });
-          }}
         >
-          <BottomNavigationAction label='Overview' icon={<DashboardIcon />} />
+          <BottomNavigationAction label='Overview' icon={<DashboardIcon />} component={Link as any} to={''} />
           <BottomNavigationAction
             label='Submissions'
             icon={
@@ -134,9 +125,10 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
                 <FormatListNumberedIcon />
               </Badge>
             }
+            component={Link as any} to={'submissions'}
           />
-          <BottomNavigationAction label='Stats' icon={<QueryStatsIcon />} />
-          <BottomNavigationAction label='Settings' icon={<SettingsIcon />} />
+          <BottomNavigationAction label='Stats' icon={<QueryStatsIcon />} component={Link as any} to={'stats'} />
+          <BottomNavigationAction label='Settings' icon={<SettingsIcon />} component={Link as any} to={'settings'} />
         </BottomNavigation>
       </Paper>
     </Box>
