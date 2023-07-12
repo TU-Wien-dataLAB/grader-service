@@ -35,7 +35,7 @@ import {
   loadBoolean,
   storeBoolean
 } from '../../services/storage.service';
-import { useRouteLoaderData } from 'react-router-dom';
+import { useNavigation, useRouteLoaderData } from 'react-router-dom';
 
 
 interface ILectureComponentProps {
@@ -48,6 +48,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
     assignments: Assignment[],
     users: {instructors: string[], tutors: string[], students: string[]}
   };
+  const navigation = useNavigation()
 
   const [lectureState, setLecture] = React.useState(lecture);
   const [assignmentsState, setAssignments] = React.useState(assignments);
@@ -59,7 +60,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
     deleteKey('cm-opened-assignment');
   };
 
-  if (assignmentsState === null) {
+  if (navigation.state === "loading") {
     return (
       <div>
         <Card>
