@@ -8,7 +8,7 @@
     "jsx": "react",
     "module": "esnext",
     "moduleResolution": "node",
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "noImplicitAny": false,
     "noUnusedLocals": false,
     "preserveWatchOutput": true,

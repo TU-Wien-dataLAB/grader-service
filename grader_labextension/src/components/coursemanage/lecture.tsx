@@ -35,47 +35,31 @@ import {
   loadBoolean,
   storeBoolean
 } from '../../services/storage.service';
+import { useRouteLoaderData } from 'react-router-dom';
+
 
 interface ILectureComponentProps {
-  lecture: Lecture;
   root: HTMLElement;
-  expanded?: boolean;
 }
 
 export const LectureComponent = (props: ILectureComponentProps) => {
-  const [lecture, setLecture] = React.useState(props.lecture);
-  const [assignments, setAssignments] = React.useState([]);
-  const [expanded, setExpanded] = React.useState(
-    loadBoolean('cm-expanded', lecture) !== null
-      ? loadBoolean('cm-expanded', lecture)
-      : props.expanded === undefined
-      ? false
-      : props.expanded
-  );
-  const [users, setUsers] = React.useState(null);
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: {instructors: string[], tutors: string[], students: string[]}
+  };
 
-  React.useEffect(() => {
-    getAllAssignments(lecture.id).then(response => {
-      setAssignments(response);
-    });
-
-    getUsers(lecture).then(response => {
-      setUsers(response);
-    });
-  }, [lecture]);
+  const [lectureState, setLecture] = React.useState(lecture);
+  const [assignmentsState, setAssignments] = React.useState(assignments);
 
   const onAssignmentDelete = () => {
-    getAllAssignments(lecture.id).then(response => {
+    getAllAssignments(lectureState.id).then(response => {
       setAssignments(response);
     });
     deleteKey('cm-opened-assignment');
   };
 
-  const handleExpandClick = () => {
-    storeBoolean('cm-expanded', !expanded, lecture);
-    setExpanded(!expanded);
-  };
-  if (assignments === null) {
+  if (assignmentsState === null) {
     return (
       <div>
         <Card>
@@ -87,9 +71,8 @@ export const LectureComponent = (props: ILectureComponentProps) => {
   return (
     <div>
       <Card
-        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
-        elevation={expanded ? 0 : 2}
-        className="lecture-card"
+        sx={{ backgroundColor: 'background.paper' }}
+        className='lecture-card'
       >
         <CardContent sx={{ mb: -1, display: 'flex' }}>
           <Typography variant={'h5'} sx={{ mr: 2 }}>
@@ -103,8 +86,8 @@ export const LectureComponent = (props: ILectureComponentProps) => {
             >
               Lecture:
             </Typography>
-            {lecture.name}
-            {lecture.complete ? (
+            {lectureState.name}
+            {lectureState.complete ? (
               <Typography
                 sx={{
                   display: 'inline-block',
@@ -118,7 +101,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
             ) : null}
           </Typography>
           <EditLectureDialog
-            lecture={lecture}
+            lecture={lectureState}
             handleSubmit={updatedLecture => {
               updateLecture(updatedLecture).then(
                 response => {
@@ -134,59 +117,51 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           />
         </CardContent>
 
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <CardContent>
-            <Grid container spacing={2} alignItems="stretch">
-              {assignments.map((el: Assignment) => (
-                <Grid
-                  item
-                  gridAutoColumns={'1fr'}
-                  sx={{
-                    maxWidth: 225,
-                    minWidth: 225,
-                    minHeight: '100%',
-                    m: 1.5
-                  }}
-                >
-                  <AssignmentComponent
-                    lecture={lecture}
-                    assignment={el}
-                    root={props.root}
-                    users={users}
-                    onDeleted={onAssignmentDelete}
-                  />
-                </Grid>
-              ))}
+        <CardContent>
+          <Grid container spacing={2} alignItems='stretch'>
+            {assignmentsState.map((el: Assignment) => (
               <Grid
                 item
                 gridAutoColumns={'1fr'}
                 sx={{
                   maxWidth: 225,
                   minWidth: 225,
-                  minHeight: 225,
-                  heigth: '100%',
+                  minHeight: '100%',
                   m: 1.5
                 }}
               >
-                <CreateDialog
-                  lecture={lecture}
-                  handleSubmit={assigment => {
-                    setAssignments((oldAssignments: Assignment[]) => [
-                      ...oldAssignments,
-                      assigment
-                    ]);
-                    setExpanded(true);
-                  }}
+                <AssignmentComponent
+                  lecture={lectureState}
+                  assignment={el}
+                  root={props.root}
+                  users={users}
+                  onDeleted={onAssignmentDelete}
                 />
               </Grid>
+            ))}
+            <Grid
+              item
+              gridAutoColumns={'1fr'}
+              sx={{
+                maxWidth: 225,
+                minWidth: 225,
+                minHeight: 225,
+                heigth: '100%',
+                m: 1.5
+              }}
+            >
+              <CreateDialog
+                lecture={lectureState}
+                handleSubmit={assigment => {
+                  setAssignments((oldAssignments: Assignment[]) => [
+                    ...oldAssignments,
+                    assigment
+                  ]);
+                }}
+              />
             </Grid>
-          </CardContent>
-        </Collapse>
-        <CardActions>
-          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
-            {(expanded ? 'Hide' : 'Show') + ' Assignments'}
-          </Button>
-        </CardActions>
+          </Grid>
+        </CardContent>
       </Card>
     </div>
   );

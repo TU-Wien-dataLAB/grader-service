@@ -6,24 +6,29 @@
 
 import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
-import { CourseManageComponent } from '../components/coursemanage/coursemanage.component';
 import { SnackbarProvider } from 'notistack';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { getRoutes } from "../components/coursemanage/routes";
 
 export class CourseManageView extends ReactWidget {
   /**
    * Construct a new grading widget
    */
+  root: HTMLElement;
+
   constructor(options: CourseManageView.IOptions = {}) {
     super();
     this.id = options.id;
     this.addClass('GradingWidget');
+    this.root = this.node;
+
   }
 
   render() {
-    const root = this.node;
+    const router = createMemoryRouter(getRoutes(this.root));
     return (
       <SnackbarProvider maxSnack={3}>
-        <CourseManageComponent root={root} />
+        <RouterProvider router={router} />
       </SnackbarProvider>
     );
   }

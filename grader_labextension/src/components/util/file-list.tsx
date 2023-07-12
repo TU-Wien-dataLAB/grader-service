@@ -54,7 +54,6 @@ export const FilesList = (props: IFileListProps) => {
 
   // generateItems will be fed using the IIterator from the FilterFileBrowserModel
   const generateItems = (files: {value: IModel, done: boolean}[]) => {
-    console.log(files[0].constructor.name)
     return files.map(file => (
       <ListItem disablePadding>
         <ListItemButton onClick={() => openFile(file.value.path)} dense={true}>
