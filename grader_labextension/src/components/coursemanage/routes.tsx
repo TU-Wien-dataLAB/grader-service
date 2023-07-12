@@ -123,7 +123,7 @@ export const getRoutes = (root: HTMLElement) => {
             <Route index path={''} element={<OverviewComponent />} handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Overview',
-              link: (params) => 'overview/'
+              link: (params) => ''
             }}></Route>
             <Route path={'submissions'} element={<GradingComponent root={root} />} handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
