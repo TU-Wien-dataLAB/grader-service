@@ -5,14 +5,13 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Cell } from '@jupyterlab/cells';
-import { Box, Divider, Grid, TextField, Typography } from '@mui/material';
-import { CellModel, NbgraderData, ToolData } from '../../model';
+import { Grid, TextField } from '@mui/material';
+import { NbgraderData, ToolData } from '../../model';
 import { GradeBook } from '../../../../services/gradebook';
-import { IObservableJSON } from '@jupyterlab/observables';
+import {INotebookModel} from "@jupyterlab/notebook";
 
 export interface ICommentComponentProps {
-  metadata: any;
+  model: INotebookModel;
   gradebook: GradeBook;
   nbname: string;
   nbgraderData: NbgraderData;
@@ -33,7 +32,7 @@ export const CommentComponent = (props: ICommentComponentProps) => {
         value={comment}
         onChange={e => {
           setComment(e.target.value);
-          props.metadata.set('updated', true);
+          props.model.setMetadata('updated', true);
           props.gradebook.setComment(
             props.nbname,
             props.toolData.id,
