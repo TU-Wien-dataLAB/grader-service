@@ -15,6 +15,7 @@ import { AssignmentModalComponent } from './assignment-modal';
 import { OverviewComponent } from './overview/overview';
 import { GradingComponent } from './grading/grading';
 import { StatsComponent } from './stats/stats';
+import { SettingsComponent } from './settings/settings';
 
 const loadPermissions = async () => {
   try {
@@ -135,7 +136,7 @@ export const getRoutes = (root: HTMLElement) => {
               crumb: (data) => 'Stats',
               link: (params) => 'stats/'
             }}></Route>
-            <Route path={'settings'} element={< ExamplePage to={'/4'} />} handle={{
+            <Route path={'settings'} element={<SettingsComponent />} handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Settings',
               link: (params) => 'settings/'
