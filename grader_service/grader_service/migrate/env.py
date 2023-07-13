@@ -19,9 +19,14 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-if not config.get_main_option('sqlalchemy.url'):
-    config.set_main_option('sqlalchemy.url',
-                           os.getenv("GRADER_DB_URL", "sqlite:///grader.db"))
+def configure_db_url():
+    "Load db url from environment if not set in config"
+    global config
+    if not config.get_main_option('sqlalchemy.url'):
+        config.set_main_option('sqlalchemy.url',
+                               os.getenv("GRADER_DB_URL", "sqlite:///grader.db"))
+
+configure_db_url()
 
 
 # edit this line and pass metadata
