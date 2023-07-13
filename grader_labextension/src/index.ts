@@ -3,6 +3,7 @@
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
+// noinspection TypeScriptValidateTypes
 
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -386,13 +387,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           if (!result.button.accept) {
             return;
           }
-          //FIXME: Need replacement for model.value
-          /*tracker.activeCell.model.value
-          //tracker.activeCell.model.value.clear();
-          tracker.activeCell.model.value.insert(
-            0,
-            tracker.activeCell.model.metadata.get('revert').toString()
-          );*/
+          tracker.activeCell.inputArea.model.sharedModel.setSource("")
+          tracker.activeCell.inputArea.model.sharedModel.setSource(
+              tracker.activeCell.model.getMetadata("revert").toString()
+          )
         });
       },
       icon: undoIcon

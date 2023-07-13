@@ -4,7 +4,8 @@ from grader_convert.preprocessors.base import NbGraderPreprocessor
 
 
 class AddRevert(NbGraderPreprocessor):
-    """Adds original code to cell which is used to revert the cell in extension"""
+    """Adds original code to cell which is used to revert the cell in
+    extension"""
 
     def preprocess(
             self, nb: NotebookNode, resources: Dict
