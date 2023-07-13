@@ -5,13 +5,14 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as nbformat from '@jupyterlab/nbformat';
-
+import { ICellModel } from '@jupyterlab/cells';
 import { ICellMetadata } from '@jupyterlab/nbformat';
 
 import { JSONObject, ReadonlyJSONObject } from '@lumino/coreutils';
 
 const NBGRADER_KEY = 'nbgrader';
 export const NBGRADER_SCHEMA_VERSION = 3;
+
 
 /**
  * A namespace for conversions between {@link NbgraderData} and
@@ -24,10 +25,10 @@ export namespace CellModel {
    * @returns Whether cleaning occurred.
    */
   export function cleanNbgraderData(
-    cellMetadata: Partial<ICellMetadata>,
+    cellModel: ICellModel,
     cellType: nbformat.CellType
   ): boolean {
-    const data = CellModel.getNbgraderData(cellMetadata);
+    const data = CellModel.getNbgraderData(cellModel.metadata);
     if (data == null || !PrivateNbgraderData.isInvalid(data, cellType)) {
       return false;
     }
@@ -37,7 +38,7 @@ export namespace CellModel {
     data.grade = false;
     data.locked = false;
     data.task = false;
-    CellModel.setNbgraderData(data, cellMetadata);
+    CellModel.setNbgraderData(data, cellModel);
 
     return true;
   }
@@ -153,21 +154,22 @@ export namespace CellModel {
    */
   export function setNbgraderData(
     data: NbgraderData,
-    cellMetadata: any
+    cellModel: ICellModel
   ): void {
+    const readOnlyMetadata = cellModel.metadata
     if (data == null) {
-      if (cellMetadata[NBGRADER_KEY] != undefined) {
-        cellMetadata[NBGRADER_KEY] = undefined;
+      if (readOnlyMetadata[NBGRADER_KEY] != undefined) {
+        readOnlyMetadata[NBGRADER_KEY] = undefined;
       }
       return;
     }
-    const currentDataJson = cellMetadata[NBGRADER_KEY];
+    const currentDataJson = readOnlyMetadata[NBGRADER_KEY];
     const currentData =
       currentDataJson == null
         ? null
         : (currentDataJson.valueOf() as NbgraderData);
     if (currentData != data) {
-      cellMetadata[NBGRADER_KEY] = data.toJson();
+      cellModel.setMetadata(NBGRADER_KEY, data.toJson());
     }
   }
 }
