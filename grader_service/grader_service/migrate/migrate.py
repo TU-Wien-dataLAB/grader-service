@@ -54,7 +54,7 @@ def load_custom_config(cfile):
     """Load a custom config file that uses the same format as Juypterhub and
     GraderService"""
     global DB_URL_PATT
-    db_url = get_matching_config(cfile, db_url_patt)
+    db_url = get_matching_config(cfile, DB_URL_PATT)
     if db_url is None:  # no match, do nothing
         return 
     environment = {}
