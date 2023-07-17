@@ -1,6 +1,5 @@
-import { Lecture } from '../../model/lecture';
-import { useNavigate } from 'react-router-dom';
 import * as React from 'react';
+import { ReactElement } from 'react';
 import {
   Button,
   ButtonProps,
@@ -10,13 +9,13 @@ import {
   TableCell,
   TableContainer,
   TableFooter,
-  TableHead, TablePagination,
-  TableRow, TableRowProps,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TableRowProps,
   Typography
 } from '@mui/material';
 import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
-import { matchesAny } from 'typedoc/dist/lib/utils/paths';
-import { ReactElement, ReactNode } from 'react';
 
 export function ButtonTr({ children, ...rest }: TableRowProps & ButtonProps) {
   return (
