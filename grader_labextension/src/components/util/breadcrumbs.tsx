@@ -51,6 +51,7 @@ export const RouterBreadcrumbs = () => {
 
   return (
     <Breadcrumbs
+      sx={{ m: 1 }}
       aria-label='breadcrumb'
       separator={<NavigateNextIcon fontSize='small' />}
     >

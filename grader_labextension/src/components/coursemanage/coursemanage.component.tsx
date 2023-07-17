@@ -6,94 +6,147 @@
 
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
-import { Scope, UserPermissions } from '../../services/permission.service';
-import { useRouteLoaderData, Link as RouterLink } from 'react-router-dom';
-import {Box, ListItem, ListItemProps, ListItemText, Paper, Tab, Tabs, Typography} from '@mui/material';
+import { useRouteLoaderData, useNavigate } from 'react-router-dom';
+import {
+  Button, ButtonProps, FormControlLabel, FormGroup,
+  Paper, Stack, Switch,
+  Table, TableBody, TableCell,
+  TableContainer, TableFooter,
+  TableHead, TablePagination,
+  TableRow, TableRowProps, Typography,
+} from '@mui/material';
+import TablePaginationActions from '@mui/material/TablePagination/TablePaginationActions';
+import Box from '@mui/material/Box';
+import { useState } from 'react';
 
 export interface ICourseManageProps {
   // lectures: Array<Lecture>;
   root: HTMLElement;
 }
 
-interface ListItemLinkProps extends ListItemProps {
-  to: string;
-  lecture: Lecture;
-}
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const CustomTabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-
+function ButtonTr({ children, ...rest }: TableRowProps & ButtonProps) {
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
-    </div>
+    <Button style={{ textTransform: 'none' }} component={TableRow} {...rest}>
+      {children}
+    </Button>
   );
 }
 
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
+interface ILectureTableProps {
+  rows: Lecture[];
+}
+
+export const LectureTable = (props: ILectureTableProps) => {
+  const navigate = useNavigate();
+  const rows = props.rows;
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+  // Avoid a layout jump when reaching the last page with empty rows.
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
+  const handleChangePage = (
+    event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number
+  ) => {
+    setPage(newPage);
   };
-}
-const ListItemLink = (props: ListItemLinkProps) => {
-  const { to, ...other } = props;
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  
   return (
-      <ListItem component={RouterLink as any} to={to} {...other} >
-          <Paper sx={{width: '100%'}}>
-              <ListItemText primary={props.lecture.name} sx={{ m: 2 }}/>
-          </Paper>
-
-      </ListItem>
+    <TableContainer component={Paper}>
+      <Table aria-label='simple table'>
+        <TableHead>
+          <TableRow>
+            <TableCell style={{ width: 100 }}>
+              <Typography color='primary'>ID</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography color='primary'>Name</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography color='primary'>Code</Typography>
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {(rowsPerPage > 0
+              ? rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              : rows
+          ).map((row) => (
+            <TableRow
+              key={row.name}
+              component={ButtonTr}
+              onClick={() => navigate(`/lecture/${row.id}`)}
+            >
+              <TableCell style={{ width: 100 }} component='th' scope='row'>
+                {row.id}
+              </TableCell>
+              <TableCell>{row.name}</TableCell>
+              <TableCell>{row.code}</TableCell>
+            </TableRow>
+          ))}
+          {emptyRows > 0 && (
+            <TableRow style={{ height: 53 * emptyRows }}>
+              <TableCell colSpan={6} />
+            </TableRow>
+          )}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TablePagination
+              rowsPerPageOptions={[5, 10]}
+              count={rows.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              SelectProps={{
+                inputProps: {
+                  'aria-label': 'rows per page'
+                }
+              }}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              ActionsComponent={TablePaginationActions}
+            />
+          </TableRow>
+        </TableFooter>
+      </Table>
+    </TableContainer>
   );
-}
+};
 
 
-export const CourseManageComponent = (props: ICourseManageProps) => {
-  const allLectures = useRouteLoaderData("root") as {lectures: Lecture[], completedLectures: Lecture[]};
-  const [tab, setTab] = React.useState(0);
+export const CourseManageComponent = () => {
+  const allLectures = useRouteLoaderData('root') as { lectures: Lecture[], completedLectures: Lecture[] };
+  const [showComplete, setShowComplete] = useState(false);
 
+  const [tab, setTab] = useState(0)
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setTab(newValue);
   };
+
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={handleChange} aria-label="basic tabs example">
-        <Tab label="Active Lectures" {...a11yProps(0)} />
-        <Tab label="Archive" {...a11yProps(1)} />
-      </Tabs>
+    <div>
+      <Box sx={{ m: 5 }}>
+        <Stack direction={'row'} justifyContent='space-between'>
+          <Typography variant={'h6'} sx={{ mb: 1 }}>Lectures</Typography>
+          <FormGroup>
+            <FormControlLabel
+              control={<Switch checked={showComplete} onChange={(ev) => setShowComplete(ev.target.checked)} />}
+              label='Completed Lectures' />
+          </FormGroup>
+        </Stack>
+
+        <LectureTable rows={showComplete ? allLectures.completedLectures : allLectures.lectures} />
       </Box>
-        <CustomTabPanel index={0} value={tab}>
-            {allLectures.lectures
-                .filter(el => UserPermissions.getScope(el) > Scope.student)
-                .map((el, index) => (
-                  <ListItemLink to={`/lecture/${el.id}`} lecture={el} />
-        ))}
-        </CustomTabPanel>
-        <CustomTabPanel index={1} value={tab}>
-            {allLectures.completedLectures
-                .filter(el => UserPermissions.getScope(el) > Scope.student)
-                .map((el, index) => (
-                  <ListItemLink to={`/lecture/${el.id}`} lecture={el} />
-                ))}
-        </CustomTabPanel>
-    </Box>
+    </div>
   );
 };
