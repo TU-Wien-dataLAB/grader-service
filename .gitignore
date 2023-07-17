@@ -498,3 +498,7 @@ grader_service/.openapi-generator
 #UI tests
 grader_labextension/ui-tests/test-results
 grader_labextension/ui-tests/playwright-report
+
+# vim swapfiles 
+*.swp
+*.swo
