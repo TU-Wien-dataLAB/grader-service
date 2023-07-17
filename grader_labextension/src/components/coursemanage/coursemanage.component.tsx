@@ -6,12 +6,9 @@
 
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
-import { getAllLectures } from '../../services/lectures.service';
 import { Scope, UserPermissions } from '../../services/permission.service';
-import { LectureComponent } from './lecture';
-import { enqueueSnackbar } from 'notistack';
 import { useRouteLoaderData, Link as RouterLink } from 'react-router-dom';
-import { ListItem, ListItemProps, ListItemText } from '@mui/material';
+import {Box, ListItem, ListItemProps, ListItemText, Paper, Tab, Tabs, Typography} from '@mui/material';
 
 export interface ICourseManageProps {
   // lectures: Array<Lecture>;
@@ -20,39 +17,83 @@ export interface ICourseManageProps {
 
 interface ListItemLinkProps extends ListItemProps {
   to: string;
-  text: string;
+  lecture: Lecture;
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const CustomTabPanel = (props: TabPanelProps) => {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          <Typography>{children}</Typography>
+        </Box>
+      )}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+}
 const ListItemLink = (props: ListItemLinkProps) => {
   const { to, ...other } = props;
   return (
-    <li>
-      <ListItem component={RouterLink as any} to={to} {...other}>
-        <ListItemText primary={props.text} />
+      <ListItem component={RouterLink as any} to={to} {...other} >
+          <Paper sx={{width: '100%'}}>
+              <ListItemText primary={props.lecture.name} sx={{ m: 2 }}/>
+          </Paper>
+
       </ListItem>
-    </li>
   );
 }
 
 
 export const CourseManageComponent = (props: ICourseManageProps) => {
   const allLectures = useRouteLoaderData("root") as {lectures: Lecture[], completedLectures: Lecture[]};
+  const [tab, setTab] = React.useState(0);
 
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTab(newValue);
+  };
   return (
-    <div className="course-list">
-      <h1>
-        <p className="course-header">Course Management</p>
-      </h1>
-      {allLectures.lectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <ListItemLink to={`/lecture/${el.id}`} text={el.name} />
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={handleChange} aria-label="basic tabs example">
+        <Tab label="Active Lectures" {...a11yProps(0)} />
+        <Tab label="Archive" {...a11yProps(1)} />
+      </Tabs>
+      </Box>
+        <CustomTabPanel index={0} value={tab}>
+            {allLectures.lectures
+                .filter(el => UserPermissions.getScope(el) > Scope.student)
+                .map((el, index) => (
+                  <ListItemLink to={`/lecture/${el.id}`} lecture={el} />
         ))}
-      {allLectures.completedLectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <ListItemLink to={`/lecture/${el.id}`} text={el.name} />
-        ))}
-    </div>
+        </CustomTabPanel>
+        <CustomTabPanel index={1} value={tab}>
+            {allLectures.completedLectures
+                .filter(el => UserPermissions.getScope(el) > Scope.student)
+                .map((el, index) => (
+                  <ListItemLink to={`/lecture/${el.id}`} lecture={el} />
+                ))}
+        </CustomTabPanel>
+    </Box>
   );
 };

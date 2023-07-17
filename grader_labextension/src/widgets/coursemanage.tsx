@@ -9,6 +9,7 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { SnackbarProvider } from 'notistack';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { getRoutes } from "../components/coursemanage/routes";
+import {Box, Typography, AppBar} from "@mui/material";
 
 export class CourseManageView extends ReactWidget {
   /**
@@ -28,6 +29,9 @@ export class CourseManageView extends ReactWidget {
     const router = createMemoryRouter(getRoutes(this.root));
     return (
       <SnackbarProvider maxSnack={3}>
+        <Box>
+          <Typography variant={'h5'} sx={{ flexGrow: 1, mt: 1.25}} align={'center'} component={'div'}>Course Management</Typography>
+        </Box>
         <RouterProvider router={router} />
       </SnackbarProvider>
     );
