@@ -36,6 +36,7 @@ import {
 import { Assignment } from '../../model/assignment';
 import { LoadingButton } from '@mui/lab';
 import EditIcon from '@mui/icons-material/Edit';
+import SettingsIcon from '@mui/icons-material/Settings';
 import {
   createAssignment
 } from '../../services/assignments.service';
@@ -106,15 +107,14 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
     <div>
       <Tooltip title={'Edit Lecture'}>
         <IconButton
-          sx={{ mt: -1 }}
           onClick={e => {
             e.stopPropagation();
             setOpen(true);
           }}
           onMouseDown={event => event.stopPropagation()}
-          aria-label="edit"
+          aria-label='edit'
         >
-          <EditIcon />
+          <SettingsIcon />
         </IconButton>
       </Tooltip>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
@@ -123,11 +123,11 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
           <DialogContent>
             <Stack spacing={2}>
               <TextField
-                variant="outlined"
+                variant='outlined'
                 fullWidth
-                id="name"
-                name="name"
-                label="Lecture Name"
+                id='name'
+                name='name'
+                label='Lecture Name'
                 value={formik.values.name}
                 onChange={formik.handleChange}
                 error={formik.touched.name && Boolean(formik.errors.name)}
@@ -143,14 +143,14 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
                     }}
                   />
                 }
-                label="Complete"
+                label='Complete'
               />
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button
-              color="primary"
-              variant="outlined"
+              color='primary'
+              variant='outlined'
               onClick={() => {
                 setOpen(false);
               }}
@@ -158,7 +158,7 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
               Cancel
             </Button>
 
-            <Button color="primary" variant="contained" type="submit">
+            <Button color='primary' variant='contained' type='submit'>
               Submit
             </Button>
           </DialogActions>
@@ -188,7 +188,7 @@ export default function NewAssignmentCard(props: INewAssignmentCardProps) {
             alignItems: 'center'
           }}
         >
-          <AddIcon sx={{ fontSize: 50 }} color="disabled" />
+          <AddIcon sx={{ fontSize: 50 }} color='disabled' />
         </CardActionArea>
       </Tooltip>
     </Card>
@@ -239,13 +239,17 @@ export const CreateDialog = (props: ICreateDialogProps) => {
   const [openDialog, setOpen] = React.useState(false);
 
   return (
-    <Box sx={{ minHeight: 225, height: '100%' }}>
-      <NewAssignmentCard
+    <>
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
         onClick={e => {
           e.stopPropagation();
           setOpen(true);
         }}
-      />
+      >
+        New
+      </Button>
       <Dialog
         open={openDialog}
         onBackdropClick={() => setOpen(false)}
@@ -256,11 +260,11 @@ export const CreateDialog = (props: ICreateDialogProps) => {
           <DialogContent>
             <Stack spacing={2}>
               <TextField
-                variant="outlined"
+                variant='outlined'
                 fullWidth
-                id="name"
-                name="name"
-                label="Assignment Name"
+                id='name'
+                name='name'
+                label='Assignment Name'
                 value={formik.values.name}
                 onChange={formik.handleChange}
                 error={formik.touched.name && Boolean(formik.errors.name)}
@@ -281,13 +285,13 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                       }}
                     />
                   }
-                  label="Set Deadline"
+                  label='Set Deadline'
                 />
 
                 <DateTimePicker
                   ampm={false}
                   disabled={formik.values.due_date === null}
-                  label="DateTimePicker"
+                  label='DateTimePicker'
                   value={formik.values.due_date}
                   onChange={(date: Date) => {
                     formik.setFieldValue('due_date', date);
@@ -311,17 +315,17 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                     }}
                   />
                 }
-                label="Limit Number of Submissions"
+                label='Limit Number of Submissions'
               />
 
               <TextField
-                variant="outlined"
+                variant='outlined'
                 fullWidth
                 disabled={!formik.values.max_submissions}
                 type={'number'}
-                id="max-submissions"
-                name="max_submissions"
-                placeholder="Submissions"
+                id='max-submissions'
+                name='max_submissions'
+                placeholder='Submissions'
                 value={formik.values.max_submissions}
                 onChange={e => {
                   formik.setFieldValue('max_submissions', e.target.value);
@@ -329,7 +333,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 error={formik.values.max_submissions < 1}
               />
 
-              <InputLabel id="demo-simple-select-label-auto">
+              <InputLabel id='demo-simple-select-label-auto'>
                 Auto-Grading Behaviour
                 <Tooltip title={gradingBehaviourHelp}>
                   <HelpOutlineOutlinedIcon
@@ -340,10 +344,10 @@ export const CreateDialog = (props: ICreateDialogProps) => {
               </InputLabel>
               <TextField
                 select
-                id="assignment-type-select"
+                id='assignment-type-select'
                 value={formik.values.automatic_grading}
-                label="Auto-Grading Behaviour"
-                placeholder="Grading"
+                label='Auto-Grading Behaviour'
+                placeholder='Grading'
                 onChange={e => {
                   formik.setFieldValue('automatic_grading', e.target.value);
                 }}
@@ -366,7 +370,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                     }}
                   />
                 }
-                label="Allow file upload by students"
+                label='Allow file upload by students'
               />
 
               {/* Not included in release 1.0
@@ -388,8 +392,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
           </DialogContent>
           <DialogActions>
             <Button
-              color="primary"
-              variant="outlined"
+              color='primary'
+              variant='outlined'
               onClick={() => {
                 setOpen(false);
               }}
@@ -397,13 +401,13 @@ export const CreateDialog = (props: ICreateDialogProps) => {
               Cancel
             </Button>
 
-            <Button color="primary" variant="contained" type="submit">
+            <Button color='primary' variant='contained' type='submit'>
               Create
             </Button>
           </DialogActions>
         </form>
       </Dialog>
-    </Box>
+    </>
   );
 };
 
@@ -430,9 +434,9 @@ export const CommitDialog = (props: ICommitDialogProps) => {
         <DialogContent>
           <TextField
             sx={{ mt: 2, width: '100%' }}
-            id="outlined-textarea"
-            label="Commit Message"
-            placeholder="Commit Message"
+            id='outlined-textarea'
+            label='Commit Message'
+            placeholder='Commit Message'
             value={message}
             onChange={event => setMessage(event.target.value)}
             multiline
@@ -440,8 +444,8 @@ export const CommitDialog = (props: ICommitDialogProps) => {
         </DialogContent>
         <DialogActions>
           <Button
-            color="primary"
-            variant="outlined"
+            color='primary'
+            variant='outlined'
             onClick={() => {
               setOpen(false);
             }}
@@ -450,9 +454,9 @@ export const CommitDialog = (props: ICommitDialogProps) => {
           </Button>
 
           <Button
-            color="primary"
-            variant="contained"
-            type="submit"
+            color='primary'
+            variant='contained'
+            type='submit'
             disabled={message === ''}
             onClick={() => {
               props.handleCommit(message);
@@ -489,12 +493,12 @@ export const AgreeDialog = (props: IAgreeDialogProps) => {
       open={props.open}
       onClose={props.handleDisagree}
       onBackdropClick={props.handleDisagree}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
+      aria-labelledby='alert-dialog-title'
+      aria-describedby='alert-dialog-description'
     >
-      <DialogTitle id="alert-dialog-title">{props.title}</DialogTitle>
+      <DialogTitle id='alert-dialog-title'>{props.title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
+        <DialogContentText id='alert-dialog-description'>
           {props.message}
         </DialogContentText>
       </DialogContent>
@@ -548,9 +552,9 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
         <DialogContent>
           <TextField
             sx={{ mt: 2, width: '100%' }}
-            id="outlined-textarea"
-            label="Commit Message"
-            placeholder="Commit Message"
+            id='outlined-textarea'
+            label='Commit Message'
+            placeholder='Commit Message'
             value={message}
             onChange={event => setMessage(event.target.value)}
             multiline
@@ -558,8 +562,8 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
         </DialogContent>
         <DialogActions>
           <Button
-            color="primary"
-            variant="outlined"
+            color='primary'
+            variant='outlined'
             onClick={() => {
               setCommitOpen(false);
             }}
@@ -569,9 +573,9 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
 
           <LoadingButton
             loading={loading}
-            color="primary"
-            variant="contained"
-            type="submit"
+            color='primary'
+            variant='contained'
+            type='submit'
             disabled={message === ''}
             onClick={async () => {
               setLoading(true);

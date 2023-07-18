@@ -19,7 +19,7 @@ interface ILectureTableProps {
 const LectureTable = (props: ILectureTableProps) => {
   const navigate = useNavigate();
   const headers = [
-    { name: 'ID', width: 100 },
+    { name: 'ID', width: 50 },
     { name: 'Name' },
     { name: 'Code' }
   ];
@@ -34,10 +34,10 @@ const LectureTable = (props: ILectureTableProps) => {
             component={ButtonTr}
             onClick={() => navigate(`/lecture/${row.id}`)}
           >
-            <TableCell style={{ width: 100 }} component="th" scope="row">
+            <TableCell style={{ width: 50 }} component="th" scope="row">
               {row.id}
             </TableCell>
-            <TableCell>{row.name}</TableCell>
+            <TableCell><Typography variant={"subtitle2"} sx={{fontSize: 16}}>{row.name}</Typography></TableCell>
             <TableCell>{row.code}</TableCell>
           </TableRow>
         );

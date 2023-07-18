@@ -29,9 +29,6 @@ export class CourseManageView extends ReactWidget {
     const router = createMemoryRouter(getRoutes(this.root));
     return (
       <SnackbarProvider maxSnack={3}>
-        <Box>
-          <Typography variant={'h5'} sx={{ flexGrow: 1, mt: 1.25}} align={'center'} component={'div'}>Course Management</Typography>
-        </Box>
         <RouterProvider router={router} />
       </SnackbarProvider>
     );
