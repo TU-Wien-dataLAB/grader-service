@@ -55,10 +55,6 @@ export const CourseManageComponent = () => {
 
   return (
     <div className="course-list">
-      <Stack direction="row" justifyContent="center">
-        <Typography variant={'h4'}>Course Management</Typography>
-      </Stack>
-
       <Box sx={{ m: 5 }}>
         <Stack direction={'row'} justifyContent="space-between">
           <Typography variant={'h6'} sx={{ mb: 1 }}>

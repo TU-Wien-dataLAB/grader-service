@@ -30,7 +30,7 @@ export class CourseManageView extends ReactWidget {
     return (
       <SnackbarProvider maxSnack={3}>
         <Box>
-          <Typography variant={'h5'} sx={{ flexGrow: 1, mt: 1.25}} align={'center'} component={'div'}>Course Management</Typography>
+          <Typography variant={'h4'} sx={{ flexGrow: 1, mt: 1.25}} align={'center'} component={'div'}>Course Management</Typography>
         </Box>
         <RouterProvider router={router} />
       </SnackbarProvider>
