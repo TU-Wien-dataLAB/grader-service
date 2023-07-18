@@ -10,6 +10,7 @@ import { SnackbarProvider } from 'notistack';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { getRoutes } from "../components/coursemanage/routes";
 import {Box, Typography, AppBar} from "@mui/material";
+import { loadString } from '../services/storage.service';
 
 export class CourseManageView extends ReactWidget {
   /**
@@ -26,7 +27,13 @@ export class CourseManageView extends ReactWidget {
   }
 
   render() {
-    const router = createMemoryRouter(getRoutes(this.root));
+    const savedPath = loadString('course-manage-react-router-path');
+    let path = "/"
+    if (savedPath !== null && savedPath !== '') {
+      console.log(`Restoring path: ${savedPath}`);
+      path = savedPath;
+    }
+    const router = createMemoryRouter(getRoutes(this.root), { initialEntries: [path] });
     return (
       <SnackbarProvider maxSnack={3}>
         <RouterProvider router={router} />

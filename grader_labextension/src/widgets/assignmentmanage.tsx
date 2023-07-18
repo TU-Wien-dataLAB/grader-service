@@ -8,13 +8,14 @@ import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { SnackbarProvider } from 'notistack';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { getRoutes } from "../components/assignment/routes";
+import { getRoutes } from '../components/assignment/routes';
+import { loadString } from '../services/storage.service';
 
 export class AssignmentManageView extends ReactWidget {
   /**
    * Construct a new assignment list widget
    */
-   root: HTMLElement;
+  root: HTMLElement;
 
   constructor(options: AssignmentManageView.IOptions = {}) {
     super();
@@ -24,7 +25,13 @@ export class AssignmentManageView extends ReactWidget {
   }
 
   render() {
-      const router = createMemoryRouter(getRoutes(this.root));
+    const savedPath = loadString('assignment-manage-react-router-path');
+    let path = '/';
+    if (savedPath !== null && savedPath !== '') {
+      console.log(`Restoring path: ${savedPath}`);
+      path = savedPath;
+    }
+    const router = createMemoryRouter(getRoutes(this.root), {initialEntries: [path]});
     return (
       <SnackbarProvider maxSnack={3}>
         <RouterProvider router={router} />

@@ -9,9 +9,13 @@ import {
 } from 'react-router-dom';
 import { Breadcrumbs, Typography } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { storeString } from '../../services/storage.service';
 
 
-export const Page = () => {
+export const Page = ({id}: {id: string}) => {
+  const pathname = useLocation().pathname
+  storeString(`${id}-react-router-path`, pathname);
+
   return (
     <>
       <RouterBreadcrumbs />
