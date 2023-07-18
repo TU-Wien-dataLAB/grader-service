@@ -8,7 +8,7 @@ import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
 import { Submission } from '../../model/submission';
-import { ModalTitle } from '../util/modal-title';
+import { SectionTitle } from '../util/section-title';
 import { Box, Chip, Typography } from '@mui/material';
 import { SubmissionList } from './submission-list';
 import LoadingOverlay from '../util/overlay';

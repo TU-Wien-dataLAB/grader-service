@@ -16,6 +16,7 @@ import { OverviewComponent } from './overview/overview';
 import { GradingComponent } from './grading/grading';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
+import { FileView } from './files/file-view';
 
 const loadPermissions = async () => {
   try {
@@ -122,22 +123,22 @@ export const getRoutes = (root: HTMLElement) => {
             }}
           >
             <Route index path={''} element={<OverviewComponent />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Overview',
               link: (params) => ''
             }}></Route>
+            <Route path={'files'} element={<FileView />} handle={{
+              crumb: (data) => 'Files',
+              link: (params) => 'files/'
+            }}></Route>
             <Route path={'submissions'} element={<GradingComponent root={root} />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Submissions',
               link: (params) => 'submissions/'
             }}></Route>
             <Route path={'stats'} element={<StatsComponent root={root} />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Stats',
               link: (params) => 'stats/'
             }}></Route>
             <Route path={'settings'} element={<SettingsComponent />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Settings',
               link: (params) => 'settings/'
             }}></Route>

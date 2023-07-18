@@ -25,7 +25,7 @@ import {
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
-import { ModalTitle } from '../../util/modal-title';
+import { SectionTitle } from '../../util/section-title';
 import {autogradeSubmission} from "../../../services/grading.service";
 import {AgreeDialog} from "../../util/dialog";
 import { useRouteLoaderData } from 'react-router-dom';
@@ -154,7 +154,7 @@ export const SettingsComponent = () => {
 
   return (
     <Box ml={'50px'} mr={'50px'}>
-      <ModalTitle title="Settings" />
+      <SectionTitle title="Settings" />
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
           <TextField

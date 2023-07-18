@@ -46,7 +46,6 @@ export const OverviewCard = (props: IOverviewCardProps) => {
       <CardContent
         sx={{
           alignItems: { xs: 'center' },
-          height: '243px',
           minWidth: '150px',
           overflowY: 'auto'
         }}

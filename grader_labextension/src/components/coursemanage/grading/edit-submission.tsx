@@ -1,4 +1,4 @@
-import { ModalTitle } from '../../util/modal-title';
+import { SectionTitle } from '../../util/section-title';
 import {
   Box,
   Button,
@@ -119,7 +119,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
 
   return (
     <Box sx={{ overflow: 'scroll', height: '100%' }}>
-      <ModalTitle title={'Manual Grading ' + props.assignment.id} />
+      <SectionTitle title={'Manual Grading ' + props.assignment.id} />
       <Box sx={{ m: 2, mt: 5 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>

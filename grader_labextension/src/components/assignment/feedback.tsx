@@ -4,7 +4,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { ModalTitle } from '../util/modal-title';
+import { SectionTitle } from '../util/section-title';
 import {
   Box,
   Button,
@@ -57,7 +57,7 @@ export const Feedback = (props: IFeedbackProps) => {
 
   return (
     <Box>
-      <ModalTitle title={'Feedback for ' + props.assignment.name} />
+      <SectionTitle title={'Feedback for ' + props.assignment.name} />
       <Box sx={{ m: 2, mt: 12 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>

@@ -37,7 +37,7 @@ import {
 import { AgreeDialog } from '../../util/dialog';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { ModalTitle } from '../../util/modal-title';
+import { SectionTitle } from '../../util/section-title';
 import { User } from '../../../model/user';
 import { Submission } from '../../../model/submission';
 import {
@@ -449,7 +449,7 @@ export const GradingComponent = (props: IGradingProps) => {
 
   return (
     <div>
-      <ModalTitle title='Grading'>
+      <SectionTitle title='Grading'>
         <Box sx={{ ml: 2 }} display='inline-block'>
           <Tooltip title='Reload'>
             <IconButton aria-label='reload' onClick={updateSubmissions}>
@@ -457,7 +457,7 @@ export const GradingComponent = (props: IGradingProps) => {
             </IconButton>
           </Tooltip>
         </Box>
-      </ModalTitle>
+      </SectionTitle>
       <div style={{ display: 'flex', height: '50vh', marginTop: '30px' }}>
         <div style={{ flexGrow: 1 }}>
           <DataGrid

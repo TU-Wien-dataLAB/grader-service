@@ -159,7 +159,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
 
   return (
     <Stack direction={'column'} sx={{ m: 5 }}>
-      <Typography variant={'h5'} sx={{ mr: 2 }}>
+      <Typography variant={'h4'} sx={{ mr: 2 }}>
         {lectureState.name}
         {lectureState.complete ? (
           <Typography

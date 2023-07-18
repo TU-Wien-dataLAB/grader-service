@@ -240,16 +240,18 @@ export const CreateDialog = (props: ICreateDialogProps) => {
 
   return (
     <>
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={e => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        New
-      </Button>
+      <Tooltip title={'Create New Assignment'}>
+        <Button
+          variant='contained'
+          startIcon={<AddIcon />}
+          onClick={e => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          New
+        </Button>
+      </Tooltip>
       <Dialog
         open={openDialog}
         onBackdropClick={() => setOpen(false)}

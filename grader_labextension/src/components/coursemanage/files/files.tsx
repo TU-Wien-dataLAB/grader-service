@@ -41,7 +41,7 @@ import { FilesList } from '../../util/file-list';
 import { GlobalObjects } from '../../../index';
 import { Contents } from '@jupyterlab/services';
 import moment from 'moment';
-import { openBrowser, openTerminal } from './util';
+import { openBrowser, openTerminal } from '../overview/util';
 import { PageConfig } from '@jupyterlab/coreutils';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import { getRemoteStatus } from '../../../services/file.service';

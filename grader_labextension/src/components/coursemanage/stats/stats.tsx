@@ -2,7 +2,7 @@ import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import { Box, Grid, IconButton, Tooltip } from '@mui/material';
-import { ModalTitle } from '../../util/modal-title';
+import { SectionTitle } from '../../util/section-title';
 import ReplayIcon from '@mui/icons-material/Replay';
 import * as React from 'react';
 import { getAllSubmissions } from '../../../services/submissions.service';
@@ -97,7 +97,7 @@ export const StatsComponent = (props: IStatsProps) => {
 
   return (
     <Box>
-      <ModalTitle title={`${assignment.name} Stats`}>
+      <SectionTitle title={`${assignment.name} Stats`}>
         <Box sx={{ ml: 2 }} display='inline-block'>
           <Tooltip title='Reload'>
             <IconButton aria-label='reload' onClick={updateSubmissions}>
@@ -105,7 +105,7 @@ export const StatsComponent = (props: IStatsProps) => {
             </IconButton>
           </Tooltip>
         </Box>
-      </ModalTitle>
+      </SectionTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
         <Grid container spacing={2} alignItems='stretch'>
           <Grid item xs={12}>
