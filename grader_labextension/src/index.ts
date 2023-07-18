@@ -43,7 +43,7 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { AssignmentList } from './widgets/assignment-list';
+import { AssignmentManageView } from './widgets/assignmentmanage';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
 import {
@@ -145,7 +145,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.browserFactory = browserFactory;
     GlobalObjects.tracker = tracker;
 
-    const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentList>>(
+    const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentManageView>>(
       {
         namespace: 'grader-assignments'
       }
@@ -264,9 +264,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.commands.addCommand(command, {
       execute: () => {
         // Create a blank content widget inside a MainAreaWidget
-        const assignmentList = new AssignmentList();
-        const assignmentWidget = new MainAreaWidget<AssignmentList>({
-          content: assignmentList
+        const assignmentView = new AssignmentManageView();
+        const assignmentWidget = new MainAreaWidget<AssignmentManageView>({
+          content: assignmentView
         });
         assignmentWidget.id = 'assignments-jupyterlab';
         assignmentWidget.title.label = 'Assignments';
@@ -326,7 +326,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         app.commands.addCommand(command, {
           label: 'Assignments',
           execute: async () => {
-            const assignmentWidget: MainAreaWidget<AssignmentList> =
+            const assignmentWidget: MainAreaWidget<AssignmentManageView> =
               await app.commands.execute(AssignmentsCommandIDs.create);
 
             if (!assignmentWidget.isAttached) {

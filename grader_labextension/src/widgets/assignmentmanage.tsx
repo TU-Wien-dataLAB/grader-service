@@ -6,30 +6,34 @@
 
 import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
-import { LectureListComponent } from '../components/assignment/lecture-list';
 import { SnackbarProvider } from 'notistack';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { getRoutes } from "../components/assignment/routes";
 
-export class AssignmentList extends ReactWidget {
+export class AssignmentManageView extends ReactWidget {
   /**
    * Construct a new assignment list widget
    */
-  constructor(options: AssignmentList.IOptions = {}) {
+   root: HTMLElement;
+
+  constructor(options: AssignmentManageView.IOptions = {}) {
     super();
     this.id = options.id;
     this.addClass('GradingWidget');
+    this.root = this.node;
   }
 
-  render(): JSX.Element {
-    const root = this.node;
+  render() {
+      const router = createMemoryRouter(getRoutes(this.root));
     return (
       <SnackbarProvider maxSnack={3}>
-        <LectureListComponent root={root} />
+        <RouterProvider router={router} />
       </SnackbarProvider>
     );
   }
 }
 
-export namespace AssignmentList {
+export namespace AssignmentManageView {
   /**
    * An options object for initializing a assignment list view widget.
    */

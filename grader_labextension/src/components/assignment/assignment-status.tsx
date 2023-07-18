@@ -16,14 +16,12 @@ import {
 import * as React from 'react';
 import { getFiles } from '../../services/file.service';
 
-import { Lecture } from '../../model/lecture';
 import { Submission } from '../../model/submission';
 import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
 /**
  * Props for AssignmentComponent.
  */
 export interface IAssignmentStatusProps {
-  lecture: Lecture;
   assignment: Assignment;
   submissions: Submission[];
 }
