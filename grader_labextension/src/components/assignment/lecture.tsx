@@ -15,20 +15,22 @@ import {
   LinearProgress,
   Typography
 } from '@mui/material';
+import { red } from '@mui/material/colors';
 import * as React from 'react';
 import { Assignment } from '../../model/assignment';
+import { AssignmentCardComponent } from './assignment-card';
+import { AssignmentStatus } from './assignment-status';
 import { Lecture } from '../../model/lecture';
 import { getAllAssignments } from '../../services/assignments.service';
 import { AssignmentComponent } from './assignment';
 import { loadBoolean, storeBoolean } from '../../services/storage.service';
+import { useNavigation, useRouteLoaderData } from 'react-router-dom';
 
 /**
  * Props for LectureComponent.
  */
 interface ILectureComponentProps {
-  lecture: Lecture;
   root: HTMLElement;
-  open?: boolean;
 }
 
 /**
@@ -36,82 +38,97 @@ interface ILectureComponentProps {
  * @param props Props of the lecture component
  */
 export const LectureComponent = (props: ILectureComponentProps) => {
-  const [assignments, setAssignments] = React.useState(null as Assignment[]);
-  const [expanded, setExpanded] = React.useState(
-    loadBoolean('a-expanded', props.lecture) !== null
-      ? loadBoolean('a-expanded', props.lecture)
-      : props.open
-  );
+    const { lecture, assignments } = useRouteLoaderData('lecture') as {
+        lecture: Lecture,
+        assignments: Assignment[], 
+    };
+    const navigation = useNavigation(); 
 
-  React.useEffect(() => {
-    getAllAssignments(props.lecture.id).then(response => {
-      setAssignments(response);
-    });
-  }, []);
+    const [lectureState, setLecture] = React.useState(lecture); 
+    const [assignmentsState, setAssignments] = React.useState(assignments);
+
+    if (navigation.state === 'loading') {
+        return (
+            <div>
+              <Card>
+                <LinearProgress />
+                </Card>
+            </div>
+        );
+    }
+
   /**
    * Toggles collapsable in the card body.
    */
-  const handleExpandClick = () => {
-    storeBoolean('a-expanded', !expanded, props.lecture);
-    setExpanded(!expanded);
-  };
-  if (assignments === null) {
-    return (
-      <div>
-        <Card>
-          <LinearProgress />
-        </Card>
-      </div>
-    );
-  }
   return (
     <div>
       <Card
-        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
-        elevation={expanded ? 0 : 2}
-        className="lecture-card"
+        sx={{ backgroundColor: 'background.paper' }}
+        className='lecture-card'
       >
         <CardContent sx={{ mb: -1, display: 'flex' }}>
           <Typography variant={'h5'} sx={{ mr: 2 }}>
-            {props.lecture.name}
+            <Typography
+              color={'text.secondary'}
+              sx={{
+                display: 'inline-block',
+                mr: 0.75,
+                fontSize: 16
+              }}
+            >
+              Lecture:
+            </Typography>
+            {lectureState.name}
+            {lectureState.complete ? (
+              <Typography
+                sx={{
+                  display: 'inline-block',
+                  ml: 0.75,
+                  fontSize: 16,
+                  color: red[400]
+                }}
+              >
+                complete
+              </Typography>
+            ) : null}
           </Typography>
         </CardContent>
 
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <CardContent>
-            <Grid container spacing={2} alignItems="stretch">
-              {assignments.map((el: Assignment) => (
-                <Grid
-                  item
-                  gridAutoColumns={'1fr'}
-                  sx={{
-                    maxWidth: 225,
-                    minWidth: 225,
-                    minHeight: '100%',
-                    m: 1.5
-                  }}
-                >
-                  <AssignmentComponent
-                    lecture={props.lecture}
-                    assignment={el}
-                    root={props.root}
-                  />
-                </Grid>
-              ))}
+        <CardContent>
+          <Grid container spacing={2} alignItems='stretch'>
+            {assignmentsState.map((el: Assignment) => (
+              <Grid
+                item
+                gridAutoColumns={'1fr'}
+                sx={{
+                  maxWidth: 225,
+                  minWidth: 225,
+                  minHeight: '100%',
+                  m: 1.5
+                }}
+              >
+                <AssignmentCardComponent
+                  lecture={lectureState}
+                  assignment={el}
+                  root={props.root}
+                />
+              </Grid>
+            ))}
+            <Grid
+              item
+              gridAutoColumns={'1fr'}
+              sx={{
+                maxWidth: 225,
+                minWidth: 225,
+                minHeight: 225,
+                heigth: '100%',
+                m: 1.5
+              }}
+            >
             </Grid>
-            {assignments.length === 0 ? (
-                <Alert sx={{ m: 3 }} severity="info">
-                  No active assignments
-                </Alert>
-              ) : null}
-          </CardContent>
-        </Collapse>
-        <CardActions>
-          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
-            {(expanded ? 'Hide' : 'Show') + ' Assignments'}
-          </Button>
-        </CardActions>
+          </Grid>
+        </CardContent>
       </Card>
-    </div>
+      </div>
   );
 };
