@@ -4,6 +4,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 import * as React from 'react';
+import moment from 'moment';
 import { useNavigate, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import {
   Button, IconButton,
@@ -17,10 +18,11 @@ import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { enqueueSnackbar } from 'notistack';
 
 import { ButtonTr, GraderTable } from '../util/table';
-import { DeadlineComponent } from '../util/deadline';
+import { DeadlineComponent, getDisplayDate } from '../util/deadline';
 import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
 import {
@@ -29,6 +31,40 @@ import {
 } from '../../services/assignments.service';
 import { ResetTv } from '@mui/icons-material';
 
+interface IEditProps {
+    status: Assignment.StatusEnum;
+}
+
+const EditButton = (props: IEditProps) => {
+    if (props.status === Assignment.StatusEnum.Released) {
+        return <EditNoteOutlinedIcon sx={{ color: green[500] }} />;
+    }
+    return <FileDownloadIcon sx={{ color: blue[500] }} />;
+}
+
+interface ISubmitProps {
+    /* This due date is gotten from a deadline component props */
+    due_date: string | null;
+}
+
+const SubmitButton = (props: ISubmitProps) => {
+    if (props.due_date === null) { /* No deadline, woohoo! */
+        // TODO: add functionality that makes this fire a submit request 
+        return <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Submit</Button>;
+    }
+    if (props.due_date !== null) { /* Got help us we have to parse a date string in javascript */
+        const date = moment.utc(props.due_date).local().toDate();
+        const display_date = getDisplayDate(date, false);
+        if (display_date === 'Deadline over!') {
+            // TODO: this should never lead anywhere 
+            return <Button variant='outlined' size={'small'} sx={{ color: red[500] }}>Deadline over!</Button>;
+        }
+        // TODO: add functionality that makes this fire a submit request
+        return <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Submit</Button>;
+    }
+    /* This should never be seen */
+    return <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Grandma's Knickers</Button>; 
+};
 
 interface IAssignmentTableProps {
     lecture: Lecture;
@@ -71,7 +107,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                       </TableCell>
                       <TableCell style={{ width: 55 }}>
                         <IconButton aria-label='Edit' size={'small'}>
-                          <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+                          <EditButton status={row.status} />
                         </IconButton>
                       </TableCell>
                       <TableCell style={{ width: 55 }}>
@@ -80,7 +116,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                         </IconButton>
                       </TableCell>
                       <TableCell>
-                        <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Submit</Button>
+                        <SubmitButton due_date={row.due_date} />
                         </TableCell>
                       <TableCell style={{ width: 55 }}>
                         <IconButton aria-label='detail view' size={'small'}>
@@ -136,7 +172,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
    */
   return (
       <Stack direction={'column'} sx={{ m: 5 }}>
-        <Typography variant={'h2'} sx={{ mb: 2 }}>
+      <Typography variant={'h2'} sx={{ mb: 2 }}>
           {lectureState.name}
           {lectureState.complete ? (
               <Typography
@@ -150,7 +186,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
                 complete 
             </Typography>
           ) : null}
-        </Typography>
+        </Typography> 
         <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
         <AssignmentTable lecture={lectureState} rows={assignmentsState} />
       </Stack>

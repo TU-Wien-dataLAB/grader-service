@@ -43,7 +43,12 @@ export const loadLecture = async (lectureId: number) => {
   return { lecture: { id: lectureId, name: 'Recommender Systems' } };
 };
 
+
 export const loadAssignment = async (lectureId: number, assignmentId: number) => {
+    const err_assignment = { 
+        assignment: { id: -1, name: 'Error loading assignment', }
+    };
+
   try {
     const assignment = await getAssignment(lectureId, assignmentId);
     const submissions = await getAllSubmissions(lectureId, assignmentId, "none", false);
@@ -53,6 +58,7 @@ export const loadAssignment = async (lectureId: number, assignmentId: number) =>
       variant: 'error'
     });
   }
+    return err_assignment;
 };
 
 function ExamplePage({ to }) {
@@ -128,7 +134,6 @@ export const getRoutes = (root: HTMLElement) => {
                         }}
                     >
                     </Route>
-                        <Route index element={<ExamplePage to={'/'} />}></Route>
                 </Route>           
             </Route>
         </Route>

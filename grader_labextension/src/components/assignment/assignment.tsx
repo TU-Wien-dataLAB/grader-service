@@ -52,7 +52,11 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     submissions: Submission[],
   };
 
+  const [submissionsState, setSubmissions] = React.useState(submissions);
+
   //const params = useParams();
+  //const match = useMatch(`/lecture/${params.lid}/assignment/${params.aid}/*`);
+  //const tab = match.params['*'];
 
   //const [showFeedback, setShowFeedback] = React.useState(false);
   //const [feedbackSubmission, setFeedbackSubmission] = React.useState(null);
@@ -68,16 +72,37 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
   return (
       <Box>
-         <Box sx={{ mt: 10 }}>
-            <Typography variant={'h6'} sx={{ ml: 2 }}>
-              Status
-            </Typography>
-            <AssignmentStatus
-              assignment={assignment}
-              submissions={submissions}
-            />
+          <Box sx={{
+               position: 'absolute',
+               bottom: 58,
+               top: 35,
+               left: 0,
+               right: 0,
+               overflowY: 'auto'
+            }}
+            >
+             <Box sx={{ mt: 10 }}>
+                <Typography variant={'h6'} sx={{ ml: 2 }}>
+                  Status
+                </Typography>
+                <AssignmentStatus
+                  assignment={assignment}
+                  submissions={submissionsState}
+                />
+            </Box>
+            <Box sx={{ mt: 10 }}>
+               <Typography variant={'h6'} sx={{ ml: 2 }}>
+                 Files
+               </Typography>
+               <AssignmentFilesComponent 
+                 lecture={lecture}
+                 assignment={assignment}
+                 submissions={submissionsState}
+                 setSubmissions={setSubmissions}
+               />
+            </Box>
             <Outlet />
-        </Box>
+          </Box>
         {/*
             <Typography variant={'h6'} sx={{ ml: 2 }}>
               Files

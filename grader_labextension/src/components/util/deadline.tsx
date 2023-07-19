@@ -58,7 +58,7 @@ const getTimeUnit = (timeUnit: string, value: number, compact: boolean) => {
   }
 };
 
-const calculateTimeLeft = (date: Date) => {
+export const calculateTimeLeft = (date: Date) => {
   const difference = +date - +new Date();
   const timeLeft: ITimeSpec = {
     weeks: Math.floor(difference / (1000 * 60 * 60 * 24 * 7)),
@@ -70,7 +70,7 @@ const calculateTimeLeft = (date: Date) => {
   return timeLeft;
 };
 
-function getDisplayDate(date: Date, compact: boolean): string {
+export function getDisplayDate(date: Date, compact: boolean): string {
   if (date === undefined) {
     return 'No Deadline 😁';
   }
