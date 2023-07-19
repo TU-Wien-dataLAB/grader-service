@@ -102,7 +102,7 @@ export const getRoutes = (root: HTMLElement) => {
                     link: (params) => '/'
                 }}
             >
-            <Route index element={<AssignmentManageComponent root={root} />}></Route>
+            <Route index element={<AssignmentManageComponent />}></Route>
                 <Route
                     id={'lecture'}
                     path={'lecture/:lid/*'}

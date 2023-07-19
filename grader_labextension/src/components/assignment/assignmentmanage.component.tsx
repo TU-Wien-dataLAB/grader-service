@@ -5,62 +5,84 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { getAllLectures } from '../../services/lectures.service';
+import { useState } from 'react';
 import { Lecture } from '../../model/lecture';
-import { LectureComponent } from './lecture';
-//import { AlertProps, Alert, Portal, AlertTitle } from '@mui/material';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
+import { FormControlLabel, FormGroup, Stack, Switch, TableCell, TableRow, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import { ButtonTr, GraderTable } from '../util/table';
 
-import { useRouteLoaderData, Link as RouterLink } from 'react-router-dom';
-import { ListItem, ListItemProps, ListItemText } from '@mui/material';
-/**
- * Props for LectureListComponent.
- */
-export interface ILectureListProps {
-  root: HTMLElement;
+interface ILectureTableProps {
+  rows: Lecture[];
 }
 
-interface ListItemLinkProps extends ListItemProps {
-    to: string;
-    text: string;
-}
-
-const ListItemLink = (props: ListItemLinkProps) => { 
-    const { to, ...other } = props;
-    return (
-        <li>
-            <ListItem component={RouterLink as any } to={to} {...other}>
-                <ListItemText primary={props.text} />
-            </ListItem>
-        </li>
-    );
+const LectureTable = (props: ILectureTableProps) => {
+  const navigate = useNavigate();
+  const headers = [
+    { name: 'ID', width: 100 },
+    { name: 'Name' },
+    { name: 'Code' }
+  ];
+  return (
+    <GraderTable<Lecture>
+      headers={headers}
+      rows={props.rows}
+      rowFunc={row => {
+        return (
+          <TableRow
+            key={row.name}
+            component={ButtonTr}
+            onClick={() => navigate(`/lecture/${row.id}`)}
+          >
+            <TableCell style={{ width: 100 }} component="th" scope="row">
+              {row.id}
+            </TableCell>
+            <TableCell>{row.name}</TableCell>
+            <TableCell>{row.code}</TableCell>
+          </TableRow>
+        );
+      }}
+    />
+  );
 };
 
 /**
  * Renders the lectures which the student addends.
  * @param props Props of the lecture file components
  */
-export const AssignmentManageComponent = (props: ILectureListProps): JSX.Element => {
-  const allLectures = useRouteLoaderData("root") as { lectures: Lecture[], completedLectures: Lecture[] };
+export const AssignmentManageComponent = () => {
+  const allLectures = useRouteLoaderData("root") as { 
+      lectures: Lecture[]; 
+      completedLectures: Lecture[]; 
+  };
+  const [showComplete, setShowComplete] = useState(false);
 
   return (
     <div className="course-list">
-      <h1>
-        <p className="course-header">Assignment Management</p>
-      </h1>
-      {/* {lectures.map((el, index) => (
-        <LectureComponent lecture={el} root={props.root} open={true} />
-      ))}
-      {lectures.length === 0 ? (
-        <Alert sx={{ m: 3 }} severity="info">
-          No active lectures found
-        </Alert>
-      ) : null} */}
+      <Box sx={{ m: 5 }}>
+        <Stack direction={'row'} spacing={2}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Lectures
+          </Typography>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showComplete}
+                  onChange={ev => setShowComplete(ev.target.checked)}
+                />
+              }
+              label="Completed Lectures"
+            />
+          </FormGroup>
+        </Stack>
 
-      {allLectures.lectures
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((el, index) => (
-          <ListItemLink key={index} to={`/lecture/${el.id}`} text={el.name} />
-        ))}
+        <LectureTable
+          rows={
+            showComplete ? allLectures.completedLectures : allLectures.lectures
+          }
+        />
+        </Box>
     </div>
   );
 };
