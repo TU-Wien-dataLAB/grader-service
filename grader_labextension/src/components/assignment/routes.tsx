@@ -15,6 +15,7 @@ import { enqueueSnackbar } from 'notistack';
 import { AssignmentManageComponent } from './assignmentmanage.component';
 import { LectureComponent } from './lecture';
 import { AssignmentComponent } from './assignment';
+import { FileView } from './files/file-view';
 
 export const loadPermissions = async () => {
     try {
@@ -133,8 +134,12 @@ export const getRoutes = (root: HTMLElement) => {
                             link: (params) => `assignment/${params?.aid}/`
                         }}
                     >
-                    </Route>
-                </Route>           
+                    <Route path={'files'} element={<FileView />} handle={{
+                      crumb: (data) => 'Files',
+                      link: (params) => 'files/'
+                    }}></Route>
+                        </Route>
+                    </Route>           
             </Route>
         </Route>
     );
