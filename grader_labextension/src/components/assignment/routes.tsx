@@ -12,6 +12,8 @@ import { getAllSubmissions } from '../../services/submissions.service';
 
 
 import { enqueueSnackbar } from 'notistack';
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
 import { AssignmentManageComponent } from './assignmentmanage.component';
 import { LectureComponent } from './lecture';
 import { AssignmentComponent } from './assignment';
@@ -41,7 +43,37 @@ export const loadLecture = async (lectureId: number) => {
       variant: 'error'
     });
   }
-  return { lecture: { id: lectureId, name: 'Recommender Systems' } };
+};
+
+/*
+ * Load submissions for all assignments in a lecture
+ * */
+export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[]) => {
+    try {
+        const submissions = await Promise.all(
+            assignments.map(async (assignment) => {
+                const submissions = await getAllSubmissions(lecture.id, assignment.id, "none", false);
+                return { assignment, submissions };
+            })
+        );
+        return submissions;
+    } catch (error: any) {
+        enqueueSnackbar(error.message, {
+            variant: 'error'
+        });
+    }
+};
+
+export const loadAssignmentTableData = async (lectureId: number) => {
+    try {
+        const { lecture, assignments } = await loadLecture(lectureId);
+        const submissions = await loadSubmissions(lecture, assignments);
+        return { lecture, assignments, submissions };
+    } catch (error: any) {
+        enqueueSnackbar(error.message, {
+            variant: 'error'
+        });
+    }
 };
 
 
@@ -113,7 +145,7 @@ export const getRoutes = (root: HTMLElement) => {
                 <Route
                     id={'lecture'}
                     path={'lecture/:lid/*'}
-                    loader={({ params }) => loadLecture(+params.lid)}
+                    loader={({ params }) => loadAssignmentTableData(+params.lid)}
                     handle={{
                         // functions in handle have to handle undefined data (error page is displayed afterwards)
                         crumb: (data) => data?.lecture.name,

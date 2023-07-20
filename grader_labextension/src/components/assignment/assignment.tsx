@@ -78,7 +78,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
       loadNumber('a-opened-assignment') === assignment.id || false
   );
   const [submissionsState, setSubmissions] = React.useState([] as Submission[]);
-  const [hasFeedback, setHasFeedback] = React.useState(false);
+  const [hasFeedback, setHasFeedback] = React.useState(false)
   const [files, setFiles] = React.useState([]);
   const [bestScore, setBestScore] = React.useState('-');
 

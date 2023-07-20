@@ -24,12 +24,11 @@ import { enqueueSnackbar } from 'notistack';
 import { ButtonTr, GraderTable } from '../util/table';
 import { DeadlineComponent, getDisplayDate } from '../util/deadline';
 import { Assignment } from '../../model/assignment';
+import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
 import {
-    createAssignment,
-    getAllAssignments
+    getAssignment,
 } from '../../services/assignments.service';
-import { ResetTv } from '@mui/icons-material';
 
 interface IEditProps {
     status: Assignment.StatusEnum;
@@ -42,6 +41,18 @@ const EditButton = (props: IEditProps) => {
     return <FileDownloadIcon sx={{ color: blue[500] }} />;
 }
 
+interface IFeedbackProps {
+    feedback_available: boolean;
+};
+
+const FeedbackButton = (props: IFeedbackProps) => {
+    if (props.feedback_available) {
+        return <DoneIcon sx={{ color: green[500] }} />;
+    }
+    return <CloseIcon sx={{ color: red[500] }} />;
+}
+
+
 interface ISubmitProps {
     /* This due date is gotten from a deadline component props */
     due_date: string | null;
@@ -49,7 +60,8 @@ interface ISubmitProps {
 
 const SubmitButton = (props: ISubmitProps) => {
     if (props.due_date === null) { /* No deadline, woohoo! */
-        // TODO: add functionality that makes this fire a submit request 
+        // TODO: add functionality that makes this fire a submit request,
+        // This is a "nice to have" ... meaning it's not necessary 
         return <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Submit</Button>;
     }
     if (props.due_date !== null) { /* Got help us we have to parse a date string in javascript */
@@ -60,6 +72,7 @@ const SubmitButton = (props: ISubmitProps) => {
             return <Button variant='outlined' size={'small'} sx={{ color: red[500] }}>Deadline over!</Button>;
         }
         // TODO: add functionality that makes this fire a submit request
+        // This is a "nice to have" ... meaning it's not necessary 
         return <Button variant='outlined' size={'small'} sx={{ color: green[500] }}>Submit</Button>;
     }
     /* This should never be seen */
@@ -68,10 +81,15 @@ const SubmitButton = (props: ISubmitProps) => {
 
 interface IAssignmentTableProps {
     lecture: Lecture;
-    rows: Assignment[];
+    rows: AssignmentStudent[];
 }
 
+
 const AssignmentTable = (props: IAssignmentTableProps) => {
+
+    /* We can pair assignment IDs with submission IDs to tell if we have
+        * feedback */
+
     const navigate = useNavigate(); 
     const headers = [
         { name: 'Name' },
@@ -84,11 +102,9 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
         { name: 'Feedback Available' }
     ];
 
-    const [showDialog, setShowDialog] = React.useState(false);
-
     return (
         <>
-          <GraderTable<Assignment>
+          <GraderTable<AssignmentStudent>
             headers={headers}
             rows={props.rows}
             rowFunc={row => {
@@ -124,9 +140,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                         </IconButton>
                       </TableCell>
                       <TableCell style={{width: 55 }}>
-                        <IconButton aria-label='feedback available' size={'small'}>
-                          <DoneIcon sx={{ color: green[500] }} />
-                        </IconButton>
+-                        <FeedbackButton feedback_available={row.feedback_available} />
                       </TableCell>
                     </TableRow>
                 );
@@ -135,6 +149,55 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
             </>
     );
 };
+
+
+/*
+ *  Extend the Assignment Type with a feedback_available field 
+ *  */  
+interface AssignmentStudent extends Assignment {
+    feedback_available: boolean;
+}
+
+/*
+    * Type to handle the AssignmentSubmissions array
+    * */
+interface AssignmentSubmissions {
+    assignment: Assignment;
+    submissions: Submission[];
+};
+
+/*
+    * Scan all submissions return true if feedback is available for that assignment.
+    * */
+const feedbackAvailable = (assignmentId: number, asubmissions: AssignmentSubmissions[]): boolean => {
+    /* Find the submissions equal to the assignmentId */
+    const submissions = asubmissions.find((asubmission) => asubmission.assignment.id === assignmentId);
+    if (submissions === undefined) {
+        return false;
+    }
+    /* If we have a submission, check if it has feedback */
+    for (const submission of submissions.submissions) {
+        if (submission.feedback_available === true) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+    * Change the Assignments -> AssignmentStudent by appending a feedback_available field 
+    * */
+const transformAssignments = (assignments: Assignment[], assignment_submissions: AssignmentSubmissions[]): AssignmentStudent[] => {
+    const assignment_submissions_transformed = [] as AssignmentStudent[]; 
+    for (const assignment of assignments) {
+        const feedback_available = feedbackAvailable(assignment.id, assignment_submissions);
+        assignment_submissions_transformed.push({
+            ...assignment,
+            feedback_available: feedback_available
+        });
+    }
+    return assignment_submissions_transformed;
+}
 
 /**
  * Props for LectureComponent.
@@ -148,14 +211,25 @@ interface ILectureComponentProps {
  * @param props Props of the lecture component
  */
 export const LectureComponent = (props: ILectureComponentProps) => {
-    const { lecture, assignments } = useRouteLoaderData('lecture') as {
+    const { lecture, assignments, submissions } = useRouteLoaderData('lecture') as {
         lecture: Lecture,
-        assignments: Assignment[], 
+        assignments: Assignment[],
+        submissions: AssignmentSubmissions[],
     };
+
+
     const navigation = useNavigation(); 
 
     const [lectureState, setLecture] = React.useState(lecture); 
     const [assignmentsState, setAssignments] = React.useState(assignments);
+    const [assignmentsStudentState, setAssignmentsStudent] = React.useState([] as AssignmentStudent[]);
+
+
+    React.useEffect(() => {
+        const assignment_submissions = transformAssignments(assignmentsState, submissions);
+        setAssignmentsStudent(assignment_submissions);
+    }, []);
+
 
     if (navigation.state === 'loading') {
         return (
@@ -188,7 +262,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           ) : null}
         </Typography> 
         <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
-        <AssignmentTable lecture={lectureState} rows={assignmentsState} />
+        <AssignmentTable lecture={lectureState} rows={assignmentsStudentState} />
       </Stack>
       );
 };
