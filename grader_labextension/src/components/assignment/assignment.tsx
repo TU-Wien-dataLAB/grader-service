@@ -36,6 +36,13 @@ import {
 } from '../../services/storage.service';
 
 
+import { submissionsReducer } from './reducers';
+import { AssignmentSubmissions } from './lecture';
+
+import { useParams } from 'react-router-dom';
+
+
+
 const calculateActiveStep = (submissions: Submission[]) => {
     const hasFeedback = submissions.reduce(
       (accum: boolean, curr: Submission) => accum || curr.feedback_available,
@@ -63,21 +70,33 @@ export interface IAssignmentModalProps {
  */
 export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
-  const { lecture, assignments } = useRouteLoaderData('lecture') as {
+  const { lecture, assignments, assignment_submissions } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
     assignments: Assignment[],
+    assignment_submissions: AssignmentSubmissions[],
   };
 
-  const { assignment, submissions } = useRouteLoaderData('assignment') as {
-    assignment: Assignment,
-    submissions: Submission[],
-  };
-  
+
+  /* Get the assignment id from router */
+  const params = useParams();
+  const assignmentId: number = +params["aid"];
+
+  const assignment_submission = assignment_submissions.find(item => item.assignment.id === assignmentId);
+  const assignment = assignment_submission.assignment;
+  const submissions = assignment_submission.submissions;
+
+  /* Copy assignments out of assignment submissions array */
   const [assignmentState, setAssignment] = React.useState(assignment);
+
+
+  /* Now we can divvy this into a useReducer  */
+  const [submissionsState, dispatchSubmit] = React.useReducer(submissionsReducer, submissions);
+
+
   const [displayAssignment, setDisplayAssignment] = React.useState(
       loadNumber('a-opened-assignment') === assignment.id || false
   );
-  const [submissionsState, setSubmissions] = React.useState([] as Submission[]);
+
   const [hasFeedback, setHasFeedback] = React.useState(false)
   const [files, setFiles] = React.useState([]);
   const [bestScore, setBestScore] = React.useState('-');
@@ -95,10 +114,20 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     setShowFeedback(true);
   };
 
+
+  const handleAddSubmission = (submissions: Submission[], submission: Submission) => {
+      /* Make the async call here */
+      dispatchSubmit({ type: 'add', submission });
+  }
+
+  const handleSetAllSubmissions = (submissions: Submission[]) => {
+      dispatchSubmit({ type: 'set_all', submission: null });
+  };
+
   React.useEffect(() => {
       getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
           response => {
-              setSubmissions(response);
+              handleSetAllSubmissions(response);
               const feedback = response.reduce(
                   (accum: boolean, curr: Submission) => 
                   accum || curr.feedback_available,
@@ -140,7 +169,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
       'none',
       false
     );
-    setSubmissions(submissions);
+    handleSetAllSubmissions(submissions);
   };
 
 
@@ -153,7 +182,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                 </Typography>
                 <AssignmentStatus
                   activeStep={activeStatus}
-                  submissions={submissionsState}
+                  submissions={submissions}
                 />
             </Box>
             <Box sx={{ mt: 10 }}>
@@ -163,8 +192,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                <AssignmentFilesComponent 
                  lecture={lecture}
                  assignment={assignment}
-                 submissions={submissionsState}
-                 setSubmissions={setSubmissions}
+                 submissions={submissions}
+                 // TODO: figure out what we need to be doing here rather than
+                 // passing a dispatch function
+                 handleAddSubmission={handleAddSubmission}
                />
             </Box>
             <Outlet />

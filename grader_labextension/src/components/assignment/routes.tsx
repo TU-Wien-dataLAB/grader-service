@@ -67,8 +67,8 @@ export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[
 export const loadAssignmentTableData = async (lectureId: number) => {
     try {
         const { lecture, assignments } = await loadLecture(lectureId);
-        const submissions = await loadSubmissions(lecture, assignments);
-        return { lecture, assignments, submissions };
+        const assignment_submissions = await loadSubmissions(lecture, assignments);
+        return { lecture, assignments, assignment_submissions };
     } catch (error: any) {
         enqueueSnackbar(error.message, {
             variant: 'error'

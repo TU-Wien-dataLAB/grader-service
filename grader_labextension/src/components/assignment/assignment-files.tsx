@@ -34,7 +34,7 @@ export interface IAssignmentFilesComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   submissions: Submission[];
-  setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
+  handleAddSubmission: (submissions: Submission[], submission: Submission) => void;
 }
 
 /**
@@ -122,10 +122,7 @@ export const AssignmentFilesComponent = (
       handleAgree: async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
-            props.setSubmissions(oldSubmissions => [
-              ...oldSubmissions,
-              response
-            ]);
+            props.handleAddSubmission(props.submissions, response);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
