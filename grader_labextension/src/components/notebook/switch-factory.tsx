@@ -15,9 +15,9 @@ import { IModeSwitchProps } from './slider';
 export class SwitchModeFactory {
   public static getSwitch(props: IModeSwitchProps): JSX.Element {
     const paths = props.notebookpanel.context.contentsModel.path.split('/');
-    const path = paths[0];
+    const path = paths[1];
     const permissions = UserPermissions.getPermissions();
-    const lecturecode = paths[1];
+    const lecturecode = paths[0];
     let hasPermission = false;
     if (permissions.hasOwnProperty(lecturecode)) {
       hasPermission = permissions[lecturecode] !== Scope.student;

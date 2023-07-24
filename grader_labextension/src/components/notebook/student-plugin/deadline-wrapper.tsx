@@ -31,7 +31,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
     if (lecture === null) {
       return;
     }
-    getAssignment(lecture.id, +props.notebookPaths[1]).then(response => {
+    getAssignment(lecture.id, +props.notebookPaths[2]).then(response => {
       setAssignment(response);
     });
   }, [lecture]);
