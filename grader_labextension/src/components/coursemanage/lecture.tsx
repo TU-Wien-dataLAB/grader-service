@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
-  Button,
+  Button,IconButton,
   Card,
   CardActions,
   CardContent,
@@ -38,6 +38,9 @@ import {
 import { useNavigate, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { ButtonTr, GraderTable } from '../util/table';
 import { DeadlineComponent } from '../util/deadline';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 
 
 interface IAssignmentTableProps {
@@ -48,12 +51,12 @@ interface IAssignmentTableProps {
 const AssignmentTable = (props: IAssignmentTableProps) => {
   const navigate = useNavigate();
   const headers = [
-    { name: 'Name' },
-    { name: 'Points', width: 75 },
-    { name: 'Deadline' },
-    { name: 'Status' },
-    { name: 'Show Details' },
-    { name: 'Delete Assignment', width: 150 }
+    { name: 'Name'},
+    { name: 'Points', width: 100 },
+    { name: 'Deadline', width: 200},
+    { name: 'Status', width: 130 },
+    { name: 'Show Details', width: 75 },
+    { name: 'Delete Assignment', width: 100 }
   ];
 
   const [showDialog, setShowDialog] = React.useState(false);
@@ -97,21 +100,22 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
               <TableCell><DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} /></TableCell>
               <TableCell>{row.status}</TableCell>
               <TableCell>
-                <Button variant='contained' size={'small'}>Details</Button>
+              <IconButton aria-label='detail view' size={'small'}>
+              <SearchIcon/>
+              </IconButton>
               </TableCell>
-              <TableCell style={{ width: 150 }}>
-                <Button
+              <TableCell>
+                <IconButton
+                  aria-label='delete assignment'
                   size={'small'}
-                  color='error'
-                  variant='contained'
                   onClick={(e) => {
                     setDeleteFunction({handleAgree: getDeleteAssignmentFunction(row.id)});
                     setShowDialog(true);
                     e.stopPropagation();
                   }}
                 >
-                  Delete
-                </Button>
+                  <CloseIcon sx={{ color: red[500] }}/>
+                </IconButton>
               </TableCell>
             </TableRow>
           );
