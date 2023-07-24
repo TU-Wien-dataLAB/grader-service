@@ -50,7 +50,7 @@ export const Feedback = (props: IFeedbackProps) => {
       setGradeBook(gradeBook);
     });
     pullFeedback(props.lecture, props.assignment, props.submission).then(() => {
-      const feedbackPath = `feedback/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`;
+      const feedbackPath = `${props.lecture.code}/feedback/${props.assignment.id}/${props.submission.id}`;
       setPath(feedbackPath);
     });
   }, [props.lecture, props.assignment, props.submission]);

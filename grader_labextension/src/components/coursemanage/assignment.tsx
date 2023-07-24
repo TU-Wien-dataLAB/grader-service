@@ -112,7 +112,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       }
     );
 
-    getFiles(`source/${props.lecture.code}/${assignment.id}`).then(files => {
+    getFiles(`${props.lecture.code}/source/${assignment.id}`).then(files => {
       setFiles(files);
     });
   }, [assignment]);

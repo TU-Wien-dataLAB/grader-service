@@ -51,7 +51,7 @@ export const Files = (
     handleAgree: null,
     handleDisagree: null
   });
-  const path = `${props.lecture.code}/${props.assignment.id}`;
+  const path = `${props.lecture.code}/assignments/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
    * @param repo input which repository should be fetched

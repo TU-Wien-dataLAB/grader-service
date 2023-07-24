@@ -107,7 +107,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
               setHasFeedback(feedback);
           }
       );
-      getFiles(`${lecture.code}/${assignment.id}`).then(files => {
+      getFiles(`${lecture.code}/assignments/${assignment.id}`).then(files => {
           if (files.length === 0) {
               pullAssignment(lecture.id, assignment.id, 'assignment');
           }

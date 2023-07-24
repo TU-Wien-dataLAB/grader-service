@@ -40,7 +40,7 @@ export interface IEditSubmissionProps {
 export const EditSubmission = (props: IEditSubmissionProps) => {
 
   const [path, setPath] = React.useState(
-    `edit/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`
+    `${props.lecture.code}/edit/${props.assignment.id}/${props.submission.id}`
   );
 
   const [submission, setSubmission] = React.useState(props.submission);

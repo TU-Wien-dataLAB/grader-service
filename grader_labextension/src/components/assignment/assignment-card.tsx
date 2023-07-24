@@ -73,7 +73,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
         setHasFeedback(feedback);
       }
     );
-    getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
+    getFiles(`${props.lecture.code}/assignments/${assignment.id}`).then(files => {
       if (files.length === 0) {
         pullAssignment(props.lecture.id, assignment.id, 'assignment');
       }

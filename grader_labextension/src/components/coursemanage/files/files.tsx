@@ -349,7 +349,7 @@ export const Files = (props: IFilesProps) => {
         </Tabs>
         <Box height={200} sx={{ overflowY: 'auto' }}>
           <FilesList
-            path={`${selectedDir}/${props.lecture.code}/${props.assignment.id}`}
+            path={`${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
             reloadFiles={reloadFilesToggle}
           />
         </Box>
