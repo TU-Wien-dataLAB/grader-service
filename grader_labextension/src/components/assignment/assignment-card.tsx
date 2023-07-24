@@ -116,7 +116,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
           bgcolor: assignment.status === 'complete' ? '#F1F1F1' : 'white'
         }}
         onClick={async () => {
-          await openBrowser(`${props.lecture.code}/${assignment.id}`);
+          await openBrowser(`${props.lecture.code}/assignments/${assignment.id}`);
           setDisplayAssignment(true);
           storeNumber('a-opened-assignment', assignment.id);
         }}

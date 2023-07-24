@@ -122,7 +122,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       <Card
         sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
         onClick={async () => {
-          await openBrowser(`source/${props.lecture.code}/${assignment.id}`);
+          await openBrowser(`${props.lecture.code}/source/${assignment.id}`);
           setDisplaySubmissions(true);
           storeNumber('cm-opened-assignment', assignment.id);
         }}

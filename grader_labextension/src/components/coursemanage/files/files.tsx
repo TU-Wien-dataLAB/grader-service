@@ -68,7 +68,7 @@ export const Files = (props: IFilesProps) => {
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
   
-  openBrowser(`${selectedDir}/${lecture.code}/${assignment.id}`)
+  openBrowser(`${lecture.code}/${selectedDir}/${assignment.id}`)
 
   const [showDialog, setShowDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -403,7 +403,7 @@ export const Files = (props: IFilesProps) => {
             sx={{ mt: -1, pt: 0, pb: 0 }}
             color={'primary'}
             onClick={() =>
-              openBrowser(`${selectedDir}/${lecture.code}/${assignment.id}`)
+              openBrowser(`${lecture.code}/${selectedDir}/${assignment.id}`)
             }
           >
             <OpenInBrowserIcon />
@@ -415,7 +415,7 @@ export const Files = (props: IFilesProps) => {
             color={'primary'}
             onClick={() =>
               openTerminal(
-                `${serverRoot}/${selectedDir}/${lecture.code}/${assignment.id}`
+                `${serverRoot}/${lecture.code}/${selectedDir}/${assignment.id}`
               )
             }
           >
