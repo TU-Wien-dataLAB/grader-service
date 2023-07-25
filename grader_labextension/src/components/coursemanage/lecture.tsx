@@ -96,7 +96,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
               <TableCell component='th' scope='row'>
                 <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
               </TableCell>
-              <TableCell style={{ width: 75 }}>{row.points}</TableCell>
+              <TableCell>{row.points}</TableCell>
               <TableCell><DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} /></TableCell>
               <TableCell>{row.status}</TableCell>
               <TableCell>
