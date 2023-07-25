@@ -137,9 +137,6 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
           }
       );
       getFiles(`${lecture.code}/${assignment.id}`).then(files => {
-          if (files.length === 0) {
-              pullAssignment(lecture.id, assignment.id, 'assignment');
-          }
           setFiles(files);
       });
 
