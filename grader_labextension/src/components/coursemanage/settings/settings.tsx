@@ -11,7 +11,6 @@ import {
   MenuItem,
   Stack,
   TextField,
-  TextFieldProps,
   Tooltip
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -26,9 +25,8 @@ import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
-import {autogradeSubmission} from "../../../services/grading.service";
 import {AgreeDialog} from "../../util/dialog";
-import { useRouteLoaderData } from 'react-router-dom';
+import { useRouteLoaderData } from 'react-router-dom';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -86,33 +84,6 @@ export const SettingsComponent = () => {
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(assignment.max_submissions)
   );
-
-  const handleDeleteAssignment = () => {
-    setDialogContent({
-      title: 'Delete Assignment',
-      message: 'Do you wish to delete this assignment?',
-      handleAgree: async () => {
-        await deleteAssignment(
-                lecture.id,
-                assignment.id
-              ).then(
-                response => {
-                  enqueueSnackbar('Successfully Deleted Assignment', {
-                    variant: 'success'
-                  });
-                },
-                (error: Error) => {
-                  enqueueSnackbar(error.message, {
-                    variant: 'error'
-                  });
-                }
-              );
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
 
    const closeDialog = () => setShowDialog(false);
 
@@ -292,18 +263,9 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Stack spacing={2} direction={'row'}>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={handleDeleteAssignment}
-          >
-            Delete Assignment
-          </Button>
-          <Button color="primary" variant="contained" type="submit">
-            Save changes
-          </Button>
-        </Stack>
+      <Button color="primary" variant="contained" type="submit">
+        Save changes
+      </Button>
         <AgreeDialog open={showDialog} {...dialogContent} />
       </form>
     </Box>
