@@ -25,10 +25,10 @@ import { AgreeDialog } from '../util/dialog';
 import { ButtonTr, GraderTable } from '../util/table';
 import { DeadlineComponent, getDisplayDate } from '../util/deadline';
 import { Assignment } from '../../model/assignment';
+import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import { resetAssignment } from '../../services/assignments.service';
-
+import { resetAssignment } from '../../services/assignments.service';
 
 /*
     * Buttons for AssignmentTable
@@ -73,13 +73,8 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
         { name: 'Feedback Available' }
     ];
 
-    /*
-        * Deduce the submissions array from the assignment array
-        * */
-
     const [showDialog, setShowDialog] = React.useState(false);
     const [resetFunction, setResetFunction] = React.useState({handleAgree: null as () => void});
-
 
     const getResetAssignmentFunction = (assignmentId: number) => {
         return async () => {
@@ -163,42 +158,14 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     * sub-routine that accomplishes this is transformAssignments, all other
     * classes and sub-routines below are called from this function.
     * */
-/*
-    * Extend the Assignment Type with a feedback_available field and submissions
-    * array 
-    * */
-interface AssignmentStudent extends Assignment {
+interface AssignmentStudent extends AssignmentDetail {
     feedback_available: boolean;
-    submissions: Submission[];
 }
-
-/*
-    * Type to handle the AssignmentSubmissions array
-    * */
-export interface AssignmentSubmissions {
-    assignment: Assignment;
-    submissions: Submission[];
-};
-
-
-/*
-    * Make an dictionary of the assignment Submissions  
-    * hashtable à la Javascript  (i.e. leverages the Object type)
-    * */
-function make_assignment_submissions_dict(asubmissions: AssignmentSubmissions[]) {
-    const result = {} as { [key: number ]: Submission[] };
-    for (const asubmission of asubmissions) {
-        result[asubmission.assignment.id] = asubmission.submissions;
-    }
-    return result;
-}
-
 
 /*
     * Scan all submissions return true if feedback is available for that assignment.
     * */
 const feedbackAvailable = (submissions: Submission[]): boolean => {
-
     /* Find the submissions equal to the assignmentId */
     if (submissions === undefined) {
         return false;
@@ -213,38 +180,29 @@ const feedbackAvailable = (submissions: Submission[]): boolean => {
 }
 
 /*
-    * Most important routine for setting up row data for AssignmentTable 
-    *
-    * Extend the Assignments[] -> AssignmentStudent[] by appending atttributes
-    * specific to student view:
-    *   - feedback_available boolean 
-    *   - submissions array
-    * */
-const transformAssignments = (assignments: Assignment[], assignment_submissions: AssignmentSubmissions[]): AssignmentStudent[] => {
-
-    const asubs_dict = make_assignment_submissions_dict(assignment_submissions);
-
+    * Transform the AssignmentDetail array into an AssignmentStudent array
+    * iterate over the submissions for each assignment, check if there is
+    * feedback available for any, then use this to set a flag in the 
+    * AssignmentStudent object */
+const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStudent[] => {
     const result = [] as AssignmentStudent[]; 
     for (const assignment of assignments) {
         /* Get any existing submissions */
-        const existing_submissions = asubs_dict[assignment.id];
+        const existingSubmissions = assignment.submissions;
+        let feedback_available = false;
 
-        if ((existing_submissions === undefined) || (existing_submissions.length === 0)) {
-            result.push({
-                ...assignment,
-                feedback_available: false,
-                submissions: []
-            });
-        } else {
-            const feedback_available = feedbackAvailable(existing_submissions);
-            result.push({
-                ...assignment,
-                feedback_available: feedback_available,
-                submissions: existing_submissions
-        });
+        /* If there are any submissions, check for feedback! */
+        if ((existingSubmissions !== undefined) || (existingSubmissions.length > 0)) {
+            feedback_available = feedbackAvailable(existingSubmissions);
+        }
+        /* Construct the AssignmentStudent object */
+        const assignmentStudent = {
+            ...assignment,
+            feedback_available: feedback_available
+        };
+        result.push(assignmentStudent);
     }
     return result; 
-    }
 };
 
 /**
@@ -259,24 +217,19 @@ interface ILectureComponentProps {
  * @param props Props of the lecture component
  */
 export const LectureComponent = (props: ILectureComponentProps) => {
-    const { lecture, assignments, assignment_submissions } = useRouteLoaderData('lecture') as {
+    const { lecture, assignments } = useRouteLoaderData('lecture') as {
         lecture: Lecture,
-        assignments: Assignment[],
-        assignment_submissions: AssignmentSubmissions[],
+        assignments: AssignmentDetail[],
     };
-
 
     const navigation = useNavigation(); 
 
+    const newAssignmentSubmissions = transformAssignments(assignments);
+
     const [lectureState, setLecture] = React.useState(lecture); 
-    const [assignmentsState, setAssignments] = React.useState(assignments);
+    const [assignmentsState, setAssignments] = React.useState(newAssignmentSubmissions);
 
-    const [assignmentsStudentState, setAssignmentsStudent] = React.useState([] as AssignmentStudent[]);
 
-    React.useEffect(() => {
-        const new_assignment_submissions = transformAssignments(assignmentsState, assignment_submissions);
-        setAssignmentsStudent(new_assignment_submissions);
-    }, []);
 
     if (navigation.state === 'loading') {
         return (
@@ -309,7 +262,7 @@ export const LectureComponent = (props: ILectureComponentProps) => {
           ) : null}
         </Typography> 
         <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
-        <AssignmentTable lecture={lectureState} rows={assignmentsStudentState} />
+        <AssignmentTable lecture={lectureState} rows={assignmentsState} />
       </Stack>
       );
 };

@@ -219,7 +219,6 @@ export const GradingComponent = (props: IGradingProps) => {
         submitted_at: utcToLocalFormat(sub.submitted_at),
         auto_status: sub.auto_status,
         manual_status: sub.manual_status,
-        logs: sub.logs,
         commit_hash: sub.commit_hash,
         feedback_available: sub.feedback_available,
         score: sub.score

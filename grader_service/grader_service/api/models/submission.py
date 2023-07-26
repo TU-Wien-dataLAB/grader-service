@@ -15,7 +15,7 @@ class Submission(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, score=None, commit_hash=None, feedback_available=None, edited=None, logs=None, properties=None):  # noqa: E501
+    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, score=None, assignid=None, commit_hash=None, feedback_available=None, edited=None):  # noqa: E501
         """Submission - a model defined in OpenAPI
 
         :param id: The id of this Submission.  # noqa: E501
@@ -30,16 +30,14 @@ class Submission(Model):
         :type username: str
         :param score: The score of this Submission.  # noqa: E501
         :type score: float
+        :param assignid: The assignid of this Submission.  # noqa: E501
+        :type assignid: int
         :param commit_hash: The commit_hash of this Submission.  # noqa: E501
         :type commit_hash: str
         :param feedback_available: The feedback_available of this Submission.  # noqa: E501
         :type feedback_available: bool
         :param edited: The edited of this Submission.  # noqa: E501
         :type edited: bool
-        :param logs: The logs of this Submission.  # noqa: E501
-        :type logs: str
-        :param properties: The properties of this Submission.  # noqa: E501
-        :type properties: str
         """
         self.openapi_types = {
             'id': int,
@@ -48,11 +46,10 @@ class Submission(Model):
             'manual_status': str,
             'username': str,
             'score': float,
+            'assignid': int,
             'commit_hash': str,
             'feedback_available': bool,
-            'edited': bool,
-            'logs': str,
-            'properties': str
+            'edited': bool
         }
 
         self.attribute_map = {
@@ -62,11 +59,10 @@ class Submission(Model):
             'manual_status': 'manual_status',
             'username': 'username',
             'score': 'score',
+            'assignid': 'assignid',
             'commit_hash': 'commit_hash',
             'feedback_available': 'feedback_available',
-            'edited': 'edited',
-            'logs': 'logs',
-            'properties': 'properties'
+            'edited': 'edited'
         }
 
         self._id = id
@@ -75,11 +71,10 @@ class Submission(Model):
         self._manual_status = manual_status
         self._username = username
         self._score = score
+        self._assignid = assignid
         self._commit_hash = commit_hash
         self._feedback_available = feedback_available
         self._edited = edited
-        self._logs = logs
-        self._properties = properties
 
     @classmethod
     def from_dict(cls, dikt) -> 'Submission':
@@ -231,6 +226,27 @@ class Submission(Model):
         self._score = score
 
     @property
+    def assignid(self):
+        """Gets the assignid of this Submission.
+
+
+        :return: The assignid of this Submission.
+        :rtype: int
+        """
+        return self._assignid
+
+    @assignid.setter
+    def assignid(self, assignid):
+        """Sets the assignid of this Submission.
+
+
+        :param assignid: The assignid of this Submission.
+        :type assignid: int
+        """
+
+        self._assignid = assignid
+
+    @property
     def commit_hash(self):
         """Gets the commit_hash of this Submission.
 
@@ -292,45 +308,3 @@ class Submission(Model):
         """
 
         self._edited = edited
-
-    @property
-    def logs(self):
-        """Gets the logs of this Submission.
-
-
-        :return: The logs of this Submission.
-        :rtype: str
-        """
-        return self._logs
-
-    @logs.setter
-    def logs(self, logs):
-        """Sets the logs of this Submission.
-
-
-        :param logs: The logs of this Submission.
-        :type logs: str
-        """
-
-        self._logs = logs
-
-    @property
-    def properties(self):
-        """Gets the properties of this Submission.
-
-
-        :return: The properties of this Submission.
-        :rtype: str
-        """
-        return self._properties
-
-    @properties.setter
-    def properties(self, properties):
-        """Sets the properties of this Submission.
-
-
-        :param properties: The properties of this Submission.
-        :type properties: str
-        """
-
-        self._properties = properties

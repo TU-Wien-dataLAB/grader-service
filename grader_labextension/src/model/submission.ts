@@ -18,11 +18,10 @@ export interface Submission {
     manual_status?: Submission.ManualStatusEnum;
     username?: string;
     score?: number;
+    assignid?: number;
     commit_hash?: string;
     feedback_available?: boolean;
     edited?: boolean;
-    logs?: string;
-    properties?: string;
 }
 export namespace Submission {
     export type AutoStatusEnum = 'not_graded' | 'pending' | 'automatically_graded' | 'grading_failed';

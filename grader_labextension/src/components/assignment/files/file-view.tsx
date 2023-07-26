@@ -8,6 +8,7 @@ import { useRouteLoaderData } from 'react-router-dom';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
+import { submissionsReducer } from '../reducers';
 
 export const FileView = () => {
     const { lecture, assignments } = useRouteLoaderData('lecture') as {
@@ -21,7 +22,12 @@ export const FileView = () => {
     };
 
     const [assignmentState, setAssignmentState] = React.useState<Assignment>(assignment);
-    const [submissions, setSubmissions] = React.useState<Submission[]>(latestSubmissions);
+
+    const [submissionsState, dispatchSubmit] = React.useReducer(submissionsReducer, latestSubmissions);
+
+    const handleAddSubmission = (submissions: Submission[], submission: Submission) => {
+        dispatchSubmit({ type: 'add', submission: submission });
+    };
 
 
     return <Box>
@@ -33,7 +39,7 @@ export const FileView = () => {
             lecture={lecture}
             assignment={assignmentState}
             submissions={allSubmissions}
-            setSubmissions={setSubmissions}
+            handleAddSubmission={handleAddSubmission}
             />
         </Grid>
       </Grid>

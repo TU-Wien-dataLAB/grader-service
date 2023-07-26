@@ -129,6 +129,9 @@ components:
         score:
           type: number
           format: float
+        assignid:
+          type: "integer"
+          format: "int64"
         commit_hash:
           type: string
         feedback_available:
@@ -141,6 +144,55 @@ components:
         status: "not_graded"
         score: 10.0
         commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
+    AssignmentDetail:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+          example: "assignment_1"
+        type:
+          type: "string"
+          enum:
+            - user
+            - group
+        due_date:
+          type: "string"
+          format: "date-time"
+          example: "2021-07-21T23:55:00Z"
+        status:
+          type: string
+          enum:
+            - created # another state of an assignment (instructor only)
+            - pushed
+            - released
+            - complete # final state -> final grade is calculated
+        points:
+          type: number
+          format: float
+        automatic_grading:
+          type: string
+          enum:
+            - "unassisted"
+            - "auto"
+            - "full_auto"
+        max_submissions:
+          type: integer
+        allow_files:
+          type: boolean
+        submissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Submission'
+      example:
+        id: 1
+        name: "assignment_1"
+        type: "user"
+        due_date: "2021-07-21T23:55:00Z"
+        status: "released"
+        points: 10.5
     ErrorMessage:
       type: "object"
       required: [ "code", "error", "path" ]

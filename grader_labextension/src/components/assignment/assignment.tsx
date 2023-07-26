@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
+import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { 
     Box, 
@@ -18,7 +19,7 @@ import { SubmissionList } from './submission-list';
 import LoadingOverlay from '../util/overlay';
 import { Feedback } from './feedback';
 import { AssignmentStatus } from './assignment-status';
-import { AssignmentFilesComponent } from './assignment-files';
+import { Files } from './files/files';
 import WarningIcon from '@mui/icons-material/Warning';
 import {
   useRouteLoaderData,
@@ -37,7 +38,6 @@ import {
 
 
 import { submissionsReducer } from './reducers';
-import { AssignmentSubmissions } from './lecture';
 
 import { useParams } from 'react-router-dom';
 
@@ -70,24 +70,18 @@ export interface IAssignmentModalProps {
  */
 export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
-  const { lecture, assignments, assignment_submissions } = useRouteLoaderData('lecture') as {
+  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
     lecture: Lecture,
-    assignments: Assignment[],
-    assignment_submissions: AssignmentSubmissions[],
+    assignment: Assignment,
+    submissions: Submission[],
   };
-
 
   /* Get the assignment id from router */
   const params = useParams();
   const assignmentId: number = +params["aid"];
 
-  const assignment_submission = assignment_submissions.find(item => item.assignment.id === assignmentId);
-  const assignment = assignment_submission.assignment;
-  const submissions = assignment_submission.submissions;
-
   /* Copy assignments out of assignment submissions array */
   const [assignmentState, setAssignment] = React.useState(assignment);
-
 
   /* Now we can divvy this into a useReducer  */
   const [submissionsState, dispatchSubmit] = React.useReducer(submissionsReducer, submissions);
@@ -186,12 +180,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                <Typography variant={'h6'} sx={{ ml: 2 }}>
                  Files
                </Typography>
-               <AssignmentFilesComponent 
+               <Files 
                  lecture={lecture}
                  assignment={assignment}
                  submissions={submissions}
-                 // TODO: figure out what we need to be doing here rather than
-                 // passing a dispatch function
                  handleAddSubmission={handleAddSubmission}
                />
             </Box>

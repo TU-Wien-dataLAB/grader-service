@@ -35,8 +35,7 @@ export const loadPermissions = async () => {
 export const loadLecture = async (lectureId: number) => {
   try {
     const lecture = await getLecture(lectureId);
-    const assignments = await getAllAssignments(lecture.id);
-
+    const assignments = await getAllAssignments(lecture.id, false, true);
     return { lecture, assignments };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
@@ -64,28 +63,16 @@ export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[
     }
 };
 
-export const loadAssignmentTableData = async (lectureId: number) => {
-    try {
-        const { lecture, assignments } = await loadLecture(lectureId);
-        const assignment_submissions = await loadSubmissions(lecture, assignments);
-        return { lecture, assignments, assignment_submissions };
-    } catch (error: any) {
-        enqueueSnackbar(error.message, {
-            variant: 'error'
-        });
-    }
-};
-
-
 export const loadAssignment = async (lectureId: number, assignmentId: number) => {
     const err_assignment = { 
         assignment: { id: -1, name: 'Error loading assignment', }
     };
 
   try {
+    const lecture = await getLecture(lectureId);
     const assignment = await getAssignment(lectureId, assignmentId);
     const submissions = await getAllSubmissions(lectureId, assignmentId, "none", false);
-    return { assignment, submissions };
+    return { lecture, assignment, submissions };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
@@ -145,7 +132,7 @@ export const getRoutes = (root: HTMLElement) => {
                 <Route
                     id={'lecture'}
                     path={'lecture/:lid/*'}
-                    loader={({ params }) => loadAssignmentTableData(+params.lid)}
+                    loader={({ params }) => loadLecture(+params.lid)}
                     handle={{
                         // functions in handle have to handle undefined data (error page is displayed afterwards)
                         crumb: (data) => data?.lecture.name,
