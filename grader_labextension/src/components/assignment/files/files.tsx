@@ -5,44 +5,44 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Assignment } from '../../model/assignment';
-import { Lecture } from '../../model/lecture';
+import { Assignment } from '../../../model/assignment';
+import { Lecture } from '../../../model/lecture';
 import {
   pullAssignment,
   pushAssignment,
   resetAssignment
-} from '../../services/assignments.service';
+} from '../../../services/assignments.service';
 import {
   getAllSubmissions,
   submitAssignment
-} from '../../services/submissions.service';
+} from '../../../services/submissions.service';
 import { Button, Stack, Tooltip } from '@mui/material';
-import { FilesList } from '../util/file-list';
+import { FilesList } from '../../util/file-list';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
-import { AgreeDialog } from '../util/dialog';
+import { AgreeDialog } from '../../util/dialog';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
-import { Submission } from '../../model/submission';
-import { RepoType } from '../util/repo-type';
+import { Submission } from '../../../model/submission';
+import { RepoType } from '../../util/repo-type';
 import { enqueueSnackbar } from 'notistack';
 
 /**
- * Props for AssignmentFilesComponent.
+ * Props for Files.
  */
-export interface IAssignmentFilesComponentProps {
+export interface IFilesProps {
   lecture: Lecture;
   assignment: Assignment;
   submissions: Submission[];
-  handleAddSubmission: (submissions: Submission[], submission: Submission) => void;
+  setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
 }
 
 /**
  * Renders the file view and additional buttons to submit, push, pull or reset the assignment.
  * @param props Props of the assignment files component
  */
-export const AssignmentFilesComponent = (
-  props: IAssignmentFilesComponentProps
+export const Files = (
+  props: IFilesProps
 ) => {
   const [dialog, setDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -51,7 +51,7 @@ export const AssignmentFilesComponent = (
     handleAgree: null,
     handleDisagree: null
   });
-  const path = `${props.lecture.code}/${props.assignment.id}`;
+  const path = `${props.lecture.code}/assignments/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
    * @param repo input which repository should be fetched
@@ -122,7 +122,10 @@ export const AssignmentFilesComponent = (
       handleAgree: async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
-            props.handleAddSubmission(props.submissions, response);
+            props.setSubmissions(oldSubmissions => [
+              ...oldSubmissions,
+              response
+            ]);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
