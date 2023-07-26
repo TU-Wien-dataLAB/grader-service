@@ -27,7 +27,6 @@ import {
 } from 'react-router-dom';
 import {
   getAssignment,
-  pullAssignment
 } from '../../services/assignments.service';
 import { getFiles } from '../../services/file.service';
 import { getAllSubmissions } from '../../services/submissions.service';
@@ -35,13 +34,7 @@ import {
   deleteKey,
   loadNumber,
 } from '../../services/storage.service';
-
-
-import { submissionsReducer } from './reducers';
-
 import { useParams } from 'react-router-dom';
-
-
 
 const calculateActiveStep = (submissions: Submission[]) => {
     const hasFeedback = submissions.reduce(
@@ -84,7 +77,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
   const [assignmentState, setAssignment] = React.useState(assignment);
 
   /* Now we can divvy this into a useReducer  */
-  const [submissionsState, dispatchSubmit] = React.useReducer(submissionsReducer, submissions);
+  const [allSubmissions, setAllSubmissions] = React.useState(submissions);
 
 
   const [displayAssignment, setDisplayAssignment] = React.useState(
@@ -108,20 +101,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     setShowFeedback(true);
   };
 
-
-  const handleAddSubmission = (submissions: Submission[], submission: Submission) => {
-      /* Make the async call here */
-      dispatchSubmit({ type: 'add', submission });
-  }
-
-  const handleSetAllSubmissions = (submissions: Submission[]) => {
-      dispatchSubmit({ type: 'set_all', submission: null });
-  };
-
   React.useEffect(() => {
       getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
           response => {
-              handleSetAllSubmissions(response);
+              setAllSubmissions(response);
               const feedback = response.reduce(
                   (accum: boolean, curr: Submission) => 
                   accum || curr.feedback_available,
@@ -160,7 +143,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
       'none',
       false
     );
-    handleSetAllSubmissions(submissions);
+    setAllSubmissions(submissions);
   };
 
 
@@ -184,7 +167,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                  lecture={lecture}
                  assignment={assignment}
                  submissions={submissions}
-                 handleAddSubmission={handleAddSubmission}
+                 setSubmissions={setAllSubmissions}
                />
             </Box>
             <Outlet />

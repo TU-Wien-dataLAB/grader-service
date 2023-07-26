@@ -22,12 +22,7 @@ export const FileView = () => {
     };
 
     const [assignmentState, setAssignmentState] = React.useState<Assignment>(assignment);
-
-    const [submissionsState, dispatchSubmit] = React.useReducer(submissionsReducer, latestSubmissions);
-
-    const handleAddSubmission = (submissions: Submission[], submission: Submission) => {
-        dispatchSubmit({ type: 'add', submission: submission });
-    };
+    const [submissionsState, setSubmissions] = React.useState<Submission[]>(latestSubmissions);
 
 
     return <Box>
@@ -39,7 +34,7 @@ export const FileView = () => {
             lecture={lecture}
             assignment={assignmentState}
             submissions={allSubmissions}
-            handleAddSubmission={handleAddSubmission}
+            setSubmissions={setSubmissions}
             />
         </Grid>
       </Grid>

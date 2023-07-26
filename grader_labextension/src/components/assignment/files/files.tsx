@@ -13,7 +13,6 @@ import {
   resetAssignment
 } from '../../../services/assignments.service';
 import {
-  getAllSubmissions,
   submitAssignment
 } from '../../../services/submissions.service';
 import { Button, Stack, Tooltip } from '@mui/material';
@@ -34,7 +33,7 @@ export interface IFilesProps {
   lecture: Lecture;
   assignment: Assignment;
   submissions: Submission[];
-  handleAddSubmission: (submissions: Submission[], submission: Submission) => void;
+  setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
 }
 
 /**
@@ -51,7 +50,7 @@ export const Files = (
     handleAgree: null,
     handleDisagree: null
   });
-  const path = `${props.lecture.code}/assignments/${props.assignment.id}`;
+  const path = `${props.lecture.code}/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
    * @param repo input which repository should be fetched
@@ -122,7 +121,10 @@ export const Files = (
       handleAgree: async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
-            props.handleAddSubmission(props.submissions, response);
+            props.setSubmissions(oldSubmissions => [
+              ...oldSubmissions,
+              response
+            ]);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
