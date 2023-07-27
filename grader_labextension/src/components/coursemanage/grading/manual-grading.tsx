@@ -23,6 +23,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
+import { lectureBasePath } from '../../../services/file.service';
 
 export interface IManualGradingProps {
   lecture: Lecture;
@@ -36,7 +37,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
   const [gradeBook, setGradeBook] = React.useState(null);
 
   const [path, setPath] = React.useState(
-    `${props.lecture.code}/manualgrade/${props.assignment.id}/${props.submission.id}`
+    `${lectureBasePath}/${props.lecture.code}/manualgrade/${props.assignment.id}/${props.submission.id}`
   );
 
   const [showDialog, setShowDialog] = React.useState(false);

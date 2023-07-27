@@ -28,6 +28,7 @@ import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
 import { pullAssignment, pushAssignment } from '../../../services/assignments.service';
 import { sub } from 'date-fns';
+import { lectureBasePath } from '../../../services/file.service';
 
 export interface IEditSubmissionProps {
   lecture: Lecture;
@@ -40,7 +41,7 @@ export interface IEditSubmissionProps {
 export const EditSubmission = (props: IEditSubmissionProps) => {
 
   const [path, setPath] = React.useState(
-    `${props.lecture.code}/edit/${props.assignment.id}/${props.submission.id}`
+    `${lectureBasePath}/${props.lecture.code}/edit/${props.assignment.id}/${props.submission.id}`
   );
 
   const [submission, setSubmission] = React.useState(props.submission);

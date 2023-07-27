@@ -28,7 +28,7 @@ import {
   getAssignment,
   pullAssignment
 } from '../../services/assignments.service';
-import { getFiles } from '../../services/file.service';
+import { getFiles, lectureBasePath } from '../../services/file.service';
 import { getAllSubmissions } from '../../services/submissions.service';
 import {
   deleteKey,
@@ -107,7 +107,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
               setHasFeedback(feedback);
           }
       );
-      getFiles(`${lecture.code}/assignments/${assignment.id}`).then(files => {
+      getFiles(`$${lectureBasePath}/{lecture.code}/assignments/${assignment.id}`).then(files => {
           if (files.length === 0) {
               pullAssignment(lecture.id, assignment.id, 'assignment');
           }

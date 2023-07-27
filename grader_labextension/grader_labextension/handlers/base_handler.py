@@ -29,17 +29,24 @@ def cache(max_age: int):
         async def request_handler_wrapper(self: "ExtensionBaseHandler", *args, **kwargs):
             self.set_header("Cache-Control", f"max-age={max_age}, must-revalidate, private")
             return await handler_method(self, *args, **kwargs)
+
         return request_handler_wrapper
+
     return wrapper
 
 
 class HandlerConfig(SingletonConfigurable):
     hub_api_url = Unicode(os.environ.get("JUPYTERHUB_API_URL"), help="The url of the hubs api.").tag(config=True)
-    hub_api_token = Unicode(os.environ.get("JUPYTERHUB_API_TOKEN"), help="The authorization token to access the hub api").tag(config=True)
+    hub_api_token = Unicode(os.environ.get("JUPYTERHUB_API_TOKEN"),
+                            help="The authorization token to access the hub api").tag(config=True)
     hub_user = Unicode(os.environ.get("JUPYTERHUB_USER"), help="The user name in jupyter hub.").tag(config=True)
     service_base_url = Unicode(
         os.environ.get("GRADER_BASE_URL", "/services/grader"),
         help="Base URL to use for each request to the grader service",
+    ).tag(config=True)
+    lectures_base_path = Unicode(
+        "Lectures",
+        help="The path in each user home directory where lecture directories are created."
     ).tag(config=True)
 
 
@@ -59,7 +66,9 @@ class ExtensionBaseHandler(APIHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
-        self.root_dir = os.path.expanduser(self.settings["server_root_dir"])
+        self.root_dir = os.path.expanduser(
+            os.path.join(self.settings["server_root_dir"], HandlerConfig.instance().lectures_base_path)
+        )
 
     @property
     def service_base_url(self):

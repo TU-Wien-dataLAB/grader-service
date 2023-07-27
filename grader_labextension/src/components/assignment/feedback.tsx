@@ -23,6 +23,7 @@ import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import { lectureBasePath } from '../../services/file.service';
 /**
  * Props for FeedbackComponent.
  */
@@ -50,7 +51,7 @@ export const Feedback = (props: IFeedbackProps) => {
       setGradeBook(gradeBook);
     });
     pullFeedback(props.lecture, props.assignment, props.submission).then(() => {
-      const feedbackPath = `${props.lecture.code}/feedback/${props.assignment.id}/${props.submission.id}`;
+      const feedbackPath = `${lectureBasePath}/${props.lecture.code}/feedback/${props.assignment.id}/${props.submission.id}`;
       setPath(feedbackPath);
     });
   }, [props.lecture, props.assignment, props.submission]);
