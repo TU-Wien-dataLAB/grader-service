@@ -48,7 +48,7 @@ interface IFeedbackProps {
     feedback_available: boolean;
 };
 
-const FeedbackButton = (props: IFeedbackProps) => {
+const FeedbackIcon = (props: IFeedbackProps) => {
     if (props.feedback_available) {
         return <DoneIcon sx={{ color: green[500] }} />;
     }
@@ -139,7 +139,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                         </IconButton>
                       </TableCell>
                       <TableCell style={{width: 55 }}>
-                        <FeedbackButton feedback_available={row.feedback_available} />
+                        <FeedbackIcon feedback_available={row.feedback_available} />
                       </TableCell>
                     </TableRow>
                 );
