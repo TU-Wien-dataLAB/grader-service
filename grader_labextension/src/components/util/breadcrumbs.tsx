@@ -17,8 +17,8 @@ export const Page = ({id}: {id: string}) => {
   storeString(`${id}-react-router-path`, pathname);
 
   return (
-    <>
-      <RouterBreadcrumbs />
+    <> 
+      <RouterBreadcrumbs/> 
       <Outlet />
     </>
   );
@@ -60,8 +60,8 @@ export const RouterBreadcrumbs = () => {
     >
       {links.map((value, index) => {
         const last = index === links.length - 1;
-        const to = links.slice(0, index + 1).join('').replace(/\/$/, "");
-        const samePath =  to === pathname; // e.g. happens if last path adds nothing to link (second to last crumb also points to same page)
+        const to = links.slice(0, index + 1).join('');
+        const samePath =  to.replace(/\/$/, "") === pathname; // e.g. happens if last path adds nothing to link (second to last crumb also points to same page)
         return last || samePath ? (
           <Typography color='text.primary' key={to}>
             {crumbs[index]}
