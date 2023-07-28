@@ -338,7 +338,7 @@ export const Files = (props: IFilesProps) => {
         subheaderTypographyProps={{ display: 'inline', ml: 2 }}
       />
 
-      <CardContent sx={{ height: '256px', overflowY: 'auto' }}>
+      <CardContent sx={{ overflowY: 'auto' }}>
         <Tabs
           variant="fullWidth"
           value={selectedDir}

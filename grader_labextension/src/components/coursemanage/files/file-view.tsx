@@ -40,22 +40,15 @@ export const FileView = () => {
     updateGitLog();
   }, [assignmentState]);
 
-  return <Box>
+  return (
+  <Box>
     <SectionTitle title={'Files'}></SectionTitle>
     <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-      <Grid container spacing={2} alignItems='stretch'>
-        <Grid item xs={12} md={6} lg={5}>
-          <Files
+    <Files
             lecture={lecture}
             assignment={assignmentState}
             onAssignmentChange={onAssignmentChange}
-            updateGitLog={updateGitLog}
-          />
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <GitLog gitLogs={gitLogs} />
-        </Grid>
-      </Grid>
+            updateGitLog={updateGitLog} />
     </Box>
-  </Box>;
-};
+  </Box>
+)};

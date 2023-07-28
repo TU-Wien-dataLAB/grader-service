@@ -5,7 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Badge, BottomNavigation, BottomNavigationAction, Box, Paper } from '@mui/material';
+import { Badge, Box, Tab, Tabs } from '@mui/material';
+import PropTypes from 'prop-types';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
@@ -15,6 +16,40 @@ import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
 import { Submission } from '../../model/submission';
 import { Link, Outlet, useMatch, useParams, useRouteLoaderData } from 'react-router-dom';
+
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`vertical-tabpanel-${index}`}
+      aria-labelledby={`vertical-tab-${index}`}
+      {...other}
+      
+    >
+      {value === index && (
+        <Box component="main">
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
+TabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.number.isRequired,
+  value: PropTypes.number.isRequired,
+};
+
+function a11yProps(index) {
+  return {
+    id: `vertical-tab-${index}`,
+    'aria-controls': `vertical-tabpanel-${index}`,
+  };
+}
 
 export interface IAssignmentModalProps {
   root: HTMLElement;
@@ -36,55 +71,29 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const match = useMatch(`/lecture/${params.lid}/assignment/${params.aid}/*`);
   const tab = match.params['*'];
 
-  // const [navigation, setNavigation] = React.useState(0);
-  // Note: maybe this should be done with handles as well
-  let navigation = -1;
-  if (tab === "") {
-    navigation = 0;
-  } else if (tab.indexOf('files') !== -1) {
-    navigation = 1;
-  } else if (tab.indexOf('submissions') !== -1) {
-    navigation = 2;
-  } else if (tab.indexOf('stats') !== -1) {
-    navigation = 3;
-  } else if (tab.indexOf('settings') !== -1) {
-    navigation = 4;
-  } else {
-    throw 'incorrect tab name';
-  }
 
+const [value, setValue] = React.useState(0);
 
-  // TODO: fix layout of content and navigation! The absolute positioning of the boxes leads to unresponsive breadcrumbs because the box is at top:0
-  //  no magic numbers anymore!
-  return (
-    <Box>
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 58,
-          top: 35,
-          left: 0,
-          right: 0,
-          overflowY: 'auto'
-        }}
-      >
-        <Outlet />
+const handleChange = (event, newValue) => {
+  setValue(newValue);
+};
 
-      </Box>
-
-      <Paper
-        sx={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
-        elevation={3}
-      >
-        <BottomNavigation
-          showLabels
-          value={navigation}
-        >
-          <BottomNavigationAction label='Overview' icon={<DashboardIcon />} component={Link as any} to={''} />
-          <BottomNavigationAction label='Files' icon={<FolderIcon />} component={Link as any} to={'files'} />
-          <BottomNavigationAction
-            label='Submissions'
-            icon={
+return (
+  
+  <Box
+    sx={{ flexGrow: 1, bgcolor: 'background.paper', display: "flex", height: 400 }}
+  >
+    <Tabs
+      orientation="vertical"
+      value={value}
+      onChange={handleChange}
+      sx={{ borderRight: 1, borderColor: 'divider', minWidth:150, marginTop: 5}}
+    >
+      <Tab label="Overview" icon={<DashboardIcon/>} iconPosition='start' 
+            {...a11yProps(0)} component={Link as any} to={''}/>
+      <Tab label="Files" icon={<FolderIcon/>} iconPosition='start' 
+            {...a11yProps(1)} component={Link as any} to={'files'}/>
+      <Tab label="Submissions"  icon={
               <Badge
                 color='secondary'
                 badgeContent={latestSubmissions?.length}
@@ -92,13 +101,29 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
               >
                 <FormatListNumberedIcon />
               </Badge>
-            }
-            component={Link as any} to={'submissions'}
-          />
-          <BottomNavigationAction label='Stats' icon={<QueryStatsIcon />} component={Link as any} to={'stats'} />
-          <BottomNavigationAction label='Settings' icon={<SettingsIcon />} component={Link as any} to={'settings'} />
-        </BottomNavigation>
-      </Paper>
-    </Box>
-  );
+            } 
+            iconPosition='start'{...a11yProps(2)} component={Link as any} to={'submissions'}/>
+      <Tab label="Stats" icon={<QueryStatsIcon/>} iconPosition='start' 
+            {...a11yProps(3)} component={Link as any} to={'stats'} />
+      <Tab label="Settings" icon={<SettingsIcon/>} iconPosition='start' 
+            {...a11yProps(4)} component={Link as any} to={'settings'}/>
+    </Tabs>
+    <TabPanel value={value} index={0} >
+      <Outlet/>
+    </TabPanel>
+    <TabPanel value={value} index={1}>
+      <Outlet/>
+    </TabPanel>
+    <TabPanel value={value} index={2}>
+      <Outlet/>
+    </TabPanel>
+    <TabPanel value={value} index={3}>
+      <Outlet/>
+    </TabPanel>
+    <TabPanel value={value} index={4}>
+      <Outlet/>
+    </TabPanel>
+  </Box>
+);
+    
 };
