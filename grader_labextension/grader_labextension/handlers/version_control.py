@@ -124,7 +124,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
             status = git_service.check_remote_status(f"grader_{repo}", "main")
         except GitError as e:
             self.log.error(e)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
         self.write(status.name)
 
 
@@ -185,7 +185,7 @@ class GitLogHandler(ExtensionBaseHandler):
                 logs = []
         except GitError as e:
             self.log.error(e)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
 
         self.write(json.dumps(logs))
 
@@ -415,7 +415,7 @@ class PushHandler(ExtensionBaseHandler):
                 return
             except (KeyError, IndexError) as e:
                 self.log.error(e)
-                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
             except HTTPClientError as e:
                 self.log.error(e.response)
                 raise HTTPError(e.code, reason=e.response.reason)
@@ -509,7 +509,7 @@ class NotebookAccessHandler(ExtensionBaseHandler):
             username = self.get_current_user()["name"]
         except TypeError as e:
             self.log.error(e)
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=e)
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e))
 
         url = f'/user/{username}/lab/tree/{lecture["code"]}/{assignment["id"]}/{quote(notebook_name)}'
         self.log.info(f"Redirecting to {url}")

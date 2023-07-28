@@ -27,15 +27,16 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
           return;
         }
         setLecture(l);
+        if (l === null) {
+            return;
+        }
+        const assignmentIdIndex = lectureSubPaths + 2;
+        getAssignment(l.id, +props.notebookPaths[assignmentIdIndex]).then(response => {
+          setAssignment(response);
+        });
       });
     }
-    if (lecture === null) {
-      return;
-    }
-    getAssignment(lecture.id, +props.notebookPaths[lectureSubPaths + 2]).then(response => {
-      setAssignment(response);
-    });
-  }, [lecture]);
+  }, [props]);
 
   return (
     <Box>
