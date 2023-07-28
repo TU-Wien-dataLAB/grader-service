@@ -3,6 +3,7 @@ import { DeadlineComponent } from '../../util/deadline';
 import { getAllLectures } from '../../../services/lectures.service';
 import { getAssignment } from '../../../services/assignments.service';
 import { Box } from '@mui/material';
+import { lectureSubPaths } from '../../../services/file.service';
 
 export interface IDeadlineWrapperProps {
   notebookPaths: string[];
@@ -21,7 +22,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
   React.useEffect(() => {
     if (lecture === null) {
       getAllLectures().then(response => {
-        const l = response.find(l => l.code === props.notebookPaths[0]);
+        const l = response.find(l => l.code === props.notebookPaths[lectureSubPaths]);
         if (l === undefined) {
           return;
         }
@@ -31,7 +32,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
     if (lecture === null) {
       return;
     }
-    getAssignment(lecture.id, +props.notebookPaths[1]).then(response => {
+    getAssignment(lecture.id, +props.notebookPaths[lectureSubPaths + 2]).then(response => {
       setAssignment(response);
     });
   }, [lecture]);

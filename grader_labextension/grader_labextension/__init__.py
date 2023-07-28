@@ -10,10 +10,12 @@ import shutil
 import sys
 from pathlib import Path
 from grader_labextension.services.request import RequestService
+from grader_labextension.handlers.base_handler import HandlerConfig
 from jupyter_server.serverapp import ServerApp, ServerWebApplication
 from traitlets.config.loader import Config
 
 from ._version import __version__
+
 
 HERE = Path(__file__).parent.resolve()
 
@@ -40,16 +42,18 @@ def validate_system_environment():
         raise RuntimeError("No git executable found! Git is necessary to run the extension!")
 
 
-def setup_handlers(web_app: ServerWebApplication, config: Config):
+def setup_handlers(web_app: ServerWebApplication, config: Config, log: logging.Logger):
     host_pattern = ".*$"
     # RequestService.config = web_app.config
     base_url = web_app.settings["base_url"]
-    log = logging.getLogger()
-    log.info("#######################################################################")
-    log.info(f'{web_app.settings["server_root_dir"]=}')
-    log.info("base_url: " + base_url)
+    settings = web_app.settings
+    if 'page_config_data' not in settings:
+        settings['page_config_data'] = {}
+    handler_config = HandlerConfig.instance(config=config)
+    settings['page_config_data']["lectures_base_path"] = handler_config.lectures_base_path
+    log.info(web_app.settings)
+
     handlers = HandlerPathRegistry.handler_list(base_url=base_url + "grader_labextension")
-    log.info([str(h[0]) for h in handlers])
     web_app.add_handlers(host_pattern, handlers)
 
 
@@ -67,6 +71,6 @@ def _load_jupyter_server_extension(server_app: ServerApp):
     server_app: jupyterlab.labapp.LabApp
         JupyterLab application instance
     """
-
-    setup_handlers(server_app.web_app, server_app.config)
+    server_app.log.info(f"Config paths: {server_app.config_file_paths}")
+    setup_handlers(server_app.web_app, server_app.config, server_app.log)
     server_app.log.info("Registered grading extension at URL path /grader_labextension")

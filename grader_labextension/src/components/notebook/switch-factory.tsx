@@ -11,13 +11,14 @@ import { CreationModeSwitch } from './create-assignment/creation-switch';
 import { Validator } from './create-assignment/validator';
 import { GradingModeSwitch } from './manual-grading/grading-switch';
 import { IModeSwitchProps } from './slider';
+import { lectureSubPaths } from '../../services/file.service';
 
 export class SwitchModeFactory {
   public static getSwitch(props: IModeSwitchProps): JSX.Element {
     const paths = props.notebookpanel.context.contentsModel.path.split('/');
-    const path = paths[0];
+    const path = paths[lectureSubPaths + 1];
     const permissions = UserPermissions.getPermissions();
-    const lecturecode = paths[1];
+    const lecturecode = paths[lectureSubPaths];
     let hasPermission = false;
     if (permissions.hasOwnProperty(lecturecode)) {
       hasPermission = permissions[lecturecode] !== Scope.student;

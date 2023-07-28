@@ -25,6 +25,7 @@ import GradingIcon from '@mui/icons-material/Grading';
 import { Submission } from '../../../model/submission';
 import { RepoType } from '../../util/repo-type';
 import { enqueueSnackbar } from 'notistack';
+import { lectureBasePath } from '../../../services/file.service';
 
 /**
  * Props for Files.
@@ -50,7 +51,7 @@ export const Files = (
     handleAgree: null,
     handleDisagree: null
   });
-  const path = `${props.lecture.code}/${props.assignment.id}`;
+  const path = `${lectureBasePath}/${props.lecture.code}/assignments/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
    * @param repo input which repository should be fetched

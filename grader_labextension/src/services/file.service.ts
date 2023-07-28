@@ -12,6 +12,14 @@ import {HTTPMethod, request} from "./request.service";
 import {Lecture} from "../model/lecture";
 import {RepoType} from "../components/util/repo-type";
 import IModel = Contents.IModel;
+import { PageConfig } from '@jupyterlab/coreutils';
+
+// remove slashes at beginning and end of base path if they exist
+export const lectureBasePath = PageConfig.getOption("lectures_base_path").replace(/^\/|\/$/g, '');
+
+// the number of sub paths in lecture base path e.g. grader/Lectures -> 2
+export const lectureSubPaths: number = lectureBasePath.split("/").length
+
 
 export const getFiles = async (path: string): Promise<IModel[]> => {
   if (path === null) return [];

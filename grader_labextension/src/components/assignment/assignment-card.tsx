@@ -29,7 +29,7 @@ import {
 import { DeadlineComponent } from '../util/deadline';
 import { AssignmentComponent } from './assignment';
 import { Submission } from '../../model/submission';
-import { getFiles } from '../../services/file.service';
+import { getFiles, lectureBasePath } from '../../services/file.service';
 import { CardDescriptor } from '../util/card-descriptor';
 import {
   deleteKey,
@@ -73,7 +73,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
         setHasFeedback(feedback);
       }
     );
-    getFiles(`${props.lecture.code}/${assignment.id}`).then(files => {
+    getFiles(`${lectureBasePath}/${props.lecture.code}/assignments/${assignment.id}`).then(files => {
       if (files.length === 0) {
         pullAssignment(props.lecture.id, assignment.id, 'assignment');
       }
@@ -116,7 +116,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
           bgcolor: assignment.status === 'complete' ? '#F1F1F1' : 'white'
         }}
         onClick={async () => {
-          await openBrowser(`${props.lecture.code}/${assignment.id}`);
+          await openBrowser(`${lectureBasePath}/${props.lecture.code}/assignments/${assignment.id}`);
           setDisplayAssignment(true);
           storeNumber('a-opened-assignment', assignment.id);
         }}

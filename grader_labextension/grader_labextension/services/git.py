@@ -55,11 +55,11 @@ class GitService(Configurable):
         self.assignment_id = assignment_id
         self.repo_type = repo_type
         if self.repo_type == "assignment" or force_user_repo:
-            self.path = os.path.join(self.git_root_dir, self.lecture_code, str(self.assignment_id))
+            self.path = os.path.join(self.git_root_dir, self.lecture_code, "assignments", str(self.assignment_id))
         elif self.repo_type == "edit":
-            self.path = os.path.join(self.git_root_dir, self.repo_type, self.lecture_code, str(self.assignment_id), str(sub_id))
+            self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id), str(sub_id))
         else:
-            self.path = os.path.join(self.git_root_dir, self.repo_type, self.lecture_code, str(self.assignment_id))
+            self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id))
             
         self.log.info(f"New git service working in {self.path}")
         os.makedirs(self.path, exist_ok=True)
