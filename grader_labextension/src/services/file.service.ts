@@ -15,11 +15,15 @@ import IModel = Contents.IModel;
 import { PageConfig } from '@jupyterlab/coreutils';
 
 // remove slashes at beginning and end of base path if they exist
-export const lectureBasePath = PageConfig.getOption("lectures_base_path").replace(/^\/|\/$/g, '');
+export let lectureBasePath = PageConfig.getOption("lectures_base_path").replace(/^\/|\/$/g, '');
+
+// append / so that lectureBasePath can be prepended to any string and becomes a valid path
+if (lectureBasePath !== '') {
+  lectureBasePath += '/'
+}
 
 // the number of sub paths in lecture base path e.g. grader/Lectures -> 2
-export const lectureSubPaths: number = lectureBasePath.split("/").length
-
+export const lectureSubPaths: number = lectureBasePath.split("/").reduce((acc, v) => (v.length > 0) ? acc + 1: acc, 0)
 
 export const getFiles = async (path: string): Promise<IModel[]> => {
   if (path === null) return [];

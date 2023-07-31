@@ -36,8 +36,8 @@ from grader_labextension.registry import HandlerPathRegistry
 
 
 def validate_system_environment():
-    if sys.version_info.major < 3 or sys.version_info.minor < 7:
-        raise RuntimeError("This extension needs Python version 3.7 or above to run!")
+    if sys.version_info.major < 3 or sys.version_info.minor < 10:
+        raise RuntimeError("This extension needs Python version 3.10 or above to run!")
     if shutil.which("git") is None:
         raise RuntimeError("No git executable found! Git is necessary to run the extension!")
 

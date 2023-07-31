@@ -37,7 +37,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
   const [gradeBook, setGradeBook] = React.useState(null);
 
   const [path, setPath] = React.useState(
-    `${lectureBasePath}/${props.lecture.code}/manualgrade/${props.assignment.id}/${props.submission.id}`
+    `${lectureBasePath}${props.lecture.code}/manualgrade/${props.assignment.id}/${props.submission.id}`
   );
 
   const [showDialog, setShowDialog] = React.useState(false);

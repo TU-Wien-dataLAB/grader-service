@@ -73,7 +73,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
         setHasFeedback(feedback);
       }
     );
-    getFiles(`${lectureBasePath}/${props.lecture.code}/assignments/${assignment.id}`).then(files => {
+    getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${assignment.id}`).then(files => {
       if (files.length === 0) {
         pullAssignment(props.lecture.id, assignment.id, 'assignment');
       }
@@ -116,7 +116,7 @@ export const AssignmentCardComponent = (props: IAssignmentComponentProps) => {
           bgcolor: assignment.status === 'complete' ? '#F1F1F1' : 'white'
         }}
         onClick={async () => {
-          await openBrowser(`${lectureBasePath}/${props.lecture.code}/assignments/${assignment.id}`);
+          await openBrowser(`${lectureBasePath}${props.lecture.code}/assignments/${assignment.id}`);
           setDisplayAssignment(true);
           storeNumber('a-opened-assignment', assignment.id);
         }}

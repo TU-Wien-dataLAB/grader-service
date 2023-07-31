@@ -68,7 +68,7 @@ export const Files = (props: IFilesProps) => {
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
   
-  openBrowser(`${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`)
+  openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
 
   const [showDialog, setShowDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -96,7 +96,7 @@ export const Files = (props: IFilesProps) => {
     repoStatus === 'push_needed' || repoStatus === 'divergent';
 
   useEffect(() => {
-    const srcPath = `${lectureBasePath}/${lecture.code}/source/${assignment.id}`;
+    const srcPath = `${lectureBasePath}${lecture.code}/source/${assignment.id}`;
     GlobalObjects.docManager.services.contents.fileChanged.connect(
       (sender: Contents.IManager, change: Contents.IChangedArgs) => {
         const { oldValue, newValue } = change;
@@ -311,7 +311,7 @@ export const Files = (props: IFilesProps) => {
   const newUntitled = async () => {
     const res = await GlobalObjects.docManager.newUntitled({
       type: 'notebook',
-      path: `${lectureBasePath}/${lecture.code}/source/${assignment.id}`
+      path: `${lectureBasePath}${lecture.code}/source/${assignment.id}`
     });
     await GlobalObjects.docManager.openOrReveal(res.path);
   };
@@ -338,25 +338,24 @@ export const Files = (props: IFilesProps) => {
           }
           subheaderTypographyProps={{ display: 'inline', ml: 2 }}
         />
-
-        <CardContent sx={{ overflowY: 'auto' }}>
-          <Tabs
-            variant="fullWidth"
-            value={selectedDir}
-            onChange={(e, dir) => handleSwitchDir(dir)}
-          >
-            <Tab label="Source" value="source" />
-            <Tab label="Release" value="release" />
-          </Tabs>
-          <Box height={200} sx={{ overflowY: 'auto' }}>
-            <FilesList
-              path={`${lectureBasePath}/${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
-              reloadFiles={reloadFilesToggle}
-            />
-          </Box>
-        </CardContent>
-        <CardActions>
-          <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
+      <CardContent sx={{ overflowY: 'auto' }}>
+        <Tabs
+          variant="fullWidth"
+          value={selectedDir}
+          onChange={(e, dir) => handleSwitchDir(dir)}
+        >
+          <Tab label="Source" value="source" />
+          <Tab label="Release" value="release" />
+        </Tabs>
+        <Box height={200} sx={{ overflowY: 'auto' }}>
+          <FilesList
+            path={`${lectureBasePath}${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
+            reloadFiles={reloadFilesToggle}
+          />
+        </Box>
+      </CardContent>
+      <CardActions>
+        <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
             <Tooltip
               title={`Commit Changes${
                 isCommitOverwrite() ? ' (Overwrites remote files!)' : ''
@@ -398,35 +397,33 @@ export const Files = (props: IFilesProps) => {
               <AddBoxIcon />
             </IconButton>
           </Tooltip>
-
-          <Tooltip title={'Show in File-Browser'}>
-            <IconButton
-              sx={{ mt: -1, pt: 0, pb: 0 }}
-              color={'primary'}
-              onClick={() =>
-                openBrowser(`${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`)
-              }
-            >
-              <OpenInBrowserIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={'Open in Terminal'}>
-            <IconButton
-              sx={{ mt: -1, pt: 0, pb: 0 }}
-              color={'primary'}
-              onClick={() =>
-                openTerminal(
-                  `${serverRoot}/${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`
-                )
-              }
-            >
-              <TerminalIcon />
-            </IconButton>
-          </Tooltip>
-        </CardActions>
-        <AgreeDialog open={showDialog} {...dialogContent} />
-      </Card>
-    </Box>
-
+        <Tooltip title={'Show in File-Browser'}>
+          <IconButton
+            sx={{ mt: -1, pt: 0, pb: 0 }}
+            color={'primary'}
+            onClick={() =>
+              openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
+            }
+          >
+            <OpenInBrowserIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={'Open in Terminal'}>
+          <IconButton
+            sx={{ mt: -1, pt: 0, pb: 0 }}
+            color={'primary'}
+            onClick={() =>
+              openTerminal(
+                `${serverRoot}/${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`
+              )
+            }
+          >
+            <TerminalIcon />
+          </IconButton>
+        </Tooltip>
+      </CardActions>
+      <AgreeDialog open={showDialog} {...dialogContent} />
+    </Card>
+  </Box>
   );
 };

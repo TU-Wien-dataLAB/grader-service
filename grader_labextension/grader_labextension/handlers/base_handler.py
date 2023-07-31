@@ -68,7 +68,7 @@ class ExtensionBaseHandler(APIHandler):
         super().__init__(*args, *kwargs)
         self.root_dir = os.path.expanduser(
             os.path.join(self.settings["server_root_dir"], HandlerConfig.instance().lectures_base_path)
-        )
+        ).rstrip("/")
 
     @property
     def service_base_url(self):

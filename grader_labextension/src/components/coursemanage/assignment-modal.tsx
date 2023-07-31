@@ -82,7 +82,6 @@ return (
       <Tab label="Settings" icon={<SettingsIcon/>} iconPosition='start' 
             {...a11yProps(4)} component={Link as any} to={'settings'}/>
     </Tabs>
-    
     <Box sx={{ flexGrow: 1, overflowY: 'scroll'}}>
       <Outlet />
     </Box>
