@@ -13,7 +13,8 @@ import { storeString } from '../../services/storage.service';
 
 
 export const Page = ({id}: {id: string}) => {
-  const pathname = useLocation().pathname
+  const pathname = "/" + useLocation().pathname.split("/").filter(v => v.length > 0).slice(0,2).join("/")
+  console.log(pathname)
   storeString(`${id}-react-router-path`, pathname);
 
   return (

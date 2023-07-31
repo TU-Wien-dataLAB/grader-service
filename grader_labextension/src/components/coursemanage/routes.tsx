@@ -85,7 +85,7 @@ function ExamplePage({ to }) {
 export const getRoutes = (root: HTMLElement) => {
   const routes = createRoutesFromElements(
     // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
-    <Route element={<Page id={"course-manage"} />} errorElement={<ErrorPage />}>
+    <Route element={<Page id={"course-manage"} />} errorElement={<ErrorPage id={"course-manage"}/>}>
       <Route
         id={'root'}
         path={'/*'}
