@@ -21,7 +21,7 @@ import { useRef } from 'react';
 function a11yProps(index) {
   return {
     id: `vertical-tab-${index}`,
-    'aria-controls': `vertical-tabpanel-${index}`,
+    'aria-controls': `vertical-tabpanel-${index}`
   };
 }
 
@@ -52,40 +52,41 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
     setValue(newValue);
   };
 
-return (
-  
-  <Box
-    sx={{ bgcolor: 'background.paper', display: "flex"}}
-  >
-    <Tabs
-      orientation="vertical"
-      value={value}
-      onChange={handleChange}
-      sx={{ borderRight: 1, borderColor: 'divider', minWidth: '150px', marginTop: 5}}
+  return (
+
+    <Box
+      sx={{ bgcolor: 'background.paper', display: 'flex' }}
     >
-      <Tab label="Overview" icon={<DashboardIcon/>} iconPosition='start' 
-            {...a11yProps(0)} component={Link as any} to={''}/>
-      <Tab label="Files" icon={<FolderIcon/>} iconPosition='start' 
-            {...a11yProps(1)} component={Link as any} to={'files'}/>
-      <Tab label="Submissions"  icon={
-              <Badge
-                color='secondary'
-                badgeContent={latestSubmissions?.length}
-                showZero={latestSubmissions !== null}
-              >
-                <FormatListNumberedIcon />
-              </Badge>
-            } 
-            iconPosition='start'{...a11yProps(2)} component={Link as any} to={'submissions'}/>
-      <Tab label="Stats" icon={<QueryStatsIcon/>} iconPosition='start' 
-            {...a11yProps(3)} component={Link as any} to={'stats'} />
-      <Tab label="Settings" icon={<SettingsIcon/>} iconPosition='start' 
-            {...a11yProps(4)} component={Link as any} to={'settings'}/>
-    </Tabs>
-    <Box sx={{ flexGrow: 1, overflowY: 'scroll'}}>
-      <Outlet />
+      <Tabs
+        orientation='vertical'
+        value={value}
+        onChange={handleChange}
+        sx={{ borderRight: 1, borderColor: 'divider', minWidth: '200px', marginTop: 5 }}
+      >
+        <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+             {...a11yProps(0)} component={Link as any} to={''} />
+        <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+             {...a11yProps(1)} component={Link as any} to={'files'} />
+        <Tab label='Submissions' icon={
+          <Badge
+            color='secondary'
+            badgeContent={latestSubmissions?.length}
+            showZero={latestSubmissions !== null}
+          >
+            <FormatListNumberedIcon />
+          </Badge>
+        }
+             iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
+             to={'submissions'} />
+        <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
+             {...a11yProps(3)} component={Link as any} to={'stats'} />
+        <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
+             {...a11yProps(4)} component={Link as any} to={'settings'} />
+      </Tabs>
+      <Box sx={{ flexGrow: 1, overflowY: 'scroll' }}>
+        <Outlet />
+      </Box>
     </Box>
-  </Box>
-);
-    
+  );
+
 };
