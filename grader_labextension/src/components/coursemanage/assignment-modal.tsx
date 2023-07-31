@@ -18,31 +18,6 @@ import { Submission } from '../../model/submission';
 import { Link, Outlet, useMatch, useParams, useRouteLoaderData } from 'react-router-dom';
 import { useRef } from 'react';
 
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
-
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`vertical-tabpanel-${index}`}
-      aria-labelledby={`vertical-tab-${index}`}
-      {...other}
-      
-      
-    >
-      <Outlet/>
-    </div>
-  );
-}
-
-TabPanel.propTypes = {
-  children: PropTypes.node,
-  index: PropTypes.number.isRequired,
-  value: PropTypes.number.isRequired,
-};
-
 function a11yProps(index) {
   return {
     id: `vertical-tab-${index}`,
@@ -108,17 +83,8 @@ return (
             {...a11yProps(4)} component={Link as any} to={'settings'}/>
     </Tabs>
     
-    <Box sx={{ flexGrow: 1}}>
-      <TabPanel value={value} index={0} >
-      </TabPanel>
-      <TabPanel value={value} index={1}>
-      </TabPanel>
-      <TabPanel value={value} index={2}>
-      </TabPanel>
-      <TabPanel value={value} index={3}>
-      </TabPanel>
-      <TabPanel value={value} index={4}>
-      </TabPanel>
+    <Box sx={{ flexGrow: 1, overflowY: 'scroll'}}>
+      <Outlet />
     </Box>
   </Box>
 );

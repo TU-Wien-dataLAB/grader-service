@@ -1,6 +1,6 @@
 import { IStatsProps } from './stats';
 import React from 'react';
-import { Card, CardContent, CardHeader } from '@mui/material';
+import { Box, Card, CardContent, CardHeader } from '@mui/material';
 import {
   PolarAngleAxis,
   RadialBar,
@@ -78,30 +78,27 @@ export const AssignmentScore = (props: IAssignmentScoreProps) => {
       />
       <CardContent
         sx={{
-          height: '70%',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 0.5
+          height: '70%'
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart cx="50%" cy="50%">
-            <text fontSize={40} x={'50%'} y={'50%'} dy={12} textAnchor="middle">
-              {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(2)}`}
-            </text>
-            <Tooltip content={<AssignmentScoreTooltip />} />
-            <Pie
-              data={data}
-              dataKey="points"
-              nameKey="notebook"
-              innerRadius={'65%'}
-              outerRadius={'80%'}
-              paddingAngle={5}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <Box sx={{ height: '100%'}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart cx="50%" cy="50%">
+                <text fontSize={40} x={'50%'} y={'50%'} dy={12} textAnchor="middle">
+                  {`${data.reduce((acc, v) => acc + v.points, 0).toFixed(2)}`}
+                </text>
+                <Tooltip content={<AssignmentScoreTooltip />} />
+                <Pie
+                  data={data}
+                  dataKey="points"
+                  nameKey="notebook"
+                  innerRadius={'65%'}
+                  outerRadius={'80%'}
+                  paddingAngle={5}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+        </Box>
       </CardContent>
     </Card>
   );
