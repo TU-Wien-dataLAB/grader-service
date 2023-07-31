@@ -16,9 +16,11 @@ import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
 import { Submission } from '../../model/submission';
 import { Link, Outlet, useMatch, useParams, useRouteLoaderData } from 'react-router-dom';
+import { useRef } from 'react';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
+
 
   return (
     <div
@@ -28,12 +30,9 @@ function TabPanel(props) {
       aria-labelledby={`vertical-tab-${index}`}
       {...other}
       
+      
     >
-      {value === index && (
-        <Box component="main">
-          {children}
-        </Box>
-      )}
+      <Outlet/>
     </div>
   );
 }
@@ -72,22 +71,22 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const tab = match.params['*'];
 
 
-const [value, setValue] = React.useState(0);
+  const [value, setValue] = React.useState(0);
 
-const handleChange = (event, newValue) => {
-  setValue(newValue);
-};
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
 
 return (
   
   <Box
-    sx={{ flexGrow: 1, bgcolor: 'background.paper', display: "flex", height: 400 }}
+    sx={{ bgcolor: 'background.paper', display: "flex"}}
   >
     <Tabs
       orientation="vertical"
       value={value}
       onChange={handleChange}
-      sx={{ borderRight: 1, borderColor: 'divider', minWidth:150, marginTop: 5}}
+      sx={{ borderRight: 1, borderColor: 'divider', minWidth: '150px', marginTop: 5}}
     >
       <Tab label="Overview" icon={<DashboardIcon/>} iconPosition='start' 
             {...a11yProps(0)} component={Link as any} to={''}/>
@@ -108,21 +107,19 @@ return (
       <Tab label="Settings" icon={<SettingsIcon/>} iconPosition='start' 
             {...a11yProps(4)} component={Link as any} to={'settings'}/>
     </Tabs>
-    <TabPanel value={value} index={0} >
-      <Outlet/>
-    </TabPanel>
-    <TabPanel value={value} index={1}>
-      <Outlet/>
-    </TabPanel>
-    <TabPanel value={value} index={2}>
-      <Outlet/>
-    </TabPanel>
-    <TabPanel value={value} index={3}>
-      <Outlet/>
-    </TabPanel>
-    <TabPanel value={value} index={4}>
-      <Outlet/>
-    </TabPanel>
+    
+    <Box sx={{ flexGrow: 1}}>
+      <TabPanel value={value} index={0} >
+      </TabPanel>
+      <TabPanel value={value} index={1}>
+      </TabPanel>
+      <TabPanel value={value} index={2}>
+      </TabPanel>
+      <TabPanel value={value} index={3}>
+      </TabPanel>
+      <TabPanel value={value} index={4}>
+      </TabPanel>
+    </Box>
   </Box>
 );
     

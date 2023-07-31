@@ -7,9 +7,9 @@
 import { Assignment } from '../../../model/assignment';
 import {
   Box,
-  Button, Card, CardContent, CardHeader,
-  Paper,
+  Button, 
   Step,
+  StepContent,
   StepLabel,
   Stepper, Tooltip,
   Typography
@@ -19,7 +19,6 @@ import NewReleasesRoundedIcon from '@mui/icons-material/NewReleasesRounded';
 import TaskIcon from '@mui/icons-material/Task';
 import UndoIcon from '@mui/icons-material/Undo';
 import TerminalIcon from '@mui/icons-material/Terminal';
-
 import { AgreeDialog, ReleaseDialog } from '../../util/dialog';
 import {
   pushAssignment,
@@ -27,6 +26,8 @@ import {
 } from '../../../services/assignments.service';
 import { Lecture } from '../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
+import { DeadlineComponent } from '../../util/deadline';
+
 
 /**
  * Props for AssignmentStatusComponent.
@@ -259,18 +260,16 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
   };
 
   return (
-    <Card elevation={3}>
-      <CardHeader title='Overview' />
-      <CardContent
-        sx={{
-          alignItems: { xs: 'center' },
+    <Box
+      sx = {{
+      alignItems: { xs: 'center' },
           minWidth: '150px',
           overflowY: 'auto'
-        }}
-      >
-        <Stepper
+    }}>
+      <Typography fontSize={24}> Overview </Typography>
+      <Stepper
           activeStep={getActiveStep(assignment.status)}
-          orientation='horizontal'
+          orientation='vertical'
         >
           {steps.map((step, index) => (
             <Step key={step.label}>
@@ -283,14 +282,21 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
               >
                 {step.label}
               </StepLabel>
+              <StepContent>
+                <Typography>
+                  {steps[getActiveStep(assignment.status)].description}
+                 </Typography>
+              </StepContent>
             </Step>
           ))}
         </Stepper>
-        <Typography>
-          {steps[getActiveStep(assignment.status)].description}
-        </Typography>
-      </CardContent>
-      <AgreeDialog open={showDialog} {...dialogContent} />
-    </Card>
+        <AgreeDialog open={showDialog} {...dialogContent} />
+        <Typography sx={{mt: 5, fontSize: 20}}> Deadline </Typography>
+        <DeadlineComponent due_date={props.assignment.due_date} 
+                          compact={false} 
+                          component={'chip'}
+                          sx={{mt: 2}}/>
+    </Box>
+   
   );
 };

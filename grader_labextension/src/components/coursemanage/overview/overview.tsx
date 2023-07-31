@@ -11,11 +11,7 @@ import { Lecture } from '../../../model/lecture';
 import { SectionTitle } from '../../util/section-title';
 import { OverviewCard } from './overview-card';
 import { Box, Grid } from '@mui/material';
-import { Files } from '../files/files';
-import { GitLog } from '../files/git-log';
 import { AssignmentStatus } from './assignment-status';
-import { RepoType } from '../../util/repo-type';
-import { getGitLog, IGitLogObject } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
 import { useRouteLoaderData } from 'react-router-dom';
 
@@ -43,20 +39,20 @@ export const OverviewComponent = () => {
       <SectionTitle title={assignmentState.name}></SectionTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
         <Grid container spacing={2} alignItems='stretch'>
-          <Grid item xs={4}>
-            <OverviewCard
+          <Grid item xs={7}>
+          <AssignmentStatus
+              lecture={lecture}
+              assignment={assignmentState}
+              onAssignmentChange={onAssignmentChange}
+            />
+          </Grid>
+          <Grid item xs={5}>
+          <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
               allSubmissions={allSubmissions}
               latestSubmissions={latestSubmissions}
               users={users}
-            />
-          </Grid>
-          <Grid item xs={8}>
-            <AssignmentStatus
-              lecture={lecture}
-              assignment={assignmentState}
-              onAssignmentChange={onAssignmentChange}
             />
           </Grid>
         </Grid>

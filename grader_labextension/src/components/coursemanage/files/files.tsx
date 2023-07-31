@@ -317,27 +317,27 @@ export const Files = (props: IFilesProps) => {
   };
 
   return (
-    <Card elevation={3}>
-      <CardHeader
-        title="Files"
-        titleTypographyProps={{ display: 'inline' }}
-        action={
-          <Tooltip title="Reload">
-            <IconButton aria-label="reload" onClick={() => reloadFiles()}>
-              <ReplayIcon />
-            </IconButton>
-          </Tooltip>
-        }
-        subheader={
-          repoStatus !== null && (
-            <Tooltip title={getRemoteStatusText(repoStatus)}>
-              {getStatusChip(repoStatus)}
+    <Box>
+      <Card elevation={3}>
+        <CardHeader
+          title="Files"
+          titleTypographyProps={{ display: 'inline' }}
+          action={
+            <Tooltip title="Reload">
+              <IconButton aria-label="reload" onClick={() => reloadFiles()}>
+                <ReplayIcon />
+              </IconButton>
             </Tooltip>
-          )
-        }
-        subheaderTypographyProps={{ display: 'inline', ml: 2 }}
-      />
-
+          }
+          subheader={
+            repoStatus !== null && (
+              <Tooltip title={getRemoteStatusText(repoStatus)}>
+                {getStatusChip(repoStatus)}
+              </Tooltip>
+            )
+          }
+          subheaderTypographyProps={{ display: 'inline', ml: 2 }}
+        />
       <CardContent sx={{ overflowY: 'auto' }}>
         <Tabs
           variant="fullWidth"
@@ -356,47 +356,47 @@ export const Files = (props: IFilesProps) => {
       </CardContent>
       <CardActions>
         <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
+            <Tooltip
+              title={`Commit Changes${
+                isCommitOverwrite() ? ' (Overwrites remote files!)' : ''
+              }`}
+            >
+              <Button
+                sx={{ mt: -1 }}
+                variant="outlined"
+                size="small"
+                color={isCommitOverwrite() ? 'error' : 'primary'}
+              >
+                <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
+                Push
+              </Button>
+            </Tooltip>
+          </CommitDialog>
           <Tooltip
-            title={`Commit Changes${
-              isCommitOverwrite() ? ' (Overwrites remote files!)' : ''
+            title={`Pull from Remote${
+              isPullOverwrite() ? ' (Overwrites local changes!)' : ''
             }`}
           >
             <Button
-              sx={{ mt: -1 }}
+              color={isPullOverwrite() ? 'error' : 'primary'}
+              sx={{ mt: -1, ml: 2 }}
+              onClick={() => handlePullAssignment()}
               variant="outlined"
               size="small"
-              color={isCommitOverwrite() ? 'error' : 'primary'}
             >
-              <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-              Push
+              <GetAppRoundedIcon fontSize="small" sx={{ mr: 1 }} />
+              Pull
             </Button>
           </Tooltip>
-        </CommitDialog>
-        <Tooltip
-          title={`Pull from Remote${
-            isPullOverwrite() ? ' (Overwrites local changes!)' : ''
-          }`}
-        >
-          <Button
-            color={isPullOverwrite() ? 'error' : 'primary'}
-            sx={{ mt: -1, ml: 2 }}
-            onClick={() => handlePullAssignment()}
-            variant="outlined"
-            size="small"
-          >
-            <GetAppRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-            Pull
-          </Button>
-        </Tooltip>
-        <Tooltip title={'Create new notebook.'}>
-          <IconButton
-            color={'primary'}
-            sx={{ mt: -1, ml: 2 }}
-            onClick={newUntitled}
-          >
-            <AddBoxIcon />
-          </IconButton>
-        </Tooltip>
+          <Tooltip title={'Create new notebook.'}>
+            <IconButton
+              color={'primary'}
+              sx={{ mt: -1, ml: 2 }}
+              onClick={newUntitled}
+            >
+              <AddBoxIcon />
+            </IconButton>
+          </Tooltip>
 
         <Tooltip title={'Show in File-Browser'}>
           <IconButton
@@ -425,5 +425,7 @@ export const Files = (props: IFilesProps) => {
       </CardActions>
       <AgreeDialog open={showDialog} {...dialogContent} />
     </Card>
+  </Box>
+
   );
 };
