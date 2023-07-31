@@ -41,14 +41,12 @@ export const FileView = () => {
   }, [assignmentState]);
 
   return (
-  <Box>
-    <SectionTitle title={'Files'}></SectionTitle>
-    <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
+  
+    <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
     <Files
             lecture={lecture}
             assignment={assignmentState}
             onAssignmentChange={onAssignmentChange}
             updateGitLog={updateGitLog} />
     </Box>
-  </Box>
 )};
