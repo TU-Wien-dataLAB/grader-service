@@ -1,7 +1,7 @@
 import { filterUserSubmissions, IStatsProps, IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
-import { Card, CardContent, CardHeader } from '@mui/material';
+import { Box, Card, CardContent, CardHeader } from '@mui/material';
 import {
   Legend,
   PolarAngleAxis,
@@ -112,34 +112,31 @@ export const GradingProgress = (props: IStatsSubComponentProps) => {
       />
       <CardContent
         sx={{
-          height: '70%',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 0.5
+          height: '70%'
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart
-            cx="50%"
-            cy="50%"
-            innerRadius="30%"
-            outerRadius="90%"
-            barSize={15}
-            data={data}
-          >
-            <PolarAngleAxis
-              type="number"
-              domain={[0, 1]}
-              angleAxisId={0}
-              tick={false}
-            />
-            <RadialBar background dataKey="value" angleAxisId={0} />
-            <Tooltip content={<GradingProgressTooltip />} />
-            <Legend layout="horizontal" verticalAlign="bottom" align="center" />
-          </RadialBarChart>
-        </ResponsiveContainer>
+          <Box sx={{ height: '100%'}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart
+                cx="50%"
+                cy="50%"
+                innerRadius="30%"
+                outerRadius="90%"
+                barSize={15}
+                data={data}
+              >
+                <PolarAngleAxis
+                  type="number"
+                  domain={[0, 1]}
+                  angleAxisId={0}
+                  tick={false}
+                />
+                <RadialBar background dataKey="value" angleAxisId={0} />
+                <Tooltip content={<GradingProgressTooltip />} />
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </Box>
       </CardContent>
     </Card>
   );
