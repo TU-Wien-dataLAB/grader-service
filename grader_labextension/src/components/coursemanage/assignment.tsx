@@ -112,7 +112,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       }
     );
 
-    getFiles(`${lectureBasePath}/${props.lecture.code}/source/${assignment.id}`).then(files => {
+    getFiles(`${lectureBasePath}${props.lecture.code}/source/${assignment.id}`).then(files => {
       setFiles(files);
     });
   }, [assignment]);
@@ -122,7 +122,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       <Card
         sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
         onClick={async () => {
-          await openBrowser(`${lectureBasePath}/${props.lecture.code}/source/${assignment.id}`);
+          await openBrowser(`${lectureBasePath}${props.lecture.code}/source/${assignment.id}`);
           setDisplaySubmissions(true);
           storeNumber('cm-opened-assignment', assignment.id);
         }}

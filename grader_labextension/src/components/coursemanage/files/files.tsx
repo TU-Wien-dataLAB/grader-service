@@ -68,7 +68,7 @@ export const Files = (props: IFilesProps) => {
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
   
-  openBrowser(`${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`)
+  openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
 
   const [showDialog, setShowDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -96,7 +96,7 @@ export const Files = (props: IFilesProps) => {
     repoStatus === 'push_needed' || repoStatus === 'divergent';
 
   useEffect(() => {
-    const srcPath = `${lectureBasePath}/${lecture.code}/source/${assignment.id}`;
+    const srcPath = `${lectureBasePath}${lecture.code}/source/${assignment.id}`;
     GlobalObjects.docManager.services.contents.fileChanged.connect(
       (sender: Contents.IManager, change: Contents.IChangedArgs) => {
         const { oldValue, newValue } = change;
@@ -311,7 +311,7 @@ export const Files = (props: IFilesProps) => {
   const newUntitled = async () => {
     const res = await GlobalObjects.docManager.newUntitled({
       type: 'notebook',
-      path: `${lectureBasePath}/${lecture.code}/source/${assignment.id}`
+      path: `${lectureBasePath}${lecture.code}/source/${assignment.id}`
     });
     await GlobalObjects.docManager.openOrReveal(res.path);
   };
@@ -349,7 +349,7 @@ export const Files = (props: IFilesProps) => {
         </Tabs>
         <Box height={200} sx={{ overflowY: 'auto' }}>
           <FilesList
-            path={`${lectureBasePath}/${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
+            path={`${lectureBasePath}${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
             reloadFiles={reloadFilesToggle}
           />
         </Box>
@@ -403,7 +403,7 @@ export const Files = (props: IFilesProps) => {
             sx={{ mt: -1, pt: 0, pb: 0 }}
             color={'primary'}
             onClick={() =>
-              openBrowser(`${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`)
+              openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
             }
           >
             <OpenInBrowserIcon />
@@ -415,7 +415,7 @@ export const Files = (props: IFilesProps) => {
             color={'primary'}
             onClick={() =>
               openTerminal(
-                `${serverRoot}/${lectureBasePath}/${lecture.code}/${selectedDir}/${assignment.id}`
+                `${serverRoot}/${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`
               )
             }
           >
