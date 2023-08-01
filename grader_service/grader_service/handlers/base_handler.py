@@ -393,8 +393,8 @@ class VersionHandler(GraderBaseHandler):
         self.write("1.0")
 
 
-def lti_username_convert(username):
-    return username.replace("e", "")
+def lti_username_convert(username: str) -> str:
+    return username
 
 
 @register_handler(r"\/", VersionSpecifier.V1)
