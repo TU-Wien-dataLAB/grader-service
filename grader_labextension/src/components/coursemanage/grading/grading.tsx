@@ -278,6 +278,7 @@ export default function GradingTable() {
     allSubmissions: Submission[],
     latestSubmissions: Submission[]
   };
+  const { bestSubmissions } = useRouteLoaderData('submissions') as { bestSubmissions: Submission[] };
 
   /**
    * Calculates chip color based on submission status.
@@ -298,24 +299,13 @@ export default function GradingTable() {
     return 'primary';
   };
 
-  // TODO: replace this
-  let rows = allSubmissions;
-
-  const switchShownSubmissions = (
-    event: React.MouseEvent<HTMLElement>,
-    value: 'none' | 'latest' | 'best'
-  ) => {
-    if (value !== null) {
-      setShownSubmissions(value);
-    }
-  };
-
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof Submission>('id');
   const [selected, setSelected] = React.useState<readonly number[]>([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [shownSubmissions, setShownSubmissions] = React.useState('none' as 'none' | 'latest' | 'best');
+  const [rows, setRows] = React.useState(allSubmissions);
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -324,6 +314,26 @@ export default function GradingTable() {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
+  };
+
+  const switchShownSubmissions = (
+    event: React.MouseEvent<HTMLElement>,
+    value: 'none' | 'latest' | 'best'
+  ) => {
+    if (value !== null) {
+      switch (value) {
+        case 'none':
+          setRows(allSubmissions);
+          break;
+        case 'latest':
+          setRows(latestSubmissions);
+          break;
+        case 'best':
+          setRows(bestSubmissions);
+          break;
+      }
+      setShownSubmissions(value);
+    }
   };
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -376,7 +386,7 @@ export default function GradingTable() {
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
       ),
-    [order, orderBy, page, rowsPerPage]
+    [order, orderBy, page, rowsPerPage, shownSubmissions]
   );
 
   return (
