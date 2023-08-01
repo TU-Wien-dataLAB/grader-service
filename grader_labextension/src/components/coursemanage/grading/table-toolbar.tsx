@@ -11,19 +11,24 @@ import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
 import { PageConfig } from '@jupyterlab/coreutils';
+import { autogradeSubmission, generateFeedback, saveSubmissions } from '../../../services/grading.service';
+import { lectureBasePath, openFile } from '../../../services/file.service';
+import { Submission } from '../../../model/submission';
 
 interface EnhancedTableToolbarProps {
   lecture: Lecture;
   assignment: Assignment;
+  rows: Submission[];
   selected: readonly number[];
   shownSubmissions: 'none' | 'latest' | 'best';
   switchShownSubmissions: (event: React.MouseEvent<HTMLElement>, value: ('none' | 'latest' | 'best')) => void;
+  clearSelection: () => void;
 }
 
 export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { lecture, assignment, selected, shownSubmissions, switchShownSubmissions } = props;
+  const { lecture, assignment, rows, selected, shownSubmissions, switchShownSubmissions, clearSelection } = props;
   const numSelected = selected.length;
-  const ltiEnabled = PageConfig.getOption("enable_lti_features") === 'true';
+  const ltiEnabled = PageConfig.getOption('enable_lti_features') === 'true';
 
   const [showDialog, setShowDialog] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -78,6 +83,86 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     setShowDialog(true);
   };
 
+  const handleExportSubmissions = async () => {
+    try {
+      await saveSubmissions(lecture, assignment, shownSubmissions);
+      await openFile(`${lectureBasePath}${lecture.code}/submissions.csv`);
+      enqueueSnackbar('Successfully exported submissions', {
+        variant: 'success'
+      });
+    } catch (err) {
+      enqueueSnackbar('Error Exporting Submissions', {
+        variant: 'error'
+      });
+    }
+  };
+
+  const handleAutogradeSubmissions = async () => {
+    setDialogContent({
+      title: 'Autograde Selected Submissions',
+      message: 'Do you wish to autograde the selected submissions?',
+      handleAgree: async () => {
+        try {
+          await Promise.all(
+            selected.map(async id => {
+              const row = rows.find(value => value.id === id);
+              row.auto_status = 'pending';
+              await autogradeSubmission(
+                lecture,
+                assignment,
+                row
+              );
+            }));
+          enqueueSnackbar(`Autograding ${numSelected} submissions!`, {
+            variant: 'success'
+          });
+        } catch (err) {
+          console.error(err);
+          enqueueSnackbar('Error Autograding Submissions', {
+            variant: 'error'
+          });
+        }
+        clearSelection();
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  };
+
+  const handleGenerateFeedback = async () => {
+    setDialogContent({
+      title: 'Generate Feedback',
+      message: 'Do you wish to generate Feedback of the selected submissions?',
+      handleAgree: async () => {
+        try {
+          await Promise.all(
+            selected.map(async id => {
+              const row = rows.find(value => value.id === id);
+              await generateFeedback(
+                lecture.id,
+                assignment.id,
+                row.id
+              );
+            })
+          );
+          enqueueSnackbar(`Generating feedback for ${numSelected} submissions!`, {
+            variant: 'success'
+          });
+        } catch (err) {
+          console.error(err);
+          enqueueSnackbar('Error Generating Feedback', {
+            variant: 'error'
+          });
+        }
+        clearSelection();
+        closeDialog();
+      },
+      handleDisagree: () => closeDialog()
+    });
+    setShowDialog(true);
+  };
+
   return (
     <>
       <Toolbar
@@ -111,10 +196,11 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         )}
         {numSelected > 0 ? (
           <ButtonGroup size='small' aria-label='autograde feedback buttons'>
-            <Button key={'autograde'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
+            <Button key={'autograde'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+                    onClick={handleAutogradeSubmissions}>
               Autograde
             </Button>
-            <Button key={'feedback'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
+            <Button key={'feedback'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }} onClick={handleGenerateFeedback}>
               {'Generate Feedback'}
             </Button>
           </ButtonGroup>
@@ -124,6 +210,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               size='small'
               startIcon={<FileDownloadIcon />}
               sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+              onClick={handleExportSubmissions}
             >
               {`Export ${optionName()} Submissions`}
             </Button>
@@ -132,6 +219,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               startIcon={<CloudSyncIcon />}
               sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
               disabled={!ltiEnabled}
+              onClick={handleSyncSubmission}
             >
               LTI Sync Grades
             </Button>

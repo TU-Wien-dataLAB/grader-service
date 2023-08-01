@@ -319,7 +319,8 @@ export default function GradingTable() {
   return (
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar lecture={lecture} assignment={assignment} selected={selected}
+        <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
+                              clearSelection={() => setSelected([])} selected={selected}
                               shownSubmissions={shownSubmissions}
                               switchShownSubmissions={switchShownSubmissions} />
         <TableContainer>

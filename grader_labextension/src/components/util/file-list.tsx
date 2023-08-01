@@ -21,7 +21,7 @@ import { Contents } from '@jupyterlab/services';
 import IModel = Contents.IModel;
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
-import { getFiles } from '../../services/file.service';
+import { getFiles, openFile } from '../../services/file.service';
 import { enqueueSnackbar } from 'notistack';
 
 interface IFileListProps {
@@ -36,21 +36,6 @@ export const FilesList = (props: IFileListProps) => {
   React.useEffect(() => {
     getFiles(props.path).then(files => setFiles(files));
   }, [props]);
-
-  const openFile = async (path: string) => {
-    GlobalObjects.commands
-      .execute('docmanager:open', {
-        path: path,
-        options: {
-          mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
-        }
-      })
-      .catch(error => {
-        enqueueSnackbar(error.message, {
-          variant: 'error'
-        });
-      });
-  };
 
   // generateItems will be fed using the IIterator from the FilterFileBrowserModel
   const generateItems = (files: {value: IModel, done: boolean}[]) => {
