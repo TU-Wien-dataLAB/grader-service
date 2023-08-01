@@ -60,17 +60,6 @@ const loadAssignment = async (lectureId: number, assignmentId: number) => {
   }
 };
 
-const loadBestSubmissions = async (lectureId: number, assignmentId: number) => {
-  try {
-    const bestSubmissions = await getAllSubmissions(lectureId, assignmentId, 'best', true, true);
-    return { bestSubmissions };
-  } catch (error: any) {
-    enqueueSnackbar(error.message, {
-      variant: 'error'
-    });
-  }
-};
-
 function ExamplePage({ to }) {
   const navigation = useNavigation(); // router navigates to new route (and loads data)
   const loading = navigation.state === 'loading';
@@ -141,8 +130,7 @@ export const getRoutes = (root: HTMLElement) => {
               crumb: (data) => 'Files',
               link: (params) => 'files/'
             }}></Route>
-            <Route id={'submissions'} path={'submissions'} element={<GradingComponent root={root} />}
-                   loader={({ params }) => loadBestSubmissions(+params.lid, +params.aid)}
+            <Route path={'submissions'} element={<GradingComponent root={root} />}
                    handle={{
                      crumb: (data) => 'Submissions',
                      link: (params) => 'submissions/'

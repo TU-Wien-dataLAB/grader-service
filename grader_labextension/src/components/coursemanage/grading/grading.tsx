@@ -20,7 +20,7 @@ import { utcToLocalFormat } from '../../../services/datetime.service';
 import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
-import { getLogs } from '../../../services/submissions.service';
+import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
 import { EnhancedTableToolbar } from './table-toolbar';
 
 
@@ -184,7 +184,6 @@ export default function GradingTable() {
     allSubmissions: Submission[],
     latestSubmissions: Submission[]
   };
-  const { bestSubmissions } = useRouteLoaderData('submissions') as { bestSubmissions: Submission[] };
 
   /**
    * Calculates chip color based on submission status.
@@ -234,25 +233,26 @@ export default function GradingTable() {
     );
   };
 
+  const updateSubmissions = (filter: "none" | "latest" | "best") => {
+    getAllSubmissions(lecture.id, assignment.id, filter, true, true).then(
+      response => {
+        setRows(response);
+      }
+    );
+  };
+
   const switchShownSubmissions = (
     event: React.MouseEvent<HTMLElement>,
     value: 'none' | 'latest' | 'best'
   ) => {
     if (value !== null) {
-      switch (value) {
-        case 'none':
-          setRows(allSubmissions);
-          break;
-        case 'latest':
-          setRows(latestSubmissions);
-          break;
-        case 'best':
-          setRows(bestSubmissions);
-          break;
-      }
       setShownSubmissions(value);
+      updateSubmissions(value);
+    } else {
+      updateSubmissions(shownSubmissions); // implicit reload
     }
   };
+
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
     property: keyof Submission
@@ -313,7 +313,7 @@ export default function GradingTable() {
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
       ),
-    [order, orderBy, page, rowsPerPage, shownSubmissions]
+    [order, orderBy, page, rowsPerPage, rows]
   );
 
   return (
