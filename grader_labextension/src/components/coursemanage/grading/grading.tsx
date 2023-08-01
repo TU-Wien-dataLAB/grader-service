@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -9,32 +8,20 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import { visuallyHidden } from '@mui/utils';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import {
-  Button,
-  ButtonGroup,
-  Chip,
-  Dialog, DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup
-} from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
 import { getLogs } from '../../../services/submissions.service';
+import { EnhancedTableToolbar } from './table-toolbar';
 
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -186,99 +173,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
-interface EnhancedTableToolbarProps {
-  selected: readonly number[];
-  shownSubmissions: 'none' | 'latest' | 'best';
-  switchShownSubmissions: (event: React.MouseEvent<HTMLElement>, value: ('none' | 'latest' | 'best')) => void;
-}
-
-function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { selected, shownSubmissions, switchShownSubmissions } = props;
-  const numSelected = selected.length;
-
-  const optionName = () => {
-    if (props.shownSubmissions === 'latest') {
-      return 'Latest';
-    } else if (props.shownSubmissions === 'best') {
-      return 'Best';
-    } else {
-      return 'All';
-    }
-  };
-
-  return (
-    <Toolbar
-      sx={{
-        pl: { sm: 2 },
-        pr: { xs: 1, sm: 1 },
-        ...(numSelected > 0 && {
-          bgcolor: (theme) =>
-            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity)
-        })
-      }}
-    >
-      {numSelected > 0 ? (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          color='inherit'
-          variant='subtitle1'
-          component='div'
-        >
-          {numSelected} selected
-        </Typography>
-      ) : (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          variant='h6'
-          id='tableTitle'
-          component='div'
-        >
-          Submissions
-        </Typography>
-      )}
-      {numSelected > 0 ? (
-        <ButtonGroup size='small' aria-label='autograde feedback buttons'>
-          <Button key={'autograde'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
-            Autograde
-          </Button>
-          <Button key={'feedback'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
-            {'Generate Feedback'}
-          </Button>
-        </ButtonGroup>
-      ) : (
-        <Stack direction='row' spacing={2}>
-          <Button
-            size='small'
-            startIcon={<FileDownloadIcon />}
-            sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-          >
-            {`Export ${optionName()} Submissions`}
-          </Button>
-          <Button
-            size='small'
-            startIcon={<CloudSyncIcon />}
-            sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-          >
-            LTI Sync Grades
-          </Button>
-          <ToggleButtonGroup
-            size='small'
-            color='primary'
-            value={shownSubmissions}
-            exclusive
-            onChange={switchShownSubmissions}
-            aria-label='shown submissions'
-          >
-            <ToggleButton value='none'>All</ToggleButton>
-            <ToggleButton value='latest'>Latest</ToggleButton>
-            <ToggleButton value='best'>Best</ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
-      )}
-    </Toolbar>
-  );
-}
-
 export default function GradingTable() {
   const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
@@ -425,7 +319,8 @@ export default function GradingTable() {
   return (
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar selected={selected} shownSubmissions={shownSubmissions}
+        <EnhancedTableToolbar lecture={lecture} assignment={assignment} selected={selected}
+                              shownSubmissions={shownSubmissions}
                               switchShownSubmissions={switchShownSubmissions} />
         <TableContainer>
           <Table
