@@ -21,8 +21,20 @@ import { Assignment } from '../../../model/assignment';
 import { useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import { Button, ButtonGroup, Chip, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {
+  Button,
+  ButtonGroup,
+  Chip,
+  Dialog, DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup
+} from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
+import { enqueueSnackbar } from 'notistack';
+import { getLogs } from '../../../services/submissions.service';
 
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -307,13 +319,25 @@ export default function GradingTable() {
   const [shownSubmissions, setShownSubmissions] = React.useState('none' as 'none' | 'latest' | 'best');
   const [rows, setRows] = React.useState(allSubmissions);
 
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: keyof Submission
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
+  const [showLogs, setShowLogs] = React.useState(false);
+  const [logs, setLogs] = React.useState(undefined);
+
+  /**
+   * Opens log dialog which contain autograded logs from grader service.
+   * @param submissionId submission for which to show logs
+   */
+  const openLogs = (submissionId: number) => {
+    getLogs(lecture.id, assignment.id, submissionId).then(
+      logs => {
+        setLogs(logs);
+        setShowLogs(true);
+      },
+      error => {
+        enqueueSnackbar('No logs for submission', {
+          variant: 'error'
+        });
+      }
+    );
   };
 
   const switchShownSubmissions = (
@@ -335,6 +359,15 @@ export default function GradingTable() {
       setShownSubmissions(value);
     }
   };
+  const handleRequestSort = (
+    event: React.MouseEvent<unknown>,
+    property: keyof Submission
+  ) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -448,7 +481,7 @@ export default function GradingTable() {
                       label={row.auto_status}
                       color={getColor(row.auto_status)}
                       clickable={true}
-                      // onClick={() => openLogs(params)}
+                      onClick={() => openLogs(row.id)}
                     /></TableCell>
                     <TableCell align='left'> <Chip
                       variant='outlined'
@@ -486,6 +519,25 @@ export default function GradingTable() {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+      <Dialog
+        open={showLogs}
+        onClose={() => setShowLogs(false)}
+        aria-labelledby='alert-dialog-title'
+        aria-describedby='alert-dialog-description'
+      >
+        <DialogTitle id='alert-dialog-title'>{'Logs'}</DialogTitle>
+        <DialogContent>
+          <Typography
+            id='alert-dialog-description'
+            sx={{ fontSize: 10, fontFamily: '\'Roboto Mono\', monospace' }}
+          >
+            {logs}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowLogs(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
