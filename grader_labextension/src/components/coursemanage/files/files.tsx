@@ -317,8 +317,8 @@ export const Files = (props: IFilesProps) => {
   };
 
   return (
-    <Box>
-      <Card elevation={3}>
+    <Box sx={{}}>
+      <Card elevation={3} sx={{}}>
         <CardHeader
           title="Files"
           titleTypographyProps={{ display: 'inline' }}
@@ -397,7 +397,6 @@ export const Files = (props: IFilesProps) => {
               <AddBoxIcon />
             </IconButton>
           </Tooltip>
-
         <Tooltip title={'Show in File-Browser'}>
           <IconButton
             sx={{ mt: -1, pt: 0, pb: 0 }}
@@ -426,6 +425,5 @@ export const Files = (props: IFilesProps) => {
       <AgreeDialog open={showDialog} {...dialogContent} />
     </Card>
   </Box>
-
   );
 };
