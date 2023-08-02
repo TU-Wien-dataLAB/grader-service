@@ -1,8 +1,9 @@
 import Toolbar from '@mui/material/Toolbar';
 import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { Button, ButtonGroup, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Button, ButtonGroup, IconButton, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import ReplayIcon from '@mui/icons-material/Replay';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import * as React from 'react';
 import { AgreeDialog } from '../../util/dialog';
@@ -235,6 +236,9 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               <ToggleButton value='latest'>Latest</ToggleButton>
               <ToggleButton value='best'>Best</ToggleButton>
             </ToggleButtonGroup>
+            <IconButton aria-label='reload' onClick={ev => switchShownSubmissions(ev, shownSubmissions)}>
+              <ReplayIcon />
+            </IconButton>
           </Stack>
         )}
       </Toolbar>
