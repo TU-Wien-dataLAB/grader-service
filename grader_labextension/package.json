@@ -74,7 +74,6 @@
     "@mui/lab": "^5.0.0-alpha.133",
     "@mui/material": "^5.13.4",
     "@mui/system": "^5.13.2",
-    "@mui/x-data-grid": "^6.6.0",
     "@mui/x-date-pickers": "^6.6.0",
     "@types/d3-shape": "^3.1.1",
     "date-fns": "^2.30.0",
