@@ -36,36 +36,20 @@ export const OverviewComponent = () => {
     setAssignmentState(assignment);
   };
 
-  const [windowSize, setWindowSize] = useState([
-    window.innerWidth,
-    window.innerHeight,
-  ]);
-
-  useEffect(() => {
-    const handleWindowResize = () => {
-      setWindowSize([window.innerWidth, window.innerHeight]);
-    };
-
-    window.addEventListener('resize', handleWindowResize);
-
-    return () => {
-      window.removeEventListener('resize', handleWindowResize);
-    };
-  }, []);
   
   return (
     <Box>
       <SectionTitle title={assignmentState.name}></SectionTitle>
-      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
-        <Grid container spacing={3} alignItems='stretch'>
-          <Grid item xs={7}>
+      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3, overflowY: "auto"}}>
+        <Grid container spacing={3} >
+          <Grid item md={7} xs={7} xl={7}>
           <AssignmentStatus
               lecture={lecture}
               assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
-          <Grid item xs = {windowSize[0]>=2000 ? 3 : 5}>
+          <Grid item md={5} xs={12} xl={3}>
           <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
