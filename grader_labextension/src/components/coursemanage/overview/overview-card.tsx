@@ -5,12 +5,11 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
   Divider,
   Grid,
-  Typography
+  Paper,
+  Typography,
+  createTheme
 } from '@mui/material';
 import * as React from 'react';
 import { Assignment } from '../../../model/assignment';
@@ -20,6 +19,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import GradeIcon from '@mui/icons-material/Grade';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+
 
 export interface IOverviewCardProps {
   lecture: Lecture;
@@ -43,86 +43,69 @@ export const OverviewCard = (props: IOverviewCardProps) => {
   }
 
   return (
-    <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+    <Grid container spacing={2}>
       <Grid item xs={6}>
-        <Card elevation={3}
-            sx={{minWidth: "150px"}}>
-          <CardHeader title='Students'/>
-          <CardContent
+        <Paper elevation={3}
             sx={{
-              alignItems: { xs: 'center' },
-              overflowY: 'auto'
-            }}
-          >
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography sx={{textAlign: "left", fontSize: 24}}>Students</Typography>
+          
           <GroupIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
-          <Typography sx={{ fontSize: 13, mr: 0.5, ml: 0.5}}>
-            {'Overall number of students in this lecture: '}
+          <Typography  sx={{ textAlign: "left", mr: 0.5, ml: 0.5}}>
+            {'Overall number of students in this lecture: ' + props.users?.students.length}
           </Typography>
-          <Typography color="text.secondary" sx={{ml: 0.5, fontSize: 13}}> 
-            {props.users?.students.length} 
-          </Typography>
-         </CardContent>
-        </Card>
+        </Paper>
         
       </Grid>
       <Grid item xs={6}>
-        <Card elevation={3}
-            sx={{minWidth: "150px"}}>
-          <CardHeader title='Submissions'/>
-          <CardContent
+        <Paper elevation={3}
             sx={{
-              alignItems: { xs: 'center' },
-              overflowY: 'auto'
-            }}
-          >
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography  sx={{textAlign: "left", fontSize: 24}}>Submissions</Typography>
           <ChecklistIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
-          <Typography sx={{ fontSize: 13, mr: 0.5, ml: 0.5}}>
-            {'Total number of submissions: '}
+          <Typography  sx={{ textAlign: "left", mr: 0.5, ml: 0.5}}>
+            {'Total number of submissions: ' + props.allSubmissions.length}
           </Typography>
-          <Typography color="text.secondary" sx={{ml: 0.5, fontSize: 13}}> 
-            {props.allSubmissions.length} 
-          </Typography>
-         </CardContent>
-        </Card>
+        </Paper>
       </Grid>
       <Grid item xs={12}>
         <Divider/>
       </Grid>
       <Grid item xs={6}>
-        <Card elevation={3}
-            sx={{minWidth: "150px"}}>
-          <CardHeader title='Grading behaviour'/>
-          <CardContent
+        <Paper elevation={3}
             sx={{
-              alignItems: { xs: 'center' },
-              overflowY: 'auto'
-            }}
-          >
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography sx={{textAlign: "left", fontSize: 24}}>Grading behaviour</Typography>
+         
           <GradeIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
-          <Typography sx={{ fontSize: 13, mr: 0.5, ml: 0.5}}>
+          <Typography sx={{mr: 0.5, ml: 0.5}}>
             {gradingBehaviour}
           </Typography>
-      
-         </CardContent>
-        </Card>
+        </Paper>
       </Grid>
       <Grid item xs={6}>
-        <Card elevation={3}
-            sx={{minWidth: "150px"}}>
-          <CardHeader title='Assignment type'/>
-          <CardContent
+        <Paper elevation={3}
             sx={{
-              alignItems: { xs: 'center' },
-              overflowY: 'auto'
-            }}
-          >
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography  sx={{textAlign: "left", fontSize: 24}}>Assignment type</Typography>
           <QuestionMarkIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
-          <Typography sx={{ fontSize: 13, mr: 0.5, ml: 0.5}}>
+          <Typography  sx={{ mr: 0.5, ml: 0.5}}>
             {props.assignment.type === 'user' ? 'User' : 'Group'}
           </Typography>
       
-         </CardContent>
-        </Card>
+        </Paper>
       </Grid>
 
     </Grid>

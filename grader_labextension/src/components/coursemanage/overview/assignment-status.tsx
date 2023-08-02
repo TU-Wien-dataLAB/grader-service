@@ -291,7 +291,7 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
           ))}
         </Stepper>
         <AgreeDialog open={showDialog} {...dialogContent} />
-        <Typography sx={{mt: 5, fontSize: 20}}> Deadline </Typography>
+        <Typography sx={{mt: 5, fontSize: 24}}> Deadline </Typography>
         <DeadlineComponent due_date={props.assignment.due_date} 
                           compact={false} 
                           component={'chip'}

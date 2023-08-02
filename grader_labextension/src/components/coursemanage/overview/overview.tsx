@@ -14,6 +14,8 @@ import { Box, Grid } from '@mui/material';
 import { AssignmentStatus } from './assignment-status';
 import { Submission } from '../../../model/submission';
 import { useRouteLoaderData } from 'react-router-dom';
+import { breakpoints } from '@mui/system';
+import { useEffect, useState } from 'react';
 
 
 export const OverviewComponent = () => {
@@ -34,11 +36,28 @@ export const OverviewComponent = () => {
     setAssignmentState(assignment);
   };
 
+  const [windowSize, setWindowSize] = useState([
+    window.innerWidth,
+    window.innerHeight,
+  ]);
+
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setWindowSize([window.innerWidth, window.innerHeight]);
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, []);
+  
   return (
     <Box>
       <SectionTitle title={assignmentState.name}></SectionTitle>
-      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-        <Grid container spacing={2} alignItems='stretch'>
+      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
+        <Grid container spacing={3} alignItems='stretch'>
           <Grid item xs={7}>
           <AssignmentStatus
               lecture={lecture}
@@ -46,7 +65,7 @@ export const OverviewComponent = () => {
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
-          <Grid item xs={5}>
+          <Grid item xs = {windowSize[0]>=2000 ? 3 : 5}>
           <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
