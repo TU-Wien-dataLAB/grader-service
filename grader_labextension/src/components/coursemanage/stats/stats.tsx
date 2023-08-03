@@ -1,7 +1,8 @@
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
-import { Box, Grid, IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import { SectionTitle } from '../../util/section-title';
 import ReplayIcon from '@mui/icons-material/Replay';
 import * as React from 'react';
@@ -108,7 +109,7 @@ export const StatsComponent = (props: IStatsProps) => {
       </SectionTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
         <Grid container spacing={2} alignItems='stretch'>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <SubmissionTimeSeries
               lecture={lecture}
               assignment={assignment}
@@ -118,7 +119,7 @@ export const StatsComponent = (props: IStatsProps) => {
               root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <GradingProgress
               lecture={lecture}
               assignment={assignment}
@@ -128,7 +129,7 @@ export const StatsComponent = (props: IStatsProps) => {
               root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <StudentSubmissions
               lecture={lecture}
               assignment={assignment}
@@ -138,10 +139,10 @@ export const StatsComponent = (props: IStatsProps) => {
               root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <AssignmentScore gb={gb} />
           </Grid>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <ScoreDistribution
               lecture={lecture}
               assignment={assignment}

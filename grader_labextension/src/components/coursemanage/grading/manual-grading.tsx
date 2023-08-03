@@ -115,7 +115,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
   };
 
   return (
-    <Box sx={{ overflow: 'scroll', height: '100%' }}>
+    <Box sx={{ height: '100%' }}>
       <SectionTitle title={'Manual Grading ' + props.assignment.id} />
       <Box sx={{ m: 2, mt: 5 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
