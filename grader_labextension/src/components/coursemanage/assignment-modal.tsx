@@ -53,40 +53,42 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   };
 
   return (
-
-    <Box
-      sx={{ bgcolor: 'background.paper', display: 'flex' }}
-    >
-      <Tabs
-        orientation='vertical'
-        value={value}
-        onChange={handleChange}
-        sx={{ borderRight: 1, borderColor: 'divider', minWidth: '200px', marginTop: 5 }}
+    <Box sx={{height: '95%', overflowY: 'auto'}}>
+      <Box
+        sx={{ bgcolor: 'background.paper', display: 'flex' }}
       >
-        <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
-             {...a11yProps(0)} component={Link as any} to={''} />
-        <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
-             {...a11yProps(1)} component={Link as any} to={'files'} />
-        <Tab label='Submissions' icon={
-          <Badge
-            color='secondary'
-            badgeContent={latestSubmissions?.length}
-            showZero={latestSubmissions !== null}
-          >
-            <FormatListNumberedIcon />
-          </Badge>
-        }
-             iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
-             to={'submissions'} />
-        <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
-             {...a11yProps(3)} component={Link as any} to={'stats'} />
-        <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
-             {...a11yProps(4)} component={Link as any} to={'settings'} />
-      </Tabs>
-      <Box sx={{ flexGrow: 1, overflowY: 'scroll' }}>
-        <Outlet />
+        <Tabs
+          orientation='vertical'
+          value={value}
+          onChange={handleChange}
+          sx={{ borderRight: 1, borderColor: 'divider', minWidth: '200px', marginTop: 5 }}
+        >
+          <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+              {...a11yProps(0)} component={Link as any} to={''} />
+          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+              {...a11yProps(1)} component={Link as any} to={'files'} />
+          <Tab label='Submissions' icon={
+            <Badge
+              color='secondary'
+              badgeContent={latestSubmissions?.length}
+              showZero={latestSubmissions !== null}
+            >
+              <FormatListNumberedIcon />
+            </Badge>
+          }
+              iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
+              to={'submissions'} />
+          <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
+              {...a11yProps(3)} component={Link as any} to={'stats'} />
+          <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
+              {...a11yProps(4)} component={Link as any} to={'settings'} />
+        </Tabs>
+        <Box sx={{ flexGrow: 1, mb: 10, overflowX: 'auto'}}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
+   
   );
 
 };

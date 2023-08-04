@@ -14,8 +14,6 @@ import { Box, Grid } from '@mui/material';
 import { AssignmentStatus } from './assignment-status';
 import { Submission } from '../../../model/submission';
 import { useRouteLoaderData } from 'react-router-dom';
-import { breakpoints } from '@mui/system';
-import { useEffect, useState } from 'react';
 
 
 export const OverviewComponent = () => {
@@ -40,16 +38,16 @@ export const OverviewComponent = () => {
   return (
     <Box>
       <SectionTitle title={assignmentState.name}></SectionTitle>
-      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3, overflowY: "auto"}}>
+      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
         <Grid container spacing={3} >
-          <Grid item md={7} xs={7} xl={7}>
+          <Grid item md={12} xs={7} lg={7} xl={7}>
           <AssignmentStatus
               lecture={lecture}
               assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
-          <Grid item md={5} xs={12} xl={3}>
+          <Grid item md={12} xs={12} lg={5} xl={3}>
           <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
