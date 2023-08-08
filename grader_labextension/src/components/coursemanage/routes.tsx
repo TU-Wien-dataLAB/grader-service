@@ -131,15 +131,14 @@ export const getRoutes = (root: HTMLElement) => {
               crumb: (data) => 'Files',
               link: (params) => 'files/'
             }}></Route>
-            <Route id={'submissions'} path={'submissions'} element={<GradingComponent />}>
-              <Route index path={''} element={<GradingTable />}
-                     handle={{
-                       crumb: (data) => 'Submissions',
-                       link: (params) => 'submissions/'
-                     }} />
-              <Route path={':sid'} element={<ManualGrading />} handle={{
+            <Route id={'submissions/*'} path={'submissions'} element={<GradingComponent />} handle={{
+              crumb: (data) => 'Submissions',
+              link: (params) => 'submissions/'
+            }}>
+              <Route index path={''} element={<GradingTable />} />
+              <Route path={'manual'} element={<ManualGrading />} handle={{
                 crumb: (data) => 'Grading View',
-                link: (params) => `${params.sid}/`
+                link: (params) => `manual/`
               }}></Route>
             </Route>
             <Route path={'stats'} element={<StatsComponent root={root} />} handle={{

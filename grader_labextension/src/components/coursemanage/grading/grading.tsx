@@ -24,6 +24,50 @@ import { getAllSubmissions, getLogs } from '../../../services/submissions.servic
 import { EnhancedTableToolbar } from './table-toolbar';
 
 
+/**
+ * Calculates chip color based on submission status.
+ * @param value submission status
+ * @return chip color
+ */
+const getColor = (value: string) => {
+  if (value === 'not_graded') {
+    return 'warning';
+  } else if (
+    value === 'automatically_graded' ||
+    value === 'manually_graded'
+  ) {
+    return 'success';
+  } else if (value === 'grading_failed') {
+    return 'error';
+  }
+  return 'primary';
+};
+
+export const getAutogradeChip = (submission: Submission) => {
+  return <Chip
+    sx={{textTransform: "capitalize"}}
+    variant='outlined'
+    label={submission.auto_status.split("_").join(" ")}
+    color={getColor(submission.auto_status)} />;
+};
+
+export const getManualChip = (submission: Submission) => {
+  return <Chip
+    sx={{textTransform: "capitalize"}}
+    variant='outlined'
+    label={submission.manual_status.split("_").join(" ")}
+    color={getColor(submission.manual_status)}
+  />;
+};
+
+export const getFeedbackChip = (submission: Submission) => {
+  return <Chip
+    variant='outlined'
+    label={submission.feedback_available ? 'Generated' : 'Not Generated'}
+    color={submission.feedback_available ? 'success' : 'error'}
+  />;
+};
+
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -192,25 +236,6 @@ export default function GradingTable() {
     setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
   };
 
-  /**
-   * Calculates chip color based on submission status.
-   * @param value submission status
-   * @return chip color
-   */
-  const getColor = (value: string) => {
-    if (value === 'not_graded') {
-      return 'warning';
-    } else if (
-      value === 'automatically_graded' ||
-      value === 'manually_graded'
-    ) {
-      return 'success';
-    } else if (value === 'grading_failed') {
-      return 'error';
-    }
-    return 'primary';
-  };
-
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof Submission>('id');
   const [selected, setSelected] = React.useState<readonly number[]>([]);
@@ -323,7 +348,7 @@ export default function GradingTable() {
   );
 
   return (
-    <Box sx={{ flex: '1 1 100%', m: 5}}>
+    <Box sx={{ flex: '1 1 100%', m: 5 }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                               clearSelection={() => setSelected([])} selected={selected}
@@ -352,7 +377,7 @@ export default function GradingTable() {
                     hover
                     onClick={(event) => {
                       setManualGradeSubmission(row);
-                      navigate(String(row.id));
+                      navigate("manual");
                     }
                     }
                     role='checkbox'
@@ -384,22 +409,15 @@ export default function GradingTable() {
                     <TableCell align='left'>{row.username}</TableCell>
                     <TableCell align='right'>{utcToLocalFormat(row.submitted_at)}</TableCell>
                     <TableCell align='left'><Chip
+                      sx={{textTransform: "capitalize"}}
                       variant='outlined'
-                      label={row.auto_status}
+                      label={row.auto_status.split("_").join(" ")}
                       color={getColor(row.auto_status)}
                       clickable={true}
                       onClick={() => openLogs(row.id)}
                     /></TableCell>
-                    <TableCell align='left'> <Chip
-                      variant='outlined'
-                      label={row.manual_status}
-                      color={getColor(row.manual_status)}
-                    /></TableCell>
-                    <TableCell align='left'> <Chip
-                      variant='outlined'
-                      label={row.feedback_available ? 'Generated' : 'Not Generated'}
-                      color={row.feedback_available ? 'success' : 'error'}
-                    /></TableCell>
+                    <TableCell align='left'>{getManualChip(row)}</TableCell>
+                    <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
                     <TableCell align='right'>{row.score}</TableCell>
                   </TableRow>
                 );
@@ -464,7 +482,7 @@ export const GradingComponent = () => {
   const [rows, setRows] = React.useState(allSubmissions);
   const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
 
-  return <Stack direction={"column"} sx={{ height: "100%" }}>
+  return <Stack direction={'column'} sx={{ height: '100%' }}>
     <SectionTitle title='Grading' />
     <Outlet context={{ lecture, assignment, rows, setRows, manualGradeSubmission, setManualGradeSubmission }} />
   </Stack>;

@@ -24,11 +24,12 @@ import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
 import { lectureBasePath } from '../../../services/file.service';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { utcToLocalFormat } from '../../../services/datetime.service';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { getAutogradeChip, getFeedbackChip, getManualChip } from './grading';
 
 
 export const ManualGrading = () => {
@@ -49,7 +50,8 @@ export const ManualGrading = () => {
   };
   const submission = manualGradeSubmission;
   const manualPath = `${lectureBasePath}${lecture.code}/manualgrade/${assignment.id}/${submission.id}`;
-  const rowIdx = rows.find(s => s.id = submission.id);
+  const rowIdx = rows.findIndex(s => s.id === submission.id);
+  const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
   const [gradeBook, setGradeBook] = React.useState(null);
   const [showDialog, setShowDialog] = React.useState(false);
@@ -126,7 +128,7 @@ export const ManualGrading = () => {
   };
 
   return (
-    <Stack direction={"column"} sx={{ flex: '1 1 100%' }}>
+    <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Box sx={{ m: 2, mt: 5 }}>
         <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>
@@ -192,11 +194,22 @@ export const ManualGrading = () => {
             </Typography>
           </Stack>
         </Stack>
+        <Stack direction={'row'} spacing={2}>
+          <Box sx={{ flex: 'auto' }}>
+            <Typography color='text.primary' sx={{ fontSize: 14 }}>Autograde
+              Status: {getAutogradeChip(submission)}</Typography>
+          </Box>
+          <Box sx={{ flex: 'auto' }}>
+            <Typography color='text.primary' sx={{ fontSize: 14 }}>Manualgrade
+              Status: {getManualChip(submission)}</Typography>
+          </Box>
+          <Box sx={{ flex: 'auto' }}>
+            <Typography color='text.primary' sx={{ fontSize: 14 }}>Feedback: {getFeedbackChip(submission)}</Typography>
+          </Box>
+        </Stack>
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
-      <Box sx={{ overflowY: 'auto', minHeight: 50 }}>
-        <FilesList path={manualPath} sx={{ m: 2 }} />
-      </Box>
+      <FilesList path={manualPath} sx={{ m: 2 }} />
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
         <Tooltip title='Reload'>
@@ -206,6 +219,7 @@ export const ManualGrading = () => {
         </Tooltip>
 
         <LoadingButton
+          size={'small'}
           loading={loading}
           color='primary'
           variant='outlined'
@@ -219,6 +233,7 @@ export const ManualGrading = () => {
         </LoadingButton>
 
         <Button
+          size={'small'}
           variant='outlined'
           color='success'
           onClick={openFinishDialog}
@@ -229,12 +244,18 @@ export const ManualGrading = () => {
       </Stack>
       <Box sx={{ flex: '1 1 100%' }}></Box>
       <Toolbar>
-        <Button variant='outlined'>Back</Button>
+        <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
         <Box sx={{ flex: '1 1 100%' }}></Box>
-        <IconButton aria-label='previous' disabled color='primary'>
+        <IconButton aria-label='previous' disabled={rowIdx === 0} color='primary' onClick={() => {
+          const prevSub = rows[rowIdx - 1]
+          setManualGradeSubmission(prevSub)
+        }}>
           <ArrowBackIcon />
         </IconButton>
-        <IconButton aria-label='next' disabled color='primary'>
+        <IconButton aria-label='next' disabled={rowIdx === rows.length - 1} color='primary' onClick={() => {
+          const nextSub = rows[rowIdx + 1]
+          setManualGradeSubmission(nextSub)
+        }}>
           <ArrowForwardIcon />
         </IconButton>
       </Toolbar>
