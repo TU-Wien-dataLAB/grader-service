@@ -45,28 +45,31 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const match = useMatch(`/lecture/${params.lid}/assignment/${params.aid}/*`);
   const tab = match.params['*'];
 
-
-  const [value, setValue] = React.useState(0);
-
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  let value: number;
+  if (tab === "") value = 0;
+  else if (tab === "files")  value = 1;
+  else if (tab.includes("submissions"))  value = 2;
+  else if (tab === "stats")  value = 3;
+  else if (tab === "settings")  value = 4;
+  else {
+    console.warn(`Unknown tab ${tab}... navigating to overview page!`);
+     value = 0;
+  }
 
   return (
-    <Box sx={{height: '95%', overflowY: 'auto'}}>
+    <Box sx={{ height: '95%', overflowY: 'auto' }}>
       <Box
         sx={{ bgcolor: 'background.paper', display: 'flex' }}
       >
         <Tabs
           orientation='vertical'
           value={value}
-          onChange={handleChange}
           sx={{ borderRight: 1, borderColor: 'divider', minWidth: '200px', marginTop: 5 }}
         >
           <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
-              {...a11yProps(0)} component={Link as any} to={''} />
+               {...a11yProps(0)} component={Link as any} to={''} />
           <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
-              {...a11yProps(1)} component={Link as any} to={'files'} />
+               {...a11yProps(1)} component={Link as any} to={'files'} />
           <Tab label='Submissions' icon={
             <Badge
               color='secondary'
@@ -76,19 +79,19 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
               <FormatListNumberedIcon />
             </Badge>
           }
-              iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
-              to={'submissions'} />
-          <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
-              {...a11yProps(3)} component={Link as any} to={'stats'} />
-          <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start'  sx={{justifyContent: 'flex-start'}}
-              {...a11yProps(4)} component={Link as any} to={'settings'} />
+               iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
+               to={'submissions'} />
+          <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+               {...a11yProps(3)} component={Link as any} to={'stats'} />
+          <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+               {...a11yProps(4)} component={Link as any} to={'settings'} />
         </Tabs>
-        <Box sx={{ flexGrow: 1, mb: 10, overflowX: 'auto'}}>
+        <Box sx={{ flexGrow: 1, mb: 10, overflowX: 'auto' }}>
           <Outlet />
         </Box>
       </Box>
     </Box>
-   
+
   );
 
 };
