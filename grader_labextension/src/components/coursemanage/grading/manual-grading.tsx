@@ -16,7 +16,7 @@ import {
   updateSubmission
 } from '../../../services/submissions.service';
 import { GradeBook } from '../../../services/gradebook';
-import { createManualFeedback } from '../../../services/grading.service';
+import { autogradeSubmission, createManualFeedback, generateFeedback } from '../../../services/grading.service';
 import { FilesList } from '../../util/file-list';
 import { AgreeDialog } from '../../util/dialog';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -30,6 +30,7 @@ import Toolbar from '@mui/material/Toolbar';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { getAutogradeChip, getFeedbackChip, getManualChip } from './grading';
+import { autogradeSubmissionsDialog, generateFeedbackDialog } from './table-toolbar';
 
 
 export const ManualGrading = () => {
@@ -66,6 +67,40 @@ export const ManualGrading = () => {
   React.useEffect(() => {
     reloadProperties();
   }, []);
+
+  const handleAutogradeSubmission = async () => {
+    await autogradeSubmissionsDialog(setShowDialog, setDialogContent, async () => {
+      try {
+        await autogradeSubmission(lecture, assignment, submission);
+        enqueueSnackbar('Autograding submission!', {
+          variant: 'success'
+        });
+      } catch (err) {
+        console.error(err);
+        enqueueSnackbar('Error Autograding Submission', {
+          variant: 'error'
+        });
+      }
+      setShowDialog(false);
+    });
+  };
+
+  const handleGenerateFeedback = async () => {
+    await generateFeedbackDialog(setShowDialog, setDialogContent, async () => {
+      try {
+        await generateFeedback(lecture.id, assignment.id, submission.id);
+        enqueueSnackbar('Generating feedback for submission!', {
+          variant: 'success'
+        });
+      } catch (err) {
+        console.error(err);
+        enqueueSnackbar('Error Generating Feedback', {
+          variant: 'error'
+        });
+      }
+      setShowDialog(false);
+    });
+  };
 
   const openFinishDialog = () => {
     setDialogContent({
@@ -211,7 +246,7 @@ export const ManualGrading = () => {
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
       <FilesList path={manualPath} sx={{ m: 2 }} />
 
-      <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
+      <Stack direction={'row'} sx={{ ml: 2, mr: 2 }} spacing={2}>
         <Tooltip title='Reload'>
           <IconButton aria-label='reload' onClick={() => reloadProperties()}>
             <ReplayIcon />
@@ -228,6 +263,7 @@ export const ManualGrading = () => {
             await handlePullSubmission();
             setLoading(false);
           }}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
           Pull Submission
         </LoadingButton>
@@ -237,9 +273,28 @@ export const ManualGrading = () => {
           variant='outlined'
           color='success'
           onClick={openFinishDialog}
-          sx={{ ml: 2 }}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto'}}
         >
           Finish Manual Grading
+        </Button>
+        <Box sx={{ flex: '1 1 100%' }}></Box>
+        <Button
+          size={'small'}
+          variant='outlined'
+          color='primary'
+          onClick={handleAutogradeSubmission}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto'}}
+        >
+          Autograde
+        </Button>
+        <Button
+          size={'small'}
+          variant='outlined'
+          color='primary'
+          onClick={handleGenerateFeedback}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+        >
+          Generate Feedback
         </Button>
       </Stack>
       <Box sx={{ flex: '1 1 100%' }}></Box>
@@ -247,14 +302,14 @@ export const ManualGrading = () => {
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
         <Box sx={{ flex: '1 1 100%' }}></Box>
         <IconButton aria-label='previous' disabled={rowIdx === 0} color='primary' onClick={() => {
-          const prevSub = rows[rowIdx - 1]
-          setManualGradeSubmission(prevSub)
+          const prevSub = rows[rowIdx - 1];
+          setManualGradeSubmission(prevSub);
         }}>
           <ArrowBackIcon />
         </IconButton>
         <IconButton aria-label='next' disabled={rowIdx === rows.length - 1} color='primary' onClick={() => {
-          const nextSub = rows[rowIdx + 1]
-          setManualGradeSubmission(nextSub)
+          const nextSub = rows[rowIdx + 1];
+          setManualGradeSubmission(nextSub);
         }}>
           <ArrowForwardIcon />
         </IconButton>

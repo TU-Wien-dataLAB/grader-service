@@ -16,6 +16,26 @@ import { autogradeSubmission, generateFeedback, saveSubmissions } from '../../..
 import { lectureBasePath, openFile } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
 
+export const autogradeSubmissionsDialog = async (setShowDialog, setDialogContent, handleAgree) => {
+  setDialogContent({
+    title: 'Autograde Selected Submissions',
+    message: 'Do you wish to autograde the selected submissions?',
+    handleAgree: handleAgree,
+    handleDisagree: () => setShowDialog(false)
+  });
+  setShowDialog(true);
+};
+
+export const generateFeedbackDialog = async (setShowDialog, setDialogContent, handleAgree) => {
+  setDialogContent({
+    title: 'Generate Feedback',
+    message: 'Do you wish to generate Feedback of the selected submissions?',
+    handleAgree: handleAgree,
+    handleDisagree: () => setShowDialog(false)
+  });
+  setShowDialog(true);
+};
+
 interface EnhancedTableToolbarProps {
   lecture: Lecture;
   assignment: Assignment;
@@ -38,7 +58,6 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     handleAgree: null,
     handleDisagree: null
   });
-  const closeDialog = () => setShowDialog(false);
 
   const optionName = () => {
     if (props.shownSubmissions === 'latest') {
@@ -57,7 +76,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
       handleAgree: async () => {
         await ltiSyncSubmissions(lecture.id, assignment.id)
           .then(response => {
-            closeDialog();
+            setShowDialog(false);
             enqueueSnackbar(
               'Successfully matched ' +
               response.syncable_users +
@@ -72,14 +91,14 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             );
           })
           .catch(error => {
-            closeDialog();
+            setShowDialog(false);
             enqueueSnackbar(
               'Error while trying to sync submissions:' + error.message,
               { variant: 'error' }
             );
           });
       },
-      handleDisagree: () => closeDialog()
+      handleDisagree: () => setShowDialog(false)
     });
     setShowDialog(true);
   };
@@ -99,69 +118,57 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   };
 
   const handleAutogradeSubmissions = async () => {
-    setDialogContent({
-      title: 'Autograde Selected Submissions',
-      message: 'Do you wish to autograde the selected submissions?',
-      handleAgree: async () => {
-        try {
-          await Promise.all(
-            selected.map(async id => {
-              const row = rows.find(value => value.id === id);
-              row.auto_status = 'pending';
-              await autogradeSubmission(
-                lecture,
-                assignment,
-                row
-              );
-            }));
-          enqueueSnackbar(`Autograding ${numSelected} submissions!`, {
-            variant: 'success'
-          });
-        } catch (err) {
-          console.error(err);
-          enqueueSnackbar('Error Autograding Submissions', {
-            variant: 'error'
-          });
-        }
-        clearSelection();
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
+    await autogradeSubmissionsDialog(setShowDialog, setDialogContent, async () => {
+      try {
+        await Promise.all(
+          selected.map(async id => {
+            const row = rows.find(value => value.id === id);
+            row.auto_status = 'pending';
+            await autogradeSubmission(
+              lecture,
+              assignment,
+              row
+            );
+          }));
+        enqueueSnackbar(`Autograding ${numSelected} submissions!`, {
+          variant: 'success'
+        });
+      } catch (err) {
+        console.error(err);
+        enqueueSnackbar('Error Autograding Submissions', {
+          variant: 'error'
+        });
+      }
+      clearSelection();
+      setShowDialog(false);
     });
-    setShowDialog(true);
   };
 
   const handleGenerateFeedback = async () => {
-    setDialogContent({
-      title: 'Generate Feedback',
-      message: 'Do you wish to generate Feedback of the selected submissions?',
-      handleAgree: async () => {
-        try {
-          await Promise.all(
-            selected.map(async id => {
-              const row = rows.find(value => value.id === id);
-              await generateFeedback(
-                lecture.id,
-                assignment.id,
-                row.id
-              );
-            })
-          );
-          enqueueSnackbar(`Generating feedback for ${numSelected} submissions!`, {
-            variant: 'success'
-          });
-        } catch (err) {
-          console.error(err);
-          enqueueSnackbar('Error Generating Feedback', {
-            variant: 'error'
-          });
-        }
-        clearSelection();
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
+    await generateFeedbackDialog(setShowDialog, setDialogContent, async () => {
+      try {
+        await Promise.all(
+          selected.map(async id => {
+            const row = rows.find(value => value.id === id);
+            await generateFeedback(
+              lecture.id,
+              assignment.id,
+              row.id
+            );
+          })
+        );
+        enqueueSnackbar(`Generating feedback for ${numSelected} submissions!`, {
+          variant: 'success'
+        });
+      } catch (err) {
+        console.error(err);
+        enqueueSnackbar('Error Generating Feedback', {
+          variant: 'error'
+        });
+      }
+      clearSelection();
+      setShowDialog(false);
     });
-    setShowDialog(true);
   };
 
   return (

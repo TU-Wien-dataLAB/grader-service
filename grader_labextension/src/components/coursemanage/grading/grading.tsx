@@ -248,9 +248,10 @@ export default function GradingTable() {
 
   /**
    * Opens log dialog which contain autograded logs from grader service.
+   * @param event the click event
    * @param submissionId submission for which to show logs
    */
-  const openLogs = (submissionId: number) => {
+  const openLogs = (event: React.MouseEvent<unknown>, submissionId: number) => {
     getLogs(lecture.id, assignment.id, submissionId).then(
       logs => {
         setLogs(logs);
@@ -262,6 +263,7 @@ export default function GradingTable() {
         });
       }
     );
+    event.stopPropagation();
   };
 
   const updateSubmissions = (filter: 'none' | 'latest' | 'best') => {
@@ -321,6 +323,7 @@ export default function GradingTable() {
     }
 
     setSelected(newSelected);
+    event.stopPropagation();
   };
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -380,7 +383,7 @@ export default function GradingTable() {
                       navigate("manual");
                     }
                     }
-                    role='checkbox'
+                    role='button'
                     aria-checked={isItemSelected}
                     tabIndex={-1}
                     key={row.id}
@@ -414,7 +417,7 @@ export default function GradingTable() {
                       label={row.auto_status.split("_").join(" ")}
                       color={getColor(row.auto_status)}
                       clickable={true}
-                      onClick={() => openLogs(row.id)}
+                      onClick={(event) => openLogs(event, row.id)}
                     /></TableCell>
                     <TableCell align='left'>{getManualChip(row)}</TableCell>
                     <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
