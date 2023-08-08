@@ -59,7 +59,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   return (
     <Box sx={{ height: '95%', overflowY: 'auto' }}>
       <Box
-        sx={{ bgcolor: 'background.paper', display: 'flex' }}
+        sx={{ height: "100%", bgcolor: 'background.paper', display: 'flex' }}
       >
         <Tabs
           orientation='vertical'
@@ -86,7 +86,7 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
           <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
                {...a11yProps(4)} component={Link as any} to={'settings'} />
         </Tabs>
-        <Box sx={{ flexGrow: 1, mb: 10, overflowX: 'auto' }}>
+        <Box sx={{ flexGrow: 1, overflowX: 'auto' }}>
           <Outlet />
         </Box>
       </Box>

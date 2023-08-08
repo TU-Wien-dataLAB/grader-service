@@ -17,7 +17,7 @@ import { Assignment } from '../../../model/assignment';
 import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
 import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
@@ -323,7 +323,7 @@ export default function GradingTable() {
   );
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ flex: '1 1 100%', m: 5}}>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                               clearSelection={() => setSelected([])} selected={selected}
@@ -464,8 +464,8 @@ export const GradingComponent = () => {
   const [rows, setRows] = React.useState(allSubmissions);
   const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
 
-  return <Box sx={{ m: 5 }}>
+  return <Stack direction={"column"} sx={{ height: "100%" }}>
     <SectionTitle title='Grading' />
     <Outlet context={{ lecture, assignment, rows, setRows, manualGradeSubmission, setManualGradeSubmission }} />
-  </Box>;
+  </Stack>;
 };

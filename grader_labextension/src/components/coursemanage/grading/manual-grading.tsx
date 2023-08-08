@@ -26,6 +26,9 @@ import { LoadingButton } from '@mui/lab';
 import { lectureBasePath } from '../../../services/file.service';
 import { useOutletContext } from 'react-router-dom';
 import { utcToLocalFormat } from '../../../services/datetime.service';
+import Toolbar from '@mui/material/Toolbar';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 
 export const ManualGrading = () => {
@@ -123,7 +126,7 @@ export const ManualGrading = () => {
   };
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Stack direction={"column"} sx={{ flex: '1 1 100%' }}>
       <Box sx={{ m: 2, mt: 5 }}>
         <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>
@@ -191,7 +194,7 @@ export const ManualGrading = () => {
         </Stack>
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
-      <Box sx={{ overflowY: 'auto' }}>
+      <Box sx={{ overflowY: 'auto', minHeight: 50 }}>
         <FilesList path={manualPath} sx={{ m: 2 }} />
       </Box>
 
@@ -224,8 +227,19 @@ export const ManualGrading = () => {
           Finish Manual Grading
         </Button>
       </Stack>
+      <Box sx={{ flex: '1 1 100%' }}></Box>
+      <Toolbar>
+        <Button variant='outlined'>Back</Button>
+        <Box sx={{ flex: '1 1 100%' }}></Box>
+        <IconButton aria-label='previous' disabled color='primary'>
+          <ArrowBackIcon />
+        </IconButton>
+        <IconButton aria-label='next' disabled color='primary'>
+          <ArrowForwardIcon />
+        </IconButton>
+      </Toolbar>
 
       <AgreeDialog open={showDialog} {...dialogContent} />
-    </Box>
+    </Stack>
   );
 };
