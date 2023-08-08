@@ -24,22 +24,31 @@ import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
 import { lectureBasePath } from '../../../services/file.service';
+import { useOutletContext } from 'react-router-dom';
+import { utcToLocalFormat } from '../../../services/datetime.service';
 
-export interface IManualGradingProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  submission: Submission;
-  username: string;
-  onClose: () => void;
-}
 
-export const ManualGrading = (props: IManualGradingProps) => {
+export const ManualGrading = () => {
+  const {
+    lecture,
+    assignment,
+    rows,
+    setRows,
+    manualGradeSubmission,
+    setManualGradeSubmission
+  } = useOutletContext() as {
+    lecture: Lecture,
+    assignment: Assignment,
+    rows: Submission[],
+    setRows: React.Dispatch<React.SetStateAction<Submission[]>>,
+    manualGradeSubmission: Submission,
+    setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
+  };
+  const submission = manualGradeSubmission;
+  const manualPath = `${lectureBasePath}${lecture.code}/manualgrade/${assignment.id}/${submission.id}`;
+  const rowIdx = rows.find(s => s.id = submission.id);
+
   const [gradeBook, setGradeBook] = React.useState(null);
-
-  const [path, setPath] = React.useState(
-    `${lectureBasePath}${props.lecture.code}/manualgrade/${props.assignment.id}/${props.submission.id}`
-  );
-
   const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -51,7 +60,7 @@ export const ManualGrading = (props: IManualGradingProps) => {
 
   React.useEffect(() => {
     reloadProperties();
-  },[]);
+  }, []);
 
   const openFinishDialog = () => {
     setDialogContent({
@@ -66,15 +75,14 @@ export const ManualGrading = (props: IManualGradingProps) => {
   };
 
   const finishGrading = () => {
-    props.submission.manual_status = 'manually_graded';
+    submission.manual_status = 'manually_graded';
     updateSubmission(
-      props.lecture.id,
-      props.assignment.id,
-      props.submission.id,
-      props.submission
+      lecture.id,
+      assignment.id,
+      submission.id,
+      submission
     ).then(
       response => {
-        props.onClose();
         enqueueSnackbar('Successfully Graded Submission', {
           variant: 'success'
         });
@@ -89,19 +97,19 @@ export const ManualGrading = (props: IManualGradingProps) => {
 
   const reloadProperties = () => {
     getProperties(
-      props.lecture.id,
-      props.assignment.id,
-      props.submission.id
+      lecture.id,
+      assignment.id,
+      submission.id
     ).then(properties => {
       const gradeBook = new GradeBook(properties);
       setGradeBook(gradeBook);
     });
   };
-  
+
   const handlePullSubmission = async () => {
-    await createManualFeedback(props.lecture.id, props.assignment.id, props.submission.id).then(
+    createManualFeedback(lecture.id, assignment.id, submission.id).then(
       response => {
-        openBrowser(path);
+        openBrowser(manualPath);
         enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
         });
@@ -116,41 +124,33 @@ export const ManualGrading = (props: IManualGradingProps) => {
 
   return (
     <Box sx={{ height: '100%' }}>
-      <SectionTitle title={'Manual Grading ' + props.assignment.id} />
       <Box sx={{ m: 2, mt: 5 }}>
-        <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
+        <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
-              Username
+              User
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
-              Lecture
+              Submitted at
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
-              sx={{ fontSize: 12, height: 35 }}
-            >
-              Assignment
-            </Typography>
-            <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Points
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Extra Credit
@@ -158,48 +158,31 @@ export const ManualGrading = (props: IManualGradingProps) => {
           </Stack>
           <Stack>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.username}
+              {submission.username}
             </Typography>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.lecture.name}
+              {utcToLocalFormat(submission.submitted_at)}
             </Typography>
             <Typography
-              color="text.primary"
-              sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
-            >
-              {props.assignment.name}
-              <Typography
-                color="text.secondary"
-                sx={{
-                  display: 'inline-block',
-                  fontSize: 14,
-                  ml: 2,
-                  height: 35
-                }}
-              >
-                {props.assignment.type}
-              </Typography>
-            </Typography>
-            <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
               {gradeBook?.getPoints()}
               <Typography
-                color="text.secondary"
+                color='text.secondary'
                 sx={{ display: 'inline-block', fontSize: 14, ml: 0.25 }}
               >
                 /{gradeBook?.getMaxPoints()}
               </Typography>
             </Typography>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
               {gradeBook?.getExtraCredits()}
@@ -209,20 +192,20 @@ export const ManualGrading = (props: IManualGradingProps) => {
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
       <Box sx={{ overflowY: 'auto' }}>
-        <FilesList path={path} sx={{ m: 2 }} />
+        <FilesList path={manualPath} sx={{ m: 2 }} />
       </Box>
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
-        <Tooltip title="Reload">
-          <IconButton aria-label="reload" onClick={() => reloadProperties()}>
+        <Tooltip title='Reload'>
+          <IconButton aria-label='reload' onClick={() => reloadProperties()}>
             <ReplayIcon />
           </IconButton>
         </Tooltip>
 
         <LoadingButton
           loading={loading}
-          color="primary"
-          variant="outlined"
+          color='primary'
+          variant='outlined'
           onClick={async () => {
             setLoading(true);
             await handlePullSubmission();
@@ -233,8 +216,8 @@ export const ManualGrading = (props: IManualGradingProps) => {
         </LoadingButton>
 
         <Button
-          variant="outlined"
-          color="success"
+          variant='outlined'
+          color='success'
           onClick={openFinishDialog}
           sx={{ ml: 2 }}
         >
@@ -245,4 +228,4 @@ export const ManualGrading = (props: IManualGradingProps) => {
       <AgreeDialog open={showDialog} {...dialogContent} />
     </Box>
   );
-}
+};

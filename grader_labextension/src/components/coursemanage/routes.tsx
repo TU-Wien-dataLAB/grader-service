@@ -17,6 +17,7 @@ import GradingTable, { GradingComponent } from './grading/grading';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
 import { FileView } from './files/file-view';
+import { ManualGrading } from './grading/manual-grading';
 
 const loadPermissions = async () => {
   try {
@@ -136,7 +137,7 @@ export const getRoutes = (root: HTMLElement) => {
                        crumb: (data) => 'Submissions',
                        link: (params) => 'submissions/'
                      }} />
-              <Route path={':sid'} element={<ExamplePage to={'/lecture/1/assignment/1/submissions'} />} handle={{
+              <Route path={':sid'} element={<ManualGrading />} handle={{
                 crumb: (data) => 'Grading View',
                 link: (params) => `${params.sid}/`
               }}></Route>

@@ -176,11 +176,20 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 export default function GradingTable() {
   const navigate = useNavigate();
 
-  const { lecture, assignment, rows, setRows } = useOutletContext() as {
+  const {
+    lecture,
+    assignment,
+    rows,
+    setRows,
+    manualGradeSubmission,
+    setManualGradeSubmission
+  } = useOutletContext() as {
     lecture: Lecture,
     assignment: Assignment,
     rows: Submission[],
-    setRows: React.Dispatch<React.SetStateAction<Submission[]>>
+    setRows: React.Dispatch<React.SetStateAction<Submission[]>>,
+    manualGradeSubmission: Submission,
+    setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
   };
 
   /**
@@ -341,7 +350,11 @@ export default function GradingTable() {
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => navigate(String(row.id))}
+                    onClick={(event) => {
+                      setManualGradeSubmission(row);
+                      navigate(String(row.id));
+                    }
+                    }
                     role='checkbox'
                     aria-checked={isItemSelected}
                     tabIndex={-1}
@@ -449,9 +462,10 @@ export const GradingComponent = () => {
   };
 
   const [rows, setRows] = React.useState(allSubmissions);
+  const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
 
   return <Box sx={{ m: 5 }}>
     <SectionTitle title='Grading' />
-    <Outlet context={{ lecture, assignment, rows, setRows }} />
+    <Outlet context={{ lecture, assignment, rows, setRows, manualGradeSubmission, setManualGradeSubmission }} />
   </Box>;
 };
