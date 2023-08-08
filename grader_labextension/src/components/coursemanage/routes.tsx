@@ -13,7 +13,7 @@ import { LectureComponent } from './lecture';
 import { getAllSubmissions } from '../../services/submissions.service';
 import { AssignmentModalComponent } from './assignment-modal';
 import { OverviewComponent } from './overview/overview';
-import { GradingComponent } from './grading/grading';
+import GradingTable, { GradingComponent } from './grading/grading';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
 import { FileView } from './files/file-view';
@@ -130,11 +130,17 @@ export const getRoutes = (root: HTMLElement) => {
               crumb: (data) => 'Files',
               link: (params) => 'files/'
             }}></Route>
-            <Route path={'submissions'} element={<GradingComponent root={root} />}
-                   handle={{
-                     crumb: (data) => 'Submissions',
-                     link: (params) => 'submissions/'
-                   }}></Route>
+            <Route id={'submissions'} path={'submissions'} element={<GradingComponent />}>
+              <Route index path={''} element={<GradingTable />}
+                     handle={{
+                       crumb: (data) => 'Submissions',
+                       link: (params) => 'submissions/'
+                     }} />
+              <Route path={':sid'} element={<ExamplePage to={'/lecture/1/assignment/1/submissions'} />} handle={{
+                crumb: (data) => 'Grading View',
+                link: (params) => `${params.sid}/`
+              }}></Route>
+            </Route>
             <Route path={'stats'} element={<StatsComponent root={root} />} handle={{
               crumb: (data) => 'Stats',
               link: (params) => 'stats/'

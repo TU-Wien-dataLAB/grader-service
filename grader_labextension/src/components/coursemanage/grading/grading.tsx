@@ -14,7 +14,7 @@ import Checkbox from '@mui/material/Checkbox';
 import { visuallyHidden } from '@mui/utils';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
-import { useRouteLoaderData } from 'react-router-dom';
+import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
 import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
@@ -174,15 +174,13 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 }
 
 export default function GradingTable() {
-  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+  const navigate = useNavigate();
+
+  const { lecture, assignment, rows, setRows } = useOutletContext() as {
     lecture: Lecture,
-    assignments: Assignment[],
-    users: { instructors: string[], tutors: string[], students: string[] }
-  };
-  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
     assignment: Assignment,
-    allSubmissions: Submission[],
-    latestSubmissions: Submission[]
+    rows: Submission[],
+    setRows: React.Dispatch<React.SetStateAction<Submission[]>>
   };
 
   /**
@@ -210,7 +208,6 @@ export default function GradingTable() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [shownSubmissions, setShownSubmissions] = React.useState('none' as 'none' | 'latest' | 'best');
-  const [rows, setRows] = React.useState(allSubmissions);
 
   const [showLogs, setShowLogs] = React.useState(false);
   const [logs, setLogs] = React.useState(undefined);
@@ -233,7 +230,7 @@ export default function GradingTable() {
     );
   };
 
-  const updateSubmissions = (filter: "none" | "latest" | "best") => {
+  const updateSubmissions = (filter: 'none' | 'latest' | 'best') => {
     getAllSubmissions(lecture.id, assignment.id, filter, true, true).then(
       response => {
         setRows(response);
@@ -344,7 +341,7 @@ export default function GradingTable() {
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, row.id)}
+                    onClick={(event) => navigate(String(row.id))}
                     role='checkbox'
                     aria-checked={isItemSelected}
                     tabIndex={-1}
@@ -359,6 +356,7 @@ export default function GradingTable() {
                         inputProps={{
                           'aria-labelledby': labelId
                         }}
+                        onClick={(event) => handleClick(event, row.id)}
                       />
                     </TableCell>
                     <TableCell
@@ -438,16 +436,22 @@ export default function GradingTable() {
   );
 }
 
-/**
- * Props for GradingComponent.
- */
-export interface IGradingProps {
-  root: HTMLElement;
-}
+export const GradingComponent = () => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
 
-export const GradingComponent = (props: IGradingProps) => {
+  const [rows, setRows] = React.useState(allSubmissions);
+
   return <Box sx={{ m: 5 }}>
     <SectionTitle title='Grading' />
-    <GradingTable />
+    <Outlet context={{ lecture, assignment, rows, setRows }} />
   </Box>;
 };
