@@ -17,11 +17,13 @@ import { Assignment } from '../../../model/assignment';
 import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack } from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
 import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
 import { EnhancedTableToolbar } from './table-toolbar';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import { green } from '@mui/material/colors';
 
 
 /**
@@ -45,17 +47,17 @@ const getColor = (value: string) => {
 
 export const getAutogradeChip = (submission: Submission) => {
   return <Chip
-    sx={{textTransform: "capitalize"}}
+    sx={{ textTransform: 'capitalize' }}
     variant='outlined'
-    label={submission.auto_status.split("_").join(" ")}
+    label={submission.auto_status.split('_').join(' ')}
     color={getColor(submission.auto_status)} />;
 };
 
 export const getManualChip = (submission: Submission) => {
   return <Chip
-    sx={{textTransform: "capitalize"}}
+    sx={{ textTransform: 'capitalize' }}
     variant='outlined'
-    label={submission.manual_status.split("_").join(" ")}
+    label={submission.manual_status.split('_').join(' ')}
     color={getColor(submission.manual_status)}
   />;
 };
@@ -110,7 +112,7 @@ function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) 
 
 interface HeadCell {
   disablePadding: boolean;
-  id: keyof Submission;
+  id: keyof Submission | 'edit';
   label: string;
   numeric: boolean;
 }
@@ -157,6 +159,12 @@ const headCells: readonly HeadCell[] = [
     numeric: true,
     disablePadding: false,
     label: 'Score'
+  },
+  {
+    id: 'edit',
+    numeric: false,
+    disablePadding: false,
+    label: 'Edit'
   }
 ];
 
@@ -198,18 +206,21 @@ function EnhancedTableHead(props: EnhancedTableProps) {
             padding={headCell.disablePadding ? 'none' : 'normal'}
             sortDirection={orderBy === headCell.id ? order : false}
           >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component='span' sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
+            {headCell.id !== 'edit'
+              ? <TableSortLabel
+                active={orderBy === headCell.id}
+                direction={orderBy === headCell.id ? order : 'asc'}
+                onClick={createSortHandler(headCell.id)}
+              >
+                {headCell.label}
+                {orderBy === headCell.id ? (
+                  <Box component='span' sx={visuallyHidden}>
+                    {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                  </Box>
+                ) : null}
+              </TableSortLabel>
+              : headCell.label
+            }
           </TableCell>
         ))}
       </TableRow>
@@ -351,7 +362,7 @@ export default function GradingTable() {
   );
 
   return (
-    <Box sx={{ flex: '1 1 100%', m: 5 }}>
+    <Box sx={{ flex: '1 1 100%', ml: 5, mr: 5 }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                               clearSelection={() => setSelected([])} selected={selected}
@@ -380,7 +391,7 @@ export default function GradingTable() {
                     hover
                     onClick={(event) => {
                       setManualGradeSubmission(row);
-                      navigate("manual");
+                      navigate('manual');
                     }
                     }
                     role='button'
@@ -412,9 +423,9 @@ export default function GradingTable() {
                     <TableCell align='left'>{row.username}</TableCell>
                     <TableCell align='right'>{utcToLocalFormat(row.submitted_at)}</TableCell>
                     <TableCell align='left'><Chip
-                      sx={{textTransform: "capitalize"}}
+                      sx={{ textTransform: 'capitalize' }}
                       variant='outlined'
-                      label={row.auto_status.split("_").join(" ")}
+                      label={row.auto_status.split('_').join(' ')}
                       color={getColor(row.auto_status)}
                       clickable={true}
                       onClick={(event) => openLogs(event, row.id)}
@@ -422,6 +433,15 @@ export default function GradingTable() {
                     <TableCell align='left'>{getManualChip(row)}</TableCell>
                     <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
                     <TableCell align='right'>{row.score}</TableCell>
+                    <TableCell style={{ width: 55 }}>
+                      <IconButton aria-label='Edit' size={'small'} onClick={(event) => {
+                        event.stopPropagation();
+                        setManualGradeSubmission(row);
+                        navigate("edit");
+                      }}>
+                        <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 );
               })}

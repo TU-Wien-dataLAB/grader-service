@@ -18,6 +18,7 @@ import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
 import { FileView } from './files/file-view';
 import { ManualGrading } from './grading/manual-grading';
+import { EditSubmission } from './grading/edit-submission';
 
 const loadPermissions = async () => {
   try {
@@ -139,6 +140,10 @@ export const getRoutes = (root: HTMLElement) => {
               <Route path={'manual'} element={<ManualGrading />} handle={{
                 crumb: (data) => 'Grading View',
                 link: (params) => `manual/`
+              }}></Route>
+              <Route path={'edit'} element={<EditSubmission />} handle={{
+                crumb: (data) => 'Edit Submission',
+                link: (params) => `edit/`
               }}></Route>
             </Route>
             <Route path={'stats'} element={<StatsComponent root={root} />} handle={{

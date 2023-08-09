@@ -26,26 +26,32 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
 import { LoadingButton } from '@mui/lab';
-import { pullAssignment, pushAssignment } from '../../../services/assignments.service';
-import { sub } from 'date-fns';
 import { lectureBasePath } from '../../../services/file.service';
+import { Link, useOutletContext } from 'react-router-dom';
+import Toolbar from '@mui/material/Toolbar';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-export interface IEditSubmissionProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  submission: Submission;
-  username: string;
-  onClose: () => void;
-}
+export const EditSubmission = () => {
+  const {
+    lecture,
+    assignment,
+    rows,
+    setRows,
+    manualGradeSubmission,
+    setManualGradeSubmission
+  } = useOutletContext() as {
+    lecture: Lecture,
+    assignment: Assignment,
+    rows: Submission[],
+    setRows: React.Dispatch<React.SetStateAction<Submission[]>>,
+    manualGradeSubmission: Submission,
+    setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
+  };
+  const path = `${lectureBasePath}${lecture.code}/edit/${assignment.id}/${manualGradeSubmission.id}`;
+  const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
-export const EditSubmission = (props: IEditSubmissionProps) => {
-
-  const [path, setPath] = React.useState(
-    `${lectureBasePath}${props.lecture.code}/edit/${props.assignment.id}/${props.submission.id}`
-  );
-
-  const [submission, setSubmission] = React.useState(props.submission);
-
+  const [submission, setSubmission] = React.useState(manualGradeSubmission);
   const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState({
@@ -59,7 +65,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
     setDialogContent({
       title: 'Edit Submission',
       message: 'Do you want to push your submission changes?',
-      handleAgree: async () => { 
+      handleAgree: async () => {
         await pushEditedFiles();
       },
       handleDisagree: () => {
@@ -70,7 +76,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   };
 
   const pushEditedFiles = async () => {
-    await pushSubmissionFiles(props.lecture, props.assignment, submission).then(
+    await pushSubmissionFiles(lecture, assignment, submission).then(
       response => {
         enqueueSnackbar('Successfully Pushed Edited Submission', {
           variant: 'success'
@@ -82,12 +88,11 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
         });
       }
     );
-    props.onClose();
   };
 
 
   const handlePullEditedSubmission = async () => {
-    await pullSubmissionFiles(props.lecture, props.assignment, submission).then(
+    await pullSubmissionFiles(lecture, assignment, submission).then(
       response => {
         openBrowser(path);
         enqueueSnackbar('Successfully Pulled Submission', {
@@ -103,7 +108,7 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
   };
 
   const setEditRepository = async () => {
-    await createOrOverrideEditRepository(props.lecture.id, props.assignment.id, submission.id).then(
+    await createOrOverrideEditRepository(lecture.id, assignment.id, submission.id).then(
       response => {
         enqueueSnackbar('Successfully Created Edit Repository', {
           variant: 'success'
@@ -116,24 +121,23 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
         });
       }
     );
-  }
+  };
 
   return (
-    <Box sx={{ height: '100%' }}>
-      <SectionTitle title={'Manual Grading ' + props.assignment.id} />
+    <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Box sx={{ m: 2, mt: 5 }}>
-        <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
+        <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Username
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Assignment
@@ -141,45 +145,43 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
           </Stack>
           <Stack>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.username}
+              {submission.username}
             </Typography>
 
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.assignment.name}
+              {assignment.name}
             </Typography>
           </Stack>
         </Stack>
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
-      <Box sx={{ overflowY: 'auto' }}>
-        <FilesList path={path} sx={{ m: 2 }} />
-      </Box>
+      <FilesList path={path} sx={{ m: 2 }} />
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
-      <LoadingButton
+        <LoadingButton
           loading={loading}
-          color={submission.edited ? "error" : "primary"}
-          variant="outlined"
+          color={submission.edited ? 'error' : 'primary'}
+          variant='outlined'
           onClick={async () => {
             setLoading(true);
             await setEditRepository();
             setLoading(false);
           }}
         >
-          {submission.edited ? "Reset " : "Create " }
+          {submission.edited ? 'Reset ' : 'Create '}
           Edit Repository
         </LoadingButton>
 
         <LoadingButton
           loading={loading}
-          color="primary"
-          variant="outlined"
+          color='primary'
+          variant='outlined'
           disabled={!submission.edited}
           onClick={async () => {
             setLoading(true);
@@ -191,21 +193,25 @@ export const EditSubmission = (props: IEditSubmissionProps) => {
         </LoadingButton>
 
         <Button
-          variant="outlined"
-          color="success"
+          variant='outlined'
+          color='success'
           disabled={!submission.edited}
           onClick={async () => {
             setLoading(true);
-            await openFinishEditing();
+            openFinishEditing();
             setLoading(false);
           }}
           sx={{ ml: 2 }}
         >
-            Push Edited Submission
+          Push Edited Submission
         </Button>
       </Stack>
+      <Box sx={{ flex: '1 1 100%' }}></Box>
+      <Toolbar>
+        <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
+      </Toolbar>
 
       <AgreeDialog open={showDialog} {...dialogContent} />
-    </Box>
+    </Stack>
   );
-}
+};
