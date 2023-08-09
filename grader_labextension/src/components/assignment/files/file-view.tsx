@@ -8,10 +8,10 @@ import { useRouteLoaderData } from 'react-router-dom';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
-import { submissionsReducer } from '../reducers';
+import { submissionsReducer } from '../reducers';
 
 export const FileView = () => {
-    const { lecture, assignments } = useRouteLoaderData('lecture') as {
+    const { lecture, assignments } = useRouteLoaderData('lecture') as {
         lecture: Lecture,
         assignments: Assignment[]
     };
@@ -21,8 +21,8 @@ export const FileView = () => {
         latestSubmissions: Submission[]
     };
 
-    const [assignmentState, setAssignmentState] = React.useState<Assignment>(assignment);
-    const [submissionsState, setSubmissions] = React.useState<Submission[]>(latestSubmissions);
+    const [assignmentState, setAssignmentState] = React.useState<Assignment>(assignment);
+    const [submissionsState, setSubmissions] = React.useState<Submission[]>(latestSubmissions);
 
 
     return <Box>

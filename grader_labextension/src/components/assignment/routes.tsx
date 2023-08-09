@@ -12,12 +12,12 @@ import { getAllSubmissions } from '../../services/submissions.service';
 
 
 import { enqueueSnackbar } from 'notistack';
-import { Assignment } from '../../model/assignment';
-import { Lecture } from '../../model/lecture';
+import { Assignment } from '../../model/assignment';
+import { Lecture } from '../../model/lecture';
 import { AssignmentManageComponent } from './assignmentmanage.component';
 import { LectureComponent } from './lecture';
 import { AssignmentComponent } from './assignment';
-import { FileView } from './files/file-view';
+import { FileView } from './files/file-view';
 
 export const loadPermissions = async () => {
     try {
@@ -29,7 +29,7 @@ export const loadPermissions = async () => {
         enqueueSnackbar(error.message, { 
             variant: 'error', 
         });
-    }   
+    }
 };
 
 export const loadLecture = async (lectureId: number) => {
@@ -158,7 +158,7 @@ export const getRoutes = (root: HTMLElement) => {
                       link: (params) => 'files/'
                     }}></Route>
                         </Route>
-                    </Route>           
+                    </Route>
             </Route>
         </Route>
     );

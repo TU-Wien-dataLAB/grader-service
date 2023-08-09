@@ -59,12 +59,12 @@ const validationSchema = yup.object({
 
 export const SettingsComponent = () => {
 
-  const { lecture, assignments } = useRouteLoaderData('lecture') as {
+  const { lecture, assignments } = useRouteLoaderData('lecture') as {
       lecture: Lecture,
       assignments: Assignment[],
   };
 
-  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
       assignment: Assignment,
       allSubmissions: Submission[],
       latestSubmissions: Submission[]

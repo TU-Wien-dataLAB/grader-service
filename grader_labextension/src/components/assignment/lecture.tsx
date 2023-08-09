@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 import * as React from 'react';
 import moment from 'moment';
-import { useNavigate, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { useNavigate, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import {
   Button, IconButton,
   Card,
@@ -25,10 +25,10 @@ import { AgreeDialog } from '../util/dialog';
 import { ButtonTr, GraderTable } from '../util/table';
 import { DeadlineComponent, getDisplayDate } from '../util/deadline';
 import { Assignment } from '../../model/assignment';
-import { AssignmentDetail } from '../../model/assignmentDetail';
+import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import { resetAssignment } from '../../services/assignments.service';
+import { resetAssignment } from '../../services/assignments.service';
 
 /*
     * Buttons for AssignmentTable
@@ -74,7 +74,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     ];
 
     const [showDialog, setShowDialog] = React.useState(false);
-    const [resetFunction, setResetFunction] = React.useState({handleAgree: null as () => void});
+    const [resetFunction, setResetFunction] = React.useState({handleAgree: null as () => void});
 
     const getResetAssignmentFunction = (assignmentId: number) => {
         return async () => {
@@ -109,7 +109,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                       onClick={() => navigate(`/lecture/${props.lecture.id}/assignment/${row.id}`)}
                       >
                       <TableCell component='th' scope='row'>
-                        <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
+                        <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
                       </TableCell>
                       <TableCell style={{ width: 34 }}>{row.points}</TableCell>
                       <TableCell>
@@ -133,7 +133,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                           <RestartAltIcon sx={{ color: blue[500] }} />
                         </IconButton>
                       </TableCell>
-                      <TableCell style={{ width: 55 }}>
+                      <TableCell style={{ width: 55 }}>
                         <IconButton aria-label='detail view' size={'small'}>
                           <SearchIcon />
                         </IconButton>
@@ -145,8 +145,8 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                 );
             }}
             />
-            <AgreeDialog open={showDialog} title={'Reset Assignment'} message={'Do you really want to reset this assignment?'} 
-                         handleDisagree={() => setShowDialog(false)} {...resetFunction} />
+            <AgreeDialog open={showDialog} title={'Reset Assignment'} message={'Do you really want to reset this assignment?'} 
+                         handleDisagree={() => setShowDialog(false)} {...resetFunction} />
             </>
     );
 };

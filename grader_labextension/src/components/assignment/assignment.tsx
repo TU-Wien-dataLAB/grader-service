@@ -7,7 +7,7 @@
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
-import { AssignmentDetail } from '../../model/assignmentDetail';
+import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { 
     Box, 
@@ -19,7 +19,7 @@ import { SubmissionList } from './submission-list';
 import LoadingOverlay from '../util/overlay';
 import { Feedback } from './feedback';
 import { AssignmentStatus } from './assignment-status';
-import { Files } from './files/files';
+import { Files } from './files/files';
 import WarningIcon from '@mui/icons-material/Warning';
 import {
   useRouteLoaderData,
@@ -34,7 +34,7 @@ import {
   deleteKey,
   loadNumber,
 } from '../../services/storage.service';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 const calculateActiveStep = (submissions: Submission[]) => {
     const hasFeedback = submissions.reduce(
@@ -63,7 +63,7 @@ export interface IAssignmentModalProps {
  */
 export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
-  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
+  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
     lecture: Lecture,
     assignment: Assignment,
     submissions: Submission[],
@@ -81,11 +81,11 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
 
   const [displayAssignment, setDisplayAssignment] = React.useState(
-      loadNumber('a-opened-assignment') === assignment.id || false
+      loadNumber('a-opened-assignment') === assignment.id || false
   );
 
   const [hasFeedback, setHasFeedback] = React.useState(false)
-  const [files, setFiles] = React.useState([]);
+  const [files, setFiles] = React.useState([]);
   const [bestScore, setBestScore] = React.useState('-');
 
   const [activeStatus, setActiveStatus] = React.useState(0);
