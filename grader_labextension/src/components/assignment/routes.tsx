@@ -31,6 +31,7 @@ export const loadPermissions = async () => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
 };
 
@@ -45,6 +46,7 @@ export const loadLecture = async (lectureId: number) => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
 };
 
@@ -64,6 +66,7 @@ export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
 };
 
@@ -79,6 +82,7 @@ export const loadAssignment = async (lectureId: number, assignmentId: number) =>
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw error;
   }
 };
 
