@@ -1,12 +1,6 @@
-import { Box, Grid } from '@mui/material';
-import { SectionTitle } from '../../util/section-title';
-import { AssignmentStatus } from '../overview/assignment-status';
-import { OverviewCard } from '../overview/overview-card';
+import { Box } from '@mui/material';
 import { Files } from './files';
-import { GitLog } from './git-log';
 import * as React from 'react';
-import { getGitLog, IGitLogObject } from '../../../services/file.service';
-import { RepoType } from '../../util/repo-type';
 import { useRouteLoaderData } from 'react-router-dom';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
@@ -25,20 +19,10 @@ export const FileView = () => {
   };
 
   const [assignmentState, setAssignmentState] = React.useState(assignment);
-  const [gitLogs, setGitLog] = React.useState([] as IGitLogObject[]);
-
   const onAssignmentChange = (assignment: Assignment) => {
     setAssignmentState(assignment);
   };
-  const updateGitLog = () => {
-    getGitLog(lecture, assignment, RepoType.SOURCE, 10).then(logs =>
-      setGitLog(logs)
-    );
-  };
 
-  React.useEffect(() => {
-    updateGitLog();
-  }, [assignmentState]);
 
   return (
   
@@ -46,7 +30,6 @@ export const FileView = () => {
     <Files
             lecture={lecture}
             assignment={assignmentState}
-            onAssignmentChange={onAssignmentChange}
-            updateGitLog={updateGitLog} />
+            onAssignmentChange={onAssignmentChange} />
     </Box>
 )};

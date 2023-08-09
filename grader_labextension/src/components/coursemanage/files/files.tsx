@@ -26,6 +26,7 @@ import {
   Chip,
   Grid,
   IconButton,
+  Modal,
   Tab,
   Tabs,
   Tooltip,
@@ -34,7 +35,7 @@ import {
 import ReplayIcon from '@mui/icons-material/Replay';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { FilesList } from '../../util/file-list';
@@ -44,10 +45,10 @@ import moment from 'moment';
 import { openBrowser, openTerminal } from '../overview/util';
 import { PageConfig } from '@jupyterlab/coreutils';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
-import { getRemoteStatus, lectureBasePath } from '../../../services/file.service';
+import { IGitLogObject, getGitLog, getRemoteStatus, lectureBasePath } from '../../../services/file.service';
 import { RepoType } from '../../util/repo-type';
-import { AddBox } from '@mui/icons-material';
 import { enqueueSnackbar } from 'notistack';
+import {  GitLogModal } from './git-log';
 
 /**
  * Props for FilesComponent.
@@ -56,7 +57,6 @@ export interface IFilesProps {
   lecture: Lecture;
   assignment: Assignment;
   onAssignmentChange: (assignment: Assignment) => void;
-  updateGitLog: () => void;
 }
 
 /**
@@ -67,6 +67,17 @@ export const Files = (props: IFilesProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
+  const [gitLogs, setGitLog] = React.useState([] as IGitLogObject[]);
+  const [assignmentState, setAssignmentState] = React.useState(assignment);
+ 
+  const updateGitLog = () => {
+    getGitLog(lecture, assignment, RepoType.SOURCE, 10).then(logs =>
+      setGitLog(logs)
+    );
+  };
+  React.useEffect(() => {
+    updateGitLog();
+  }, [assignmentState]);
   
   openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
 
@@ -289,7 +300,6 @@ export const Files = (props: IFilesProps) => {
                 console.error('Error cannot intepret unkown as error', err);
             }
         }
-        props.updateGitLog();
         reloadFiles();
         getRemoteStatus(
           props.lecture,
@@ -318,7 +328,7 @@ export const Files = (props: IFilesProps) => {
 
   return (
     <Box sx={{}}>
-      <Card elevation={3} sx={{}}>
+      <Card elevation={3} sx={{width: '100%', overflowX: 'auto'}}>
         <CardHeader
           title="Files"
           titleTypographyProps={{ display: 'inline' }}
@@ -338,7 +348,7 @@ export const Files = (props: IFilesProps) => {
           }
           subheaderTypographyProps={{ display: 'inline', ml: 2 }}
         />
-      <CardContent sx={{ overflowY: 'auto' }}>
+      <CardContent sx={{ overflow: 'auto' }}>
         <Tabs
           variant="fullWidth"
           value={selectedDir}
@@ -354,7 +364,7 @@ export const Files = (props: IFilesProps) => {
           />
         </Box>
       </CardContent>
-      <CardActions>
+      <CardActions sx={{display: 'flex'}}>
         <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
             <Tooltip
               title={`Commit Changes${
@@ -362,7 +372,7 @@ export const Files = (props: IFilesProps) => {
               }`}
             >
               <Button
-                sx={{ mt: -1 }}
+                sx={{ mt: -1, mr: 1 }}
                 variant="outlined"
                 size="small"
                 color={isCommitOverwrite() ? 'error' : 'primary'}
@@ -379,7 +389,7 @@ export const Files = (props: IFilesProps) => {
           >
             <Button
               color={isPullOverwrite() ? 'error' : 'primary'}
-              sx={{ mt: -1, ml: 2 }}
+              sx={{ mt: -1 }}
               onClick={() => handlePullAssignment()}
               variant="outlined"
               size="small"
@@ -389,14 +399,17 @@ export const Files = (props: IFilesProps) => {
             </Button>
           </Tooltip>
           <Tooltip title={'Create new notebook.'}>
-            <IconButton
-              color={'primary'}
-              sx={{ mt: -1, ml: 2 }}
+            <Button
+              variant='outlined'
+              size="small"
+              sx={{ mt: -1}}
               onClick={newUntitled}
             >
-              <AddBoxIcon />
-            </IconButton>
+              <AddIcon fontSize='small' sx={{mr: 1}}/>
+              Add new
+            </Button>
           </Tooltip>
+        <GitLogModal gitLogs={gitLogs}/>
         <Tooltip title={'Show in File-Browser'}>
           <IconButton
             sx={{ mt: -1, pt: 0, pb: 0 }}
@@ -420,7 +433,7 @@ export const Files = (props: IFilesProps) => {
           >
             <TerminalIcon />
           </IconButton>
-        </Tooltip>
+        </Tooltip>  
       </CardActions>
       <AgreeDialog open={showDialog} {...dialogContent} />
     </Card>
