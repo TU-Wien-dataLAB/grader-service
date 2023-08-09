@@ -33,7 +33,7 @@ export class CourseManageView extends ReactWidget {
       console.log(`Restoring path: ${savedPath}`);
       path = savedPath;
     }
-    const router = createMemoryRouter(getRoutes(this.root), { initialEntries: [path] });
+    const router = createMemoryRouter(getRoutes(), { initialEntries: [path] });
     return (
       <SnackbarProvider maxSnack={3}>
         <RouterProvider router={router} />

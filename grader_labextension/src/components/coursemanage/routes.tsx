@@ -84,7 +84,7 @@ function ExamplePage({ to }) {
   );
 }
 
-export const getRoutes = (root: HTMLElement) => {
+export const getRoutes = () => {
   const routes = createRoutesFromElements(
     // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
     <Route element={<Page id={'course-manage'} />} errorElement={<ErrorPage id={'course-manage'} />}>
@@ -110,12 +110,12 @@ export const getRoutes = (root: HTMLElement) => {
         >
           <Route
             index
-            element={<LectureComponent root={root} />}
+            element={<LectureComponent />}
           ></Route>
           <Route
             id={'assignment'}
             path={'assignment/:aid/*'}
-            element={<AssignmentModalComponent root={root} />}
+            element={<AssignmentModalComponent />}
             loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
             handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
@@ -146,7 +146,7 @@ export const getRoutes = (root: HTMLElement) => {
                 link: (params) => `edit/`
               }}></Route>
             </Route>
-            <Route path={'stats'} element={<StatsComponent root={root} />} handle={{
+            <Route path={'stats'} element={<StatsComponent />} handle={{
               crumb: (data) => 'Stats',
               link: (params) => 'stats/'
             }}></Route>

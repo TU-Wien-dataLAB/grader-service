@@ -141,7 +141,7 @@ export const getRoutes = (root: HTMLElement) => {
                 >
                     <Route
                         index
-                        element={<LectureComponent root={root} />}
+                        element={<LectureComponent />}
                     ></Route>
                     <Route
                         id={'assignment'}

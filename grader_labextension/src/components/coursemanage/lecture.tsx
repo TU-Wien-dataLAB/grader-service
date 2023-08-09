@@ -129,11 +129,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
 };
 
 
-interface ILectureComponentProps {
-  root: HTMLElement;
-}
-
-export const LectureComponent = (props: ILectureComponentProps) => {
+export const LectureComponent = () => {
   const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
     assignments: Assignment[],

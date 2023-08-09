@@ -1,4 +1,3 @@
-import { IStatsProps } from './stats';
 import React from 'react';
 import { Box, Card, CardContent, CardHeader } from '@mui/material';
 import {

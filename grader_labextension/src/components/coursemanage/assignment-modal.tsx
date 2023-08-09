@@ -25,11 +25,7 @@ function a11yProps(index) {
   };
 }
 
-export interface IAssignmentModalProps {
-  root: HTMLElement;
-}
-
-export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
+export const AssignmentModalComponent = () => {
   const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
     assignments: Assignment[],
@@ -46,20 +42,25 @@ export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
   const tab = match.params['*'];
 
   let value: number;
-  if (tab === "") value = 0;
-  else if (tab === "files")  value = 1;
-  else if (tab.includes("submissions"))  value = 2;
-  else if (tab === "stats")  value = 3;
-  else if (tab === "settings")  value = 4;
-  else {
+  if (tab === '') {
+    value = 0;
+  } else if (tab === 'files') {
+    value = 1;
+  } else if (tab.includes('submissions')) {
+    value = 2;
+  } else if (tab === 'stats') {
+    value = 3;
+  } else if (tab === 'settings') {
+    value = 4;
+  } else {
     console.warn(`Unknown tab ${tab}... navigating to overview page!`);
-     value = 0;
+    value = 0;
   }
 
   return (
     <Box sx={{ height: '95%', overflowY: 'auto' }}>
       <Box
-        sx={{ height: "100%", bgcolor: 'background.paper', display: 'flex' }}
+        sx={{ height: '100%', bgcolor: 'background.paper', display: 'flex' }}
       >
         <Tabs
           orientation='vertical'

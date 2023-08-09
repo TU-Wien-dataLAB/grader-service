@@ -10,7 +10,7 @@ import {
   Brush
 } from 'recharts';
 import { Box, Card, CardContent, CardHeader, Typography } from '@mui/material';
-import { IStatsProps, IStatsSubComponentProps } from './stats';
+import { IStatsSubComponentProps } from './stats';
 import moment from 'moment';
 import { Submission } from '../../../model/submission';
 import {

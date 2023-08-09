@@ -206,18 +206,10 @@ const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStuden
 };
 
 /**
- * Props for LectureComponent.
+ * Renders the lecture card which contains its assignments.
  */
-interface ILectureComponentProps {
-  root: HTMLElement;
-}
-
-/**
- * Renders the lecture card which contains it's assignments.
- * @param props Props of the lecture component
- */
-export const LectureComponent = (props: ILectureComponentProps) => {
-    const { lecture, assignments } = useRouteLoaderData('lecture') as {
+export const LectureComponent = () => {
+    const { lecture, assignments } = useRouteLoaderData('lecture') as {
         lecture: Lecture,
         assignments: AssignmentDetail[],
     };

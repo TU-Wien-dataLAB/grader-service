@@ -1,4 +1,4 @@
-import { filterUserSubmissions, IStatsProps, IStatsSubComponentProps } from './stats';
+import { filterUserSubmissions, IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
 import { Box, Card, CardContent, CardHeader } from '@mui/material';

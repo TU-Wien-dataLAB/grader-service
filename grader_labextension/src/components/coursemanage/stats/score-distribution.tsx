@@ -1,4 +1,4 @@
-import { IStatsProps, IStatsSubComponentProps } from './stats';
+import { IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
 import { Assignment } from '../../../model/assignment';

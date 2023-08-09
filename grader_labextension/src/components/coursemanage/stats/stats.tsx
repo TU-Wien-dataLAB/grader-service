@@ -24,20 +24,15 @@ export const filterUserSubmissions = (
   return submissions.filter((v, i, a) => !users.includes(v.username));
 };
 
-export interface IStatsProps {
-  root: HTMLElement;
-}
-
 export interface IStatsSubComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   allSubmissions: Submission[];
   latestSubmissions: Submission[];
   users: { students: string[]; tutors: string[]; instructors: string[] };
-  root: HTMLElement;
 }
 
-export const StatsComponent = (props: IStatsProps) => {
+export const StatsComponent = () => {
   const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
     assignments: Assignment[],
@@ -116,7 +111,6 @@ export const StatsComponent = (props: IStatsProps) => {
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
           <Grid md={12} lg={4}>
@@ -126,7 +120,6 @@ export const StatsComponent = (props: IStatsProps) => {
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
           <Grid md={12} lg={4}>
@@ -136,7 +129,6 @@ export const StatsComponent = (props: IStatsProps) => {
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
           <Grid md={12} lg={4}>
@@ -149,7 +141,6 @@ export const StatsComponent = (props: IStatsProps) => {
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
         </Grid>
