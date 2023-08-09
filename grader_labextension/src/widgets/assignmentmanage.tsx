@@ -10,31 +10,34 @@ import { SnackbarProvider } from 'notistack';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { getRoutes } from '../components/assignment/routes';
 import { loadString } from '../services/storage.service';
+import { Router } from '@remix-run/router';
 
 export class AssignmentManageView extends ReactWidget {
   /**
    * Construct a new assignment list widget
    */
   root: HTMLElement;
+  router: Router;
 
   constructor(options: AssignmentManageView.IOptions = {}) {
     super();
     this.id = options.id;
     this.addClass('GradingWidget');
     this.root = this.node;
-  }
 
-  render() {
     const savedPath = loadString('assignment-manage-react-router-path');
     let path = '/';
     if (savedPath !== null && savedPath !== '') {
       console.log(`Restoring path: ${savedPath}`);
       path = savedPath;
     }
-    const router = createMemoryRouter(getRoutes(this.root), {initialEntries: [path]});
+    this.router = createMemoryRouter(getRoutes(this.root), { initialEntries: [path] });
+  }
+
+  render() {
     return (
       <SnackbarProvider maxSnack={3}>
-        <RouterProvider router={router} />
+        <RouterProvider router={this.router} />
       </SnackbarProvider>
     );
   }
