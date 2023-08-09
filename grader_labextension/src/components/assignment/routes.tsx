@@ -20,22 +20,26 @@ import { AssignmentComponent } from './assignment';
 import { FileView } from './files/file-view';
 
 export const loadPermissions = async () => {
-    try {
-        await UserPermissions.loadPermissions();
-        const lectures = await getAllLectures(); 
-        const completedLectures = await getAllLectures(true);
-        return { lectures, completedLectures };
-    } catch (error: any) {
-        enqueueSnackbar(error.message, { 
-            variant: 'error', 
-        });
-    }
+  try {
+    await UserPermissions.loadPermissions();
+    const [lectures, completedLectures] = await Promise.all([
+      getAllLectures(),
+      getAllLectures(true)
+    ]);
+    return { lectures, completedLectures };
+  } catch (error: any) {
+    enqueueSnackbar(error.message, {
+      variant: 'error'
+    });
+  }
 };
 
 export const loadLecture = async (lectureId: number) => {
   try {
-    const lecture = await getLecture(lectureId);
-    const assignments = await getAllAssignments(lecture.id, false, true);
+    const [lecture, assignments] = await Promise.all([
+      getLecture(lectureId),
+      getAllAssignments(lectureId, false, true)
+    ]);
     return { lecture, assignments };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
@@ -48,37 +52,34 @@ export const loadLecture = async (lectureId: number) => {
  * Load submissions for all assignments in a lecture
  * */
 export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[]) => {
-    try {
-        const submissions = await Promise.all(
-            assignments.map(async (assignment) => {
-                const submissions = await getAllSubmissions(lecture.id, assignment.id, "none", false);
-                return { assignment, submissions };
-            })
-        );
-        return submissions;
-    } catch (error: any) {
-        enqueueSnackbar(error.message, {
-            variant: 'error'
-        });
-    }
+  try {
+    const submissions = await Promise.all(
+      assignments.map(async (assignment) => {
+        const submissions = await getAllSubmissions(lecture.id, assignment.id, 'none', false);
+        return { assignment, submissions };
+      })
+    );
+    return submissions;
+  } catch (error: any) {
+    enqueueSnackbar(error.message, {
+      variant: 'error'
+    });
+  }
 };
 
 export const loadAssignment = async (lectureId: number, assignmentId: number) => {
-    const err_assignment = { 
-        assignment: { id: -1, name: 'Error loading assignment', }
-    };
-
   try {
-    const lecture = await getLecture(lectureId);
-    const assignment = await getAssignment(lectureId, assignmentId);
-    const submissions = await getAllSubmissions(lectureId, assignmentId, "none", false);
+    const [lecture, assignment, submissions] = await Promise.all([
+      getLecture(lectureId),
+      getAssignment(lectureId, assignmentId),
+      getAllSubmissions(lectureId, assignmentId, 'none', false)
+    ]);
     return { lecture, assignment, submissions };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
   }
-    return err_assignment;
 };
 
 function ExamplePage({ to }) {
@@ -116,51 +117,51 @@ const testFetchAssignment = async (lectureId: number, assignmentId: number) => {
 };
 
 export const getRoutes = (root: HTMLElement) => {
-    const routes = createRoutesFromElements(
-        // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
-        <Route element={<Page id={"assignment-manage"} />} errorElement={<ErrorPage id={"assignment-manage"}/>}>
+  const routes = createRoutesFromElements(
+    // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
+    <Route element={<Page id={'assignment-manage'} />} errorElement={<ErrorPage id={'assignment-manage'} />}>
+      <Route
+        id={'root'}
+        path={'/*'}
+        loader={loadPermissions}
+        handle={{
+          crumb: (data) => 'Lectures',
+          link: (params) => '/'
+        }}
+      >
+        <Route index element={<AssignmentManageComponent />}></Route>
         <Route
-                id={'root'}
-                path={'/*'}
-                loader={loadPermissions}
-                handle={{
-                    crumb: (data) => 'Lectures',
-                    link: (params) => '/'
-                }}
-            >
-            <Route index element={<AssignmentManageComponent />}></Route>
-                <Route
-                    id={'lecture'}
-                    path={'lecture/:lid/*'}
-                    loader={({ params }) => loadLecture(+params.lid)}
-                    handle={{
-                        // functions in handle have to handle undefined data (error page is displayed afterwards)
-                        crumb: (data) => data?.lecture.name,
-                        link: (params) => `lecture/${params?.lid}/`
-                    }}
-                >
-                    <Route
-                        index
-                        element={<LectureComponent />}
-                    ></Route>
-                    <Route
-                        id={'assignment'}
-                        path={'assignment/:aid/*'}
-                        element={<AssignmentComponent root={root} />}
-                        loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
-                        handle={{
-                            crumb: (data) => data?.assignment.name,
-                            link: (params) => `assignment/${params?.aid}/`
-                        }}
-                    >
-                    <Route path={'files'} element={<FileView />} handle={{
-                      crumb: (data) => 'Files',
-                      link: (params) => 'files/'
-                    }}></Route>
-                        </Route>
-                    </Route>
-            </Route>
+          id={'lecture'}
+          path={'lecture/:lid/*'}
+          loader={({ params }) => loadLecture(+params.lid)}
+          handle={{
+            // functions in handle have to handle undefined data (error page is displayed afterwards)
+            crumb: (data) => data?.lecture.name,
+            link: (params) => `lecture/${params?.lid}/`
+          }}
+        >
+          <Route
+            index
+            element={<LectureComponent />}
+          ></Route>
+          <Route
+            id={'assignment'}
+            path={'assignment/:aid/*'}
+            element={<AssignmentComponent root={root} />}
+            loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
+            handle={{
+              crumb: (data) => data?.assignment.name,
+              link: (params) => `assignment/${params?.aid}/`
+            }}
+          >
+            <Route path={'files'} element={<FileView />} handle={{
+              crumb: (data) => 'Files',
+              link: (params) => 'files/'
+            }}></Route>
+          </Route>
         </Route>
-    );
-    return routes;
+      </Route>
+    </Route>
+  );
+  return routes;
 };

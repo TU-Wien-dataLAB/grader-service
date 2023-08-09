@@ -23,8 +23,10 @@ import { EditSubmission } from './grading/edit-submission';
 const loadPermissions = async () => {
   try {
     await UserPermissions.loadPermissions();
-    const lectures = await getAllLectures();
-    const completedLectures = await getAllLectures(true);
+    const [lectures, completedLectures] = await Promise.all([
+      getAllLectures(),
+      getAllLectures(true)
+    ]);
     return { lectures, completedLectures };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
@@ -35,25 +37,26 @@ const loadPermissions = async () => {
 
 const loadLecture = async (lectureId: number) => {
   try {
-    const lecture = await getLecture(lectureId);
-    const assignments = await getAllAssignments(lecture.id);
-    const users = await getUsers(lecture);
-
+    const [lecture, assignments, users] = await Promise.all([
+      getLecture(lectureId),
+      getAllAssignments(lectureId),
+      getUsers(lectureId)
+    ]);
     return { lecture, assignments, users };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
   }
-  return { lecture: { id: lectureId, name: 'Recommender Systems' } };
 };
 
-// TODO: remove test code
 const loadAssignment = async (lectureId: number, assignmentId: number) => {
   try {
-    const assignment = await getAssignment(lectureId, assignmentId);
-    const allSubmissions = await getAllSubmissions(lectureId, assignmentId, 'none', true);
-    const latestSubmissions = await getAllSubmissions(lectureId, assignmentId, 'latest', true);
+    const [assignment, allSubmissions, latestSubmissions] = await Promise.all([
+      getAssignment(lectureId, assignmentId),
+      getAllSubmissions(lectureId, assignmentId, 'none', true),
+      getAllSubmissions(lectureId, assignmentId, 'latest', true)
+    ]);
     return { assignment, allSubmissions, latestSubmissions };
   } catch (error: any) {
     enqueueSnackbar(error.message, {

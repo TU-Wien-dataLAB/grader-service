@@ -56,7 +56,7 @@ export const StatsComponent = () => {
     setLatestSubmissionsState(
       await getAllSubmissions(lecture.id, assignment.id, 'latest', true)
     );
-    setUsersState(await getUsers(lecture));
+    setUsersState(await getUsers(lecture.id));
     setGb(
       new GradeBook(
         await getAssignmentProperties(lecture.id, assignment.id)
@@ -78,7 +78,7 @@ export const StatsComponent = () => {
   }, [allSubmissions, latestSubmissions]);
 
   React.useEffect(() => {
-    getUsers(lecture).then(response => {
+    getUsers(lecture.id).then(response => {
       setUsersState(response);
     });
   }, [users]);

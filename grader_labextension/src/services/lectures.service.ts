@@ -12,13 +12,13 @@ export function createLecture(lecture: Lecture): Promise<Lecture> {
 }
 
 export function getAllLectures(complete: boolean = false, reload = false): Promise<Lecture[]> {
-  let url = '/lectures'
+  let url = '/lectures';
   if (complete) {
-      let searchParams = new URLSearchParams({
-        "complete": String(complete)
-      })
-      url += '?' + searchParams;
-    }
+    let searchParams = new URLSearchParams({
+      'complete': String(complete)
+    });
+    url += '?' + searchParams;
+  }
   return request<Lecture[]>(HTTPMethod.GET, url, reload);
 }
 
@@ -34,7 +34,10 @@ export function deleteLecture(lectureId: number): void {
   request<void>(HTTPMethod.DELETE, `/lectures/${lectureId}`);
 }
 
-//TODO: create Datapackage model to replace any
-export function getUsers(lecture: Lecture) : Promise<any> {
-  return request<any>(HTTPMethod.GET, `/lectures/${lecture.id}/users`);
+export function getUsers(lectureId: number): Promise<{ instructors: string[], tutors: string[], students: string[] }> {
+  return request<{
+    instructors: string[],
+    tutors: string[],
+    students: string[]
+  }>(HTTPMethod.GET, `/lectures/${lectureId}/users`);
 }
