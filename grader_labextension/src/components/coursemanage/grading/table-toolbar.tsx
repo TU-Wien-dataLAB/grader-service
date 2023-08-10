@@ -6,7 +6,6 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import * as React from 'react';
-import { AgreeDialog } from '../../util/dialog';
 import { ltiSyncSubmissions } from '../../../services/submissions.service';
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
@@ -15,25 +14,22 @@ import { PageConfig } from '@jupyterlab/coreutils';
 import { autogradeSubmission, generateFeedback, saveSubmissions } from '../../../services/grading.service';
 import { lectureBasePath, openFile } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
+import { showDialog } from '../../util/dialog-provider';
 
-export const autogradeSubmissionsDialog = async (setShowDialog, setDialogContent, handleAgree) => {
-  setDialogContent({
-    title: 'Autograde Selected Submissions',
-    message: 'Do you wish to autograde the selected submissions?',
-    handleAgree: handleAgree,
-    handleDisagree: () => setShowDialog(false)
-  });
-  setShowDialog(true);
+export const autogradeSubmissionsDialog = async (handleAgree) => {
+  showDialog(
+    'Autograde Selected Submissions',
+    'Do you wish to autograde the selected submissions?',
+    handleAgree
+  );
 };
 
-export const generateFeedbackDialog = async (setShowDialog, setDialogContent, handleAgree) => {
-  setDialogContent({
-    title: 'Generate Feedback',
-    message: 'Do you wish to generate Feedback of the selected submissions?',
-    handleAgree: handleAgree,
-    handleDisagree: () => setShowDialog(false)
-  });
-  setShowDialog(true);
+export const generateFeedbackDialog = async (handleAgree) => {
+  showDialog(
+    'Generate Feedback',
+    'Do you wish to generate Feedback of the selected submissions?',
+    handleAgree
+  );
 };
 
 interface EnhancedTableToolbarProps {
@@ -51,14 +47,6 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const numSelected = selected.length;
   const ltiEnabled = PageConfig.getOption('enable_lti_features') === 'true';
 
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
-
   const optionName = () => {
     if (props.shownSubmissions === 'latest') {
       return 'Latest';
@@ -70,13 +58,12 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   };
 
   const handleSyncSubmission = async () => {
-    setDialogContent({
-      title: 'LTI Sync Submission',
-      message: 'Do you wish to sync Submissions?',
-      handleAgree: async () => {
+    showDialog(
+      'LTI Sync Submission',
+      'Do you wish to sync Submissions?',
+      async () => {
         await ltiSyncSubmissions(lecture.id, assignment.id)
           .then(response => {
-            setShowDialog(false);
             enqueueSnackbar(
               'Successfully matched ' +
               response.syncable_users +
@@ -91,16 +78,13 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             );
           })
           .catch(error => {
-            setShowDialog(false);
             enqueueSnackbar(
               'Error while trying to sync submissions:' + error.message,
               { variant: 'error' }
             );
           });
-      },
-      handleDisagree: () => setShowDialog(false)
-    });
-    setShowDialog(true);
+      }
+    );
   };
 
   const handleExportSubmissions = async () => {
@@ -118,7 +102,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   };
 
   const handleAutogradeSubmissions = async () => {
-    await autogradeSubmissionsDialog(setShowDialog, setDialogContent, async () => {
+    await autogradeSubmissionsDialog(async () => {
       try {
         await Promise.all(
           selected.map(async id => {
@@ -140,12 +124,11 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         });
       }
       clearSelection();
-      setShowDialog(false);
     });
   };
 
   const handleGenerateFeedback = async () => {
-    await generateFeedbackDialog(setShowDialog, setDialogContent, async () => {
+    await generateFeedbackDialog(async () => {
       try {
         await Promise.all(
           selected.map(async id => {
@@ -167,7 +150,6 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         });
       }
       clearSelection();
-      setShowDialog(false);
     });
   };
 
@@ -249,7 +231,6 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           </Stack>
         )}
       </Toolbar>
-      <AgreeDialog open={showDialog} {...dialogContent} />
     </>
   );
 }

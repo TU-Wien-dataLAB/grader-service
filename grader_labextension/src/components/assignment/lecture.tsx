@@ -21,134 +21,125 @@ import SearchIcon from '@mui/icons-material/Search';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { enqueueSnackbar } from 'notistack';
 
-import { AgreeDialog } from '../util/dialog';
 import { ButtonTr, GraderTable } from '../util/table';
 import { DeadlineComponent, getDisplayDate } from '../util/deadline';
 import { Assignment } from '../../model/assignment';
 import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import { resetAssignment } from '../../services/assignments.service';
+import { resetAssignment } from '../../services/assignments.service';
+import { showDialog } from '../util/dialog-provider';
 
 /*
     * Buttons for AssignmentTable
     * */
 interface IEditProps {
-    status: Assignment.StatusEnum;
+  status: Assignment.StatusEnum;
 }
 
 const EditButton = (props: IEditProps) => {
-    if (props.status === Assignment.StatusEnum.Released) {
-        return <EditNoteOutlinedIcon sx={{ color: green[500] }} />;
-    }
-    return <FileDownloadIcon sx={{ color: blue[500] }} />;
-}
+  if (props.status === Assignment.StatusEnum.Released) {
+    return <EditNoteOutlinedIcon sx={{ color: green[500] }} />;
+  }
+  return <FileDownloadIcon sx={{ color: blue[500] }} />;
+};
 
 interface IFeedbackProps {
-    feedback_available: boolean;
+  feedback_available: boolean;
 };
 
 const FeedbackIcon = (props: IFeedbackProps) => {
-    if (props.feedback_available) {
-        return <DoneIcon sx={{ color: green[500] }} />;
-    }
-    return <CloseIcon sx={{ color: red[500] }} />;
-}
+  if (props.feedback_available) {
+    return <DoneIcon sx={{ color: green[500] }} />;
+  }
+  return <CloseIcon sx={{ color: red[500] }} />;
+};
 
 interface IAssignmentTableProps {
-    lecture: Lecture;
-    rows: AssignmentStudent[];
+  lecture: Lecture;
+  rows: AssignmentStudent[];
 }
 
 
 const AssignmentTable = (props: IAssignmentTableProps) => {
-    const navigate = useNavigate(); 
-    const headers = [
-        { name: 'Name' },
-        { name: 'Points', width: 75 },
-        { name: 'Deadline' },
-        { name: 'Edit' },
-        { name: 'Reset' },
-        { name: 'Detail View' },
-        { name: 'Feedback Available' }
-    ];
+  const navigate = useNavigate();
+  const headers = [
+    { name: 'Name' },
+    { name: 'Points', width: 75 },
+    { name: 'Deadline' },
+    { name: 'Edit' },
+    { name: 'Reset' },
+    { name: 'Detail View' },
+    { name: 'Feedback Available' }
+  ];
 
-    const [showDialog, setShowDialog] = React.useState(false);
-    const [resetFunction, setResetFunction] = React.useState({handleAgree: null as () => void});
-
-    const getResetAssignmentFunction = (assignmentId: number) => {
-        return async () => {
-            try {
-                await resetAssignment(
-                    props.lecture,
-                    props.rows.find(a => a.id === assignmentId)
-                );
-                enqueueSnackbar('Assignment reset successfully', { 
-                    variant: 'success' 
-                });
-            } catch (error: any) {
-                enqueueSnackbar(error.message, {
-                    variant: 'error'
-                });
-            }
-            setShowDialog(false);
-        };
-    };
-                    
-
-    return (
-        <>
-          <GraderTable<AssignmentStudent>
-            headers={headers}
-            rows={props.rows}
-            rowFunc={row => {
-                return (
-                    <TableRow
-                      key={row.name}
-                      component={ButtonTr}
-                      onClick={() => navigate(`/lecture/${props.lecture.id}/assignment/${row.id}`)}
-                      >
-                      <TableCell component='th' scope='row'>
-                        <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
-                      </TableCell>
-                      <TableCell style={{ width: 34 }}>{row.points}</TableCell>
-                      <TableCell>
-                        <DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} />
-                      </TableCell>
-                      <TableCell style={{ width: 55 }}>
-                        <IconButton aria-label='Edit' size={'small'}>
-                          <EditButton status={row.status} />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell style={{ width: 55 }}>
-                        <IconButton 
-                           aria-label='reset' 
-                           size={'small'}
-                           onClick={(e) => {
-                               setResetFunction({handleAgree: getResetAssignmentFunction(row.id)});
-                               setShowDialog(true);
-                               e.stopPropagation();
-                           }}
-                           >
-                          <RestartAltIcon sx={{ color: blue[500] }} />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell style={{ width: 55 }}>
-                        <IconButton aria-label='detail view' size={'small'}>
-                          <SearchIcon />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell style={{width: 55 }}>
-                        <FeedbackIcon feedback_available={row.feedback_available} />
-                      </TableCell>
-                    </TableRow>
-                );
-            }}
-            />
-            <AgreeDialog open={showDialog} title={'Reset Assignment'} message={'Do you really want to reset this assignment?'} 
-                         handleDisagree={() => setShowDialog(false)} {...resetFunction} />
-            </>
-    );
+  return (
+    <>
+      <GraderTable<AssignmentStudent>
+        headers={headers}
+        rows={props.rows}
+        rowFunc={row => {
+          return (
+            <TableRow
+              key={row.name}
+              component={ButtonTr}
+              onClick={() => navigate(`/lecture/${props.lecture.id}/assignment/${row.id}`)}
+            >
+              <TableCell component='th' scope='row'>
+                <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
+              </TableCell>
+              <TableCell style={{ width: 34 }}>{row.points}</TableCell>
+              <TableCell>
+                <DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} />
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <IconButton aria-label='Edit' size={'small'}>
+                  <EditButton status={row.status} />
+                </IconButton>
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <IconButton
+                  aria-label='reset'
+                  size={'small'}
+                  onClick={(e) => {
+                    showDialog(
+                      'Reset Assignment',
+                      'Do you really want to reset this assignment?',
+                      async () => {
+                        try {
+                          await resetAssignment(
+                            props.lecture,
+                            props.rows.find(a => a.id === row.id)
+                          );
+                          enqueueSnackbar('Assignment reset successfully', {
+                            variant: 'success'
+                          });
+                        } catch (error: any) {
+                          enqueueSnackbar(error.message, {
+                            variant: 'error'
+                          });
+                        }
+                      });
+                    e.stopPropagation();
+                  }}
+                >
+                  <RestartAltIcon sx={{ color: blue[500] }} />
+                </IconButton>
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <IconButton aria-label='detail view' size={'small'}>
+                  <SearchIcon />
+                </IconButton>
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <FeedbackIcon feedback_available={row.feedback_available} />
+              </TableCell>
+            </TableRow>
+          );
+        }}
+      />
+    </>
+  );
 };
 
 /*
@@ -159,25 +150,25 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     * classes and sub-routines below are called from this function.
     * */
 interface AssignmentStudent extends AssignmentDetail {
-    feedback_available: boolean;
+  feedback_available: boolean;
 }
 
 /*
     * Scan all submissions return true if feedback is available for that assignment.
     * */
 const feedbackAvailable = (submissions: Submission[]): boolean => {
-    /* Find the submissions equal to the assignmentId */
-    if (submissions === undefined) {
-        return false;
-    }
-    /* If we have a submission, check if it has feedback */
-    for (const submission of submissions) {
-        if (submission.feedback_available === true) {
-            return true;
-        }
-    }
+  /* Find the submissions equal to the assignmentId */
+  if (submissions === undefined) {
     return false;
-}
+  }
+  /* If we have a submission, check if it has feedback */
+  for (const submission of submissions) {
+    if (submission.feedback_available === true) {
+      return true;
+    }
+  }
+  return false;
+};
 
 /*
     * Transform the AssignmentDetail array into an AssignmentStudent array
@@ -185,76 +176,75 @@ const feedbackAvailable = (submissions: Submission[]): boolean => {
     * feedback available for any, then use this to set a flag in the 
     * AssignmentStudent object */
 const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStudent[] => {
-    const result = [] as AssignmentStudent[]; 
-    for (const assignment of assignments) {
-        /* Get any existing submissions */
-        const existingSubmissions = assignment.submissions;
-        let feedback_available = false;
+  const result = [] as AssignmentStudent[];
+  for (const assignment of assignments) {
+    /* Get any existing submissions */
+    const existingSubmissions = assignment.submissions;
+    let feedback_available = false;
 
-        /* If there are any submissions, check for feedback! */
-        if ((existingSubmissions !== undefined) || (existingSubmissions.length > 0)) {
-            feedback_available = feedbackAvailable(existingSubmissions);
-        }
-        /* Construct the AssignmentStudent object */
-        const assignmentStudent = {
-            ...assignment,
-            feedback_available: feedback_available
-        };
-        result.push(assignmentStudent);
+    /* If there are any submissions, check for feedback! */
+    if ((existingSubmissions !== undefined) || (existingSubmissions.length > 0)) {
+      feedback_available = feedbackAvailable(existingSubmissions);
     }
-    return result; 
+    /* Construct the AssignmentStudent object */
+    const assignmentStudent = {
+      ...assignment,
+      feedback_available: feedback_available
+    };
+    result.push(assignmentStudent);
+  }
+  return result;
 };
 
 /**
  * Renders the lecture card which contains its assignments.
  */
 export const LectureComponent = () => {
-    const { lecture, assignments } = useRouteLoaderData('lecture') as {
-        lecture: Lecture,
-        assignments: AssignmentDetail[],
-    };
+  const { lecture, assignments } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: AssignmentDetail[],
+  };
 
-    const navigation = useNavigation(); 
+  const navigation = useNavigation();
 
-    const newAssignmentSubmissions = transformAssignments(assignments);
+  const newAssignmentSubmissions = transformAssignments(assignments);
 
-    const [lectureState, setLecture] = React.useState(lecture); 
-    const [assignmentsState, setAssignments] = React.useState(newAssignmentSubmissions);
+  const [lectureState, setLecture] = React.useState(lecture);
+  const [assignmentsState, setAssignments] = React.useState(newAssignmentSubmissions);
 
 
-
-    if (navigation.state === 'loading') {
-        return (
-            <div>
-              <Card>
-                <LinearProgress />
-                </Card>
-            </div>
-        );
-    }
+  if (navigation.state === 'loading') {
+    return (
+      <div>
+        <Card>
+          <LinearProgress />
+        </Card>
+      </div>
+    );
+  }
 
   /**
    * Toggles collapsable in the card body.
    */
   return (
-      <Stack direction={'column'} sx={{ m: 5 }}>
+    <Stack direction={'column'} sx={{ m: 5 }}>
       <Typography variant={'h2'} sx={{ mb: 2 }}>
-          {lectureState.name}
-          {lectureState.complete ? (
-              <Typography
-                sx={{
-                    display: 'inline-block',
-                    ml: 0.75,
-                    fontSize: 16,
-                    color: red[400]
-                }}
-                >
-                complete 
-            </Typography>
-          ) : null}
-        </Typography> 
-        <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
-        <AssignmentTable lecture={lectureState} rows={assignmentsState} />
-      </Stack>
-      );
+        {lectureState.name}
+        {lectureState.complete ? (
+          <Typography
+            sx={{
+              display: 'inline-block',
+              ml: 0.75,
+              fontSize: 16,
+              color: red[400]
+            }}
+          >
+            complete
+          </Typography>
+        ) : null}
+      </Typography>
+      <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
+      <AssignmentTable lecture={lectureState} rows={assignmentsState} />
+    </Stack>
+  );
 };

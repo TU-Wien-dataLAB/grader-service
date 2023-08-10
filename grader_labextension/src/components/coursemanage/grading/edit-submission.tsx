@@ -21,7 +21,6 @@ import {
 import { GradeBook } from '../../../services/gradebook';
 import { createManualFeedback } from '../../../services/grading.service';
 import { FilesList } from '../../util/file-list';
-import { AgreeDialog } from '../../util/dialog';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
@@ -31,6 +30,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { showDialog } from '../../util/dialog-provider';
 
 export const EditSubmission = () => {
   const {
@@ -52,28 +52,7 @@ export const EditSubmission = () => {
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
   const [submission, setSubmission] = React.useState(manualGradeSubmission);
-  const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
-
-  const openFinishEditing = () => {
-    setDialogContent({
-      title: 'Edit Submission',
-      message: 'Do you want to push your submission changes?',
-      handleAgree: async () => {
-        await pushEditedFiles();
-      },
-      handleDisagree: () => {
-        setShowDialog(false);
-      }
-    });
-    setShowDialog(true);
-  };
 
   const pushEditedFiles = async () => {
     await pushSubmissionFiles(lecture, assignment, submission).then(
@@ -197,9 +176,13 @@ export const EditSubmission = () => {
           color='success'
           disabled={!submission.edited}
           onClick={async () => {
-            setLoading(true);
-            openFinishEditing();
-            setLoading(false);
+            showDialog(
+              'Edit Submission',
+              'Do you want to push your submission changes?',
+              async () => {
+                await pushEditedFiles();
+              }
+            );
           }}
           sx={{ ml: 2 }}
         >
@@ -210,8 +193,6 @@ export const EditSubmission = () => {
       <Toolbar>
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
       </Toolbar>
-
-      <AgreeDialog open={showDialog} {...dialogContent} />
     </Stack>
   );
 };

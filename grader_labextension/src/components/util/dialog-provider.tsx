@@ -4,11 +4,11 @@ import { LoadingButton } from '@mui/lab';
 import { enqueueSnackbar } from 'notistack';
 
 interface ProviderContext {
-  showDialog: (title: string, message: string, onAgree: () => Promise<void>) => void;
+  showDialog: (title: string, message: string, onAgree: (() => Promise<void>) | (() => void)) => void;
 }
 
 const DialogContext = React.createContext<ProviderContext>({
-  showDialog: (title: string, message: string, onAgree: () => Promise<void>) => {
+  showDialog: (title: string, message: string, onAgree: (() => Promise<void>) | (() => void)) => {
     return;
   }
 });
@@ -24,9 +24,9 @@ export const DialogProvider = (props: IDialogProviderProps) => {
   const [open, setOpen] = React.useState(false);
   const [title, setTitle] = React.useState('');
   const [message, setMessage] = React.useState('');
-  const [onAgree, setOnAgree] = React.useState<() => Promise<void>>(undefined);
+  const [onAgree, setOnAgree] = React.useState<(() => Promise<void>) | (() => void)>(undefined);
 
-  showDialog = (title: string, message: string, onAgree: () => Promise<void>) => {
+  showDialog = (title: string, message: string, onAgree: (() => Promise<void>) | (() => void)) => {
     setTitle(title);
     setMessage(message);
     setOnAgree(() => onAgree);

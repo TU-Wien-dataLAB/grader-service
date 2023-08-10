@@ -7,7 +7,7 @@
 import { Assignment } from '../../../model/assignment';
 import {
   Box,
-  Button, 
+  Button,
   Step,
   StepContent,
   StepLabel,
@@ -19,7 +19,7 @@ import NewReleasesRoundedIcon from '@mui/icons-material/NewReleasesRounded';
 import TaskIcon from '@mui/icons-material/Task';
 import UndoIcon from '@mui/icons-material/Undo';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import { AgreeDialog, ReleaseDialog } from '../../util/dialog';
+import { ReleaseDialog } from '../../util/dialog';
 import {
   pushAssignment,
   updateAssignment
@@ -27,6 +27,7 @@ import {
 import { Lecture } from '../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
 import { DeadlineComponent } from '../../util/deadline';
+import { showDialog } from '../../util/dialog-provider';
 
 
 /**
@@ -60,13 +61,6 @@ const getActiveStep = (status: Assignment.StatusEnum) => {
  */
 export const AssignmentStatus = (props: IAssignmentStatusProps) => {
   const [assignment, setAssignment] = React.useState(props.assignment);
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
   /**
    * Updates assignment status.
    * @param status assignment status
@@ -130,7 +124,6 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
     );
   };
 
-  const closeDialog = () => setShowDialog(false);
   const fontSize = 16;
   const steps = [
     {
@@ -243,60 +236,56 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
    * Handles assignment status change to "complete" status
    */
   const completeAssignment = async () => {
-    setDialogContent({
-      title: 'Complete Assignment',
-      message: `Do you want to mark ${assignment.name} as complete? This action will hide the assignment for all students!`,
-      handleAgree: async () => {
+    showDialog(
+      'Complete Assignment',
+      `Do you want to mark ${assignment.name} as complete? This action will hide the assignment for all students!`,
+      async () => {
         await updateAssignmentStatus(
           'complete',
           'Successfully Updated Assignment',
           'Error Updating Assignment'
         );
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
+      }
+    );
   };
 
   return (
     <Box
-      sx = {{
-      alignItems: { xs: 'center' },
-          minWidth: '150px',
-          overflowY: 'auto'
-    }}>
+      sx={{
+        alignItems: { xs: 'center' },
+        minWidth: '150px',
+        overflowY: 'auto'
+      }}>
       <Typography fontSize={24}> Overview </Typography>
       <Stepper
-          activeStep={getActiveStep(assignment.status)}
-          orientation='vertical'
-        >
-          {steps.map((step, index) => (
-            <Step key={step.label}>
-              <StepLabel
-                optional={
-                  index === 2 ? (
-                    <Typography variant='caption'>Last step</Typography>
-                  ) : null
-                }
-              >
-                {step.label}
-              </StepLabel>
-              <StepContent>
-                <Typography>
-                  {steps[getActiveStep(assignment.status)].description}
-                 </Typography>
-              </StepContent>
-            </Step>
-          ))}
-        </Stepper>
-        <AgreeDialog open={showDialog} {...dialogContent} />
-        <Typography sx={{mt: 5, fontSize: 24}}> Deadline </Typography>
-        <DeadlineComponent due_date={props.assignment.due_date} 
-                          compact={false} 
-                          component={'chip'}
-                          sx={{mt: 2}}/>
+        activeStep={getActiveStep(assignment.status)}
+        orientation='vertical'
+      >
+        {steps.map((step, index) => (
+          <Step key={step.label}>
+            <StepLabel
+              optional={
+                index === 2 ? (
+                  <Typography variant='caption'>Last step</Typography>
+                ) : null
+              }
+            >
+              {step.label}
+            </StepLabel>
+            <StepContent>
+              <Typography>
+                {steps[getActiveStep(assignment.status)].description}
+              </Typography>
+            </StepContent>
+          </Step>
+        ))}
+      </Stepper>
+      <Typography sx={{ mt: 5, fontSize: 24 }}> Deadline </Typography>
+      <DeadlineComponent due_date={props.assignment.due_date}
+                         compact={false}
+                         component={'chip'}
+                         sx={{ mt: 2 }} />
     </Box>
-   
+
   );
 };

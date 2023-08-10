@@ -19,13 +19,13 @@ import { Button, Stack, Tooltip } from '@mui/material';
 import { FilesList } from '../../util/file-list';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
-import { AgreeDialog } from '../../util/dialog';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import { Submission } from '../../../model/submission';
 import { RepoType } from '../../util/repo-type';
 import { enqueueSnackbar } from 'notistack';
 import { lectureBasePath } from '../../../services/file.service';
+import { showDialog } from '../../util/dialog-provider';
 
 /**
  * Props for Files.
@@ -44,13 +44,6 @@ export interface IFilesProps {
 export const Files = (
   props: IFilesProps
 ) => {
-  const [dialog, setDialog] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
   const path = `${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`;
   /**
    * Pulls from given repository by sending a request to the grader git service.
@@ -72,12 +65,10 @@ export const Files = (
    * Sends request to reset the student changes.
    */
   const resetAssignmentHandler = async () => {
-    setDialogContent({
-      title: 'Reset Assignment',
-      message:
-        'This action will delete your current progress and reset the assignment! \n' +
-        'Therefore you should copy and paste your work to a different directory before progressing. ',
-      handleAgree: async () => {
+    showDialog(
+      'Reset Assignment',
+      'This action will delete your current progress and reset the assignment!',
+      async () => {
         try {
           await pushAssignment(
             props.lecture.id,
@@ -95,31 +86,26 @@ export const Files = (
             variant: 'success'
           });
         } catch (e) {
-            if (e instanceof Error) {
-              enqueueSnackbar('Error Reset Assignment: ' + e.message, {
-                variant: 'error'
-              });
-            } else {
-                console.error("Error: cannot interpret type unkown as error", e);
-              }
+          if (e instanceof Error) {
+            enqueueSnackbar('Error Reset Assignment: ' + e.message, {
+              variant: 'error'
+            });
+          } else {
+            console.error('Error: cannot interpret type unkown as error', e);
+          }
         }
-        setDialog(false);
-      },
-      handleDisagree: () => {
-        setDialog(false);
       }
-    });
-    setDialog(true);
+    );
   };
 
   /**
    * Pushes the student submission and submits the assignment
    */
   const submitAssignmentHandler = async () => {
-    setDialogContent({
-      title: 'Submit Assignment',
-      message: 'This action will submit your current notebooks!',
-      handleAgree: async () => {
+    showDialog(
+      'Submit Assignment',
+      'This action will submit your current notebooks!',
+      async () => {
         await submitAssignment(props.lecture, props.assignment, true).then(
           response => {
             props.setSubmissions(oldSubmissions => [
@@ -136,11 +122,8 @@ export const Files = (
             });
           }
         );
-        setDialog(false);
-      },
-      handleDisagree: () => setDialog(false)
-    });
-    setDialog(true);
+      }
+    );
   };
 
   const pushAssignmentHandler = async () => {
@@ -188,11 +171,11 @@ export const Files = (
         {props.assignment.type === 'group' && (
           <Tooltip title={'Push Changes'}>
             <Button
-              variant="outlined"
-              size="small"
+              variant='outlined'
+              size='small'
               onClick={pushAssignmentHandler}
             >
-              <PublishRoundedIcon fontSize="small" sx={{ mr: 1 }} />
+              <PublishRoundedIcon fontSize='small' sx={{ mr: 1 }} />
               Push
             </Button>
           </Tooltip>
@@ -201,20 +184,20 @@ export const Files = (
         {props.assignment.type === 'group' && (
           <Tooltip title={'Pull from Remote'}>
             <Button
-              variant="outlined"
-              size="small"
+              variant='outlined'
+              size='small'
               onClick={() => fetchAssignmentHandler('assignment')}
             >
-              <GetAppRoundedIcon fontSize="small" sx={{ mr: 1 }} />
+              <GetAppRoundedIcon fontSize='small' sx={{ mr: 1 }} />
               Pull
             </Button>
           </Tooltip>
         )}
         <Tooltip title={'Submit Files in Assignment'}>
           <Button
-            variant="outlined"
-            color="success"
-            size="small"
+            variant='outlined'
+            color='success'
+            size='small'
             disabled={
               isDeadlineOver() ||
               isMaxSubmissionReached() ||
@@ -222,25 +205,23 @@ export const Files = (
             }
             onClick={() => submitAssignmentHandler()}
           >
-            <GradingIcon fontSize="small" sx={{ mr: 1 }} />
+            <GradingIcon fontSize='small' sx={{ mr: 1 }} />
             Submit
           </Button>
         </Tooltip>
 
         <Tooltip title={'Reset Assignment to Released Version'}>
           <Button
-            variant="outlined"
-            size="small"
-            color="error"
+            variant='outlined'
+            size='small'
+            color='error'
             onClick={() => resetAssignmentHandler()}
           >
-            <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
+            <RestartAltIcon fontSize='small' sx={{ mr: 1 }} />
             Reset
           </Button>
         </Tooltip>
       </Stack>
-
-      <AgreeDialog open={dialog} {...dialogContent} />
     </div>
   );
 };

@@ -22,7 +22,7 @@ import {
   getAllAssignments
 } from '../../services/assignments.service';
 import { AssignmentComponent } from './assignment';
-import { AgreeDialog, CreateDialog, EditLectureDialog } from '../util/dialog';
+import { CreateDialog, EditLectureDialog } from '../util/dialog';
 import {
   getLecture,
   getUsers,
@@ -59,8 +59,6 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     { name: 'Show Details', width: 75 },
     { name: 'Delete Assignment', width: 100 }
   ];
-
-  const [deleteFunction, setDeleteFunction] = React.useState({ handleAgree: null as () => void });
 
   return (
     <>

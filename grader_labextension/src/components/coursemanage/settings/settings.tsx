@@ -25,7 +25,6 @@ import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
-import {AgreeDialog} from "../../util/dialog";
 import { useRouteLoaderData } from 'react-router-dom';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
@@ -70,22 +69,12 @@ export const SettingsComponent = () => {
       latestSubmissions: Submission[]
   };
 
-  // Agree dialog states for assignment deletion
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
   const [checked, setChecked] = React.useState(
     assignment.due_date !== null
   );
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(assignment.max_submissions)
   );
-
-   const closeDialog = () => setShowDialog(false);
 
   const formik = useFormik({
     initialValues: {
@@ -266,7 +255,6 @@ export const SettingsComponent = () => {
       <Button color="primary" variant="contained" type="submit">
         Save changes
       </Button>
-        <AgreeDialog open={showDialog} {...dialogContent} />
       </form>
     </Box>
   );

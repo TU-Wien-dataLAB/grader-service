@@ -48,6 +48,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Simulate } from 'react-dom/test-utils';
 import error = Simulate.error;
 import { enqueueSnackbar } from 'notistack';
+import { showDialog } from './dialog-provider';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -473,50 +474,6 @@ export const CommitDialog = (props: ICommitDialogProps) => {
   );
 };
 
-export interface IAgreeDialogProps {
-  open: boolean;
-  title: string;
-  message: string;
-  handleAgree: () => void;
-  handleDisagree: () => void;
-}
-
-export const AgreeDialog = (props: IAgreeDialogProps) => {
-  const [loading, setLoading] = React.useState(false);
-
-  const executeAction = async (action: () => void) => {
-    setLoading(true);
-    await action();
-    setLoading(false);
-  };
-
-  return (
-    <Dialog
-      open={props.open}
-      onClose={props.handleDisagree}
-      onBackdropClick={props.handleDisagree}
-      aria-labelledby='alert-dialog-title'
-      aria-describedby='alert-dialog-description'
-    >
-      <DialogTitle id='alert-dialog-title'>{props.title}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id='alert-dialog-description'>
-          {props.message}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.handleDisagree}>Disagree</Button>
-        <LoadingButton
-          loading={loading}
-          onClick={() => executeAction(props.handleAgree)}
-          autoFocus
-        >
-          <span>Agree</span>
-        </LoadingButton>
-      </DialogActions>
-    </Dialog>
-  );
-};
 
 export interface IReleaseDialogProps extends ICommitDialogProps {
   assignment: Assignment;
@@ -524,7 +481,6 @@ export interface IReleaseDialogProps extends ICommitDialogProps {
 }
 
 export const ReleaseDialog = (props: IReleaseDialogProps) => {
-  const [agreeOpen, setAgreeOpen] = React.useState(false);
   const [commitOpen, setCommitOpen] = React.useState(false);
   const [message, setMessage] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -533,17 +489,15 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
 
   return (
     <div>
-      <Box onClick={() => setAgreeOpen(true)}>{props.children}</Box>
-      <AgreeDialog
-        open={agreeOpen}
-        title={'Release Assignment'}
-        message={agreeMessage}
-        handleAgree={() => {
-          setAgreeOpen(false);
-          setCommitOpen(true);
-        }}
-        handleDisagree={() => setAgreeOpen(false)}
-      />
+      <Box onClick={() => {
+        showDialog(
+          'Release Assignment',
+          agreeMessage,
+          () => {
+            setCommitOpen(true);
+          }
+        );
+      }}>{props.children}</Box>
       <Dialog
         open={commitOpen}
         onClose={() => setCommitOpen(false)}

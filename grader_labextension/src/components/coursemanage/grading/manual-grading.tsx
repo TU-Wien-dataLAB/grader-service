@@ -18,7 +18,6 @@ import {
 import { GradeBook } from '../../../services/gradebook';
 import { autogradeSubmission, createManualFeedback, generateFeedback } from '../../../services/grading.service';
 import { FilesList } from '../../util/file-list';
-import { AgreeDialog } from '../../util/dialog';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { enqueueSnackbar } from 'notistack';
 import { openBrowser } from '../overview/util';
@@ -31,6 +30,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { getAutogradeChip, getFeedbackChip, getManualChip } from './grading';
 import { autogradeSubmissionsDialog, generateFeedbackDialog } from './table-toolbar';
+import { showDialog } from '../../util/dialog-provider';
 
 
 export const ManualGrading = () => {
@@ -55,21 +55,14 @@ export const ManualGrading = () => {
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
   const [gradeBook, setGradeBook] = React.useState(null);
-  const [showDialog, setShowDialog] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
 
   React.useEffect(() => {
     reloadProperties();
   }, []);
 
   const handleAutogradeSubmission = async () => {
-    await autogradeSubmissionsDialog(setShowDialog, setDialogContent, async () => {
+    await autogradeSubmissionsDialog(async () => {
       try {
         await autogradeSubmission(lecture, assignment, submission);
         enqueueSnackbar('Autograding submission!', {
@@ -81,12 +74,11 @@ export const ManualGrading = () => {
           variant: 'error'
         });
       }
-      setShowDialog(false);
     });
   };
 
   const handleGenerateFeedback = async () => {
-    await generateFeedbackDialog(setShowDialog, setDialogContent, async () => {
+    await generateFeedbackDialog(async () => {
       try {
         await generateFeedback(lecture.id, assignment.id, submission.id);
         enqueueSnackbar('Generating feedback for submission!', {
@@ -98,20 +90,15 @@ export const ManualGrading = () => {
           variant: 'error'
         });
       }
-      setShowDialog(false);
     });
   };
 
   const openFinishDialog = () => {
-    setDialogContent({
-      title: 'Confirm Grading',
-      message: 'Do you want to save the assignment grading?',
-      handleAgree: finishGrading,
-      handleDisagree: () => {
-        setShowDialog(false);
-      }
-    });
-    setShowDialog(true);
+    showDialog(
+      'Confirm Grading',
+      'Do you want to save the assignment grading?',
+      finishGrading
+    );
   };
 
   const finishGrading = () => {
@@ -273,7 +260,7 @@ export const ManualGrading = () => {
           variant='outlined'
           color='success'
           onClick={openFinishDialog}
-          sx={{ whiteSpace: 'nowrap', minWidth: 'auto'}}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
           Finish Manual Grading
         </Button>
@@ -283,7 +270,7 @@ export const ManualGrading = () => {
           variant='outlined'
           color='primary'
           onClick={handleAutogradeSubmission}
-          sx={{ whiteSpace: 'nowrap', minWidth: 'auto'}}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
           Autograde
         </Button>
@@ -314,8 +301,6 @@ export const ManualGrading = () => {
           <ArrowForwardIcon />
         </IconButton>
       </Toolbar>
-
-      <AgreeDialog open={showDialog} {...dialogContent} />
     </Stack>
   );
 };
