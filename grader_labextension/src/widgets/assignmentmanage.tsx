@@ -11,6 +11,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { getRoutes } from '../components/assignment/routes';
 import { loadString } from '../services/storage.service';
 import { Router } from '@remix-run/router';
+import { DialogProvider } from '../components/util/dialog-provider';
 
 export class AssignmentManageView extends ReactWidget {
   /**
@@ -37,7 +38,9 @@ export class AssignmentManageView extends ReactWidget {
   render() {
     return (
       <SnackbarProvider maxSnack={3}>
-        <RouterProvider router={this.router} />
+        <DialogProvider>
+          <RouterProvider router={this.router} />
+        </DialogProvider>
       </SnackbarProvider>
     );
   }

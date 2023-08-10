@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
-  Button,IconButton,
+  Button, IconButton,
   Card,
   CardActions,
   CardContent,
@@ -41,6 +41,7 @@ import { DeadlineComponent } from '../util/deadline';
 import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
+import { showDialog } from '../util/dialog-provider';
 
 
 interface IAssignmentTableProps {
@@ -51,35 +52,15 @@ interface IAssignmentTableProps {
 const AssignmentTable = (props: IAssignmentTableProps) => {
   const navigate = useNavigate();
   const headers = [
-    { name: 'Name'},
+    { name: 'Name' },
     { name: 'Points', width: 100 },
-    { name: 'Deadline', width: 200},
+    { name: 'Deadline', width: 200 },
     { name: 'Status', width: 130 },
     { name: 'Show Details', width: 75 },
     { name: 'Delete Assignment', width: 100 }
   ];
 
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [deleteFunction, setDeleteFunction] = React.useState({handleAgree: null as () => void});
-
-  const getDeleteAssignmentFunction = (assignmentId: number) => {
-    return async () => {
-      try {
-        await deleteAssignment(
-          props.lecture.id,
-          assignmentId
-        );
-        enqueueSnackbar('Successfully Deleted Assignment', {
-          variant: 'success'
-        });
-      } catch (error: any) {
-        enqueueSnackbar(error.message, {
-          variant: 'error'
-        });
-      }
-      setShowDialog(false);
-    };
-  };
+  const [deleteFunction, setDeleteFunction] = React.useState({ handleAgree: null as () => void });
 
   return (
     <>
@@ -100,29 +81,43 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
               <TableCell><DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} /></TableCell>
               <TableCell>{row.status}</TableCell>
               <TableCell>
-              <IconButton aria-label='detail view' size={'small'}>
-              <SearchIcon/>
-              </IconButton>
+                <IconButton aria-label='detail view' size={'small'}>
+                  <SearchIcon />
+                </IconButton>
               </TableCell>
               <TableCell>
                 <IconButton
                   aria-label='delete assignment'
                   size={'small'}
                   onClick={(e) => {
-                    setDeleteFunction({handleAgree: getDeleteAssignmentFunction(row.id)});
-                    setShowDialog(true);
+                    showDialog(
+                      'Delete Assignment',
+                      'Do you wish to delete this assignment?',
+                      async () => {
+                        try {
+                          await deleteAssignment(
+                            props.lecture.id,
+                            row.id
+                          );
+                          enqueueSnackbar('Successfully Deleted Assignment', {
+                            variant: 'success'
+                          });
+                        } catch (error: any) {
+                          enqueueSnackbar(error.message, {
+                            variant: 'error'
+                          });
+                        }
+                      });
                     e.stopPropagation();
                   }}
                 >
-                  <CloseIcon sx={{ color: red[500] }}/>
+                  <CloseIcon sx={{ color: red[500] }} />
                 </IconButton>
               </TableCell>
             </TableRow>
           );
         }}
       />
-      <AgreeDialog open={showDialog} title={'Delete Assignment'} message={'Do you wish to delete this assignment?'}
-                   handleDisagree={() => setShowDialog(false)} {...deleteFunction} />
     </>
 
   );
