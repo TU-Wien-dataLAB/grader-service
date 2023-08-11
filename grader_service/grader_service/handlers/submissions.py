@@ -632,8 +632,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
-    r'(?P<assignment_id>\d*)\/submissions\/lti\/?',
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
@@ -642,11 +641,8 @@ class LtiSyncHandler(GraderBaseHandler):
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         # build the subquery
-        subquery = (self.session.query(Submission.username,
-                                       func.max(Submission.date).label(
-                                           "max_date"))
-                    .filter(Submission.assignid == assignment_id,
-                            Submission.feedback_available)
+        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_available)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -654,27 +650,22 @@ class LtiSyncHandler(GraderBaseHandler):
         submissions = (
             self.session.query(Submission)
             .join(subquery,
-                  (Submission.username == subquery.c.username) & (
-                              Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission
-                  .feedback_available)
+                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
+                          Submission.assignid == assignment_id) & Submission.feedback_available)
             .all())
 
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        lti_username_convert = RequestHandlerConfig.instance()\
-            .lti_username_convert
+        lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
 
         if lti_username_convert is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to match users: \
-                            lti_username_convert is not set in grader config")
+                            reason="Unable to match users: lti_username_convert is not set in grader "
+                                   "config")
 
-        scores = [{"id": s.id, "username": lti_username_convert(s.username),
-                   "score": s.score} for s in submissions]
+        scores = [{"id": s.id, "username": lti_username_convert(s.username), "score": s.score} for s in submissions]
         stamp = datetime.datetime.now()
-        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token[
-            "ttl"] > stamp - datetime.timedelta(
+        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
                 minutes=50):
             token = LtiSyncHandler.cache_token["token"]
         else:
@@ -691,56 +682,43 @@ class LtiSyncHandler(GraderBaseHandler):
         lti_client_id = RequestHandlerConfig.instance().lti_client_id
         if lti_client_id is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: \
-                            lti_client_id is not set in grader config")
+                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
         lti_token_url = RequestHandlerConfig.instance().lti_token_url
         if lti_token_url is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: \
-                            lti_token_url is not set in grader config")
+                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
 
         private_key = RequestHandlerConfig.instance().lti_token_private_key
         if private_key is None:
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: \
-                            lti_token_private_key is not set in grader config")
+                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
         if callable(private_key):
             private_key = private_key()
 
-        payload = {"iss": "grader-service", "sub": lti_client_id,
-                   "aud": [lti_token_url],
-                   "ist": str(int(time.time())),
-                   "exp": str(int(time.time()) + 60),
+        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
+                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
         try:
             encoded = jwt.encode(payload, private_key, algorithm="RS256")
         except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY,
-                            f"Unable to encode payload: {str(e)}")
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
         self.log.info("encoded: " + encoded)
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-            "https://purl.imsglobal.org/spec/lti-nrps/scope/\
-            contextmembership.readonly"
+            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
         ]
         scopes = url_escape(" ".join(scopes))
-        data = f"grant_type=client_credentials&\
-        client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
+        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
         self.log.info("data: " + data)
 
         httpclient = AsyncHTTPClient()
         try:
-            response = await httpclient.fetch(
-                HTTPRequest(
-                    url=lti_token_url, method="POST", body=data,
-                    headers={
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    }))
+            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
+                                                          headers={
+                                                              "Content-Type": "application/x-www-form-urlencoded"}))
         except HTTPClientError as e:
             self.log.error(e.response)
-            raise HTTPError(e.code,
-                            reason="Unable to request token:" +
-                                   e.response.reason)
+            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
         return json_decode(response.body)["access_token"]
