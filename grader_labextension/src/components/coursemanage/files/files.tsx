@@ -11,8 +11,7 @@ import { Lecture } from '../../../model/lecture';
 import {
   generateAssignment,
   pullAssignment,
-  pushAssignment,
-  updateAssignment
+  pushAssignment
 } from '../../../services/assignments.service';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
 import { CommitDialog } from '../../util/dialog';
@@ -24,13 +23,10 @@ import {
   CardContent,
   CardHeader,
   Chip,
-  Grid,
   IconButton,
-  Modal,
   Tab,
   Tabs,
-  Tooltip,
-  Typography
+  Tooltip
 } from '@mui/material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';

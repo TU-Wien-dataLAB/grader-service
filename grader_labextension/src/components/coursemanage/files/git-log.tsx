@@ -41,7 +41,7 @@ const style = {
   boxShadow: 3,
   pt: 2,
   px: 4,
-  pb: 3,
+  pb: 3
   
 };
 

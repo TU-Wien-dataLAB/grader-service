@@ -7,10 +7,10 @@
 import * as React from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { MuiFileInput } from 'mui-file-input'
 import {
   Button,
   TextField,
@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
-  TextFieldProps,
   DialogContentText,
   IconButton,
   Checkbox,
@@ -31,11 +30,11 @@ import {
   Card,
   CardActionArea,
   Box,
-  Typography
+  InputAdornment
 } from '@mui/material';
 import { Assignment } from '../../model/assignment';
 import { LoadingButton } from '@mui/lab';
-import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   createAssignment
@@ -49,6 +48,8 @@ import { Simulate } from 'react-dom/test-utils';
 import error = Simulate.error;
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from './dialog-provider';
+
+
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -548,3 +549,5 @@ export const ReleaseDialog = (props: IReleaseDialogProps) => {
     </div>
   );
 };
+
+

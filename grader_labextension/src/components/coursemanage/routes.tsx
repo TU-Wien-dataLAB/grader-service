@@ -19,6 +19,7 @@ import { SettingsComponent } from './settings/settings';
 import { FileView } from './files/file-view';
 import { ManualGrading } from './grading/manual-grading';
 import { EditSubmission } from './grading/edit-submission';
+import { CreateSubmission } from './grading/create-submission';
 
 const loadPermissions = async () => {
   try {
@@ -150,6 +151,10 @@ export const getRoutes = () => {
               <Route path={'edit'} element={<EditSubmission />} handle={{
                 crumb: (data) => 'Edit Submission',
                 link: (params) => `edit/`
+              }}></Route>
+              <Route path={'create'} element={<CreateSubmission />} handle={{
+                crumb: (data) => 'Create Submission',
+                link: (params) => `create/`
               }}></Route>
             </Route>
             <Route path={'stats'} element={<StatsComponent />} handle={{

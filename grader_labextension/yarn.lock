@@ -4882,6 +4882,7 @@ __metadata:
     is-plain-object: ^5.0.0
     mkdirp: ^3.0.1
     moment: ^2.29.4
+    mui-file-input: ^3.0.0
     notistack: ^3.0.1
     npm-run-all: ^4.1.5
     prettier: ^2.8.8
@@ -5960,6 +5961,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mui-file-input@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "mui-file-input@npm:3.0.0"
+  dependencies:
+    pretty-bytes: ^6.1.1
+  peerDependencies:
+    "@emotion/react": ^11.5.0
+    "@emotion/styled": ^11.3.0
+    "@mui/icons-material": ^5.0.0
+    "@mui/material": ^5.0.0
+    "@types/react": ^18.0.0
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 776f796aa1935c60b2b35581dbad6835af1e0142ac20b8788d68bedd2c87e21ce862ea1e573fcc6ba998d33e840c928f24f9b89fce3f6ef79ff90d4f2d92d4c1
+  languageName: node
+  linkType: hard
+
 "nanoid@npm:^3.3.6":
   version: 3.3.6
   resolution: "nanoid@npm:3.3.6"
@@ -6488,6 +6509,13 @@ __metadata:
   bin:
     prettier: bin-prettier.js
   checksum: b49e409431bf129dd89238d64299ba80717b57ff5a6d1c1a8b1a28b590d998a34e083fa13573bc732bb8d2305becb4c9a4407f8486c81fa7d55100eb08263cf8
+  languageName: node
+  linkType: hard
+
+"pretty-bytes@npm:^6.1.1":
+  version: 6.1.1
+  resolution: "pretty-bytes@npm:6.1.1"
+  checksum: 43d29d909d2d88072da2c3d72f8fd0f2d2523c516bfa640aff6e31f596ea1004b6601f4cabc50d14b2cf10e82635ebe5b7d9378f3d5bae1c0067131829421b8a
   languageName: node
   linkType: hard
 

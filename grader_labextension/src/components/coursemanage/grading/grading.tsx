@@ -17,13 +17,15 @@ import { Assignment } from '../../../model/assignment';
 import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack } from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Toolbar, Tooltip } from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
 import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
 import { EnhancedTableToolbar } from './table-toolbar';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import { green } from '@mui/material/colors';
+import AddIcon from '@mui/icons-material/Add';
+
 
 
 /**
@@ -363,6 +365,20 @@ export default function GradingTable() {
 
   return (
     <Box sx={{ flex: '1 1 100%', ml: 5, mr: 5 }}>
+      <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 2 }}>
+          <Tooltip title={'Manually add new submission'}>
+             <Button onClick={(event) => {
+                        event.stopPropagation();
+                        navigate("create");
+                      }} 
+                variant='outlined'
+                size="small"
+                sx={{ whiteSpace: 'nowrap'}}>
+                <AddIcon fontSize='small' sx={{mr: 1}}/>
+                New
+              </Button>
+          </Tooltip> 
+        </Stack>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                               clearSelection={() => setSelected([])} selected={selected}
@@ -450,6 +466,7 @@ export default function GradingTable() {
                   style={{
                     height: 53 * emptyRows
                   }}
+                  
                 >
                   <TableCell colSpan={6} />
                 </TableRow>
