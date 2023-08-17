@@ -1,7 +1,7 @@
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import * as React from 'react';
-import { useFormik } from 'formik';
+import { ErrorMessage, useFormik } from 'formik';
 import {
   Box,
   Button,
@@ -75,6 +75,8 @@ export const SettingsComponent = () => {
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(assignment.max_submissions)
   );
+  
+  
 
   const formik = useFormik({
     initialValues: {
@@ -150,6 +152,7 @@ export const SettingsComponent = () => {
               ampm={false}
               disabled={!checked}
               label="DateTimePicker"
+              disablePast
               value={formik.values.due_date}
               onChange={(date: Date) => {
                 formik.setFieldValue('due_date', date);

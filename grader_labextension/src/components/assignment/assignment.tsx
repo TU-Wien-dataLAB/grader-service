@@ -153,8 +153,8 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
 
   return (
-      <Box>
-      <Box sx={{ height: '100%' }}>
+      <Box sx={{height: '95%', overflow: 'auto'}}>
+      <Box >
             <Box sx={{ mt: 10 }}>
                 <Typography variant={'h6'} sx={{ ml: 2 }}>
                   Status

@@ -23,6 +23,7 @@ import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
 import { getFiles, openFile } from '../../services/file.service';
 import { enqueueSnackbar } from 'notistack';
+import { grey } from '@mui/material/colors';
 
 interface IFileListProps {
   path: string;
@@ -40,7 +41,7 @@ export const FilesList = (props: IFileListProps) => {
   // generateItems will be fed using the IIterator from the FilterFileBrowserModel
   const generateItems = (files: {value: IModel, done: boolean}[]) => {
     return files.map(file => (
-      <ListItem disablePadding>
+      <ListItem disablePadding >
         <ListItemButton onClick={() => openFile(file.value.path)} dense={true}>
           <ListItemIcon>
             <InsertDriveFileRoundedIcon />
@@ -53,9 +54,9 @@ export const FilesList = (props: IFileListProps) => {
 
   return (
     <Paper elevation={0} sx={props.sx}>
-      <Card sx={{ mt: 1, height: '80%' }} variant="outlined">
+      <Card sx={{ mt: 1, maxHeight: 200, overflow: 'auto'}} variant="outlined">
         {files.length === 0 ? (
-          <Typography variant={'body1'} sx={{ ml: 1 }}>
+          <Typography variant={'body1'} color={grey[500]} sx={{ ml: 1 }}>
             No Files Found
           </Typography>
         ) : (

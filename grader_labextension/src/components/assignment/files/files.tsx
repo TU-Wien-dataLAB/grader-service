@@ -165,7 +165,7 @@ export const Files = (
 
   return (
     <div>
-      <FilesList path={path} sx={{ m: 2, mt: 1 }} />
+      <FilesList path={path} sx={{ m: 2, mt: 1}} />
 
       <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
         {props.assignment.type === 'group' && (
