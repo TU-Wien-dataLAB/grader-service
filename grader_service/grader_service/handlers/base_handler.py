@@ -12,7 +12,9 @@ import json
 import os
 import shutil
 import sys
+import time
 import traceback
+import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
@@ -25,6 +27,7 @@ from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
+from grader_service.utils import maybe_future
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
 from grader_service.orm.base import Serializable, DeleteState
@@ -38,6 +41,8 @@ from tornado import httputil, web
 from tornado.escape import json_decode
 from tornado.web import HTTPError
 from tornado_sqlalchemy import SessionMixin
+
+SESSION_COOKIE_NAME = 'grader-session-id'
 
 
 def authorize(scopes: List[Scope]):
@@ -97,10 +102,13 @@ def authorize(scopes: List[Scope]):
     return wrapper
 
 
-class GraderBaseHandler(SessionMixin, web.RequestHandler):
+class BaseHandler(SessionMixin, web.RequestHandler):
     """Base class of all handler classes
 
     Implements validation and request functions"""
+
+    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+        pass
 
     def __init__(
             self,
@@ -111,19 +119,140 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         super().__init__(application, request, **kwargs)
         # add type hint for application
         self.application: GraderServer = self.application
+        self.authenticator = self.application.authenticator
         self.log = self.application.log
 
-    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
-        pass
+    def _set_cookie(self, key, value, encrypted=True, expires_days=1.0, **overrides):
+        """Setting any cookie should go through here
+
+        if encrypted use tornado's set_secure_cookie,
+        otherwise set plaintext cookies.
+        """
+        # tornado <4.2 have a bug that consider secure==True as soon as
+        # 'secure' kwarg is passed to set_secure_cookie
+        kwargs = {}
+        kwargs.update(self.settings.get('cookie_options', {}))
+        kwargs.update(overrides)
+        kwargs.update({'httponly': True})
+        if self.request.protocol == 'https':
+            kwargs['secure'] = True
+
+        if encrypted:
+            set_cookie = self.set_secure_cookie
+        else:
+            set_cookie = self.set_cookie
+
+        self.log.debug("Setting cookie %s: %s", key, kwargs)
+        set_cookie(key, value, expires_days=expires_days, **kwargs)
+
+    def _set_user_cookie(self, user, server):
+        self.log.debug("Setting cookie for %s: %s", user.name,
+                       server.cookie_name)
+        self._set_cookie(
+            server.cookie_name, user.cookie_id, encrypted=True,
+            path=server.base_url
+        )
+
+    def get_session_cookie(self):
+        """Get the session id from a cookie
+
+        Returns None if no session id is stored
+        """
+        return self.get_cookie(SESSION_COOKIE_NAME, None)
+
+    def set_session_cookie(self):
+        """Set a new session id cookie
+
+        new session id is returned
+
+        Session id cookie is *not* encrypted,
+        so other services on this domain can read it.
+        """
+        session_id = uuid.uuid4().hex
+        self._set_cookie(
+            SESSION_COOKIE_NAME, session_id, encrypted=False,
+            path=self.application.base_url
+        )
+        return session_id
+
+    def set_grader_cookie(self, user):
+        """set the login cookie for the Grader"""
+        self._set_user_cookie(user, self.hub)
+
+    def set_login_cookie(self, user):
+        """Set login cookies for the Hub and single-user server."""
+
+        if not self.get_session_cookie():
+            self.set_session_cookie()
+
+    def authenticate(self, data):
+        return maybe_future(
+            self.authenticator.get_authenticated_user(self, data))
+
+    async def auth_to_user(self, authenticated, user=None):
+        """Persist data from .authenticate() or .refresh_user() to the User database
+
+        Args:
+            authenticated(dict): return data from .authenticate or .refresh_user
+            user(User, optional): the User object to refresh, if refreshing
+        Return:
+            user(User): the constructed User object
+        """
+        if isinstance(authenticated, str):
+            authenticated = {'name': authenticated}
+        username = authenticated['name']
+        auth_state = authenticated.get('auth_state')
+        admin = authenticated.get('admin')
+        refreshing = user is not None
+
+        if user and username != user.name:
+            raise ValueError(
+                f"Username doesn't match! {username} != {user.name}")
+
+        user_model = self.session.query(User).get(username)
+        if user_model is None:
+            self.log.info(
+                f'User {username} does not exist and will be created.')
+            user_model = User()
+            user_model.name = username
+            self.session.add(user_model)
+            self.session.commit()
+        return user_model
+
+
+    async def login_user(self, data=None):
+        """Login a user"""
+        # auth_timer = self.statsd.timer('login.authenticate').start()
+        authenticated = await self.authenticate(data)
+        # auth_timer.stop(send=False)
+
+        if authenticated:
+            user = await self.auth_to_user(authenticated)
+            self.set_login_cookie(user)
+
+            self.log.info("User logged in: %s", user.name)
+            user._auth_refreshed = time.monotonic()
+            return user
+        else:
+            self.log.warning(
+                "Failed login for %s",
+                (data or {}).get('username', 'unknown user')
+            )
+
+    @property
+    def user(self) -> User:
+        return self.current_user
+
+
+class GraderBaseHandler(BaseHandler):
 
     async def prepare(self) -> Optional[Awaitable[None]]:
         if ((self.request.path.strip("/")
              != self.application.base_url.strip("/"))
-            and (self.request.path.strip("/")
-                 != self.application.base_url.strip("/") + "/health")):
+                and (self.request.path.strip("/")
+                     != self.application.base_url.strip("/") + "/health")):
             app_config = self.application.config
-            authenticator = self.application.auth_cls(config=app_config)
-            await authenticator.authenticate(self)
+            # await self.authenticator.authenticate(self, self.request.body)
         return super().prepare()
 
     def validate_parameters(self, *args):
@@ -233,11 +362,11 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                                assignment: Assignment, message: str,
                                checkout_main: bool = False):
         tmp_path_base = Path(
-                self.application.grader_service_dir,
-                "tmp",
-                assignment.lecture.code,
-                str(assignment.id),
-                str(self.user.name))
+            self.application.grader_service_dir,
+            "tmp",
+            assignment.lecture.code,
+            str(assignment.id),
+            str(self.user.name))
 
         # Deleting dir
         if os.path.exists(tmp_path_base):
@@ -311,10 +440,10 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             GitError: returns appropriate git error"""
         self.log.info(f"Running: {command}")
         ret = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd)
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=cwd)
         await ret.wait()
 
     def write_json(self, obj) -> None:
@@ -362,9 +491,9 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             return cls._serialize(obj.to_dict())
         return None
 
-    @property
-    def user(self) -> User:
-        return self.current_user
+
+class LogoutHandler(BaseHandler):
+    pass
 
 
 def authenticated(

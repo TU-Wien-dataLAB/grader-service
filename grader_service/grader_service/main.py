@@ -18,14 +18,15 @@ import inspect
 import tornado
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
-from traitlets import config, Bool, Type
+from traitlets import config, Bool, Type, Instance
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
+from auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
-from grader_service.auth.lti13oauthenticator import LTI13OAuthenticator
+from auth.lti13oauthenticator import LTI13OAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -114,6 +115,12 @@ class GraderService(config.Application):
         default_value=LTI13OAuthenticator,
         klass=object, allow_none=False, config=True
     )
+
+    authenticator = Instance(object)
+
+    @default('authenticator')
+    def _authenticator_default(self):
+        return self.authenticator_class(parent=self)
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
@@ -267,7 +274,8 @@ class GraderService(config.Application):
         RequestHandlerConfig.config = self.config
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
-
+        handlers.extend(self.authenticator.get_handlers(self))
+        self.log.info(handlers)
         isSQLite = 'sqlite://' in self.db_url
 
         # start the webserver
@@ -275,7 +283,7 @@ class GraderService(config.Application):
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
-                auth_cls=self.authenticator_class,
+                authenticator=self.authenticator,
                 handlers=handlers,
                 cookie_secret=secrets.token_hex(
                     nbytes=32

@@ -1,49 +1,27 @@
 """HTTP Handlers for the hub server"""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-import asyncio
 
 from jinja2 import Template
 from tornado import web
 from tornado.escape import url_escape
 from tornado.httputil import url_concat
 
-from .utils import maybe_future
-from ..handlers.base_handler import GraderBaseHandler
+from grader_service.handlers.base_handler import BaseHandler
 
 
-class LogoutHandler(GraderBaseHandler):
+class LogoutHandler(BaseHandler):
     """Log a user out by clearing their login cookie."""
 
     @property
     def shutdown_on_logout(self):
         return self.settings.get('shutdown_on_logout', False)
 
-    async def _shutdown_servers(self, user):
-        """Shutdown servers for logout
-
-        Get all active servers for the provided user, stop them.
-        """
-        active_servers = [
-            name
-            for (name, spawner) in user.spawners.items()
-            if spawner.active and not spawner.pending
-        ]
-        if active_servers:
-            self.log.info("Shutting down %s's servers", user.name)
-            futures = []
-            for server_name in active_servers:
-                futures.append(maybe_future(self.stop_single_user(user, server_name)))
-            await asyncio.gather(*futures)
-
     def _backend_logout_cleanup(self, name):
         """Default backend logout actions
-
-        Send a log message, clear some cookies, increment the logout counter.
         """
         self.log.info("User logged out: %s", name)
-        self.clear_login_cookie()
-        self.statsd.incr('logout')
+
 
     async def default_handle_logout(self):
         """The default logout action
@@ -90,7 +68,7 @@ class LogoutHandler(GraderBaseHandler):
         await self.render_logout_page()
 
 
-class LoginHandler(GraderBaseHandler):
+class LoginHandler(BaseHandler):
     """Render the login page."""
 
     def _render(self, login_error=None, username=None):

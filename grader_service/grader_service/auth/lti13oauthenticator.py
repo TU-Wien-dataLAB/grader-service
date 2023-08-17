@@ -6,12 +6,11 @@ import jwt
 
 from typing import Any, Dict, List, cast
 
-from traitlets import Unicode, Bool, Union
-from jupyterhub.traitlets import Callable
+from traitlets import Unicode, Bool, Union, Callable
 
-from oauthenticator.oauth2 import OAuthenticator
-from oauthenticator.oauth2 import OAuthLoginHandler
-from oauthenticator.oauth2 import OAuthCallbackHandler
+from .oauth2 import OAuthenticator
+from .oauth2 import OAuthLoginHandler
+from .oauth2 import OAuthCallbackHandler
 
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError
@@ -88,7 +87,7 @@ class LTI13CallbackHandler(OAuthCallbackHandler):
         user = await self.login_user()
         if user is None:
             raise HTTPError(403, 'User missing or null')
-        self.log.debug('Redirecting user %s to %s' % (user.id, self.get_next_url(user)))
+        self.log.debug('Redirecting user %s to %s' % (user.name, self.get_next_url(user)))
         self.redirect(self.get_next_url(user))
 
 

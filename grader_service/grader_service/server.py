@@ -16,8 +16,8 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     link: https://shorturl.at/yDGHZ"""
 
     def __init__(self, grader_service_dir: str, base_url: str,
-                 auth_cls, **kwargs):
+                 authenticator, **kwargs):
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.base_url = base_url
-        self.auth_cls = auth_cls
+        self.authenticator = authenticator
