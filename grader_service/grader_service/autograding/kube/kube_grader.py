@@ -101,6 +101,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                   allow_none=False).tag(config=True)
     kube_context = Unicode(default_value=None, allow_none=True,
                            help="Kubernetes context to load config from. "
+                   
                                 "If the context is None (default), "
                                 "the incluster config "
                                 "will be used.").tag(config=True)
@@ -186,8 +187,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                    f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
                    "--ExecutePreprocessor.timeout=360"]
-
-        # command = "sleep 10000"
 
         volumes = [self.volume] + self.extra_volumes
 

@@ -19,6 +19,7 @@ from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_convert.converters.generate_feedback import GenerateFeedback
+from grader_service.handlers.base_handler import RequestHandlerConfig
 
 
 class GenerateFeedbackExecutor(LocalAutogradeExecutor):
@@ -190,6 +191,29 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert",
                                  allow_none=False).tag(config=True)
 
+    def _set_lti_grade(self):
+        if not RequestHandlerConfig.enable_lti_features:
+            return
+        self.log.info(f"LTI: set grade {self.submission.score} "
+                      f"for submission {self.submission.id}")
+        token = request_bearer_token()
+
+        # Get lineitem
+
+        # In the grader labextension we get all lineitems and check if
+        # there is one with the same name as the assignment
+        # we can not do this here
+
+        # If the lineitem does not exist, create it
+
+        # Get lms user id
+
+        # In the grader labextension we get all users of the course and check
+        # if there is one with the same name as the submission user
+        # we can not do this here
+
+        # send grade to lineitem/scores url
+
     async def _run(self):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
@@ -205,5 +229,6 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
         self.log.info(self.grading_logs)
         if process.returncode == 0:
             self.log.info("Process has successfully completed execution!")
+            self._set_lti_grade()
         else:
             raise RuntimeError("Process has failed execution!")

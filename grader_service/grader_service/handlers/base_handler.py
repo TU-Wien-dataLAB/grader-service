@@ -123,7 +123,7 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                  != self.application.base_url.strip("/") + "/health")):
             app_config = self.application.config
             authenticator = self.application.auth_cls(config=app_config)
-            await authenticator.authenticate_user(self)
+            await authenticator.authenticate(self)
         return super().prepare()
 
     def validate_parameters(self, *args):

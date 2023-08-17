@@ -25,6 +25,7 @@ from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
 
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
+from grader_service.auth.lti13oauthenticator import LTI13OAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -110,7 +111,7 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     authenticator_class = Type(
-        default_value=JupyterHubGroupAuthenticator,
+        default_value=LTI13OAuthenticator,
         klass=object, allow_none=False, config=True
     )
 
