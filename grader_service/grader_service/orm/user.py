@@ -19,6 +19,8 @@ class User(Base, Serializable):
     submissions = relationship("Submission", back_populates="user")
     groups = relationship("Group", secondary=group_assignment_table,
                           back_populates="users")
+    api_tokens = relationship("APIToken", back_populates="user")
+    oauth_codes = relationship("OAuthCode", back_populates="user")
 
     def serialize(self):
         return {"name": self.name}

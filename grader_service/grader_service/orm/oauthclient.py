@@ -1,7 +1,10 @@
 from sqlalchemy import Column, Integer, Unicode
 from sqlalchemy.orm import relationship
 
+from grader_service.orm.api_token import APIToken
 from grader_service.orm.base import Base
+from grader_service.orm.oauthcode import OAuthCode
+
 
 class OAuthClient(Base):
     __tablename__ = 'oauth_client'
@@ -15,16 +18,6 @@ class OAuthClient(Base):
     def client_id(self):
         return self.identifier
 
-    spawner = relationship(
-        "Spawner",
-        back_populates="oauth_client",
-        uselist=False,
-    )
-    service = relationship(
-        "Service",
-        back_populates="oauth_client",
-        uselist=False,
-    )
     access_tokens = relationship(
         APIToken, back_populates='oauth_client', cascade='all, delete-orphan'
     )
