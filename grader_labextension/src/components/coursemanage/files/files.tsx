@@ -308,7 +308,7 @@ export const Files = (props: IFilesProps) => {
   };
 
   return (
-    <Box sx={{}}>
+    <Box>
       <Card elevation={3} sx={{ width: '100%', overflowX: 'auto' }}>
         <CardHeader
           title='Files'

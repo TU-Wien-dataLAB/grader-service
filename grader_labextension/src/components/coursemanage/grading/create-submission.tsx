@@ -1,4 +1,3 @@
-import { SectionTitle } from '../../util/section-title';
 import {
     Alert,
   AlertTitle,
@@ -14,25 +13,16 @@ import * as React from 'react';
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
-import {
-  createOrOverrideEditRepository,
-  getProperties,
-  pullSubmissionFiles,
-  pushSubmissionFiles,
-  updateSubmission
-} from '../../../services/submissions.service';
 import { FilesList } from '../../util/file-list';
-import { getRemoteStatus, lectureBasePath } from '../../../services/file.service';
-import { Link, useOutletContext, useRouteLoaderData } from 'react-router-dom';
-import Toolbar from '@mui/material/Toolbar';
+import { lectureBasePath } from '../../../services/file.service';
+import { Link, useOutletContext, useRouteLoaderData } from 'react-router-dom'
 import { showDialog } from '../../util/dialog-provider';
 import Autocomplete from '@mui/material/Autocomplete';
 import moment from 'moment';
 import { Contents } from '@jupyterlab/services';
 import { GlobalObjects } from '../../../index';
-import { RepoType } from '../../util/repo-type';
-import { PageConfig } from '@jupyterlab/coreutils';
 import { openBrowser } from '../overview/util';
+import ReplayIcon from '@mui/icons-material/Replay';
 
 
 export const CreateSubmission = () => {
@@ -84,12 +74,18 @@ export const CreateSubmission = () => {
    
   };
 
+  const [reloadFilesToggle, setReloadFiles] = React.useState(false);
+
+  const reloadFiles = () => {
+    setReloadFiles(!reloadFilesToggle);
+  };
+
   return (
     <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Alert severity="info" sx = {{m: 2}}>
         <AlertTitle>Info</AlertTitle>
         If you want to create a submission for a student manually, make sure to follow these steps: <br/><br/> 
-        1. &ensp; By loading this page, directory 'edit/create/' is authomatically opened in File Browser on your left-hand side.<br/>
+        1. &ensp; By loading this page, directory 'edit/create/' is automatically opened in File Browser on your left-hand side.<br/>
         2. &ensp; Upload the desired files here. They will automatically appear in the Submission Files below.<br/>
         3. &ensp; Choose the student for whom you want to create the submission.<br/>
         4. &ensp; Push the submission.
@@ -111,7 +107,15 @@ export const CreateSubmission = () => {
             />
         )}
     />
-      <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
+      <Stack direction={'row'} justifyContent={'flex-start'} alignItems={'center'} spacing={2} sx={{ml: 2}} >
+        <Typography>Submission Files</Typography>
+        <Tooltip title='Reload Files'>
+          <IconButton aria-label='reload' onClick={() => reloadFiles()}>
+            <ReplayIcon />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      
       <FilesList path={path} sx={{m: 2}}/>
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
         <Button

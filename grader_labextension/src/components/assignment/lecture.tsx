@@ -65,12 +65,12 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
   const navigate = useNavigate();
   const headers = [
     { name: 'Name' },
-    { name: 'Points', width: 75 },
-    { name: 'Deadline' },
-    { name: 'Edit' },
-    { name: 'Reset' },
-    { name: 'Detail View' },
-    { name: 'Feedback Available' }
+    { name: 'Points', width: 100 },
+    { name: 'Deadline', width: 200 },
+    { name: 'Edit', width: 75},
+    { name: 'Reset',  width: 75 },
+    { name: 'Detail View',  width: 75 },
+    { name: 'Feedback Available',  width: 80 }
   ];
 
   return (

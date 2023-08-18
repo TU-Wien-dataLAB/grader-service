@@ -155,7 +155,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
   return (
       <Box sx={{height: '95%', overflow: 'auto'}}>
       <Box >
-            <Box sx={{ mt: 10 }}>
+            <Box sx={{ mt: 6 }}>
                 <Typography variant={'h6'} sx={{ ml: 2 }}>
                   Status
                 </Typography>
@@ -164,7 +164,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                   submissions={submissions}
                 />
             </Box>
-            <Box sx={{ mt: 10 }}>
+            <Box sx={{ mt: 4 }}>
                <Typography variant={'h6'} sx={{ ml: 2 }}>
                  Files
                </Typography>
@@ -177,7 +177,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
             </Box>
             <Outlet />
           </Box>
-          <Box sx={{ mt: 10 }}>
+          <Box sx={{ mt: 4 }}>
             <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>
               Submissions
               {assignment.max_submissions !== null ? (
