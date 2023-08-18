@@ -11,6 +11,9 @@ from grader_service.orm.submission import Submission
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import Base
 from grader_service.orm.group import Group
+from grader_service.orm.oauthcode import OAuthCode
+from grader_service.orm.oauthclient import OAuthClient
+from grader_service.orm.api_token import APIToken
 
 __all__ = ['Lecture', 'User', 'Role', 'Submission',
            'Assignment', 'Base', 'Group']

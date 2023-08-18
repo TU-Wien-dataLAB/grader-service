@@ -122,6 +122,10 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         self.authenticator = self.application.authenticator
         self.log = self.application.log
 
+    @property
+    def user(self) -> User:
+        return self.current_user
+
     def _set_cookie(self, key, value, encrypted=True, expires_days=1.0, **overrides):
         """Setting any cookie should go through here
 

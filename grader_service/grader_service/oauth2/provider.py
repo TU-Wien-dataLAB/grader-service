@@ -6,7 +6,10 @@ from oauthlib import uri_validate
 from oauthlib.oauth2 import RequestValidator, WebApplicationServer
 from oauthlib.oauth2.rfc6749.grant_types import authorization_code, base
 from tornado.log import app_log
+
+from grader_service.orm.api_token import APIToken
 from grader_service.orm.oauthclient import OAuthClient
+from grader_service.orm.oauthcode import OAuthCode
 from grader_service.utils import compare_token, hash_token
 
 # patch absolute-uri check
@@ -172,7 +175,7 @@ class JupyterHubRequestValidator(RequestValidator):
             - Authorization Code Grant
         """
         app_log.debug("Deleting oauth code %s... for %s", code[:3], client_id)
-        orm_code = self.db.query(orm.OAuthCode).filter_by(code=code).first()
+        orm_code = self.db.query(OAuthCode).filter_by(code=code).first()
         if orm_code is not None:
             self.db.delete(orm_code)
             self.db.commit()
@@ -221,15 +224,15 @@ class JupyterHubRequestValidator(RequestValidator):
             kwargs,
         )
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).first()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).first()
         )
         if orm_client is None:
             raise ValueError("No such client: %s" % client_id)
 
-        orm_code = orm.OAuthCode(
+        orm_code = OAuthCode(
             code=code['code'],
             # oauth has 5 minutes to complete
-            expires_at=int(orm.OAuthCode.now() + 300),
+            expires_at=int(OAuthCode.now() + 300),
             scopes=list(request.scopes),
             redirect_uri=orm_client.redirect_uri,
             session_id=request.session_id,
@@ -316,7 +319,7 @@ class JupyterHubRequestValidator(RequestValidator):
         if request.user is None:
             raise ValueError("No user for access token: %s" % request.user)
         client = (
-            self.db.query(orm.OAuthClient)
+            self.db.query(OAuthClient)
             .filter_by(identifier=request.client.client_id)
             .first()
         )
@@ -325,7 +328,7 @@ class JupyterHubRequestValidator(RequestValidator):
         token.pop("refresh_token", None)
 
         # APIToken.new commits the token to the db
-        orm.APIToken.new(
+        APIToken.new(
             oauth_client=client,
             expires_in=token['expires_in'],
             scopes=request.scopes,
@@ -389,7 +392,7 @@ class JupyterHubRequestValidator(RequestValidator):
         """
         app_log.debug("Validating client id %s", client_id)
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).first()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).first()
         )
         if orm_client is None:
             return False
@@ -419,7 +422,7 @@ class JupyterHubRequestValidator(RequestValidator):
         Method is used by:
             - Authorization Code Grant
         """
-        orm_code = orm.OAuthCode.find(self.db, code=code)
+        orm_code = OAuthCode.find(self.db, code=code)
         if orm_code is None:
             app_log.debug("No such code: %s", code)
             return False
@@ -468,7 +471,7 @@ class JupyterHubRequestValidator(RequestValidator):
             redirect_uri,
         )
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).first()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).first()
         )
         if orm_client is None:
             app_log.warning("No such oauth client %s", client_id)
@@ -527,7 +530,7 @@ class JupyterHubRequestValidator(RequestValidator):
             - Client Credentials Grant
         """
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).one_or_none()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).one_or_none()
         )
         if orm_client is None:
             app_log.warning("No such oauth client %s", client_id)
@@ -619,10 +622,10 @@ class JupyterHubOAuthServer(WebApplicationServer):
         # transaction, so should fail if there are multiple
         # rows with the same identifier.
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).one_or_none()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).one_or_none()
         )
         if orm_client is None:
-            orm_client = orm.OAuthClient(
+            orm_client = OAuthClient(
                 identifier=client_id,
             )
             self.db.add(orm_client)
@@ -641,7 +644,7 @@ class JupyterHubOAuthServer(WebApplicationServer):
     def remove_client(self, client_id):
         """Remove a client by its id if it is existed."""
         orm_client = (
-            self.db.query(orm.OAuthClient).filter_by(identifier=client_id).one_or_none()
+            self.db.query(OAuthClient).filter_by(identifier=client_id).one_or_none()
         )
         if orm_client is not None:
             self.db.delete(orm_client)
@@ -652,7 +655,7 @@ class JupyterHubOAuthServer(WebApplicationServer):
 
     def fetch_by_client_id(self, client_id):
         """Find a client by its id"""
-        client = self.db.query(orm.OAuthClient).filter_by(identifier=client_id).first()
+        client = self.db.query(OAuthClient).filter_by(identifier=client_id).first()
         if client and client.secret:
             return client
 

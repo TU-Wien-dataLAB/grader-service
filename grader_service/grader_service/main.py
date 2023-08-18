@@ -16,6 +16,8 @@ import sys
 import inspect
 
 import tornado
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
 from traitlets import config, Bool, Type, Instance
@@ -23,15 +25,17 @@ from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
-from auth.auth import Authenticator
+from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
-from auth.lti13oauthenticator import LTI13OAuthenticator
+from grader_service.auth.lti13oauthenticator import LTI13OAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.oauth2.provider import make_provider
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
+from grader_service.utils import url_path_join
 
 
 class GraderService(config.Application):
@@ -117,6 +121,9 @@ class GraderService(config.Application):
     )
 
     authenticator = Instance(object)
+
+    # TODO make configurable
+    oauth_token_expires_in = int(1 * 24 * 3600)
 
     @default('authenticator')
     def _authenticator_default(self):
@@ -257,6 +264,15 @@ class GraderService(config.Application):
     async def cleanup(self):
         pass
 
+    def init_oauth(self):
+        engine = create_engine(self.db_url)
+        self.oauth_provider = make_provider(
+            lambda: sessionmaker(engine),
+            url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
+            login_url=url_path_join(self.base_url_path, 'login'),
+            token_expires_in=self.oauth_token_expires_in,
+        )
+
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
 
@@ -274,6 +290,8 @@ class GraderService(config.Application):
         RequestHandlerConfig.config = self.config
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        # Add the handlers of the authenticator
+        # TODO this should be done in the HandlerPathRegistry
         handlers.extend(self.authenticator.get_handlers(self))
         self.log.info(handlers)
         isSQLite = 'sqlite://' in self.db_url

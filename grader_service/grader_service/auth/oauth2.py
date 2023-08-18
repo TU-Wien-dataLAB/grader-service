@@ -700,10 +700,11 @@ class OAuthenticator(Authenticator):
             )
 
     def get_handlers(self, app):
+        self.log.info(app.base_url_path)
         return [
-            (r"/oauth_login", self.login_handler),
-            (r"/oauth_callback", self.callback_handler),
-            (r"/logout", self.logout_handler),
+            (f"{app.base_url_path}/oauth_login", self.login_handler),
+            (f"{app.base_url_path}/oauth_callback", self.callback_handler),
+            (f"{app.base_url_path}/logout", self.logout_handler),
         ]
 
     def build_userdata_request_headers(self, access_token, token_type):
