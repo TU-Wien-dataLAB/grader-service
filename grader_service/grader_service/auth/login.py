@@ -96,7 +96,6 @@ class LoginHandler(BaseHandler):
         )
 
     async def get(self):
-        self.statsd.incr('login.request')
         user = self.current_user
         if user:
             # set new login cookie
@@ -105,7 +104,7 @@ class LoginHandler(BaseHandler):
             self.redirect(self.get_next_url(user), permanent=False)
         else:
             if self.authenticator.auto_login:
-                auto_login_url = self.authenticator.login_url(self.hub.base_url)
+                auto_login_url = self.authenticator.login_url(self.application.base_url)
                 if auto_login_url == self.settings['login_url']:
                     # auto_login without a custom login handler
                     # means that auth info is already in the request
@@ -124,7 +123,6 @@ class LoginHandler(BaseHandler):
                     self.redirect(auto_login_url)
                 return
             username = self.get_argument('username', default='')
-            self.finish(await self._render(username=username))
 
     async def post(self):
         # parse the arguments dict
@@ -137,19 +135,12 @@ class LoginHandler(BaseHandler):
             # which should be allowed to start or end with space
             data[arg] = self.get_argument(arg, strip=arg == "username")
 
-        auth_timer = self.statsd.timer('login.authenticate').start()
         user = await self.login_user(data)
-        auth_timer.stop(send=False)
 
-        if user:
-            # register current user for subsequent requests to user (e.g. logging the request)
-            self._jupyterhub_user = user
-            self.redirect(self.get_next_url(user))
-        else:
-            html = await self._render(
-                login_error='Invalid username or password', username=data['username']
-            )
-            self.finish(html)
+        # register current user for subsequent requests to user (e.g. logging the request)
+        self._jupyterhub_user = user
+        self.redirect(self.get_next_url(user))
+
 
 
 # /login renders the login page or the "Login with..." link,

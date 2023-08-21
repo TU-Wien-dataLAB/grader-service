@@ -19,6 +19,7 @@ from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
+from urllib.parse import urlparse
 
 from traitlets import Type, Integer, TraitType, Unicode, Union, Bool
 from traitlets import Callable as CallableTrait
@@ -27,7 +28,7 @@ from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
-from grader_service.utils import maybe_future
+from grader_service.utils import maybe_future, url_path_join
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
 from grader_service.orm.base import Serializable, DeleteState
@@ -126,6 +127,23 @@ class BaseHandler(SessionMixin, web.RequestHandler):
     def user(self) -> User:
         return self.current_user
 
+    @property
+    def csp_report_uri(self):
+        return self.settings.get(
+            'csp_report_uri',
+            url_path_join(self.application.base_url, 'security/csp-report')
+        )
+
+    @property
+    def content_security_policy(self):
+        """The default Content-Security-Policy header
+
+        Can be overridden by defining Content-Security-Policy in settings['headers']
+        """
+        return '; '.join(
+            ["frame-ancestors 'self'", "report-uri " + self.csp_report_uri]
+        )
+
     def _set_cookie(self, key, value, encrypted=True, expires_days=1.0, **overrides):
         """Setting any cookie should go through here
 
@@ -164,6 +182,37 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         """
         return self.get_cookie(SESSION_COOKIE_NAME, None)
 
+    def _user_for_cookie(self, cookie_name, cookie_value=None):
+        """Get the User for a given cookie, if there is one"""
+        cookie_id = self.get_secure_cookie(
+            cookie_name, cookie_value, max_age_days=self.cookie_max_age_days
+        )
+
+        def clear():
+            self.clear_cookie(cookie_name, path=self.application.base_url)
+
+        if cookie_id is None:
+            if self.get_cookie(cookie_name):
+                self.log.warning("Invalid or expired cookie token")
+                clear()
+            return
+        cookie_id = cookie_id.decode('utf8', 'replace')
+        u = self.db.query(User).filter(
+            User.cookie_id == cookie_id).first()
+        user = self._user_from_orm(u)
+        if user is None:
+            self.log.warning("Invalid cookie token")
+            # have cookie, but it's not valid. Clear it and start over.
+            clear()
+            return
+        # update user activity
+        if self._record_activity(user):
+            self.db.commit()
+        return user
+    def get_current_user_cookie(self):
+        """get_current_user from a cookie token"""
+        return self._user_for_cookie(self.hub.cookie_name)
+
     def set_session_cookie(self):
         """Set a new session id cookie
 
@@ -178,10 +227,6 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             path=self.application.base_url
         )
         return session_id
-
-    def set_grader_cookie(self, user):
-        """set the login cookie for the Grader"""
-        self._set_user_cookie(user, self.hub)
 
     def set_login_cookie(self, user):
         """Set login cookies for the Hub and single-user server."""

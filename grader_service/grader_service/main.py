@@ -25,9 +25,7 @@ from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
-from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
-from grader_service.auth.hub import JupyterHubGroupAuthenticator
 from grader_service.auth.lti13oauthenticator import LTI13OAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.oauth2.provider import make_provider
@@ -36,6 +34,7 @@ from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
 from grader_service.utils import url_path_join
+from grader_service.oauth2 import handlers as oauth_handlers
 
 
 class GraderService(config.Application):
@@ -266,12 +265,17 @@ class GraderService(config.Application):
 
     def init_oauth(self):
         engine = create_engine(self.db_url)
+        session = sessionmaker(engine)()
         self.oauth_provider = make_provider(
-            lambda: sessionmaker(engine),
+            lambda: session,
             url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
             login_url=url_path_join(self.base_url_path, 'login'),
             token_expires_in=self.oauth_token_expires_in,
         )
+        self.oauth_provider.add_client('ihaveadream',
+                                       'ihaveadream',
+                                       'http:localhost:8000',
+                                       ['openid'])
 
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
@@ -285,6 +289,8 @@ class GraderService(config.Application):
 
         await self._setup_environment()
 
+        self.init_oauth()
+
         # pass config to DataBaseManager and GraderExecutor
         GraderExecutor.config = self.config
         RequestHandlerConfig.config = self.config
@@ -293,7 +299,8 @@ class GraderService(config.Application):
         # Add the handlers of the authenticator
         # TODO this should be done in the HandlerPathRegistry
         handlers.extend(self.authenticator.get_handlers(self))
-        self.log.info(handlers)
+        handlers.extend(oauth_handlers.default_handlers)
+        self.log.info(oauth_handlers.default_handlers)
         isSQLite = 'sqlite://' in self.db_url
 
         # start the webserver
@@ -303,6 +310,7 @@ class GraderService(config.Application):
                 base_url=self.base_url_path,
                 authenticator=self.authenticator,
                 handlers=handlers,
+                oauth_provider=self.oauth_provider,
                 cookie_secret=secrets.token_hex(
                     nbytes=32
                 ),  # generate new cookie secret at startup
@@ -312,6 +320,7 @@ class GraderService(config.Application):
                     {"pool_size": 50, "max_overflow": -1}
                 ),
                 parent=self,
+                login_url='authorize'
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,
