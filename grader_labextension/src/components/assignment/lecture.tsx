@@ -12,7 +12,7 @@ import {
   LinearProgress, Stack, TableCell, TableRow,
   Typography
 } from '@mui/material';
-import { red, blue, green } from '@mui/material/colors';
+import { red, blue, green, grey } from '@mui/material/colors';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import DoneIcon from '@mui/icons-material/Done';
@@ -27,21 +27,70 @@ import { Assignment } from '../../model/assignment';
 import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import { resetAssignment } from '../../services/assignments.service';
+import { pullAssignment, resetAssignment } from '../../services/assignments.service';
 import { showDialog } from '../util/dialog-provider';
+import EditOffIcon from '@mui/icons-material/EditOff';
+import { getFiles, lectureBasePath } from '../../services/file.service';
 
 /*
     * Buttons for AssignmentTable
     * */
 interface IEditProps {
   status: Assignment.StatusEnum;
+  lecture: Lecture;
+  assignment: Assignment;
 }
 
+
 const EditButton = (props: IEditProps) => {
-  if (props.status === Assignment.StatusEnum.Released) {
-    return <EditNoteOutlinedIcon sx={{ color: green[500] }} />;
+  const [assignmentPulled, setAssignmentPulled] = React.useState(false);
+  const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
+    await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
+      () =>{
+        enqueueSnackbar('Successfully Pulled Repo', {
+          variant: 'success'
+        }, 
+       )},
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
+  };
+  React.useEffect(() =>
+  {
+    getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`).then(files =>
+      {
+        if(files.length > 0){
+          setAssignmentPulled(true);
+        }
+      })
+  });
+  
+   if(props.status == Assignment.StatusEnum.Released && assignmentPulled === false){
+    return( 
+      <IconButton
+            onClick={(e) =>{
+            showDialog('Pull Assignment',
+            'Do you really want to pull this assignment?',
+            async ()=> {
+              await fetchAssignmentHandler('assignment');
+            });
+            e.stopPropagation();
+          }}>
+          <FileDownloadIcon sx={{ color: blue[500] }} />
+      </IconButton>
+      );
+   }
+  if (props.status === Assignment.StatusEnum.Complete){
+    return <EditOffIcon sx={{ color: grey[500]}} />
   }
-  return <FileDownloadIcon sx={{ color: blue[500] }} />;
+  else return (
+    <IconButton>
+      <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+    </IconButton>
+  );
+  
 };
 
 interface IFeedbackProps {
@@ -93,9 +142,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                 <DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} />
               </TableCell>
               <TableCell style={{ width: 55 }}>
-                <IconButton aria-label='Edit' size={'small'}>
-                  <EditButton status={row.status} />
-                </IconButton>
+                <EditButton status={row.status} lecture={props.lecture} assignment={row} />
               </TableCell>
               <TableCell style={{ width: 55 }}>
                 <IconButton
@@ -151,6 +198,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     * */
 interface AssignmentStudent extends AssignmentDetail {
   feedback_available: boolean;
+  
 }
 
 /*

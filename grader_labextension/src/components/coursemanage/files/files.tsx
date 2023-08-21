@@ -308,8 +308,7 @@ export const Files = (props: IFilesProps) => {
   };
 
   return (
-    <Box>
-      <Card elevation={3} sx={{ width: '100%', overflowX: 'auto' }}>
+      <Card elevation={3} sx={{ overflowX: 'auto', m:3, height: '90%', display: 'flex', flexDirection: 'column' }}>
         <CardHeader
           title='Files'
           titleTypographyProps={{ display: 'inline' }}
@@ -345,7 +344,7 @@ export const Files = (props: IFilesProps) => {
             />
           </Box>
         </CardContent>
-        <CardActions sx={{ display: 'flex' }}>
+        <CardActions sx={{marginTop: 'auto'}} >
           <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
             <Tooltip
               title={`Commit Changes${
@@ -417,6 +416,5 @@ export const Files = (props: IFilesProps) => {
           </Tooltip>
         </CardActions>
       </Card>
-    </Box>
   );
 };

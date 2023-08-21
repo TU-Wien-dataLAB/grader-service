@@ -293,6 +293,7 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 />
 
                 <DateTimePicker
+                  disablePast
                   ampm={false}
                   disabled={formik.values.due_date === null}
                   label='DateTimePicker'

@@ -69,7 +69,7 @@ export const AssignmentModalComponent = () => {
         >
           <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
                {...a11yProps(0)} component={Link as any} to={''} />
-          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start'}}
                {...a11yProps(1)} component={Link as any} to={'files'} />
           <Tab label='Submissions' icon={
             <Badge
