@@ -33,8 +33,6 @@ export const FileView = () => {
           <Files
             lecture={lecture}
             assignment={assignmentState}
-            submissions={allSubmissions}
-            setSubmissions={setSubmissions}
             />
         </Grid>
       </Grid>

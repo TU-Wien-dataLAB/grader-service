@@ -31,6 +31,7 @@ import { pullAssignment, resetAssignment } from '../../services/assignments.serv
 import { showDialog } from '../util/dialog-provider';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import { getFiles, lectureBasePath } from '../../services/file.service';
+import { openBrowser } from '../coursemanage/overview/util';
 
 /*
     * Buttons for AssignmentTable
@@ -40,6 +41,7 @@ interface IEditProps {
   lecture: Lecture;
   assignment: Assignment;
 }
+
 
 
 const EditButton = (props: IEditProps) => {
@@ -82,7 +84,8 @@ const EditButton = (props: IEditProps) => {
       </IconButton>
       );
    }
-  if (props.status === Assignment.StatusEnum.Complete){
+   const time = new Date(props.assignment.due_date).getTime();
+  if ((props.assignment.due_date !== null && time < Date.now()) || props.status === Assignment.StatusEnum.Complete ){
     return <EditOffIcon sx={{ color: grey[500]}} />
   }
   else return (
@@ -122,6 +125,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     { name: 'Feedback Available',  width: 80 }
   ];
 
+ ;
   return (
     <>
       <GraderTable<AssignmentStudent>

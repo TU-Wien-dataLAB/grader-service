@@ -59,8 +59,9 @@ export function GraderTable<T>(props: IGraderTableProps<T>) {
   };
 
   return (
-    <TableContainer component={Paper}>
-      <Table aria-label='simple table'>
+    <Paper sx={{overflow: 'hidden'}}>
+    <TableContainer sx={{maxHeight: '500px'}} >
+      <Table aria-label='simple table' stickyHeader>
         <TableHead>
           <TableRow>
             {props.headers.map(header =>
@@ -71,35 +72,13 @@ export function GraderTable<T>(props: IGraderTableProps<T>) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {(rowsPerPage > 0
-              ? props.rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              : props.rows
-          ).map((row) => props.rowFunc(row))}
-          {emptyRows > 0 && (
+          {props.rows.map((row) => props.rowFunc(row))}
             <TableRow style={{ height: 53 * emptyRows }}>
               <TableCell colSpan={6} />
             </TableRow>
-          )}
         </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-              rowsPerPageOptions={[5, 10]}
-              count={props.rows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              SelectProps={{
-                inputProps: {
-                  'aria-label': 'rows per page'
-                }
-              }}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              ActionsComponent={TablePaginationActions}
-            />
-          </TableRow>
-        </TableFooter>
       </Table>
     </TableContainer>
+    </Paper>
   );
 };

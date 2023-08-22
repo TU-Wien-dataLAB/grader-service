@@ -12,7 +12,8 @@ import {
   Collapse,
   Grid,
   LinearProgress, Stack, TableCell, TableRow,
-  Typography
+  Typography,
+  Box
 } from '@mui/material';
 import * as React from 'react';
 import { Assignment } from '../../model/assignment';

@@ -45,7 +45,13 @@ export const SubmissionList = (props: ISubmissionListProps) => {
    * Generates submission items which will be rendered in the list
    * and will be fed using the IIterator from the FilterFileBrowserModel
    * @param submissions student submissions
+   *
    */
+
+React.useEffect(() => {
+  console.log("Triggered rerender")
+},[props.submissions])
+
   const generateItems = (submissions: Submission[]) => {
     return submissions
       .sort((a, b) =>

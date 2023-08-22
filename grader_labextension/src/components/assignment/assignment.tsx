@@ -11,7 +11,10 @@ import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { 
     Box, 
+    Button, 
     Chip,
+    Stack,
+    Tooltip,
     Typography
 } from '@mui/material';
 
@@ -26,15 +29,22 @@ import {
   Outlet,
 } from 'react-router-dom';
 import {
-  getAssignment,
+  getAssignment, pullAssignment, pushAssignment, resetAssignment,
 } from '../../services/assignments.service';
 import { getFiles, lectureBasePath } from '../../services/file.service';
-import { getAllSubmissions } from '../../services/submissions.service';
+import { getAllSubmissions, submitAssignment } from '../../services/submissions.service';
 import {
   deleteKey,
   loadNumber,
 } from '../../services/storage.service';
 import { useParams } from 'react-router-dom';
+import { enqueueSnackbar } from 'notistack';
+import { showDialog } from '../util/dialog-provider';
+import { RepoType } from '../util/repo-type';
+import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
+import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import GradingIcon from '@mui/icons-material/Grading';
 
 const calculateActiveStep = (submissions: Submission[]) => {
     const hasFeedback = submissions.reduce(
@@ -77,8 +87,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
   const [assignmentState, setAssignment] = React.useState(assignment);
 
   /* Now we can divvy this into a useReducer  */
-  const [allSubmissions, setAllSubmissions] = React.useState(submissions);
-
+  const [allSubmissions, setSubmissions] = React.useState(submissions);
 
   const [displayAssignment, setDisplayAssignment] = React.useState(
       loadNumber('a-opened-assignment') === assignment.id || false
@@ -104,7 +113,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
   React.useEffect(() => {
       getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
           response => {
-              setAllSubmissions(response);
+              setSubmissions(response);
               const feedback = response.reduce(
                   (accum: boolean, curr: Submission) => 
                   accum || curr.feedback_available,
@@ -148,7 +157,123 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
       'none',
       false
     );
-    setAllSubmissions(submissions);
+    setSubmissions(submissions);
+  };
+
+  const resetAssignmentHandler = async () => {
+    showDialog(
+      'Reset Assignment',
+      'This action will delete your current progress and reset the assignment!',
+      async () => {
+        try {
+          await pushAssignment(
+            lecture.id,
+            assignment.id,
+            'assignment',
+            'Pre-Reset'
+          );
+          await resetAssignment(lecture, assignment);
+          await pullAssignment(
+            lecture.id,
+            assignment.id,
+            'assignment'
+          );
+          enqueueSnackbar('Successfully Reset Assignment', {
+            variant: 'success'
+          });
+        } catch (e) {
+          if (e instanceof Error) {
+            enqueueSnackbar('Error Reset Assignment: ' + e.message, {
+              variant: 'error'
+            });
+          } else {
+            console.error('Error: cannot interpret type unkown as error', e);
+          }
+        }
+      }
+    );
+  };
+
+  /**
+   * Pushes the student submission and submits the assignment
+   */
+  const submitAssignmentHandler = async () => {
+    showDialog(
+      'Submit Assignment',
+      'This action will submit your current notebooks!',
+      async () => {
+        await submitAssignment(lecture, assignment, true).then(
+          response => {
+            console.log("Submitted")
+            setSubmissions(oldSubmissions => [
+              ...oldSubmissions,
+              response
+            ]);
+            enqueueSnackbar('Successfully Submitted Assignment', {
+              variant: 'success'
+            });
+          },
+          error => {
+            enqueueSnackbar(error.message, {
+              variant: 'error'
+            });
+          }
+        );
+      }
+    );
+  };
+
+  const pushAssignmentHandler = async () => {
+    await pushAssignment(
+      lecture.id,
+      assignment.id,
+      RepoType.ASSIGNMENT
+    ).then(
+      () =>
+        enqueueSnackbar('Successfully Pushed Assignment', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
+  };
+   /**
+   * Pulls from given repository by sending a request to the grader git service.
+   * @param repo input which repository should be fetched
+   */
+   const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
+    await pullAssignment(lecture.id, assignment.id, repo).then(
+      () =>
+        enqueueSnackbar('Successfully Pulled Repo', {
+          variant: 'success'
+        }),
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
+  };
+
+  const isDeadlineOver = () => {
+    if (assignment.due_date === null) {
+      return false;
+    }
+    const time = new Date(assignment.due_date).getTime();
+    return time < Date.now();
+  };
+
+  const isAssignmentCompleted = () => {
+    return assignment.status === 'complete';
+  };
+
+  const isMaxSubmissionReached = () => {
+    if (assignment.max_submissions === null) {
+      return false;
+    } else {
+      return assignment.max_submissions <= submissions.length;
+    }
   };
 
 
@@ -171,9 +296,63 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                <Files 
                  lecture={lecture}
                  assignment={assignment}
-                 submissions={submissions}
-                 setSubmissions={setAllSubmissions}
+            
                />
+               <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
+        {assignment.type === 'group' && (
+          <Tooltip title={'Push Changes'}>
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={pushAssignmentHandler}
+            >
+              <PublishRoundedIcon fontSize='small' sx={{ mr: 1 }} />
+              Push
+            </Button>
+          </Tooltip>
+        )}
+
+        {assignment.type === 'group' && (
+          <Tooltip title={'Pull from Remote'}>
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={() => fetchAssignmentHandler('assignment')}
+            >
+              <GetAppRoundedIcon fontSize='small' sx={{ mr: 1 }} />
+              Pull
+            </Button>
+          </Tooltip>
+        )}
+        <Tooltip title={'Submit Files in Assignment'}>
+          <Button
+            variant='outlined'
+            color='success'
+            size='small'
+            disabled={
+              isDeadlineOver() ||
+              isMaxSubmissionReached() ||
+              isAssignmentCompleted()
+            }
+            onClick={() => submitAssignmentHandler()}
+          >
+            <GradingIcon fontSize='small' sx={{ mr: 1 }} />
+            Submit
+          </Button>
+        </Tooltip>
+
+        <Tooltip title={'Reset Assignment to Released Version'}>
+          <Button
+            variant='outlined'
+            size='small'
+            color='error'
+            onClick={() => resetAssignmentHandler()}
+          >
+            <RestartAltIcon fontSize='small' sx={{ mr: 1 }} />
+            Reset
+          </Button>
+        </Tooltip>
+      </Stack>
             </Box>
             <Outlet />
           </Box>
