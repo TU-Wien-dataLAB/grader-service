@@ -45,7 +45,7 @@ class HandlerConfig(SingletonConfigurable):
         help="Base URL to use for each request to the grader service",
     ).tag(config=True)
     lectures_base_path = Unicode(
-        "Lectures",
+        "lectures",
         help="The path in each user home directory where lecture directories are created."
     ).tag(config=True)
 
