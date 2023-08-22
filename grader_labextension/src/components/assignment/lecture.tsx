@@ -63,14 +63,15 @@ const EditButton = (props: IEditProps) => {
   {
     getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`).then(files =>
       {
+          console.log(files)
         if(files.length > 0){
           setAssignmentPulled(true);
         }
       })
   });
   
-   if(props.status == Assignment.StatusEnum.Released && assignmentPulled === false){
-    return( 
+   if (assignmentPulled === false){
+    return (
       <IconButton
             onClick={(e) =>{
             showDialog('Pull Assignment',

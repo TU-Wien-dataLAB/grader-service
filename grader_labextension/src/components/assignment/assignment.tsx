@@ -45,6 +45,7 @@ import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 const calculateActiveStep = (submissions: Submission[]) => {
     const hasFeedback = submissions.reduce(
@@ -73,7 +74,7 @@ export interface IAssignmentModalProps {
  */
 export const AssignmentComponent = (props: IAssignmentModalProps) => {
 
-  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
+  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
     lecture: Lecture,
     assignment: Assignment,
     submissions: Submission[],
@@ -159,6 +160,8 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     );
     setSubmissions(submissions);
   };
+
+
 
   const resetAssignmentHandler = async () => {
     showDialog(
@@ -276,6 +279,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     }
   };
 
+  const isAssignmentFetched = () => {
+      return files.length > 0 ? true : false
+    }
+
 
   return (
       <Box sx={{height: '95%', overflow: 'auto'}}>
@@ -319,11 +326,25 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
               size='small'
               onClick={() => fetchAssignmentHandler('assignment')}
             >
-              <GetAppRoundedIcon fontSize='small' sx={{ mr: 1 }} />
+              <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} />
               Pull
             </Button>
           </Tooltip>
         )}
+        { !isAssignmentFetched() ?
+            <Tooltip title={'Fetch Assignment'}>
+              <Button
+                variant='outlined'
+                color='primary'
+                size='small'
+                onClick={() => fetchAssignmentHandler("release")}
+              >
+                <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} />
+                Fetch
+              </Button>
+            </Tooltip>
+            : null }
+
         <Tooltip title={'Submit Files in Assignment'}>
           <Button
             variant='outlined'
@@ -332,7 +353,8 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
             disabled={
               isDeadlineOver() ||
               isMaxSubmissionReached() ||
-              isAssignmentCompleted()
+              isAssignmentCompleted() ||
+              files.length == 0
             }
             onClick={() => submitAssignmentHandler()}
           >

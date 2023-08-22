@@ -10,7 +10,6 @@ import * as yup from 'yup';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { MuiFileInput } from 'mui-file-input'
 import {
   Button,
   TextField,
