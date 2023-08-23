@@ -140,8 +140,8 @@ class GradingManualHandler(ExtensionBaseHandler):
         )
         git_service.path = os.path.join(
             git_service.git_root_dir,
-            "manualgrade",
             git_service.lecture_code,
+            "manualgrade",
             str(git_service.assignment_id),
             str(sub_id),
         )
@@ -238,8 +238,8 @@ class PullFeedbackHandler(ExtensionBaseHandler):
         )
         git_service.path = os.path.join(
             git_service.git_root_dir,
-            "feedback",
             git_service.lecture_code,
+            "feedback",
             str(git_service.assignment_id),
             str(sub_id),
         )

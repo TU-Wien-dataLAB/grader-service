@@ -5,4 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 
 # import handlers
-from . import assignment, grading, lectures, submissions, permission, version_control, config
+from . import assignment, grading, lectures, submissions, permission, version_control

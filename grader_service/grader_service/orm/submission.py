@@ -59,6 +59,7 @@ class Submission(Base, Serializable):
             auto_status=self.auto_status,
             manual_status=self.manual_status,
             score=self.score,
+            assignid=self.assignid,
             commit_hash=self.commit_hash,
             feedback_available=self.feedback_available,
             edited=self.edited

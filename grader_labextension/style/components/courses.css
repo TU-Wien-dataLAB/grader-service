@@ -1,7 +1,6 @@
 .course-list {
     overflow: scroll;
     height: 100%;
-    background-color: #fafafa;
 }
 
 .course-header {

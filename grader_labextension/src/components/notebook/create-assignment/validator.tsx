@@ -58,7 +58,7 @@ export const Validator = (props: ValidatorProps) => {
       const metadata: NbgraderData = CellModel.getNbgraderData(
         c.model.metadata
       );
-      const cellText = c.model.value.text;
+      const cellText = c.inputArea.model.sharedModel.source;
       const layout = c.layout as PanelLayout;
       const toolData: ToolData = CellModel.newToolData(metadata, c.model.type);
       if (metadata !== null) {

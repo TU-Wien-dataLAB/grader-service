@@ -90,7 +90,7 @@
 	-webkit-animation: display 0.7s linear forwards;
 	animation: display 0.7s linear forwards;
   }
-  
+
   @-webkit-keyframes display {
 	0% {
 	  opacity: 0.2;
@@ -114,4 +114,6 @@
 	  opacity: 1;
 	}
   }
+
+  
   

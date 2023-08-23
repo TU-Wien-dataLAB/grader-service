@@ -28,16 +28,16 @@ import {
 import { AssignmentModalComponent } from './assignment-modal';
 import { DeadlineComponent } from '../util/deadline';
 import { blue } from '@mui/material/colors';
-import { getFiles } from '../../services/file.service';
+import { getFiles, lectureBasePath } from '../../services/file.service';
 import { openBrowser } from './overview/util';
 import { CardDescriptor } from '../util/card-descriptor';
 import { enqueueSnackbar } from 'notistack';
-import { GradeBook } from '../../services/gradebook';
 import {
   deleteKey,
   loadNumber,
   storeNumber
 } from '../../services/storage.service';
+import { Link } from 'react-router-dom';
 
 /**
  * Props for AssignmentComponent.
@@ -73,7 +73,7 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
   const [numAutoGraded, setNumAutoGraded] = React.useState(0);
   const [numManualGraded, setNumManualGraded] = React.useState(0);
   React.useEffect(() => {
-    getAllSubmissions(props.lecture, assignment, 'none', true).then(
+    getAllSubmissions(props.lecture.id, assignment.id, 'none', true).then(
       response => {
         setAllSubmissions(response);
         let auto = 0;
@@ -106,13 +106,13 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       }
     );
 
-    getAllSubmissions(props.lecture, assignment, 'latest', true).then(
+    getAllSubmissions(props.lecture.id, assignment.id, 'latest', true).then(
       response => {
         setLatestSubmissions(response);
       }
     );
 
-    getFiles(`source/${props.lecture.code}/${assignment.id}`).then(files => {
+    getFiles(`${lectureBasePath}${props.lecture.code}/source/${assignment.id}`).then(files => {
       setFiles(files);
     });
   }, [assignment]);
@@ -122,21 +122,23 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
       <Card
         sx={{ maxWidth: 225, minWidth: 225, height: '100%', m: 1.5 }}
         onClick={async () => {
-          await openBrowser(`source/${props.lecture.code}/${assignment.id}`);
+          await openBrowser(`${lectureBasePath}${props.lecture.code}/source/${assignment.id}`);
           setDisplaySubmissions(true);
           storeNumber('cm-opened-assignment', assignment.id);
         }}
       >
         <CardActionArea
           sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          component={Link as any}
+          to={`/lecture/${props.lecture.id}/assignment/${props.assignment.id}/`}
         >
           <CardContent sx={{ flexGrow: 1 }}>
-            <Typography variant="h5" component="div">
+            <Typography variant='h5' component='div'>
               {assignment.name}
             </Typography>
             <Typography
               sx={{ fontSize: 14 }}
-              color="text.secondary"
+              color='text.secondary'
               gutterBottom
             >
               {files.length + ' File' + (files.length === 1 ? '' : 's')}
@@ -183,22 +185,6 @@ export const AssignmentComponent = (props: IAssignmentComponentProps) => {
           />
         </CardActionArea>
       </Card>
-      <LoadingOverlay
-        onClose={onSubmissionClose}
-        open={displaySubmissions}
-        container={props.root}
-        transition="zoom"
-      >
-        <AssignmentModalComponent
-          lecture={props.lecture}
-          assignment={assignment}
-          allSubmissions={allSubmissions}
-          latestSubmissions={latestSubmissions}
-          root={props.root}
-          users={props.users}
-          onClose={onSubmissionClose}
-        />
-      </LoadingOverlay>
     </Box>
   );
 };

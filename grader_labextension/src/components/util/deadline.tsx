@@ -6,11 +6,10 @@
 
 import * as React from 'react';
 import moment from 'moment';
-import { CardContent, Chip, Typography } from '@mui/material';
+import { Chip, createTheme } from '@mui/material';
 import AccessAlarmRoundedIcon from '@mui/icons-material/AccessAlarmRounded';
-import { SxProps } from '@mui/system';
+import { SxProps, ThemeProvider } from '@mui/system';
 import { Theme } from '@mui/material/styles';
-import { red, orange, grey } from '@mui/material/colors';
 
 export interface IDeadlineProps {
   due_date: string | null;
@@ -47,6 +46,19 @@ const fullTimeUnits: IUnitMap = {
   s: 'Second'
 };
 
+const theme = createTheme({
+  palette: {
+    warning: {
+      main: '#ffa726', 
+      contrastText: '#fff',
+    },
+    error: {
+      main: '#ef5350', 
+      contrastText: '#fff',
+    },
+  },
+});
+
 const getTimeUnit = (timeUnit: string, value: number, compact: boolean) => {
   if (compact) {
     return `${value}${compactTimeUnits[timeUnit]}`;
@@ -58,7 +70,7 @@ const getTimeUnit = (timeUnit: string, value: number, compact: boolean) => {
   }
 };
 
-const calculateTimeLeft = (date: Date) => {
+export const calculateTimeLeft = (date: Date) => {
   const difference = +date - +new Date();
   const timeLeft: ITimeSpec = {
     weeks: Math.floor(difference / (1000 * 60 * 60 * 24 * 7)),
@@ -70,7 +82,7 @@ const calculateTimeLeft = (date: Date) => {
   return timeLeft;
 };
 
-function getDisplayDate(date: Date, compact: boolean): string {
+export function getDisplayDate(date: Date, compact: boolean): string {
   if (date === undefined) {
     return 'No Deadline 😁';
   }
@@ -97,16 +109,6 @@ function getDisplayDate(date: Date, compact: boolean): string {
     )} ${getTimeUnit('h', time.hours, compact)}`;
   } else {
     return 'Deadline over!';
-  }
-}
-
-function getCardColor(c: 'default' | 'warning' | 'error') {
-  if (c === 'default') {
-    return grey[300];
-  } else if (c === 'warning') {
-    return orange[500];
-  } else {
-    return red[500];
   }
 }
 
@@ -160,24 +162,16 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
     setNewInterval(newInterval);
   };
 
-  return props.component === 'chip' ? (
-    <Chip
+  return(
+    <ThemeProvider theme={theme}> 
+        <Chip 
       sx={props.sx}
       size="small"
       icon={<AccessAlarmRoundedIcon />}
       label={displayDate}
       color={color}
     />
-  ) : (
-    <CardContent
-      sx={{ backgroundColor: getCardColor(color), p: 1, width: '100%' }}
-    >
-      <Typography variant="overline" align="left" sx={{ fontSize: 9, ml: 1 }}>
-        Deadline
-      </Typography>
-      <Typography align="center" sx={{ fontSize: 12, m: 0, mt: -1 }}>
-        {displayDate}
-      </Typography>
-    </CardContent>
+    </ThemeProvider>
+    
   );
 };

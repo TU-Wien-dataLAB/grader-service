@@ -25,6 +25,7 @@ import {
   utcToTimestamp
 } from '../../services/datetime.service';
 import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
+import { grey } from '@mui/material/colors';
 
 /**
  * Props for SubmissionListComponent.
@@ -44,7 +45,13 @@ export const SubmissionList = (props: ISubmissionListProps) => {
    * Generates submission items which will be rendered in the list
    * and will be fed using the IIterator from the FilterFileBrowserModel
    * @param submissions student submissions
+   *
    */
+
+React.useEffect(() => {
+  console.log("Triggered rerender")
+},[props.submissions])
+
   const generateItems = (submissions: Submission[]) => {
     return submissions
       .sort((a, b) =>
@@ -86,7 +93,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
     <Paper elevation={0} sx={props.sx}>
       <Card sx={{ mt: 1 }} variant="outlined">
         {props.submissions.length === 0 ? (
-          <Typography variant={'body1'} sx={{ ml: 1 }}>
+          <Typography variant={'body1'} color={grey[500]} sx={{ ml: 1 }}>
             No Submissions Yet
           </Typography>
         ) : (

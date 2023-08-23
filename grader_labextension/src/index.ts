@@ -3,6 +3,7 @@
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
+// noinspection TypeScriptValidateTypes
 
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -42,7 +43,7 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { AssignmentList } from './widgets/assignment-list';
+import { AssignmentManageView } from './widgets/assignmentmanage';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import IModel = Contents.IModel;
 import {
@@ -101,7 +102,7 @@ namespace DeadlineCommandIDs {
 export class GlobalObjects {
   static commands: CommandRegistry;
   static docRegistry: DocumentRegistry;
-  static serviceManager: ServiceManager;
+  static serviceManager: ServiceManager.IManager;
   static docManager: IDocumentManager;
   static browserFactory: IFileBrowserFactory;
   static tracker: INotebookTracker;
@@ -144,7 +145,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.browserFactory = browserFactory;
     GlobalObjects.tracker = tracker;
 
-    const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentList>>(
+    const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentManageView>>(
       {
         namespace: 'grader-assignments'
       }
@@ -263,9 +264,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.commands.addCommand(command, {
       execute: () => {
         // Create a blank content widget inside a MainAreaWidget
-        const assignmentList = new AssignmentList();
-        const assignmentWidget = new MainAreaWidget<AssignmentList>({
-          content: assignmentList
+        const assignmentView = new AssignmentManageView();
+        const assignmentWidget = new MainAreaWidget<AssignmentManageView>({
+          content: assignmentView
         });
         assignmentWidget.id = 'assignments-jupyterlab';
         assignmentWidget.title.label = 'Assignments';
@@ -325,7 +326,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         app.commands.addCommand(command, {
           label: 'Assignments',
           execute: async () => {
-            const assignmentWidget: MainAreaWidget<AssignmentList> =
+            const assignmentWidget: MainAreaWidget<AssignmentManageView> =
               await app.commands.execute(AssignmentsCommandIDs.create);
 
             if (!assignmentWidget.isAttached) {
@@ -369,13 +370,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('revert');
+        return tracker.activeCell.model.getMetadata('revert') != null;
       },
       isEnabled: () => {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('revert');
+        return tracker.activeCell.model.getMetadata('revert') != null;
       },
       execute: () => {
         showDialog({
@@ -386,11 +387,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           if (!result.button.accept) {
             return;
           }
-          tracker.activeCell.model.value.clear();
-          tracker.activeCell.model.value.insert(
-            0,
-            tracker.activeCell.model.metadata.get('revert').toString()
-          );
+          tracker.activeCell.inputArea.model.sharedModel.setSource("")
+          tracker.activeCell.inputArea.model.sharedModel.setSource(
+              tracker.activeCell.model.getMetadata("revert").toString()
+          )
         });
       },
       icon: undoIcon
@@ -403,13 +403,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('hint');
+        return tracker.activeCell.model.getMetadata('hint') != null;
       },
       isEnabled: () => {
         if (tracker.activeCell === null) {
           return false;
         }
-        return tracker.activeCell.model.metadata.has('hint');
+        return tracker.activeCell.model.getMetadata('hint') != null;
       },
       execute: () => {
         let hintWidget: HintWidget = null;
@@ -422,13 +422,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         if (hintWidget === null) {
           (tracker.activeCell.layout as PanelLayout).addWidget(
             new HintWidget(
-              tracker.activeCell.model.metadata.get('hint').toString()
+              tracker.activeCell.model.getMetadata('hint').toString()
             )
           );
         } else {
           hintWidget.toggleShowAlert();
           hintWidget.setHint(
-            tracker.activeCell.model.metadata.get('hint').toString()
+            tracker.activeCell.model.getMetadata('hint').toString()
           );
           hintWidget.update();
         }

@@ -5,133 +5,94 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import {
-  Badge,
-  BottomNavigation,
-  BottomNavigationAction,
-  Box,
-  Paper
-} from '@mui/material';
+import { Badge, Box, Tab, Tabs } from '@mui/material';
+import PropTypes from 'prop-types';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import FolderIcon from '@mui/icons-material/Folder';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Assignment } from '../../model/assignment';
 import { Lecture } from '../../model/lecture';
-import { getAllSubmissions } from '../../services/submissions.service';
-import { GradingComponent } from './grading/grading';
-import { OverviewComponent } from './overview/overview';
 import { Submission } from '../../model/submission';
-import { StatsComponent } from './stats/stats';
-import { GradeBook } from '../../services/gradebook';
-import { loadNumber, storeNumber } from '../../services/storage.service';
-import { SettingsComponent } from './settings/settings';
+import { Link, Outlet, useMatch, useParams, useRouteLoaderData } from 'react-router-dom';
+import { useRef } from 'react';
 
-export interface IAssignmentModalProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  allSubmissions: any[];
-  latestSubmissions: Submission[];
-  root: HTMLElement;
-  users: any;
-  onClose: () => void;
+function a11yProps(index) {
+  return {
+    id: `vertical-tab-${index}`,
+    'aria-controls': `vertical-tabpanel-${index}`
+  };
 }
 
-export const AssignmentModalComponent = (props: IAssignmentModalProps) => {
-  const [latestSubmissions, setSubmissions] = React.useState(
-    props.latestSubmissions
-  );
-  const [navigation, setNavigation] = React.useState(
-    loadNumber('cm-navigation', null, props.assignment) || 0
-  );
+export const AssignmentModalComponent = () => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const params = useParams();
+  const match = useMatch(`/lecture/${params.lid}/assignment/${params.aid}/*`);
+  const tab = match.params['*'];
+
+  let value: number;
+  if (tab === '') {
+    value = 0;
+  } else if (tab === 'files') {
+    value = 1;
+  } else if (tab.includes('submissions')) {
+    value = 2;
+  } else if (tab === 'stats') {
+    value = 3;
+  } else if (tab === 'settings') {
+    value = 4;
+  } else {
+    console.warn(`Unknown tab ${tab}... navigating to overview page!`);
+    value = 0;
+  }
 
   return (
-    <Box>
+    <Box sx={{ height: '95%', overflowY: 'auto' }}>
       <Box
-        sx={{
-          position: 'absolute',
-          bottom: 58,
-          top: 0,
-          left: 0,
-          right: 0,
-          overflowY: 'auto'
-        }}
+        sx={{ height: '100%', bgcolor: 'background.paper', display: 'flex' }}
       >
-        {navigation === 0 && (
-          <OverviewComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
-            latest_submissions={latestSubmissions}
-            users={props.users}
-            onClose={props.onClose}
-          />
-        )}
-
-        {navigation === 1 && (
-          <GradingComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
-            root={props.root}
-          />
-        )}
-        {navigation === 2 && (
-          <StatsComponent
-            lecture={props.lecture}
-            assignment={props.assignment}
-            allSubmissions={props.allSubmissions}
-            latestSubmissions={props.latestSubmissions}
-            users={props.users}
-            root={props.root}
-          />
-        )}
-        {navigation === 3 && (
-          <SettingsComponent
-            assignment={props.assignment}
-            lecture={props.lecture}
-            submissions={props.latestSubmissions}
-          />
-        )}
-      </Box>
-
-      <Paper
-        sx={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
-        elevation={3}
-      >
-        <BottomNavigation
-          showLabels
-          value={navigation}
-          onChange={(event, newValue) => {
-            storeNumber('cm-navigation', newValue, null, props.assignment);
-            setNavigation(newValue);
-            getAllSubmissions(
-              props.lecture,
-              props.assignment,
-              'latest',
-              true
-            ).then((response: any) => {
-              setSubmissions(response);
-            });
-          }}
+        <Tabs
+          orientation='vertical'
+          value={value}
+          sx={{ borderRight: 1, borderColor: 'divider', minWidth: '200px', marginTop: 5 }}
         >
-          <BottomNavigationAction label="Overview" icon={<DashboardIcon />} />
-          <BottomNavigationAction
-            label="Submissions"
-            icon={
-              <Badge
-                color="secondary"
-                badgeContent={props.latestSubmissions?.length}
-                showZero={props.latestSubmissions !== null}
-              >
-                <FormatListNumberedIcon />
-              </Badge>
-            }
-          />
-          <BottomNavigationAction label="Stats" icon={<QueryStatsIcon />} />
-          <BottomNavigationAction label="Settings" icon={<SettingsIcon />} />
-        </BottomNavigation>
-      </Paper>
+          <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+               {...a11yProps(0)} component={Link as any} to={''} />
+          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start'}}
+               {...a11yProps(1)} component={Link as any} to={'files'} />
+          <Tab label='Submissions' icon={
+            <Badge
+              color='secondary'
+              badgeContent={latestSubmissions?.length}
+              showZero={latestSubmissions !== null}
+            >
+              <FormatListNumberedIcon />
+            </Badge>
+          }
+               iconPosition='start' sx={{ justifyContent: 'flex-start' }} {...a11yProps(2)} component={Link as any}
+               to={'submissions'} />
+          <Tab label='Stats' icon={<QueryStatsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+               {...a11yProps(3)} component={Link as any} to={'stats'} />
+          <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
+               {...a11yProps(4)} component={Link as any} to={'settings'} />
+        </Tabs>
+        <Box sx={{ flexGrow: 1, overflowX: 'auto' }}>
+          <Outlet />
+        </Box>
+      </Box>
     </Box>
+
   );
+
 };

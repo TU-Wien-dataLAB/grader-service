@@ -3,3 +3,7 @@ traitlets>=5.0.5
 tornado>=6.2
 jupyter_server>=2.0.0
 grader-convert>=0.1.14
+hatch>=1.7
+hatch-jupyter-builder>=0.5
+hatch-nodejs-version
+jupyterlab<5,>=4.0.0

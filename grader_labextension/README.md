@@ -1,7 +1,8 @@
 # grader_labextension
 
-[![Github Actions Status](https://github.com/github_username/grader-labextension/workflows/Build/badge.svg)](https://github.com/github_username/grader-labextension/actions/workflows/build.yml)
-A JupyterLab extension.
+[![Github Actions Status](https://github.com/TU-Wien-dataLAB/Grader-Service/workflows/Build/badge.svg)](https://github.com/TU-Wien-dataLAB/Grader-Service/actions/workflows/build.yml)
+
+Grader Labextension is a JupyterLab extension to enable automatic grading of assignment notebooks.
 
 This extension is composed of a Python package named `grader_labextension`
 for the server extension and a NPM package named `grader-labextension`
@@ -9,7 +10,7 @@ for the frontend extension.
 
 ## Requirements
 
-- JupyterLab >= 3.0
+- JupyterLab >= 4.0.0
 
 ## Install
 
@@ -57,7 +58,7 @@ The `jlpm` command is JupyterLab's pinned version of
 # Clone the repo to your local environment
 # Change directory to the grader_labextension directory
 # Install package in development mode
-pip install -e .
+pip install -e ".[test]"
 # Link your development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
 # Server extension must be manually installed in develop mode
@@ -94,6 +95,44 @@ pip uninstall grader_labextension
 In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
 command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
 folder is located. Then you can remove the symlink named `grader-labextension` within that folder.
+
+### Testing the extension
+
+#### Server tests
+
+This extension is using [Pytest](https://docs.pytest.org/) for Python code testing.
+
+Install test dependencies (needed only once):
+
+```sh
+pip install -e ".[test]"
+# Each time you install the Python package, you need to restore the front-end extension link
+jupyter labextension develop . --overwrite
+```
+
+To execute them, run:
+
+```sh
+pytest -vv -r ap --cov grader_labextension
+```
+
+#### Frontend tests
+
+This extension is using [Jest](https://jestjs.io/) for JavaScript code testing.
+
+To execute them, execute:
+
+```sh
+jlpm
+jlpm test
+```
+
+#### Integration tests
+
+This extension uses [Playwright](https://playwright.dev/docs/intro/) for the integration tests (aka user level tests).
+More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jupyterlab/tree/master/galata) is used to handle testing the extension in JupyterLab.
+
+More information are provided within the [ui-tests](./ui-tests/README.md) README.
 
 ### Packaging the extension
 

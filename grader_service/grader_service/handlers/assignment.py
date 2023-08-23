@@ -5,9 +5,11 @@ from pathlib import Path
 
 import tornado
 import os
+from sqlalchemy.orm import joinedload
 from grader_convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
+from grader_service.orm.submission import Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -36,7 +38,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
             :raises HTTPError: throws err if lecture is deleted
             """
         lecture_id = parse_ids(lecture_id)
-        self.validate_parameters()
+        self.validate_parameters("include-submissions")
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
@@ -60,7 +62,21 @@ class AssignmentBaseHandler(GraderBaseHandler):
                 a for a in role.lecture.assignments if (a.deleted
                                                         == DeleteState.active)
             ]
-        assignments = sorted(assignments, key=lambda o: o.id)
+
+        # Handle the case that the user wants to include submissions
+        include_submissions = self.get_argument("include-submissions", "true") == "true"
+        if include_submissions: 
+            assignids = [a.id for a in assignments]
+            username = self.user.name
+            results = self.session.query(Submission).filter(
+                    Submission.assignid.in_(assignids), 
+                    Submission.username == username).all()
+            # Create a combined list of assignments and submissions 
+            assignments = [a.serialize() for a in assignments]
+            submissions = [s.serialize() for s in results]
+            for a in assignments:
+                a['submissions'] = [s for s in submissions if s['assignid'] == a['id']]
+        assignments = sorted(assignments, key=lambda o: o["id"])
         self.write_json(assignments)
 
     @authorize([Scope.instructor])

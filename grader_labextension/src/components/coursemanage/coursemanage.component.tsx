@@ -5,50 +5,84 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
+import { useState } from 'react';
 import { Lecture } from '../../model/lecture';
-import { getAllLectures } from '../../services/lectures.service';
-import { Scope, UserPermissions } from '../../services/permission.service';
-import { LectureComponent } from './lecture';
-import { enqueueSnackbar } from 'notistack';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
+import { FormControlLabel, FormGroup, Stack, Switch, TableCell, TableRow, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import { ButtonTr, GraderTable } from '../util/table';
+import { SectionTitle } from '../util/section-title';
 
-export interface ICourseManageProps {
-  // lectures: Array<Lecture>;
-  root: HTMLElement;
+interface ILectureTableProps {
+  rows: Lecture[];
 }
 
-export const CourseManageComponent = (props: ICourseManageProps) => {
-  const [lectures, setLectures] = React.useState([] as Lecture[]);
-  const [completedLectures, setCompletedLectures] = React.useState(
-    [] as Lecture[]
+const LectureTable = (props: ILectureTableProps) => {
+  const navigate = useNavigate();
+  const headers = [
+    { name: 'ID', width: 50 },
+    { name: 'Name' },
+    { name: 'Code' }
+  ];
+  return (
+    <GraderTable<Lecture>
+      headers={headers}
+      rows={props.rows}
+      rowFunc={row => {
+        return (
+          <TableRow
+            key={row.name}
+            component={ButtonTr}
+            onClick={() => navigate(`/lecture/${row.id}`)}
+          >
+            <TableCell style={{ width: 50 }} component='th' scope='row'>
+              {row.id}
+            </TableCell>
+            <TableCell><Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography></TableCell>
+            <TableCell>{row.code}</TableCell>
+          </TableRow>
+        );
+      }}
+    />
   );
-  React.useEffect(() => {
-    UserPermissions.loadPermissions().then(
-      () => {
-        getAllLectures().then(l => setLectures(l));
-        getAllLectures(true).then(l => setCompletedLectures(l));
-      },
-      error =>
-        enqueueSnackbar(error.message, {
-          variant: 'error'
-        })
-    );
-  }, [props]);
+};
+
+export const CourseManageComponent = () => {
+  const allLectures = useRouteLoaderData('root') as {
+    lectures: Lecture[];
+    completedLectures: Lecture[];
+  };
+  const [showComplete, setShowComplete] = useState(false);
 
   return (
-    <div className="course-list">
-      <h1>
-        <p className="course-header">Course Management</p>
-      </h1>
-      {lectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <LectureComponent lecture={el} root={props.root} expanded={true} />
-        ))}
-      {completedLectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <LectureComponent lecture={el} root={props.root} expanded={false} />
-        ))}
+    <div className='course-list'>
+      <Stack direction='row' justifyContent='center'>
+        <Typography variant={'h4'}>Course Management</Typography>
+      </Stack>
+      <Box sx={{ m: 5 }}>
+        <Stack direction={'row'} justifyContent='space-between'>
+          <Typography variant={'h6'} sx={{ mb: 1 }}>
+            Lectures
+          </Typography>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showComplete}
+                  onChange={ev => setShowComplete(ev.target.checked)}
+                />
+              }
+              label='Completed Lectures'
+            />
+          </FormGroup>
+        </Stack>
+
+        <LectureTable
+          rows={
+            showComplete ? allLectures.completedLectures : allLectures.lectures
+          }
+        />
+      </Box>
     </div>
   );
 };

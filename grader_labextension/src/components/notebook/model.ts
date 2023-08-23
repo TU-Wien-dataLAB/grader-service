@@ -5,13 +5,14 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as nbformat from '@jupyterlab/nbformat';
-
-import { IObservableJSON } from '@jupyterlab/observables';
+import { ICellModel } from '@jupyterlab/cells';
+import { ICellMetadata } from '@jupyterlab/nbformat';
 
 import { JSONObject, ReadonlyJSONObject } from '@lumino/coreutils';
 
 const NBGRADER_KEY = 'nbgrader';
 export const NBGRADER_SCHEMA_VERSION = 3;
+
 
 /**
  * A namespace for conversions between {@link NbgraderData} and
@@ -24,10 +25,10 @@ export namespace CellModel {
    * @returns Whether cleaning occurred.
    */
   export function cleanNbgraderData(
-    cellMetadata: IObservableJSON,
+    cellModel: ICellModel,
     cellType: nbformat.CellType
   ): boolean {
-    const data = CellModel.getNbgraderData(cellMetadata);
+    const data = CellModel.getNbgraderData(cellModel.metadata);
     if (data == null || !PrivateNbgraderData.isInvalid(data, cellType)) {
       return false;
     }
@@ -37,7 +38,7 @@ export namespace CellModel {
     data.grade = false;
     data.locked = false;
     data.task = false;
-    CellModel.setNbgraderData(data, cellMetadata);
+    CellModel.setNbgraderData(data, cellModel);
 
     return true;
   }
@@ -45,15 +46,13 @@ export namespace CellModel {
   /**
    * Removes the "cell_type" property from the nbgrader data.
    */
-  export function clearCellType(cellMetadata: IObservableJSON): void {
-    const data = cellMetadata.get(NBGRADER_KEY) as JSONObject;
+  export function clearCellType(cellMetadata: Partial<ICellMetadata>): void {
+    const data = cellMetadata[NBGRADER_KEY];
     if (data == null) {
       return;
     }
-    if ('cell_type' in data) {
-      data['cell_type'] = undefined;
-    }
-    cellMetadata.set(NBGRADER_KEY, data);
+    data['cell_type'] = undefined;
+    cellMetadata[NBGRADER_KEY] = data;
   }
 
   /**
@@ -61,11 +60,11 @@ export namespace CellModel {
    *
    * @returns The nbgrader data, or null if it doesn't exist.
    */
-  export function getNbgraderData(cellMetadata: IObservableJSON): NbgraderData {
+  export function getNbgraderData(cellMetadata: Partial<ICellMetadata>): NbgraderData {
     if (cellMetadata == null) {
       return null;
     }
-    const nbgraderValue = cellMetadata.get('nbgrader');
+    const nbgraderValue = cellMetadata[NBGRADER_KEY];
     if (nbgraderValue == null) {
       return null;
     }
@@ -155,21 +154,22 @@ export namespace CellModel {
    */
   export function setNbgraderData(
     data: NbgraderData,
-    cellMetadata: IObservableJSON
+    cellModel: ICellModel
   ): void {
+    const readOnlyMetadata = cellModel.metadata
     if (data == null) {
-      if (cellMetadata.has(NBGRADER_KEY)) {
-        cellMetadata.delete(NBGRADER_KEY);
+      if (readOnlyMetadata[NBGRADER_KEY] != undefined) {
+        readOnlyMetadata[NBGRADER_KEY] = undefined;
       }
       return;
     }
-    const currentDataJson = cellMetadata.get(NBGRADER_KEY);
+    const currentDataJson = readOnlyMetadata[NBGRADER_KEY];
     const currentData =
       currentDataJson == null
         ? null
         : (currentDataJson.valueOf() as NbgraderData);
     if (currentData != data) {
-      cellMetadata.set(NBGRADER_KEY, data.toJson());
+      cellModel.setMetadata(NBGRADER_KEY, data.toJson());
     }
   }
 }

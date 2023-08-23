@@ -21,8 +21,9 @@ import { Contents } from '@jupyterlab/services';
 import IModel = Contents.IModel;
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
-import { getFiles } from '../../services/file.service';
+import { getFiles, openFile } from '../../services/file.service';
 import { enqueueSnackbar } from 'notistack';
+import { grey } from '@mui/material/colors';
 
 interface IFileListProps {
   path: string;
@@ -37,30 +38,15 @@ export const FilesList = (props: IFileListProps) => {
     getFiles(props.path).then(files => setFiles(files));
   }, [props]);
 
-  const openFile = async (path: string) => {
-    GlobalObjects.commands
-      .execute('docmanager:open', {
-        path: path,
-        options: {
-          mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
-        }
-      })
-      .catch(error => {
-        enqueueSnackbar(error.message, {
-          variant: 'error'
-        });
-      });
-  };
-
   // generateItems will be fed using the IIterator from the FilterFileBrowserModel
-  const generateItems = (files: IModel[]) => {
-    return files.map(value => (
-      <ListItem disablePadding>
-        <ListItemButton onClick={() => openFile(value.path)} dense={true}>
+  const generateItems = (files: {value: IModel, done: boolean}[]) => {
+    return files.map(file => (
+      <ListItem disablePadding >
+        <ListItemButton onClick={() => openFile(file.value.path)} dense={true}>
           <ListItemIcon>
             <InsertDriveFileRoundedIcon />
           </ListItemIcon>
-          <ListItemText primary={value.name} />
+          <ListItemText primary={file.value.name} />
         </ListItemButton>
       </ListItem>
     ));
@@ -68,9 +54,9 @@ export const FilesList = (props: IFileListProps) => {
 
   return (
     <Paper elevation={0} sx={props.sx}>
-      <Card sx={{ mt: 1, height: '80%' }} variant="outlined">
+      <Card sx={{ mt: 1, maxHeight: 200, overflow: 'auto'}} variant="outlined">
         {files.length === 0 ? (
-          <Typography variant={'body1'} sx={{ ml: 1 }}>
+          <Typography variant={'body1'} color={grey[500]} sx={{ ml: 1 }}>
             No Files Found
           </Typography>
         ) : (

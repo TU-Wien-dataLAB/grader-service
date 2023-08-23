@@ -1,8 +1,9 @@
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
-import { Box, Grid, IconButton, Tooltip } from '@mui/material';
-import { ModalTitle } from '../../util/modal-title';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
+import { SectionTitle } from '../../util/section-title';
 import ReplayIcon from '@mui/icons-material/Replay';
 import * as React from 'react';
 import { getAllSubmissions } from '../../../services/submissions.service';
@@ -14,6 +15,7 @@ import { getUsers } from '../../../services/lectures.service';
 import { GradeBook } from '../../../services/gradebook';
 import { AssignmentScore } from './assignment-score';
 import { getAssignmentProperties } from '../../../services/assignments.service';
+import { useRouteLoaderData } from 'react-router-dom';
 
 export const filterUserSubmissions = (
   submissions: Submission[],
@@ -22,59 +24,67 @@ export const filterUserSubmissions = (
   return submissions.filter((v, i, a) => !users.includes(v.username));
 };
 
-export interface IStatsProps {
+export interface IStatsSubComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   allSubmissions: Submission[];
   latestSubmissions: Submission[];
   users: { students: string[]; tutors: string[]; instructors: string[] };
-  root: HTMLElement;
 }
 
-export const StatsComponent = (props: IStatsProps) => {
-  const [submissions, setSubmissions] = React.useState(props.allSubmissions);
-  const [latestSubmissions, setLatestSubmissions] = React.useState(
-    props.latestSubmissions
-  );
+export const StatsComponent = () => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const [allSubmissionsState, setAllSubmissionsState] = React.useState(allSubmissions);
+  const [latestSubmissionsState, setLatestSubmissionsState] = React.useState(latestSubmissions);
   const [gb, setGb] = React.useState(null as GradeBook);
-  const [users, setUsers] = React.useState(props.users);
+  const [usersState, setUsersState] = React.useState(users);
 
   const updateSubmissions = async () => {
-    setSubmissions(
-      await getAllSubmissions(props.lecture, props.assignment, 'none', true)
+    setAllSubmissionsState(
+      await getAllSubmissions(lecture.id, assignment.id, 'none', true)
     );
-    setLatestSubmissions(
-      await getAllSubmissions(props.lecture, props.assignment, 'latest', true)
+    setLatestSubmissionsState(
+      await getAllSubmissions(lecture.id, assignment.id, 'latest', true)
     );
-    setUsers(await getUsers(props.lecture));
+    setUsersState(await getUsers(lecture.id));
     setGb(
       new GradeBook(
-        await getAssignmentProperties(props.lecture.id, props.assignment.id)
+        await getAssignmentProperties(lecture.id, assignment.id)
       )
     );
   };
 
   React.useEffect(() => {
-    getAllSubmissions(props.lecture, props.assignment, 'none', true).then(
+    getAllSubmissions(lecture.id, assignment.id, 'none', true).then(
       response => {
-        setSubmissions(response);
+        setAllSubmissionsState(response);
       }
     );
-    getAllSubmissions(props.lecture, props.assignment, 'latest', true).then(
+    getAllSubmissions(lecture.id, assignment.id, 'latest', true).then(
       response => {
-        setLatestSubmissions(response);
+        setLatestSubmissionsState(response);
       }
     );
-  }, [props.allSubmissions, props.latestSubmissions]);
+  }, [allSubmissions, latestSubmissions]);
 
   React.useEffect(() => {
-    getUsers(props.lecture).then(response => {
-      setUsers(response);
+    getUsers(lecture.id).then(response => {
+      setUsersState(response);
     });
-  }, [props.users]);
+  }, [users]);
 
   React.useEffect(() => {
-    getAssignmentProperties(props.lecture.id, props.assignment.id).then(
+    getAssignmentProperties(lecture.id, assignment.id).then(
       properties => {
         setGb(new GradeBook(properties));
       }
@@ -83,58 +93,54 @@ export const StatsComponent = (props: IStatsProps) => {
 
   return (
     <Box>
-      <ModalTitle title={`${props.assignment.name} Stats`}>
-        <Box sx={{ ml: 2 }} display="inline-block">
-          <Tooltip title="Reload">
-            <IconButton aria-label="reload" onClick={updateSubmissions}>
+      <SectionTitle title={`${assignment.name} Stats`}>
+        <Box sx={{ ml: 2 }} display='inline-block'>
+          <Tooltip title='Reload'>
+            <IconButton aria-label='reload' onClick={updateSubmissions}>
               <ReplayIcon />
             </IconButton>
           </Tooltip>
         </Box>
-      </ModalTitle>
+      </SectionTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-        <Grid container spacing={2} alignItems="stretch">
-          <Grid item xs={12}>
+        <Grid container spacing={2} alignItems='stretch'>
+          <Grid xs={12}>
             <SubmissionTimeSeries
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
-              root={props.root}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <GradingProgress
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
-              root={props.root}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <StudentSubmissions
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
-              root={props.root}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <AssignmentScore gb={gb} />
           </Grid>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <ScoreDistribution
-              lecture={props.lecture}
-              assignment={props.assignment}
-              allSubmissions={submissions}
-              latestSubmissions={latestSubmissions}
-              users={users}
-              root={props.root}
+              lecture={lecture}
+              assignment={assignment}
+              allSubmissions={allSubmissionsState}
+              latestSubmissions={latestSubmissionsState}
+              users={usersState}
             />
           </Grid>
         </Grid>

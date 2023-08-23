@@ -29,6 +29,7 @@ import {GlobalObjects} from '../../..';
 import {Box, Button, Grid, Stack, Typography} from "@mui/material";
 import {AntSwitch} from "../create-assignment/creation-switch";
 import {Validator} from "../create-assignment/validator";
+import { lectureSubPaths } from '../../../services/file.service';
 
 export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
   public state = {
@@ -51,16 +52,16 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
     this.notebookpanel = props.notebookpanel;
     this.notebookPaths =
       this.notebookpanel.context.contentsModel.path.split('/');
-    this.subID = +this.notebookPaths[3];
+    this.subID = +this.notebookPaths[lectureSubPaths + 3];
     this.onChange = this.props.onChange;
   }
 
   public async componentDidMount() {
     const lectures = await getAllLectures();
-    this.lecture = lectures.find(l => l.code === this.notebookPaths[1]);
+    this.lecture = lectures.find(l => l.code === this.notebookPaths[lectureSubPaths]);
     this.assignment = await getAssignment(
       this.lecture.id,
-      +this.notebookPaths[2]
+      +this.notebookPaths[lectureSubPaths + 2]
     );
 
     const properties = await getProperties(
@@ -77,12 +78,12 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
   }
 
   private async saveProperties() {
-    const metadata = this.notebook.model.metadata;
+    const model = this.notebook.model;
     //if there were no updates return
-    if (!metadata.get('updated')) {
+    if (!model.getMetadata('updated')) {
       return;
     }
-    metadata.set('updated', false);
+    model.setMetadata('updated', false);
     this.setState({saveButtonText: 'Saving'});
     try {
       await updateProperties(
@@ -110,7 +111,11 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
       );
     } catch (err) {
       this.setState({saveButtonText: 'Save'});
-      showErrorMessage('Error saving properties', err);
+      if (err instanceof Error) {
+        showErrorMessage('Error saving properties', err);
+      } else {
+          console.error('Error while trying to interpret type unknown as error', err);
+      }
     }
   }
 
@@ -135,7 +140,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
             new DataWidget(
               c,
               this.gradeBook,
-              this.notebookPaths[4].split('.').slice(0, -1).join('.')
+              this.notebookPaths[lectureSubPaths + 4].split('.').slice(0, -1).join('.')
             )
           );
           currentLayout.addWidget(
@@ -143,7 +148,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
               c,
               this.notebook,
               this.gradeBook,
-              this.notebookPaths[4].split('.').slice(0, -1).join('.')
+              this.notebookPaths[lectureSubPaths + 4].split('.').slice(0, -1).join('.')
             )
           );
         } else {

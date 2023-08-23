@@ -9,8 +9,8 @@ import {
   TooltipProps,
   Brush
 } from 'recharts';
-import { Card, CardContent, CardHeader, Typography } from '@mui/material';
-import { IStatsProps } from './stats';
+import { Box, Card, CardContent, CardHeader, Typography } from '@mui/material';
+import { IStatsSubComponentProps } from './stats';
 import moment from 'moment';
 import { Submission } from '../../../model/submission';
 import {
@@ -68,7 +68,7 @@ const getData = (submissions: Submission[]): { time: number; n: number }[] => {
   });
 };
 
-export const SubmissionTimeSeries = (props: IStatsProps) => {
+export const SubmissionTimeSeries = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState([] as { time: number; n: number }[]);
 
   React.useEffect(() => {
@@ -80,70 +80,65 @@ export const SubmissionTimeSeries = (props: IStatsProps) => {
     <Card sx={{ height: 300, width: '100%' }}>
       <CardHeader title={'Submissions'} />
       <CardContent
-        sx={{
-          height: '70%',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 0.5
-        }}
+          sx={{height:'70%'}}
       >
         {data.length === 0 ? (
           <Typography color={'text.secondary'}>No Data Available</Typography>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              height={150}
-              width={250}
-              data={data}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 0,
-                bottom: 5
-              }}
-            >
-              <defs>
-                <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={'#0088FE'} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={'#0088FE'} stopOpacity={0.2} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="time"
-                tickFormatter={unixTime => moment(unixTime).format('DD. MMM')}
-              />
-              <YAxis dataKey="n" />
-              <Tooltip
-                label={'Number of Submissions'}
-                content={<SubmissionTimeSeriesTooltip />}
-              />
-              <Area
-                type="monotone"
-                dataKey="n"
-                stroke={'#0088FE'}
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#gradient)"
-              />
-              <Brush
-                height={15}
-                startIndex={
-                  loadNumber('stats-sub-brush-start', null, props.assignment) ||
-                  0
-                }
-                onChange={e => {
-                  storeNumber(
-                    'stats-sub-brush-start',
-                    (e as any).startIndex,
-                    null,
-                    props.assignment
-                  );
+          <Box sx={{ height: '100%'}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                height={150}
+                width={250}
+                data={data}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 0,
+                  bottom: 5
                 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+              >
+                <defs>
+                  <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={'#0088FE'} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={'#0088FE'} stopOpacity={0.2} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="time"
+                  tickFormatter={unixTime => moment(unixTime).format('DD. MMM')}
+                />
+                <YAxis dataKey="n" />
+                <Tooltip
+                  label={'Number of Submissions'}
+                  content={<SubmissionTimeSeriesTooltip />}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="n"
+                  stroke={'#0088FE'}
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#gradient)"
+                />
+                <Brush
+                  height={15}
+                  startIndex={
+                    loadNumber('stats-sub-brush-start', null, props.assignment) ||
+                    0
+                  }
+                  onChange={e => {
+                    storeNumber(
+                      'stats-sub-brush-start',
+                      (e as any).startIndex,
+                      null,
+                      props.assignment
+                    );
+                  }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Box>
         )}
       </CardContent>
     </Card>

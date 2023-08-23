@@ -22,10 +22,11 @@ export interface GradeComponentProps {
 }
 
 export const GradeComponent = (props: GradeComponentProps) => {
-  const metadata = props.notebook.model.metadata;
-  if (!metadata.has('updated')) {
-    metadata.set('updated', false);
+  const model = props.notebook.model;
+  if (model.getMetadata('updated') != undefined) {
+    model.setMetadata('updated', false);
   }
+  const metadata = model.metadata
   const gradableCell =
     props.toolData.type !== 'readonly' &&
     props.toolData.type !== 'solution' &&
@@ -42,7 +43,7 @@ export const GradeComponent = (props: GradeComponentProps) => {
           <Grid container spacing={2}>
             {showCommment && (
               <CommentComponent
-                metadata={metadata}
+                model={model}
                 nbgraderData={props.nbgraderData}
                 toolData={props.toolData}
                 gradebook={props.gradebook}
@@ -52,7 +53,7 @@ export const GradeComponent = (props: GradeComponentProps) => {
 
             {gradableCell && (
               <PointsComponent
-                metadata={metadata}
+                model={model}
                 nbgraderData={props.nbgraderData}
                 toolData={props.toolData}
                 gradebook={props.gradebook}
@@ -62,7 +63,7 @@ export const GradeComponent = (props: GradeComponentProps) => {
 
             {gradableCell && (
               <ExtraCreditComponent
-                metadata={metadata}
+                model={model}
                 nbgraderData={props.nbgraderData}
                 toolData={props.toolData}
                 gradebook={props.gradebook}
