@@ -5,16 +5,20 @@ import {
   useMatches,
   useParams,
   useLoaderData,
-  Outlet
+  Outlet, useLocation
 } from 'react-router-dom';
 import { Breadcrumbs, Typography } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { storeString } from '../../services/storage.service';
 
 
-export const Page = () => {
+export const Page = ({id}: {id: string}) => {
+  const pathname = "/" + useLocation().pathname.split("/").filter(v => v.length > 0).slice(0,2).join("/")
+  storeString(`${id}-react-router-path`, pathname);
+
   return (
-    <>
-      <RouterBreadcrumbs />
+    <> 
+      <RouterBreadcrumbs/> 
       <Outlet />
     </>
   );
@@ -30,9 +34,9 @@ export function LinkRouter(props: LinkRouterProps) {
 }
 
 export const RouterBreadcrumbs = () => {
-  const data = useLoaderData();
-  const params = useParams();
+  const pathname = useLocation().pathname.replace(/\/$/, "");
   let matches = useMatches();
+  console.log(`Navigating to: ${pathname}`)
 
   let crumbs = matches
     // first get rid of any matches that don't have handle and crumb
@@ -51,13 +55,15 @@ export const RouterBreadcrumbs = () => {
 
   return (
     <Breadcrumbs
+      sx={{ m: 1 }}
       aria-label='breadcrumb'
       separator={<NavigateNextIcon fontSize='small' />}
     >
       {links.map((value, index) => {
         const last = index === links.length - 1;
         const to = links.slice(0, index + 1).join('');
-        return last ? (
+        const samePath =  to.replace(/\/$/, "") === pathname; // e.g. happens if last path adds nothing to link (second to last crumb also points to same page)
+        return last || samePath ? (
           <Typography color='text.primary' key={to}>
             {crumbs[index]}
           </Typography>

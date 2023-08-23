@@ -50,12 +50,12 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
         # Create directories for every assignment
         try:
             dirs = set(
-                filter(lambda e: e[0] != ".", os.listdir(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}'))))
+                filter(lambda e: e[0] != ".", os.listdir(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments'))))
             for assignment in response:
                 if assignment["id"] not in dirs:
-                    self.log.info(f'Creating directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
+                    self.log.info(f'Creating directory {self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}')
                     os.makedirs(
-                        os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{assignment["id"]}'), exist_ok=True
+                        os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}'), exist_ok=True
                     )
                 try:
                     dirs.remove(assignment["id"])
@@ -93,15 +93,15 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
         # if we did not get an error when creating the assignment (i.e. the user is authorized etc.) then we can
         # create the directory structure if it does not exist yet
         os.makedirs(
-            os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{response["id"]}'),
+            os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments/{response["id"]}'),
             exist_ok=True
         )
         os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/source/{lecture['code']}/{response['id']}"),
+            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/source/{response['id']}"),
             exist_ok=True,
         )
         os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/release/{lecture['code']}/{response['id']}"),
+            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/release/{response['id']}"),
             exist_ok=True,
         )
         self.write(json.dumps(response))
@@ -170,7 +170,7 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
             raise HTTPError(e.code, reason=e.response.reason)
 
         os.makedirs(
-            os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{response["id"]}'),
+            os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments/{response["id"]}'),
             exist_ok=True
         )
         self.write(json.dumps(response))
@@ -205,8 +205,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
 
-        self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/{assignment["id"]}')
-        shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/{assignment["id"]}'), ignore_errors=True)
+        self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}')
+        shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}'), ignore_errors=True)
         self.write("OK")
 
 

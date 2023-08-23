@@ -4,7 +4,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { ModalTitle } from '../util/modal-title';
+import { SectionTitle } from '../util/section-title';
 import {
   Box,
   Button,
@@ -23,6 +23,7 @@ import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import { lectureBasePath } from '../../services/file.service';
 /**
  * Props for FeedbackComponent.
  */
@@ -50,14 +51,14 @@ export const Feedback = (props: IFeedbackProps) => {
       setGradeBook(gradeBook);
     });
     pullFeedback(props.lecture, props.assignment, props.submission).then(() => {
-      const feedbackPath = `feedback/${props.lecture.code}/${props.assignment.id}/${props.submission.id}`;
+      const feedbackPath = `${lectureBasePath}${props.lecture.code}/feedback/${props.assignment.id}/${props.submission.id}`;
       setPath(feedbackPath);
     });
   }, [props.lecture, props.assignment, props.submission]);
 
   return (
     <Box>
-      <ModalTitle title={'Feedback for ' + props.assignment.name} />
+      <SectionTitle title={'Feedback for ' + props.assignment.name} />
       <Box sx={{ m: 2, mt: 12 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>

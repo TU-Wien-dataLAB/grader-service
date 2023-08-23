@@ -3,59 +3,270 @@
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
-
+import * as React from 'react';
+import moment from 'moment';
+import { useNavigate, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import {
-  Alert,
-  Button,
+  Button, IconButton,
   Card,
-  CardActions,
-  CardContent,
-  Collapse,
-  Grid,
-  LinearProgress,
+  LinearProgress, Stack, TableCell, TableRow,
   Typography
 } from '@mui/material';
-import * as React from 'react';
-import { Assignment } from '../../model/assignment';
-import { Lecture } from '../../model/lecture';
-import { getAllAssignments } from '../../services/assignments.service';
-import { AssignmentComponent } from './assignment';
-import { loadBoolean, storeBoolean } from '../../services/storage.service';
+import { red, blue, green, grey } from '@mui/material/colors';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { enqueueSnackbar } from 'notistack';
 
-/**
- * Props for LectureComponent.
- */
-interface ILectureComponentProps {
+import { ButtonTr, GraderTable } from '../util/table';
+import { DeadlineComponent, getDisplayDate } from '../util/deadline';
+import { Assignment } from '../../model/assignment';
+import { AssignmentDetail } from '../../model/assignmentDetail';
+import { Submission } from '../../model/submission';
+import { Lecture } from '../../model/lecture';
+import { pullAssignment, resetAssignment } from '../../services/assignments.service';
+import { showDialog } from '../util/dialog-provider';
+import EditOffIcon from '@mui/icons-material/EditOff';
+import { getFiles, lectureBasePath } from '../../services/file.service';
+import { openBrowser } from '../coursemanage/overview/util';
+
+/*
+    * Buttons for AssignmentTable
+    * */
+interface IEditProps {
+  status: Assignment.StatusEnum;
   lecture: Lecture;
-  root: HTMLElement;
-  open?: boolean;
+  assignment: Assignment;
 }
 
-/**
- * Renders the lecture card which contains it's assignments.
- * @param props Props of the lecture component
- */
-export const LectureComponent = (props: ILectureComponentProps) => {
-  const [assignments, setAssignments] = React.useState(null as Assignment[]);
-  const [expanded, setExpanded] = React.useState(
-    loadBoolean('a-expanded', props.lecture) !== null
-      ? loadBoolean('a-expanded', props.lecture)
-      : props.open
-  );
 
-  React.useEffect(() => {
-    getAllAssignments(props.lecture.id).then(response => {
-      setAssignments(response);
-    });
-  }, []);
-  /**
-   * Toggles collapsable in the card body.
-   */
-  const handleExpandClick = () => {
-    storeBoolean('a-expanded', !expanded, props.lecture);
-    setExpanded(!expanded);
+
+const EditButton = (props: IEditProps) => {
+  const [assignmentPulled, setAssignmentPulled] = React.useState(false);
+  const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
+    await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
+      () =>{
+        enqueueSnackbar('Successfully Pulled Repo', {
+          variant: 'success'
+        }, 
+       )},
+      error =>
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+    );
   };
-  if (assignments === null) {
+  React.useEffect(() =>
+  {
+    getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`).then(files =>
+      {
+          console.log(files)
+        if(files.length > 0){
+          setAssignmentPulled(true);
+        }
+      })
+  });
+  
+   if (assignmentPulled === false){
+    return (
+      <IconButton
+            onClick={(e) =>{
+            showDialog('Pull Assignment',
+            'Do you really want to pull this assignment?',
+            async ()=> {
+              await fetchAssignmentHandler('assignment');
+            });
+            e.stopPropagation();
+          }}>
+          <FileDownloadIcon sx={{ color: blue[500] }} />
+      </IconButton>
+      );
+   }
+   const time = new Date(props.assignment.due_date).getTime();
+  if ((props.assignment.due_date !== null && time < Date.now()) || props.status === Assignment.StatusEnum.Complete ){
+    return <EditOffIcon sx={{ color: grey[500]}} />
+  }
+  else return (
+    <IconButton>
+      <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+    </IconButton>
+  );
+  
+};
+
+interface IFeedbackProps {
+  feedback_available: boolean;
+};
+
+const FeedbackIcon = (props: IFeedbackProps) => {
+  if (props.feedback_available) {
+    return <DoneIcon sx={{ color: green[500] }} />;
+  }
+  return <CloseIcon sx={{ color: red[500] }} />;
+};
+
+interface IAssignmentTableProps {
+  lecture: Lecture;
+  rows: AssignmentStudent[];
+}
+
+
+const AssignmentTable = (props: IAssignmentTableProps) => {
+  const navigate = useNavigate();
+  const headers = [
+    { name: 'Name' },
+    { name: 'Points', width: 100 },
+    { name: 'Deadline', width: 200 },
+    { name: 'Edit', width: 75},
+    { name: 'Reset',  width: 75 },
+    { name: 'Detail View',  width: 75 },
+    { name: 'Feedback Available',  width: 80 }
+  ];
+
+ ;
+  return (
+    <>
+      <GraderTable<AssignmentStudent>
+        headers={headers}
+        rows={props.rows}
+        rowFunc={row => {
+          return (
+            <TableRow
+              key={row.name}
+              component={ButtonTr}
+              onClick={() => navigate(`/lecture/${props.lecture.id}/assignment/${row.id}`)}
+            >
+              <TableCell component='th' scope='row'>
+                <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
+              </TableCell>
+              <TableCell style={{ width: 34 }}>{row.points}</TableCell>
+              <TableCell>
+                <DeadlineComponent component={'chip'} due_date={row.due_date} compact={true} />
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <EditButton status={row.status} lecture={props.lecture} assignment={row} />
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <IconButton
+                  aria-label='reset'
+                  size={'small'}
+                  onClick={(e) => {
+                    showDialog(
+                      'Reset Assignment',
+                      'Do you really want to reset this assignment?',
+                      async () => {
+                        try {
+                          await resetAssignment(
+                            props.lecture,
+                            props.rows.find(a => a.id === row.id)
+                          );
+                          enqueueSnackbar('Assignment reset successfully', {
+                            variant: 'success'
+                          });
+                        } catch (error: any) {
+                          enqueueSnackbar(error.message, {
+                            variant: 'error'
+                          });
+                        }
+                      });
+                    e.stopPropagation();
+                  }}
+                >
+                  <RestartAltIcon sx={{ color: blue[500] }} />
+                </IconButton>
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <IconButton aria-label='detail view' size={'small'}>
+                  <SearchIcon />
+                </IconButton>
+              </TableCell>
+              <TableCell style={{ width: 55 }}>
+                <FeedbackIcon feedback_available={row.feedback_available} />
+              </TableCell>
+            </TableRow>
+          );
+        }}
+      />
+    </>
+  );
+};
+
+/*
+    * Helper classes & functions for LectureComponent 
+    * The goal is to construct an AssignmentStudent class that contains
+    * all information that is used by the rows in the assignment table. The
+    * sub-routine that accomplishes this is transformAssignments, all other
+    * classes and sub-routines below are called from this function.
+    * */
+interface AssignmentStudent extends AssignmentDetail {
+  feedback_available: boolean;
+  
+}
+
+/*
+    * Scan all submissions return true if feedback is available for that assignment.
+    * */
+const feedbackAvailable = (submissions: Submission[]): boolean => {
+  /* Find the submissions equal to the assignmentId */
+  if (submissions === undefined) {
+    return false;
+  }
+  /* If we have a submission, check if it has feedback */
+  for (const submission of submissions) {
+    if (submission.feedback_available === true) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/*
+    * Transform the AssignmentDetail array into an AssignmentStudent array
+    * iterate over the submissions for each assignment, check if there is
+    * feedback available for any, then use this to set a flag in the 
+    * AssignmentStudent object */
+const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStudent[] => {
+  const result = [] as AssignmentStudent[];
+  for (const assignment of assignments) {
+    /* Get any existing submissions */
+    const existingSubmissions = assignment.submissions;
+    let feedback_available = false;
+
+    /* If there are any submissions, check for feedback! */
+    if ((existingSubmissions !== undefined) || (existingSubmissions.length > 0)) {
+      feedback_available = feedbackAvailable(existingSubmissions);
+    }
+    /* Construct the AssignmentStudent object */
+    const assignmentStudent = {
+      ...assignment,
+      feedback_available: feedback_available
+    };
+    result.push(assignmentStudent);
+  }
+  return result;
+};
+
+/**
+ * Renders the lecture card which contains its assignments.
+ */
+export const LectureComponent = () => {
+  const { lecture, assignments } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: AssignmentDetail[],
+  };
+
+  const navigation = useNavigation();
+
+  const newAssignmentSubmissions = transformAssignments(assignments);
+
+  const [lectureState, setLecture] = React.useState(lecture);
+  const [assignmentsState, setAssignments] = React.useState(newAssignmentSubmissions);
+
+
+  if (navigation.state === 'loading') {
     return (
       <div>
         <Card>
@@ -64,54 +275,29 @@ export const LectureComponent = (props: ILectureComponentProps) => {
       </div>
     );
   }
-  return (
-    <div>
-      <Card
-        sx={{ backgroundColor: expanded ? '#fafafa' : 'background.paper' }}
-        elevation={expanded ? 0 : 2}
-        className="lecture-card"
-      >
-        <CardContent sx={{ mb: -1, display: 'flex' }}>
-          <Typography variant={'h5'} sx={{ mr: 2 }}>
-            {props.lecture.name}
-          </Typography>
-        </CardContent>
 
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <CardContent>
-            <Grid container spacing={2} alignItems="stretch">
-              {assignments.map((el: Assignment) => (
-                <Grid
-                  item
-                  gridAutoColumns={'1fr'}
-                  sx={{
-                    maxWidth: 225,
-                    minWidth: 225,
-                    minHeight: '100%',
-                    m: 1.5
-                  }}
-                >
-                  <AssignmentComponent
-                    lecture={props.lecture}
-                    assignment={el}
-                    root={props.root}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-            {assignments.length === 0 ? (
-                <Alert sx={{ m: 3 }} severity="info">
-                  No active assignments
-                </Alert>
-              ) : null}
-          </CardContent>
-        </Collapse>
-        <CardActions>
-          <Button size="small" sx={{ ml: 'auto' }} onClick={handleExpandClick}>
-            {(expanded ? 'Hide' : 'Show') + ' Assignments'}
-          </Button>
-        </CardActions>
-      </Card>
-    </div>
+  /**
+   * Toggles collapsable in the card body.
+   */
+  return (
+    <Stack direction={'column'} sx={{ m: 5 }}>
+      <Typography variant={'h2'} sx={{ mb: 2 }}>
+        {lectureState.name}
+        {lectureState.complete ? (
+          <Typography
+            sx={{
+              display: 'inline-block',
+              ml: 0.75,
+              fontSize: 16,
+              color: red[400]
+            }}
+          >
+            complete
+          </Typography>
+        ) : null}
+      </Typography>
+      <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
+      <AssignmentTable lecture={lectureState} rows={assignmentsState} />
+    </Stack>
   );
 };

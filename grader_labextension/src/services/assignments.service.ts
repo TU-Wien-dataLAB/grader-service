@@ -5,6 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import {Assignment} from '../model/assignment';
+import {AssignmentDetail} from '../model/assignmentDetail';
 import {Lecture} from '../model/lecture';
 import {request, HTTPMethod} from './request.service'
 
@@ -12,8 +13,15 @@ export function createAssignment(lectureId: number, assignment: Assignment): Pro
   return request<Assignment, Assignment>(HTTPMethod.POST, `/lectures/${lectureId}/assignments`, assignment)
 }
 
-export function getAllAssignments(lectureId: number, reload = false): Promise<Assignment[]> {
-  return request<Assignment[]>(HTTPMethod.GET, `/lectures/${lectureId}/assignments`, reload)
+export function getAllAssignments(lectureId: number, reload = false, includeSubmissions = false): Promise<AssignmentDetail[]> {
+  let url = `/lectures/${lectureId}/assignments`;
+  if (includeSubmissions) {
+      let searchParams = new URLSearchParams({
+            "include-submissions": String(includeSubmissions)
+      })
+      url += '?' + searchParams;
+  }
+  return request<AssignmentDetail[]>(HTTPMethod.GET, url, reload);
 }
 
 export function getAssignment(lectureId: number, assignmentId: number, reload = false): Promise<Assignment> {

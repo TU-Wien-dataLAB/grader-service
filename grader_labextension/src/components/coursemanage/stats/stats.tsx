@@ -1,8 +1,9 @@
 import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
-import { Box, Grid, IconButton, Tooltip } from '@mui/material';
-import { ModalTitle } from '../../util/modal-title';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
+import { SectionTitle } from '../../util/section-title';
 import ReplayIcon from '@mui/icons-material/Replay';
 import * as React from 'react';
 import { getAllSubmissions } from '../../../services/submissions.service';
@@ -23,20 +24,15 @@ export const filterUserSubmissions = (
   return submissions.filter((v, i, a) => !users.includes(v.username));
 };
 
-export interface IStatsProps {
-  root: HTMLElement;
-}
-
 export interface IStatsSubComponentProps {
   lecture: Lecture;
   assignment: Assignment;
   allSubmissions: Submission[];
   latestSubmissions: Submission[];
   users: { students: string[]; tutors: string[]; instructors: string[] };
-  root: HTMLElement;
 }
 
-export const StatsComponent = (props: IStatsProps) => {
+export const StatsComponent = () => {
   const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
     assignments: Assignment[],
@@ -60,7 +56,7 @@ export const StatsComponent = (props: IStatsProps) => {
     setLatestSubmissionsState(
       await getAllSubmissions(lecture.id, assignment.id, 'latest', true)
     );
-    setUsersState(await getUsers(lecture));
+    setUsersState(await getUsers(lecture.id));
     setGb(
       new GradeBook(
         await getAssignmentProperties(lecture.id, assignment.id)
@@ -82,7 +78,7 @@ export const StatsComponent = (props: IStatsProps) => {
   }, [allSubmissions, latestSubmissions]);
 
   React.useEffect(() => {
-    getUsers(lecture).then(response => {
+    getUsers(lecture.id).then(response => {
       setUsersState(response);
     });
   }, [users]);
@@ -97,7 +93,7 @@ export const StatsComponent = (props: IStatsProps) => {
 
   return (
     <Box>
-      <ModalTitle title={`${assignment.name} Stats`}>
+      <SectionTitle title={`${assignment.name} Stats`}>
         <Box sx={{ ml: 2 }} display='inline-block'>
           <Tooltip title='Reload'>
             <IconButton aria-label='reload' onClick={updateSubmissions}>
@@ -105,50 +101,46 @@ export const StatsComponent = (props: IStatsProps) => {
             </IconButton>
           </Tooltip>
         </Box>
-      </ModalTitle>
+      </SectionTitle>
       <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
         <Grid container spacing={2} alignItems='stretch'>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <SubmissionTimeSeries
               lecture={lecture}
               assignment={assignment}
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <GradingProgress
               lecture={lecture}
               assignment={assignment}
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <StudentSubmissions
               lecture={lecture}
               assignment={assignment}
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid md={12} lg={4}>
             <AssignmentScore gb={gb} />
           </Grid>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <ScoreDistribution
               lecture={lecture}
               assignment={assignment}
               allSubmissions={allSubmissionsState}
               latestSubmissions={latestSubmissionsState}
               users={usersState}
-              root={props.root}
             />
           </Grid>
         </Grid>

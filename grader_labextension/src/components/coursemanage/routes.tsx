@@ -13,49 +13,59 @@ import { LectureComponent } from './lecture';
 import { getAllSubmissions } from '../../services/submissions.service';
 import { AssignmentModalComponent } from './assignment-modal';
 import { OverviewComponent } from './overview/overview';
-import { GradingComponent } from './grading/grading';
+import GradingTable, { GradingComponent } from './grading/grading';
 import { StatsComponent } from './stats/stats';
 import { SettingsComponent } from './settings/settings';
+import { FileView } from './files/file-view';
+import { ManualGrading } from './grading/manual-grading';
+import { EditSubmission } from './grading/edit-submission';
+import { CreateSubmission } from './grading/create-submission';
 
 const loadPermissions = async () => {
   try {
     await UserPermissions.loadPermissions();
-    const lectures = await getAllLectures();
-    const completedLectures = await getAllLectures(true);
+    const [lectures, completedLectures] = await Promise.all([
+      getAllLectures(),
+      getAllLectures(true)
+    ]);
     return { lectures, completedLectures };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
 };
 
 const loadLecture = async (lectureId: number) => {
   try {
-    const lecture = await getLecture(lectureId);
-    const assignments = await getAllAssignments(lecture.id);
-    const users = await getUsers(lecture);
-
+    const [lecture, assignments, users] = await Promise.all([
+      getLecture(lectureId),
+      getAllAssignments(lectureId),
+      getUsers(lectureId)
+    ]);
     return { lecture, assignments, users };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
-  return { lecture: { id: lectureId, name: 'Recommender Systems' } };
 };
 
-// TODO: remove test code
 const loadAssignment = async (lectureId: number, assignmentId: number) => {
   try {
-    const assignment = await getAssignment(lectureId, assignmentId);
-    const allSubmissions = await getAllSubmissions(lectureId, assignmentId, 'none', true);
-    const latestSubmissions = await getAllSubmissions(lectureId, assignmentId, 'latest', true);
+    const [assignment, allSubmissions, latestSubmissions] = await Promise.all([
+      getAssignment(lectureId, assignmentId),
+      getAllSubmissions(lectureId, assignmentId, 'none', true),
+      getAllSubmissions(lectureId, assignmentId, 'latest', true)
+    ]);
     return { assignment, allSubmissions, latestSubmissions };
   } catch (error: any) {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
+    throw new Error("Could not load data!");
   }
 };
 
@@ -81,10 +91,10 @@ function ExamplePage({ to }) {
   );
 }
 
-export const getRoutes = (root: HTMLElement) => {
+export const getRoutes = () => {
   const routes = createRoutesFromElements(
     // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
-    <Route element={<Page />} errorElement={<ErrorPage />}>
+    <Route element={<Page id={'course-manage'} />} errorElement={<ErrorPage id={'course-manage'} />}>
       <Route
         id={'root'}
         path={'/*'}
@@ -94,7 +104,7 @@ export const getRoutes = (root: HTMLElement) => {
           link: (params) => '/'
         }}
       >
-        <Route index element={<CourseManageComponent root={root} />}></Route>
+        <Route index element={<CourseManageComponent />}></Route>
         <Route
           id={'lecture'}
           path={'lecture/:lid/*'}
@@ -107,12 +117,12 @@ export const getRoutes = (root: HTMLElement) => {
         >
           <Route
             index
-            element={<LectureComponent root={root} />}
+            element={<LectureComponent />}
           ></Route>
           <Route
             id={'assignment'}
             path={'assignment/:aid/*'}
-            element={<AssignmentModalComponent root={root} />}
+            element={<AssignmentModalComponent />}
             loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
             handle={{
               // functions in handle have to handle undefined data (error page is displayed afterwards)
@@ -122,22 +132,36 @@ export const getRoutes = (root: HTMLElement) => {
             }}
           >
             <Route index path={''} element={<OverviewComponent />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Overview',
               link: (params) => ''
             }}></Route>
-            <Route path={'submissions'} element={<GradingComponent root={root} />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
+            <Route path={'files'} element={<FileView />} handle={{
+              crumb: (data) => 'Files',
+              link: (params) => 'files/'
+            }}></Route>
+            <Route id={'submissions/*'} path={'submissions'} element={<GradingComponent />} handle={{
               crumb: (data) => 'Submissions',
               link: (params) => 'submissions/'
-            }}></Route>
-            <Route path={'stats'} element={<StatsComponent root={root} />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
+            }}>
+              <Route index path={''} element={<GradingTable />} />
+              <Route path={'manual'} element={<ManualGrading />} handle={{
+                crumb: (data) => 'Grading View',
+                link: (params) => `manual/`
+              }}></Route>
+              <Route path={'edit'} element={<EditSubmission />} handle={{
+                crumb: (data) => 'Edit Submission',
+                link: (params) => `edit/`
+              }}></Route>
+              <Route path={'create'} element={<CreateSubmission />} handle={{
+                crumb: (data) => 'Create Submission',
+                link: (params) => `create/`
+              }}></Route>
+            </Route>
+            <Route path={'stats'} element={<StatsComponent />} handle={{
               crumb: (data) => 'Stats',
               link: (params) => 'stats/'
             }}></Route>
             <Route path={'settings'} element={<SettingsComponent />} handle={{
-              // functions in handle have to handle undefined data (error page is displayed afterwards)
               crumb: (data) => 'Settings',
               link: (params) => 'settings/'
             }}></Route>

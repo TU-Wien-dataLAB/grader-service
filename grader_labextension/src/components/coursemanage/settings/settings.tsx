@@ -1,7 +1,7 @@
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import * as React from 'react';
-import { useFormik } from 'formik';
+import { ErrorMessage, useFormik } from 'formik';
 import {
   Box,
   Button,
@@ -11,7 +11,6 @@ import {
   MenuItem,
   Stack,
   TextField,
-  TextFieldProps,
   Tooltip
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -25,10 +24,8 @@ import {
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
-import { ModalTitle } from '../../util/modal-title';
-import {autogradeSubmission} from "../../../services/grading.service";
-import {AgreeDialog} from "../../util/dialog";
-import { useRouteLoaderData } from 'react-router-dom';
+import { SectionTitle } from '../../util/section-title';
+import { useRouteLoaderData } from 'react-router-dom';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -61,60 +58,25 @@ const validationSchema = yup.object({
 
 export const SettingsComponent = () => {
 
-  const { lecture, assignments } = useRouteLoaderData('lecture') as {
+  const { lecture, assignments } = useRouteLoaderData('lecture') as {
       lecture: Lecture,
       assignments: Assignment[],
   };
 
-  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
       assignment: Assignment,
       allSubmissions: Submission[],
       latestSubmissions: Submission[]
   };
 
-  // Agree dialog states for assignment deletion
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
   const [checked, setChecked] = React.useState(
     assignment.due_date !== null
   );
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(assignment.max_submissions)
   );
-
-  const handleDeleteAssignment = () => {
-    setDialogContent({
-      title: 'Delete Assignment',
-      message: 'Do you wish to delete this assignment?',
-      handleAgree: async () => {
-        await deleteAssignment(
-                lecture.id,
-                assignment.id
-              ).then(
-                response => {
-                  enqueueSnackbar('Successfully Deleted Assignment', {
-                    variant: 'success'
-                  });
-                },
-                (error: Error) => {
-                  enqueueSnackbar(error.message, {
-                    variant: 'error'
-                  });
-                }
-              );
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
-
-   const closeDialog = () => setShowDialog(false);
+  
+  
 
   const formik = useFormik({
     initialValues: {
@@ -154,7 +116,7 @@ export const SettingsComponent = () => {
 
   return (
     <Box ml={'50px'} mr={'50px'}>
-      <ModalTitle title="Settings" />
+      <SectionTitle title="Settings" />
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
           <TextField
@@ -190,6 +152,7 @@ export const SettingsComponent = () => {
               ampm={false}
               disabled={!checked}
               label="DateTimePicker"
+              disablePast
               value={formik.values.due_date}
               onChange={(date: Date) => {
                 formik.setFieldValue('due_date', date);
@@ -292,19 +255,9 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Stack spacing={2} direction={'row'}>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={handleDeleteAssignment}
-          >
-            Delete Assignment
-          </Button>
-          <Button color="primary" variant="contained" type="submit">
-            Save changes
-          </Button>
-        </Stack>
-        <AgreeDialog open={showDialog} {...dialogContent} />
+      <Button color="primary" variant="contained" type="submit">
+        Save changes
+      </Button>
       </form>
     </Box>
   );

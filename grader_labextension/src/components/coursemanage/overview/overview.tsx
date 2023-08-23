@@ -8,14 +8,10 @@ import * as React from 'react';
 
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
-import { ModalTitle } from '../../util/modal-title';
+import { SectionTitle } from '../../util/section-title';
 import { OverviewCard } from './overview-card';
 import { Box, Grid } from '@mui/material';
-import { Files } from './files';
-import { GitLog } from './git-log';
 import { AssignmentStatus } from './assignment-status';
-import { RepoType } from '../../util/repo-type';
-import { getGitLog, IGitLogObject } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
 import { useRouteLoaderData } from 'react-router-dom';
 
@@ -33,56 +29,32 @@ export const OverviewComponent = () => {
   };
 
   const [assignmentState, setAssignmentState] = React.useState(assignment);
-  const [gitLogs, setGitLog] = React.useState([] as IGitLogObject[]);
 
   const onAssignmentChange = (assignment: Assignment) => {
     setAssignmentState(assignment);
   };
 
-  const updateGitLog = () => {
-    getGitLog(lecture, assignment, RepoType.SOURCE, 10).then(logs =>
-      setGitLog(logs)
-    );
-  };
-
-  React.useEffect(() => {
-    updateGitLog();
-  }, [assignmentState]);
-
+  
   return (
     <Box>
-      <ModalTitle title={assignmentState.name}></ModalTitle>
-      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
-        <Grid container spacing={2} alignItems='stretch'>
-          <Grid item xs={12} md={12} lg={12}>
-            <AssignmentStatus
+      <SectionTitle title={assignmentState.name}></SectionTitle>
+      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
+        <Grid container spacing={3} >
+          <Grid item md={12} xs={7} lg={6} xl={7}>
+          <AssignmentStatus
               lecture={lecture}
               assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
-
-          <Grid item xs={12} md={6} lg={3}>
-            <OverviewCard
+          <Grid item md={12} xs={12} lg={6} xl={5}>
+          <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
               allSubmissions={allSubmissions}
               latestSubmissions={latestSubmissions}
               users={users}
             />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={5}>
-            <Files
-              lecture={lecture}
-              assignment={assignmentState}
-              onAssignmentChange={onAssignmentChange}
-              updateGitLog={updateGitLog}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={4}>
-            <GitLog gitLogs={gitLogs} />
           </Grid>
         </Grid>
       </Box>

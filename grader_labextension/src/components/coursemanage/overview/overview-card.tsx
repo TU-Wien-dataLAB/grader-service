@@ -5,19 +5,21 @@
 // LICENSE file in the root directory of this source tree.
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
   Divider,
   Grid,
-  Typography
+  Paper,
+  Typography,
+  createTheme
 } from '@mui/material';
 import * as React from 'react';
 import { Assignment } from '../../../model/assignment';
-import { DeadlineComponent } from '../../util/deadline';
 import { Lecture } from '../../../model/lecture';
-import { utcToLocal } from '../../../services/datetime.service';
 import { Submission } from '../../../model/submission';
+import GroupIcon from '@mui/icons-material/Group';
+import ChecklistIcon from '@mui/icons-material/Checklist';
+import GradeIcon from '@mui/icons-material/Grade';
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+
 
 export interface IOverviewCardProps {
   lecture: Lecture;
@@ -41,121 +43,72 @@ export const OverviewCard = (props: IOverviewCardProps) => {
   }
 
   return (
-    <Card elevation={3}>
-      <CardHeader title="Overview" />
-      <CardContent
-        sx={{
-          alignItems: { xs: 'center' },
-          height: '243px',
-          minWidth: '150px',
-          overflowY: 'auto'
-        }}
-      >
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users?.students.length}
-          <Typography
-            color="text.secondary"
+    <Grid container spacing={2}>
+      <Grid item xs={6}>
+        <Paper elevation={3}
             sx={{
-              display: 'inline-block',
-              ml: 0.75,
-              fontSize: 13
-            }}
-          >
-            {'Student' + (props.users?.students.length === 1 ? '' : 's')}
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography sx={{textAlign: "left", fontSize: 24}}>Students</Typography>
+          
+          <GroupIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
+          <Typography  sx={{ textAlign: "left", mr: 0.5, ml: 0.5}}>
+            {'Overall number of students in this lecture: ' + props.users?.students.length}
           </Typography>
-        </Typography>
+        </Paper>
+        
+      </Grid>
+      <Grid item xs={6}>
+        <Paper elevation={3}
+            sx={{
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography  sx={{textAlign: "left", fontSize: 24}}>Submissions</Typography>
+          <ChecklistIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
+          <Typography  sx={{ textAlign: "left", mr: 0.5, ml: 0.5}}>
+            {'Total number of submissions: ' + props.allSubmissions.length}
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid item xs={12}>
+        <Divider/>
+      </Grid>
+      <Grid item xs={6}>
+        <Paper elevation={3}
+            sx={{
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography sx={{textAlign: "left", fontSize: 24}}>Grading behaviour</Typography>
+         
+          <GradeIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
+          <Typography sx={{mr: 0.5, ml: 0.5}}>
+            {gradingBehaviour}
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid item xs={6}>
+        <Paper elevation={3}
+            sx={{
+                height: "205px",
+                textAlign: "center",
+                overflowY: 'auto',
+                padding: "10px"}}>
+          <Typography  sx={{textAlign: "left", fontSize: 24}}>Assignment type</Typography>
+          <QuestionMarkIcon color="primary" sx={{ fontSize: 80, ml: 1}}/>
+          <Typography  sx={{ mr: 0.5, ml: 0.5}}>
+            {props.assignment.type === 'user' ? 'User' : 'Group'}
+          </Typography>
+      
+        </Paper>
+      </Grid>
 
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users?.tutors.length}
-          <Typography
-            color="text.secondary"
-            sx={{
-              display: 'inline-block',
-              ml: 0.75,
-              fontSize: 13
-            }}
-          >
-            {'Tutor' + (props.users?.tutors.length === 1 ? '' : 's')}
-          </Typography>
-        </Typography>
-
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.users?.instructors.length}
-          <Typography
-            color="text.secondary"
-            sx={{
-              display: 'inline-block',
-              ml: 0.75,
-              fontSize: 13
-            }}
-          >
-            {'Instructor' + (props.users?.instructors.length === 1 ? '' : 's')}
-          </Typography>
-        </Typography>
-
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.allSubmissions.length}
-          <Typography
-            color="text.secondary"
-            sx={{
-              display: 'inline-block',
-              ml: 0.75,
-              fontSize: 13
-            }}
-          >
-            {'Submissions Total'}
-          </Typography>
-        </Typography>
-        <Typography sx={{ fontSize: 15, mt: 0.5, ml: 0.5 }}>
-          {props.latestSubmissions.length}
-          <Typography
-            color="text.secondary"
-            sx={{
-              display: 'inline-block',
-              ml: 0.75,
-              fontSize: 13
-            }}
-          >
-            {'Users that submitted at least once'}
-          </Typography>
-        </Typography>
-        <Divider sx={{ mt: 1, mb: 1 }} />
-        <Typography
-          color="text.secondary"
-          sx={{
-            display: 'inline-block',
-            fontSize: 13,
-            mb: -1,
-            ml: 0.5
-          }}
-        >
-          Grading Behaviour:
-        </Typography>
-        <Typography sx={{ fontSize: 15, ml: 0.5 }}>
-          {gradingBehaviour}
-        </Typography>
-
-        <Typography
-          color="text.secondary"
-          sx={{
-            display: 'inline-block',
-            fontSize: 13,
-            mt: 1,
-            mb: -1,
-            ml: 0.5
-          }}
-        >
-          Assignment Type:
-        </Typography>
-        <Typography sx={{ fontSize: 15, ml: 0.5 }}>
-          {props.assignment.type === 'user' ? 'User' : 'Group'}
-        </Typography>
-      </CardContent>
-      <DeadlineComponent
-        due_date={props.assignment.due_date}
-        compact={false}
-        component={'card'}
-      />
-    </Card>
+    </Grid>
+    
   );
 };

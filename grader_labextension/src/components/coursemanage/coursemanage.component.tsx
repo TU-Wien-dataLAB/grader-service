@@ -5,54 +5,84 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
+import { useState } from 'react';
 import { Lecture } from '../../model/lecture';
-import { getAllLectures } from '../../services/lectures.service';
-import { Scope, UserPermissions } from '../../services/permission.service';
-import { LectureComponent } from './lecture';
-import { enqueueSnackbar } from 'notistack';
-import { useRouteLoaderData, Link as RouterLink } from 'react-router-dom';
-import { ListItem, ListItemProps, ListItemText } from '@mui/material';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
+import { FormControlLabel, FormGroup, Stack, Switch, TableCell, TableRow, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import { ButtonTr, GraderTable } from '../util/table';
+import { SectionTitle } from '../util/section-title';
 
-export interface ICourseManageProps {
-  // lectures: Array<Lecture>;
-  root: HTMLElement;
+interface ILectureTableProps {
+  rows: Lecture[];
 }
 
-interface ListItemLinkProps extends ListItemProps {
-  to: string;
-  text: string;
-}
-
-const ListItemLink = (props: ListItemLinkProps) => {
-  const { to, ...other } = props;
+const LectureTable = (props: ILectureTableProps) => {
+  const navigate = useNavigate();
+  const headers = [
+    { name: 'ID', width: 50 },
+    { name: 'Name' },
+    { name: 'Code' }
+  ];
   return (
-    <li>
-      <ListItem component={RouterLink as any} to={to} {...other}>
-        <ListItemText primary={props.text} />
-      </ListItem>
-    </li>
+    <GraderTable<Lecture>
+      headers={headers}
+      rows={props.rows}
+      rowFunc={row => {
+        return (
+          <TableRow
+            key={row.name}
+            component={ButtonTr}
+            onClick={() => navigate(`/lecture/${row.id}`)}
+          >
+            <TableCell style={{ width: 50 }} component='th' scope='row'>
+              {row.id}
+            </TableCell>
+            <TableCell><Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography></TableCell>
+            <TableCell>{row.code}</TableCell>
+          </TableRow>
+        );
+      }}
+    />
   );
-}
+};
 
-
-export const CourseManageComponent = (props: ICourseManageProps) => {
-  const allLectures = useRouteLoaderData("root") as {lectures: Lecture[], completedLectures: Lecture[]};
+export const CourseManageComponent = () => {
+  const allLectures = useRouteLoaderData('root') as {
+    lectures: Lecture[];
+    completedLectures: Lecture[];
+  };
+  const [showComplete, setShowComplete] = useState(false);
 
   return (
-    <div className="course-list">
-      <h1>
-        <p className="course-header">Course Management</p>
-      </h1>
-      {allLectures.lectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <ListItemLink to={`/lecture/${el.id}`} text={el.name} />
-        ))}
-      {allLectures.completedLectures
-        .filter(el => UserPermissions.getScope(el) > Scope.student)
-        .map((el, index) => (
-          <ListItemLink to={`/lecture/${el.id}`} text={el.name} />
-        ))}
+    <div className='course-list'>
+      <Stack direction='row' justifyContent='center'>
+        <Typography variant={'h4'}>Course Management</Typography>
+      </Stack>
+      <Box sx={{ m: 5 }}>
+        <Stack direction={'row'} justifyContent='space-between'>
+          <Typography variant={'h6'} sx={{ mb: 1 }}>
+            Lectures
+          </Typography>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showComplete}
+                  onChange={ev => setShowComplete(ev.target.checked)}
+                />
+              }
+              label='Completed Lectures'
+            />
+          </FormGroup>
+        </Stack>
+
+        <LectureTable
+          rows={
+            showComplete ? allLectures.completedLectures : allLectures.lectures
+          }
+        />
+      </Box>
     </div>
   );
 };

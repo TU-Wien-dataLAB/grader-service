@@ -1,9 +1,9 @@
-import { IStatsProps, IStatsSubComponentProps } from './stats';
+import { IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
 import { Assignment } from '../../../model/assignment';
 import {
-  Button,
+  Box,
   Card,
   CardContent,
   CardHeader,
@@ -152,37 +152,34 @@ export const ScoreDistribution = (props: IStatsSubComponentProps) => {
       />
       <CardContent
         sx={{
-          height: '70%',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 0.5
+          height: '70%'
         }}
       >
         {data.reduce((acc, v) => acc + v.count, 0) === 0 ? (
           <Typography color={'text.secondary'}>No Data Available</Typography>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              height={150}
-              width={250}
-              data={data}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 0,
-                bottom: 5
-              }}
-              barGap={0}
-              barCategoryGap={0}
-            >
-              <XAxis dataKey="name" />
-              <YAxis dataKey="count" />
-              <Tooltip content={<ScoreDistributionTooltip />} />
-              <Bar dataKey="count" fill={'#0088FE'} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Box sx={{ height: '100%'}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                height={150}
+                width={250}
+                data={data}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 0,
+                  bottom: 5
+                }}
+                barGap={0}
+                barCategoryGap={0}
+              >
+                <XAxis dataKey="name" />
+                <YAxis dataKey="count" />
+                <Tooltip content={<ScoreDistributionTooltip />} />
+                <Bar dataKey="count" fill={'#0088FE'} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
         )}
       </CardContent>
     </Card>

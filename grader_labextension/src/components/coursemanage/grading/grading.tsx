@@ -1,295 +1,271 @@
-// Copyright (c) 2022, TU Wien
-// All rights reserved.
-//
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree.
-
-import {
-  DataGrid,
-  GridRenderCellParams,
-  GridRowSelectionModel
-} from '@mui/x-data-grid';
 import * as React from 'react';
-import { Assignment } from '../../../model/assignment';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Checkbox from '@mui/material/Checkbox';
+import { visuallyHidden } from '@mui/utils';
 import { Lecture } from '../../../model/lecture';
-import { utcToLocalFormat } from '../../../services/datetime.service';
-import {
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Typography,
-  Tooltip,
-  IconButton
-} from '@mui/material';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import {
-  getAllSubmissions,
-  getLogs,
-  ltiSyncSubmissions
-} from '../../../services/submissions.service';
-import { AgreeDialog } from '../../util/dialog';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { ModalTitle } from '../../util/modal-title';
-import { User } from '../../../model/user';
+import { Assignment } from '../../../model/assignment';
+import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
-import {
-  autogradeSubmission,
-  generateFeedback,
-  saveSubmissions
-} from '../../../services/grading.service';
-import LoadingOverlay from '../../util/overlay';
-import { ManualGrading } from './manual-grading';
-import ReplayIcon from '@mui/icons-material/Replay';
-import { GlobalObjects } from '../../../index';
+import { utcToLocalFormat } from '../../../services/datetime.service';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Toolbar, Tooltip } from '@mui/material';
+import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
-import { loadString, storeString } from '../../../services/storage.service';
-import CloudSyncIcon from '@mui/icons-material/CloudSync';
-import { getConfig } from '../../../services/config.service';
-import { EditSubmission } from './edit-submission';
-import { useRouteLoaderData } from 'react-router-dom';
+import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
+import { EnhancedTableToolbar } from './table-toolbar';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import { green } from '@mui/material/colors';
+import AddIcon from '@mui/icons-material/Add';
+
+
 
 /**
- * Props for GradingComponent.
+ * Calculates chip color based on submission status.
+ * @param value submission status
+ * @return chip color
  */
-export interface IGradingProps {
-  root: HTMLElement;
+const getColor = (value: string) => {
+  if (value === 'not_graded') {
+    return 'warning';
+  } else if (
+    value === 'automatically_graded' ||
+    value === 'manually_graded'
+  ) {
+    return 'success';
+  } else if (value === 'grading_failed') {
+    return 'error';
+  }
+  return 'primary';
+};
+
+export const getAutogradeChip = (submission: Submission) => {
+  return <Chip
+    sx={{ textTransform: 'capitalize' }}
+    variant='outlined'
+    label={submission.auto_status.split('_').join(' ')}
+    color={getColor(submission.auto_status)} />;
+};
+
+export const getManualChip = (submission: Submission) => {
+  return <Chip
+    sx={{ textTransform: 'capitalize' }}
+    variant='outlined'
+    label={submission.manual_status.split('_').join(' ')}
+    color={getColor(submission.manual_status)}
+  />;
+};
+
+export const getFeedbackChip = (submission: Submission) => {
+  return <Chip
+    variant='outlined'
+    label={submission.feedback_available ? 'Generated' : 'Not Generated'}
+    color={submission.feedback_available ? 'success' : 'error'}
+  />;
+};
+
+function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
 }
 
-/**
- * .Rows object for the data grid.
- */
-interface IRowValues extends Submission {
-  sub_id: number;
+type Order = 'asc' | 'desc';
+
+function getComparator<Key extends keyof Submission>(
+  order: Order,
+  orderBy: Key
+): (
+  a: Submission,
+  b: Submission
+) => number {
+  return order === 'desc'
+    ? (a, b) => descendingComparator<Submission>(a, b, orderBy)
+    : (a, b) => -descendingComparator<Submission>(a, b, orderBy);
 }
 
-/**
- * Renders the grading view in which the course management can grade student submissions and generate feedback.
- * @param props Props of the grading component
- */
-export const GradingComponent = (props: IGradingProps) => {
-  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
-    lecture: Lecture,
-    assignments: Assignment[],
-    users: { instructors: string[], tutors: string[], students: string[] }
-  };
-  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
-    assignment: Assignment,
-    allSubmissions: Submission[],
-    latestSubmissions: Submission[]
-  };
-
-  const [option, setOption] = React.useState(
-    (loadString('grading-submission-option', null, assignment) ||
-      'none') as 'none' | 'latest' | 'best'
-  );
-  const [showDialog, setShowDialog] = React.useState(false);
-  const [showLogs, setShowLogs] = React.useState(false);
-  const [showSyncGrades, setSyncGrades] = React.useState(false);
-  const [logs, setLogs] = React.useState(undefined);
-  const [dialogContent, setDialogContent] = React.useState({
-    title: '',
-    message: '',
-    handleAgree: null,
-    handleDisagree: null
-  });
-
-  const [displayManualGrading, setDisplayManualGrading] = React.useState(false);
-  const [displayEditSubmission, setDisplayEditSubmission] = React.useState(false);
-
-  const onManualGradingClose = async () => {
-    setDisplayManualGrading(false);
-  };
-
-  const onEditSubmissionClose = async () => {
-    setDisplayEditSubmission(false);
-  };
-
-  /**
-   * Removes row selection.
-   */
-  const cleanSelectedRows = () => {
-    setSelectedRows([]);
-  };
-  /**
-   * Automatically grade selected submissions.
-   */
-  const handleAutogradeSubmissions = async () => {
-    setDialogContent({
-      title: 'Autograde Selected Submissions',
-      message: 'Do you wish to autograde the selected submissions?',
-      handleAgree: async () => {
-        try {
-          const numSubs = selectedRowsData.length;
-          selectedRowsData.map(async row => {
-            row.auto_status = 'pending';
-            await autogradeSubmission(
-              lecture,
-              assignment,
-              getSubmissionFromRow(row)
-            );
-          });
-        } catch (err) {
-          console.error(err);
-          enqueueSnackbar('Error Autograding Submissions', {
-            variant: 'error'
-          });
-        }
-        cleanSelectedRows();
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
-  /**
-   * Generate feedback for selected submissions.
-   */
-  const handleGenerateFeedback = async () => {
-    setDialogContent({
-      title: 'Generate Feedback',
-      message: 'Do you wish to generate Feedback of the selected submissions?',
-      handleAgree: async () => {
-        try {
-          const numSubs = selectedRowsData.length;
-          await Promise.all(
-            selectedRowsData.map(async row => {
-              await generateFeedback(
-                lecture.id,
-                assignment.id,
-                row.id
-              );
-            })
-          );
-          getAllSubmissions(
-            lecture.id,
-            assignment.id,
-            option,
-            true,
-            true
-          ).then(response => {
-            setRows(generateRows(response));
-            enqueueSnackbar(`Generating Feedback for ${numSubs} Submissions`, {
-              variant: 'success'
-            });
-          });
-        } catch (err) {
-          console.error(err);
-          enqueueSnackbar('Error Generating Feedback', {
-            variant: 'error'
-          });
-        }
-        cleanSelectedRows();
-        closeDialog();
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
-  };
-
-  const getConfigFromService = () => {
-    getConfig().then(response => {
-      setSyncGrades(response['enable_lti_features']);
-    });
-  };
-
-  /**
-   * Closes dialog window.
-   */
-  const closeDialog = () => setShowDialog(false);
-  /**
-   * Generates rows objects out of submission.
-   * @param submissions submissions which are used to generate row objects
-   */
-  const generateRows = (submissions: Submission[]) => {
-    const rows: IRowValues[] = [];
-    let id = 1;
-    submissions.forEach((sub: Submission) => {
-      rows.push({
-        id: sub.id,
-        sub_id: id++,
-        username: sub.username,
-        submitted_at: utcToLocalFormat(sub.submitted_at),
-        auto_status: sub.auto_status,
-        manual_status: sub.manual_status,
-        logs: sub.logs,
-        commit_hash: sub.commit_hash,
-        feedback_available: sub.feedback_available,
-        score: sub.score
-      });
-    });
-    return rows;
-  };
-
-  const [submissions, setSubmissions] = React.useState(allSubmissions);
-  const [rows, setRows] = React.useState([]);
-
-  const [selectedRows, setSelectedRows] = React.useState<GridRowSelectionModel>(
-    []
-  );
-  const [selectedRowsData, setSelectedRowsData] = React.useState(
-    [] as IRowValues[]
-  );
-  /**
-   * Updates rows by setting the new value of the submission select.
-   * @param event select change event
-   */
-  const handleChange = (event: SelectChangeEvent) => {
-    setOption(event.target.value as 'none' | 'latest' | 'best');
-    storeString(
-      'grading-submission-option',
-      event.target.value,
-      null,
-      assignment
-    );
-  };
-  /**
-   * Updates submissions and rows.
-   */
-  const updateSubmissions = () => {
-    getAllSubmissions(lecture.id, assignment.id, option, true, true).then(
-      response => {
-        setRows(generateRows(response));
-        setSubmissions(response);
-      }
-    );
-  };
-
-  React.useEffect(() => {
-    updateSubmissions();
-    getConfigFromService();
-  }, [option, displayManualGrading]);
-  /**
-   * Calculates chip color based on submission status.
-   * @param value submission status
-   * @return chip color
-   */
-  const getColor = (value: string) => {
-    if (value === 'not_graded') {
-      return 'warning';
-    } else if (
-      value === 'automatically_graded' ||
-      value === 'manually_graded'
-    ) {
-      return 'success';
-    } else if (value === 'grading_failed') {
-      return 'error';
+// Since 2020 all major browsers ensure sort stability with Array.prototype.sort().
+// stableSort() brings sort stability to non-modern browsers (notably IE11). If you
+// only support modern browsers you can replace stableSort(exampleArray, exampleComparator)
+// with exampleArray.slice().sort(exampleComparator)
+function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) {
+  const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
+  stabilizedThis.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) {
+      return order;
     }
-    return 'primary';
+    return a[1] - b[1];
+  });
+  return stabilizedThis.map((el) => el[0]);
+}
+
+interface HeadCell {
+  disablePadding: boolean;
+  id: keyof Submission | 'edit';
+  label: string;
+  numeric: boolean;
+}
+
+const headCells: readonly HeadCell[] = [
+  {
+    id: 'id',
+    numeric: true,
+    disablePadding: true,
+    label: 'ID'
+  },
+  {
+    id: 'username',
+    numeric: false,
+    disablePadding: false,
+    label: 'User'
+  },
+  {
+    id: 'submitted_at',
+    numeric: true,
+    disablePadding: false,
+    label: 'Date'
+  },
+  {
+    id: 'auto_status',
+    numeric: false,
+    disablePadding: false,
+    label: 'Autograde-Status'
+  },
+  {
+    id: 'manual_status',
+    numeric: false,
+    disablePadding: false,
+    label: 'Manualgrade-Status'
+  },
+  {
+    id: 'feedback_available',
+    numeric: false,
+    disablePadding: false,
+    label: 'Feedback generated'
+  },
+  {
+    id: 'score',
+    numeric: true,
+    disablePadding: false,
+    label: 'Score'
+  },
+  {
+    id: 'edit',
+    numeric: false,
+    disablePadding: false,
+    label: 'Edit'
+  }
+];
+
+interface EnhancedTableProps {
+  numSelected: number;
+  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Submission) => void;
+  onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  order: Order;
+  orderBy: string;
+  rowCount: number;
+}
+
+function EnhancedTableHead(props: EnhancedTableProps) {
+  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
+    props;
+  const createSortHandler =
+    (property: keyof Submission) => (event: React.MouseEvent<unknown>) => {
+      onRequestSort(event, property);
+    };
+
+  return (
+    <TableHead>
+      <TableRow>
+        <TableCell padding='checkbox'>
+          <Checkbox
+            color='primary'
+            indeterminate={numSelected > 0 && numSelected < rowCount}
+            checked={rowCount > 0 && numSelected === rowCount}
+            onChange={onSelectAllClick}
+            inputProps={{
+              'aria-label': 'select all desserts'
+            }}
+          />
+        </TableCell>
+        {headCells.map((headCell) => (
+          <TableCell
+            key={headCell.id}
+            align={headCell.numeric ? 'right' : 'left'}
+            padding={headCell.disablePadding ? 'none' : 'normal'}
+            sortDirection={orderBy === headCell.id ? order : false}
+          >
+            {headCell.id !== 'edit'
+              ? <TableSortLabel
+                active={orderBy === headCell.id}
+                direction={orderBy === headCell.id ? order : 'asc'}
+                onClick={createSortHandler(headCell.id)}
+              >
+                {headCell.label}
+                {orderBy === headCell.id ? (
+                  <Box component='span' sx={visuallyHidden}>
+                    {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                  </Box>
+                ) : null}
+              </TableSortLabel>
+              : headCell.label
+            }
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
+export default function GradingTable() {
+  const navigate = useNavigate();
+
+  const {
+    lecture,
+    assignment,
+    rows,
+    setRows,
+    manualGradeSubmission,
+    setManualGradeSubmission
+  } = useOutletContext() as {
+    lecture: Lecture,
+    assignment: Assignment,
+    rows: Submission[],
+    setRows: React.Dispatch<React.SetStateAction<Submission[]>>,
+    manualGradeSubmission: Submission,
+    setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
   };
+
+  const [order, setOrder] = React.useState<Order>('asc');
+  const [orderBy, setOrderBy] = React.useState<keyof Submission>('id');
+  const [selected, setSelected] = React.useState<readonly number[]>([]);
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [shownSubmissions, setShownSubmissions] = React.useState('none' as 'none' | 'latest' | 'best');
+
+  const [showLogs, setShowLogs] = React.useState(false);
+  const [logs, setLogs] = React.useState(undefined);
+
   /**
    * Opens log dialog which contain autograded logs from grader service.
-   * @param params row which is needed to find selected submission
+   * @param event the click event
+   * @param submissionId submission for which to show logs
    */
-  const openLogs = (params: GridRenderCellParams<any>) => {
-    getLogs(lecture.id, assignment.id, params.row.id).then(
+  const openLogs = (event: React.MouseEvent<unknown>, submissionId: number) => {
+    getLogs(lecture.id, assignment.id, submissionId).then(
       logs => {
         setLogs(logs);
         setShowLogs(true);
@@ -300,336 +276,214 @@ export const GradingComponent = (props: IGradingProps) => {
         });
       }
     );
+    event.stopPropagation();
   };
 
-  const columns = [
-    { field: 'sub_id', headerName: 'No.', width: 110 },
-    { field: 'username', headerName: 'User', width: 130 },
-    { field: 'submitted_at', headerName: 'Date', width: 170 },
-    {
-      field: 'auto_status',
-      headerName: 'Autograde-Status',
-      width: 200,
-      renderCell: (params: GridRenderCellParams<any>) => (
-        <Chip
-          variant='outlined'
-          label={params.value}
-          color={getColor(params.value)}
-          clickable={true}
-          onClick={() => openLogs(params)}
-        />
-      )
-    },
-    {
-      field: 'manual_status',
-      headerName: 'Manualgrade-Status',
-      width: 170,
-      renderCell: (params: GridRenderCellParams<any>) => (
-        <Chip
-          variant='outlined'
-          label={params.value}
-          color={getColor(params.value)}
-        />
-      )
-    },
-    {
-      field: 'feedback_available',
-      headerName: 'Feedback generated',
-      width: 170,
-      renderCell: (params: GridRenderCellParams<any>) => (
-        <Chip
-          variant='outlined'
-          label={params.value ? 'Generated' : 'Not Generated'}
-          color={params.value ? 'success' : 'error'}
-        />
-      )
-    },
-    { field: 'score', headerName: 'Score', width: 130 }
-  ];
-  /**
-   * Returns submission based on given rows.
-   * @param row row which is needed to determine submission
-   */
-  const getSubmissionFromRow = (row: IRowValues): Submission => {
-    // Leave linear search for now (there were problems with casting and the local display date when casting)
-    if (row === undefined) {
-      return null;
-    }
-    const id = row.id;
-    const submission = submissions.find(s => s.id === id);
-    return submission === undefined ? null : submission;
+  const updateSubmissions = (filter: 'none' | 'latest' | 'best') => {
+    getAllSubmissions(lecture.id, assignment.id, filter, true, true).then(
+      response => {
+        setRows(response);
+      }
+    );
   };
 
-  const allAutoGraded = (selection: IRowValues[]) => {
-    return selection.reduce((acc, cur) => {
-      return cur.auto_status === 'automatically_graded' && acc;
-    }, true);
-  };
-
-  const allManualGraded = (selection: IRowValues[]) => {
-    return selection.reduce((acc, cur) => {
-      return cur.manual_status === 'manually_graded' && acc;
-    }, true);
-  };
-
-  const optionName = () => {
-    if (option === 'latest') {
-      return 'Latest';
-    } else if (option === 'best') {
-      return 'Best';
+  const switchShownSubmissions = (
+    event: React.MouseEvent<HTMLElement>,
+    value: 'none' | 'latest' | 'best'
+  ) => {
+    if (value !== null) {
+      setShownSubmissions(value);
+      updateSubmissions(value);
     } else {
-      return 'All';
+      updateSubmissions(shownSubmissions); // implicit reload
     }
   };
 
-  const openFile = async (path: string) => {
-    GlobalObjects.commands
-      .execute('docmanager:open', {
-        path: path,
-        options: {
-          mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
-        }
-      })
-      .catch(error => {
-        enqueueSnackbar(error.message, {
-          variant: 'error'
-        });
-      });
-  };
-  /**
-   * Exports submissions.
-   */
-  const handleExportSubmissions = async () => {
-    try {
-      await saveSubmissions(lecture, assignment, option);
-      await openFile(`${lecture.code}/submissions.csv`);
-      enqueueSnackbar('Successfully exported submissions', {
-        variant: 'success'
-      });
-    } catch (err) {
-      enqueueSnackbar('Error Exporting Submissions', {
-        variant: 'error'
-      });
-    }
+  const handleRequestSort = (
+    event: React.MouseEvent<unknown>,
+    property: keyof Submission
+  ) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
   };
 
-  const handleSyncSubmission = async () => {
-    setDialogContent({
-      title: 'LTI Sync Submission',
-      message: 'Do you wish to sync Submissions?',
-      handleAgree: async () => {
-        await ltiSyncSubmissions(lecture.id, assignment.id)
-          .then(response => {
-            closeDialog();
-            enqueueSnackbar(
-              'Successfully matched ' +
-              response.syncable_users +
-              ' submissions with learning platform',
-              { variant: 'success' }
-            );
-            enqueueSnackbar(
-              'Successfully synced latest submissions with feedback of ' +
-              response.synced_user +
-              ' users',
-              { variant: 'success' }
-            );
-          })
-          .catch(error => {
-            closeDialog();
-            enqueueSnackbar(
-              'Error while trying to sync submissions:' + error.message,
-              { variant: 'error' }
-            );
-          });
-      },
-      handleDisagree: () => closeDialog()
-    });
-    setShowDialog(true);
+
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const newSelected = rows.map((n) => n.id);
+      setSelected(newSelected);
+      return;
+    }
+    setSelected([]);
   };
+
+  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+    const selectedIndex = selected.indexOf(id);
+    let newSelected: readonly number[] = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+
+    setSelected(newSelected);
+    event.stopPropagation();
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const isSelected = (id: number) => selected.indexOf(id) !== -1;
+
+  // Avoid a layout jump when reaching the last page with empty rows.
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
+  const visibleRows = React.useMemo(
+    () =>
+      stableSort(rows, getComparator(order, orderBy)).slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      ),
+    [order, orderBy, page, rowsPerPage, rows]
+  );
 
   return (
-    <div>
-      <ModalTitle title='Grading'>
-        <Box sx={{ ml: 2 }} display='inline-block'>
-          <Tooltip title='Reload'>
-            <IconButton aria-label='reload' onClick={updateSubmissions}>
-              <ReplayIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </ModalTitle>
-      <div style={{ display: 'flex', height: '50vh', marginTop: '30px' }}>
-        <div style={{ flexGrow: 1 }}>
-          <DataGrid
-            sx={{ mb: 3, ml: 3, mr: 3 }}
-            columns={columns}
-            rows={rows}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={e => {
-              const selectedIDs = new Set(e);
-              const selectedRowData = rows.filter(row =>
-                selectedIDs.has(row.id)
-              );
-              setSelectedRows(e);
-              setSelectedRowsData(selectedRowData);
-            }}
-          />
-        </div>
-      </div>
-      <span style={{ height: '15vh' }}>
-        <FormControl sx={{ m: 3 }}>
-          <InputLabel id='submission-select-label'>View</InputLabel>
-          <Select
-            labelId='submission-select-label'
-            id='submission-select'
-            value={option}
-            label='Age'
-            onChange={handleChange}
+    <Box sx={{ flex: '1 1 100%', ml: 5, mr: 5 }}>
+      <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 2 }}>
+          <Tooltip title={'Manually add new submission'}>
+             <Button onClick={(event) => {
+                        event.stopPropagation();
+                        navigate("create");
+                      }} 
+                variant='outlined'
+                size="small"
+                sx={{ whiteSpace: 'nowrap'}}>
+                <AddIcon fontSize='small' sx={{mr: 1}}/>
+                New
+              </Button>
+          </Tooltip> 
+        </Stack>
+      <Paper sx={{ width: '100%', mb: 2 }}>
+        <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
+                              clearSelection={() => setSelected([])} selected={selected}
+                              shownSubmissions={shownSubmissions}
+                              switchShownSubmissions={switchShownSubmissions} />
+        <TableContainer>
+          <Table
+            sx={{ minWidth: 750 }}
+            aria-labelledby='tableTitle'
           >
-            <MenuItem value={'none'}>All Submissions</MenuItem>
-            <MenuItem value={'latest'}>Latest Submissions of Users</MenuItem>
-            <MenuItem value={'best'}>Best Submissions of Users</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <Button
-          disabled={
-            selectedRowsData.length !== 1
-          }
-          sx={{ m: 3 }}
-          onClick={() => {
-            setDisplayEditSubmission(true);
-            cleanSelectedRows();
-          }}
-          variant='outlined'
-        >
-            {'Edit Submission'}
-          </Button>
+            <EnhancedTableHead
+              numSelected={selected.length}
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              rowCount={rows.length}
+            />
+            <TableBody>
+              {visibleRows.map((row, index) => {
+                const isItemSelected = isSelected(row.id);
+                const labelId = `enhanced-table-checkbox-${index}`;
 
-        <Tooltip
-          title={`Run Autograde Tests for ${selectedRows.length} Submission${
-            selectedRows.length === 1 ? '' : 's'
-          }`}
-        >
-          <Button
-            disabled={selectedRows.length === 0}
-            sx={{ m: 3 }}
-            variant='outlined'
-            onClick={handleAutogradeSubmissions}
-          >
-            {`Autograde (${selectedRows.length})`}
-          </Button>
-        </Tooltip>
-        <NavigateNextIcon
-          color={
-            selectedRowsData.length === 1 &&
-            selectedRowsData[0]?.auto_status !== 'automatically_graded'
-              ? 'error'
-              : selectedRowsData.length !== 1 ||
-              selectedRowsData[0]?.auto_status !== 'automatically_graded'
-                ? 'disabled'
-                : 'primary'
-          }
-          sx={{ mb: -1 }}
+                return (
+                  <TableRow
+                    hover
+                    onClick={(event) => {
+                      setManualGradeSubmission(row);
+                      navigate('manual');
+                    }
+                    }
+                    role='button'
+                    aria-checked={isItemSelected}
+                    tabIndex={-1}
+                    key={row.id}
+                    selected={isItemSelected}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell padding='checkbox'>
+                      <Checkbox
+                        color='primary'
+                        checked={isItemSelected}
+                        inputProps={{
+                          'aria-labelledby': labelId
+                        }}
+                        onClick={(event) => handleClick(event, row.id)}
+                      />
+                    </TableCell>
+                    <TableCell
+                      component='th'
+                      id={labelId}
+                      scope='row'
+                      padding='none'
+                      align='right'
+                    >
+                      {row.id}
+                    </TableCell>
+                    <TableCell align='left'>{row.username}</TableCell>
+                    <TableCell align='right'>{utcToLocalFormat(row.submitted_at)}</TableCell>
+                    <TableCell align='left'><Chip
+                      sx={{ textTransform: 'capitalize' }}
+                      variant='outlined'
+                      label={row.auto_status.split('_').join(' ')}
+                      color={getColor(row.auto_status)}
+                      clickable={true}
+                      onClick={(event) => openLogs(event, row.id)}
+                    /></TableCell>
+                    <TableCell align='left'>{getManualChip(row)}</TableCell>
+                    <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
+                    <TableCell align='right'>{row.score}</TableCell>
+                    <TableCell style={{ width: 55 }}>
+                      <IconButton aria-label='Edit' size={'small'} onClick={(event) => {
+                        event.stopPropagation();
+                        setManualGradeSubmission(row);
+                        navigate("edit");
+                      }}>
+                        <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {emptyRows > 0 && (
+                <TableRow
+                  style={{
+                    height: 53 * emptyRows
+                  }}
+                  
+                >
+                  <TableCell colSpan={6} />
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component='div'
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
         />
-        <Tooltip title={'Manually Grade Answers of Submission'}>
-          <Button
-            disabled={
-              selectedRowsData.length !== 1 ||
-              selectedRowsData[0]?.auto_status !== 'automatically_graded'
-            }
-            sx={{ m: 3 }}
-            onClick={() => {
-              cleanSelectedRows();
-              setDisplayManualGrading(true);
-            }}
-            variant='outlined'
-          >
-            {'Manualgrade'}
-          </Button>
-        </Tooltip>
-        <NavigateNextIcon
-          color={
-            selectedRows.length === 0
-              ? 'disabled'
-              : allManualGraded(selectedRowsData) ||
-              assignment.automatic_grading === 'full_auto'
-                ? 'primary'
-                : 'error'
-          }
-          sx={{ mb: -1 }}
-        />
-        <Tooltip title={'Generate and Publish Feedback'}>
-          <Button
-            disabled={
-              selectedRows.length === 0 ||
-              (assignment.automatic_grading !== 'full_auto' &&
-                !allAutoGraded(selectedRowsData))
-            }
-            sx={{ m: 3 }}
-            onClick={handleGenerateFeedback}
-            variant='outlined'
-          >
-            {`Generate Feedback (${selectedRows.length})`}
-          </Button>
-        </Tooltip>
-
-        <Button
-          startIcon={<FileDownloadIcon />}
-          sx={{ m: 3 }}
-          onClick={handleExportSubmissions}
-          variant='outlined'
-        >
-          {`Export ${optionName()} Submissions`}
-        </Button>
-
-        <Button
-          variant='outlined'
-          startIcon={<CloudSyncIcon />}
-          sx={{ m: 3 }}
-          disabled={!showSyncGrades}
-          onClick={handleSyncSubmission}
-        >
-          {showSyncGrades
-            ? 'LTI Sync Grades'
-            : 'LTI Sync Grades (disabled by grader service)'}
-        </Button>
-      </span>
-
-      <LoadingOverlay
-        onClose={onManualGradingClose}
-        open={displayManualGrading}
-        container={props.root}
-        transition='zoom'
-      >
-        <ManualGrading
-          lecture={lecture}
-          assignment={assignment}
-          submission={getSubmissionFromRow(selectedRowsData[0])}
-          username={selectedRowsData[0]?.username}
-          onClose={onManualGradingClose}
-        />
-      </LoadingOverlay>
-
-      <LoadingOverlay
-        onClose={onEditSubmissionClose}
-        open={displayEditSubmission}
-        container={props.root}
-        transition='zoom'
-      >
-        <EditSubmission
-          lecture={lecture}
-          assignment={assignment}
-          submission={getSubmissionFromRow(selectedRowsData[0])}
-          username={selectedRowsData[0]?.username}
-          onClose={onEditSubmissionClose}
-        />
-      </LoadingOverlay>
-
-      {/* Dialog */}
-      <AgreeDialog open={showDialog} {...dialogContent} />
+      </Paper>
       <Dialog
         open={showLogs}
         onClose={() => setShowLogs(false)}
@@ -649,6 +503,27 @@ export const GradingComponent = (props: IGradingProps) => {
           <Button onClick={() => setShowLogs(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   );
+}
+
+export const GradingComponent = () => {
+  const { lecture, assignments, users } = useRouteLoaderData('lecture') as {
+    lecture: Lecture,
+    assignments: Assignment[],
+    users: { instructors: string[], tutors: string[], students: string[] }
+  };
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
+  };
+
+  const [rows, setRows] = React.useState(allSubmissions);
+  const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
+
+  return <Stack direction={'column'} sx={{ height: '100%' }}>
+    <SectionTitle title='Grading' />
+    <Outlet context={{ lecture, assignment, rows, setRows, manualGradeSubmission, setManualGradeSubmission }} />
+  </Stack>;
 };

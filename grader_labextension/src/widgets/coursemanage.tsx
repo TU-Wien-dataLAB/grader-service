@@ -8,13 +8,18 @@ import * as React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { SnackbarProvider } from 'notistack';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { getRoutes } from "../components/coursemanage/routes";
+import { getRoutes } from '../components/coursemanage/routes';
+import { Box, Typography, AppBar } from '@mui/material';
+import { loadString } from '../services/storage.service';
+import { Router } from '@remix-run/router';
+import { DialogProvider } from '../components/util/dialog-provider';
 
 export class CourseManageView extends ReactWidget {
   /**
    * Construct a new grading widget
    */
   root: HTMLElement;
+  router: Router;
 
   constructor(options: CourseManageView.IOptions = {}) {
     super();
@@ -22,13 +27,21 @@ export class CourseManageView extends ReactWidget {
     this.addClass('GradingWidget');
     this.root = this.node;
 
+    const savedPath = loadString('course-manage-react-router-path');
+    let path = '/';
+    if (savedPath !== null && savedPath !== '') {
+      console.log(`Restoring path: ${savedPath}`);
+      path = savedPath;
+    }
+    this.router = createMemoryRouter(getRoutes(), { initialEntries: [path] });
   }
 
   render() {
-    const router = createMemoryRouter(getRoutes(this.root));
     return (
       <SnackbarProvider maxSnack={3}>
-        <RouterProvider router={router} />
+        <DialogProvider>
+          <RouterProvider router={this.router} />
+        </DialogProvider>
       </SnackbarProvider>
     );
   }
