@@ -51,8 +51,9 @@ exclude = [".github", "binder"]
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 "jupyter-config/nb-config" = "etc/jupyter/jupyter_notebook_config.d"
 
-[tool.hatch.build.hooks.version]
-path = "grader_labextension/_version.py"
+
+[tool.tbump.version]
+current = "0.1.35"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
