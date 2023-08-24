@@ -5,8 +5,7 @@ from tornado.httpclient import HTTPClientError
 from grader_labextension.registry import HandlerPathRegistry
 from grader_labextension.handlers.base_handler import HandlerConfig
 from traitlets.config.loader import Config
-
-from grader_service.request import RequestService
+from grader_labextension.services.request import RequestService
 
 
 def _jupyter_labextension_paths():
