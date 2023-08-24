@@ -236,8 +236,10 @@ const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStuden
     let feedback_available = false;
 
     /* If there are any submissions, check for feedback! */
-    if ((existingSubmissions !== undefined) || (existingSubmissions.length > 0)) {
-      feedback_available = feedbackAvailable(existingSubmissions);
+    if (existingSubmissions !== undefined) {
+        if (existingSubmissions.length > 0) {
+            feedback_available = feedbackAvailable(existingSubmissions);
+        }
     }
     /* Construct the AssignmentStudent object */
     const assignmentStudent = {
