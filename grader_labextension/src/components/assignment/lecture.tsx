@@ -27,7 +27,7 @@ import { Assignment } from '../../model/assignment';
 import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import { pullAssignment, resetAssignment } from '../../services/assignments.service';
+import {pullAssignment, pushAssignment, resetAssignment} from '../../services/assignments.service';
 import { showDialog } from '../util/dialog-provider';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import { getFiles, lectureBasePath } from '../../services/file.service';
@@ -126,7 +126,6 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     { name: 'Feedback Available',  width: 80 }
   ];
 
- ;
   return (
     <>
       <GraderTable<AssignmentStudent>
@@ -158,11 +157,24 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                       'Reset Assignment',
                       'Do you really want to reset this assignment?',
                       async () => {
-                        try {
-                          await resetAssignment(
-                            props.lecture,
-                            props.rows.find(a => a.id === row.id)
-                          );
+                          const assignment = props.rows.find(a => a.id === row.id)
+                          try {
+                            await pushAssignment(
+                                props.lecture.id,
+                                assignment.id,
+                                'assignment',
+                                'Pre-Reset'
+                              );
+                            await resetAssignment(
+                                props.lecture,
+                                (assignment as Assignment)
+                            );
+                            await pullAssignment(
+                                props.lecture.id,
+                                assignment.id,
+                                'assignment'
+                            );
+
                           enqueueSnackbar('Assignment reset successfully', {
                             variant: 'success'
                           });
