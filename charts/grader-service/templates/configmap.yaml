@@ -24,11 +24,11 @@ data:
     {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
     {{- end }}
-    {{- if .Values.kubeAutogradeExecutor.resolveImageName }}
-      c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
-    {{- else }}
-      c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
-    {{- end }}
+    #{{- if .Values.kubeAutogradeExecutor.resolveImageName }}
+    #c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
+    #{{- else }}
+    #c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
+    #{{- end }}
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
