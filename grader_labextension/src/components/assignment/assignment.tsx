@@ -248,14 +248,18 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
    */
    const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
     await pullAssignment(lecture.id, assignment.id, repo).then(
-      () =>
+      () => {
         enqueueSnackbar('Successfully Pulled Repo', {
           variant: 'success'
-        }),
-      error =>
+        })
+        getFiles(`${lectureBasePath}${lecture.code}/assignments/${assignment.id}`).then(files => {
+                setFiles(files);
+            })
+      },
+      error => {
         enqueueSnackbar(error.message, {
           variant: 'error'
-        })
+        })}
     );
   };
 
