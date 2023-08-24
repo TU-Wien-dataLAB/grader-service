@@ -59,6 +59,7 @@ kubeAutogradeExecutor:
   extraVolumes: ""
   extraVolumeMounts: ""
   cell_timeout: 360
+  resolveImageName: ""
 
 extraConfig: ""
 
