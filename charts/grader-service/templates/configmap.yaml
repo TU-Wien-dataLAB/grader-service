@@ -7,8 +7,7 @@ metadata:
     {{- include "grader-service.labels" . | nindent 4 }}
 data:
   grader_service_config.py: |
-    {{ .Values.extraConfig | indent 4 }}
-
+{{ .Values.extraConfig | indent 4 }}
     {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
@@ -24,18 +23,17 @@ data:
     {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
     {{- end }}
-    #{{- if .Values.kubeAutogradeExecutor.resolveImageName }}
-    #c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
-    #{{- else }}
-    #c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
-    #{{- end }}
+    {{- if .Values.kubeAutogradeExecutor.resolveImageName }}
+      c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
+    {{- else }}
+      c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
+    {{- end }}
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
     c.KubeAutogradeExecutor.cell_timeout = {{ .Values.kubeAutogradeExecutor.cell_timeout }}
 
     {{ else }}
-    
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
     
