@@ -1,4 +1,4 @@
-from .handlers import setup_handlers
+from grader_labextension.api_handler import setup_handlers
 
 
 def _jupyter_labextension_paths():

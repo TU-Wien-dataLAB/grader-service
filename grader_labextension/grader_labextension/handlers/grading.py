@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import shutil
 
-from grader_labextension import RequestService
+from grader_labextension.services.request import RequestService
 from grader_labextension.registry import register_handler
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from tornado.httpclient import HTTPResponse, HTTPClientError
