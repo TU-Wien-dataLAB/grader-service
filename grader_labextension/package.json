@@ -1,6 +1,6 @@
 {
     "name": "grader-labextension",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "description": "Jupyterlab extension for using the grader service.",
     "keywords": [
         "jupyter",
