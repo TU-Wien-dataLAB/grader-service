@@ -16,15 +16,3 @@ class HealthHandler(ExtensionBaseHandler):
         response = "Grader Labextension: Health OK"
         self.write(response)
 
-
-def setup_handlers(server_app):
-    web_app = server_app.web_app
-    host_pattern = ".*$"
-    base_url = web_app.settings["base_url"]
-    server_app.log.info("########################################################################")
-    server_app.log.info(f'{web_app.settings["server_root_dir"]=}')
-    server_app.log.info("base_url: " + base_url)
-    handlers = HandlerPathRegistry.handler_list(
-        base_url=base_url + "grader_labextension")
-    server_app.log.info([str(h[0]) for h in handlers])
-    web_app.add_handlers(host_pattern, handlers)

@@ -5,66 +5,83 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import socket
-from typing import Dict, Union
-from urllib.parse import quote_plus, urlencode
 
+from tornado.httpclient import AsyncHTTPClient, HTTPResponse, HTTPRequest
+from traitlets.config.configurable import SingletonConfigurable
+from typing import Dict, Union, Callable, Optional
 from tornado.escape import json_decode
-from tornado.httpclient import AsyncHTTPClient, HTTPResponse
-from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import TraitError, validate
+from traitlets.traitlets import TraitError, Unicode, validate
+from urllib.parse import urlencode, quote_plus, urlparse, ParseResultBytes
+import os
 
 
-class RequestService(LoggingConfigurable):
-    def __init__(self, url: str, **kwargs):
+class RequestService(SingletonConfigurable):
+    url = Unicode(os.environ.get("GRADER_HOST_URL", "http://127.0.0.1:4010"))
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.http_client = AsyncHTTPClient()
-        self.url = url
+        self._service_cookie = None
 
     async def request(
         self,
         method: str,
         endpoint: str,
-        body: dict = None,
+        body: Union[dict, str] = None,
         header: Dict[str, str] = None,
-    ) -> Union[dict, list]:
+        decode_response: bool = True,
+        request_timeout: float = 20.0,
+        connect_timeout: float = 20.0,
+        response_callback: Optional[Callable[[HTTPResponse], None]] = None
+    ) -> Union[dict, list, HTTPResponse]:
+        self.log.info(self.url + endpoint)
+        if self._service_cookie:
+            header["Cookie"] = self._service_cookie
+
+        if isinstance(body, dict):
+            body = json.dumps(body)
+
+        # Build HTTPRequest
+        request = HTTPRequest(url=self.url + endpoint,
+                            method=method,
+                            headers=header,
+                            request_timeout=request_timeout,
+                            connect_timeout=connect_timeout
+                            )
+        # Add body if exists
         if body:
-            response: HTTPResponse = await self.http_client.fetch(
-                self.url + endpoint,
-                method=method,
-                headers=header,
-                body=json.dumps(body),
-            )
+            request.body = body
+
+        # Sent HTTPRequest
+        response: HTTPResponse = await self.http_client.fetch(request=request)
+
+        for cookie in response.headers.get_list("Set-Cookie"):
+            token = header.get("Authorization", None)
+            if token and token.startswith("Token "):
+                token = token[len("Token "):]
+            else:
+                continue
+            if cookie.startswith(token):
+                self._service_cookie = cookie
+
+        if response_callback:
+            response_callback(response)
+
+        if decode_response:
+            return json_decode(response.body)
         else:
-            response: HTTPResponse = await self.http_client.fetch(
-                self.url + endpoint, method=method, headers=header, body=body
-            )
-        return json_decode(response.body)
+            return response
 
-    @validate("scheme")
-    def _validate_scheme(self, proposal):
-        if proposal["value"] not in {"http", "https"}:
-            raise TraitError("Invalid scheme. Use either http or https")
-        return proposal["value"]
-
-    @validate("host")
-    def _validate_host(self, proposal):
-        try:
-            socket.gethostbyname(proposal["value"])
-            return proposal["value"]
-        except socket.error:
-            err = f'Unable to resolve hostname: {proposal["value"]}'
-            raise TraitError(err)
-
-    @validate("port")
-    def _validate_port(self, proposal):
-        value = proposal["value"]
-        if not 1 <= value <= 65535:
-            raise TraitError("Port number has to be between 1 and 65535.")
-        return value
+    @validate("url")
+    def _validate_url(self, proposal):
+        url = proposal["value"]
+        result: ParseResultBytes = urlparse(url)
+        if not all([result.scheme, result.hostname]):
+            raise TraitError("Invalid url: at least has to contain scheme and hostname")
+        return url
 
     @staticmethod
-    def get_query_string(params: dict) -> dict:
+    def get_query_string(params: dict) -> str:
         d = {k: v for k, v in params.items() if v is not None}
         query_params: str = urlencode(d, quote_via=quote_plus)
         return "?" + query_params if query_params != "" else ""
