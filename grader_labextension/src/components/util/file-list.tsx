@@ -27,7 +27,6 @@ import { grey } from '@mui/material/colors';
 
 interface IFileListProps {
   path: string;
-  reloadFiles?: boolean;
   sx?: SxProps<Theme>;
 }
 
