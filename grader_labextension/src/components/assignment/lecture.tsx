@@ -27,7 +27,7 @@ import { Assignment } from '../../model/assignment';
 import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
 import { Lecture } from '../../model/lecture';
-import {pullAssignment, pushAssignment, resetAssignment} from '../../services/assignments.service';
+import { pullAssignment, pushAssignment, resetAssignment } from '../../services/assignments.service';
 import { showDialog } from '../util/dialog-provider';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import { getFiles, lectureBasePath } from '../../services/file.service';
@@ -43,58 +43,57 @@ interface IEditProps {
 }
 
 
-
 const EditButton = (props: IEditProps) => {
   const [assignmentPulled, setAssignmentPulled] = React.useState(false);
   const fetchAssignmentHandler = async (repo: 'assignment' | 'release') => {
     await pullAssignment(props.lecture.id, props.assignment.id, repo).then(
-      () =>{
+      () => {
         enqueueSnackbar('Successfully Pulled Repo', {
-          variant: 'success'
-        }, 
-       )},
+            variant: 'success'
+          }
+        );
+      },
       error =>
         enqueueSnackbar(error.message, {
           variant: 'error'
         })
     );
   };
-  React.useEffect(() =>
-  {
-    getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`).then(files =>
-      {
-          console.log(files)
-        if(files.length > 0){
-          setAssignmentPulled(true);
-        }
-      })
+  React.useEffect(() => {
+    getFiles(`${lectureBasePath}${props.lecture.code}/assignments/${props.assignment.id}`).then(files => {
+      console.log(files);
+      if (files.length > 0) {
+        setAssignmentPulled(true);
+      }
+    });
   });
-  
-   if (assignmentPulled === false){
+
+  if (!assignmentPulled) {
     return (
       <IconButton
-            onClick={(e) =>{
-            showDialog('Pull Assignment',
+        onClick={(e) => {
+          showDialog('Pull Assignment',
             'Do you really want to pull this assignment?',
-            async ()=> {
+            async () => {
               await fetchAssignmentHandler('assignment');
             });
-            e.stopPropagation();
-          }}>
-          <FileDownloadIcon sx={{ color: blue[500] }} />
+          e.stopPropagation();
+        }}>
+        <FileDownloadIcon sx={{ color: blue[500] }} />
       </IconButton>
-      );
-   }
-   const time = new Date(props.assignment.due_date).getTime();
-  if ((props.assignment.due_date !== null && time < Date.now()) || props.status === Assignment.StatusEnum.Complete ){
-    return <EditOffIcon sx={{ color: grey[500]}} />
+    );
   }
-  else return (
-    <IconButton>
-      <EditNoteOutlinedIcon sx={{ color: green[500] }} />
-    </IconButton>
-  );
-  
+  const time = new Date(props.assignment.due_date).getTime();
+  if ((props.assignment.due_date !== null && time < Date.now()) || props.status === Assignment.StatusEnum.Complete) {
+    return <EditOffIcon sx={{ color: grey[500] }} />;
+  } else {
+    return (
+      <IconButton>
+        <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+      </IconButton>
+    );
+  }
+
 };
 
 interface IFeedbackProps {
@@ -120,10 +119,10 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     { name: 'Name' },
     { name: 'Points', width: 100 },
     { name: 'Deadline', width: 200 },
-    { name: 'Edit', width: 75},
-    { name: 'Reset',  width: 75 },
-    { name: 'Detail View',  width: 75 },
-    { name: 'Feedback Available',  width: 80 }
+    { name: 'Edit', width: 75 },
+    { name: 'Reset', width: 75 },
+    { name: 'Detail View', width: 75 },
+    { name: 'Feedback Available', width: 80 }
   ];
 
   return (
@@ -140,6 +139,17 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
             >
               <TableCell component='th' scope='row'>
                 <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
+                {row.status !== 'released' ?
+                  <Typography
+                    sx={{
+                      display: 'inline-block',
+                      ml: 0.75,
+                      fontSize: 16,
+                      color: red[400]
+                    }}
+                  >
+                    (not released)
+                  </Typography> : null}
               </TableCell>
               <TableCell style={{ width: 34 }}>{row.points}</TableCell>
               <TableCell>
@@ -157,23 +167,23 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                       'Reset Assignment',
                       'Do you really want to reset this assignment?',
                       async () => {
-                          const assignment = props.rows.find(a => a.id === row.id)
-                          try {
-                            await pushAssignment(
-                                props.lecture.id,
-                                assignment.id,
-                                'assignment',
-                                'Pre-Reset'
-                              );
-                            await resetAssignment(
-                                props.lecture,
-                                (assignment as Assignment)
-                            );
-                            await pullAssignment(
-                                props.lecture.id,
-                                assignment.id,
-                                'assignment'
-                            );
+                        const assignment = props.rows.find(a => a.id === row.id);
+                        try {
+                          await pushAssignment(
+                            props.lecture.id,
+                            assignment.id,
+                            'assignment',
+                            'Pre-Reset'
+                          );
+                          await resetAssignment(
+                            props.lecture,
+                            (assignment as Assignment)
+                          );
+                          await pullAssignment(
+                            props.lecture.id,
+                            assignment.id,
+                            'assignment'
+                          );
 
                           enqueueSnackbar('Assignment reset successfully', {
                             variant: 'success'
@@ -215,7 +225,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
     * */
 interface AssignmentStudent extends AssignmentDetail {
   feedback_available: boolean;
-  
+
 }
 
 /*
@@ -249,9 +259,9 @@ const transformAssignments = (assignments: AssignmentDetail[]): AssignmentStuden
 
     /* If there are any submissions, check for feedback! */
     if (existingSubmissions !== undefined) {
-        if (existingSubmissions.length > 0) {
-            feedback_available = feedbackAvailable(existingSubmissions);
-        }
+      if (existingSubmissions.length > 0) {
+        feedback_available = feedbackAvailable(existingSubmissions);
+      }
     }
     /* Construct the AssignmentStudent object */
     const assignmentStudent = {
