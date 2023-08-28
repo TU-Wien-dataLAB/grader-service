@@ -34,21 +34,21 @@ export const OverviewComponent = () => {
     setAssignmentState(assignment);
   };
 
-  
+
   return (
-    <Box>
+    <Box sx={{ flex: 1,  overflow: 'auto' }}>
       <SectionTitle title={assignmentState.name}></SectionTitle>
-      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3}}>
-        <Grid container spacing={3} >
+      <Box sx={{ ml: 3, mr: 3, mb: 3, mt: 3 }}>
+        <Grid container spacing={3}>
           <Grid item md={12} xs={7} lg={6} xl={7}>
-          <AssignmentStatus
+            <AssignmentStatus
               lecture={lecture}
               assignment={assignmentState}
               onAssignmentChange={onAssignmentChange}
             />
           </Grid>
           <Grid item md={12} xs={12} lg={6} xl={5}>
-          <OverviewCard
+            <OverviewCard
               lecture={lecture}
               assignment={assignmentState}
               allSubmissions={allSubmissions}

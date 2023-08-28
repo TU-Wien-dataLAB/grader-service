@@ -92,7 +92,7 @@ export const StatsComponent = () => {
   }, []);
 
   return (
-    <Box>
+    <Box sx={{ flex: 1, overflow: 'auto'}}>
       <SectionTitle title={`${assignment.name} Stats`}>
         <Box sx={{ ml: 2 }} display='inline-block'>
           <Tooltip title='Reload'>
