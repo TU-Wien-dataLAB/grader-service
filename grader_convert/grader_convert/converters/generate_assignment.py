@@ -81,5 +81,6 @@ class GenerateAssignmentApp(ConverterApp):
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
             copy_files=self.copy_files,
+            config_path=self.config_path,
             config=self.config
         ).start()
