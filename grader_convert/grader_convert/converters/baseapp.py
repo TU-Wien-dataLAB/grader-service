@@ -15,6 +15,7 @@ base_converter_aliases = {
     "i": "ConverterApp.input_directory",
     "o": "ConverterApp.output_directory",
     "p": "ConverterApp.file_pattern",
+    "e": "ConverterApp.config_path",
     "input_directory": "ConverterApp.input_directory",
     "output_directory": "ConverterApp.output_directory",
     "file_pattern": "ConverterApp.file_pattern",
@@ -45,6 +46,7 @@ class ConverterApp(Application):
     output_directory = Unicode(None, allow_none=False).tag(config=True)
     file_pattern = Unicode("*.ipynb", allow_none=False).tag(config=True)
     copy_files = Bool(False, allow_none=False).tag(config=True)
+    config_path = Unicode("grader-config.py", allow_none=False).tag(config=True)
 
     def _log_level_default(self):
         return logging.INFO
@@ -56,6 +58,14 @@ class ConverterApp(Application):
         else:
             self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
             raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
+        
+    @validate("config_path")
+    def _config_path_exists(self, proposal) -> str:
+        if os.path.isfile(proposal["value"]):
+            return proposal["value"]
+        else:
+            self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
+            raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
 
     def fail(self, msg, *args):
         """Log the error msg using self.log.error and exit using sys.exit(1)."""
