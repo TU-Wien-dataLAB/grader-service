@@ -32,15 +32,19 @@ class DeduplicateIds(NbGraderPreprocessor):
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
+
         if not (
             utils.is_grade(cell) or utils.is_solution(cell) or utils.is_locked(cell)
         ):
+            self.log.warning("cell above")
             return cell, resources
 
         grade_id = cell.metadata.nbgrader["grade_id"]
+
         if grade_id in self.grade_ids:
+
             self.log.warning("Cell with id '%s' exists multiple times!", grade_id)
-            cell.metadata.nbgrader = {}
+            cell.metadata = {}
         else:
             self.grade_ids.add(grade_id)
 
