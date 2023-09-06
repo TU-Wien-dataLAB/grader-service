@@ -15,7 +15,6 @@ base_converter_aliases = {
     "i": "ConverterApp.input_directory",
     "o": "ConverterApp.output_directory",
     "p": "ConverterApp.file_pattern",
-    "e": "ConverterApp.config_path",
     "input_directory": "ConverterApp.input_directory",
     "output_directory": "ConverterApp.output_directory",
     "file_pattern": "ConverterApp.file_pattern",
@@ -46,7 +45,6 @@ class ConverterApp(Application):
     output_directory = Unicode(None, allow_none=False).tag(config=True)
     file_pattern = Unicode("*.ipynb", allow_none=False).tag(config=True)
     copy_files = Bool(False, allow_none=False).tag(config=True)
-    config_path = Unicode("grader-config.py", allow_none=False).tag(config=True)
 
     def _log_level_default(self):
         return logging.INFO
