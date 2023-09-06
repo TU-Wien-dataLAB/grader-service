@@ -10,11 +10,11 @@ pip install jupyterhub jupyterlab
 
 echo "Installing grader_convert..."
 pip install -r ../../grader_convert/requirements.txt
-pip install -e ../../grader_convert
+pip install --no-use-pep517 ../../grader_convert
 
 echo "Installing grader_service..."
 pip install -r ../../grader_service/requirements.txt
-pip install -e ../../grader_service
+pip install --no-use-pep517 ../../grader_service
 
 echo "Installing grader_labextension..."
 pip install -r ../../grader_labextension/requirements.txt
@@ -42,4 +42,4 @@ chmod 777 ./service_dir/git
 
 pip list
 
-deactivate
+deactivate 
