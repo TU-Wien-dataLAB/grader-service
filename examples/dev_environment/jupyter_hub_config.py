@@ -30,10 +30,10 @@ c.JupyterHub.services.append(
 )
 
 c.JupyterHub.load_groups = {
-        "20wle2:instructor": ["user1", "user2"],
-        "20wle2:student": ["user3"],
-        "22wle1:instructor": ["user1", "user2"],
-        "22wle1:student": ["user3"],
+        "23wsle2:instructor": {'users': ["user1", "user2"]},
+        "23wsle2:student": {'users': ["user3"]},
+        "23wsle1:instructor": {'users': ["user1", "user2"]},
+        "23wsle1:student": {'users': ["user3"]},
 }
 
 c.JupyterHub.log_level = "INFO"
