@@ -22,12 +22,12 @@ a tutor in one lecture.
 One Instance Hub vs. Multiple Instances Hub
 ============================================
 In winter semester 2023 we are introducing One Instance Hub, which allows you to have all of your lectures in one place and easily manage them. 
-If you are using Jupyter as a Service for multiple lectures, they are now are shown in one list. In each lecture 
+If you are using Jupyter as a Service for multiple lectures, they are now shown in one list. In each lecture 
 you can manage as many assignments as needed and this process and navigation between assignments has been made
-easier. You can also switch between completed and current lectures and take a look at assignments that were published in completed lectures. 
-Students who are enrolled in multiple lectures which are using Jupyter as a Service see all of their lecturers
-and assignments in one place without a need to follow a link provided in each TUWEL course which uese Jupyter as a Service. Once they are logged in
-Jupyterhub they see all of their lectures and assignments released in those lectures.
+easier. You can also switch between completed and current lectures and review assignments that were monitored in completed lectures. 
+Students who are enrolled in multiple lectures using Jupyter as a Service will see all of their lecturers and assignments in one place, 
+eliminating the need to follow a link provided in each TUWEL course that uses Jupyter as a Service. Once they are logged into JupyterHub,
+they can access all of their lectures and assignments released in those lectures.
 
 Create Your First Assignment
 =============================
@@ -207,21 +207,21 @@ When Juypterhub is launched students see only the Assignments card:
     :alt: student launcher
 
 
-| Studnets are presented with a list of courses they are enrolled in. They can see completed lectures from previous semesters as well and take a look at their old assignments:
+| Studnets are presented with a list of courses they are enrolled in. They can also see completed lectures from previous semesters as well and take a look at their old assignments:
 
 .. image:: _static/assets/images/student_lecture_list.png
     :alt: student lecture list 
 
-| Each lecture provides its own assignment table. Each table cell represents an assignment and its brief overview:
+| Each lecture has its dedicated assignment table, with each table cell representing an assignment along with a brief overview.
 
 .. image:: _static/assets/gifs/student_assignment_table.gif
     :alt: assignment overview for studnets
 
-| If a new assignment was released for students, students have to firstly pull it from remote repository in order to get assignment files they can work on. Afterwards an "Edit" instead of "Download" icon will be shown in the table cell.
-| Each table cell shows name of assignment, wheter feedback for submission is available and maximum points reached in the submission. Each table cell also shows a countdown of the deadline. Once deadline has been reached, students can no more submit the assignment files.
+| If a new assignment is released for students, students must first pull it from the remote repository in order to obtain assignment files they can work on. Afterwards, an "Edit" icon will be shown in the table cell.
 
+| Each table cell displays the name of the assignment, indicates whether feedback for submission is available, and shows the maximum points reached in the submission. Each table cell also features a countdown of the deadline. Once the deadline has been reached, students can no longer submit the assignment files.
 
-When clicking on an assignment table cell or "Detail View" button, students are presented with a detailed view of the assignment that lets them work on the assignment and make submissions.
+When clicking on an assignment table cell or the 'Detail View' button, students are presented with a detailed view of the assignment, allowing them to work on the assignment and make submissions.
 
 
 .. image:: _static/assets/images/student_detail_view.png
