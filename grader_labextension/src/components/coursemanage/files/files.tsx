@@ -297,7 +297,7 @@ export const Files = (props: IFilesProps) => {
   };
 
   return (
-    <Card elevation={3} sx={{ overflowX: 'auto', m: 3, height: '90%', display: 'flex', flexDirection: 'column' }}>
+    <Card elevation={3} sx={{ overflowX: 'auto', m: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
       <CardHeader
         title='Files'
         titleTypographyProps={{ display: 'inline' }}

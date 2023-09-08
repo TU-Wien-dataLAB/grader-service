@@ -18,6 +18,7 @@ import { AssignmentManageComponent } from './assignmentmanage.component';
 import { LectureComponent } from './lecture';
 import { AssignmentComponent } from './assignment';
 import { FileView } from './files/file-view';
+import { Feedback } from './feedback';
 
 export const loadPermissions = async () => {
   try {
@@ -31,7 +32,7 @@ export const loadPermissions = async () => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 
@@ -46,7 +47,7 @@ export const loadLecture = async (lectureId: number) => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 
@@ -66,7 +67,7 @@ export const loadSubmissions = async (lecture: Lecture, assignments: Assignment[
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 
@@ -120,7 +121,7 @@ const testFetchAssignment = async (lectureId: number, assignmentId: number) => {
   };
 };
 
-export const getRoutes = (root: HTMLElement) => {
+export const getRoutes = () => {
   const routes = createRoutesFromElements(
     // this is a layout route without a path (see: https://reactrouter.com/en/main/start/concepts#layout-routes)
     <Route element={<Page id={'assignment-manage'} />} errorElement={<ErrorPage id={'assignment-manage'} />}>
@@ -151,16 +152,16 @@ export const getRoutes = (root: HTMLElement) => {
           <Route
             id={'assignment'}
             path={'assignment/:aid/*'}
-            element={<AssignmentComponent root={root} />}
             loader={({ params }) => loadAssignment(+params.lid, +params.aid)}
             handle={{
               crumb: (data) => data?.assignment.name,
               link: (params) => `assignment/${params?.aid}/`
             }}
           >
-            <Route path={'files'} element={<FileView />} handle={{
-              crumb: (data) => 'Files',
-              link: (params) => 'files/'
+            <Route index element={<AssignmentComponent />} />
+            <Route path={'feedback/:sid'} element={<Feedback />} handle={{
+              crumb: (data) => 'Feedback',
+              link: (params) => `feedback/${params?.sid}/`
             }}></Route>
           </Route>
         </Route>

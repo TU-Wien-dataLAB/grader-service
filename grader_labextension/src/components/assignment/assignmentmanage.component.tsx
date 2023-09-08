@@ -34,7 +34,7 @@ const LectureTable = (props: ILectureTableProps) => {
             component={ButtonTr}
             onClick={() => navigate(`/lecture/${row.id}`)}
           >
-            <TableCell style={{ width: 100 }} component="th" scope="row">
+            <TableCell style={{ width: 100 }} component='th' scope='row'>
               {row.id}
             </TableCell>
             <TableCell>{row.name}</TableCell>
@@ -51,38 +51,37 @@ const LectureTable = (props: ILectureTableProps) => {
  * @param props Props of the lecture file components
  */
 export const AssignmentManageComponent = () => {
-  const allLectures = useRouteLoaderData("root") as { 
-      lectures: Lecture[]; 
-      completedLectures: Lecture[]; 
+  const allLectures = useRouteLoaderData('root') as {
+    lectures: Lecture[];
+    completedLectures: Lecture[];
   };
   const [showComplete, setShowComplete] = useState(false);
 
   return (
-    <div className="course-list">
-      <Box sx={{ m: 5 }}>
-        <Stack direction={'row'} spacing={2}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Lectures
-          </Typography>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showComplete}
-                  onChange={ev => setShowComplete(ev.target.checked)}
-                />
-              }
-              label="Completed Lectures"
-            />
-          </FormGroup>
-        </Stack>
+    <Stack flexDirection={'column'} sx={{ m: 5, flex: 1, overflow: 'hidden' }}>
+      <Stack direction={'row'} spacing={2}>
+        <Typography variant='h6' sx={{ mb: 1 }}>
+          Lectures
+        </Typography>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showComplete}
+                onChange={ev => setShowComplete(ev.target.checked)}
+              />
+            }
+            label='Completed Lectures'
+          />
+        </FormGroup>
+      </Stack>
 
-        <LectureTable
-          rows={
-            showComplete ? allLectures.completedLectures : allLectures.lectures
-          }
-        />
-        </Box>
-    </div>
+      <LectureTable
+        rows={
+          showComplete ? allLectures.completedLectures : allLectures.lectures
+        }
+      />
+
+    </Stack>
   );
 };

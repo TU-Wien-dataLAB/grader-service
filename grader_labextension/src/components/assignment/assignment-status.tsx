@@ -18,6 +18,7 @@ import { getFiles } from '../../services/file.service';
 
 import { Submission } from '../../model/submission';
 import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
+
 /**
  * Props for AssignmentComponent.
  */
@@ -32,25 +33,6 @@ export interface IAssignmentStatusProps {
  * @param props props of assignment status component
  */
 export const AssignmentStatus = (props: IAssignmentStatusProps) => {
-  //const [activeStep, setActiveStep] = React.useState(0);
-
-  /**
-   * Calculates what the current step of the student assignment is.
-   */
-  //const getActiveStep = async () => {
-  //  const hasFeedback = props.submissions.reduce(
-  //    (accum: boolean, curr: Submission) => accum || curr.feedback_available,
-  //    false
-  //  );
-  //  if (hasFeedback) {
-  //    return 3;
-  //  }
-  //  if (props.submissions.length > 0) {
-  //    return 1;
-  //  }
-  //  return 0;
-  //};
-
   const fontSize = 14;
   const steps = [
     {
@@ -92,14 +74,14 @@ export const AssignmentStatus = (props: IAssignmentStatusProps) => {
   return (
     <Card elevation={0}>
       <CardContent sx={{ overflowY: 'auto' }}>
-        <Stepper activeStep={props.activeStep} orientation="horizontal">
+        <Stepper activeStep={props.activeStep} orientation='horizontal'>
           {steps.map((step) => (
             <Step key={step.label}>
               <StepLabel>{step.label}</StepLabel>
             </Step>
           ))}
         </Stepper>
-        <Typography sx={{ mt: 2, ml: 2, maxWidth: '50%' }}>
+        <Typography sx={{ mt: 2, ml: 2 }}>
           {steps[props.activeStep < 2 ? props.activeStep : 2].description}
         </Typography>
       </CardContent>

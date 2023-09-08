@@ -59,14 +59,14 @@ const validationSchema = yup.object({
 export const SettingsComponent = () => {
 
   const { lecture, assignments } = useRouteLoaderData('lecture') as {
-      lecture: Lecture,
-      assignments: Assignment[],
+    lecture: Lecture,
+    assignments: Assignment[],
   };
 
-  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
-      assignment: Assignment,
-      allSubmissions: Submission[],
-      latestSubmissions: Submission[]
+  const { assignment, allSubmissions, latestSubmissions } = useRouteLoaderData('assignment') as {
+    assignment: Assignment,
+    allSubmissions: Submission[],
+    latestSubmissions: Submission[]
   };
 
   const [checked, setChecked] = React.useState(
@@ -75,8 +75,7 @@ export const SettingsComponent = () => {
   const [checkedLimit, setCheckedLimit] = React.useState(
     Boolean(assignment.max_submissions)
   );
-  
-  
+
 
   const formik = useFormik({
     initialValues: {
@@ -115,16 +114,16 @@ export const SettingsComponent = () => {
   });
 
   return (
-    <Box ml={'50px'} mr={'50px'}>
-      <SectionTitle title="Settings" />
+    <Box sx={{ m: 5, flex: 1, overflow: 'auto' }}>
+      <SectionTitle title='Settings' />
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
           <TextField
-            variant="outlined"
+            variant='outlined'
             fullWidth
-            id="name"
-            name="name"
-            label="Assignment Name"
+            id='name'
+            name='name'
+            label='Assignment Name'
             value={formik.values.name}
             onChange={formik.handleChange}
             error={formik.touched.name && Boolean(formik.errors.name)}
@@ -146,12 +145,12 @@ export const SettingsComponent = () => {
                   }}
                 />
               }
-              label="Set Deadline"
+              label='Set Deadline'
             />
             <DateTimePicker
               ampm={false}
               disabled={!checked}
-              label="DateTimePicker"
+              label='DateTimePicker'
               disablePast
               value={formik.values.due_date}
               onChange={(date: Date) => {
@@ -174,17 +173,17 @@ export const SettingsComponent = () => {
                 }}
               />
             }
-            label="Limit Number of Submissions"
+            label='Limit Number of Submissions'
           />
 
           <TextField
-            variant="outlined"
+            variant='outlined'
             fullWidth
             disabled={!checkedLimit}
             type={'number'}
-            id="max-submissions"
-            name="max_submissions"
-            placeholder="Submissions"
+            id='max-submissions'
+            name='max_submissions'
+            placeholder='Submissions'
             value={formik.values.max_submissions || null}
             InputProps={{ inputProps: { min: 1 } }}
             onChange={e => {
@@ -199,7 +198,7 @@ export const SettingsComponent = () => {
             }
           />
 
-          <InputLabel id="demo-simple-select-label-auto">
+          <InputLabel id='demo-simple-select-label-auto'>
             Auto-Grading Behaviour
             <Tooltip title={gradingBehaviourHelp}>
               <HelpOutlineOutlinedIcon
@@ -210,10 +209,10 @@ export const SettingsComponent = () => {
           </InputLabel>
           <TextField
             select
-            id="assignment-type-select"
+            id='assignment-type-select'
             value={formik.values.automatic_grading}
-            label="Auto-Grading Behaviour"
-            placeholder="Grading"
+            label='Auto-Grading Behaviour'
+            placeholder='Grading'
             onChange={e => {
               formik.setFieldValue('automatic_grading', e.target.value);
             }}
@@ -233,7 +232,7 @@ export const SettingsComponent = () => {
                 }}
               />
             }
-            label="Allow file upload by students"
+            label='Allow file upload by students'
           />
 
           {/* Not included in release 0.1
@@ -255,9 +254,9 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-      <Button color="primary" variant="contained" type="submit">
-        Save changes
-      </Button>
+        <Button color='primary' variant='contained' type='submit'>
+          Save changes
+        </Button>
       </form>
     </Box>
   );

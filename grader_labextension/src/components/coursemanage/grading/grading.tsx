@@ -17,7 +17,18 @@ import { Assignment } from '../../../model/assignment';
 import { Outlet, useNavigate, useOutletContext, useRouteLoaderData } from 'react-router-dom';
 import { Submission } from '../../../model/submission';
 import { utcToLocalFormat } from '../../../services/datetime.service';
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Toolbar, Tooltip } from '@mui/material';
+import {
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Toolbar,
+  Tooltip
+} from '@mui/material';
 import { SectionTitle } from '../../util/section-title';
 import { enqueueSnackbar } from 'notistack';
 import { getAllSubmissions, getLogs } from '../../../services/submissions.service';
@@ -25,7 +36,6 @@ import { EnhancedTableToolbar } from './table-toolbar';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import { green } from '@mui/material/colors';
 import AddIcon from '@mui/icons-material/Add';
-
 
 
 /**
@@ -364,7 +374,7 @@ export default function GradingTable() {
   );
 
   return (
-    <Box sx={{ flex: '1 1 100%', ml: 5, mr: 5 }}>
+    <Stack sx={{ flex: 1, ml: 5, mr: 5, overflow: 'hidden' }}>
       <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 2 }}>
         {/*
         TODO: Requires backend implementation and frontend tweaks
@@ -381,112 +391,111 @@ export default function GradingTable() {
               </Button>
           </Tooltip>
          */}
-        </Stack>
-      <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
-                              clearSelection={() => setSelected([])} selected={selected}
-                              shownSubmissions={shownSubmissions}
-                              switchShownSubmissions={switchShownSubmissions} />
-        <TableContainer>
-          <Table
-            sx={{ minWidth: 750 }}
-            aria-labelledby='tableTitle'
-          >
-            <EnhancedTableHead
-              numSelected={selected.length}
-              order={order}
-              orderBy={orderBy}
-              onSelectAllClick={handleSelectAllClick}
-              onRequestSort={handleRequestSort}
-              rowCount={rows.length}
-            />
-            <TableBody>
-              {visibleRows.map((row, index) => {
-                const isItemSelected = isSelected(row.id);
-                const labelId = `enhanced-table-checkbox-${index}`;
+      </Stack>
+      <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
+                            clearSelection={() => setSelected([])} selected={selected}
+                            shownSubmissions={shownSubmissions}
+                            switchShownSubmissions={switchShownSubmissions} />
+      <Box sx={{ flex: 1, overflow: 'scroll' }}>
+        <Table
+          // sx={{ minWidth: 750 }}
+          aria-labelledby='tableTitle'
+          stickyHeader
+        >
+          <EnhancedTableHead
+            numSelected={selected.length}
+            order={order}
+            orderBy={orderBy}
+            onSelectAllClick={handleSelectAllClick}
+            onRequestSort={handleRequestSort}
+            rowCount={rows.length}
+          />
+          <TableBody>
+            {visibleRows.map((row, index) => {
+              const isItemSelected = isSelected(row.id);
+              const labelId = `enhanced-table-checkbox-${index}`;
 
-                return (
-                  <TableRow
-                    hover
-                    onClick={(event) => {
-                      setManualGradeSubmission(row);
-                      navigate('manual');
-                    }
-                    }
-                    role='button'
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    key={row.id}
-                    selected={isItemSelected}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell padding='checkbox'>
-                      <Checkbox
-                        color='primary'
-                        checked={isItemSelected}
-                        inputProps={{
-                          'aria-labelledby': labelId
-                        }}
-                        onClick={(event) => handleClick(event, row.id)}
-                      />
-                    </TableCell>
-                    <TableCell
-                      component='th'
-                      id={labelId}
-                      scope='row'
-                      padding='none'
-                      align='right'
-                    >
-                      {row.id}
-                    </TableCell>
-                    <TableCell align='left'>{row.username}</TableCell>
-                    <TableCell align='right'>{utcToLocalFormat(row.submitted_at)}</TableCell>
-                    <TableCell align='left'><Chip
-                      sx={{ textTransform: 'capitalize' }}
-                      variant='outlined'
-                      label={row.auto_status.split('_').join(' ')}
-                      color={getColor(row.auto_status)}
-                      clickable={true}
-                      onClick={(event) => openLogs(event, row.id)}
-                    /></TableCell>
-                    <TableCell align='left'>{getManualChip(row)}</TableCell>
-                    <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
-                    <TableCell align='right'>{row.score}</TableCell>
-                    <TableCell style={{ width: 55 }}>
-                      <IconButton aria-label='Edit' size={'small'} onClick={(event) => {
-                        event.stopPropagation();
-                        setManualGradeSubmission(row);
-                        navigate("edit");
-                      }}>
-                        <EditNoteOutlinedIcon sx={{ color: green[500] }} />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {emptyRows > 0 && (
+              return (
                 <TableRow
-                  style={{
-                    height: 53 * emptyRows
-                  }}
-                  
+                  hover
+                  onClick={(event) => {
+                    setManualGradeSubmission(row);
+                    navigate('manual');
+                  }
+                  }
+                  role='button'
+                  aria-checked={isItemSelected}
+                  tabIndex={-1}
+                  key={row.id}
+                  selected={isItemSelected}
+                  sx={{ cursor: 'pointer' }}
                 >
-                  <TableCell colSpan={6} />
+                  <TableCell padding='checkbox'>
+                    <Checkbox
+                      color='primary'
+                      checked={isItemSelected}
+                      inputProps={{
+                        'aria-labelledby': labelId
+                      }}
+                      onClick={(event) => handleClick(event, row.id)}
+                    />
+                  </TableCell>
+                  <TableCell
+                    component='th'
+                    id={labelId}
+                    scope='row'
+                    padding='none'
+                    align='right'
+                  >
+                    {row.id}
+                  </TableCell>
+                  <TableCell align='left'>{row.username}</TableCell>
+                  <TableCell align='right'>{utcToLocalFormat(row.submitted_at)}</TableCell>
+                  <TableCell align='left'><Chip
+                    sx={{ textTransform: 'capitalize' }}
+                    variant='outlined'
+                    label={row.auto_status.split('_').join(' ')}
+                    color={getColor(row.auto_status)}
+                    clickable={true}
+                    onClick={(event) => openLogs(event, row.id)}
+                  /></TableCell>
+                  <TableCell align='left'>{getManualChip(row)}</TableCell>
+                  <TableCell align='left'>{getFeedbackChip(row)}</TableCell>
+                  <TableCell align='right'>{row.score}</TableCell>
+                  <TableCell style={{ width: 55 }}>
+                    <IconButton aria-label='Edit' size={'small'} onClick={(event) => {
+                      event.stopPropagation();
+                      setManualGradeSubmission(row);
+                      navigate('edit');
+                    }}>
+                      <EditNoteOutlinedIcon sx={{ color: green[500] }} />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component='div'
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
+              );
+            })}
+            {emptyRows > 0 && (
+              <TableRow
+                style={{
+                  height: 53 * emptyRows
+                }}
+
+              >
+                <TableCell colSpan={6} />
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component='div'
+        count={rows.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <Dialog
         open={showLogs}
         onClose={() => setShowLogs(false)}
@@ -506,7 +515,7 @@ export default function GradingTable() {
           <Button onClick={() => setShowLogs(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Stack>
   );
 }
 
@@ -525,7 +534,7 @@ export const GradingComponent = () => {
   const [rows, setRows] = React.useState(allSubmissions);
   const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
 
-  return <Stack direction={'column'} sx={{ height: '100%' }}>
+  return <Stack direction={'column'} sx={{ flex: 1, overflow: 'hidden' }}>
     <SectionTitle title='Grading' />
     <Outlet context={{ lecture, assignment, rows, setRows, manualGradeSubmission, setManualGradeSubmission }} />
   </Stack>;

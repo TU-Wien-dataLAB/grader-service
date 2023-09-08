@@ -7,20 +7,22 @@ import {
   useLoaderData,
   Outlet, useLocation
 } from 'react-router-dom';
-import { Breadcrumbs, Typography } from '@mui/material';
+import { Box, Breadcrumbs, Stack, Typography } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { storeString } from '../../services/storage.service';
 
 
-export const Page = ({id}: {id: string}) => {
-  const pathname = "/" + useLocation().pathname.split("/").filter(v => v.length > 0).slice(0,2).join("/")
+export const Page = ({ id }: { id: string }) => {
+  const pathname = '/' + useLocation().pathname.split('/').filter(v => v.length > 0).slice(0, 2).join('/');
   storeString(`${id}-react-router-path`, pathname);
 
   return (
-    <> 
-      <RouterBreadcrumbs/> 
-      <Outlet />
-    </>
+    <Stack flexDirection={'column'} sx={{ height: '100%', width: '100%' }}>
+      <RouterBreadcrumbs />
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'stretch', height: '100%', overflow: 'hidden' }}>
+        <Outlet />
+      </Box>
+    </Stack>
   );
 };
 
@@ -34,9 +36,9 @@ export function LinkRouter(props: LinkRouterProps) {
 }
 
 export const RouterBreadcrumbs = () => {
-  const pathname = useLocation().pathname.replace(/\/$/, "");
+  const pathname = useLocation().pathname.replace(/\/$/, '');
   let matches = useMatches();
-  console.log(`Navigating to: ${pathname}`)
+  console.log(`Navigating to: ${pathname}`);
 
   let crumbs = matches
     // first get rid of any matches that don't have handle and crumb
@@ -62,7 +64,7 @@ export const RouterBreadcrumbs = () => {
       {links.map((value, index) => {
         const last = index === links.length - 1;
         const to = links.slice(0, index + 1).join('');
-        const samePath =  to.replace(/\/$/, "") === pathname; // e.g. happens if last path adds nothing to link (second to last crumb also points to same page)
+        const samePath = to.replace(/\/$/, '') === pathname; // e.g. happens if last path adds nothing to link (second to last crumb also points to same page)
         return last || samePath ? (
           <Typography color='text.primary' key={to}>
             {crumbs[index]}

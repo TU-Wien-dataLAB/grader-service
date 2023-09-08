@@ -8,7 +8,7 @@ import { SectionTitle } from '../util/section-title';
 import {
   Box,
   Button,
-  Stack,
+  Stack, Tooltip,
   Typography
 } from '@mui/material';
 import * as React from 'react';
@@ -23,69 +23,72 @@ import { GradeBook } from '../../services/gradebook';
 import { FilesList } from '../util/file-list';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
-import { lectureBasePath } from '../../services/file.service';
-/**
- * Props for FeedbackComponent.
- */
-export interface IFeedbackProps {
-  lecture: Lecture;
-  assignment: Assignment;
-  submission: Submission;
-}
+import { getFiles, lectureBasePath } from '../../services/file.service';
+import { Link, useParams, useRouteLoaderData } from 'react-router-dom';
 
-/**
- * Renders the feedback of a student submission.
- * @param props Props of the feedback component
- */
-export const Feedback = (props: IFeedbackProps) => {
+export const Feedback = () => {
+  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
+    lecture: Lecture,
+    assignment: Assignment,
+    submissions: Submission[],
+  };
+  const assignmentLink = `/lecture/${lecture.id}/assignment/${assignment.id}`;
+
+  const params = useParams();
+  const submissionId = +params['sid'];
+  const submission = submissions.find(s => s.id === submissionId);
+
   const [gradeBook, setGradeBook] = React.useState(null);
   const [path, setPath] = React.useState(null);
 
+  const feedbackPath = `${lectureBasePath}${lecture.code}/feedback/${assignment.id}/${submission.id}`;
+  getFiles(feedbackPath).then(files => {
+    if (files.length > 0) {
+      setPath(feedbackPath);
+    }
+  });
+
   React.useEffect(() => {
     getProperties(
-      props.lecture.id,
-      props.assignment.id,
-      props.submission.id
+      lecture.id,
+      assignment.id,
+      submission.id
     ).then(properties => {
       const gradeBook = new GradeBook(properties);
       setGradeBook(gradeBook);
     });
-    pullFeedback(props.lecture, props.assignment, props.submission).then(() => {
-      const feedbackPath = `${lectureBasePath}${props.lecture.code}/feedback/${props.assignment.id}/${props.submission.id}`;
-      setPath(feedbackPath);
-    });
-  }, [props.lecture, props.assignment, props.submission]);
+  }, [lecture, assignment, submission]);
 
   return (
     <Box>
-      <SectionTitle title={'Feedback for ' + props.assignment.name} />
+      <SectionTitle title={'Feedback for ' + assignment.name} />
       <Box sx={{ m: 2, mt: 12 }}>
-        <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
+        <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
           <Stack sx={{ mt: 0.5 }}>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Lecture
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Assignment
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Points
             </Typography>
             <Typography
-              textAlign="right"
-              color="text.secondary"
+              textAlign='right'
+              color='text.secondary'
               sx={{ fontSize: 12, height: 35 }}
             >
               Extra Credit
@@ -93,18 +96,18 @@ export const Feedback = (props: IFeedbackProps) => {
           </Stack>
           <Stack>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.lecture.name}
+              {lecture.name}
             </Typography>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
-              {props.assignment.name}
+              {assignment.name}
               <Typography
-                color="text.secondary"
+                color='text.secondary'
                 sx={{
                   display: 'inline-block',
                   fontSize: 14,
@@ -112,23 +115,23 @@ export const Feedback = (props: IFeedbackProps) => {
                   height: 35
                 }}
               >
-                {props.assignment.type}
+                {assignment.type}
               </Typography>
             </Typography>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
               {gradeBook?.getPoints()}
               <Typography
-                color="text.secondary"
+                color='text.secondary'
                 sx={{ display: 'inline-block', fontSize: 14, ml: 0.25 }}
               >
                 /{gradeBook?.getMaxPoints()}
               </Typography>
             </Typography>
             <Typography
-              color="text.primary"
+              color='text.primary'
               sx={{ display: 'inline-block', fontSize: 16, height: 35 }}
             >
               {gradeBook?.getExtraCredits()}
@@ -138,21 +141,37 @@ export const Feedback = (props: IFeedbackProps) => {
       </Box>
       <Typography sx={{ m: 2, mb: 0 }}>
         Feedback Files
-        {path !== null && (
-          <Button
-            sx={{ mt: -1, ml: 2 }}
-            variant="outlined"
-            size="small"
-            color={'primary'}
-            onClick={() => openBrowser(path)}
-          >
-            <OpenInBrowserIcon fontSize="small" sx={{ mr: 1 }} />
-            Show in Filebrowser
-          </Button>
-        )}
       </Typography>
 
       <FilesList path={path} sx={{ m: 2 }} />
+      <Stack direction={'row'} spacing={2} sx={{ m: 2 }}>
+        <Button variant='outlined' component={Link as any} to={assignmentLink}>Back</Button>
+        <Button
+          variant='outlined'
+          size='small'
+          color={'primary'}
+          onClick={() => {
+            pullFeedback(lecture, assignment, submission).then(() => {
+              setPath(feedbackPath);
+            });
+          }}
+        >
+          Pull Feedback
+        </Button>
+        {path !== null && (
+          <Tooltip title={'Show files in JupyterLab file browser'}>
+            <Button
+              variant='outlined'
+              size='small'
+              color={'primary'}
+              onClick={() => openBrowser(path)}
+            >
+              <OpenInBrowserIcon fontSize='small' sx={{ mr: 1 }} />
+              Show in Filebrowser
+            </Button>
+          </Tooltip>
+        )}
+      </Stack>
     </Box>
   );
 };

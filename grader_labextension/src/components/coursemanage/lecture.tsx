@@ -149,7 +149,7 @@ export const LectureComponent = () => {
   }
 
   return (
-    <Stack direction={'column'} sx={{ m: 5 }}>
+    <Stack direction={'column'} sx={{ m: 5, flex: 1 }}>
       <Typography variant={'h4'} sx={{ mr: 2 }}>
         {lectureState.name}
         {lectureState.complete ? (
@@ -193,7 +193,7 @@ export const LectureComponent = () => {
       </Stack>
 
       <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
-      <AssignmentTable lecture={lectureState} rows={assignmentsState} setAssignments={setAssignments}/>
+      <AssignmentTable lecture={lectureState} rows={assignmentsState} setAssignments={setAssignments} />
     </Stack>
   );
 };

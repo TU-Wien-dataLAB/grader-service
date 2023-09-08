@@ -19,8 +19,6 @@ import {
 } from '@mui/material';
 
 import { SubmissionList } from './submission-list';
-import LoadingOverlay from '../util/overlay';
-import { Feedback } from './feedback';
 import { AssignmentStatus } from './assignment-status';
 import { Files } from './files/files';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -33,11 +31,6 @@ import {
 } from '../../services/assignments.service';
 import { getFiles, lectureBasePath } from '../../services/file.service';
 import { getAllSubmissions, submitAssignment } from '../../services/submissions.service';
-import {
-  deleteKey,
-  loadNumber
-} from '../../services/storage.service';
-import { useParams } from 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from '../util/dialog-provider';
 import { RepoType } from '../util/repo-type';
@@ -46,6 +39,8 @@ import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { openBrowser } from '../coursemanage/overview/util';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -62,17 +57,9 @@ const calculateActiveStep = (submissions: Submission[]) => {
 };
 
 /**
- * Props for AssignmentModalComponent.
- */
-export interface IAssignmentModalProps {
-  root: HTMLElement;
-}
-
-/**
  * Renders the components available in the extended assignment modal view
- * @param props props of assignment modal component
  */
-export const AssignmentComponent = (props: IAssignmentModalProps) => {
+export const AssignmentComponent = () => {
   const navigate = useNavigate();
   const reloadPage = () => navigate(0);
 
@@ -82,50 +69,22 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     submissions: Submission[],
   };
 
-  /* Get the assignment id from router */
-  const params = useParams();
-  const assignmentId: number = +params['aid'];
-
-  /* Copy assignments out of assignment submissions array */
-  const [assignmentState, setAssignment] = React.useState(assignment);
+  const path = `${lectureBasePath}${lecture.code}/assignments/${assignment.id}`;
 
   /* Now we can divvy this into a useReducer  */
   const [allSubmissions, setSubmissions] = React.useState(submissions);
 
-  const [displayAssignment, setDisplayAssignment] = React.useState(
-    loadNumber('a-opened-assignment') === assignment.id || false
-  );
 
-  const [hasFeedback, setHasFeedback] = React.useState(false);
   const [files, setFiles] = React.useState([]);
-  const [bestScore, setBestScore] = React.useState('-');
-
   const [activeStatus, setActiveStatus] = React.useState(0);
-
-  const [showFeedback, setShowFeedback] = React.useState(false);
-  const [feedbackSubmission, setFeedbackSubmission] = React.useState(null);
-  /**
-   * Opens the feedback view.
-   * @param submission submission which feedback will be displayed
-   */
-  const openFeedback = (submission: Submission) => {
-    setFeedbackSubmission(submission);
-    setShowFeedback(true);
-  };
 
   React.useEffect(() => {
     getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
       response => {
         setSubmissions(response);
-        const feedback = response.reduce(
-          (accum: boolean, curr: Submission) =>
-            accum || curr.feedback_available,
-          false
-        );
-        setHasFeedback(feedback);
       }
     );
-    getFiles(`${lectureBasePath}${lecture.code}/assignments/${assignment.id}`).then(files => {
+    getFiles(path).then(files => {
       // TODO: make it really explicit where & who pulls the asssignment
       // files!
       //if (files.length === 0) {
@@ -134,34 +93,9 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
       setFiles(files);
     });
 
-    getAllSubmissions(lecture.id, assignment.id, 'best', false).then(
-      submissions => {
-        if (submissions.length > 0 && submissions[0].score) {
-          setBestScore(submissions[0].score.toString());
-        }
-      }
-    );
-
     let active_step = calculateActiveStep(submissions);
     setActiveStatus(active_step);
-
-  }, [props]);
-
-  /**
-   * Executed on assignment modal close.
-   */
-  const onAssignmentClose = async () => {
-    setDisplayAssignment(false);
-    deleteKey('a-opened-assignment');
-    setAssignment(await getAssignment(lecture.id, assignment.id));
-    const submissions = await getAllSubmissions(
-      lecture.id,
-      assignment.id,
-      'none',
-      false
-    );
-    setSubmissions(submissions);
-  };
+  }, []);
 
 
   const resetAssignmentHandler = async () => {
@@ -210,10 +144,7 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
         await submitAssignment(lecture, assignment, true).then(
           response => {
             console.log('Submitted');
-            setSubmissions(oldSubmissions => [
-              response,
-              ...oldSubmissions
-            ]);
+            setSubmissions([response, ...allSubmissions]);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
@@ -287,12 +218,12 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
   };
 
   const isAssignmentFetched = () => {
-    return files.length > 0 ? true : false;
+    return files.length > 0;
   };
 
 
   return (
-    <Box sx={{ height: '95%', overflow: 'auto' }}>
+    <Box sx={{ flex: 1, overflow: 'auto' }}>
       <Box>
         <Box sx={{ mt: 6 }}>
           <Typography variant={'h6'} sx={{ ml: 2 }}>
@@ -381,9 +312,20 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
                 Reset
               </Button>
             </Tooltip>
+
+            <Tooltip title={'Show files in JupyterLab file browser'}>
+              <Button
+                variant='outlined'
+                size='small'
+                color={'primary'}
+                onClick={() => openBrowser(path)}
+              >
+                <OpenInBrowserIcon fontSize='small' sx={{ mr: 1 }} />
+                Show in Filebrowser
+              </Button>
+            </Tooltip>
           </Stack>
         </Box>
-        <Outlet />
       </Box>
       <Box sx={{ mt: 4 }}>
         <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>
@@ -402,22 +344,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
           ) : null}
         </Typography>
         <SubmissionList
-          submissions={submissions}
-          openFeedback={openFeedback}
+          submissions={allSubmissions}
           sx={{ m: 2, mt: 1 }}
         />
       </Box>
-      <LoadingOverlay
-        onClose={() => setShowFeedback(false)}
-        open={showFeedback}
-        container={props.root}
-      >
-        <Feedback
-          lecture={lecture}
-          assignment={assignment}
-          submission={feedbackSubmission}
-        />
-      </LoadingOverlay>
     </Box>
   );
 };
