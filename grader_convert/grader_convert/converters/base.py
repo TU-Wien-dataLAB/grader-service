@@ -51,7 +51,7 @@ class BaseConverter(LoggingConfigurable):
             "__pycache__",
             "feedback",
             ".git",
-            "convert-config.py",
+            "grader_config.py",
         ],
         help=dedent(
             """
@@ -168,7 +168,7 @@ class BaseConverter(LoggingConfigurable):
 
         c = Config()
 
-        custom_config_path = f'{self._input_directory}/convert-config.py'
+        custom_config_path = f'{self._input_directory}/grader_config.py'
         if os.path.exists(custom_config_path):
 
             local_vars = {'c': c}
