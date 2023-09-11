@@ -9,6 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { AssignmentSettings } from './assignmentSettings';
 
 
 export interface Assignment { 
@@ -21,6 +22,7 @@ export interface Assignment {
     automatic_grading?: Assignment.AutomaticGradingEnum;
     max_submissions?: number;
     allow_files?: boolean;
+    settings?: AssignmentSettings;
 }
 export namespace Assignment {
     export type TypeEnum = 'user' | 'group';
