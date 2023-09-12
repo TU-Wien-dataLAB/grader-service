@@ -18,7 +18,9 @@ Contents
 
    installation
    get_started
-   user_guide
+   instructor_guide
+   student_guide
+   contribution
    grader_service/grader_service_rest_api
    about
 
