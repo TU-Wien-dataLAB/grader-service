@@ -41,6 +41,9 @@ class Submission(Base, Serializable):
     edited = Column(Boolean, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow, nullable=False)
+    grading_score = Column(Float, nullable=False)
+    score_scaling = Column(Float, server_default="1.0", nullable=False)
+
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
     logs = relationship("SubmissionLogs",

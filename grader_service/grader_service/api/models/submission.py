@@ -15,7 +15,7 @@ class Submission(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, score=None, assignid=None, commit_hash=None, feedback_available=None, edited=None):  # noqa: E501
+    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, grading_score=None, score_scaling=None, score=None, assignid=None, commit_hash=None, feedback_available=None, edited=None):  # noqa: E501
         """Submission - a model defined in OpenAPI
 
         :param id: The id of this Submission.  # noqa: E501
@@ -28,6 +28,10 @@ class Submission(Model):
         :type manual_status: str
         :param username: The username of this Submission.  # noqa: E501
         :type username: str
+        :param grading_score: The grading_score of this Submission.  # noqa: E501
+        :type grading_score: float
+        :param score_scaling: The score_scaling of this Submission.  # noqa: E501
+        :type score_scaling: float
         :param score: The score of this Submission.  # noqa: E501
         :type score: float
         :param assignid: The assignid of this Submission.  # noqa: E501
@@ -45,6 +49,8 @@ class Submission(Model):
             'auto_status': str,
             'manual_status': str,
             'username': str,
+            'grading_score': float,
+            'score_scaling': float,
             'score': float,
             'assignid': int,
             'commit_hash': str,
@@ -58,6 +64,8 @@ class Submission(Model):
             'auto_status': 'auto_status',
             'manual_status': 'manual_status',
             'username': 'username',
+            'grading_score': 'grading_score',
+            'score_scaling': 'score_scaling',
             'score': 'score',
             'assignid': 'assignid',
             'commit_hash': 'commit_hash',
@@ -70,6 +78,8 @@ class Submission(Model):
         self._auto_status = auto_status
         self._manual_status = manual_status
         self._username = username
+        self._grading_score = grading_score
+        self._score_scaling = score_scaling
         self._score = score
         self._assignid = assignid
         self._commit_hash = commit_hash
@@ -203,6 +213,52 @@ class Submission(Model):
         """
 
         self._username = username
+
+    @property
+    def grading_score(self):
+        """Gets the grading_score of this Submission.
+
+
+        :return: The grading_score of this Submission.
+        :rtype: float
+        """
+        return self._grading_score
+
+    @grading_score.setter
+    def grading_score(self, grading_score):
+        """Sets the grading_score of this Submission.
+
+
+        :param grading_score: The grading_score of this Submission.
+        :type grading_score: float
+        """
+
+        self._grading_score = grading_score
+
+    @property
+    def score_scaling(self):
+        """Gets the score_scaling of this Submission.
+
+
+        :return: The score_scaling of this Submission.
+        :rtype: float
+        """
+        return self._score_scaling
+
+    @score_scaling.setter
+    def score_scaling(self, score_scaling):
+        """Sets the score_scaling of this Submission.
+
+
+        :param score_scaling: The score_scaling of this Submission.
+        :type score_scaling: float
+        """
+        if score_scaling is not None and score_scaling > 1.0:  # noqa: E501
+            raise ValueError("Invalid value for `score_scaling`, must be a value less than or equal to `1.0`")  # noqa: E501
+        if score_scaling is not None and score_scaling < 0.0:  # noqa: E501
+            raise ValueError("Invalid value for `score_scaling`, must be a value greater than or equal to `0.0`")  # noqa: E501
+
+        self._score_scaling = score_scaling
 
     @property
     def score(self):

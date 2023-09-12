@@ -8,6 +8,7 @@ import json
 import shutil
 import time
 
+import isodate
 import jwt
 import os.path
 import subprocess
@@ -21,6 +22,7 @@ import tornado
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
 from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
+from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
@@ -31,7 +33,7 @@ from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 from grader_convert.gradebook.models import GradeBookModel
 
-from grader_service.handlers.base_handler import GraderBaseHandler, authorize,\
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
     RequestHandlerConfig
 import datetime
 
@@ -45,7 +47,7 @@ def remove_points_from_submission(submissions):
 
 @register_handler(
     path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments' +
-    r'\/(?P<assignment_id>\d*)\/submissions\/?',
+         r'\/(?P<assignment_id>\d*)\/submissions\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionHandler(GraderBaseHandler):
@@ -238,10 +240,11 @@ class SubmissionHandler(GraderBaseHandler):
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
         submission_ts = datetime.datetime.utcnow()
-        if assignment.duedate is not None \
-                and submission_ts > assignment.duedate:
-            raise HTTPError(HTTPStatus.CONFLICT,
-                            reason="Submission after due date of assignment!")
+
+        score_scaling = 1.0
+        if assignment.duedate is not None:
+            score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts)
+
         if assignment.max_submissions:
             submissions = assignment.submissions
             usersubmissions = [s for s in submissions if
@@ -255,6 +258,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission.date = submission_ts
         submission.username = self.user.name
         submission.feedback_available = False
+        submission.score_scaling = score_scaling
 
         if assignment.duedate is not None \
                 and submission.date > assignment.duedate:
@@ -289,10 +293,10 @@ class SubmissionHandler(GraderBaseHandler):
         if assignment.automatic_grading in [AutoGradingBehaviour.auto,
                                             AutoGradingBehaviour.full_auto]:
             self.set_status(HTTPStatus.ACCEPTED)
-            executor = RequestHandlerConfig.instance()\
+            executor = RequestHandlerConfig.instance() \
                 .autograde_executor_class(
-                    self.application.grader_service_dir, submission,
-                    close_session=False, config=self.application.config
+                self.application.grader_service_dir, submission,
+                close_session=False, config=self.application.config
             )
             if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
                 feedback_executor = GenerateFeedbackExecutor(
@@ -314,10 +318,35 @@ class SubmissionHandler(GraderBaseHandler):
         if assignment.automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
 
+    @staticmethod
+    def calculate_late_submission_scaling(assignment, submission_ts) -> float:
+        assignment_settings = AssignmentSettingsModel.from_dict(json.loads(assignment.settings))
+        if assignment_settings.late_submission and len(assignment_settings.late_submission) > 0:
+            scaling = 0.0
+            if submission_ts <= assignment.duedate:
+                scaling = 1.0
+            else:
+                for period in assignment_settings.late_submission:
+                    late_submission_date = assignment.duedate + isodate.parse_duration(period.period)
+                    if submission_ts < late_submission_date:
+                        scaling = period.scaling
+                        break
+                if scaling == 0.0:
+                    raise HTTPError(HTTPStatus.CONFLICT,
+                                    reason="Submission after last late submission period of assignment!")
+        else:
+
+            if submission_ts < assignment.duedate:
+                scaling = 1.0
+            else:
+                raise HTTPError(HTTPStatus.CONFLICT,
+                                reason="Submission after due date of assignment!")
+        return scaling
+
 
 @register_handler(
     path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
-    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?',
+         r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionObjectHandler(GraderBaseHandler):
@@ -372,13 +401,17 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.feedback_available = sub_model.feedback_available or False
+        # TODO: validate score_scaling
+        if sub_model.score_scaling and sub.score_scaling != sub_model.score_scaling:
+            sub.score_scaling = sub_model.score_scaling
+            sub.score = sub_model.score_scaling * sub.grading_score if sub.grading_score else None
         self.session.commit()
         self.write_json(sub)
 
 
 @register_handler(
     path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
-    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/logs\/?',
+         r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/logs\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionLogsHandler(GraderBaseHandler):
@@ -408,8 +441,8 @@ class SubmissionLogsHandler(GraderBaseHandler):
 
 @register_handler(
     path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
-    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/' +
-    r'properties\/?',
+         r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/' +
+         r'properties\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionPropertiesHandler(GraderBaseHandler):
@@ -481,7 +514,8 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason="Cannot parse properties file!")
 
-        submission.score = score
+        submission.grading_score = score
+        submission.score = submission.score_scaling * score
 
         properties = SubmissionProperties(properties=properties_string,
                                           sub_id=submission.id)
@@ -503,7 +537,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
 @register_handler(
     path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
-    r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?',
+         r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?',
     version_specifier=VersionSpecifier.ALL,
 )
 class SubmissionEditHandler(GraderBaseHandler):

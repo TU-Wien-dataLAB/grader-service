@@ -2,12 +2,16 @@ import json
 import shutil
 from http import HTTPStatus
 from pathlib import Path
+from typing import Union
 
 import tornado
 import os
+
+import isodate
 from sqlalchemy.orm import joinedload
 from grader_convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
 from grader_service.orm.submission import Submission
 from grader_service.orm.base import DeleteState
@@ -18,6 +22,30 @@ from tornado.web import HTTPError
 from .handler_utils import parse_ids
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
+
+
+def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
+    if settings is None:
+        return
+    late_submission = settings.late_submission or []
+    current_period = isodate.parse_duration("P0D")
+    curr_scaling = 1.0
+    for period in late_submission:
+        try:
+            d = isodate.parse_duration(period.period)
+            if not isinstance(period.scaling, float):
+                raise TypeError
+            s = period.scaling
+        except (isodate.isoerror.ISO8601Error, TypeError):
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid settings!")
+        if d <= current_period:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Period lengths are not increasing!)")
+        if s <= 0.0 or s >= 1.0:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling has to be between 0.0 and 1.0 exclusive!")
+        if s >= curr_scaling:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling is not decreasing!)")
+        current_period = d
+        curr_scaling = s
 
 
 @register_handler(
@@ -65,12 +93,12 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
         # Handle the case that the user wants to include submissions
         include_submissions = self.get_argument("include-submissions", "true") == "true"
-        if include_submissions: 
+        if include_submissions:
             assignids = [a.id for a in assignments]
             username = self.user.name
             results = self.session.query(Submission).filter(
-                    Submission.assignid.in_(assignids), 
-                    Submission.username == username).all()
+                Submission.assignid.in_(assignids),
+                Submission.username == username).all()
             # Create a combined list of assignments and submissions 
             assignments = [a.serialize() for a in assignments]
             submissions = [s.serialize() for s in results]
@@ -114,6 +142,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
             msg = "Maximum number of submissions cannot be smaller than 1!"
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason=msg)
+        validate_assignment_settings(assignment_model.settings)
 
         assignment.lectid = lecture_id
         assignment.duedate = assignment_model.due_date
@@ -124,6 +153,8 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignment.automatic_grading = assignment_model.automatic_grading
         assignment.max_submissions = assignment_model.max_submissions
         assignment.allow_files = get_allow_files(assignment_model)
+        if assignment_model.settings:
+            assignment.settings = json.dumps(assignment_model.settings.to_dict())
 
         self.session.add(assignment)
         try:
@@ -137,7 +168,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.write_json(assignment)
 
 
-def get_allow_files(assignment_model: AssignmentModel): 
+def get_allow_files(assignment_model: AssignmentModel):
     """Extract the allow files from field in assignment table.
 
     Return false if field is None, else a list."""
@@ -186,6 +217,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 and (assignment_model.max_submissions < 1)):
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason="Max num submissions < 1!")
+        validate_assignment_settings(assignment_model.settings)
 
         assignment.name = assignment_model.name
         assignment.duedate = assignment_model.due_date
@@ -194,6 +226,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment.automatic_grading = assignment_model.automatic_grading
         assignment.max_submissions = assignment_model.max_submissions
         assignment.allow_files = get_allow_files(assignment_model)
+        if assignment_model.settings:
+            assignment.settings = json.dumps(assignment_model.settings.to_dict())
+
         if ((assignment.automatic_grading == AutoGradingBehaviour.full_auto.name)  # noqa E501
                 and (assignment.properties is not None)):
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
@@ -285,10 +320,10 @@ class AssignmentResetHandler(GraderBaseHandler):
 
         grader_service_dir = Path(self.application.grader_service_dir)
         git_path_base = grader_service_dir.joinpath(
-                "tmp",
-                assignment.lecture.code,
-                assignment.name,
-                self.user.name)
+            "tmp",
+            assignment.lecture.code,
+            assignment.name,
+            self.user.name)
         self.log.info(git_path_base)
         # Deleting dir
         if os.path.exists(git_path_base):
@@ -318,7 +353,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?", # noqa E501
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentPropertiesHandler(GraderBaseHandler):
