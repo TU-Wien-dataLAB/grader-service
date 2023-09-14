@@ -69,10 +69,7 @@ export const LateSubmissionForm = (props: ILateSubmissionFormProps) => {
   };
 
   return (
-    <Stack direction={'column'} spacing={2}>
-      <InputLabel>
-        Late Submissions
-      </InputLabel>
+    <>
       {formik.values.settings.late_submission.map((l: SubmissionPeriod, i: number) => {
         const late_sub_info = values_from_duration(l.period, l.scaling);
         return <Stack direction={'row'} spacing={2}>
@@ -92,7 +89,6 @@ export const LateSubmissionForm = (props: ILateSubmissionFormProps) => {
           <IconButton onClick={() => removeLateSubmission(i)}><ClearIcon /></IconButton>
         </Stack>;
       })}
-      <Button onClick={() => addLateSubmission()}>New</Button>
-    </Stack>
-  );
+      <Button variant={'outlined'} onClick={() => addLateSubmission()}>Add Late Submission Period</Button>
+    </>);
 };
