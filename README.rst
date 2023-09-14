@@ -106,7 +106,9 @@ This repository contains all the necessary packages for a full installation of t
 
     pip install grader-service
 
+.. installation-end
 
+.. installation-from-soruce-start
 
 Installation from Source
 --------------------------
@@ -138,7 +140,7 @@ Development Environment
 Alternatively you can run the installation scripts in ``examples/dev_environment``.
 Follow the documentation there. The directory also contains the config files for a local installation.
 
-.. installation-end
+.. installation-from-soruce-end
 
 
 Getting Started
@@ -192,10 +194,11 @@ The config could look like this:
     c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
     c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
 
+
     c.JupyterHub.load_groups = {
-        "lect1:instructor": ["user1"],
-        "lect1:tutor": ["user2"],
-        "lect1:student": ["user3", "user4"]
+        "lect1:instructor": {'users': ["user1"]},
+        "lect1:tutor": {'users': ["user2"]},
+        "lect1:student": {'users': ["user3", "user4"]},
     }
 
 Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.

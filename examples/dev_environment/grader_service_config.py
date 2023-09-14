@@ -19,4 +19,4 @@ c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(serv
 assert issubclass(KubeAutogradeExecutor, LocalAutogradeExecutor)
 c.RequestHandlerConfig.autograde_executor_class = LocalProcessAutogradeExecutor
 c.KubeAutogradeExecutor.kube_context = "minikube"
-c.KubeAutogradeExecutor.default_image_name = lambda l, a: "s210.dl.hpc.tuwien.ac.at/grader/grader-notebook-minimal:arm"
+c.KubeAutogradeExecutor.default_image_name = lambda l, a: "s210.dl.hpc.tuwien.ac.at/jaas/scipy-notebook:latest"

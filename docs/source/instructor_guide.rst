@@ -1,5 +1,5 @@
-User Guide
-***************
+Instructor Guide
+=================
 
 After installation and configuration of the grader labextension and service you should
 be able to access the frontend interface of the extension.
@@ -20,7 +20,7 @@ a tutor in one lecture.
     Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 
 One Instance Hub vs. Multiple Instances Hub
-============================================
+--------------------------------------------
 In winter semester 2023 we are introducing One Instance Hub, which allows you to have all of your lectures in one place and easily manage them. 
 If you are using Jupyter as a Service for multiple lectures, they are now shown in one list. In each lecture 
 you can manage as many assignments as needed and this process and navigation between assignments has been made
@@ -30,7 +30,7 @@ eliminating the need to follow a link provided in each TUWEL course that uses Ju
 they can access all of their lectures and assignments released in those lectures.
 
 Create Your First Assignment
-=============================
+-----------------------------
 Before students can access the notebooks, an assignment must be created.
 To access this feature, open the course management dashboard and navigate to desired lecture:
 
@@ -48,7 +48,7 @@ To access this feature, open the course management dashboard and navigate to des
     :alt: add assignment dialog
 
 Working With Assignments
-========================
+------------------------
 Once an assignment has been created it can be opened, which will display the overview window.
 In the overview window of the assignment, you will find many ways to monitor, grade and extend the current assignment.
 
@@ -76,7 +76,7 @@ Notebooks can be added by either using the "Create a new notebook" button or by 
 The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
 
 Creating a Notebook for an Assignment
-=====================================
+--------------------------------------
 
 Up until now, no files have been added to the assignment. To have tasks for students to work on, notebooks have to be added to the assignment.
 As mentioned previously, we can either add a notebook from the file view or create it using the JupyterLab launcher.
@@ -118,6 +118,19 @@ Grader Cell Types:
         :width: 500
         :alt: autograded test
         :align: center
+
+    Tests can also always be hidden with the use of ``BEGIN ALWAYS HIDDEN TESTS`` and ``END ALWAYS HIDDEN TESTS`` directives. This means that students won't see tests which were run in the generated feedback. This behavior might be desired for **automatic** and **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments.
+    
+    .. image:: _static/assets/images/always_hidden_tests.png
+        :width: 500
+        :alt: allways hidden test
+        :align: center
+
+    The following image shows both an always hidden and a hidden test cell in the feedback view. For always hidden tests, only the points reached in the submission are shown, whereas for hidden tests, the run tests are also displayed.
+   
+    .. image:: _static/assets/images/student_feedback_always_hidden_tests.png
+        :alt: feedback for always hidden tests
+        
 
 - Manual graded answer
     This cell type supports free-form answers from students.
@@ -262,7 +275,7 @@ Here is a sample ``grader_config.py`` template for reference:
 
 
 Assignment Lifecycle
-=====================================
+---------------------
 
 .. image:: _static/assets/images/assignment_status.png
     :width: 400
@@ -290,7 +303,7 @@ Assignment Lifecycle
 
 
 Grading Assignments
-=====================================
+--------------------
 
 To grade student submissions navigate to submissions tab:
 
@@ -327,59 +340,4 @@ It specifies the action taken when a user submits an assignment.
     :width: 350
     :alt: autograding behavior
     :align: center
-
-
-Student Guide
-===============
-
-When Juypterhub is launched students see only the Assignments card:
-
-.. image:: _static/assets/images/student_launcher.png
-    :alt: student launcher
-
-
-| Studnets are presented with a list of courses they are enrolled in. They can also see completed lectures from previous semesters as well and take a look at their old assignments:
-
-.. image:: _static/assets/images/student_lecture_list.png
-    :alt: student lecture list 
-
-| Each lecture has its dedicated assignment table, with each table cell representing an assignment along with a brief overview.
-
-.. image:: _static/assets/gifs/student_assignment_table.gif
-    :alt: assignment overview for studnets
-
-| If a new assignment is released for students, students must first pull it from the remote repository in order to obtain assignment files they can work on. Afterwards, an "Edit" icon will be shown in the table cell.
-
-| Each table cell displays the name of the assignment, indicates whether feedback for submission is available, and shows the maximum points reached in the submission. Each table cell also features a countdown of the deadline. Once the deadline has been reached, students can no longer submit the assignment files.
-
-When clicking on an assignment table cell or the 'Detail View' button, students are presented with a detailed view of the assignment, allowing them to work on the assignment and make submissions.
-
-
-.. image:: _static/assets/images/student_detail_view.png
-    :alt: student view
-
-| The status bar is supposed to guide the students through the stages, from working on the assignment to viewing the feedback they received.
-
-The files in the assignment are displayed in a list and can be opened from there. The submit button submits the current state of the assignment.
-To reset the assignment to its original state, students can use the reset button.
-No progress is lost when resetting the assignment, the release state is just a new commit in the underlying git repository.
-
-Submissions are shown in the submission list. On top of the submission list is a chip that tells the students wheter there is a limited number of submissions they are allowed to make until the deadline has been reached.
-If a submission has feedback available, it will be displayed in this submission list and can be viewed from there.
-
-.. image:: _static/assets/images/student_view_feedback.png
-    :alt: student view feedback
-
-| Once the student submissions have been graded and feedback is available we can see it in the submission list and can open the feedback view. It will present an overview of the score reached and a list of detailed feedback for each graded notebook.
-
-.. image:: _static/assets/images/student_feedback_window.png
-    :alt: feedback view
-
-| The detailed feedback is a HTML file and shows the student answers along with the score and comments from instructors.
-
-.. image:: _static/assets/images/feedback_html.png
-    :alt: feedback html
-
-
-
 
