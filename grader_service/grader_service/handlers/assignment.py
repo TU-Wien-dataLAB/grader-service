@@ -1,3 +1,4 @@
+import datetime
 import json
 import shutil
 from http import HTTPStatus
@@ -33,10 +34,12 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
     for period in late_submission:
         try:
             d = isodate.parse_duration(period.period)
+            if d < datetime.timedelta(0):
+                raise ValueError
             if not isinstance(period.scaling, float):
                 raise TypeError
             s = period.scaling
-        except (isodate.isoerror.ISO8601Error, TypeError):
+        except (isodate.isoerror.ISO8601Error, TypeError, ValueError):
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid settings!")
         if d <= current_period:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Period lengths are not increasing!)")

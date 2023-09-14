@@ -26,7 +26,10 @@ import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
 import { useRouteLoaderData } from 'react-router-dom';
-import { getLateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
+import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
+import { FormikValues } from 'formik/dist/types';
+import { SubmissionPeriod } from '../../../model/submissionPeriod';
+import moment from 'moment';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -77,12 +80,49 @@ export const SettingsComponent = () => {
     Boolean(assignment.max_submissions)
   );
 
-  const validateLateSubmissions = (values) => {
-    let error = {};
-    // TODO: implement
-    // if (!props.selectIsCategoriesValid) {
-    //   error.categories = 'please select a category';
-    // }
+  const validateLateSubmissions = (values: FormikValues) => {
+    const late_submissions: ILateSubmissionInfo[] = getLateSubmissionInfo(values.settings.late_submission);
+    let error = { late_submission: { days: {}, hours: {}, scaling: {} } };
+    let nErrors = 0;
+    for (let i = 0; i < late_submissions.length; i++) {
+      const info = late_submissions[i];
+      if (info.days < 0) {
+        error.late_submission.days[i] = 'days cannot be negative';
+        nErrors++;
+      }
+      if (info.hours < 0) {
+        error.late_submission.hours[i] = 'hours cannot be negative';
+        nErrors++;
+      }
+      if (info.scaling <= 0 || info.scaling >= 1) {
+        error.late_submission.scaling[i] = 'scaling has to be between 0 and 1 exclusive';
+        nErrors++;
+      }
+      if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration(0)) {
+        error.late_submission.days[i] = 'period cannot be 0';
+        error.late_submission.hours[i] = 'period cannot be 0';
+        nErrors++;
+      }
+      if (i > 0) {
+        const prevInfo = late_submissions[i - 1];
+        if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration({
+          days: prevInfo.days,
+          hours: prevInfo.hours
+        })) {
+          error.late_submission.days[i] = 'periods have to be increasing';
+          error.late_submission.hours[i] = 'periods have to be increasing';
+          nErrors++;
+        }
+        if (info.scaling >= prevInfo.scaling) {
+          error.late_submission.scaling[i] = 'scaling has to decrease';
+          nErrors++;
+        }
+      }
+    }
+    if (nErrors == 0) {
+      // error object has to be empty, otherwise submit is blocked
+      return {};
+    }
     return error;
   };
 
@@ -98,7 +138,7 @@ export const SettingsComponent = () => {
       automatic_grading: assignment.automatic_grading,
       max_submissions: assignment.max_submissions || null,
       allow_files: assignment.allow_files || false,
-      lateSubmissions: getLateSubmissionInfo(assignment.settings.late_submission)
+      settings: assignment.settings
     },
     validationSchema: validationSchema,
     onSubmit: values => {
