@@ -138,7 +138,7 @@ export const SettingsComponent = () => {
       automatic_grading: assignment.automatic_grading,
       max_submissions: assignment.max_submissions || null,
       allow_files: assignment.allow_files || false,
-      settings: assignment.settings
+      settings: {late_submission: assignment.settings.late_submission || []}
     },
     validationSchema: validationSchema,
     onSubmit: values => {
