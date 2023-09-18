@@ -398,7 +398,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub.feedback_available = sub_model.feedback_available or False
         if sub_model.score_scaling and sub.score_scaling != sub_model.score_scaling:
             sub.score_scaling = sub_model.score_scaling
-            sub.score = sub_model.score_scaling * sub.grading_score if sub.grading_score else None
+            sub.score = sub_model.score_scaling * sub.grading_score
         self.session.commit()
         self.write_json(sub)
 

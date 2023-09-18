@@ -228,7 +228,7 @@ export const ManualGrading = () => {
                 const s = submission;
                 s.score_scaling = submissionScaling;
                 updateSubmission(lecture.id, assignment.id, submission.id, s).then(() => {
-                  enqueueSnackbar('Updated submission scaling!');
+                  enqueueSnackbar('Updated submission scaling!', { variant: 'success' });
                 });
                 event.preventDefault();
               }}>
@@ -272,6 +272,7 @@ export const ManualGrading = () => {
         <LoadingButton
           size={'small'}
           loading={loading}
+          disabled={submission.auto_status !== 'automatically_graded'}
           color='primary'
           variant='outlined'
           onClick={async () => {
@@ -292,6 +293,15 @@ export const ManualGrading = () => {
           sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
           Finish Manual Grading
+        </Button>
+        <Button
+          size={'small'}
+          variant='outlined'
+          color='success'
+          component={Link as any} to={submissionsLink + '/edit'}
+          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+        >
+          Edit Submission
         </Button>
         <Box sx={{ flex: '1 1 100%' }}></Box>
         <Button
