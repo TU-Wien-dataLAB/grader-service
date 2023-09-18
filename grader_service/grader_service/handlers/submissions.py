@@ -396,7 +396,6 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.feedback_available = sub_model.feedback_available or False
-        # TODO: validate score_scaling
         if sub_model.score_scaling and sub.score_scaling != sub_model.score_scaling:
             sub.score_scaling = sub_model.score_scaling
             sub.score = sub_model.score_scaling * sub.grading_score if sub.grading_score else None

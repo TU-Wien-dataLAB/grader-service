@@ -1,9 +1,9 @@
 import { SectionTitle } from '../../util/section-title';
 import {
   Box,
-  Button,
+  Button, Checkbox, FormControlLabel,
   IconButton,
-  Stack,
+  Stack, TextField,
   Tooltip,
   Typography
 } from '@mui/material';
@@ -53,6 +53,8 @@ export const ManualGrading = () => {
   const manualPath = `${lectureBasePath}${lecture.code}/manualgrade/${assignment.id}/${submission.id}`;
   const rowIdx = rows.findIndex(s => s.id === submission.id);
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
+
+  const [submissionScaling, setSubmissionScaling] = React.useState(submission.score_scaling);
 
   const [gradeBook, setGradeBook] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -182,6 +184,13 @@ export const ManualGrading = () => {
             >
               Extra Credit
             </Typography>
+            <Typography
+              textAlign='right'
+              color='text.secondary'
+              sx={{ fontSize: 12, height: 75 }}
+            >
+              Score Scaling
+            </Typography>
           </Stack>
           <Stack>
             <Typography
@@ -214,6 +223,26 @@ export const ManualGrading = () => {
             >
               {gradeBook?.getExtraCredits()}
             </Typography>
+            <Box sx={{ height: 75 }}>
+              <form onSubmit={(event) => {
+                const s = submission;
+                s.score_scaling = submissionScaling;
+                updateSubmission(lecture.id, assignment.id, submission.id, s).then(() => {
+                  enqueueSnackbar('Updated submission scaling!');
+                });
+                event.preventDefault();
+              }}>
+                <Stack direction={'row'} spacing={2}>
+                  <TextField id={'scaling'} label={'Scaling'} value={submissionScaling} size={'small'}
+                             type={'number'} inputProps={{ maxLength: 4, step: '0.01', min: 0.0, max: 1.0 }}
+                             onChange={e => setSubmissionScaling(+e.target.value)} />
+                  <Button color='primary' variant='contained' type='submit'>
+                    Update
+                  </Button>
+                </Stack>
+              </form>
+
+            </Box>
           </Stack>
         </Stack>
         <Stack direction={'row'} spacing={2}>
