@@ -44,7 +44,7 @@ class DeduplicateIds(NbGraderPreprocessor):
         if grade_id in self.grade_ids:
 
             self.log.warning("Cell with id '%s' exists multiple times!", grade_id)
-            cell.metadata = {}
+            cell.metadata.nbgrader = {}
         else:
             self.grade_ids.add(grade_id)
 
