@@ -82,7 +82,7 @@ export const LateSubmissionForm = (props: ILateSubmissionFormProps) => {
                      helperText={i in (formik.errors?.late_submission?.hours || {}) && formik.errors.late_submission?.hours[i]}
                      onChange={e => updateLateSubmissionValue(i, 'hours', +e.target.value)} />
           <TextField id={`scaling${i}`} label={'Scaling'} value={late_sub_info.scaling} type={'number'}
-                     inputProps={{ maxLength: 4, step: '0.1', min: 0.0, max: 1.0 }}
+                     inputProps={{ maxLength: 4, step: '0.01', min: 0.0, max: 1.0 }}
                      error={i in (formik.errors?.late_submission?.scaling || {})}
                      helperText={i in (formik.errors?.late_submission?.scaling || {}) && formik.errors.late_submission?.scaling[i]}
                      onChange={e => updateLateSubmissionValue(i, 'scaling', +e.target.value)} />
