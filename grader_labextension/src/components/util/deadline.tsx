@@ -261,7 +261,7 @@ export function DeadlineDetail(props: IDeadlineDetailProps) {
           <AlarmIcon color={color === 'default' ? 'action' : color} />
         </ListItemIcon>
         <ListItemText primary={utcToLocalFormat(props.due_date)} />
-        <ListItemText primary={<Typography color={'text.secondary'}>in {displayDuration}</Typography>} />
+        <ListItemText primary={<Typography color={'text.secondary'}>{displayDuration}</Typography>} />
       </ListItem>
     </List>;
   } else {
@@ -280,7 +280,7 @@ export function DeadlineDetail(props: IDeadlineDetailProps) {
             <AlarmIcon color={color === 'default' ? 'action' : color} />
           </ListItemIcon>
           <ListItemText primary={utcToLocalFormat(props.due_date)} />
-          <ListItemText primary={<Typography color={'text.secondary'}>in {displayDuration}</Typography>} />
+          <ListItemText primary={<Typography color={'text.secondary'}>{displayDuration}</Typography>} />
           <Typography
             color={'text.secondary'}>{`${props.late_submissions.length} Extension${props.late_submissions.length !== 1 ? 's' : ''}`}</Typography>
           {open ? <ExpandLess /> : <ExpandMore />}

@@ -380,7 +380,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         score = 0
         for id, n in book.notebooks.items():
             score += n.score
-        self.submission.score = score
+        self.submission.grading_score = score
+        self.submission.score = self.submission.score_scaling * score
         self.session.commit()
 
     def _set_db_state(self, success=True):

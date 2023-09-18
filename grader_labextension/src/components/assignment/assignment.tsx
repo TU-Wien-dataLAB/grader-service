@@ -47,6 +47,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { DeadlineDetail } from '../util/deadline';
+import moment from 'moment';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -272,6 +273,15 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
     return time < Date.now();
   };
 
+  const isLateSubmissionOver = () => {
+    if (assignment.due_date === null) {
+      return false;
+    }
+    const late_submission = assignment.settings.late_submission || [{ period: 'P0D', scaling: undefined }];
+    const late = moment(assignment.due_date).add(moment.duration(late_submission[late_submission.length - 1].period)).toDate().getTime();
+    return late < Date.now();
+  };
+
   const isAssignmentCompleted = () => {
     return assignment.status === 'complete';
   };
@@ -356,10 +366,10 @@ export const AssignmentComponent = (props: IAssignmentModalProps) => {
             <Tooltip title={'Submit Files in Assignment'}>
               <Button
                 variant='outlined'
-                color='success'
+                color={(!isDeadlineOver()) ? 'success' : 'warning'}
                 size='small'
                 disabled={
-                  isDeadlineOver() ||
+                  isLateSubmissionOver() ||
                   isMaxSubmissionReached() ||
                   isAssignmentCompleted() ||
                   files.length == 0

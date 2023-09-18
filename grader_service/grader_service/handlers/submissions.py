@@ -260,11 +260,6 @@ class SubmissionHandler(GraderBaseHandler):
         submission.feedback_available = False
         submission.score_scaling = score_scaling
 
-        if assignment.duedate is not None \
-                and submission.date > assignment.duedate:
-            self.write({"message": "Cannot submit assignment: Past due date!"})
-            self.write_error(HTTPStatus.FORBIDDEN)
-
         git_repo_path = self.construct_git_dir(
             repo_type=assignment.type, lecture=assignment.lecture,
             assignment=assignment)
@@ -513,9 +508,6 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
             self.log.info(e)
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason="Cannot parse properties file!")
-
-        submission.grading_score = score
-        submission.score = submission.score_scaling * score
 
         properties = SubmissionProperties(properties=properties_string,
                                           sub_id=submission.id)
