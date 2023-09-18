@@ -20,7 +20,7 @@ def upgrade():
     op.add_column('assignment', sa.Column('settings', sa.Text, server_default='{}', nullable=False))
 
     # columns for original points (grading_points) and the late submission scaling (point_scaling)
-    op.add_column('submission', sa.Column('grading_score', sa.DECIMAL(10, 3), nullable=False))
+    op.add_column('submission', sa.Column('grading_score', sa.DECIMAL(10, 3), nullable=True))
     op.add_column('submission', sa.Column('score_scaling', sa.DECIMAL(10, 3), server_default="1.0", nullable=False))
 
 
