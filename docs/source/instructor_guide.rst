@@ -1,5 +1,5 @@
-User Guide
-***************
+Instructor Guide
+=================
 
 After installation and configuration of the grader labextension and service you should
 be able to access the frontend interface of the extension.
@@ -20,7 +20,7 @@ a tutor in one lecture.
     Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 
 One Instance Hub vs. Multiple Instances Hub
-============================================
+--------------------------------------------
 In winter semester 2023 we are introducing One Instance Hub, which allows you to have all of your lectures in one place and easily manage them. 
 If you are using Jupyter as a Service for multiple lectures, they are now shown in one list. In each lecture 
 you can manage as many assignments as needed and this process and navigation between assignments has been made
@@ -30,7 +30,7 @@ eliminating the need to follow a link provided in each TUWEL course that uses Ju
 they can access all of their lectures and assignments released in those lectures.
 
 Create Your First Assignment
-=============================
+-----------------------------
 Before students can access the notebooks, an assignment must be created.
 To access this feature, open the course management dashboard and navigate to desired lecture:
 
@@ -48,7 +48,7 @@ To access this feature, open the course management dashboard and navigate to des
     :alt: add assignment dialog
 
 Working With Assignments
-========================
+------------------------
 Once an assignment has been created it can be opened, which will display the overview window.
 In the overview window of the assignment, you will find many ways to monitor, grade and extend the current assignment.
 
@@ -76,7 +76,7 @@ Notebooks can be added by either using the "Create a new notebook" button or by 
 The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
 
 Creating a Notebook for an Assignment
-=====================================
+--------------------------------------
 
 Up until now, no files have been added to the assignment. To have tasks for students to work on, notebooks have to be added to the assignment.
 As mentioned previously, we can either add a notebook from the file view or create it using the JupyterLab launcher.
@@ -119,6 +119,19 @@ Grader Cell Types:
         :alt: autograded test
         :align: center
 
+    Tests can also always be hidden with the use of ``BEGIN ALWAYS HIDDEN TESTS`` and ``END ALWAYS HIDDEN TESTS`` directives. This means that students won't see tests which were run in the generated feedback. This behavior might be desired for **automatic** and **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments.
+    
+    .. image:: _static/assets/images/always_hidden_tests.png
+        :width: 500
+        :alt: allways hidden test
+        :align: center
+
+    The following image shows both an always hidden and a hidden test cell in the feedback view. For always hidden tests, only the points reached in the submission are shown, whereas for hidden tests, the run tests are also displayed.
+   
+    .. image:: _static/assets/images/student_feedback_always_hidden_tests.png
+        :alt: feedback for always hidden tests
+        
+
 - Manual graded answer
     This cell type supports free-form answers from students.
     They should not be tested with automatic tests but are intended to be manually graded.
@@ -130,8 +143,139 @@ Grader Cell Types:
         :align: center
 
 
+
+Customizing Assignment Creation with grader_config.py
+=====================================================
+
+Instructors have the ability to customize the grading process using a configuration file named ``grader_config.py``. This file should reside in the same directory as the assignment notebooks you wish to grade.
+
+How to Use ``grader_config.py``
+-------------------------------
+
+1. **Create a ``grader_config.py`` File**
+    Create this file in the directory that houses your assignment notebooks.
+
+.. image:: _static/assets/images/grader_convert.png
+    :alt: grader convert file
+
+2. **Edit the Configurations**
+    Open the ``grader_config.py`` file in a text editor and edit the configurations. Here are some commonly used options:
+
+    - **Customizing the Code Stub for Solution Cells**
+        Normally, solution cells are replaced with ``raise NotImplementedError()``. Modify this default behavior like so:
+
+        .. code-block:: python
+
+            c.ClearSolutions.code_stub = { 'python': "# The stage is yours\nraise NotImplementedError('No Answer Given!')" }
+
+
+    - **Changing Delimiters for Hidden Tests**
+        By default, the grader identifies hidden tests using "BEGIN HIDDEN TESTS" and "END HIDDEN TESTS". You can modify these by setting the following:
+
+        .. code-block:: python
+
+            c.ClearHiddenTests.begin_test_delimiter = "HIDE TEST START"
+            c.ClearHiddenTests.end_test_delimiter = "HIDE TEST END"
+
+
+3. **Save the Configuration**
+    After setting your configurations, save the ``grader_config.py`` file.
+
+This way the grader service would generate following assignment:
+
+.. image:: _static/assets/images/grader_convert_example.png
+    :width: 500
+    :alt: grader convert result
+    :align: center
+
+From following assignment notebook:
+
+.. image:: _static/assets/images/grader_convert_result.png
+    :width: 500
+    :alt: grader convert example
+    :align: center
+
+Applying Custom Configurations
+------------------------------
+Once the ``grader_config.py`` file is saved in the appropriate directory, the grader service will automatically use these configurations during the creation process.
+
+Sample ``grader_config.py``
+---------------------------
+Here is a sample ``grader_config.py`` template for reference:
+
+.. code-block:: python
+
+    # Grader Convert Configuration File
+
+    # -------------------------------------------------
+    # ClearSolutions Configuration
+    # -------------------------------------------------
+
+    # `code_stub` replaces the content of solution cells with a language-specific code snippet.
+    # Instructors can override these placeholders with the code snippets of their choice.
+    c.ClearSolutions.code_stub = {
+        'python': "# YEEETE\nraise NotImplementedError()",  # Placeholder for Python solution cells
+        'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
+        'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
+        # ... (More languages)
+    }
+
+    # -------------------------------------------------
+    # ClearAlwaysHiddenTests Configuration
+    # -------------------------------------------------
+
+    # Delimiters for always hidden utilities.
+    # Blocks of code between these delimiters will always be hidden in the notebook.
+    c.ClearAlwaysHiddenTests.begin_util_delimeter = "BEGIN ALWAYS HIDDEN UTILS"  # Start delimiter
+    c.ClearAlwaysHiddenTests.end_util_delimeter = "END ALWAYS HIDDEN UTILS"  # End delimiter
+
+    # -------------------------------------------------
+    # ClearHiddenTests Configuration
+    # -------------------------------------------------
+
+    # Delimiters for hidden tests.
+    # Blocks of code between these delimiters will be hidden in the notebook.
+    c.ClearHiddenTests.begin_test_delimeter = "BEGIN HIDDEN TESTS"  # Start delimiter
+    c.ClearHiddenTests.end_test_delimeter = "END HIDDEN TESTS"  # End delimiter
+
+    # -------------------------------------------------
+    # ClearMarkScheme Configuration
+    # -------------------------------------------------
+
+    # Delimiters for the mark scheme.
+    # Blocks of text between these delimiters describe the marking scheme.
+    c.ClearMarkScheme.begin_mark_scheme_delimeter = "BEGIN MARK SCHEME"  # Start delimiter
+    c.ClearMarkScheme.end_mark_scheme_delimeter = "END MARK SCHEME"  # End delimiter
+
+    # -------------------------------------------------
+    # IncludeHeaderFooter Configuration
+    # -------------------------------------------------
+
+    # Header and Footer files to be included at the top and bottom of each notebook.
+    c.IncludeHeaderFooter.header = "header.ipynb"  # Header notebook file
+    c.IncludeHeaderFooter.footer = "footer.ipynb"  # Footer notebook file
+
+    # -------------------------------------------------
+    # LimitOutput Configuration
+    # -------------------------------------------------
+
+    # Limit the number of lines and traceback lines in the output cells.
+    c.LimitOutput.max_lines = 1000  # Max number of lines in output
+    c.LimitOutput.max_traceback = 100  # Max number of traceback lines
+
+    # -------------------------------------------------
+    # LockCells Configuration
+    # -------------------------------------------------
+
+    # Options for locking cells in the notebook to prevent editing.
+    c.LockCells.lock_solution_cells = True  # Lock solution cells
+    c.LockCells.lock_grade_cells = True  # Lock grade cells
+    c.LockCells.lock_readonly_cells = True  # Lock readonly cells
+    c.LockCells.lock_all_cells = False  # Lock all cells in the notebook (overrides above settings)
+
+
 Assignment Lifecycle
-=====================================
+---------------------
 
 .. image:: _static/assets/images/assignment_status.png
     :width: 400
@@ -159,7 +303,7 @@ Assignment Lifecycle
 
 
 Grading Assignments
-=====================================
+--------------------
 
 To grade student submissions navigate to submissions tab:
 
@@ -196,59 +340,4 @@ It specifies the action taken when a user submits an assignment.
     :width: 350
     :alt: autograding behavior
     :align: center
-
-
-Student Guide
-===============
-
-When Juypterhub is launched students see only the Assignments card:
-
-.. image:: _static/assets/images/student_launcher.png
-    :alt: student launcher
-
-
-| Studnets are presented with a list of courses they are enrolled in. They can also see completed lectures from previous semesters as well and take a look at their old assignments:
-
-.. image:: _static/assets/images/student_lecture_list.png
-    :alt: student lecture list 
-
-| Each lecture has its dedicated assignment table, with each table cell representing an assignment along with a brief overview.
-
-.. image:: _static/assets/gifs/student_assignment_table.gif
-    :alt: assignment overview for studnets
-
-| If a new assignment is released for students, students must first pull it from the remote repository in order to obtain assignment files they can work on. Afterwards, an "Edit" icon will be shown in the table cell.
-
-| Each table cell displays the name of the assignment, indicates whether feedback for submission is available, and shows the maximum points reached in the submission. Each table cell also features a countdown of the deadline. Once the deadline has been reached, students can no longer submit the assignment files.
-
-When clicking on an assignment table cell or the 'Detail View' button, students are presented with a detailed view of the assignment, allowing them to work on the assignment and make submissions.
-
-
-.. image:: _static/assets/images/student_detail_view.png
-    :alt: student view
-
-| The status bar is supposed to guide the students through the stages, from working on the assignment to viewing the feedback they received.
-
-The files in the assignment are displayed in a list and can be opened from there. The submit button submits the current state of the assignment.
-To reset the assignment to its original state, students can use the reset button.
-No progress is lost when resetting the assignment, the release state is just a new commit in the underlying git repository.
-
-Submissions are shown in the submission list. On top of the submission list is a chip that tells the students wheter there is a limited number of submissions they are allowed to make until the deadline has been reached.
-If a submission has feedback available, it will be displayed in this submission list and can be viewed from there.
-
-.. image:: _static/assets/images/student_view_feedback.png
-    :alt: student view feedback
-
-| Once the student submissions have been graded and feedback is available we can see it in the submission list and can open the feedback view. It will present an overview of the score reached and a list of detailed feedback for each graded notebook.
-
-.. image:: _static/assets/images/student_feedback_window.png
-    :alt: feedback view
-
-| The detailed feedback is a HTML file and shows the student answers along with the score and comments from instructors.
-
-.. image:: _static/assets/images/feedback_html.png
-    :alt: feedback html
-
-
-
 

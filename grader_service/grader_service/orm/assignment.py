@@ -17,8 +17,8 @@ from grader_service.orm.base import Base, DeleteState, Serializable
 
 class AutoGradingBehaviour(enum.Enum):
     unassisted = 0  # assignments not automatically graded
-    auto = 1        # assignments auto graded when submitted
-    full_auto = 2   # assignments auto graded, feedback generated on submit
+    auto = 1  # assignments auto graded when submitted
+    full_auto = 2  # assignments auto graded, feedback generated on submit
 
 
 class Assignment(Base, Serializable):
@@ -44,6 +44,8 @@ class Assignment(Base, Serializable):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow, nullable=False)
+    settings = Column(Text, server_default='', nullable=False)
+
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
 
@@ -60,6 +62,7 @@ class Assignment(Base, Serializable):
             points=self.points,
             automatic_grading=self.automatic_grading.name,
             max_submissions=self.max_submissions,
-            allow_files=self.allow_files
+            allow_files=self.allow_files,
+            settings=assignment.AssignmentSettings.from_dict(self.settings)
         )
         return assignment_model

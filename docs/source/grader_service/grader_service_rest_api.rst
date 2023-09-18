@@ -1,5 +1,5 @@
 REST API
----------------------------
+---------
 
 Below is an interactive view of the grader service OpenAPI specification.
 
