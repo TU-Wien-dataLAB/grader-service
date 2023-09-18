@@ -476,7 +476,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
         os.mkdir(self.output_path)
-        self._write_gradebook(self.submission.assignment.properties)
+        self._write_gradebook(self._put_grades_in_assignment_properties())
 
         command = f'{self.convert_executable} autograde ' \
                   f'-i "{self.input_path}" ' \
