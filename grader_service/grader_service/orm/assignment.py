@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
+import json
 from datetime import datetime
 
 from grader_service.api.models import assignment
@@ -63,6 +64,6 @@ class Assignment(Base, Serializable):
             automatic_grading=self.automatic_grading.name,
             max_submissions=self.max_submissions,
             allow_files=self.allow_files,
-            settings=assignment.AssignmentSettings.from_dict(self.settings)
+            settings=assignment.AssignmentSettings.from_dict(json.loads(self.settings))
         )
         return assignment_model

@@ -26,13 +26,13 @@ import {
 } from '../../services/datetime.service';
 import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
 import { grey } from '@mui/material/colors';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Props for SubmissionListComponent.
  */
 interface ISubmissionListProps {
   submissions: Submission[];
-  openFeedback: (s: Submission) => void;
   sx?: SxProps<Theme>;
 }
 
@@ -48,9 +48,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
    *
    */
 
-React.useEffect(() => {
-  console.log("Triggered rerender")
-},[props.submissions])
+  const navigate = useNavigate();
 
   const generateItems = (submissions: Submission[]) => {
     return submissions
@@ -65,8 +63,8 @@ React.useEffect(() => {
               value.feedback_available ? (
                 <Button
                   startIcon={<ChatRoundedIcon />}
-                  size="small"
-                  onClick={() => props.openFeedback(value)}
+                  size='small'
+                  onClick={() => navigate(`feedback/${value.id}`)}
                 >
                   Open feedback
                 </Button>
@@ -91,7 +89,7 @@ React.useEffect(() => {
 
   return (
     <Paper elevation={0} sx={props.sx}>
-      <Card sx={{ mt: 1 }} variant="outlined">
+      <Card sx={{ mt: 1 }} variant='outlined'>
         {props.submissions.length === 0 ? (
           <Typography variant={'body1'} color={grey[500]} sx={{ ml: 1 }}>
             No Submissions Yet

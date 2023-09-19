@@ -145,6 +145,14 @@ components:
             - "grading_failed"
         username:
           type: string
+        grading_score:
+          type: number
+          format: float
+        score_scaling:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
         score:
           type: number
           format: float

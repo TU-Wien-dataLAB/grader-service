@@ -50,7 +50,8 @@ class BaseConverter(LoggingConfigurable):
             "*.pyc",
             "__pycache__",
             "feedback",
-            ".git"
+            ".git",
+            "grader_config.py",
         ],
         help=dedent(
             """
@@ -134,6 +135,24 @@ class BaseConverter(LoggingConfigurable):
             raise TraitError("post_convert_hook must be callable")
         return value
 
+    # Override this method to allow certain traitlets to be overridden
+    # def _allowed_override_keys(self):
+    #     return {
+    #         'ClearSolutions': ['code_stub'],
+    #         'ClearHiddenTests': ['begin_test_delimeter', 'end_test_delimeter'],
+    #     }
+    
+    # Sanitize config to only allow certain keys to be overridden
+    # def _sanitize_config(self, raw_config, allowed_keys):
+    #     sanitized_config = Config()
+    #     for key, value in raw_config.items():
+    #         if key in allowed_keys:
+    #             if isinstance(value, Config):
+    #                 sanitized_config[key] = self._sanitize_config(value, allowed_keys[key])
+    #             else:
+    #                 sanitized_config[key] = value
+    #     return sanitized_config
+
     def __init__(
             self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: typing.Any
     ) -> None:
@@ -148,6 +167,17 @@ class BaseConverter(LoggingConfigurable):
             self.logfile = None
 
         c = Config()
+
+        custom_config_path = f'{self._input_directory}/grader_config.py'
+        if os.path.exists(custom_config_path):
+
+            local_vars = {'c': c}
+            with open(custom_config_path) as f:
+                code = compile(f.read(), 'config.py', 'exec')
+                exec(code, {}, local_vars)
+
+            c = local_vars['c']
+
         c.Exporter.default_preprocessors = []
         self.update_config(c)
 

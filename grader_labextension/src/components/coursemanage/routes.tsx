@@ -21,6 +21,8 @@ import { ManualGrading } from './grading/manual-grading';
 import { EditSubmission } from './grading/edit-submission';
 import { CreateSubmission } from './grading/create-submission';
 
+const shouldReload = (request: Request) => new URL(request.url).searchParams.get('reload') === 'true';
+
 const loadPermissions = async () => {
   try {
     await UserPermissions.loadPermissions();
@@ -33,7 +35,7 @@ const loadPermissions = async () => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 
@@ -49,7 +51,7 @@ const loadLecture = async (lectureId: number) => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 
@@ -65,7 +67,7 @@ const loadAssignment = async (lectureId: number, assignmentId: number) => {
     enqueueSnackbar(error.message, {
       variant: 'error'
     });
-    throw new Error("Could not load data!");
+    throw new Error('Could not load data!');
   }
 };
 

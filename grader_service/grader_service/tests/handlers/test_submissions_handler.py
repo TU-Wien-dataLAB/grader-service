@@ -10,10 +10,11 @@ from re import sub
 import secrets
 from unittest.mock import patch
 
+import isodate
 import pytest
 from grader_service.server import GraderServer
 import json
-from grader_service.api.models.user import User
+from grader_service.orm.assignment import Assignment as AssignmentORM
 from grader_service.api.models.submission import Submission
 from tornado.httpclient import HTTPClientError
 from datetime import timezone
@@ -24,6 +25,7 @@ from .tornado_test_utils import *
 from .db_util import insert_assignments
 from ...api.models.assignment import Assignment
 from ...handlers.base_handler import GraderBaseHandler
+from ...handlers.submissions import SubmissionHandler
 
 
 async def submission_test_setup(sql_alchemy_db, http_server_client, default_user, default_token,
@@ -39,6 +41,39 @@ async def submission_test_setup(sql_alchemy_db, http_server_client, default_user
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     return response
+
+
+@pytest.mark.parametrize("period,expected", [("P0D", 1.0), ("P1D", 0.5), ("P2D", 0.2), ("P3D", 0.1)])
+def test_calculate_late_submission_scaling(period, expected):
+    a = AssignmentORM()
+    now = datetime.utcnow()
+    a.duedate = now
+
+    settings = {
+        "late_submission": [{"period": "P1D", "scaling": 0.5},
+                            {"period": "P2D", "scaling": 0.2},
+                            {"period": "P3D", "scaling": 0.1}]
+    }
+    a.settings = json.dumps(settings)
+
+    submission_ts = now - isodate.parse_duration("PT1S") + isodate.parse_duration(period)
+    assert SubmissionHandler.calculate_late_submission_scaling(a, submission_ts) == expected
+
+
+def test_calculate_late_submission_scaling_error():
+    a = AssignmentORM()
+    now = datetime.utcnow()
+    a.duedate = now
+
+    settings = {
+        "late_submission": [{"period": "P1D", "scaling": 0.5}]
+    }
+    a.settings = json.dumps(settings)
+
+    submission_ts = now + isodate.parse_duration("P1M")
+    from tornado.web import HTTPError
+    with pytest.raises(HTTPError):
+        SubmissionHandler.calculate_late_submission_scaling(a, submission_ts)
 
 
 async def test_get_submissions(
@@ -154,9 +189,6 @@ async def test_get_submissions_filter_wrong(
         )
     e = exc_info.value
     assert e.code == 400
-
-
-
 
 
 async def test_get_submissions_instructor_version(

@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Badge, Box, Tab, Tabs } from '@mui/material';
+import { Badge, Box, Stack, Tab, Tabs } from '@mui/material';
 import PropTypes from 'prop-types';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -58,9 +58,9 @@ export const AssignmentModalComponent = () => {
   }
 
   return (
-    <Box sx={{ height: '95%', overflowY: 'auto' }}>
+    <Stack flexDirection={'column'} sx={{ flex: 1, overflowY: 'auto' }}>
       <Box
-        sx={{ height: '100%', bgcolor: 'background.paper', display: 'flex' }}
+        sx={{ flex: 1, bgcolor: 'background.paper', display: 'flex', overflow: 'hidden' }}
       >
         <Tabs
           orientation='vertical'
@@ -69,7 +69,7 @@ export const AssignmentModalComponent = () => {
         >
           <Tab label='Overview' icon={<DashboardIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
                {...a11yProps(0)} component={Link as any} to={''} />
-          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start'}}
+          <Tab label='Files' icon={<FolderIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
                {...a11yProps(1)} component={Link as any} to={'files'} />
           <Tab label='Submissions' icon={
             <Badge
@@ -87,11 +87,11 @@ export const AssignmentModalComponent = () => {
           <Tab label='Settings' icon={<SettingsIcon />} iconPosition='start' sx={{ justifyContent: 'flex-start' }}
                {...a11yProps(4)} component={Link as any} to={'settings'} />
         </Tabs>
-        <Box sx={{ flexGrow: 1, overflowX: 'auto' }}>
+        <Box sx={{ display: "flex", flexGrow: 1, overflow: 'hidden' }}>
           <Outlet />
         </Box>
       </Box>
-    </Box>
+    </Stack>
 
   );
 

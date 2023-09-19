@@ -56,6 +56,14 @@ class ConverterApp(Application):
         else:
             self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
             raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
+        
+    @validate("config_path")
+    def _config_path_exists(self, proposal) -> str:
+        if os.path.isfile(proposal["value"]):
+            return proposal["value"]
+        else:
+            self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
+            raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
 
     def fail(self, msg, *args):
         """Log the error msg using self.log.error and exit using sys.exit(1)."""
