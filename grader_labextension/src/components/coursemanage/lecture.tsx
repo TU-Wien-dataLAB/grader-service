@@ -43,11 +43,14 @@ import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import { showDialog } from '../util/dialog-provider';
+import { useEffect } from 'react';
+import { Submission } from '../../model/submission';
 
 
 interface IAssignmentTableProps {
   lecture: Lecture;
   rows: Assignment[];
+  setAssignments: React.Dispatch<React.SetStateAction<Assignment[]>>,
 }
 
 const AssignmentTable = (props: IAssignmentTableProps) => {
@@ -101,6 +104,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                           enqueueSnackbar('Successfully Deleted Assignment', {
                             variant: 'success'
                           });
+                          props.setAssignments(props.rows.filter(a => a.id !== row.id));
                         } catch (error: any) {
                           enqueueSnackbar(error.message, {
                             variant: 'error'
@@ -134,13 +138,6 @@ export const LectureComponent = () => {
   const [lectureState, setLecture] = React.useState(lecture);
   const [assignmentsState, setAssignments] = React.useState(assignments);
 
-  const onAssignmentDelete = () => {
-    getAllAssignments(lectureState.id).then(response => {
-      setAssignments(response);
-    });
-    deleteKey('cm-opened-assignment');
-  };
-
   if (navigation.state === 'loading') {
     return (
       <div>
@@ -152,7 +149,7 @@ export const LectureComponent = () => {
   }
 
   return (
-    <Stack direction={'column'} sx={{ m: 5 }}>
+    <Stack direction={'column'} sx={{ m: 5, flex: 1 }}>
       <Typography variant={'h4'} sx={{ mr: 2 }}>
         {lectureState.name}
         {lectureState.complete ? (
@@ -196,7 +193,7 @@ export const LectureComponent = () => {
       </Stack>
 
       <Stack><Typography variant={'h6'}>Assignments</Typography></Stack>
-      <AssignmentTable lecture={lectureState} rows={assignmentsState} />
+      <AssignmentTable lecture={lectureState} rows={assignmentsState} setAssignments={setAssignments} />
     </Stack>
   );
 };

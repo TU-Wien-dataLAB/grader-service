@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 
 import { Assignment } from '../../model/assignment';
-import LoadingOverlay from '../util/overlay';
 import { Lecture } from '../../model/lecture';
 import {
   getAllSubmissions,

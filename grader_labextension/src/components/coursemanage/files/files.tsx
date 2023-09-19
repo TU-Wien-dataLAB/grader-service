@@ -46,6 +46,7 @@ import { RepoType } from '../../util/repo-type';
 import { enqueueSnackbar } from 'notistack';
 import { GitLogModal } from './git-log';
 import { showDialog } from '../../util/dialog-provider';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Props for FilesComponent.
@@ -61,6 +62,9 @@ export interface IFilesProps {
  * @param props props of the file component
  */
 export const Files = (props: IFilesProps) => {
+  const navigate = useNavigate();
+  const reloadPage = () => navigate(0);
+
   const [assignment, setAssignment] = React.useState(props.assignment);
   const [lecture, setLecture] = React.useState(props.lecture);
   const [selectedDir, setSelectedDir] = React.useState('source');
@@ -72,13 +76,16 @@ export const Files = (props: IFilesProps) => {
       setGitLog(logs)
     );
   };
+  const updateRemoteStatus = async () => {
+    let status = await getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE, true);
+    setRepoStatus(status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent');
+  };
   React.useEffect(() => {
     updateGitLog();
   }, [assignmentState]);
 
-  openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`);
 
-  const [reloadFilesToggle, setReloadFiles] = React.useState(false);
+  openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`);
 
   const [repoStatus, setRepoStatus] = React.useState(
     null as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
@@ -113,7 +120,7 @@ export const Files = (props: IFilesProps) => {
       this
     );
 
-    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE).then(
+    getRemoteStatus(props.lecture, props.assignment, RepoType.SOURCE, true).then(
       status => {
         setRepoStatus(
           status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
@@ -121,17 +128,7 @@ export const Files = (props: IFilesProps) => {
       }
     );
   }, [props.assignment, props.lecture]);
-  /**
-   * Reload file view.
-   */
-  const reloadFiles = () => {
-    setReloadFiles(!reloadFilesToggle);
-    getRemoteStatus(lecture, assignment, RepoType.SOURCE).then(status => {
-      setRepoStatus(
-        status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
-      );
-    });
-  };
+
   /**
    * Switches between source and release directory.
    * @param dir dir which should be switched to
@@ -186,6 +183,7 @@ export const Files = (props: IFilesProps) => {
           enqueueSnackbar('Successfully Pushed Assignment', {
             variant: 'success'
           });
+          reloadPage();
         } catch (err) {
           if (err instanceof Error) {
             enqueueSnackbar('Error Pushing Assignment: ' + err.message, {
@@ -273,27 +271,17 @@ export const Files = (props: IFilesProps) => {
       async () => {
         try {
           await pullAssignment(lecture.id, assignment.id, 'source');
-          reloadFiles();
-          getRemoteStatus(
-            props.lecture,
-            props.assignment,
-            RepoType.SOURCE,
-            true
-          ).then(status => {
-            setRepoStatus(
-              status as 'up_to_date' | 'pull_needed' | 'push_needed' | 'divergent'
-            );
-          });
           enqueueSnackbar('Successfully Pulled Assignment', {
             variant: 'success'
           });
+          reloadPage();
         } catch (err) {
           if (err instanceof Error) {
             enqueueSnackbar('Error Pulling Assignment: ' + err.message, {
               variant: 'error'
             });
           } else {
-            console.error('Error cannot intepret unkown as error', err);
+            console.error('Error cannot interpret unknown as error', err);
           }
         }
       });
@@ -304,117 +292,117 @@ export const Files = (props: IFilesProps) => {
       type: 'notebook',
       path: `${lectureBasePath}${lecture.code}/source/${assignment.id}`
     });
+    await updateRemoteStatus();
     await GlobalObjects.docManager.openOrReveal(res.path);
   };
 
   return (
-      <Card elevation={3} sx={{ overflowX: 'auto', m:3, height: '90%', display: 'flex', flexDirection: 'column' }}>
-        <CardHeader
-          title='Files'
-          titleTypographyProps={{ display: 'inline' }}
-          action={
-            <Tooltip title='Reload'>
-              <IconButton aria-label='reload' onClick={() => reloadFiles()}>
-                <ReplayIcon />
-              </IconButton>
+    <Card elevation={3} sx={{ overflowX: 'auto', m: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <CardHeader
+        title='Files'
+        titleTypographyProps={{ display: 'inline' }}
+        action={
+          <Tooltip title='Reload'>
+            <IconButton aria-label='reload' onClick={() => reloadPage()}>
+              <ReplayIcon />
+            </IconButton>
+          </Tooltip>
+        }
+        subheader={
+          repoStatus !== null && (
+            <Tooltip title={getRemoteStatusText(repoStatus)}>
+              {getStatusChip(repoStatus)}
             </Tooltip>
-          }
-          subheader={
-            repoStatus !== null && (
-              <Tooltip title={getRemoteStatusText(repoStatus)}>
-                {getStatusChip(repoStatus)}
-              </Tooltip>
-            )
-          }
-          subheaderTypographyProps={{ display: 'inline', ml: 2 }}
-        />
-        <CardContent sx={{ overflow: 'auto' }}>
-          <Tabs
-            variant='fullWidth'
-            value={selectedDir}
-            onChange={(e, dir) => handleSwitchDir(dir)}
-          >
-            <Tab label='Source' value='source' />
-            <Tab label='Release' value='release' />
-          </Tabs>
-          <Box height={200}>
-            <FilesList
-              path={`${lectureBasePath}${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
-              reloadFiles={reloadFilesToggle}
-            />
-          </Box>
-        </CardContent>
-        <CardActions sx={{marginTop: 'auto'}} >
-          <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
-            <Tooltip
-              title={`Commit Changes${
-                isCommitOverwrite() ? ' (Overwrites remote files!)' : ''
-              }`}
-            >
-              <Button
-                sx={{ mt: -1, mr: 1 }}
-                variant='outlined'
-                size='small'
-                color={isCommitOverwrite() ? 'error' : 'primary'}
-              >
-                <PublishRoundedIcon fontSize='small' sx={{ mr: 1 }} />
-                Push
-              </Button>
-            </Tooltip>
-          </CommitDialog>
+          )
+        }
+        subheaderTypographyProps={{ display: 'inline', ml: 2 }}
+      />
+      <CardContent sx={{ overflow: 'auto' }}>
+        <Tabs
+          variant='fullWidth'
+          value={selectedDir}
+          onChange={(e, dir) => handleSwitchDir(dir)}
+        >
+          <Tab label='Source' value='source' />
+          <Tab label='Release' value='release' />
+        </Tabs>
+        <Box height={200}>
+          <FilesList
+            path={`${lectureBasePath}${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
+          />
+        </Box>
+      </CardContent>
+      <CardActions sx={{ marginTop: 'auto' }}>
+        <CommitDialog handleCommit={msg => handlePushAssignment(msg)}>
           <Tooltip
-            title={`Pull from Remote${
-              isPullOverwrite() ? ' (Overwrites local changes!)' : ''
+            title={`Commit Changes${
+              isCommitOverwrite() ? ' (Overwrites remote files!)' : ''
             }`}
           >
             <Button
-              color={isPullOverwrite() ? 'error' : 'primary'}
-              sx={{ mt: -1 }}
-              onClick={() => handlePullAssignment()}
+              sx={{ mt: -1, mr: 1 }}
               variant='outlined'
               size='small'
+              color={isCommitOverwrite() ? 'error' : 'primary'}
             >
-              <GetAppRoundedIcon fontSize='small' sx={{ mr: 1 }} />
-              Pull
+              <PublishRoundedIcon fontSize='small' sx={{ mr: 1 }} />
+              Push
             </Button>
           </Tooltip>
-          <Tooltip title={'Create new notebook.'}>
-            <Button
-              variant='outlined'
-              size='small'
-              sx={{ mt: -1 }}
-              onClick={newUntitled}
-            >
-              <AddIcon fontSize='small' sx={{ mr: 1 }} />
-              Add new
-            </Button>
-          </Tooltip>
-          <GitLogModal gitLogs={gitLogs} />
-          <Tooltip title={'Show in File-Browser'}>
-            <IconButton
-              sx={{ mt: -1, pt: 0, pb: 0 }}
-              color={'primary'}
-              onClick={() =>
-                openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
-              }
-            >
-              <OpenInBrowserIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={'Open in Terminal'}>
-            <IconButton
-              sx={{ mt: -1, pt: 0, pb: 0 }}
-              color={'primary'}
-              onClick={() =>
-                openTerminal(
-                  `${serverRoot}/${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`
-                )
-              }
-            >
-              <TerminalIcon />
-            </IconButton>
-          </Tooltip>
-        </CardActions>
-      </Card>
+        </CommitDialog>
+        <Tooltip
+          title={`Pull from Remote${
+            isPullOverwrite() ? ' (Overwrites local changes!)' : ''
+          }`}
+        >
+          <Button
+            color={isPullOverwrite() ? 'error' : 'primary'}
+            sx={{ mt: -1 }}
+            onClick={() => handlePullAssignment()}
+            variant='outlined'
+            size='small'
+          >
+            <GetAppRoundedIcon fontSize='small' sx={{ mr: 1 }} />
+            Pull
+          </Button>
+        </Tooltip>
+        <Tooltip title={'Create new notebook.'}>
+          <Button
+            variant='outlined'
+            size='small'
+            sx={{ mt: -1 }}
+            onClick={newUntitled}
+          >
+            <AddIcon fontSize='small' sx={{ mr: 1 }} />
+            Add new
+          </Button>
+        </Tooltip>
+        <GitLogModal gitLogs={gitLogs} />
+        <Tooltip title={'Show in File-Browser'}>
+          <IconButton
+            sx={{ mt: -1, pt: 0, pb: 0 }}
+            color={'primary'}
+            onClick={() =>
+              openBrowser(`${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`)
+            }
+          >
+            <OpenInBrowserIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={'Open in Terminal'}>
+          <IconButton
+            sx={{ mt: -1, pt: 0, pb: 0 }}
+            color={'primary'}
+            onClick={() =>
+              openTerminal(
+                `${serverRoot}/${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`
+              )
+            }
+          >
+            <TerminalIcon />
+          </IconButton>
+        </Tooltip>
+      </CardActions>
+    </Card>
   );
 };

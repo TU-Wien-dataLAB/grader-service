@@ -17,14 +17,12 @@ export class AssignmentManageView extends ReactWidget {
   /**
    * Construct a new assignment list widget
    */
-  root: HTMLElement;
   router: Router;
 
   constructor(options: AssignmentManageView.IOptions = {}) {
     super();
     this.id = options.id;
     this.addClass('GradingWidget');
-    this.root = this.node;
 
     const savedPath = loadString('assignment-manage-react-router-path');
     let path = '/';
@@ -32,7 +30,7 @@ export class AssignmentManageView extends ReactWidget {
       console.log(`Restoring path: ${savedPath}`);
       path = savedPath;
     }
-    this.router = createMemoryRouter(getRoutes(this.root), { initialEntries: [path] });
+    this.router = createMemoryRouter(getRoutes(), { initialEntries: [path] });
   }
 
   render() {

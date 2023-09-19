@@ -15,7 +15,6 @@ import subprocess
 from http import HTTPStatus
 
 from grader_service.autograding.grader_executor import GraderExecutor
-
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 import tornado
@@ -396,7 +395,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.feedback_available = sub_model.feedback_available or False
-        if sub_model.score_scaling and sub.score_scaling != sub_model.score_scaling:
+        if sub_model.score_scaling is not None and sub.score_scaling != sub_model.score_scaling:
             sub.score_scaling = sub_model.score_scaling
             sub.score = sub_model.score_scaling * sub.grading_score
         self.session.commit()

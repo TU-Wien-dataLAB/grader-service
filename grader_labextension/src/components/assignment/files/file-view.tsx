@@ -11,7 +11,7 @@ import { Submission } from '../../../model/submission';
 import { submissionsReducer } from '../reducers';
 
 export const FileView = () => {
-    const { lecture, assignments } = useRouteLoaderData('lecture') as {
+    const { lecture, assignments } = useRouteLoaderData('lecture') as {
         lecture: Lecture,
         assignments: Assignment[]
     };

@@ -55,34 +55,32 @@ export const CourseManageComponent = () => {
   const [showComplete, setShowComplete] = useState(false);
 
   return (
-    <div className='course-list'>
+    <Stack direction={'column'} sx={{ m: 5, flex: 1, overflow: 'hidden' }}>
       <Stack direction='row' justifyContent='center'>
         <Typography variant={'h4'}>Course Management</Typography>
       </Stack>
-      <Box sx={{ m: 5 }}>
-        <Stack direction={'row'} justifyContent='space-between'>
-          <Typography variant={'h6'} sx={{ mb: 1 }}>
-            Lectures
-          </Typography>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showComplete}
-                  onChange={ev => setShowComplete(ev.target.checked)}
-                />
-              }
-              label='Completed Lectures'
-            />
-          </FormGroup>
-        </Stack>
+      <Stack direction={'row'} justifyContent='space-between'>
+        <Typography variant={'h6'} sx={{ mb: 1 }}>
+          Lectures
+        </Typography>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showComplete}
+                onChange={ev => setShowComplete(ev.target.checked)}
+              />
+            }
+            label='Completed Lectures'
+          />
+        </FormGroup>
+      </Stack>
 
-        <LectureTable
-          rows={
-            showComplete ? allLectures.completedLectures : allLectures.lectures
-          }
-        />
-      </Box>
-    </div>
+      <LectureTable
+        rows={
+          showComplete ? allLectures.completedLectures : allLectures.lectures
+        }
+      />
+    </Stack>
   );
 };

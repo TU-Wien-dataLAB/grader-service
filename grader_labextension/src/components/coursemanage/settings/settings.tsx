@@ -167,7 +167,7 @@ export const SettingsComponent = () => {
   });
 
   return (
-    <Box ml={'50px'} mr={'50px'}>
+    <Box sx={{ m: 5, flex: 1, overflow: 'auto' }}>
       <SectionTitle title='Settings' />
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={2} sx={{ ml: 2, mr: 2 }}>
@@ -329,7 +329,7 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Button color='primary' variant='contained' type='submit' sx={{ mt: 2 }}>
+        <Button color='primary' variant='contained' type='submit'>
           Save changes
         </Button>
       </form>
