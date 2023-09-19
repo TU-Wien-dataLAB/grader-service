@@ -45,14 +45,12 @@ data:
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
 
     {{- if .Values.requestHandlerConfig.enable_lti_features }}
+
     c.RequestHandlerConfig.enable_lti_features = True
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url | quote }}
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
-
-    {{- if .Values.requestHandlerConfig.resolve_lti_urls }}
     c.RequestHandlerConfig.resolve_lti_urls = {{ .Values.requestHandlerConfig.resolve_lti_urls }}
-    {{- end }}
 
     {{ end }}
 
