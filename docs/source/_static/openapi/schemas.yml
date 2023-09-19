@@ -55,6 +55,24 @@ components:
         name: "Informationsvisualisierung"
         code: "ivs21"
         complete: false
+    AssignmentSettings:
+      type: "object"
+      properties:
+        late_submission:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/SubmissionPeriod'
+    SubmissionPeriod:
+      type: "object"
+      properties:
+        period:
+          type: "string"
+        scaling:
+          type: "number"
+          format: "float"
+      example:
+          period: "P1W1D"
+          scaling: 0.5
     Assignment:
       type: "object"
       properties:
@@ -93,6 +111,8 @@ components:
           type: integer
         allow_files:
           type: boolean
+        settings:
+          $ref: "#/components/schemas/AssignmentSettings"
       example:
         id: 1
         name: "assignment_1"
@@ -126,6 +146,14 @@ components:
             - "grading_failed"
         username:
           type: string
+        grading_score:
+          type: number
+          format: float
+        score_scaling:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
         score:
           type: number
           format: float

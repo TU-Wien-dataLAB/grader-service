@@ -19,18 +19,30 @@ a tutor in one lecture.
     You can find how to enable extensions `here <https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager>`_.
     Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 
+One Instance Hub vs. Multiple Instances Hub
+============================================
+In winter semester 2023 we are introducing One Instance Hub, which allows you to have all of your lectures in one place and easily manage them. 
+If you are using Jupyter as a Service for multiple lectures, they are now shown in one list. In each lecture 
+you can manage as many assignments as needed and this process and navigation between assignments has been made
+easier. You can also switch between completed and current lectures and review assignments that were monitored in completed lectures. 
+Students who are enrolled in multiple lectures using Jupyter as a Service will see all of their lecturers and assignments in one place, 
+eliminating the need to follow a link provided in each TUWEL course that uses Jupyter as a Service. Once they are logged into JupyterHub,
+they can access all of their lectures and assignments released in those lectures.
 
 Create Your First Assignment
 =============================
 Before students can access the notebooks, an assignment must be created.
-To access this feature, open the course management dashboard:
+To access this feature, open the course management dashboard and navigate to desired lecture:
 
-.. image:: _static/assets/images/course_management.png
-    :alt: course management dashboard
+.. image:: _static/assets/images/courses.png
+    :alt: course management list
 
-The course management dashboard lists all lectures and their assignments if the current user is an instructor.
-By pressing on the "+" field below the lecture name, instructors can
-add new assignments to the lecture:
+| The course management table lists all assignments in the chosen lecture and lets you easily manage them:
+
+.. image:: _static/assets/images/assignments.png
+    :alt: assignment list
+
+| By pressing on the "+ NEW" button on top of the assignment list, instructors can add new assignments to the lecture:
 
 .. image:: _static/assets/images/add_assignment.png
     :alt: add assignment dialog
@@ -53,15 +65,13 @@ To view these directories, use the files card in the overview window of the assi
 By switching between source and release file viewer, the extension will convert the source notebooks to their release versions.
 
 .. image:: _static/assets/images/file_view.png
-    :width: 300
     :alt: file view
-    :align: center
 
 .. note::
     Just the source notebooks and files should be edited! Changes to files in the release directory will be lost when generating the files again.
 
 The grader service and labextension use git to support the collaborative creation of assignments. Also, it provides a simple way to distribute the files to the students.
-Notebooks can be added by either using the "Create a new notebook" button or by copying files directly into the correct source directory via the file browser.
+Notebooks can be added by either using the "Create a new notebook" button or by copying files directly into the correct source directory via the file browser on left-hand side.
 
 The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
 
@@ -76,8 +86,7 @@ As mentioned previously, we can either add a notebook from the file view or crea
     :alt: creation mode
     :align: center
 
-For notebooks which are in the source directory, a creation mode can be enabled in the notebook toolbar.
-It adds widgets around notebook cells that can be used to control the function of the code cell.
+| For notebooks which are in the source directory, a creation mode can be enabled in the notebook toolbar. It adds widgets around notebook cells that can be used to control the function of the code cell.
 
 Grader Cell Types:
 
@@ -120,22 +129,20 @@ Grader Cell Types:
         :alt: manual answer
         :align: center
 
-- Manual graded task
-    This cell type represents an abstract task description.
-    It is intended for a general description of what should be done and students are free to implement the task however they see fit where the answer could span several cells.
-    The task can only be given in a markdown cell.
 
 Assignment Lifecycle
 =====================================
 
 .. image:: _static/assets/images/assignment_status.png
+    :width: 400
     :alt: assignment status
+    :align: center
 
-An assignment can have 3 states that can be switched between and represent the lifecycle of the assignment.
+| An assignment can have 3 states that can be switched between and represent the lifecycle of the assignment.
 
 - Edit
     When first created, the assignment is in "Edit mode", where the assignment files can be added and edited.
-    In this stage, the assignment is not visible to students. However, when an instructor opens the student window, it will be displayed to them.
+    In this stage, the assignment is not visible to students. However, when an instructor opens the student view ("Assignments" card in launcher), it will be displayed to them.
 - Released
     The assignment is released to students and the students can work on it.
     The released files are identical to the files in the release directory at the time of the release.
@@ -154,12 +161,14 @@ An assignment can have 3 states that can be switched between and represent the l
 Grading Assignments
 =====================================
 
-Student submissions can be graded when switching to the Submissions tab at the bottom of the overview window.
+To grade student submissions navigate to submissions tab:
 
 .. image:: _static/assets/images/submission_grading.png
     :alt: submission grading
 
-Submissions can be selected from the list and actions can be performed on the submissions.
+
+| Submissions can be selected from the list and actions can be performed on the submissions.
+
 Grader Service supports batch auto-grading and batch feedback generation of several submissions.
 Naturally, submissions have to be manually graded individually.
 
@@ -190,44 +199,56 @@ It specifies the action taken when a user submits an assignment.
 
 
 Student Guide
-=====================================
+===============
 
-Students are presented with a list of assignments for them to solve.
-The card of an assignment provides an overview of the assignment, such as the number of submissions, whether feedback for one submission is available and the maximum points reached in a submission.
-It also shows a countdown of the deadline.
+When Juypterhub is launched students see only the Assignments card:
 
-.. image:: _static/assets/images/student_overview.png
-    :alt: student overview
-
-When clicking on an assignment card, students are presented with a detailed view of the assignment that lets them work on the assignment and make submissions.
+.. image:: _static/assets/images/student_launcher.png
+    :alt: student launcher
 
 
-.. image:: _static/assets/images/student_view.png
+| Studnets are presented with a list of courses they are enrolled in. They can also see completed lectures from previous semesters as well and take a look at their old assignments:
+
+.. image:: _static/assets/images/student_lecture_list.png
+    :alt: student lecture list 
+
+| Each lecture has its dedicated assignment table, with each table cell representing an assignment along with a brief overview.
+
+.. image:: _static/assets/gifs/student_assignment_table.gif
+    :alt: assignment overview for studnets
+
+| If a new assignment is released for students, students must first pull it from the remote repository in order to obtain assignment files they can work on. Afterwards, an "Edit" icon will be shown in the table cell.
+
+| Each table cell displays the name of the assignment, indicates whether feedback for submission is available, and shows the maximum points reached in the submission. Each table cell also features a countdown of the deadline. Once the deadline has been reached, students can no longer submit the assignment files.
+
+When clicking on an assignment table cell or the 'Detail View' button, students are presented with a detailed view of the assignment, allowing them to work on the assignment and make submissions.
+
+
+.. image:: _static/assets/images/student_detail_view.png
     :alt: student view
 
-The status bar is supposed to guide the students through the stages, from working on the assignment to viewing the feedback they received.
+| The status bar is supposed to guide the students through the stages, from working on the assignment to viewing the feedback they received.
 
 The files in the assignment are displayed in a list and can be opened from there. The submit button submits the current state of the assignment.
 To reset the assignment to its original state, students can use the reset button.
 No progress is lost when resetting the assignment, the release state is just a new commit in the underlying git repository.
 
-Submissions are shown in the submission list. If a submission has feedback available, it will be displayed in this submission list and can be viewed from there.
+Submissions are shown in the submission list. On top of the submission list is a chip that tells the students wheter there is a limited number of submissions they are allowed to make until the deadline has been reached.
+If a submission has feedback available, it will be displayed in this submission list and can be viewed from there.
 
 .. image:: _static/assets/images/student_view_feedback.png
     :alt: student view feedback
 
-Once the student submissions have been graded and feedback is available we can see it in the submission list and can open the feedback view.
-It will present an overview of the score reached and a list of detailed feedback for each graded notebook.
+| Once the student submissions have been graded and feedback is available we can see it in the submission list and can open the feedback view. It will present an overview of the score reached and a list of detailed feedback for each graded notebook.
 
-.. image:: _static/assets/images/feedback_view.png
+.. image:: _static/assets/images/student_feedback_window.png
     :alt: feedback view
 
-The detailed feedback is a HTML file and shows the student answers along with the score and comments from instructors.
+| The detailed feedback is a HTML file and shows the student answers along with the score and comments from instructors.
 
 .. image:: _static/assets/images/feedback_html.png
     :alt: feedback html
 
-.. note::
-    You may have to click the "Trust HTML" button to view the feedback file.
+
 
 

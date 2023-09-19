@@ -63,7 +63,7 @@ Grader Service offers lecturers and students a well integrated teaching environm
 
 Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
 
-.. image:: ./docs/source/_static/assets/gifs/release2_small.gif
+.. image:: ./docs/source/_static/assets/gifs/labextension_update.gif
 
 Requirements
 ===========
