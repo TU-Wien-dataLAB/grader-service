@@ -56,3 +56,5 @@ data:
     [user]
       name = {{ .Values.gitConfig.gitUser }}
       email = {{ .Values.gitConfig.gitEmail }}
+    [init]
+      defaultBranch: main
