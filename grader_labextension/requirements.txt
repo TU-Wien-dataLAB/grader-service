@@ -7,4 +7,3 @@ hatch>=1.7
 hatch-jupyter-builder>=0.5
 hatch-nodejs-version
 jupyterlab<5,>=4.0.0
-
