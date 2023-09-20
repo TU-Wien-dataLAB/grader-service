@@ -40,8 +40,8 @@ data:
     {{ end }}
 
     c.GraderService.db_url = "{{ .Values.db.url }}"
-    c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size }}
-    c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
+    c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
+    c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int}}
 
     {{- if .Values.requestHandlerConfig.enable_lti_features }}
     c.RequestHandlerConfig.enable_lti_features = True
