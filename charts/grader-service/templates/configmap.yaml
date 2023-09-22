@@ -26,6 +26,7 @@ data:
     {{- if .Values.kubeAutogradeExecutor.resolveImageName }}
     c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
     {{- else }}
+
     c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
     {{- end }}
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
@@ -44,10 +45,13 @@ data:
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size }}
 
     {{- if .Values.requestHandlerConfig.enable_lti_features }}
+
     c.RequestHandlerConfig.enable_lti_features = True
     c.RequestHandlerConfig.lti_token_url = {{ .Values.requestHandlerConfig.lti_token_url | quote }}
     c.RequestHandlerConfig.lti_client_id = {{ .Values.requestHandlerConfig.lti_client_id | quote }}
     c.RequestHandlerConfig.lti_token_private_key = {{ .Values.requestHandlerConfig.lti_token_private_key | quote }}
+    c.RequestHandlerConfig.resolve_lti_urls = {{ .Values.requestHandlerConfig.resolve_lti_urls }}
+
     {{ end }}
 
 

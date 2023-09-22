@@ -69,6 +69,7 @@ requestHandlerConfig:
   lti_token_url: ""
   lti_username_convert: null
   lti_token_private_key: ""
+  resolve_lti_urls: null
   max_buffer_size: 104857600
   max_body_size: 104857600
 
