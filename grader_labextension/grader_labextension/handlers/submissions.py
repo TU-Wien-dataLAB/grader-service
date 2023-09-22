@@ -334,3 +334,43 @@ class LtiSyncHandler(ExtensionBaseHandler):
                 synced_user += 1
 
         self.write({"syncable_users": syncable_user_count, "synced_user": synced_user})
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/single\/?",
+)
+class LtiSingleSyncHandler(ExtensionBaseHandler):
+
+    async def put(self, lecture_id: int, assignment_id: int):
+
+        student = requests.get(HandlerConfig.instance().hub_api_url + "/users/" + self.user_name,
+                                  headers={"Authorization": "token " + HandlerConfig.instance().hub_api_token})
+        
+        if student["auth_state"] is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, "Auth state of current user could not be found! Please logout and "
+                                                  "login again and check if enable_auth_state is enabled in JupyterHub!")
+        
+        # TODO: get the right student's ID from auth state
+        student_id = student["auth_state"]["user_id"]
+
+        # defines the mode how to sync the score, default latest (options: latest, best)
+        sync_mode = self.get_query_argument("sync_mode", "latest")
+
+        data = {
+            "student_id": student_id,
+            "sync_mode": sync_mode
+        }
+
+        try:
+            # send a POST request to the grader-service to sync this student's score
+            response = await self.request_service.request(
+                method="PUT",
+                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/lti/single",
+                data=data,
+                header=self.grader_authentication_header
+            )
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason=e.response.reason)
+        
+        self.write(response)

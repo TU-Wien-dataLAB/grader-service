@@ -635,6 +635,7 @@ class SubmissionEditHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
+    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
     @authorize([Scope.instructor])
@@ -676,6 +677,123 @@ class LtiSyncHandler(GraderBaseHandler):
 
         self.write_json(scores)
 
+
+    async def request_bearer_token(self):
+        # get config variables
+        lti_client_id = RequestHandlerConfig.instance().lti_client_id
+        if lti_client_id is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
+        lti_token_url = RequestHandlerConfig.instance().lti_token_url
+        if lti_token_url is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
+
+        private_key = RequestHandlerConfig.instance().lti_token_private_key
+        if private_key is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND,
+                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
+        if callable(private_key):
+            private_key = private_key()
+
+        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
+                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
+                   "jti": str(int(time.time())) + "123"}
+        try:
+            encoded = jwt.encode(payload, private_key, algorithm="RS256")
+        except Exception as e:
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
+        self.log.info("encoded: " + encoded)
+        scopes = [
+            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+        ]
+        scopes = url_escape(" ".join(scopes))
+        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
+               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
+        self.log.info("data: " + data)
+
+        httpclient = AsyncHTTPClient()
+        try:
+            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
+                                                          headers={
+                                                              "Content-Type": "application/x-www-form-urlencoded"}))
+        except HTTPClientError as e:
+            self.log.error(e.response)
+            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
+        return json_decode(response.body)["access_token"]
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/single\/?",
+)
+class LtiSingleSyncHandler(GraderBaseHandler):
+
+    # TODO: manage lti_urls function through traitlet
+    def lti_autosync_url():
+        return ('memebership_url', 'lineitem_url')
+    
+    # lti_autosync_url = CallableTrait(default_value=lti_autosync_url,
+    #                                      config=True,
+    #                                      allow_none=True)
+     
+    # Note: duplicate code from LtiSyncHandler, token now get cached two times
+    cache_token = {"token": None, "ttl": datetime.datetime.now()}
+
+    async def put(self, lecture_id: int, assignment_id: int):
+
+        data = self.request.body_arguments
+        
+        student_id = data.get('student_id')
+        sync_mode = data.get("sync_mode", "latest")
+        
+        if sync_mode == 'latest':
+            # TODO: check how to fetch latest subs
+            submission = None
+        elif sync_mode == 'best':
+            # TODO: check how to fetch latest subs
+            submission = None
+        else:
+            raise ValueError(f"Invalid sync_mode '{sync_mode}'")
+        
+        if submission is not None:
+
+            # fetch lti cached token or update if expired
+            stamp = datetime.datetime.now()
+            if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
+                    minutes=50):
+                token = LtiSyncHandler.cache_token["token"]
+            else:
+                token = await self.request_bearer_token()
+                LtiSyncHandler.cache_token["token"] = token
+                LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
+
+            # TODO: get memebershipurl and lineitemurl from traitlet
+            # membership_url, lineitemurl_url = lti_autosync_url()
+            membership_url, lineitems_url = None, None
+
+            # TODO: check if user exits in lti (tuwel) and has a valid
+            httpclient = AsyncHTTPClient()
+            try:
+                members = await httpclient.fetch(HTTPRequest(url=membership_url, method="GET", headers={"Authorization": "Bearer " + token,
+                                    "Accept": "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"}))
+            except HTTPClientError as e:
+                self.log.error(e.response)
+                raise HTTPError(e.code, reason="Unable to request membership_url:" + e.response.reason)
+
+            # TODO: create lineitem if not exists and send lineitem_body
+            try:
+                lineitems = await httpclient.fetch(HTTPRequest(url=membership_url, method="GET", headers={"Authorization": "Bearer " + token,
+                                    "Accept": "application/vnd.ims.lis.v2.lineitemcontainer+json"}))
+            except HTTPClientError as e:
+                self.log.error(e.response)
+                raise HTTPError(e.code, reason="Unable to request membership_url:" + e.response.reason)
+
+        self.write({})
+
+
+    # TODO: refactor, function is duplicated
     async def request_bearer_token(self):
         # get config variables
         lti_client_id = RequestHandlerConfig.instance().lti_client_id
