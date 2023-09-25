@@ -20,5 +20,4 @@ class ConfigHandler(GraderBaseHandler):
         Gathers useful config for the grader labextension and returns it.
         :return: config in dict
         """
-        handler_config = RequestHandlerConfig.instance()
-        self.write({"enable_lti_features": handler_config.enable_lti_features})
+        self.write({})

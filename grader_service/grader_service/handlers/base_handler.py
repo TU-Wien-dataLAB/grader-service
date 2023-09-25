@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
 
 from traitlets import Type, Integer, TraitType, Unicode, Union, Bool
-from traitlets import Callable as CallableTrait
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
@@ -393,8 +392,7 @@ class VersionHandler(GraderBaseHandler):
         self.write("1.0")
 
 
-def lti_username_convert(username: str) -> str:
-    return username
+
 
 
 @register_handler(r"\/", VersionSpecifier.V1)
@@ -424,21 +422,4 @@ class RequestHandlerConfig(SingletonConfigurable):
                                             allow_none=False,
                                             config=True)
 
-    enable_lti_features = Bool(False, config=True)
-    lti_client_id = Unicode(None, config=True, allow_none=True)
-    lti_token_url = Unicode(None, config=True, allow_none=True)
-    # function used to change the hub username to the lti sourcedid value
-    help_msg = "Converts the grader service username to the lti sourced id."
-    lti_username_convert = CallableTrait(default_value=lti_username_convert,
-                                         config=True,
-                                         allow_none=True,
-                                         help=help_msg)
-    lti_token_private_key = Union(
-        [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)),
-         CallableTrait(None)],
-        allow_none=True,
-        config=True,
-        help="""
-        Private Key used to encrypt bearer token request
-        """,
-    )
+    

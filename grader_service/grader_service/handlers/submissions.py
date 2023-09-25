@@ -3,12 +3,9 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
 import json
 import shutil
-import time
-
-import jwt
+from grader_service.plugins.lti import LTISyncGrades
 import os.path
 import subprocess
 from http import HTTPStatus
@@ -17,8 +14,6 @@ from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 import tornado
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
-from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.submission import Submission
@@ -303,6 +298,9 @@ class SubmissionHandler(GraderBaseHandler):
                     on_finish=lambda: GraderExecutor.instance().submit(
                         feedback_executor.start)
                 )
+                # Trigger LTI Plugin
+                # TODO FIX THIS, Wrong parameters
+                await LTISyncGrades.instance().start(lecture_id, assignment_id, [submission], sync_on_feedback=True)
             else:
                 GraderExecutor.instance().submit(
                     executor.start,
@@ -653,189 +651,14 @@ class LtiSyncHandler(GraderBaseHandler):
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
                           Submission.assignid == assignment_id) & Submission.feedback_available)
             .all())
-
+        
+        lecture =  self.session.query(Lecture).get(lecture_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
-
-        if lti_username_convert is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to match users: lti_username_convert is not set in grader "
-                                   "config")
-
-        scores = [{"id": s.id, "username": lti_username_convert(s.username), "score": s.score} for s in submissions]
-        stamp = datetime.datetime.now()
-        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
-                minutes=50):
-            token = LtiSyncHandler.cache_token["token"]
-        else:
-            token = await self.request_bearer_token()
-            LtiSyncHandler.cache_token["token"] = token
-            LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
-
-        scores = {"assignment": assignment, "scores": scores, "token": token}
-
-        self.write_json(scores)
-
-
-    async def request_bearer_token(self):
-        # get config variables
-        lti_client_id = RequestHandlerConfig.instance().lti_client_id
-        if lti_client_id is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
-        lti_token_url = RequestHandlerConfig.instance().lti_token_url
-        if lti_token_url is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
-
-        private_key = RequestHandlerConfig.instance().lti_token_private_key
-        if private_key is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
-        if callable(private_key):
-            private_key = private_key()
-
-        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
-                   "jti": str(int(time.time())) + "123"}
+        lti_plugin = LTISyncGrades.instance()
         try:
-            encoded = jwt.encode(payload, private_key, algorithm="RS256")
+            results = await lti_plugin.start(lecture, assignment, submissions)
         except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
-        self.log.info("encoded: " + encoded)
-        scopes = [
-            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
-            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-        ]
-        scopes = url_escape(" ".join(scopes))
-        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
-               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
-        self.log.info("data: " + data)
-
-        httpclient = AsyncHTTPClient()
-        try:
-            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
-                                                          headers={
-                                                              "Content-Type": "application/x-www-form-urlencoded"}))
-        except HTTPClientError as e:
-            self.log.error(e.response)
-            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
-        return json_decode(response.body)["access_token"]
-
-
-@register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/single\/?",
-)
-class LtiSingleSyncHandler(GraderBaseHandler):
-
-    # TODO: manage lti_urls function through traitlet
-    def lti_autosync_url():
-        return ('memebership_url', 'lineitem_url')
-    
-    # lti_autosync_url = CallableTrait(default_value=lti_autosync_url,
-    #                                      config=True,
-    #                                      allow_none=True)
-     
-    # Note: duplicate code from LtiSyncHandler, token now get cached two times
-    cache_token = {"token": None, "ttl": datetime.datetime.now()}
-
-    async def put(self, lecture_id: int, assignment_id: int):
-
-        data = self.request.body_arguments
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
         
-        student_id = data.get('student_id')
-        sync_mode = data.get("sync_mode", "latest")
-        
-        if sync_mode == 'latest':
-            # TODO: check how to fetch latest subs
-            submission = None
-        elif sync_mode == 'best':
-            # TODO: check how to fetch latest subs
-            submission = None
-        else:
-            raise ValueError(f"Invalid sync_mode '{sync_mode}'")
-        
-        if submission is not None:
-
-            # fetch lti cached token or update if expired
-            stamp = datetime.datetime.now()
-            if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
-                    minutes=50):
-                token = LtiSyncHandler.cache_token["token"]
-            else:
-                token = await self.request_bearer_token()
-                LtiSyncHandler.cache_token["token"] = token
-                LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
-
-            # TODO: get memebershipurl and lineitemurl from traitlet
-            # membership_url, lineitemurl_url = lti_autosync_url()
-            membership_url, lineitems_url = None, None
-
-            # TODO: check if user exits in lti (tuwel) and has a valid
-            httpclient = AsyncHTTPClient()
-            try:
-                members = await httpclient.fetch(HTTPRequest(url=membership_url, method="GET", headers={"Authorization": "Bearer " + token,
-                                    "Accept": "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"}))
-            except HTTPClientError as e:
-                self.log.error(e.response)
-                raise HTTPError(e.code, reason="Unable to request membership_url:" + e.response.reason)
-
-            # TODO: create lineitem if not exists and send lineitem_body
-            try:
-                lineitems = await httpclient.fetch(HTTPRequest(url=membership_url, method="GET", headers={"Authorization": "Bearer " + token,
-                                    "Accept": "application/vnd.ims.lis.v2.lineitemcontainer+json"}))
-            except HTTPClientError as e:
-                self.log.error(e.response)
-                raise HTTPError(e.code, reason="Unable to request membership_url:" + e.response.reason)
-
-        self.write({})
-
-
-    # TODO: refactor, function is duplicated
-    async def request_bearer_token(self):
-        # get config variables
-        lti_client_id = RequestHandlerConfig.instance().lti_client_id
-        if lti_client_id is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
-        lti_token_url = RequestHandlerConfig.instance().lti_token_url
-        if lti_token_url is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
-
-        private_key = RequestHandlerConfig.instance().lti_token_private_key
-        if private_key is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
-        if callable(private_key):
-            private_key = private_key()
-
-        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
-                   "jti": str(int(time.time())) + "123"}
-        try:
-            encoded = jwt.encode(payload, private_key, algorithm="RS256")
-        except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
-        self.log.info("encoded: " + encoded)
-        scopes = [
-            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
-            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-        ]
-        scopes = url_escape(" ".join(scopes))
-        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
-               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
-        self.log.info("data: " + data)
-
-        httpclient = AsyncHTTPClient()
-        try:
-            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
-                                                          headers={
-                                                              "Content-Type": "application/x-www-form-urlencoded"}))
-        except HTTPClientError as e:
-            self.log.error(e.response)
-            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
-        return json_decode(response.body)["access_token"]
+        self.write_json(results)

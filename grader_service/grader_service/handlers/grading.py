@@ -7,6 +7,9 @@ from http import HTTPStatus
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.autograding.grader_executor import GraderExecutor
+from grader_service.orm.assignment import Assignment
+from grader_service.orm.lecture import Lecture
+from grader_service.plugins.lti import LTISyncGrades
 from .handler_utils import parse_ids
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Scope
@@ -61,6 +64,7 @@ class GradingAutoHandler(GraderBaseHandler):
         submission = self.session.query(Submission).get(sub_id)
         self.set_status(HTTPStatus.ACCEPTED,
                         reason="Autograding submission process started")
+        
         self.write_json(submission)
 
 
@@ -96,7 +100,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         lecture_id, assignment_id, sub_id = parse_ids(
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
-        submission = self.get_submission(lecture_id, assignment_id, sub_id)
+        submission = self.session.query(Submission).get(sub_id)
         executor = GenerateFeedbackExecutor(
             self.application.grader_service_dir, submission,
             config=self.application.config
@@ -106,7 +110,10 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lambda: self.log.info(f"Successfully generated feedback \
              for submission {submission.id}!")
         )
-        submission = self.session.query(Submission).get(sub_id)
         self.set_status(HTTPStatus.ACCEPTED,
                         reason="Generating feedback process started")
+        
+        # TODO FIX THIS, wrong parametes
+        await LTISyncGrades.instance().start(lecture_id, assignment_id, [submission], sync_on_feedback=True)
+
         self.write_json(submission)
