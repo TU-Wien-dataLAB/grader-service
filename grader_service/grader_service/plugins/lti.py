@@ -20,7 +20,7 @@ def default_lti_username_convert(username: str) -> str:
 def default_enable_lti(lecture, assignment, submissions):
     return {"enable_lti": False, "sync_on_feedback": False}
 
-class LTISyncGrades(SingletonConfigurable, SessionMixin):
+class LTISyncGrades(SingletonConfigurable):
     enable_lti_features = Union(
         [Dict({"enable_lti": False, "sync_on_feedback": False}),
          Callable(default_enable_lti)],
