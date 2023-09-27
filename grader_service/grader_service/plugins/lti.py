@@ -13,16 +13,18 @@ from http import HTTPStatus
 from tornado.escape import url_escape, json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.web import HTTPError
+from tornado_sqlalchemy import SessionMixin
+
 
 def default_lti_username_convert(username: str) -> str:
     return username
 
 def default_enable_lti(lecture, assignment, submissions):
-    return {"enable_lti": False, "sync_on_feedback": False}
+    return {"enable_lti": True, "sync_on_feedback": True}
 
-class LTISyncGrades(SingletonConfigurable):
+class LTISyncGrades(SingletonConfigurable, SessionMixin):
     enable_lti_features = Union(
-        [Dict({"enable_lti": False, "sync_on_feedback": False}),
+        [Dict({"enable_lti": True, "sync_on_feedback": True}),
          Callable(default_enable_lti)],
         allow_none=True,
         config=True,
@@ -74,7 +76,9 @@ class LTISyncGrades(SingletonConfigurable):
         else:
             return False
             
-    async def start(self, lecture, assignment, submissions: list[Submission], sync_on_feedback=False):
+    async def start(self, lecture: dict, assignment: dict, submissions: list[dict], sync_on_feedback=False):
+
+        self.log.info(f'{lecture} {assignment} {submissions}')
         if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
             return
         
@@ -119,10 +123,10 @@ class LTISyncGrades(SingletonConfigurable):
         syncable_user_count = 0
         for submission in submissions:
             for member in members:
-                if member["lis_person_sourcedid"] == self.username_convert(submission.username):
+                if member["lis_person_sourcedid"] == self.username_convert(submission["username"]):
                     syncable_user_count += 1
-                    grades.append(self.build_grade_publish_body(member["user_id"], submission.score,
-                                                           float(assignment.points)))
+                    grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
+                                                           float(assignment["points"])))
         # 6. get all lineitems
         try:
             response = await httpclient.fetch(HTTPRequest(url=lineitems_url, method="GET",
@@ -137,15 +141,15 @@ class LTISyncGrades(SingletonConfigurable):
         # 7. check if a lineitem with assignment name exists
         lineitem = None
         for item in lineitems:
-            if item["label"] == assignment.name:
+            if item["label"] == assignment["name"]:
                 # lineitem found
                 lineitem = item
                 break
         
         # 8. if not create a lineitem with the assignment name
         if lineitem is None:
-            lineitem_body = {"scoreMaximum": float(assignment.points), "label": assignment.name,
-                             "resourceId": assignment.id,
+            lineitem_body = {"scoreMaximum": float(assignment["points"]), "label": assignment["name"],
+                             "resourceId": assignment["id"],
                              "tag": "grade", "startDateTime": str(datetime.datetime.now()),
                              "endDateTime": str(datetime.date.today() + datetime.timedelta(days=1, hours=1))}
             try:
