@@ -15,7 +15,9 @@ from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 import tornado
 from grader_service.api.models.submission import Submission as SubmissionModel
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.assignment import AutoGradingBehaviour
+from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -273,6 +275,8 @@ class SubmissionHandler(GraderBaseHandler):
         submission.auto_status = "not_graded"
         submission.manual_status = "not_graded"
 
+        automatic_grading = assignment.automatic_grading
+
         self.session.add(submission)
         self.session.commit()
         self.set_status(HTTPStatus.CREATED)
@@ -280,7 +284,7 @@ class SubmissionHandler(GraderBaseHandler):
 
         # If the assignment has automatic grading or fully
         # automatic grading perform necessary operations
-        if assignment.automatic_grading in [AutoGradingBehaviour.auto,
+        if automatic_grading in [AutoGradingBehaviour.auto,
                                             AutoGradingBehaviour.full_auto]:
             self.set_status(HTTPStatus.ACCEPTED)
             executor = RequestHandlerConfig.instance()\
@@ -288,19 +292,21 @@ class SubmissionHandler(GraderBaseHandler):
                     self.application.grader_service_dir, submission,
                     close_session=False, config=self.application.config
             )
-            if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
+            if automatic_grading == AutoGradingBehaviour.full_auto:
                 feedback_executor = GenerateFeedbackExecutor(
                     self.application.grader_service_dir, submission,
                     config=self.application.config
                 )
-                GraderExecutor.instance().submit(
-                    executor.start,
-                    on_finish=lambda: GraderExecutor.instance().submit(
-                        feedback_executor.start)
-                )
+
+                async def feedback_and_sync():
+
+                    GraderExecutor.instance().submit(feedback_executor.start)
+                    lecture : Lecture = self.session.query(Lecture).get(lecture_id)
+                    await LTISyncGrades.instance().start(lecture.serialize(), assignment.serialize(), [submission.serialize()], sync_on_feedback=True)
+
+                GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
+                
                 # Trigger LTI Plugin
-                # TODO FIX THIS, Wrong parameters
-                await LTISyncGrades.instance().start(lecture_id, assignment_id, [submission], sync_on_feedback=True)
             else:
                 GraderExecutor.instance().submit(
                     executor.start,
@@ -308,7 +314,7 @@ class SubmissionHandler(GraderBaseHandler):
                         f"Autograding task of submission \
                         {submission.id} exited!")
                 )
-        if assignment.automatic_grading == AutoGradingBehaviour.unassisted:
+        if automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
 
 
@@ -645,19 +651,20 @@ class LtiSyncHandler(GraderBaseHandler):
                     .subquery())
 
         # build the main query
-        submissions = (
+        submissions : list[Submission] = (
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
                           Submission.assignid == assignment_id) & Submission.feedback_available)
             .all())
-        
-        lecture =  self.session.query(Lecture).get(lecture_id)
-        assignment = self.get_assignment(lecture_id, assignment_id)
+
+        assignment : Assignment = self.get_assignment(lecture_id, assignment_id)
+        lecture : Lecture = self.session.query(Lecture).get(lecture_id)
 
         lti_plugin = LTISyncGrades.instance()
         try:
-            results = await lti_plugin.start(lecture, assignment, submissions)
+            results = await lti_plugin.start(lecture.serialize(), assignment.serialize(), [ s.serialize() for s in submissions ])
+
         except Exception as e:
             raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
         
