@@ -61,6 +61,13 @@ Grader Labextension
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
+Try out GraderService:
+
+.. image:: https://mybinder.org/badge_logo.svg
+    :target: https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-demo/HEAD?urlpath=lab
+    :alt: binder
+
+
 Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
 
 .. image:: ./docs/source/_static/assets/gifs/labextension_update.gif
