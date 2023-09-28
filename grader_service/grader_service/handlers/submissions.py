@@ -501,6 +501,8 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
             gradebook = GradeBookModel.from_dict(json.loads(properties_string))
 
             score = gradebook.score
+            submission.grading_score = score
+            submission.score = submission.score_scaling * score
 
         except Exception as e:
             self.log.info(e)
