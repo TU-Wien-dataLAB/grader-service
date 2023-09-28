@@ -13,18 +13,16 @@ from http import HTTPStatus
 from tornado.escape import url_escape, json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.web import HTTPError
-from tornado_sqlalchemy import SessionMixin
-
 
 def default_lti_username_convert(username: str) -> str:
     return username
 
 def default_enable_lti(lecture, assignment, submissions):
-    return {"enable_lti": True, "sync_on_feedback": True}
+    return {"enable_lti": False, "sync_on_feedback": False}
 
-class LTISyncGrades(SingletonConfigurable, SessionMixin):
+class LTISyncGrades(SingletonConfigurable):
     enable_lti_features = Union(
-        [Dict({"enable_lti": True, "sync_on_feedback": True}),
+        [Dict({"enable_lti": False, "sync_on_feedback": False}),
          Callable(default_enable_lti)],
         allow_none=True,
         config=True,
@@ -78,7 +76,6 @@ class LTISyncGrades(SingletonConfigurable, SessionMixin):
             
     async def start(self, lecture: dict, assignment: dict, submissions: list[dict], sync_on_feedback=False):
 
-        self.log.info(f'{lecture} {assignment} {submissions}')
         if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
             return
         
