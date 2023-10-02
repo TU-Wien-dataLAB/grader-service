@@ -57,7 +57,7 @@ class LTISyncGrades(SingletonConfigurable):
     # cache for lti token    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
     
-    def _check_if_lti_enabled(self, lecture, assignment, submissions, sync_on_feedback):
+    def check_if_lti_enabled(self, lecture, assignment, submissions, sync_on_feedback):
         if callable(self.enable_lti_features):
             enable_lti = self.enable_lti_features(lecture, assignment, submissions)
         else:
@@ -74,16 +74,15 @@ class LTISyncGrades(SingletonConfigurable):
         else:
             return False
             
-    async def start(self, lecture: dict, assignment: dict, submissions: list[dict], sync_on_feedback=False):
+    async def start(self, lecture: dict, assignment: dict, submissions: list[dict]):
 
-        if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
-            return
+        # # Check if the LTI plugin should be used
+        # if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
+        #     self.log.info("Skipping LTI plugin as it is not enabled")
+        #     return {"syncable_users": 0, "synced_user": 0}
         
-        # Check if the LTI plugin should be used
         self.log.info("Start LTI Grade Sync")
-        if not self.enable_lti_features["enable_lti"]:
-            self.log.info("Skipping LTI plugin as it is not enabled")
-            return
+
         # 1. request bearer token
         stamp = datetime.datetime.now()
         if self.cache_token["token"] and self.cache_token["ttl"] > stamp - datetime.timedelta(
