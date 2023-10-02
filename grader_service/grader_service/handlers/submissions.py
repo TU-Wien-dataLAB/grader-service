@@ -302,7 +302,19 @@ class SubmissionHandler(GraderBaseHandler):
 
                     GraderExecutor.instance().submit(feedback_executor.start)
                     lecture : Lecture = self.session.query(Lecture).get(lecture_id)
-                    await LTISyncGrades.instance().start(lecture.serialize(), assignment.serialize(), [submission.serialize()], sync_on_feedback=True)
+
+                    try:
+
+                        lti_plugin = LTISyncGrades.instance()
+                        data = (lecture.serialize(), assignment.serialize(), [ submission.serialize() ])
+
+                        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
+                            await LTISyncGrades.instance().start(*data)
+                        else:
+                            self.log.info("Skipping LTI plugin as it is not enabled")
+
+                    except Exception as e:
+                        raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
 
                 GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
                 
@@ -661,11 +673,20 @@ class LtiSyncHandler(GraderBaseHandler):
         assignment : Assignment = self.get_assignment(lecture_id, assignment_id)
         lecture : Lecture = self.session.query(Lecture).get(lecture_id)
 
-        lti_plugin = LTISyncGrades.instance()
-        try:
-            results = await lti_plugin.start(lecture.serialize(), assignment.serialize(), [ s.serialize() for s in submissions ])
 
-        except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
+        lti_plugin = LTISyncGrades.instance()
+        data = (lecture.serialize(), assignment.serialize(), [ s.serialize() for s in submissions ])
+
+        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
+
+            try:
+                results = await LTISyncGrades.instance().start(*data)
+                self.write_json(results)
+            except Exception as e:
+                raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
+            
+        else:
+            self.log.info("Skipping LTI plugin as it is not enabled")
+            self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+
         
-        self.write_json(results)

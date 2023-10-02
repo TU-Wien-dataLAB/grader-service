@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
+from tornado.web import HTTPError
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.autograding.grader_executor import GraderExecutor
@@ -113,7 +114,20 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         self.set_status(HTTPStatus.ACCEPTED,
                         reason="Generating feedback process started")
         
-        # TODO FIX THIS, wrong parametes
-        await LTISyncGrades.instance().start(lecture_id, assignment_id, [submission], sync_on_feedback=True)
+        lecture: Lecture = self.session.get(Lecture, lecture_id)
+        assignment: Assignment = self.session.get(Assignment, assignment_id)
+
+        try:
+            
+            lti_plugin = LTISyncGrades.instance()
+            data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
+            
+            if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
+                await LTISyncGrades.instance().start(*data)
+            else:
+                self.log.info("Skipping LTI plugin as it is not enabled")
+          
+        except Exception as e:
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))      
 
         self.write_json(submission)
