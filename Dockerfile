@@ -37,12 +37,8 @@ RUN apt-get update \
 COPY ./grader_service /grader_service
 COPY ./grader_convert /grader_convert
 COPY ./grader_service.sh /usr/local/bin/grader_service.sh
-# install dependencies
-RUN python3 -m pip install -r /grader_convert/requirements.txt && \
-    python3 -m pip install -r /grader_service/requirements.txt
 
-RUN python3 -m pip install --no-use-pep517 /grader_convert/ && \
-    python3 -m pip install --no-use-pep517 /grader_service/ 
+RUN python3 -m pip install /grader_service/
     # && \
     # rm -rf /convert/ && \
     # rm -rf /grader_service/
