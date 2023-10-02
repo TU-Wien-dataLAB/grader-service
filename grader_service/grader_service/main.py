@@ -312,16 +312,12 @@ class GraderService(config.Application):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        subprocess.run(
-            shlex.split("git config --global init.defaultBranch main"))
-        if subprocess.check_output(shlex.split("git config user.name"))\
-                .decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global \
-            user.name "{self.service_git_username}"'))
-        if subprocess.check_output(shlex.split("git config user.email"))\
-                .decode("utf-8").strip() == "":
-            subprocess.run(shlex.split(f'git config --global \
-            user.email "{self.service_git_email}"'))
+        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False, capture_output=True).stdout.decode().strip() != "main":
+            raise RuntimeError("Git default branch has to be set to 'main'!")
+        if subprocess.run(['git', 'config', 'user.name'], check=False, capture_output=True).stdout.decode().strip() == "":
+            raise RuntimeError("Git user.name has to be set!")
+        if subprocess.run(['git', 'config', 'user.email'], check=False, capture_output=True).stdout.decode().strip() == "":
+            raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""

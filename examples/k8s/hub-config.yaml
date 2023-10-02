@@ -26,6 +26,8 @@ hub:
         "lect1:tutor": ["tutor"],
         "lect1:student": ["student"]
       }
+      
+      c.KubeSpawner.debug = True
 
 rbac:
   create: true
@@ -47,9 +49,9 @@ singleuser:
   defaultUrl: /lab
   image:
     name: ghcr.io/tu-wien-datalab/grader-service-labextension
-    tag: "latest"
+    tag: "main"
   extraEnv:
-    GRADER_HOST_URL: http://proxy-public
+    GRADER_HOST_URL: http://grader-service:4010
 
 # scheduling relates to the user-scheduler pods and user-placeholder pods.
 scheduling:
@@ -67,6 +69,10 @@ prePuller:
 
 ingress:
   enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - localhost
 
 # cull relates to the jupyterhub-idle-culler service, responsible for evicting
 # inactive singleuser pods.

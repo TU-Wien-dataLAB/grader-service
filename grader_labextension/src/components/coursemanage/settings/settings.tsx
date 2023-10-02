@@ -11,7 +11,7 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Tooltip
+  Tooltip, Typography
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -26,6 +26,11 @@ import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
 import { useRouteLoaderData } from 'react-router-dom';
+import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
+import { FormikValues } from 'formik/dist/types';
+import { SubmissionPeriod } from '../../../model/submissionPeriod';
+import moment from 'moment';
+import { red } from '@mui/material/colors';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -76,6 +81,52 @@ export const SettingsComponent = () => {
     Boolean(assignment.max_submissions)
   );
 
+  const validateLateSubmissions = (values: FormikValues) => {
+    const late_submissions: ILateSubmissionInfo[] = getLateSubmissionInfo(values.settings.late_submission);
+    let error = { late_submission: { days: {}, hours: {}, scaling: {} } };
+    let nErrors = 0;
+    for (let i = 0; i < late_submissions.length; i++) {
+      const info = late_submissions[i];
+      if (info.days < 0) {
+        error.late_submission.days[i] = 'days cannot be negative';
+        nErrors++;
+      }
+      if (info.hours < 0) {
+        error.late_submission.hours[i] = 'hours cannot be negative';
+        nErrors++;
+      }
+      if (info.scaling <= 0 || info.scaling >= 1) {
+        error.late_submission.scaling[i] = 'scaling has to be between 0 and 1 exclusive';
+        nErrors++;
+      }
+      if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration(0)) {
+        error.late_submission.days[i] = 'period cannot be 0';
+        error.late_submission.hours[i] = 'period cannot be 0';
+        nErrors++;
+      }
+      if (i > 0) {
+        const prevInfo = late_submissions[i - 1];
+        if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration({
+          days: prevInfo.days,
+          hours: prevInfo.hours
+        })) {
+          error.late_submission.days[i] = 'periods have to be increasing';
+          error.late_submission.hours[i] = 'periods have to be increasing';
+          nErrors++;
+        }
+        if (info.scaling >= prevInfo.scaling) {
+          error.late_submission.scaling[i] = 'scaling has to decrease';
+          nErrors++;
+        }
+      }
+    }
+    if (nErrors == 0) {
+      // error object has to be empty, otherwise submit is blocked
+      return {};
+    }
+    return error;
+  };
+
 
   const formik = useFormik({
     initialValues: {
@@ -87,7 +138,8 @@ export const SettingsComponent = () => {
       type: assignment.type,
       automatic_grading: assignment.automatic_grading,
       max_submissions: assignment.max_submissions || null,
-      allow_files: assignment.allow_files || false
+      allow_files: assignment.allow_files || false,
+      settings: { late_submission: assignment.settings.late_submission || [] }
     },
     validationSchema: validationSchema,
     onSubmit: values => {
@@ -110,7 +162,8 @@ export const SettingsComponent = () => {
           });
         }
       );
-    }
+    },
+    validate: validateLateSubmissions
   });
 
   return (
@@ -234,6 +287,28 @@ export const SettingsComponent = () => {
             }
             label='Allow file upload by students'
           />
+
+          <Stack direction={'column'} spacing={2}>
+            <InputLabel>
+              Late Submissions
+              <Tooltip title={'Late submissions are defined by a period (in days and hours) and a scaling factor. ' +
+                'When a submission falls in the late submission periods you specified, the scaling factor of the ' +
+                'last period that still matches the submission time is used to calculate the points of the submission by multiplying the total points by ' +
+                'that scaling factor. After the last late submission period is over, the submission is rejected precisely ' +
+                'the same way as if no late submission periods were specified.'}>
+                <HelpOutlineOutlinedIcon
+                  fontSize={'small'}
+                  sx={{ ml: 1.5, mt: 1.0 }}
+                />
+              </Tooltip>
+            </InputLabel>
+            <Stack direction={'column'} spacing={2} sx={{ pl: 3 }}>
+              {(formik.values.due_date !== null)
+                ? <LateSubmissionForm formik={formik} />
+                : <Typography sx={{ color: red[500] }}>Deadline not set! To configure late submissions set a deadline
+                  first!</Typography>}
+            </Stack>
+          </Stack>
 
           {/* Not included in release 0.1
               <InputLabel id="demo-simple-select-label">Type</InputLabel>

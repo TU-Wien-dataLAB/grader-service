@@ -61,9 +61,16 @@ Grader Labextension
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
+Try out GraderService:
+
+.. image:: https://mybinder.org/badge_logo.svg
+    :target: https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-demo/HEAD?urlpath=lab
+    :alt: binder
+
+
 Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
 
-.. image:: ./docs/source/_static/assets/gifs/release2_small.gif
+.. image:: ./docs/source/_static/assets/gifs/labextension_update.gif
 
 Requirements
 ===========
@@ -106,7 +113,9 @@ This repository contains all the necessary packages for a full installation of t
 
     pip install grader-service
 
+.. installation-end
 
+.. installation-from-soruce-start
 
 Installation from Source
 --------------------------
@@ -138,7 +147,7 @@ Development Environment
 Alternatively you can run the installation scripts in ``examples/dev_environment``.
 Follow the documentation there. The directory also contains the config files for a local installation.
 
-.. installation-end
+.. installation-from-soruce-end
 
 
 Getting Started
@@ -192,10 +201,11 @@ The config could look like this:
     c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
     c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
 
+
     c.JupyterHub.load_groups = {
-        "lect1:instructor": ["user1"],
-        "lect1:tutor": ["user2"],
-        "lect1:student": ["user3", "user4"]
+        "lect1:instructor": {'users': ["user1"]},
+        "lect1:tutor": {'users': ["user2"]},
+        "lect1:student": {'users': ["user3", "user4"]},
     }
 
 Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.

@@ -39,6 +39,8 @@ import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { DeadlineDetail } from '../util/deadline';
+import moment from 'moment';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 
@@ -74,7 +76,6 @@ export const AssignmentComponent = () => {
   /* Now we can divvy this into a useReducer  */
   const [allSubmissions, setSubmissions] = React.useState(submissions);
 
-
   const [files, setFiles] = React.useState([]);
   const [activeStatus, setActiveStatus] = React.useState(0);
 
@@ -96,7 +97,6 @@ export const AssignmentComponent = () => {
     let active_step = calculateActiveStep(submissions);
     setActiveStatus(active_step);
   }, []);
-
 
   const resetAssignmentHandler = async () => {
     showDialog(
@@ -205,6 +205,18 @@ export const AssignmentComponent = () => {
     return time < Date.now();
   };
 
+  const isLateSubmissionOver = () => {
+    if (assignment.due_date === null) {
+      return false;
+    }
+    let late_submission = assignment.settings.late_submission;
+    if (late_submission === null || late_submission.length === 0) {
+      late_submission = [{ period: 'P0D', scaling: undefined }]
+    }
+    const late = moment(assignment.due_date).add(moment.duration(late_submission[late_submission.length - 1].period)).toDate().getTime();
+    return late < Date.now();
+  };
+
   const isAssignmentCompleted = () => {
     return assignment.status === 'complete';
   };
@@ -233,6 +245,9 @@ export const AssignmentComponent = () => {
             activeStep={activeStatus}
             submissions={submissions}
           />
+        </Box>
+        <Box sx={{ mt: 2, ml: 2 }}>
+          <DeadlineDetail due_date={assignment.due_date} late_submissions={assignment.settings.late_submission || []} />
         </Box>
         <Box sx={{ mt: 4 }}>
           <Typography variant={'h6'} sx={{ ml: 2 }}>
@@ -286,10 +301,10 @@ export const AssignmentComponent = () => {
             <Tooltip title={'Submit Files in Assignment'}>
               <Button
                 variant='outlined'
-                color='success'
+                color={(!isDeadlineOver()) ? 'success' : 'warning'}
                 size='small'
                 disabled={
-                  isDeadlineOver() ||
+                  isLateSubmissionOver() ||
                   isMaxSubmissionReached() ||
                   isAssignmentCompleted() ||
                   files.length == 0
@@ -312,7 +327,6 @@ export const AssignmentComponent = () => {
                 Reset
               </Button>
             </Tooltip>
-
             <Tooltip title={'Show files in JupyterLab file browser'}>
               <Button
                 variant='outlined'
@@ -326,6 +340,7 @@ export const AssignmentComponent = () => {
             </Tooltip>
           </Stack>
         </Box>
+        <Outlet />
       </Box>
       <Box sx={{ mt: 4 }}>
         <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>

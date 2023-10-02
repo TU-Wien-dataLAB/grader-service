@@ -64,7 +64,8 @@ def test_assignment_serialization():
         'points': 0,
         'automatic_grading': AutoGradingBehaviour.unassisted,
         'max_submissions': 1,
-        'allow_files': None
+        'allow_files': None,
+        'settings': {'late_submission': None}
     }
     a = Assignment(
         id=d["id"],
@@ -74,7 +75,8 @@ def test_assignment_serialization():
         points=0,
         status=d["status"],
         automatic_grading=d["automatic_grading"],
-        max_submissions=1
+        max_submissions=1,
+        settings='{}'
     )
 
     d["due_date"] = (d["due_date"].isoformat("T", "milliseconds") + "Z")

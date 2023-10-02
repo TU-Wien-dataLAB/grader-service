@@ -17,6 +17,8 @@ export interface Submission {
     auto_status?: Submission.AutoStatusEnum;
     manual_status?: Submission.ManualStatusEnum;
     username?: string;
+    grading_score?: number;
+    score_scaling?: number;
     score?: number;
     assignid?: number;
     commit_hash?: string;
