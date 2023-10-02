@@ -322,10 +322,12 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         self.write(json.dumps(chunk))
 
     def write_error(self, status_code: int, **kwargs) -> None:
+
         self.set_header('Content-Type', 'application/json')
+        self.set_status(status_code)
         _, e, _ = kwargs.get("exc_info", (None, None, None))
         error = httputil.responses.get(status_code, "Unknown")
-        reason = None
+        reason = kwargs.get("reason", None)
         if e and isinstance(e, HTTPError) and e.reason:
             reason = e.reason
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
