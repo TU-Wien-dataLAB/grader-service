@@ -64,14 +64,18 @@ kubeAutogradeExecutor:
 extraConfig: ""
 
 requestHandlerConfig:
-  enable_lti_features: false
-  lti_client_id: ""
-  lti_token_url: ""
-  lti_username_convert: null
-  lti_token_private_key: ""
-  resolve_lti_urls: null
   max_buffer_size: 104857600
   max_body_size: 104857600
+
+# lti
+ltiSyncGrades:
+  enabled: {"enable_lti": False, "sync_on_feedback": False}
+  client_id: ""
+  token_url: ""
+  username_convert: null
+  token_private_key: ""
+  resolve_lti_urls: ""
+
 
 # pvc
 storageClassName: ""
