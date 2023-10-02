@@ -72,7 +72,7 @@ class LTISyncGrades(SingletonConfigurable):
         else:
             return False
             
-    async def start(self, lecture: dict, assignment: dict, submissions: list[dict]):
+    async def start(self, lecture, assignment, submissions):
 
         # # Check if the LTI plugin should be used
         # if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
