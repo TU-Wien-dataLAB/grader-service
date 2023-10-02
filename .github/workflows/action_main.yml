@@ -87,7 +87,7 @@ jobs:
     secrets: inherit
 
   release_labextension:
-    needs: dockerize_labextension
+    needs: build_labextension
     if: startsWith(github.ref, 'refs/tags/grader-labextension')
     uses: ./.github/workflows/publish_labextension.yml
     secrets: inherit
