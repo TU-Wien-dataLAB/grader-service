@@ -4,9 +4,13 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
+from tornado.web import HTTPError
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.autograding.grader_executor import GraderExecutor
+from grader_service.orm.assignment import Assignment
+from grader_service.orm.lecture import Lecture
+from grader_service.plugins.lti import LTISyncGrades
 from .handler_utils import parse_ids
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Scope
@@ -61,6 +65,7 @@ class GradingAutoHandler(GraderBaseHandler):
         submission = self.session.query(Submission).get(sub_id)
         self.set_status(HTTPStatus.ACCEPTED,
                         reason="Autograding submission process started")
+        
         self.write_json(submission)
 
 
@@ -96,7 +101,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         lecture_id, assignment_id, sub_id = parse_ids(
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
-        submission = self.get_submission(lecture_id, assignment_id, sub_id)
+        submission : Submission = self.get_submission(lecture_id, assignment_id, sub_id)
         executor = GenerateFeedbackExecutor(
             self.application.grader_service_dir, submission,
             config=self.application.config
@@ -106,7 +111,23 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lambda: self.log.info(f"Successfully generated feedback \
              for submission {submission.id}!")
         )
-        submission = self.session.query(Submission).get(sub_id)
         self.set_status(HTTPStatus.ACCEPTED,
                         reason="Generating feedback process started")
+        
+        lecture: Lecture = self.session.get(Lecture, lecture_id)
+        assignment: Assignment = self.session.get(Assignment, assignment_id)
+
+        lti_plugin = LTISyncGrades.instance()
+        data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
+
+        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
+
+            try:
+                await lti_plugin.start(*data)
+            except HTTPError as e:
+                self.write_error(e.status_code, reason=e.reason)
+                self.log.info("Could not sync grades: " + e.reason )
+            except Exception as e:
+                self.log.error("Could not sync grades: " + str(e))
+
         self.write_json(submission)

@@ -45,7 +45,6 @@ interface EnhancedTableToolbarProps {
 export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
   const { lecture, assignment, rows, selected, shownSubmissions, switchShownSubmissions, clearSelection } = props;
   const numSelected = selected.length;
-  const ltiEnabled = PageConfig.getOption('enable_lti_features') === 'true';
 
   const optionName = () => {
     if (props.shownSubmissions === 'latest') {
@@ -79,7 +78,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           })
           .catch(error => {
             enqueueSnackbar(
-              'Error while trying to sync submissions:' + error.message,
+              'Error while trying to sync submissions: ' + error.message,
               { variant: 'error' }
             );
           });
@@ -208,7 +207,6 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
               size='small'
               startIcon={<CloudSyncIcon />}
               sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-              disabled={!ltiEnabled}
               onClick={handleSyncSubmission}
             >
               LTI Sync Grades

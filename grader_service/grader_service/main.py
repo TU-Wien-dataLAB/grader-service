@@ -14,7 +14,6 @@ import signal
 import subprocess
 import sys
 import inspect
-
 import tornado
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
@@ -30,6 +29,7 @@ from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
+from grader_service.plugins.lti import LTISyncGrades
 
 
 class GraderService(config.Application):
@@ -261,10 +261,11 @@ class GraderService(config.Application):
 
         await self._setup_environment()
 
-        # pass config to DataBaseManager and GraderExecutor
+        # pass config
         GraderExecutor.config = self.config
         RequestHandlerConfig.config = self.config
-
+        LTISyncGrades.config = self.config
+        
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
 
         isSQLite = 'sqlite://' in self.db_url

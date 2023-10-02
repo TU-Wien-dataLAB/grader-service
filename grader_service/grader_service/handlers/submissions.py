@@ -3,7 +3,6 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
 import json
 import shutil
 import time
@@ -13,16 +12,17 @@ import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
+import tornado
 
+from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
-import tornado
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
-from tornado.escape import url_escape, json_decode
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
 from grader_service.orm.assignment import AutoGradingBehaviour
+from grader_service.orm.assignment import Assignment
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -277,6 +277,8 @@ class SubmissionHandler(GraderBaseHandler):
         submission.auto_status = "not_graded"
         submission.manual_status = "not_graded"
 
+        automatic_grading = assignment.automatic_grading
+
         self.session.add(submission)
         self.session.commit()
         self.set_status(HTTPStatus.CREATED)
@@ -284,7 +286,7 @@ class SubmissionHandler(GraderBaseHandler):
 
         # If the assignment has automatic grading or fully
         # automatic grading perform necessary operations
-        if assignment.automatic_grading in [AutoGradingBehaviour.auto,
+        if automatic_grading in [AutoGradingBehaviour.auto,
                                             AutoGradingBehaviour.full_auto]:
             self.set_status(HTTPStatus.ACCEPTED)
             executor = RequestHandlerConfig.instance() \
@@ -292,16 +294,33 @@ class SubmissionHandler(GraderBaseHandler):
                 self.application.grader_service_dir, submission,
                 close_session=False, config=self.application.config
             )
-            if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
+            if automatic_grading == AutoGradingBehaviour.full_auto:
                 feedback_executor = GenerateFeedbackExecutor(
                     self.application.grader_service_dir, submission,
                     config=self.application.config
                 )
-                GraderExecutor.instance().submit(
-                    executor.start,
-                    on_finish=lambda: GraderExecutor.instance().submit(
-                        feedback_executor.start)
-                )
+
+                async def feedback_and_sync():
+
+                    GraderExecutor.instance().submit(feedback_executor.start)
+                    lecture : Lecture = self.session.query(Lecture).get(lecture_id)
+
+                    lti_plugin = LTISyncGrades.instance()
+                    data = (lecture.serialize(), assignment.serialize(), [ submission.serialize() ])
+
+                    if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
+
+                        try:
+                            await lti_plugin.start(*data)
+                        except Exception as e:
+                            self.log.error("Could not sync grades: " + str(e))
+                        
+                    else:
+                        self.log.info("Skipping LTI plugin as it is not enabled")
+                
+                GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
+                
+                # Trigger LTI Plugin
             else:
                 GraderExecutor.instance().submit(
                     executor.start,
@@ -309,7 +328,7 @@ class SubmissionHandler(GraderBaseHandler):
                         f"Autograding task of submission \
                         {submission.id} exited!")
                 )
-        if assignment.automatic_grading == AutoGradingBehaviour.unassisted:
+        if automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
 
     @staticmethod
@@ -662,6 +681,7 @@ class SubmissionEditHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
+    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
     @authorize([Scope.instructor])
@@ -673,78 +693,33 @@ class LtiSyncHandler(GraderBaseHandler):
                     .subquery())
 
         # build the main query
-        submissions = (
+        submissions : list[Submission] = (
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
                           Submission.assignid == assignment_id) & Submission.feedback_available)
             .all())
 
-        assignment = self.get_assignment(lecture_id, assignment_id)
+        assignment : Assignment = self.get_assignment(lecture_id, assignment_id)
+        lecture : Lecture = self.session.query(Lecture).get(lecture_id)
 
-        lti_username_convert = RequestHandlerConfig.instance().lti_username_convert
 
-        if lti_username_convert is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to match users: lti_username_convert is not set in grader "
-                                   "config")
+        lti_plugin = LTISyncGrades.instance()
+        data = (lecture.serialize(), assignment.serialize(), [ s.serialize() for s in submissions ])
 
-        scores = [{"id": s.id, "username": lti_username_convert(s.username), "score": s.score} for s in submissions]
-        stamp = datetime.datetime.now()
-        if LtiSyncHandler.cache_token["token"] and LtiSyncHandler.cache_token["ttl"] > stamp - datetime.timedelta(
-                minutes=50):
-            token = LtiSyncHandler.cache_token["token"]
+        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
+
+            try:
+                results = await lti_plugin.start(*data)
+                self.write_json(results)
+            except HTTPError as e:
+                self.write_error(e.status_code, reason=e.reason)
+                self.log.info("Could not sync grades: " + e.reason )
+            except Exception as e:
+                self.log.error("Could not sync grades: " + str(e))
+            
         else:
-            token = await self.request_bearer_token()
-            LtiSyncHandler.cache_token["token"] = token
-            LtiSyncHandler.cache_token["ttl"] = datetime.datetime.now()
+            self.log.info("Skipping LTI plugin as it is not enabled")
+            self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
 
-        scores = {"assignment": assignment, "scores": scores, "token": token}
-
-        self.write_json(scores)
-
-    async def request_bearer_token(self):
-        # get config variables
-        lti_client_id = RequestHandlerConfig.instance().lti_client_id
-        if lti_client_id is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_client_id is not set in grader config")
-        lti_token_url = RequestHandlerConfig.instance().lti_token_url
-        if lti_token_url is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_url is not set in grader config")
-
-        private_key = RequestHandlerConfig.instance().lti_token_private_key
-        if private_key is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Unable to request bearer token: lti_token_private_key is not set in grader config")
-        if callable(private_key):
-            private_key = private_key()
-
-        payload = {"iss": "grader-service", "sub": lti_client_id, "aud": [lti_token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
-                   "jti": str(int(time.time())) + "123"}
-        try:
-            encoded = jwt.encode(payload, private_key, algorithm="RS256")
-        except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
-        self.log.info("encoded: " + encoded)
-        scopes = [
-            "https://purl.imsglobal.org/spec/lti-ags/scope/score",
-            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-            "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-        ]
-        scopes = url_escape(" ".join(scopes))
-        data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
-               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
-        self.log.info("data: " + data)
-
-        httpclient = AsyncHTTPClient()
-        try:
-            response = await httpclient.fetch(HTTPRequest(url=lti_token_url, method="POST", body=data,
-                                                          headers={
-                                                              "Content-Type": "application/x-www-form-urlencoded"}))
-        except HTTPClientError as e:
-            self.log.error(e.response)
-            raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)
-        return json_decode(response.body)["access_token"]
+        
