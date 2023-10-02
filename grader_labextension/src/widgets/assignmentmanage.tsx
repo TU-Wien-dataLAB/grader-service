@@ -38,7 +38,7 @@ export class AssignmentManageView extends ReactWidget {
     return (
       <SnackbarProvider maxSnack={3}   
       action={(snackbarId) => (
-        <Button variant="contained" size='small' onClick={() => closeSnackbar(snackbarId)}>
+        <Button variant="outlined" size='small' style={{ color: 'white', borderColor: 'white' }} onClick={() => closeSnackbar(snackbarId)}>
           Dismiss
         </Button>
       )}>

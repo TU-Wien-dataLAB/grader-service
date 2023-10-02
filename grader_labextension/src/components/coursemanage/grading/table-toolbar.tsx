@@ -78,7 +78,7 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           })
           .catch(error => {
             enqueueSnackbar(
-              'Error while trying to sync submissions:' + error.message,
+              'Error while trying to sync submissions: ' + error.message,
               { variant: 'error' }
             );
           });

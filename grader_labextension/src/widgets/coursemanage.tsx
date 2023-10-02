@@ -40,7 +40,7 @@ export class CourseManageView extends ReactWidget {
     return (
       <SnackbarProvider maxSnack={3}
         action={(snackbarId) => (
-          <Button onClick={() => closeSnackbar(snackbarId)}>
+          <Button variant="outlined" size='small' style={{ color: 'white', borderColor: 'white' }} onClick={() => closeSnackbar(snackbarId)}>
             Dismiss
           </Button>
         )}>
