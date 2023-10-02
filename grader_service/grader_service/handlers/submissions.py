@@ -12,15 +12,17 @@ import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
+import tornado
 
+from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
-import tornado
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.assignment import Assignment
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -303,19 +305,24 @@ class SubmissionHandler(GraderBaseHandler):
                     GraderExecutor.instance().submit(feedback_executor.start)
                     lecture : Lecture = self.session.query(Lecture).get(lecture_id)
 
-                    try:
+                    lti_plugin = LTISyncGrades.instance()
+                    data = (lecture.serialize(), assignment.serialize(), [ submission.serialize() ])
 
-                        lti_plugin = LTISyncGrades.instance()
-                        data = (lecture.serialize(), assignment.serialize(), [ submission.serialize() ])
+                    if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
 
-                        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
-                            await LTISyncGrades.instance().start(*data)
-                        else:
-                            self.log.info("Skipping LTI plugin as it is not enabled")
-
-                    except Exception as e:
-                        raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
-
+                        try:
+                            results = await lti_plugin.start(*data)
+                            self.write_json(results)
+                        except HTTPError as e:
+                            self.write_error(e.status_code, reason=e.reason)
+                            self.log.info("Could not sync grades: " + e.reason )
+                        except Exception as e:
+                            self.log.error("Could not sync grades: " + str(e))
+                        
+                    else:
+                        self.log.info("Skipping LTI plugin as it is not enabled")
+                        self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+                
                 GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
                 
                 # Trigger LTI Plugin
@@ -708,10 +715,13 @@ class LtiSyncHandler(GraderBaseHandler):
         if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
 
             try:
-                results = await LTISyncGrades.instance().start(*data)
+                results = await lti_plugin.start(*data)
                 self.write_json(results)
+            except HTTPError as e:
+                self.write_error(e.status_code, reason=e.reason)
+                self.log.info("Could not sync grades: " + e.reason )
             except Exception as e:
-                raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "Could not sync grades: " + str(e))
+                self.log.error("Could not sync grades: " + str(e))
             
         else:
             self.log.info("Skipping LTI plugin as it is not enabled")

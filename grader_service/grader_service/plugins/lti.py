@@ -3,9 +3,7 @@ import json
 import os
 import time
 from urllib.parse import urlparse
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
+
 import jwt
 from traitlets import Callable, Dict, Unicode, Union
 from traitlets.config import SingletonConfigurable
@@ -82,6 +80,8 @@ class LTISyncGrades(SingletonConfigurable):
         #     return {"syncable_users": 0, "synced_user": 0}
         
         self.log.info("Start LTI Grade Sync")
+        if len(submissions) == 0:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
 
         # 1. request bearer token
         stamp = datetime.datetime.now()
