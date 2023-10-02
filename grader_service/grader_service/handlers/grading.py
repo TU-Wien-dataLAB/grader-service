@@ -101,7 +101,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         lecture_id, assignment_id, sub_id = parse_ids(
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
-        submission = self.session.query(Submission).get(sub_id)
+        submission : Submission = self.session.query(Submission).get(sub_id)
         executor = GenerateFeedbackExecutor(
             self.application.grader_service_dir, submission,
             config=self.application.config
@@ -123,8 +123,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
 
             try:
-                results = await lti_plugin.start(*data)
-                self.write_json(results)
+                await lti_plugin.start(*data)
             except HTTPError as e:
                 self.write_error(e.status_code, reason=e.reason)
                 self.log.info("Could not sync grades: " + e.reason )
