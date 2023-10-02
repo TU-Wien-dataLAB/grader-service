@@ -247,8 +247,7 @@ class LtiSyncHandler(ExtensionBaseHandler):
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/lti",
                 header=self.grader_authentication_header)
         except HTTPClientError as e:
-            self.log.error(e.response)
-            raise HTTPError(e.code, reason=e.response.reason)
+            self.log.error(e.response.body)
+            raise HTTPError(e.code, reason=json.loads(e.response.body).get("message", "Error while syncing grades"))
 
-        
         self.write(json.dumps(response))

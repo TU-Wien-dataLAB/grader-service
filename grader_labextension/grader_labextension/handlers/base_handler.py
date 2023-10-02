@@ -114,9 +114,10 @@ class ExtensionBaseHandler(APIHandler):
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.set_header('Content-Type', 'application/json')
+        self.set_status(status_code)
         _, e, _ = kwargs.get("exc_info", (None, None, None))
         error = httputil.responses.get(status_code, "Unknown")
-        reason = None
+        reason = kwargs.get("reason", None)
         if e and isinstance(e, HTTPError) and e.reason:
             reason = e.reason
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
@@ -125,6 +126,9 @@ class ExtensionBaseHandler(APIHandler):
             for line in traceback.format_exception(*kwargs["exc_info"]):
                 lines.append(line)
             self.finish(json.dumps(
-                ErrorMessage(status_code, error, self.request.path, reason, traceback=json.dumps(lines)).to_dict()))
+                ErrorMessage(status_code, error, self.request.path, reason,
+                             traceback=json.dumps(lines)).to_dict()))
         else:
-            self.finish(json.dumps(ErrorMessage(status_code, error, self.request.path, reason).to_dict()))
+            self.finish(json.dumps(ErrorMessage(status_code, error,
+                                                self.request.path,
+                                                reason).to_dict()))
