@@ -130,13 +130,13 @@ In the ``grader`` directory run:
 .. code-block:: bash
 
    pip install -r ./grader_convert/requirements.txt
-   pip install --no-use-pep517 ./grader_convert
+   pip install ./grader_convert
 
    pip install -r ./grader_labextension/requirements.txt
    pip install ./grader_labextension
 
    pip install -r ./grader_service/requirements.txt
-   pip install --no-use-pep517 ./grader_service
+   pip install ./grader_service
 
 
 Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
@@ -226,8 +226,8 @@ In order to start the grader service we have to provide a configuration file for
 
     c.JupyterHubGroupAuthenticator.hub_api_url = "http://127.0.0.1:8081/hub/api"
 
-    c.LocalAutogradeExecutor.base_input_path = os.path.expanduser(os.path.join(service_dir, "convert_in"))
-    c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(service_dir, "convert_out"))
+    c.LocalAutogradeExecutor.relative_input_path = "convert_in"
+    c.LocalAutogradeExecutor.relative_output_path = "convert_out"
 
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
@@ -249,7 +249,7 @@ When restarting the JupyterHub you should now see the following log message: ::
 
 Do not forget to set the log level to ``INFO`` in the JupyterHub config if you want to see this message.
 
-The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the `jupyter_notebook_config.py` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
+The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the ``jupyter_server_config.py`` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
 
 .. code-block:: python
 

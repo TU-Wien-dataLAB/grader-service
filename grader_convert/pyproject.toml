@@ -1,3 +1,51 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grader-convert"
+description = "Grader convert"
+version = "0.2.2"
+requires-python = ">=3.8"
+authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "jupyter_core>=4.7.1",
+    "jsonschema>=3.2.0",
+    "nbformat>=5.4.0",
+    "tornado>=6.2",
+    "SQLAlchemy>=1.4.22",
+    "pytest>=6.2.4",
+    "traitlets>=5.1.1",
+    "python-dateutil>=2.8.2",
+    "jupyter-client>=7.1.1",
+    "nbconvert>=6.4.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["grader_convert.tests", "grader_convert.tests.*"]
+
+[project.scripts]
+grader-convert = "grader_convert.main:main"
+
+[project.urls]
+Homepage = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+Repository = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
+
+
 [tool.tbump]
 # Uncomment this if your project is hosted on GitHub:
 github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
@@ -25,6 +73,10 @@ tag_template = "grader-convert-{new_version}"
 # For each file to patch, add a [[tool.tbump.file]] config
 # section containing the path of the file, relative to the
 # pyproject.toml location.
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+search = "version = \"{current_version}\""
 
 [[tool.tbump.file]]
 src = "grader_convert/_version.py"
