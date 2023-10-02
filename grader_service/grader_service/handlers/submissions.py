@@ -311,17 +311,12 @@ class SubmissionHandler(GraderBaseHandler):
                     if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
 
                         try:
-                            results = await lti_plugin.start(*data)
-                            self.write_json(results)
-                        except HTTPError as e:
-                            self.write_error(e.status_code, reason=e.reason)
-                            self.log.info("Could not sync grades: " + e.reason )
+                            await lti_plugin.start(*data)
                         except Exception as e:
                             self.log.error("Could not sync grades: " + str(e))
                         
                     else:
                         self.log.info("Skipping LTI plugin as it is not enabled")
-                        self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
                 
                 GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
                 
