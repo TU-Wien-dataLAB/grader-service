@@ -19,11 +19,6 @@ RUN apt-get clean && \
 COPY ./grader_labextension /grader_labextension
 COPY ./grader_convert /grader_convert
 
-# install grading service
-RUN python3 -m pip install -r /grader_labextension/requirements.txt && \
-    python3 -m pip install -r /grader_convert/requirements.txt
-
-RUN python3 -m pip install --no-use-pep517 /grader_convert/
 RUN python3 -m pip install /grader_labextension
 
 USER jovyan
