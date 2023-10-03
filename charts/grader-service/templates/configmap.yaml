@@ -50,8 +50,6 @@ data:
     c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
 
-    {{ end }}
-
 
 
 
