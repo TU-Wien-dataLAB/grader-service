@@ -8,14 +8,20 @@ metadata:
 data:
   grader_service_config.py: |
 {{ .Values.extraConfig | indent 4 }}
+
     {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
-    
+    {{ else }}
+    from grader_service.autograding.local_grader import LocalAutogradeExecutor
+    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+    {{ end }}
+
+
     {{- if .Values.requestHandlerConfig }}
     {{- if .Values.requestHandlerConfig.git_max_file_mb }}
     c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
-    {{- end }}
+    {{- end }}    
     {{- end }}
     
     c.KubeAutogradeExecutor.kube_context = None
@@ -34,12 +40,6 @@ data:
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
     c.KubeAutogradeExecutor.cell_timeout = {{ .Values.kubeAutogradeExecutor.cell_timeout }}
 
-    {{ else }}
-    from grader_service.autograding.local_grader import LocalAutogradeExecutor
-    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
-    
-    {{ end }}
-
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int}}
@@ -49,8 +49,6 @@ data:
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
     c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
-
-
 
 
   .gitconfig: |
