@@ -7,6 +7,7 @@ metadata:
     {{- include "grader-service.labels" . | nindent 4 }}
 data:
   grader_service_config.py: |
+{{ .Values.extraConfig | indent 4 }}
     {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
@@ -50,7 +51,6 @@ data:
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
 
     {{ end }}
-{{ .Values.extraConfig | indent 4 }}
 
 
 
