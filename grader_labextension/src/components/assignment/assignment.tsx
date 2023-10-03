@@ -290,7 +290,7 @@ export const AssignmentComponent = () => {
                   variant='outlined'
                   color='primary'
                   size='small'
-                  onClick={() => fetchAssignmentHandler('release')}
+                  onClick={() => fetchAssignmentHandler('assignment')}
                 >
                   <FileDownloadIcon fontSize='small' sx={{ mr: 1 }} />
                   Fetch
