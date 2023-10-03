@@ -69,7 +69,7 @@ requestHandlerConfig:
 
 # lti
 ltiSyncGrades:
-  enabled: {"enable_lti": False, "sync_on_feedback": False}
+  enabled: '{"enable_lti": False, "sync_on_feedback": False}'
   client_id: ""
   token_url: ""
   username_convert: null
