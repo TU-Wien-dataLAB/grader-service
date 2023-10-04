@@ -83,11 +83,12 @@ class LTISyncGrades(SingletonConfigurable):
         #     self.log.info("Skipping LTI plugin as it is not enabled")
         #     return {"syncable_users": 0, "synced_user": 0}
         
-        self.log.info("Start LTI Grade Sync")
+        self.log.info("LTI: start grade sync")
         if len(submissions) == 0:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
 
         # 1. request bearer token
+        self.log.debug("LTI: request bearer token")
         stamp = datetime.datetime.now()
         if self.cache_token["token"] and self.cache_token["ttl"] > stamp - datetime.timedelta(
                 minutes=50):
@@ -98,6 +99,7 @@ class LTISyncGrades(SingletonConfigurable):
             self.cache_token["ttl"] = datetime.datetime.now()
 
         # 2. resolve lti urls
+        self.log.debug("LTI: resolve lti url")
         try:
             lti_urls = self.resolve_lti_urls(lecture, assignment, submissions)
             lineitems_url = lti_urls["lineitems_url"]
@@ -106,6 +108,7 @@ class LTISyncGrades(SingletonConfigurable):
             self.log.error(e)
             return
         # 3. get all members
+        self.log.debug("LTI: request all members of lti course")
         httpclient = AsyncHTTPClient()
         try:
             response = await httpclient.fetch(HTTPRequest(url=membership_url, method="GET",
@@ -119,6 +122,7 @@ class LTISyncGrades(SingletonConfigurable):
     
         # 4. match usernames of submissions to lti memberships
         # and generate for each submission a request body -> grades list
+        self.log.debug("LTI: match grader usernames with lti identifier")
         grades = []
         syncable_user_count = 0
         for submission in submissions:
@@ -132,7 +136,9 @@ class LTISyncGrades(SingletonConfigurable):
                     syncable_user_count += 1
                     grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
                                                            float(assignment["points"])))
+        self.log.info(f"LTI: matched f{syncable_user_count} users")
         # 6. get all lineitems
+        self.log.debug("LTI: resolve lti url")
         try:
             response = await httpclient.fetch(HTTPRequest(url=lineitems_url, method="GET",
                                                           headers={
@@ -165,12 +171,26 @@ class LTISyncGrades(SingletonConfigurable):
             except HTTPClientError as e:
                 self.log.error(e.response)
                 raise HTTPError(e.code, reason="Unable to create new lineitem in course:" + e.response.reason)
-        lineitem = json_decode(response.body)[0]
+        # due to different "interpretations" of the ims lti standard,
+        # the response is sometimes a list containing the lineitem or
+        # just the lineitem json
+        try:
+            lineitem_response = json_decode(response.body)
+        except Exception as e:
+            self.log.error("LTI: could not decode lineitem request response")
+            raise e
+        if isinstance(lineitem_response, list):
+            lineitem = lineitem_response[0]
+        elif isinstance(lineitem_response, dict):
+            lineitem = lineitem_response
+        else:
+            self.log.error("LTI: lineitem request response does not match dict or list")
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "lineitem request response does not match dict or list")
         
         # 9. push grades to lineitem
         url_parsed = urlparse(lineitem["id"])
         lineitem = url_parsed._replace(path=url_parsed.path + "/scores").geturl()
-        
+        self.log.debug("LTI: start sending grades to LTI course")
         synced_user = 0
         for grade in grades:
             try:
@@ -219,7 +239,7 @@ class LTISyncGrades(SingletonConfigurable):
             encoded = jwt.encode(payload, private_key, algorithm="RS256")
         except Exception as e:
             raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
-        self.log.info("encoded: " + encoded)
+
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
@@ -228,7 +248,6 @@ class LTISyncGrades(SingletonConfigurable):
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
-        self.log.info("data: " + data)
 
         httpclient = AsyncHTTPClient()
         try:
