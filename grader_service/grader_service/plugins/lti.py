@@ -38,6 +38,10 @@ class LTISyncGrades(SingletonConfigurable):
                                          config=True,
                                          allow_none=True,
                                          help=help_msg)
+    username_match = Unicode("user_id",
+                             config=True,
+                             allow_none=False,
+                             help="Sets which membership container attribute should be matched against the submission username")
     token_private_key = Union(
         [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)),
          Callable(None)],
@@ -119,7 +123,12 @@ class LTISyncGrades(SingletonConfigurable):
         syncable_user_count = 0
         for submission in submissions:
             for member in members:
-                if member["lis_person_sourcedid"] == self.username_convert(submission["username"]):
+                try:
+                    user_match = member[self.username_match]
+                except KeyError:
+                    self.log.error(f"LTI Error: Given username_match key '{self.username_match}' does not exist in LTI membership user")
+                    continue
+                if user_match == self.username_convert(submission["username"]):
                     syncable_user_count += 1
                     grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
                                                            float(assignment["points"])))
