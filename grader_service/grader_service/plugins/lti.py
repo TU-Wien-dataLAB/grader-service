@@ -136,7 +136,7 @@ class LTISyncGrades(SingletonConfigurable):
                     syncable_user_count += 1
                     grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
                                                            float(assignment["points"])))
-        self.log.info(f"LTI: matched f{syncable_user_count} users")
+        self.log.info(f"LTI: matched {syncable_user_count} users")
         # 6. get all lineitems
         self.log.debug("LTI: resolve lti url")
         try:
