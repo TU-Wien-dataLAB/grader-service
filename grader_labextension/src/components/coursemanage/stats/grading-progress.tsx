@@ -1,7 +1,7 @@
 import { filterUserSubmissions, IStatsSubComponentProps } from './stats';
 import React from 'react';
 import { Submission } from '../../../model/submission';
-import { Box, Card, CardContent, CardHeader } from '@mui/material';
+import { Box, Card, CardContent, CardHeader, Paper, Typography } from '@mui/material';
 import {
   Legend,
   PolarAngleAxis,
@@ -15,7 +15,7 @@ import {
   NameType,
   ValueType
 } from 'recharts/types/component/DefaultTooltipContent';
-import moment from 'moment';
+import { useTheme } from '@mui/material/styles';
 
 interface GradingProgressData {
   auto: number;
@@ -32,17 +32,17 @@ const GradingProgressTooltip = ({
     const action =
       payload[0].payload.name === 'Feedback' ? 'Generated' : 'Graded';
     return (
-      <div className="custom-tooltip">
-        <p
+      <Paper className="custom-tooltip">
+        <Typography
           className="recharts-tooltip-label"
           style={{ color: payload[0].payload.fill }}
         >
           {payload[0].payload.name}
-        </p>
-        <p className="recharts-tooltip-label">{`${(
+        </Typography>
+        <Typography className="recharts-tooltip-label">{`${(
           +payload[0].value * 100
-        ).toFixed(0)}% ${action}`}</p>
-      </div>
+        ).toFixed(0)}% ${action}`}</Typography>
+      </Paper>
     );
   }
   return null;
@@ -91,6 +91,7 @@ const getData = (
 
 export const GradingProgress = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState([]);
+  const darkMode = useTheme().palette.mode === 'dark';
 
   React.useEffect(() => {
     const d = getData(props.latestSubmissions, props.users);
@@ -131,7 +132,7 @@ export const GradingProgress = (props: IStatsSubComponentProps) => {
                   angleAxisId={0}
                   tick={false}
                 />
-                <RadialBar background dataKey="value" angleAxisId={0} />
+                <RadialBar background={{ fill: darkMode ? "#555" : "#eee" }} dataKey="value" angleAxisId={0} />
                 <Tooltip content={<GradingProgressTooltip />} />
                 <Legend layout="horizontal" verticalAlign="bottom" align="center" />
               </RadialBarChart>
