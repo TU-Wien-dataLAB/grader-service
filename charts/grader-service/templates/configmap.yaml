@@ -51,6 +51,7 @@ data:
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
     c.LTISyncGrades.username_match = {{ .Values.ltiSyncGrades.username_match | quote }}
 
+    c.GraderService.log_level = "{{ .Values.logLevel }}"
 
   .gitconfig: |
     [user]
