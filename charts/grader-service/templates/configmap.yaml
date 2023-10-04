@@ -42,13 +42,14 @@ data:
 
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
-    c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int}}
+    c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
 
     c.LTISyncGrades.enable_lti_features = {{ .Values.ltiSyncGrades.enabled }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
     c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
+    c.LTISyncGrades.username_match = {{ .Values.ltiSyncGrades.username_match | quote }}
 
 
   .gitconfig: |

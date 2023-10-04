@@ -73,8 +73,10 @@ ltiSyncGrades:
   client_id: ""
   token_url: ""
   username_convert: null
+  username_match: "user_id"
   token_private_key: ""
   resolve_lti_urls: ""
+
 
 
 # pvc
