@@ -55,7 +55,7 @@ export const CourseManageComponent = () => {
   const [showComplete, setShowComplete] = useState(false);
 
   return (
-    <Stack direction={'column'} sx={{ m: 5, flex: 1, overflow: 'hidden' }}>
+    <Stack direction={'column'} sx={{ mt: 5, ml: 5, flex: 1 }}>
       <Stack direction='row' justifyContent='center'>
         <Typography variant={'h4'}>Course Management</Typography>
       </Stack>
