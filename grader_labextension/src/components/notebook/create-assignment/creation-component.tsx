@@ -5,18 +5,21 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import {Cell} from '@jupyterlab/cells';
-import {CellModel, CellType} from '../model';
+import { Cell } from '@jupyterlab/cells';
+import { CellModel, CellType } from '../model';
 import {
   Alert,
-  Box,
+  Box, createTheme,
   Divider,
   Grid,
   MenuItem, styled, Switch,
   TextField
 } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+import { GlobalObjects } from '../../../index';
+import { ThemeProvider } from '@mui/system';
 
-export const AntSwitch = styled(Switch)(({theme}) => ({
+export const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 28,
   height: 16,
   padding: 0,
@@ -85,7 +88,7 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     props.cell.model.getMetadata('hint') != null
   );
   const [hint, setHint] = React.useState(
-    hintChecked ? props.cell.model.getMetadata('hint'): ''
+    hintChecked ? props.cell.model.getMetadata('hint') : ''
   );
 
   const handleHintChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,117 +116,124 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     updateMetadata();
   });
 
-  const alertStyle = {width: 250};
+  const alertStyle = { width: 250 };
   const gradableCell =
     type !== ('readonly' as CellType) &&
     type !== ('solution' as CellType) &&
     type !== '';
   const solutionCell = type === 'solution' || type === 'manual';
 
+  const theme = createTheme({
+    palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
+  });
+
   return (
-    <Box>
-      <Divider/>
-      <Box sx={{mt: 2, mb: 1, ml: 3}}>
-        <Grid container spacing={1}>
-          <Grid item>
-            <TextField
-              label="Type"
-              select
-              size="small"
-              sx={{minWidth: 150}}
-              value={type}
-              onChange={e => {
-                setType(e.target.value as CellType);
-              }}
-            >
-              <MenuItem value="">-</MenuItem>
-              <MenuItem value="readonly">Readonly</MenuItem>
-              {props.cell.model.type === 'code' && (
-                <MenuItem value="solution">Autograded answer</MenuItem>
-              )}
-              {props.cell.model.type === 'code' && (
-                <MenuItem value="tests">Autograded tests</MenuItem>
-              )}
-              <MenuItem value="manual">Manual graded answer</MenuItem>
-              {props.cell.model.type === 'markdown' && (
-                <MenuItem value="task">Manual graded task</MenuItem>
-              )}
-            </TextField>
-          </Grid>
-
-          {type !== '' && (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box>
+        <Divider />
+        <Box sx={{ mt: 2, mb: 1, ml: 3 }}>
+          <Grid container spacing={1}>
             <Grid item>
               <TextField
-                size="small"
-                label="ID"
-                value={id}
-                onChange={e => setId(e.target.value)}
-                error={id === ''}
-                helperText={id === '' ? 'ID not set' : ' '}
-              ></TextField>
-            </Grid>
-          )}
-
-          {gradableCell && (
-            <Grid item>
-              <TextField
-                size="small"
-                label="Points"
-                value={points}
-                type="number"
-                onChange={e => setPoints(parseFloat(e.target.value))}
-                InputProps={{
-                  inputProps: {
-                    max: 10000,
-                    min: 0,
-                    step: 0.25
-                  }
+                label='Type'
+                select
+                size='small'
+                sx={{ minWidth: 150 }}
+                value={type}
+                onChange={e => {
+                  setType(e.target.value as CellType);
                 }}
-                error={points === undefined}
-                helperText={points === undefined ? 'Points not set' : ' '}
-              />
+              >
+                <MenuItem value=''>-</MenuItem>
+                <MenuItem value='readonly'>Readonly</MenuItem>
+                {props.cell.model.type === 'code' && (
+                  <MenuItem value='solution'>Autograded answer</MenuItem>
+                )}
+                {props.cell.model.type === 'code' && (
+                  <MenuItem value='tests'>Autograded tests</MenuItem>
+                )}
+                <MenuItem value='manual'>Manual graded answer</MenuItem>
+                {props.cell.model.type === 'markdown' && (
+                  <MenuItem value='task'>Manual graded task</MenuItem>
+                )}
+              </TextField>
             </Grid>
-          )}
 
-          {solutionCell && (
-            <Grid item>
-              <AntSwitch
-                sx={{ mt: 2, ml: 1 }}
-                checked={hintChecked}
-                onChange={handleHintChange}
-                inputProps={{'aria-label': 'controlled'}}
-              />
-            </Grid>
-          )}
-          {solutionCell && (
-            <Grid item>
-              <TextField
-                size="small"
-                label="Optional hint"
-                value={hint}
-                disabled={!hintChecked}
-                onChange={e => setHint(e.target.value)}
-              ></TextField>
-            </Grid>
-          )}
+            {type !== '' && (
+              <Grid item>
+                <TextField
+                  size='small'
+                  label='ID'
+                  value={id}
+                  onChange={e => setId(e.target.value)}
+                  error={id === ''}
+                  helperText={id === '' ? 'ID not set' : ' '}
+                ></TextField>
+              </Grid>
+            )}
 
-          {type === '' && (
-            <Grid item>
-              <Alert variant="outlined" sx={alertStyle} severity="warning">
-                Type not set
-              </Alert>
-            </Grid>
-          )}
+            {gradableCell && (
+              <Grid item>
+                <TextField
+                  size='small'
+                  label='Points'
+                  value={points}
+                  type='number'
+                  onChange={e => setPoints(parseFloat(e.target.value))}
+                  InputProps={{
+                    inputProps: {
+                      max: 10000,
+                      min: 0,
+                      step: 0.25
+                    }
+                  }}
+                  error={points === undefined}
+                  helperText={points === undefined ? 'Points not set' : ' '}
+                />
+              </Grid>
+            )}
 
-          {points === 0 && (
-            <Grid item>
-              <Alert variant="outlined" sx={alertStyle} severity="warning">
-                Gradable cell with zero points
-              </Alert>
-            </Grid>
-          )}
-        </Grid>
+            {solutionCell && (
+              <Grid item>
+                <AntSwitch
+                  sx={{ mt: 2, ml: 1 }}
+                  checked={hintChecked}
+                  onChange={handleHintChange}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                />
+              </Grid>
+            )}
+            {solutionCell && (
+              <Grid item>
+                <TextField
+                  size='small'
+                  label='Optional hint'
+                  value={hint}
+                  disabled={!hintChecked}
+                  onChange={e => setHint(e.target.value)}
+                ></TextField>
+              </Grid>
+            )}
+
+            {type === '' && (
+              <Grid item>
+                <Alert variant='outlined' sx={alertStyle} severity='warning'>
+                  Type not set
+                </Alert>
+              </Grid>
+            )}
+
+            {points === 0 && (
+              <Grid item>
+                <Alert variant='outlined' sx={alertStyle} severity='warning'>
+                  Gradable cell with zero points
+                </Alert>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 };

@@ -19,8 +19,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Stack
+  Stack, createTheme
 } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+import { GlobalObjects } from '../../../index';
+import { ThemeProvider } from '@mui/system';
 
 export interface ValidatorProps {
   notebook: Notebook;
@@ -164,50 +167,58 @@ export const Validator = (props: ValidatorProps) => {
   const handleClose = () => {
     setDialog(false);
   };
+
+  const theme = createTheme({
+    palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
+  });
+
   return (
-    <Box>
-      <MuiButton
-        className="grader-toolbar-button"
-        onClick={validateNotebook}
-        variant="outlined"
-        color="success"
-        size="small"
-        sx={{ fontSize: '0.1rem' }}
-      >
-        Validate
-      </MuiButton>
-      <Dialog
-        open={dialogOpen}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{'Validation Report'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2}>
-            {results.length === 0 && (
-              <Box sx={{ width: '450px' }}>
-                <Alert severity="success">
-                  <AlertTitle>No errors found</AlertTitle>
-                </Alert>
-              </Box>
-            )}
-            {results.map((e: ReportItem) => (
-              <Box sx={{ width: '450px' }}>
-                <Alert severity={e.type}>
-                  <AlertTitle>{e.id}</AlertTitle>
-                  {e.msg}
-                </Alert>
-              </Box>
-            ))}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <MuiButton onClick={handleClose} autoFocus>
-            Ok
-          </MuiButton>
-        </DialogActions>
-      </Dialog>
-    </Box>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box>
+        <MuiButton
+          className='grader-toolbar-button'
+          onClick={validateNotebook}
+          variant='outlined'
+          color='success'
+          size='small'
+          sx={{ fontSize: '0.1rem' }}
+        >
+          Validate
+        </MuiButton>
+        <Dialog
+          open={dialogOpen}
+          onClose={handleClose}
+          aria-labelledby='alert-dialog-title'
+          aria-describedby='alert-dialog-description'
+        >
+          <DialogTitle id='alert-dialog-title'>{'Validation Report'}</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2}>
+              {results.length === 0 && (
+                <Box sx={{ width: '450px' }}>
+                  <Alert severity='success'>
+                    <AlertTitle>No errors found</AlertTitle>
+                  </Alert>
+                </Box>
+              )}
+              {results.map((e: ReportItem) => (
+                <Box sx={{ width: '450px' }}>
+                  <Alert severity={e.type}>
+                    <AlertTitle>{e.id}</AlertTitle>
+                    {e.msg}
+                  </Alert>
+                </Box>
+              ))}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <MuiButton onClick={handleClose} autoFocus>
+              Ok
+            </MuiButton>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </ThemeProvider>
   );
 };
