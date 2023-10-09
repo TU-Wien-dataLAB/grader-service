@@ -163,8 +163,9 @@ class GraderService(config.Application):
         "config": "GraderService.config_file",
     }
 
+
     log_level = Enum(
-        ["CRITICAL", "FATAL", "ERROR", "WARNING",
+        [0, 10, 20, 30, 40, 50, "CRITICAL", "FATAL", "ERROR", "WARNING",
          "WARN", "INFO", "DEBUG", "NOTSET"],
         "INFO",
     ).tag(config=True)
@@ -229,9 +230,14 @@ class GraderService(config.Application):
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
-        super().initialize(*args, **kwargs)
-        self.setup_loggers(self.log_level)
         self.log.info("Starting Initialization...")
+        self.log.info("Loading config file...")
+        super().initialize(*args, **kwargs)
+        self.parse_command_line(argv)
+        self.load_config_file(self.config_file)
+        self.setup_loggers(self.log_level)
+        
+
         self._start_future = asyncio.Future()
 
         if sys.version_info.major < 3 or sys.version_info.minor < 8:
@@ -242,9 +248,6 @@ class GraderService(config.Application):
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
 
-        self.parse_command_line(argv)
-        self.log.info("Loading config file...")
-        self.load_config_file(self.config_file)
 
     async def cleanup(self):
         pass
