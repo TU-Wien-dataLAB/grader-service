@@ -39,9 +39,16 @@ export const GradeComponent = (props: GradeComponentProps) => {
     props.toolData.type === 'manual' ||
     props.toolData.type === 'solution';
 
-  const theme = createTheme({
-    palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
-  });
+  const [theme, setTheme] = React.useState(
+    createTheme({
+      palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
+    })
+  );
+
+  GlobalObjects.themeManager.themeChanged.connect(() => {
+    const palette = (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark';
+    setTheme(createTheme({ palette: { mode: palette } }));
+  }, this);
 
   return (
     <ThemeProvider theme={theme}>
