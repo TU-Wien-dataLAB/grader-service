@@ -127,7 +127,7 @@ export function getProperties(
   reload = false
 ): Promise<any> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/properties`;
-  return request<any>(HTTPMethod.GET, url, reload);
+  return request<any>(HTTPMethod.GET, url, null, reload);
 }
 
 export function getLogs(
@@ -137,7 +137,7 @@ export function getLogs(
   reload = false
 ): Promise<string> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/logs`;
-  return request<string>(HTTPMethod.GET, url, reload);
+  return request<string>(HTTPMethod.GET, url, null, reload);
 }
 
 export function createOrOverrideEditRepository(
@@ -161,10 +161,11 @@ export function updateProperties(
 export function getSubmission(
   lectureId: number,
   assignmentId: number,
-  submissionId: number
+  submissionId: number,
+  reload: boolean = false
 ): Promise<Submission> {
   const url = `/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`;
-  return request<Submission>(HTTPMethod.GET, url);
+  return request<Submission>(HTTPMethod.GET, url, null, reload);
 }
 
 export function updateSubmission(

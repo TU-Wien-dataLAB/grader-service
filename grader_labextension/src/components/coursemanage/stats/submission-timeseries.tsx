@@ -9,7 +9,7 @@ import {
   TooltipProps,
   Brush
 } from 'recharts';
-import { Box, Card, CardContent, CardHeader, Typography } from '@mui/material';
+import { Box, Card, CardContent, CardHeader, Paper, Typography } from '@mui/material';
 import { IStatsSubComponentProps } from './stats';
 import moment from 'moment';
 import { Submission } from '../../../model/submission';
@@ -18,6 +18,7 @@ import {
   ValueType
 } from 'recharts/types/component/DefaultTooltipContent';
 import { loadNumber, storeNumber } from '../../../services/storage.service';
+import { useTheme } from '@mui/material/styles';
 
 const SubmissionTimeSeriesTooltip = ({
   active,
@@ -26,14 +27,14 @@ const SubmissionTimeSeriesTooltip = ({
 }: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
     return (
-      <div className="custom-tooltip">
-        <p className="recharts-tooltip-label">
+      <Paper className="custom-tooltip">
+        <Typography className="recharts-tooltip-label">
           {moment(payload[0].payload.time).format('DD. MMM')}
-        </p>
-        <p className="recharts-tooltip-label">{`${payload[0].value} Submission${
+        </Typography>
+        <Typography className="recharts-tooltip-label">{`${payload[0].value} Submission${
           payload[0].value === 1 ? '' : 's'
-        }`}</p>
-      </div>
+        }`}</Typography>
+      </Paper>
     );
   }
 
@@ -70,6 +71,7 @@ const getData = (submissions: Submission[]): { time: number; n: number }[] => {
 
 export const SubmissionTimeSeries = (props: IStatsSubComponentProps) => {
   const [data, setData] = React.useState([] as { time: number; n: number }[]);
+  const darkMode = useTheme().palette.mode === 'dark';
 
   React.useEffect(() => {
     const d = getData(props.allSubmissions);
@@ -135,6 +137,9 @@ export const SubmissionTimeSeries = (props: IStatsSubComponentProps) => {
                       props.assignment
                     );
                   }}
+                  fill={darkMode ? '#333' : '#eee'}
+                  stroke={darkMode ? "#fff": "#666"}
+                  fillOpacity={darkMode ? 0.4 : 0.2}
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -40,9 +40,9 @@ export function request<T, B = any>(
 
   // set cache always to default,
   // otherwise ServerConnection.makeRequest puts the timestamp as a query parameter resulting in no cache hits
-  options.cache = "default";
+  options.cache = 'default';
   if (reload) {
-    options.cache = "reload";
+    options.cache = 'reload';
   }
 
   return ServerConnection.makeRequest(requestUrl, options, settings).then(
@@ -64,29 +64,5 @@ export function request<T, B = any>(
       console.log(data);
       return data;
     }
-  );
-
-  return lastValueFrom(
-    from(ServerConnection.makeRequest(requestUrl, options, settings)).pipe(
-      switchMap(async response => {
-        if (!response.ok) {
-          throw new ServerConnection.ResponseError(
-            response,
-            await response.text()
-          );
-        }
-        let data: any = await response.text();
-        if (data.length > 0) {
-          try {
-            data = JSON.parse(data);
-          } catch (error) {
-            console.log('Not a JSON response body.', response);
-          }
-        }
-        console.log('Request ' + method.toString() + ' URL: ' + requestUrl);
-        console.log(data);
-        return data;
-      })
-    )
   );
 }

@@ -6,9 +6,12 @@
 
 import * as React from 'react';
 import { Cell } from '@jupyterlab/cells';
-import { Box, Divider, Grid, Typography } from '@mui/material';
+import { Box, createTheme, Divider, Grid, Typography } from '@mui/material';
 import { CellModel } from '../../model';
 import { GradeBook } from '../../../../services/gradebook';
+import CssBaseline from '@mui/material/CssBaseline';
+import { GlobalObjects } from '../../../../index';
+import { ThemeProvider } from '@mui/system';
 
 export interface IDataComponentProps {
   cell: Cell;
@@ -25,35 +28,49 @@ export const DataComponent = (props: IDataComponentProps) => {
     toolData.type !== 'solution' &&
     toolData.type !== '';
 
+  const [theme, setTheme] = React.useState(
+    createTheme({
+      palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
+    })
+  );
+
+  GlobalObjects.themeManager.themeChanged.connect(() => {
+    const palette = (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark';
+    setTheme(createTheme({ palette: { mode: palette } }));
+  }, this);
+
   return (
-    <Box>
-      <Divider />
-      <Box sx={{ mt: 2, mb: 1, ml: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item>
-            <Typography>Type: {toolData.type}</Typography>
-          </Grid>
-
-          <Grid item>
-            <Typography>ID: {toolData.id}</Typography>
-          </Grid>
-
-          {toolData.type === 'tests' && (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box>
+        <Divider />
+        <Box sx={{ mt: 2, mb: 1, ml: 3 }}>
+          <Grid container spacing={2}>
             <Grid item>
-              <Typography>
-                Autograded Points:{' '}
-                {props.gradebook.getAutoGradeScore(props.nbname, toolData.id)}
-              </Typography>
+              <Typography>Type: {toolData.type}</Typography>
             </Grid>
-          )}
 
-          {gradableCell && (
             <Grid item>
-              <Typography>Max Points: {toolData.points}</Typography>
+              <Typography>ID: {toolData.id}</Typography>
             </Grid>
-          )}
-        </Grid>
+
+            {toolData.type === 'tests' && (
+              <Grid item>
+                <Typography>
+                  Autograded Points:{' '}
+                  {props.gradebook.getAutoGradeScore(props.nbname, toolData.id)}
+                </Typography>
+              </Grid>
+            )}
+
+            {gradableCell && (
+              <Grid item>
+                <Typography>Max Points: {toolData.points}</Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 };

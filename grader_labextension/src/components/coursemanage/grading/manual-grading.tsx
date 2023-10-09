@@ -12,7 +12,7 @@ import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import {
-  getProperties,
+  getProperties, getSubmission,
   updateSubmission
 } from '../../../services/submissions.service';
 import { GradeBook } from '../../../services/gradebook';
@@ -49,19 +49,45 @@ export const ManualGrading = () => {
     manualGradeSubmission: Submission,
     setManualGradeSubmission: React.Dispatch<React.SetStateAction<Submission>>
   };
-  const submission = manualGradeSubmission;
-  const manualPath = `${lectureBasePath}${lecture.code}/manualgrade/${assignment.id}/${submission.id}`;
+  const [submission, setSubmission] = React.useState(manualGradeSubmission);
+  const mPath = `${lectureBasePath}${lecture.code}/manualgrade/${assignment.id}/${submission.id}`;
   const rowIdx = rows.findIndex(s => s.id === submission.id);
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
   const [submissionScaling, setSubmissionScaling] = React.useState(submission.score_scaling);
-
+  const [manualPath, setManualPath] = React.useState(mPath);
   const [gradeBook, setGradeBook] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     reloadProperties();
   }, []);
+
+  const reloadManualPath = () => {
+    setManualPath(mPath);
+  };
+
+  const reloadProperties = () => {
+    getProperties(
+      lecture.id,
+      assignment.id,
+      submission.id,
+      true
+    ).then(properties => {
+      const gradeBook = new GradeBook(properties);
+      setGradeBook(gradeBook);
+    });
+  };
+
+  const reloadSubmission = () => {
+    getSubmission(lecture.id, assignment.id, submission.id, true).then(s => setSubmission(s));
+  };
+
+  const reload = () => {
+    reloadSubmission();
+    reloadProperties();
+    reloadManualPath();
+  };
 
   const handleAutogradeSubmission = async () => {
     await autogradeSubmissionsDialog(async () => {
@@ -70,6 +96,7 @@ export const ManualGrading = () => {
         enqueueSnackbar('Autograding submission!', {
           variant: 'success'
         });
+        reload();
       } catch (err) {
         console.error(err);
         enqueueSnackbar('Error Autograding Submission', {
@@ -86,6 +113,7 @@ export const ManualGrading = () => {
         enqueueSnackbar('Generating feedback for submission!', {
           variant: 'success'
         });
+        reload();
       } catch (err) {
         console.error(err);
         enqueueSnackbar('Error Generating Feedback', {
@@ -115,24 +143,15 @@ export const ManualGrading = () => {
         enqueueSnackbar('Successfully Graded Submission', {
           variant: 'success'
         });
+        reload();
       },
       err => {
         enqueueSnackbar(err.message, {
           variant: 'error'
         });
+        reload();
       }
     );
-  };
-
-  const reloadProperties = () => {
-    getProperties(
-      lecture.id,
-      assignment.id,
-      submission.id
-    ).then(properties => {
-      const gradeBook = new GradeBook(properties);
-      setGradeBook(gradeBook);
-    });
   };
 
   const handlePullSubmission = async () => {
@@ -142,6 +161,7 @@ export const ManualGrading = () => {
         enqueueSnackbar('Successfully Pulled Submission', {
           variant: 'success'
         });
+        reload();
       },
       err => {
         enqueueSnackbar(err.message, {
@@ -264,7 +284,7 @@ export const ManualGrading = () => {
 
       <Stack direction={'row'} sx={{ ml: 2, mr: 2 }} spacing={2}>
         <Tooltip title='Reload'>
-          <IconButton aria-label='reload' onClick={() => reloadProperties()}>
+          <IconButton aria-label='reload' onClick={() => reload()}>
             <ReplayIcon />
           </IconButton>
         </Tooltip>
