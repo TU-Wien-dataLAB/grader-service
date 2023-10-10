@@ -242,13 +242,13 @@ class SubmissionHandler(GraderBaseHandler):
 
         score_scaling = 1.0
         if assignment.duedate is not None:
-            score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts)
+            score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
 
         if assignment.max_submissions:
             submissions = assignment.submissions
             usersubmissions = [s for s in submissions if
                                s.username == role.username]
-            if len(usersubmissions) >= assignment.max_submissions:
+            if len(usersubmissions) >= assignment.max_submissions and role.role < Scope.tutor:
                 raise HTTPError(HTTPStatus.CONFLICT, reason="Maximum number \
                 of submissions reached!")
 
@@ -287,7 +287,7 @@ class SubmissionHandler(GraderBaseHandler):
         # If the assignment has automatic grading or fully
         # automatic grading perform necessary operations
         if automatic_grading in [AutoGradingBehaviour.auto,
-                                            AutoGradingBehaviour.full_auto]:
+                                 AutoGradingBehaviour.full_auto]:
             self.set_status(HTTPStatus.ACCEPTED)
             executor = RequestHandlerConfig.instance() \
                 .autograde_executor_class(
@@ -303,10 +303,10 @@ class SubmissionHandler(GraderBaseHandler):
                 async def feedback_and_sync():
 
                     GraderExecutor.instance().submit(feedback_executor.start)
-                    lecture : Lecture = self.session.query(Lecture).get(lecture_id)
+                    lecture: Lecture = self.session.query(Lecture).get(lecture_id)
 
                     lti_plugin = LTISyncGrades.instance()
-                    data = (lecture.serialize(), assignment.serialize(), [ submission.serialize() ])
+                    data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
 
                     if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
 
@@ -314,12 +314,12 @@ class SubmissionHandler(GraderBaseHandler):
                             await lti_plugin.start(*data)
                         except Exception as e:
                             self.log.error("Could not sync grades: " + str(e))
-                        
+
                     else:
                         self.log.info("Skipping LTI plugin as it is not enabled")
-                
+
                 GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
-                
+
                 # Trigger LTI Plugin
             else:
                 GraderExecutor.instance().submit(
@@ -332,7 +332,7 @@ class SubmissionHandler(GraderBaseHandler):
             self.session.close()
 
     @staticmethod
-    def calculate_late_submission_scaling(assignment, submission_ts) -> float:
+    def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
         assignment_settings = AssignmentSettingsModel.from_dict(json.loads(assignment.settings))
         if assignment_settings.late_submission and len(assignment_settings.late_submission) > 0:
             scaling = 0.0
@@ -344,16 +344,17 @@ class SubmissionHandler(GraderBaseHandler):
                     if submission_ts < late_submission_date:
                         scaling = period.scaling
                         break
-                if scaling == 0.0:
+                if scaling == 0.0 and role.role < Scope.tutor:
                     raise HTTPError(HTTPStatus.CONFLICT,
                                     reason="Submission after last late submission period of assignment!")
         else:
-
             if submission_ts < assignment.duedate:
                 scaling = 1.0
             else:
-                raise HTTPError(HTTPStatus.CONFLICT,
-                                reason="Submission after due date of assignment!")
+                if role.role < Scope.tutor:
+                    raise HTTPError(HTTPStatus.CONFLICT, reason="Submission after due date of assignment!")
+                else:
+                    scaling = 0.0
         return scaling
 
 
@@ -681,7 +682,6 @@ class SubmissionEditHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
-    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
     @authorize([Scope.instructor])
@@ -693,19 +693,18 @@ class LtiSyncHandler(GraderBaseHandler):
                     .subquery())
 
         # build the main query
-        submissions : list[Submission] = (
+        submissions: list[Submission] = (
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
                           Submission.assignid == assignment_id) & Submission.feedback_available)
             .all())
 
-        assignment : Assignment = self.get_assignment(lecture_id, assignment_id)
-        lecture : Lecture = self.session.query(Lecture).get(lecture_id)
-
+        assignment: Assignment = self.get_assignment(lecture_id, assignment_id)
+        lecture: Lecture = self.session.query(Lecture).get(lecture_id)
 
         lti_plugin = LTISyncGrades.instance()
-        data = (lecture.serialize(), assignment.serialize(), [ s.serialize() for s in submissions ])
+        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
 
         if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
 
@@ -714,12 +713,10 @@ class LtiSyncHandler(GraderBaseHandler):
                 self.write_json(results)
             except HTTPError as e:
                 self.write_error(e.status_code, reason=e.reason)
-                self.log.info("Could not sync grades: " + e.reason )
+                self.log.info("Could not sync grades: " + e.reason)
             except Exception as e:
                 self.log.error("Could not sync grades: " + str(e))
-            
+
         else:
             self.log.info("Skipping LTI plugin as it is not enabled")
             self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
-
-        
