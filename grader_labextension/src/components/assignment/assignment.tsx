@@ -7,35 +7,21 @@
 import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
-import { AssignmentDetail } from '../../model/assignmentDetail';
 import { Submission } from '../../model/submission';
-import {
-  Box,
-  Button,
-  Chip,
-  Stack,
-  Tooltip,
-  Typography
-} from '@mui/material';
+import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
 
 import { SubmissionList } from './submission-list';
 import { AssignmentStatus } from './assignment-status';
 import { Files } from './files/files';
 import WarningIcon from '@mui/icons-material/Warning';
-import {
-  useRouteLoaderData,
-  Outlet, useNavigate, useLocation
-} from 'react-router-dom';
-import {
-  getAssignment, pullAssignment, pushAssignment, resetAssignment
-} from '../../services/assignments.service';
+import { Outlet, useNavigate, useRouteLoaderData } from 'react-router-dom';
+import { pullAssignment, pushAssignment, resetAssignment } from '../../services/assignments.service';
 import { getFiles, lectureBasePath } from '../../services/file.service';
 import { getAllSubmissions, submitAssignment } from '../../services/submissions.service';
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from '../util/dialog-provider';
 import { RepoType } from '../util/repo-type';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
-import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import GradingIcon from '@mui/icons-material/Grading';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -43,6 +29,7 @@ import { DeadlineDetail } from '../util/deadline';
 import moment from 'moment';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import { Scope, UserPermissions } from '../../services/permission.service';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -211,7 +198,7 @@ export const AssignmentComponent = () => {
     }
     let late_submission = assignment.settings.late_submission;
     if (late_submission === null || late_submission.length === 0) {
-      late_submission = [{ period: 'P0D', scaling: undefined }]
+      late_submission = [{ period: 'P0D', scaling: undefined }];
     }
     const late = moment(assignment.due_date).add(moment.duration(late_submission[late_submission.length - 1].period)).toDate().getTime();
     return late < Date.now();
@@ -231,6 +218,12 @@ export const AssignmentComponent = () => {
 
   const isAssignmentFetched = () => {
     return files.length > 0;
+  };
+
+  const hasPermissions = () => {
+    const permissions = UserPermissions.getPermissions();
+    const scope = permissions[lecture.code];
+    return scope >= Scope.tutor;
   };
 
 
@@ -304,10 +297,14 @@ export const AssignmentComponent = () => {
                 color={(!isDeadlineOver()) ? 'success' : 'warning'}
                 size='small'
                 disabled={
-                  isLateSubmissionOver() ||
-                  isMaxSubmissionReached() ||
-                  isAssignmentCompleted() ||
-                  files.length == 0
+                  hasPermissions()
+                    ? false
+                    : (
+                      isLateSubmissionOver() ||
+                      isMaxSubmissionReached() ||
+                      isAssignmentCompleted() ||
+                      files.length == 0
+                    )
                 }
                 onClick={() => submitAssignmentHandler()}
               >
