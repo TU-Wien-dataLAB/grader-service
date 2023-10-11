@@ -396,7 +396,7 @@ export default function GradingTable() {
                             clearSelection={() => setSelected([])} selected={selected}
                             shownSubmissions={shownSubmissions}
                             switchShownSubmissions={switchShownSubmissions} />
-      <Box sx={{ flex: 1, overflow: 'scroll' }}>
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Table
           // sx={{ minWidth: 750 }}
           aria-labelledby='tableTitle'

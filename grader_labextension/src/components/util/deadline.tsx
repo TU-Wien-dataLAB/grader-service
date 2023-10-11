@@ -24,6 +24,7 @@ import AlarmIcon from '@mui/icons-material/Alarm';
 import AlarmAddIcon from '@mui/icons-material/AlarmAdd';
 import { SubmissionPeriod } from '../../model/submissionPeriod';
 import { utcToLocalFormat } from '../../services/datetime.service';
+import { GlobalObjects } from '../../index';
 
 export interface IDeadlineProps {
   due_date: string | null;
@@ -59,19 +60,6 @@ const fullTimeUnits: IUnitMap = {
   m: 'Minute',
   s: 'Second'
 };
-
-const theme = createTheme({
-  palette: {
-    warning: {
-      main: '#ffa726',
-      contrastText: '#fff'
-    },
-    error: {
-      main: '#ef5350',
-      contrastText: '#fff'
-    }
-  }
-});
 
 const getTimeUnit = (timeUnit: string, value: number, compact: boolean) => {
   if (compact) {
@@ -181,6 +169,20 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
     setNewInterval(newInterval);
   };
 
+  const theme = createTheme({
+    palette: {
+      mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark',
+      warning: {
+        main: '#ffa726',
+        contrastText: '#fff'
+      },
+      error: {
+        main: '#ef5350',
+        contrastText: '#fff'
+      }
+    }
+  });
+
   return (
     <ThemeProvider theme={theme}>
       <Chip
@@ -191,7 +193,6 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
         color={color}
       />
     </ThemeProvider>
-
   );
 };
 

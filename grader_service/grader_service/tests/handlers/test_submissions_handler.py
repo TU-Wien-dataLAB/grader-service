@@ -18,7 +18,7 @@ from grader_service.orm.assignment import Assignment as AssignmentORM
 from grader_service.api.models.submission import Submission
 from tornado.httpclient import HTTPClientError
 from datetime import timezone
-from .db_util import insert_submission, insert_take_part
+from .db_util import insert_submission, insert_take_part, _get_assignment
 
 # Imports are important otherwise they will not be found
 from .tornado_test_utils import *
@@ -26,6 +26,8 @@ from .db_util import insert_assignments
 from ...api.models.assignment import Assignment
 from ...handlers.base_handler import GraderBaseHandler
 from ...handlers.submissions import SubmissionHandler
+from ...orm import Role
+from ...orm.takepart import Scope
 
 
 async def submission_test_setup(sql_alchemy_db, http_server_client, default_user, default_token,
@@ -46,6 +48,8 @@ async def submission_test_setup(sql_alchemy_db, http_server_client, default_user
 @pytest.mark.parametrize("period,expected", [("P0D", 1.0), ("P1D", 0.5), ("P2D", 0.2), ("P3D", 0.1)])
 def test_calculate_late_submission_scaling(period, expected):
     a = AssignmentORM()
+    role = Role()
+    role.role = Scope.student
     now = datetime.utcnow()
     a.duedate = now
 
@@ -57,11 +61,13 @@ def test_calculate_late_submission_scaling(period, expected):
     a.settings = json.dumps(settings)
 
     submission_ts = now - isodate.parse_duration("PT1S") + isodate.parse_duration(period)
-    assert SubmissionHandler.calculate_late_submission_scaling(a, submission_ts) == expected
+    assert SubmissionHandler.calculate_late_submission_scaling(a, submission_ts, role) == expected
 
 
 def test_calculate_late_submission_scaling_error():
     a = AssignmentORM()
+    role = Role()
+    role.role = Scope.student
     now = datetime.utcnow()
     a.duedate = now
 
@@ -73,7 +79,7 @@ def test_calculate_late_submission_scaling_error():
     submission_ts = now + isodate.parse_duration("P1M")
     from tornado.web import HTTPError
     with pytest.raises(HTTPError):
-        SubmissionHandler.calculate_late_submission_scaling(a, submission_ts)
+        SubmissionHandler.calculate_late_submission_scaling(a, submission_ts, role)
 
 
 async def test_get_submissions(
@@ -1080,25 +1086,21 @@ async def test_max_submissions_assignment(
         sql_alchemy_db,
         tmp_path
 ):
+    default_user["groups"] = ["20wle2:student", "21wle1:student", "22wle1:student"]
     http_server = jupyter_hub_mock_server(default_user, default_token)
     app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
 
     l_id = 3
     a_id = 3
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
-                                automatic_grading="unassisted", max_submissions=1)
-    post_response = await http_server_client.fetch(
-        url,
-        method="POST",
-        headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(pre_assignment.to_dict()),
-    )
-    assert post_response.code == 201
-    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
-    assert post_assignment.max_submissions == 1
-    assert post_assignment.id == a_id
+    session = sql_alchemy_db.sessionmaker()
+    assignment_orm = _get_assignment("pytest", l_id, "2055-06-06 23:59:00.000", 20, "released")
+    assignment_orm.max_submissions = 1
+    assignment_orm.automatic_grading = "unassisted"
+    session.add(assignment_orm)
+    session.commit()
+
+    assert assignment_orm.id == 3
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
 

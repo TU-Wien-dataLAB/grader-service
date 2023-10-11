@@ -25,6 +25,7 @@ import {
 
 import { ILauncher } from '@jupyterlab/launcher';
 import { INotebookTools, Notebook, NotebookPanel } from '@jupyterlab/notebook';
+import { IThemeManager } from '@jupyterlab/apputils'
 
 import { CourseManageView } from './widgets/coursemanage';
 
@@ -106,6 +107,7 @@ export class GlobalObjects {
   static docManager: IDocumentManager;
   static browserFactory: IFileBrowserFactory;
   static tracker: INotebookTracker;
+  static themeManager: IThemeManager;
 }
 
 /**
@@ -121,7 +123,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     IDocumentManager,
     IFileBrowserFactory,
     INotebookTracker,
-    ILayoutRestorer
+    ILayoutRestorer,
+    IThemeManager
   ],
   activate: (
     app: JupyterFrontEnd,
@@ -131,7 +134,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     docManager: IDocumentManager,
     browserFactory: IFileBrowserFactory,
     tracker: INotebookTracker,
-    restorer: ILayoutRestorer
+    restorer: ILayoutRestorer,
+    themeManager: IThemeManager
   ) => {
     console.log('JupyterLab extension grader_labextension is activated!');
     console.log('JupyterFrontEnd:', app);
@@ -144,6 +148,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.docManager = docManager;
     GlobalObjects.browserFactory = browserFactory;
     GlobalObjects.tracker = tracker;
+    GlobalObjects.themeManager = themeManager;
 
     const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentManageView>>(
       {

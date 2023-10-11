@@ -329,7 +329,7 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Button color='primary' variant='contained' type='submit'>
+        <Button sx={{mt: 2}} color='primary' variant='contained' type='submit'>
           Save changes
         </Button>
       </form>

@@ -149,7 +149,7 @@ export const LectureComponent = () => {
   }
 
   return (
-    <Stack direction={'column'} sx={{ m: 5, flex: 1 }}>
+    <Stack direction={'column'} sx={{ mt: 5, ml: 5, flex: 1 }}>
       <Typography variant={'h4'} sx={{ mr: 2 }}>
         {lectureState.name}
         {lectureState.complete ? (
