@@ -84,8 +84,8 @@ class LTISyncGrades(SingletonConfigurable):
         #     return {"syncable_users": 0, "synced_user": 0}
         
         self.log.info("LTI: start grade sync")
-        if len(submissions) == 0:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
+        # if len(submissions) == 0:
+        #     raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
 
         # 1. request bearer token
         self.log.debug("LTI: request bearer token")
