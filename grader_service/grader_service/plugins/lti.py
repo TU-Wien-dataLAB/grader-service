@@ -149,6 +149,7 @@ class LTISyncGrades(SingletonConfigurable):
             self.log.error(e.response)
             raise HTTPError(e.code, reason="Unable to get lineitems of course:" + e.response.reason)
         lineitems = json_decode(response.body)
+        self.log.debug(f"LTI found lineitems: {lineitems}")
         
         # 7. check if a lineitem with assignment name exists
         lineitem = None
