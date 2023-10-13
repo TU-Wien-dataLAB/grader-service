@@ -102,6 +102,7 @@ class LTISyncGrades(SingletonConfigurable):
         self.log.debug("LTI: resolve lti url")
         try:
             lti_urls = self.resolve_lti_urls(lecture, assignment, submissions)
+            self.log.debug(f"LTI membership and lineitems URL: {lti_urls}")
             lineitems_url = lti_urls["lineitems_url"]
             membership_url = lti_urls["membership_url"]
         except Exception as e:
@@ -154,6 +155,7 @@ class LTISyncGrades(SingletonConfigurable):
         for item in lineitems:
             if item["label"] == assignment["name"]:
                 # lineitem found
+                self.log.debug(f"LTI found lineitem: {item}")
                 lineitem = item
                 break
         
@@ -174,18 +176,18 @@ class LTISyncGrades(SingletonConfigurable):
         # due to different "interpretations" of the ims lti standard,
         # the response is sometimes a list containing the lineitem or
         # just the lineitem json
-        try:
-            lineitem_response = json_decode(response.body)
-        except Exception as e:
-            self.log.error("LTI: could not decode lineitem request response")
-            raise e
-        if isinstance(lineitem_response, list):
-            lineitem = lineitem_response[0]
-        elif isinstance(lineitem_response, dict):
-            lineitem = lineitem_response
-        else:
-            self.log.error("LTI: lineitem request response does not match dict or list")
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "lineitem request response does not match dict or list")
+            try:
+                lineitem_response = json_decode(response.body)
+            except Exception as e:
+                self.log.error("LTI: could not decode lineitem request response")
+                raise e
+            if isinstance(lineitem_response, list):
+                lineitem = lineitem_response[0]
+            elif isinstance(lineitem_response, dict):
+                lineitem = lineitem_response
+            else:
+                self.log.error("LTI: lineitem request response does not match dict or list")
+                raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "lineitem request response does not match dict or list")
         
         # 9. push grades to lineitem
         url_parsed = urlparse(lineitem["id"])
