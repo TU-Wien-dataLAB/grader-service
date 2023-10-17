@@ -156,7 +156,7 @@ export namespace CellModel {
     data: NbgraderData,
     cellModel: ICellModel
   ): void {
-    const readOnlyMetadata = cellModel.metadata
+    const readOnlyMetadata = cellModel.metadata;
     if (data == null) {
       if (readOnlyMetadata[NBGRADER_KEY] != undefined) {
         readOnlyMetadata[NBGRADER_KEY] = undefined;
@@ -171,6 +171,10 @@ export namespace CellModel {
     if (currentData != data) {
       cellModel.setMetadata(NBGRADER_KEY, data.toJson());
     }
+  }
+
+  export function deleteNbgraderData(collModel: ICellModel) {
+    collModel.deleteMetadata(NBGRADER_KEY);
   }
 }
 
@@ -243,7 +247,7 @@ namespace PrivateNbgraderData {
       !PrivateNbgraderData.isTask(nbgraderData) &&
       cellType !== 'code' &&
       PrivateNbgraderData.isSolution(nbgraderData) !=
-        PrivateNbgraderData.isGrade(nbgraderData)
+      PrivateNbgraderData.isGrade(nbgraderData)
     );
   }
 

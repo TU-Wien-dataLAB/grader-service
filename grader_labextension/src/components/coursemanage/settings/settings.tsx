@@ -87,6 +87,14 @@ export const SettingsComponent = () => {
     let nErrors = 0;
     for (let i = 0; i < late_submissions.length; i++) {
       const info = late_submissions[i];
+      if (!Number.isInteger(info.days)) {
+        error.late_submission.days[i] = 'days have to be whole numbers';
+        nErrors++;
+      }
+      if (!Number.isInteger(info.hours)) {
+        error.late_submission.hours[i] = 'hours have to be whole numbers';
+        nErrors++;
+      }
       if (info.days < 0) {
         error.late_submission.days[i] = 'days cannot be negative';
         nErrors++;
@@ -97,6 +105,10 @@ export const SettingsComponent = () => {
       }
       if (info.scaling <= 0 || info.scaling >= 1) {
         error.late_submission.scaling[i] = 'scaling has to be between 0 and 1 exclusive';
+        nErrors++;
+      }
+      if (parseFloat(info.scaling.toFixed(3)) !== info.scaling) {
+        error.late_submission.scaling[i] = 'scaling can only be specified up to 3 decimal points';
         nErrors++;
       }
       if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration(0)) {
@@ -329,7 +341,7 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Button sx={{mt: 2}} color='primary' variant='contained' type='submit'>
+        <Button sx={{ mt: 2 }} color='primary' variant='contained' type='submit'>
           Save changes
         </Button>
       </form>
