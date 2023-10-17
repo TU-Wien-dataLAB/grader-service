@@ -107,8 +107,8 @@ export const SettingsComponent = () => {
         error.late_submission.scaling[i] = 'scaling has to be between 0 and 1 exclusive';
         nErrors++;
       }
-      if (parseFloat(info.scaling.toFixed(2)) !== info.scaling) {
-        error.late_submission.scaling[i] = 'scaling can only be specified up to 2 decimal points';
+      if (parseFloat(info.scaling.toFixed(3)) !== info.scaling) {
+        error.late_submission.scaling[i] = 'scaling can only be specified up to 3 decimal points';
         nErrors++;
       }
       if (moment.duration({ days: info.days, hours: info.hours }) <= moment.duration(0)) {
