@@ -103,7 +103,11 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     }
     toolData.points = points;
     const data = CellModel.newNbgraderData(toolData);
-    CellModel.setNbgraderData(data, props.cell.model);
+    if (data === null) {
+      CellModel.deleteNbgraderData(props.cell.model)
+    } else {
+      CellModel.setNbgraderData(data, props.cell.model);
+    }
     //TODO: Currently we set the optional hint differently than the grader data, but maybe we should do it like this
     if (hintChecked) {
       props.cell.model.setMetadata('hint', hint);
