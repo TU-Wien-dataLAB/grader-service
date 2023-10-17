@@ -308,7 +308,7 @@ export function DeadlineDetail(props: IDeadlineDetailProps) {
                   <AlarmAddIcon />
                 </ListItemIcon>
                 <ListItemText primary={`${p.days()} Days ${p.hours()} Hours`} />
-                <ListItemText primary={`Penalty: ${(1 - l.scaling) * 100}%`} />
+                <ListItemText primary={`Penalty: ${((1 - l.scaling) * 100).toFixed(2)}%`} />
               </ListItem>;
             })}
           </List>

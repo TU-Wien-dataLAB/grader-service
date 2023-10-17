@@ -74,15 +74,17 @@ export const LateSubmissionForm = (props: ILateSubmissionFormProps) => {
         const late_sub_info = values_from_duration(l.period, l.scaling);
         return <Stack direction={'row'} spacing={2}>
           <TextField id={`days_${i}`} label={'Days'} value={late_sub_info.days} type={'number'}
+                     inputProps={{pattern: "^\\d*$"}}
                      error={i in (formik.errors?.late_submission?.days || {})}
                      helperText={i in (formik.errors?.late_submission?.days || {}) && formik.errors.late_submission?.days[i]}
                      onChange={e => updateLateSubmissionValue(i, 'days', +e.target.value)} />
           <TextField id={`hours${i}`} label={'Hours'} value={late_sub_info.hours} type={'number'}
+                     inputProps={{pattern: "^\\d*$"}}
                      error={i in (formik.errors?.late_submission?.hours || {})}
                      helperText={i in (formik.errors?.late_submission?.hours || {}) && formik.errors.late_submission?.hours[i]}
                      onChange={e => updateLateSubmissionValue(i, 'hours', +e.target.value)} />
           <TextField id={`scaling${i}`} label={'Scaling'} value={late_sub_info.scaling} type={'number'}
-                     inputProps={{ maxLength: 4, step: '0.01', min: 0.0, max: 1.0 }}
+                     inputProps={{ maxLength: 4, step: '0.01', min: 0.0, max: 1.0, pattern: "^\\d*\\.\\d{0,2}?$" }}
                      error={i in (formik.errors?.late_submission?.scaling || {})}
                      helperText={i in (formik.errors?.late_submission?.scaling || {}) && formik.errors.late_submission?.scaling[i]}
                      onChange={e => updateLateSubmissionValue(i, 'scaling', +e.target.value)} />
