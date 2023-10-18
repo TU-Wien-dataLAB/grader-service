@@ -7,8 +7,8 @@ jupyterhub:
   baseUrl: /
 
 db:
-  dialect: sqlite
-  host: /var/lib/grader-service/grader.db
+  dialect: postgresql
+  url: "postgresql://grader-service:Starfish@grader-db-postgresql.jupyter.svc.cluster.local:5432"
 
 gitConfig:
   gitUser: "grader-service"

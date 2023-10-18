@@ -75,7 +75,7 @@ ltiSyncGrades:
   username_convert: null
   username_match: "user_id"
   token_private_key: ""
-  resolve_lti_urls: ""
+  resolve_lti_urls: "None"
 
 logLevel: "INFO"
 
