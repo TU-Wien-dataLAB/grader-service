@@ -7,25 +7,8 @@
 import * as React from 'react';
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
-import {
-  pullAssignment,
-  pushAssignment,
-  resetAssignment
-} from '../../../services/assignments.service';
-import {
-  submitAssignment
-} from '../../../services/submissions.service';
-import { Button, Stack, Tooltip } from '@mui/material';
 import { FilesList } from '../../util/file-list';
-import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
-import GetAppRoundedIcon from '@mui/icons-material/GetAppRounded';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import GradingIcon from '@mui/icons-material/Grading';
-import { Submission } from '../../../model/submission';
-import { RepoType } from '../../util/repo-type';
-import { enqueueSnackbar } from 'notistack';
 import { lectureBasePath } from '../../../services/file.service';
-import { showDialog } from '../../util/dialog-provider';
 import { openBrowser } from '../../coursemanage/overview/util';
 import { GlobalObjects } from '../../..';
 import { Contents } from '@jupyterlab/services';

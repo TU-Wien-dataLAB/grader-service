@@ -1,5 +1,5 @@
 import {
-    Alert,
+  Alert,
   AlertTitle,
   Box,
   Button,
@@ -14,7 +14,7 @@ import { Lecture } from '../../../model/lecture';
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import { FilesList } from '../../util/file-list';
-import { lectureBasePath } from '../../../services/file.service';
+import { lectureBasePath, makeDir, makeDirs } from '../../../services/file.service';
 import { Link, useOutletContext, useRouteLoaderData } from 'react-router-dom'
 import { showDialog } from '../../util/dialog-provider';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -43,35 +43,38 @@ export const CreateSubmission = () => {
     assignments: Assignment[],
     users: { instructors: string[], tutors: string[], students: string[] }
   };
-  const path = `${lectureBasePath}${lecture.code}/edit/${assignment.id}/create`;
+
+  const [path, setPath] = React.useState(null);
+  //const path = `${lectureBasePath}${lecture.code}/create/${assignment.id}`;
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
 
   const [srcChangedTimestamp, setSrcChangeTimestamp] = React.useState(
     moment().valueOf()
   ); // now
-  
-  React.useEffect(() => {
-    const srcPath = `${lectureBasePath}${lecture.code}/edit/${assignment.id}/create`;
-    GlobalObjects.docManager.services.contents.fileChanged.connect(
-      (sender: Contents.IManager, change: Contents.IChangedArgs) => {
-        const { oldValue, newValue } = change;
-        if (!newValue.path.includes(srcPath)) {
-          return;
-        }
 
-        const modified = moment(newValue.last_modified).valueOf();
-        if (srcChangedTimestamp === null || srcChangedTimestamp < modified) {
-          setSrcChangeTimestamp(modified);
-        }
-      },
-      this
-    );
+  React.useEffect(() => {
+    makeDirs(`${lectureBasePath}${lecture.code}`, [`create`, `${assignment.id}`]).then(p => {
+      setPath(p);
+      openBrowser(p);
+      GlobalObjects.docManager.services.contents.fileChanged.connect(
+        (sender: Contents.IManager, change: Contents.IChangedArgs) => {
+          const { oldValue, newValue } = change;
+          if (!newValue.path.includes(p)) {
+            return;
+          }
+
+          const modified = moment(newValue.last_modified).valueOf();
+          if (srcChangedTimestamp === null || srcChangedTimestamp < modified) {
+            setSrcChangeTimestamp(modified);
+          }
+        },
+        this
+      );
+    });
   });
-  
-  openBrowser(`${lectureBasePath}${lecture.code}/edit/${assignment.id}/create`);
 
   const createSubmission = async () => {
-   
+
   };
 
   const [reloadFilesToggle, setReloadFiles] = React.useState(false);
@@ -82,12 +85,12 @@ export const CreateSubmission = () => {
 
   return (
     <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
-      <Alert severity="info" sx = {{m: 2}}>
+      <Alert severity="info" sx={{ m: 2 }}>
         <AlertTitle>Info</AlertTitle>
-        If you want to create a submission for a student manually, make sure to follow these steps: <br/><br/> 
-        1. &ensp; By loading this page, directory 'edit/create/' is automatically opened in File Browser on your left-hand side.<br/>
-        2. &ensp; Upload the desired files here. They will automatically appear in the Submission Files below.<br/>
-        3. &ensp; Choose the student for whom you want to create the submission.<br/>
+        If you want to create a submission for a student manually, make sure to follow these steps: <br /><br />
+        1. &ensp; By loading this page, directory 'create/{assignment.id}' is automatically opened in File Browser on your left-hand side.<br />
+        2. &ensp; Upload the desired files here. They will automatically appear in the Submission Files below.<br />
+        3. &ensp; Choose the student for whom you want to create the submission.<br />
         4. &ensp; Push the submission.
       </Alert>
       <Typography sx={{ m: 2, mb: 0 }}>Select a student</Typography>
@@ -95,19 +98,19 @@ export const CreateSubmission = () => {
         id="country-select-demo"
         options={users["students"]}
         autoHighlight
-        sx={{m: 2}}
+        sx={{ m: 2 }}
         renderInput={(params) => (
-            <TextField
+          <TextField
             {...params}
-            label="Choose Student"
+            label="Select Student"
             inputProps={{
-                ...params.inputProps,
-                autoComplete: 'new-password', 
+              ...params.inputProps,
+              autoComplete: 'new-password',
             }}
-            />
+          />
         )}
-    />
-      <Stack direction={'row'} justifyContent={'flex-start'} alignItems={'center'} spacing={2} sx={{ml: 2}} >
+      />
+      <Stack direction={'row'} justifyContent={'flex-start'} alignItems={'center'} spacing={2} sx={{ ml: 2 }} >
         <Typography>Submission Files</Typography>
         <Tooltip title='Reload Files'>
           <IconButton aria-label='reload' onClick={() => reloadFiles()}>
@@ -115,8 +118,8 @@ export const CreateSubmission = () => {
           </IconButton>
         </Tooltip>
       </Stack>
-      
-      <FilesList path={path} sx={{m: 2}}/>
+
+      <FilesList path={path} sx={{ m: 2 }} />
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
         <Button
           variant='outlined'
@@ -135,7 +138,7 @@ export const CreateSubmission = () => {
           Push Submission
         </Button>
       </Stack>
-      <Stack sx={{ml: 2, mt: 3, mb: 5}} direction={'row'}>
+      <Stack sx={{ ml: 2, mt: 3, mb: 5 }} direction={'row'}>
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
       </Stack>
     </Stack>
