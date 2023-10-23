@@ -36,6 +36,7 @@ import { EnhancedTableToolbar } from './table-toolbar';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import { green } from '@mui/material/colors';
 import AddIcon from '@mui/icons-material/Add';
+import { loadNumber, loadString, storeNumber, storeString } from '../../../services/storage.service';
 
 
 /**
@@ -263,11 +264,15 @@ export default function GradingTable() {
   const [orderBy, setOrderBy] = React.useState<keyof Submission>('id');
   const [selected, setSelected] = React.useState<readonly number[]>([]);
   const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [shownSubmissions, setShownSubmissions] = React.useState('none' as 'none' | 'latest' | 'best');
+  const [rowsPerPage, setRowsPerPage] = React.useState(loadNumber('grading-rows-per-page') || 10);
+  const [shownSubmissions, setShownSubmissions] = React.useState((loadString('grading-shown-submissions') || 'none') as 'none' | 'latest' | 'best');
 
   const [showLogs, setShowLogs] = React.useState(false);
   const [logs, setLogs] = React.useState(undefined);
+
+  React.useEffect(() => {
+    updateSubmissions(shownSubmissions);
+  });
 
   /**
    * Opens log dialog which contain autograded logs from grader service.
@@ -304,6 +309,7 @@ export default function GradingTable() {
     if (value !== null) {
       setShownSubmissions(value);
       updateSubmissions(value);
+      storeString('grading-shown-submissions', value);
     } else {
       updateSubmissions(shownSubmissions); // implicit reload
     }
@@ -354,7 +360,9 @@ export default function GradingTable() {
   };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    const n = parseInt(event.target.value, 10);
+    setRowsPerPage(n);
+    storeNumber('grading-rows-per-page', n);
     setPage(0);
   };
 
@@ -488,7 +496,7 @@ export default function GradingTable() {
         </Table>
       </Box>
       <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
+        rowsPerPageOptions={[10, 25, 50]}
         component='div'
         count={rows.length}
         rowsPerPage={rowsPerPage}
@@ -531,7 +539,7 @@ export const GradingComponent = () => {
     latestSubmissions: Submission[]
   };
 
-  const [rows, setRows] = React.useState(allSubmissions);
+  const [rows, setRows] = React.useState([] as Submission[]);
   const [manualGradeSubmission, setManualGradeSubmission] = React.useState(undefined as Submission);
 
   return <Stack direction={'column'} sx={{ flex: 1, overflow: 'hidden' }}>
