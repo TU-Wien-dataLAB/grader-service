@@ -320,6 +320,7 @@ class PushHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
             submission = Submission.from_dict(response)
+            submission.submitted_at = ""  # set to empty string, so it can be serialized (not updated in PUT)
             submission.username = username
             submission.edited = True
             await self.request_service.request(
