@@ -52,6 +52,22 @@ export async function pullSubmissionFiles(
   );
 }
 
+export async function createSubmissionFiles(
+  lecture: Lecture,
+  assignment: Assignment,
+  username: string
+) {
+  let url = `/lectures/${lecture.id}/assignments/${assignment.id}/push/edit`
+  const searchParams = new URLSearchParams({
+    for_user: username
+  });
+  url += '?' + searchParams;
+  return request<void>(
+    HTTPMethod.PUT,
+    url
+  );
+}
+
 export async function pushSubmissionFiles(
   lecture: Lecture,
   assignment: Assignment,

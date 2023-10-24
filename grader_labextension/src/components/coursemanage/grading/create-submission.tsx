@@ -23,6 +23,8 @@ import { Contents } from '@jupyterlab/services';
 import { GlobalObjects } from '../../../index';
 import { openBrowser } from '../overview/util';
 import ReplayIcon from '@mui/icons-material/Replay';
+import { createSubmissionFiles, pushSubmissionFiles } from '../../../services/submissions.service';
+import { enqueueSnackbar } from 'notistack';
 
 
 export const CreateSubmission = () => {
@@ -45,7 +47,6 @@ export const CreateSubmission = () => {
   };
 
   const [path, setPath] = React.useState(null);
-  //const path = `${lectureBasePath}${lecture.code}/create/${assignment.id}`;
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
   const [userDir, setUserDir] = React.useState<string | null>(null);
 
@@ -75,7 +76,19 @@ export const CreateSubmission = () => {
   });
 
   const createSubmission = async () => {
-
+    // TODO: call pus submission and the rest is handled in the labestension server
+    await createSubmissionFiles(lecture, assignment, userDir).then(
+      response => {
+        enqueueSnackbar(`Successfully Created Submission for user: ${userDir}`, {
+          variant: 'success'
+        });
+      },
+      err => {
+        enqueueSnackbar(err.message, {
+          variant: 'error'
+        });
+      }
+    );
   };
 
   const [reloadFilesToggle, setReloadFiles] = React.useState(false);

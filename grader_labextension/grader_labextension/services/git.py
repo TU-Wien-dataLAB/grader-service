@@ -46,7 +46,7 @@ class GitService(Configurable):
         allow_none=False).tag(config=True)
 
     def __init__(self, server_root_dir: str, lecture_code: str, assignment_id: int, repo_type: str,
-                 force_user_repo=False, sub_id=None, *args, **kwargs):
+                 force_user_repo=False, sub_id=None, username=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log = logging.getLogger(str(self.__class__))
         self._git_version = None
@@ -57,7 +57,10 @@ class GitService(Configurable):
         if self.repo_type == "assignment" or force_user_repo:
             self.path = os.path.join(self.git_root_dir, self.lecture_code, "assignments", str(self.assignment_id))
         elif self.repo_type == "edit":
-            self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id), str(sub_id))
+            if sub_id is None:
+                self.path = os.path.join(self.git_root_dir, self.lecture_code, "create", str(self.assignment_id), username)
+            else:
+                self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id), str(sub_id))
         else:
             self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id))
             

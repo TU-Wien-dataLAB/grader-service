@@ -63,7 +63,7 @@ class GenerateHandler(ExtensionBaseHandler):
             input_dir=f"{self.root_dir}/{code}/source/{a_id}",
             output_dir=output_dir,
             file_pattern="*.ipynb",
-            copy_files=True  # Always copy files from source to release
+            copy_files=True,  # Always copy files from source to release
         )
         generator.force = True
 
@@ -104,7 +104,9 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
     async def get(self, lecture_id: int, assignment_id: int, repo: str):
         if repo not in {"assignment", "source", "release"}:
             self.log.error(HTTPStatus.NOT_FOUND)
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
+            raise HTTPError(
+                HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist"
+            )
         lecture = await self.get_lecture(lecture_id)
         assignment = await self.get_assignment(lecture_id, assignment_id)
         git_service = GitService(
@@ -148,7 +150,9 @@ class GitLogHandler(ExtensionBaseHandler):
         """
         if repo not in {"assignment", "source", "release"}:
             self.log.error(HTTPStatus.NOT_FOUND)
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
+            raise HTTPError(
+                HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist"
+            )
         n_history = int(self.get_argument("n", "10"))
         try:
             lecture = await self.request_service.request(
@@ -210,8 +214,10 @@ class PullHandler(ExtensionBaseHandler):
         """
         if repo not in {"assignment", "source", "release", "edit"}:
             self.log.error(HTTPStatus.NOT_FOUND)
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist")
-        
+            raise HTTPError(
+                HTTPStatus.NOT_FOUND, reason=f"Repository {repo} does not exist"
+            )
+
         # Submission id needed for edit repository
         sub_id = self.get_argument("subid", None)
 
@@ -237,13 +243,13 @@ class PullHandler(ExtensionBaseHandler):
             repo_type=repo,
             config=self.config,
             force_user_repo=repo == "release",
-            sub_id=sub_id
+            sub_id=sub_id,
         )
         try:
             if not git_service.is_git():
                 git_service.init()
                 git_service.set_author(author=self.user_name)
-            git_service.set_remote(f"grader_{repo}",sub_id=sub_id)
+            git_service.set_remote(f"grader_{repo}", sub_id=sub_id)
             git_service.pull(f"grader_{repo}", force=True)
             self.write("OK")
         except GitError as e:
@@ -275,6 +281,9 @@ class PushHandler(ExtensionBaseHandler):
         sub_id = self.get_argument("subid", None)
         commit_message = self.get_argument("commit-message", None)
         submit = self.get_argument("submit", "false") == "true"
+        # this username is used when an instructor creates a submission for a user (ignored otherwise)
+        username = self.get_argument("for_user", None)
+
         if repo == "source" and (commit_message is None or commit_message == ""):
             self.log.error("Commit message was not found")
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit message was not found")
@@ -293,6 +302,33 @@ class PushHandler(ExtensionBaseHandler):
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
+        
+        # TODO: similar logic for push instruction submission
+        #   however we cannot push to edit repository when no submission exists
+        #   reverse order:
+        #   first create submission (with fake commit hash since autograder does not need any commit hash if submission is set to edited),
+        #   then set submission to edited and update username to student username -> need to be able to set this later (in PUT?) -> also refactor SubmissionEditHandler? -> create new endpoint?
+        #   then push to edit repository directly (not using SubmissionEditHandler),
+        
+        # differentiate between "normal" edit and "create" edit by sub_id -> if it is None we know we are in submission creation mode instead of edit mode
+        if repo == "edit" and sub_id is None:
+            submission = Submission(commit_hash="0" * 40)
+            response = await self.request_service.request(
+                "POST",
+                f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions",
+                body=submission.to_dict(),
+                header=self.grader_authentication_header,
+            )
+            submission = Submission.from_dict(response)
+            submission.username = username
+            submission.edited = True
+            await self.request_service.request(
+                "PUT",
+                f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission.id}",
+                body=submission.to_dict(),
+                header=self.grader_authentication_header,
+            )
+            sub_id = submission.id
 
         git_service = GitService(
             server_root_dir=self.root_dir,
@@ -300,7 +336,8 @@ class PushHandler(ExtensionBaseHandler):
             assignment_id=assignment["id"],
             repo_type=repo,
             config=self.config,
-            sub_id=sub_id
+            sub_id=sub_id,
+            username=username
         )
 
         if repo == "release":
@@ -319,7 +356,7 @@ class PushHandler(ExtensionBaseHandler):
                 input_dir=src_path,
                 output_dir=git_service.path,
                 file_pattern="*.ipynb",
-                copy_files=True  # Always copy files from source to release
+                copy_files=True,  # Always copy files from source to release
             )
             generator.force = True
 
@@ -337,7 +374,9 @@ class PushHandler(ExtensionBaseHandler):
                 generator.start()
                 self.log.info("GenerateAssignment conversion done")
             except GraderConvertException as e:
-                self.log.error("Converting failed: Error converting notebook!", exc_info=True)
+                self.log.error(
+                    "Converting failed: Error converting notebook!", exc_info=True
+                )
 
                 raise HTTPError(409, reason=str(e))
             try:
@@ -347,8 +386,10 @@ class PushHandler(ExtensionBaseHandler):
                     gradebook_json: dict = json.load(f)
             except FileNotFoundError:
                 self.log.error(f"Cannot find gradebook file: {gradebook_path}")
-                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                reason=f"Cannot find gradebook file: {gradebook_path}")
+                raise HTTPError(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    reason=f"Cannot find gradebook file: {gradebook_path}",
+                )
 
             self.log.info(f"Setting properties of assignment from {gradebook_path}")
             response: HTTPResponse = await self.request_service.request(
@@ -372,8 +413,10 @@ class PushHandler(ExtensionBaseHandler):
                 self.log.error(
                     f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!"
                 )
-                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                reason=f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!")
+                raise HTTPError(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    reason=f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!",
+                )
 
         self.log.info(f"File contents of {repo}: {git_service.path}")
         self.log.info(",".join(os.listdir(git_service.path)))
@@ -400,13 +443,6 @@ class PushHandler(ExtensionBaseHandler):
             self.log.error("GitError:\n" + e.error)
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e.error))
 
-        # TODO: similar logic for push instruction submission
-        #   however we cannot push to edit repository when no submission exists
-        #   reverse order:
-        #   first create submission (with fake commit hash since autograder does not need any commit hash if submission is set to edited),
-        #   then push to edit repository directly (not using SubmissionEditHandler),
-        #   then set submission to edited -> need to be able to set this later (in PUT?) -> also refactor SubmissionEditHandler? -> create new endpoint?
-        #   differentiate between "normal" edit and "create" edit by sub_id -> if it is None we know we are in submission creation mode instead of edit mode
         if submit and repo == "assignment":
             self.log.info(f"Submitting assignment {assignment_id}!")
             try:
