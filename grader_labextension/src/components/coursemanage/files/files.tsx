@@ -108,14 +108,21 @@ export const Files = (props: IFilesProps) => {
     GlobalObjects.docManager.services.contents.fileChanged.connect(
       (sender: Contents.IManager, change: Contents.IChangedArgs) => {
         const { oldValue, newValue } = change;
-        if (!newValue.path.includes(srcPath)) {
+        if (newValue && !newValue.path.includes(srcPath)) {
           return;
         }
 
-        const modified = moment(newValue.last_modified).valueOf();
-        if (srcChangedTimestamp === null || srcChangedTimestamp < modified) {
-          setSrcChangeTimestamp(modified);
+        if (oldValue && !oldValue.path.includes(srcPath)) {
+          return;
         }
+
+        if (newValue) {
+          const modified = moment(newValue.last_modified).valueOf();
+          if (srcChangedTimestamp === null || srcChangedTimestamp < modified) {
+            setSrcChangeTimestamp(modified);
+          }
+        }
+        reloadPage();
       },
       this
     );
