@@ -537,6 +537,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(submission)
 
+    # TODO: not used, remove?
     def get_extra_credit(self, gradebook):
         extra_credit = 0
         for notebook in gradebook.notebooks.values():
@@ -599,79 +600,78 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         await self._run_command_async('git init --bare', git_repo_path)
 
-        if os.path.exists(submission_repo_path):
-            # Create temporary paths to copy the submission
-            # files in the edit repository
-            tmp_path = os.path.join(
-                self.application.grader_service_dir,
-                "tmp",
-                lecture.code,
-                str(assignment.id),
-                "edit",
-                str(submission.id),
-            )
+        # Create temporary paths to copy the submission
+        # files in the edit repository
+        tmp_path = os.path.join(
+            self.application.grader_service_dir,
+            "tmp",
+            lecture.code,
+            str(assignment.id),
+            "edit",
+            str(submission.id),
+        )
 
-            tmp_input_path = os.path.join(
-                tmp_path,
-                "input"
-            )
+        tmp_input_path = os.path.join(
+            tmp_path,
+            "input"
+        )
 
-            tmp_output_path = os.path.join(
-                tmp_path,
-                "output"
-            )
+        tmp_output_path = os.path.join(
+            tmp_path,
+            "output"
+        )
 
-            if os.path.exists(tmp_path):
-                shutil.rmtree(tmp_path, ignore_errors=True)
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path, ignore_errors=True)
 
-            os.makedirs(tmp_input_path, exist_ok=True)
+        os.makedirs(tmp_input_path, exist_ok=True)
 
-            # Init local repository
-            command = "git init"
-            await self._run_command_async(command, tmp_input_path)
+        # Init local repository
+        command = "git init"
+        await self._run_command_async(command, tmp_input_path)
 
-            # Pull user repository
-            command = f'git pull "{submission_repo_path}" main'
-            await self._run_command_async(command, tmp_input_path)
-            self.log.info("Successfully cloned repo")
+        # Pull user repository
+        command = f'git pull "{submission_repo_path}" main'
+        await self._run_command_async(command, tmp_input_path)
+        self.log.info("Successfully cloned repo")
 
-            # Checkout to correct submission commit
-            command = f"git checkout {submission.commit_hash}"
-            await self._run_command_async(command, tmp_input_path)
-            self.log.info(f"Now at commit {submission.commit_hash}")
+        # Checkout to correct submission commit
+        command = f"git checkout {submission.commit_hash}"
+        await self._run_command_async(command, tmp_input_path)
+        self.log.info(f"Now at commit {submission.commit_hash}")
 
-            # Copy files to output directory
-            shutil.copytree(tmp_input_path, tmp_output_path,
-                            ignore=shutil.ignore_patterns(".git"))
+        # Copy files to output directory
+        shutil.copytree(tmp_input_path, tmp_output_path,
+                        ignore=shutil.ignore_patterns(".git"))
 
-            # Init local repository
-            command = "git init"
-            await self._run_command_async(command, tmp_output_path)
+        # Init local repository
+        command = "git init"
+        await self._run_command_async(command, tmp_output_path)
 
-            # Add edit remote
-            command = f"git remote add edit {git_repo_path}"
-            await self._run_command_async(command, tmp_output_path)
-            self.log.info("Successfully added edit remote")
+        # Add edit remote
+        command = f"git remote add edit {git_repo_path}"
+        await self._run_command_async(command, tmp_output_path)
+        self.log.info("Successfully added edit remote")
 
-            # Switch to main
-            command = "git switch -c main"
-            await self._run_command_async(command, tmp_output_path)
-            self.log.info("Successfully switched to branch main")
+        # Switch to main
+        command = "git switch -c main"
+        await self._run_command_async(command, tmp_output_path)
+        self.log.info("Successfully switched to branch main")
 
-            # Add files to staging
-            command = "git add -A"
-            await self._run_command_async(command, tmp_output_path)
-            self.log.info("Successfully added files to staging")
+        # Add files to staging
+        command = "git add -A"
+        await self._run_command_async(command, tmp_output_path)
+        self.log.info("Successfully added files to staging")
 
-            # Commit Files
-            command = 'git commit -m "Initial commit" '
-            await self._run_command_async(command, tmp_output_path)
-            self.log.info("Successfully commited files")
+        # Commit Files
+        command = 'git commit -m "Initial commit" '
+        await self._run_command_async(command, tmp_output_path)
+        self.log.info("Successfully commited files")
 
-            # Push copied files
-            command = "git push edit main"
-            await self._run_command_async(command, tmp_output_path)
-            self.log.info("Successfully pushed copied files")
+        # Push copied files
+        command = "git push edit main"
+        await self._run_command_async(command, tmp_output_path)
+        self.log.info("Successfully pushed copied files")
 
         submission.edited = True
         self.session.commit()
