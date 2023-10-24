@@ -47,13 +47,14 @@ export const CreateSubmission = () => {
   const [path, setPath] = React.useState(null);
   //const path = `${lectureBasePath}${lecture.code}/create/${assignment.id}`;
   const submissionsLink = `/lecture/${lecture.id}/assignment/${assignment.id}/submissions`;
+  const [userDir, setUserDir] = React.useState<string | null>(null);
 
   const [srcChangedTimestamp, setSrcChangeTimestamp] = React.useState(
     moment().valueOf()
   ); // now
 
   React.useEffect(() => {
-    makeDirs(`${lectureBasePath}${lecture.code}`, [`create`, `${assignment.id}`]).then(p => {
+    makeDirs(`${lectureBasePath}${lecture.code}`, [`create`, `${assignment.id}`, userDir]).then(p => {
       setPath(p);
       openBrowser(p);
       GlobalObjects.docManager.services.contents.fileChanged.connect(
@@ -83,21 +84,25 @@ export const CreateSubmission = () => {
     setReloadFiles(!reloadFilesToggle);
   };
 
+  
+
   return (
     <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Alert severity="info" sx={{ m: 2 }}>
         <AlertTitle>Info</AlertTitle>
         If you want to create a submission for a student manually, make sure to follow these steps: <br /><br />
-        1. &ensp; By loading this page, directory 'create/{assignment.id}' is automatically opened in File Browser on your left-hand side.<br />
+        1. &ensp; By selecting a student for whom you want to create submission, directory 'create/{assignment.id}/student_id' is automatically opened in File Browser on your left-hand side.<br />
         2. &ensp; Upload the desired files here. They will automatically appear in the Submission Files below.<br />
         3. &ensp; Choose the student for whom you want to create the submission.<br />
         4. &ensp; Push the submission.
       </Alert>
       <Typography sx={{ m: 2, mb: 0 }}>Select a student</Typography>
       <Autocomplete
-        id="country-select-demo"
         options={users["students"]}
         autoHighlight
+        onChange={(event: any, newUserDir: string | null) => {
+          setUserDir(newUserDir);
+        }}
         sx={{ m: 2 }}
         renderInput={(params) => (
           <TextField
@@ -105,7 +110,7 @@ export const CreateSubmission = () => {
             label="Select Student"
             inputProps={{
               ...params.inputProps,
-              autoComplete: 'new-password',
+             // autoComplete: 'new-password',
             }}
           />
         )}
