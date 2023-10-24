@@ -57,7 +57,7 @@ class GitService(Configurable):
         if self.repo_type == "assignment" or force_user_repo:
             self.path = os.path.join(self.git_root_dir, self.lecture_code, "assignments", str(self.assignment_id))
         elif self.repo_type == "edit":
-            if sub_id is None:
+            if username is not None:
                 self.path = os.path.join(self.git_root_dir, self.lecture_code, "create", str(self.assignment_id), username)
             else:
                 self.path = os.path.join(self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id), str(sub_id))
