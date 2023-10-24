@@ -379,8 +379,10 @@ export default function GradingTable() {
   };
 
   const filteredRows = React.useMemo(
-    () => rows.filter(r => submissionString(r).includes(search)), [search, rows]
-  );
+    () => {
+      const regexp = new RegExp(`.*${search}.*`);
+      return rows.filter(r => regexp.test(submissionString(r)))
+    }, [search, rows]);
 
   const visibleRows = React.useMemo(
     () =>
