@@ -18,14 +18,9 @@ class DeduplicateIds(NbGraderPreprocessor):
         # keep track of grade ids encountered so far
         self.grade_ids = set([])
 
-        # reverse cell order
-        nb.cells = nb.cells[::-1]
-
         # process each cell in reverse order
         nb, resources = super(DeduplicateIds, self).preprocess(nb, resources)
 
-        # unreverse cell order
-        nb.cells = nb.cells[::-1]
 
         return nb, resources
 
@@ -44,7 +39,7 @@ class DeduplicateIds(NbGraderPreprocessor):
         if grade_id in self.grade_ids:
 
             self.log.warning("Cell with id '%s' exists multiple times!", grade_id)
-            cell.metadata.nbgrader = {}
+            cell.metadata = {}
         else:
             self.grade_ids.add(grade_id)
 
