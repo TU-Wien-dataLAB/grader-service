@@ -270,9 +270,11 @@ export default function GradingTable() {
   const [showLogs, setShowLogs] = React.useState(false);
   const [logs, setLogs] = React.useState(undefined);
 
+  const [search, setSearch] = React.useState('');
+
   React.useEffect(() => {
     updateSubmissions(shownSubmissions);
-  });
+  }, []);
 
   /**
    * Opens log dialog which contain autograded logs from grader service.
@@ -372,14 +374,22 @@ export default function GradingTable() {
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
+  const submissionString = (s: Submission): string => {
+    return `${s.id} ${s.username} ${utcToLocalFormat(s.submitted_at)} ${s.auto_status.split('_').join(' ')} ${s.manual_status.split('_').join(' ')} ${s.feedback_available ? 'generated' : 'not generated'} ${s.score}`.toLowerCase();
+  };
+
+  const filteredRows = React.useMemo(
+    () => {
+      const regexp = new RegExp(`.*${search}.*`);
+      return rows.filter(r => regexp.test(submissionString(r)))
+    }, [search, rows]);
+
   const visibleRows = React.useMemo(
     () =>
-      stableSort(rows, getComparator(order, orderBy)).slice(
+      stableSort(filteredRows, getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
-      ),
-    [order, orderBy, page, rowsPerPage, rows]
-  );
+      ), [order, orderBy, page, rowsPerPage, rows, search]);
 
   return (
     <Stack sx={{ flex: 1, ml: 5, mr: 5, overflow: 'hidden' }}>
@@ -403,7 +413,7 @@ export default function GradingTable() {
       <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                             clearSelection={() => setSelected([])} selected={selected}
                             shownSubmissions={shownSubmissions}
-                            switchShownSubmissions={switchShownSubmissions} />
+                            switchShownSubmissions={switchShownSubmissions} setSearch={setSearch} />
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Table
           // sx={{ minWidth: 750 }}
@@ -487,7 +497,6 @@ export default function GradingTable() {
                 style={{
                   height: 53 * emptyRows
                 }}
-
               >
                 <TableCell colSpan={6} />
               </TableRow>
@@ -498,7 +507,7 @@ export default function GradingTable() {
       <TablePagination
         rowsPerPageOptions={[10, 25, 50]}
         component='div'
-        count={rows.length}
+        count={filteredRows.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
