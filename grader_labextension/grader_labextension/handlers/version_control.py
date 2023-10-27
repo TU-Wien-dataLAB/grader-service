@@ -313,13 +313,14 @@ class PushHandler(ExtensionBaseHandler):
         # differentiate between "normal" edit and "create" edit by sub_id -> if it is None we know we are in submission creation mode instead of edit mode
         if repo == "edit" and sub_id is None:
             submission = Submission(commit_hash="0" * 40)
-            response = await self.request_service.request(
+            response: dict = await self.request_service.request(
                 "POST",
                 f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}/submissions",
                 body=submission.to_dict(),
                 header=self.grader_authentication_header,
             )
             submission = Submission.from_dict(response)
+            submission.submitted_at = response["submitted_at"]
             submission.username = username
             submission.edited = True
             await self.request_service.request(
@@ -328,7 +329,7 @@ class PushHandler(ExtensionBaseHandler):
                 body=submission.to_dict(),
                 header=self.grader_authentication_header,
             )
-            sub_id = submission.id
+            sub_id = str(submission.id)
 
         git_service = GitService(
             server_root_dir=self.root_dir,
