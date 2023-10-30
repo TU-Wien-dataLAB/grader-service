@@ -417,10 +417,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
         # sub.date = sub_model.submitted_at
         # sub.assignid = assignment_id
         
-        #TODO: Check if user is instructor and enable setting auf username if that's the case.
         role = self.get_role(lecture_id)
         if role.role >= Scope.instructor:
-            sub.username = self.user.name
+            sub.username = sub_model.username
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.edited = sub_model.edited
