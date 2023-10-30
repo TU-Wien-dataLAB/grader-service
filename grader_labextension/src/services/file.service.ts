@@ -6,13 +6,16 @@
 
 import { FilterFileBrowserModel } from '@jupyterlab/filebrowser/lib/model';
 import { GlobalObjects } from '../index';
+import {
+  renameFile
+} from '@jupyterlab/docmanager';
 import { Contents } from '@jupyterlab/services';
 import { Assignment } from '../model/assignment';
 import { HTTPMethod, request } from './request.service';
 import { Lecture } from '../model/lecture';
 import { RepoType } from '../components/util/repo-type';
 import IModel = Contents.IModel;
-import { PageConfig } from '@jupyterlab/coreutils';
+import { PageConfig, PathExt } from '@jupyterlab/coreutils';
 import { enqueueSnackbar } from 'notistack';
 
 // remove slashes at beginning and end of base path if they exist
@@ -68,6 +71,32 @@ export const openFile = async (path: string) => {
       });
     });
 };
+
+export const makeDir = async (path: string, name: string) => {
+  const newPath = PathExt.join(path, name);
+  const exists = (await getFiles(path)).map(f => (f as any).value.name).includes(name);
+  if (!exists) {
+    const model = await GlobalObjects.docManager.newUntitled({ path, type: 'directory' });
+    const oldPath = PathExt.join(path, model.name);
+    console.log(oldPath, newPath)
+    await GlobalObjects.docManager.rename(oldPath, newPath).catch(error => {
+      if (error.response.status !== 409) {
+        // if it's not caused by an already existing file, rethrow
+        throw error;
+      }
+    });
+  }
+  return newPath;
+}
+
+export const makeDirs = async(path: string, names: string[]) =>{
+  let p = path;
+  for (let i = 0; i < names.length; i++) {
+    const n = names[i];
+    p = await makeDir(p, n);    
+  }
+  return p;
+}
 
 export interface IGitLogObject {
   commit: string,

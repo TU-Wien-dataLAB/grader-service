@@ -31,7 +31,7 @@ import { pullAssignment, pushAssignment, resetAssignment } from '../../services/
 import { showDialog } from '../util/dialog-provider';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import { getFiles, lectureBasePath } from '../../services/file.service';
-import { openBrowser } from '../coursemanage/overview/util';
+
 
 /*
     * Buttons for AssignmentTable

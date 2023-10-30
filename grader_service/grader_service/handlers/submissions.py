@@ -266,10 +266,15 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Git repository not found")
 
+
         try:
-            subprocess.run(
-                ["git", "branch", "main", "--contains", commit_hash],
-                cwd=git_repo_path, capture_output=True)
+            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user. 
+            # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
+            # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
+            if commit_hash != "0"*40:
+                subprocess.run(
+                    ["git", "branch", "main", "--contains", commit_hash],
+                    cwd=git_repo_path, capture_output=True)
         except subprocess.CalledProcessError:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
@@ -411,9 +416,13 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub = self.get_submission(lecture_id, assignment_id, submission_id)
         # sub.date = sub_model.submitted_at
         # sub.assignid = assignment_id
-        # sub.username = self.user.name
+        
+        role = self.get_role(lecture_id)
+        if role.role >= Scope.instructor:
+            sub.username = sub_model.username
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
+        sub.edited = sub_model.edited
         sub.feedback_available = sub_model.feedback_available or False
         if sub_model.score_scaling is not None and sub.score_scaling != sub_model.score_scaling:
             sub.score_scaling = sub_model.score_scaling
@@ -537,6 +546,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(submission)
 
+    # TODO: not used, remove?
     def get_extra_credit(self, gradebook):
         extra_credit = 0
         for notebook in gradebook.notebooks.values():

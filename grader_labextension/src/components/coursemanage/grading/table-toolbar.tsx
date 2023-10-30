@@ -18,11 +18,13 @@ import { ltiSyncSubmissions } from '../../../services/submissions.service';
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
-import { PageConfig } from '@jupyterlab/coreutils';
 import { autogradeSubmission, generateFeedback, saveSubmissions } from '../../../services/grading.service';
 import { lectureBasePath, openFile } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
 import { showDialog } from '../../util/dialog-provider';
+import AddIcon from '@mui/icons-material/Add';
+import { Link } from 'react-router-dom';
+import { openBrowser } from '../overview/util';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 
@@ -190,8 +192,18 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     });
   };
 
+
+
+
   return (
     <>
+    <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 1 }}>
+      <Button variant='outlined' startIcon={<AddIcon/>}
+      component={Link as any} to={'create'}
+      >
+        New Submission
+      </Button>
+    </Stack>
       <Toolbar
         sx={{
           pl: { sm: 2 },
