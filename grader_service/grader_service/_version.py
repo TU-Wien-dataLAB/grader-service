@@ -5,4 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 
 # version_info updated by running `tbump`
-__version__ = '0.2.8a1'
+__version__ = '0.2.8a2'
