@@ -330,6 +330,7 @@ class PushHandler(ExtensionBaseHandler):
                 header=self.grader_authentication_header,
             )
             sub_id = str(submission.id)
+            self.log.info(f"Created submission {sub_id} for user {username} and pushing to {repo}...")
 
         git_service = GitService(
             server_root_dir=self.root_dir,
