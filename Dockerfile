@@ -21,6 +21,8 @@ RUN groupadd -g 1000 grader-service && \
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
     python3 \
+    gcc \
+    python3-dev \
     python3-pip \
     git \
     vim \
