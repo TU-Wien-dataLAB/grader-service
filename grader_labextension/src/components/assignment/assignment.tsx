@@ -15,9 +15,14 @@ import { AssignmentStatus } from './assignment-status';
 import { Files } from './files/files';
 import WarningIcon from '@mui/icons-material/Warning';
 import { Outlet, useNavigate, useRouteLoaderData } from 'react-router-dom';
-import { pullAssignment, pushAssignment, resetAssignment } from '../../services/assignments.service';
+import {
+  getAssignmentProperties,
+  pullAssignment,
+  pushAssignment,
+  resetAssignment
+} from '../../services/assignments.service';
 import { getFiles, lectureBasePath } from '../../services/file.service';
-import { getAllSubmissions, submitAssignment } from '../../services/submissions.service';
+import { getAllSubmissions, getProperties, submitAssignment } from '../../services/submissions.service';
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from '../util/dialog-provider';
 import { RepoType } from '../util/repo-type';
@@ -30,6 +35,7 @@ import moment from 'moment';
 import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import { Scope, UserPermissions } from '../../services/permission.service';
+import { GradeBook } from '../../services/gradebook';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -57,6 +63,17 @@ export const AssignmentComponent = () => {
     assignment: Assignment,
     submissions: Submission[],
   };
+
+  const [fileList, setFileList] = React.useState([] as string[]);
+
+  React.useEffect(() => {
+    getAssignmentProperties(lecture.id, assignment.id).then(
+      properties => {
+        const gb = new GradeBook(properties);
+        setFileList([...gb.getNotebooks().map(n => n + ".ipynb"), ...gb.getExtraFiles()])
+      }
+    );
+  }, []);
 
   const path = `${lectureBasePath}${lecture.code}/assignments/${assignment.id}`;
 
@@ -249,7 +266,7 @@ export const AssignmentComponent = () => {
           <Files
             lecture={lecture}
             assignment={assignment}
-
+            files={fileList}
           />
           <Stack direction={'row'} spacing={1} sx={{ m: 1, ml: 2 }}>
             {assignment.type === 'group' && (
