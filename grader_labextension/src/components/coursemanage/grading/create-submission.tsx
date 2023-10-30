@@ -100,6 +100,7 @@ export const CreateSubmission = () => {
   
 
   return (
+    <Box sx={{ overflow: 'auto' }}>
     <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Alert severity="info" sx={{ m: 2 }}>
         <AlertTitle>Info</AlertTitle>
@@ -160,5 +161,6 @@ export const CreateSubmission = () => {
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
       </Stack>
     </Stack>
+    </Box>
   );
 };

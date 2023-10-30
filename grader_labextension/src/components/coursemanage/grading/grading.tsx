@@ -394,21 +394,6 @@ export default function GradingTable() {
   return (
     <Stack sx={{ flex: 1, ml: 5, mr: 5, overflow: 'hidden' }}>
       <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 2 }}>
-        {/*
-        TODO: Requires backend implementation and frontend tweaks
-        <Tooltip title={'Manually add new submission'}>
-             <Button onClick={(event) => {
-                        event.stopPropagation();
-                        navigate("create");
-                      }}
-                variant='outlined'
-                size="small"
-                sx={{ whiteSpace: 'nowrap'}}>
-                <AddIcon fontSize='small' sx={{mr: 1}}/>
-                New
-              </Button>
-          </Tooltip>
-         */}
       </Stack>
       <EnhancedTableToolbar lecture={lecture} assignment={assignment} rows={rows}
                             clearSelection={() => setSelected([])} selected={selected}
