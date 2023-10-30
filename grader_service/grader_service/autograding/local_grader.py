@@ -17,6 +17,8 @@ from pathlib import Path
 from subprocess import PIPE, CalledProcessError
 from typing import Optional
 
+from traitlets.config import Config
+
 from grader_convert.converters.autograde import Autograde
 from grader_convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
@@ -27,8 +29,7 @@ from sqlalchemy.orm import Session
 from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
 
-from traitlets.traitlets import TraitError, Unicode, validate
-
+from traitlets.traitlets import TraitError, Unicode, validate, Callable
 
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -50,6 +51,10 @@ class AutogradingStatus:
     finished_at: datetime
 
 
+def default_timeout_func(l: Lecture) -> int:
+    return 360
+
+
 class LocalAutogradeExecutor(LoggingConfigurable):
     """
     Runs an autograde job on the local machine
@@ -62,6 +67,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     relative_output_path = Unicode("convert_out",
                                    allow_none=True).tag(config=True)
     git_executable = Unicode("git", allow_none=False).tag(config=True)
+
+    timeout_func = Callable(default_timeout_func, allow_none=False,
+                            help="Function that takes a lecture as an argument and returns the cell timeout in seconds."
+                            ).tag(config=True)
 
     def __init__(self, grader_service_dir: str,
                  submission: Submission, close_session=True, **kwargs):
@@ -231,8 +240,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_assignment_properties())
 
+        c = Config()
+        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+
         autograder = Autograde(self.input_path, self.output_path, "*.ipynb",
-                               copy_files=self.assignment.allow_files)
+                               copy_files=self.assignment.allow_files, config=c)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -483,7 +495,8 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
                   f'-p "*.ipynb" ' \
-                  f'--copy_files={self.assignment.allow_files}'
+                  f'--copy_files={self.assignment.allow_files} ' \
+                  f'--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}'
         self.log.info(f"Running {command}")
         process = await self._run_subprocess(command, None)
         if process.returncode == 0:

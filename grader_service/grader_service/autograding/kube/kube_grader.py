@@ -190,7 +190,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                    "-p", "*.ipynb",
                    f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
-                   "--ExecutePreprocessor.timeout=360"]
+                   f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
 
         # command = "sleep 10000"
 
