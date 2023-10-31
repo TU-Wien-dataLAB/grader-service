@@ -17,7 +17,10 @@ gitConfig:
 volumePermissions:
   enabled: true
 
-autogradeExecutorClass: LocalAutogradeExecutor #KubeAutogradeExecutor
+concurrentGradingTasks: 1
+autogradeExecutorClass: KubeAutogradeExecutor
+kubeAutogradeExecutor:
+  image: ghcr.io/tu-wien-datalab/grader-service-labextension
 
 # pvc
 # If storageClassName is not defined or commented as below, the default storageClass from your cluster will be used.

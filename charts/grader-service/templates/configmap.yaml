@@ -23,6 +23,8 @@ data:
     c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
     {{- end }}    
     {{- end }}
+
+    c.GraderExecutor.n_concurrent_tasks = {{ .Values.concurrentGradingTasks | int }}
     
     c.KubeAutogradeExecutor.kube_context = None
     
@@ -38,7 +40,6 @@ data:
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
-    c.KubeAutogradeExecutor.cell_timeout = {{ .Values.kubeAutogradeExecutor.cell_timeout }}
 
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
