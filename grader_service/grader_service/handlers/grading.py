@@ -53,6 +53,9 @@ class GradingAutoHandler(GraderBaseHandler):
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
         submission = self.get_submission(lecture_id, assignment_id, sub_id)
+        submission.auto_status = "pending"
+        self.session.commit()
+
         executor = RequestHandlerConfig.instance().autograde_executor_class(
             self.application.grader_service_dir, submission,
             config=self.application.config

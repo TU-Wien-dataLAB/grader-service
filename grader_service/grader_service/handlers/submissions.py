@@ -293,6 +293,9 @@ class SubmissionHandler(GraderBaseHandler):
         # automatic grading perform necessary operations
         if automatic_grading in [AutoGradingBehaviour.auto,
                                  AutoGradingBehaviour.full_auto]:
+            submission.auto_status = "pending"
+            self.session.commit()
+
             self.set_status(HTTPStatus.ACCEPTED)
             executor = RequestHandlerConfig.instance() \
                 .autograde_executor_class(

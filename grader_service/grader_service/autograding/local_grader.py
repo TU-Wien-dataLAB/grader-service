@@ -225,9 +225,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             await self._run_subprocess(command, self.input_path)
             self.log.info(f"Now at commit {self.submission.commit_hash}")
 
-        self.submission.auto_status = "pending"
-        self.session.commit()
-
     async def _run(self):
         """
         Runs the autograding in the current interpreter
