@@ -52,13 +52,14 @@ gitConfig:
 volumePermissions:
   enabled: true
 
+concurrentGradingTasks: 5
+
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
   tag: latest
   extraVolumes: ""
   extraVolumeMounts: ""
-  cell_timeout: 360
   resolveImageName: null
 
 extraConfig: ""
@@ -75,7 +76,7 @@ ltiSyncGrades:
   username_convert: null
   username_match: "user_id"
   token_private_key: ""
-  resolve_lti_urls: ""
+  resolve_lti_urls: "None"
 
 logLevel: "INFO"
 
