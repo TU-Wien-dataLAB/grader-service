@@ -107,6 +107,11 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                 "the incluster config "
                                 "will be used.").tag(config=True)
 
+    resolve_node_selector = Callable(default_value=lambda _: None, allow_none=False,
+                                     help="""Function that takes a lecture as input and outputs a node selector for 
+                                     this lecture. The returned value has to be a dict[str, str] or None and is directly 
+                                     passed to the Kubernetes API.""").tag(config=True)
+
     volume = Dict(default_value={},
                   allow_none=False).tag(config=True)
 
@@ -198,10 +203,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
         volume_mounts = [{"name": "data", "mountPath": self.input_path,
                           "subPath": self.relative_input_path +
-                          "/submission_" + str(self.submission.id)},
+                                     "/submission_" + str(self.submission.id)},
                          {"name": "data", "mountPath": self.output_path,
                           "subPath": self.relative_output_path +
-                          "/submission_" + str(self.submission.id)}]
+                                     "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
 
         pod = make_pod(
@@ -214,6 +219,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             volume_mounts=volume_mounts,
             labels=None,
             annotations=None,
+            node_selector=self.resolve_node_selector(self.lecture),
             tolerations=None,
             run_as_user=self.uid,
         )
