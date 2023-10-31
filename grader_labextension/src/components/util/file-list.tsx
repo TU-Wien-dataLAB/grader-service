@@ -27,11 +27,13 @@ import { enqueueSnackbar } from 'notistack';
 import { grey } from '@mui/material/colors';
 import WarningIcon from '@mui/icons-material/Warning';
 import DangerousIcon from '@mui/icons-material/Dangerous';
+import { Assignment } from '../../model/assignment';
 
 interface IFileListProps {
   path: string;
   sx?: SxProps<Theme>;
   shouldContain?: string[];
+  assignment?: Assignment;
 }
 
 export const FilesList = (props: IFileListProps) => {
@@ -61,7 +63,7 @@ export const FilesList = (props: IFileListProps) => {
           </ListItemIcon>
           <ListItemText primary={<Typography>{file.value.name}</Typography>}
                         secondary={
-                          (!inContained(file.value.name))
+                          (!inContained(file.value.name) && !props.assignment?.allow_files)
                             ? <Stack direction={'row'} spacing={2}>
                               <Tooltip title={extraFileHelp}>
                                 <Stack direction={'row'} spacing={2} flex={0}>
