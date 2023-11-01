@@ -27,18 +27,22 @@ import { enqueueSnackbar } from 'notistack';
 import { grey } from '@mui/material/colors';
 import WarningIcon from '@mui/icons-material/Warning';
 import DangerousIcon from '@mui/icons-material/Dangerous';
+import { Assignment } from '../../model/assignment';
 
 interface IFileListProps {
   path: string;
   sx?: SxProps<Theme>;
   shouldContain?: string[];
+  assignment?: Assignment;
 }
 
 export const FilesList = (props: IFileListProps) => {
   const [files, setFiles] = React.useState([]);
 
   React.useEffect(() => {
-    getFiles(props.path).then(files => setFiles(files));
+    getFiles(props.path).then(files => {
+      setFiles(files);
+    });
   }, [props]);
 
   const inContained = (file: string) => {
@@ -60,6 +64,7 @@ export const FilesList = (props: IFileListProps) => {
             <InsertDriveFileRoundedIcon />
           </ListItemIcon>
           <ListItemText primary={<Typography>{file.value.name}</Typography>}
+                        /*
                         secondary={
                           (!inContained(file.value.name))
                             ? <Stack direction={'row'} spacing={2}>
@@ -71,7 +76,9 @@ export const FilesList = (props: IFileListProps) => {
                               </Tooltip>
                             </Stack>
                             : null
-                        } />
+                        }
+                         */
+          />
         </ListItemButton>
       </ListItem>
     ));
@@ -86,16 +93,16 @@ export const FilesList = (props: IFileListProps) => {
         <ListItem disablePadding>
           <ListItem>
             <ListItemIcon>
-              <InsertDriveFileRoundedIcon color={"disabled"} />
+              <InsertDriveFileRoundedIcon color={'disabled'} />
             </ListItemIcon>
-            <ListItemText primary={<Typography color={"text.secondary"}>{file}</Typography>}
+            <ListItemText primary={<Typography color={'text.secondary'}>{file}</Typography>}
                           secondary={
                             <Stack direction={'row'} spacing={2}>
                               <Tooltip title={missingFileHelp}>
-                                  <Stack direction={'row'} spacing={2} flex={0}>
-                                    <DangerousIcon color={'error'} fontSize={'small'} />
-                                    <Typography sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>File Missing</Typography>
-                                  </Stack>
+                                <Stack direction={'row'} spacing={2} flex={0}>
+                                  <DangerousIcon color={'error'} fontSize={'small'} />
+                                  <Typography sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>File Missing</Typography>
+                                </Stack>
                               </Tooltip>
                             </Stack>
                           } />
