@@ -36,6 +36,7 @@ import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import { Scope, UserPermissions } from '../../services/permission.service';
 import { GradeBook } from '../../services/gradebook';
+import { number } from 'yup';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -51,14 +52,11 @@ const calculateActiveStep = (submissions: Submission[]) => {
   return 0;
 };
 
-const SubmissionsLeftChip = () =>{
-  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
-    lecture: Lecture,
-    assignment: Assignment,
-    submissions: Submission[],
-  };
-  const submissionsLeft = assignment.max_submissions - submissions.length;
-  const output = submissionsLeft + ' submission' + (submissionsLeft === 1 ? ' left' : 's left'); 
+interface ISubmissionsLeft{
+  subLeft: number;
+}
+const SubmissionsLeftChip = (props: ISubmissionsLeft ) =>{
+  const output = props.subLeft + ' submission' + (props.subLeft === 1 ? ' left' : 's left'); 
   return(
     <Chip
       sx={{ ml: 2 }}
@@ -97,14 +95,16 @@ export const AssignmentComponent = () => {
 
   /* Now we can divvy this into a useReducer  */
   const [allSubmissions, setSubmissions] = React.useState(submissions);
-
   const [files, setFiles] = React.useState([]);
   const [activeStatus, setActiveStatus] = React.useState(0);
+  const [subLeft, setSubLeft] = React.useState(0);
+
 
   React.useEffect(() => {
     getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
       response => {
         setSubmissions(response);
+        setSubLeft(assignment.max_submissions - response.length);
       }
     );
     getFiles(path).then(files => {
@@ -167,6 +167,7 @@ export const AssignmentComponent = () => {
           response => {
             console.log('Submitted');
             setSubmissions([response, ...allSubmissions]);
+            setSubLeft(subLeft - 1);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
@@ -260,7 +261,6 @@ export const AssignmentComponent = () => {
     const scope = permissions[lecture.code];
     return scope >= Scope.tutor;
   };
-
 
   return (
     <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -382,14 +382,14 @@ export const AssignmentComponent = () => {
               ? ( hasPermissions()
                   ? (
                       <Stack direction={'row'}>
-                      <SubmissionsLeftChip/>
+                      <SubmissionsLeftChip subLeft={subLeft}/>
                       <Chip sx={{ml: 2}}
                        color="success" variant="outlined"
                        label={'As instructor you have unlimited submissions'}/>
                       </Stack>
                     )
                   : (
-                    <SubmissionsLeftChip/>
+                    <SubmissionsLeftChip subLeft={subLeft}/>
                   )
                 )
               : null
