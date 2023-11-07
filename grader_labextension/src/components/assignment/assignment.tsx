@@ -36,7 +36,6 @@ import { openBrowser } from '../coursemanage/overview/util';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import { Scope, UserPermissions } from '../../services/permission.service';
 import { GradeBook } from '../../services/gradebook';
-import { number } from 'yup';
 
 const calculateActiveStep = (submissions: Submission[]) => {
   const hasFeedback = submissions.reduce(
@@ -55,7 +54,7 @@ const calculateActiveStep = (submissions: Submission[]) => {
 interface ISubmissionsLeft{
   subLeft: number;
 }
-const SubmissionsLeftChip = (props: ISubmissionsLeft ) =>{
+const SubmissionsLeftChip = (props: ISubmissionsLeft) =>{
   const output = props.subLeft + ' submission' + (props.subLeft === 1 ? ' left' : 's left'); 
   return(
     <Chip

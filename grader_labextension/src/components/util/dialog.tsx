@@ -29,7 +29,10 @@ import {
   Card,
   CardActionArea,
   Box,
-  InputAdornment
+  InputAdornment,
+  TooltipProps,
+  tooltipClasses,
+  Typography
 } from '@mui/material';
 import { Assignment } from '../../model/assignment';
 import { LoadingButton } from '@mui/lab';
@@ -47,6 +50,7 @@ import { Simulate } from 'react-dom/test-utils';
 import error = Simulate.error;
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from './dialog-provider';
+import styled from '@mui/system/styled';
 
 
 
@@ -88,6 +92,14 @@ export interface IEditLectureProps {
   handleSubmit: (updatedLecture: Lecture) => void;
 }
 
+  const EditLectureNameTooltip = styled(({ className, ...props }: TooltipProps) => (
+    <Tooltip {...props} classes={{ popper: className }} />
+  ))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+      maxWidth: 220
+    },
+  }));
+
 export const EditLectureDialog = (props: IEditLectureProps) => {
   const formik = useFormik({
     initialValues: {
@@ -106,7 +118,16 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
 
   return (
     <div>
-      <Tooltip title={'Edit Lecture'}>
+        <EditLectureNameTooltip
+        title={
+          props.lecture.code === props.lecture.name ?(
+            <React.Fragment>
+            <Typography color="inherit">Edit Lecture</Typography>
+            {"Note: "} <em>{"Lecture name is currently the same as lecture code. You should edit it to make it more readable."}</em>
+          </React.Fragment>
+          ): "Edit Lecture"
+        }
+      >
         <IconButton
           onClick={e => {
             e.stopPropagation();
@@ -117,7 +138,7 @@ export const EditLectureDialog = (props: IEditLectureProps) => {
         >
           <SettingsIcon />
         </IconButton>
-      </Tooltip>
+      </EditLectureNameTooltip>
       <Dialog open={openDialog} onBackdropClick={() => setOpen(false)}>
         <DialogTitle>Edit Lecture</DialogTitle>
         <form onSubmit={formik.handleSubmit}>
