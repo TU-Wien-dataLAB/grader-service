@@ -51,6 +51,24 @@ const calculateActiveStep = (submissions: Submission[]) => {
   return 0;
 };
 
+const SubmissionsLeftChip = () =>{
+  const { lecture, assignment, submissions } = useRouteLoaderData('assignment') as {
+    lecture: Lecture,
+    assignment: Assignment,
+    submissions: Submission[],
+  };
+  const submissionsLeft = assignment.max_submissions - submissions.length;
+  const output = submissionsLeft + ' submission' + (submissionsLeft === 1 ? ' left' : 's left'); 
+  return(
+    <Chip
+      sx={{ ml: 2 }}
+      size='medium'
+      icon={<WarningIcon />}
+      label={output}
+                      />
+  )
+}
+
 /**
  * Renders the components available in the extended assignment modal view
  */
@@ -359,18 +377,24 @@ export const AssignmentComponent = () => {
       <Box sx={{ mt: 4 }}>
         <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>
           Submissions
-          {assignment.max_submissions !== null ? (
-            <Chip
-              sx={{ ml: 2 }}
-              size='medium'
-              icon={<WarningIcon />}
-              label={
-                assignment.max_submissions -
-                submissions.length +
-                ' submissions left'
-              }
-            />
-          ) : null}
+          
+          { assignment.max_submissions !== null
+              ? ( hasPermissions()
+                  ? (
+                      <Stack direction={'row'}>
+                      <SubmissionsLeftChip/>
+                      <Chip sx={{ml: 2}}
+                       color="success" variant="outlined"
+                       label={'As instructor you have unlimited submissions'}/>
+                      </Stack>
+                    )
+                  : (
+                    <SubmissionsLeftChip/>
+                  )
+                )
+              : null
+          }
+
         </Typography>
         <SubmissionList
           submissions={allSubmissions}
