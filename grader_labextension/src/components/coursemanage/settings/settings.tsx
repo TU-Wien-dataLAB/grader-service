@@ -11,7 +11,7 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Tooltip, Typography
+  Tooltip, Typography, 
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -214,13 +214,18 @@ export const SettingsComponent = () => {
             />
             <DateTimePicker
               ampm={false}
-              disabled={!checked}
               label='DateTimePicker'
-              disablePast
+              disabled={!checked}
               value={formik.values.due_date}
               onChange={(date: Date) => {
                 formik.setFieldValue('due_date', date);
+                if(new Date(date).getTime() < Date.now()){
+                  enqueueSnackbar("You selected date in past!",{
+                    variant: 'warning'
+                  });
+                }
               }}
+              
             />
           </LocalizationProvider>
 
