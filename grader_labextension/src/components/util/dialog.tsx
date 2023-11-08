@@ -32,7 +32,8 @@ import {
   InputAdornment,
   TooltipProps,
   tooltipClasses,
-  Typography
+  Typography,
+  Snackbar
 } from '@mui/material';
 import { Assignment } from '../../model/assignment';
 import { LoadingButton } from '@mui/lab';
@@ -51,7 +52,7 @@ import error = Simulate.error;
 import { enqueueSnackbar } from 'notistack';
 import { showDialog } from './dialog-provider';
 import styled from '@mui/system/styled';
-
+import MuiAlert, { AlertProps } from '@mui/material/Alert';
 
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
@@ -260,6 +261,23 @@ export const CreateDialog = (props: ICreateDialogProps) => {
 
   const [openDialog, setOpen] = React.useState(false);
 
+  const [openSnackbar, setOpenSnackBar] = React.useState(false);
+
+  const handleOpenSnackBar = () => {
+    setOpenSnackBar(true);
+  };
+
+  const handleCloseSnackBar = () => {
+    setOpenSnackBar(false);
+  };
+
+  const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
+    props,
+    ref,
+  ) {
+    return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+  });
+  
   return (
     <>
       <Tooltip title={'Create New Assignment'}>
@@ -313,15 +331,22 @@ export const CreateDialog = (props: ICreateDialogProps) => {
                 />
 
                 <DateTimePicker
-                  disablePast
                   ampm={false}
                   disabled={formik.values.due_date === null}
                   label='DateTimePicker'
                   value={formik.values.due_date}
                   onChange={(date: Date) => {
                     formik.setFieldValue('due_date', date);
+                    if(new Date(date).getTime() < Date.now()){
+                      handleOpenSnackBar();
+                    }
                   }}
                 />
+                <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackBar} >
+                <Alert onClose={handleCloseSnackBar} severity="warning" sx={{ width: '100%' }}>
+                  You chose date in the past!
+                </Alert>
+              </Snackbar>
               </LocalizationProvider>
 
               <FormControlLabel
