@@ -166,7 +166,8 @@ export const AssignmentComponent = () => {
           response => {
             console.log('Submitted');
             setSubmissions([response, ...allSubmissions]);
-            setSubLeft(subLeft - 1);
+            if(subLeft - 1 < 0) setSubLeft(0);
+            else setSubLeft(subLeft - 1);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
