@@ -103,7 +103,8 @@ export const AssignmentComponent = () => {
     getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
       response => {
         setSubmissions(response);
-        setSubLeft(assignment.max_submissions - response.length);
+        if(assignment.max_submissions - response.length < 0) setSubLeft(0);
+        else setSubLeft(assignment.max_submissions - response.length);
       }
     );
     getFiles(path).then(files => {
