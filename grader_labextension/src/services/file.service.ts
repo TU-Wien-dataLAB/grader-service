@@ -84,7 +84,6 @@ export const makeDir = async (path: string, name: string) => {
   if (!exists) {
     const model = await GlobalObjects.docManager.newUntitled({ path, type: 'directory' });
     const oldPath = PathExt.join(path, model.name);
-    console.log(oldPath, newPath)
     await GlobalObjects.docManager.rename(oldPath, newPath).catch(error => {
       if (error.response.status !== 409) {
         // if it's not caused by an already existing file, rethrow
