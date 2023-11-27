@@ -8,7 +8,8 @@ import {
   InputAdornment,
   Stack,
   ToggleButton,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  Tooltip
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -192,7 +193,15 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     });
   };
 
-
+  const checkAutogradeStatus = () => {
+    let available = true;
+      selected.forEach(async id =>{
+        const row = rows.find(value => value.id === id);
+        if(row.auto_status !== 'automatically_graded')
+          available = false;
+      })
+      return available;
+  };
 
 
   return (
@@ -266,13 +275,19 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         )}
         {numSelected > 0 ? (
           <ButtonGroup size='small' aria-label='autograde feedback buttons'>
-            <Button key={'autograde'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-                    onClick={handleAutogradeSubmissions}>
-              Autograde
-            </Button>
+            <Tooltip title={'To generate feedback all selected submissions must be autograded.'}>
+              <Button key={'autograde'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+                      onClick={handleAutogradeSubmissions}>
+                Autograde
+              </Button>
+            </Tooltip>
+            
+            {checkAutogradeStatus() === true ?
             <Button key={'feedback'} sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }} onClick={handleGenerateFeedback}>
               {'Generate Feedback'}
-            </Button>
+             </Button>
+            : null}
+            
           </ButtonGroup>
         ) : (
           <Stack direction='row' spacing={2}>

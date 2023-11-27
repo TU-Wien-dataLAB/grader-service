@@ -408,7 +408,7 @@ export const ManualGrading = () => {
               </Button>
         : null}
         
-      
+        {submission.auto_status === 'automatically_graded' ?
         <Button
           size={'small'}
           variant='outlined'
@@ -418,6 +418,7 @@ export const ManualGrading = () => {
         >
           Generate Feedback
         </Button>
+        : null}
       </Stack>
       <Box sx={{ flex: '1 1 100%', mt: 3 }}></Box>
       <Toolbar>
