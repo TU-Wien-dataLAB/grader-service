@@ -15,7 +15,7 @@ c.SimpleLocalProcessSpawner.home_dir_template = os.path.join(config_dir, 'home_d
 c.JupyterHub.authenticator_class = 'jupyterhub.auth.DummyAuthenticator'
 c.DummyAuthenticator.password = "admin"
 c.Authenticator.admin_users = {'user1'}
-c.Authenticator.allowed_users = {"user1", "user2", "user3"}
+c.Authenticator.allowed_users = {"user1", "user2", "user3", "user4", "user5", "user6", "user7"}
 
 ## simple setup
 c.JupyterHub.ip = '127.0.0.1'
@@ -31,7 +31,7 @@ c.JupyterHub.services.append(
 
 c.JupyterHub.load_groups = {
         "23wsle2:instructor": {'users': ["user1", "user2"]},
-        "23wsle2:student": {'users': ["user3"]},
+        "23wsle2:student": {'users': ["user3", "user4", "user5", "user6", "user7"]},
         "23wsle1:instructor": {'users': ["user1", "user2"]},
         "23wsle1:student": {'users': ["user3"]},
 }

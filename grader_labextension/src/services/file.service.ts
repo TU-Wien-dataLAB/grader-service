@@ -59,7 +59,7 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
     }
     f = items.next();
   }
-  console.log('getting files from path ' + path);
+  //console.log('getting files from path ' + path);
   return files;
 };
 
@@ -80,7 +80,28 @@ export const openFile = async (path: string) => {
 
 export const makeDir = async (path: string, name: string) => {
   const newPath = PathExt.join(path, name);
-  const exists = (await getFiles(path)).map(f => (f as any).value.name).includes(name);
+  let exists = false;
+  const model = new FilterFileBrowserModel({
+    auto: true,
+    manager: GlobalObjects.docManager
+  });
+  try {
+    await model.cd(path);
+  } catch (_) {
+    exists = false;
+  }
+  const items = model.items();
+  let f = items.next();
+  while (f.value !== undefined) {
+    if (f.value.type === 'directory') {
+      if(f.value.name === name){
+        exists = true;
+      }
+    } 
+    f = items.next();
+  }
+  
+  console.log('direcory: ' + name + ' exists: ' + exists);
   if (!exists) {
     const model = await GlobalObjects.docManager.newUntitled({ path, type: 'directory' });
     const oldPath = PathExt.join(path, model.name);
@@ -91,14 +112,18 @@ export const makeDir = async (path: string, name: string) => {
       }
     });
   }
+  console.log('new path created: ' + newPath);
   return newPath;
 }
 
 export const makeDirs = async(path: string, names: string[]) =>{
   let p = path;
+  console.log('path: ' + path);
   for (let i = 0; i < names.length; i++) {
     const n = names[i];
-    p = await makeDir(p, n);    
+    console.log("try to create dir: "+ names[i]); 
+    p = await makeDir(p, n);  
+     
   }
   return p;
 }
