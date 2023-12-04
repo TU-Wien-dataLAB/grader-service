@@ -1,0 +1,27 @@
+
+name: "Project Management Actions"
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  send_issue_to_management_tool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: View issue information
+        run: |
+          echo "Issue title: ${{ github.event.issue.title }}"
+          echo "Issue body: ${{ github.event.issue.body }}"
+
+      - name: Send issue to GitLab CI
+        run: |
+          curl -X POST --fail \
+               -F token=${{ secrets.GITLAB_CI_TRIGGER_TOKEN }} \
+               -F "ref=main" \
+               -F "variables[TITLE]=${{ github.event.issue.title }}" \
+               -F "variables[DESCRIPTION]=${{ github.event.issue.body }}" \
+               -F "variables[SOURCE]=github" \
+               ${{ secrets.GITLAB_CI_TRIGGER_URL }}
