@@ -1,7 +1,15 @@
 import Toolbar from '@mui/material/Toolbar';
 import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { Button, ButtonGroup, IconButton, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {
+  Button,
+  ButtonGroup, FormControl,
+  IconButton, Input,
+  InputAdornment,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup
+} from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
@@ -10,11 +18,15 @@ import { ltiSyncSubmissions } from '../../../services/submissions.service';
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
-import { PageConfig } from '@jupyterlab/coreutils';
 import { autogradeSubmission, generateFeedback, saveSubmissions } from '../../../services/grading.service';
 import { lectureBasePath, openFile } from '../../../services/file.service';
 import { Submission } from '../../../model/submission';
 import { showDialog } from '../../util/dialog-provider';
+import AddIcon from '@mui/icons-material/Add';
+import { Link } from 'react-router-dom';
+import { openBrowser } from '../overview/util';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
 export const autogradeSubmissionsDialog = async (handleAgree) => {
   showDialog(
@@ -40,11 +52,39 @@ interface EnhancedTableToolbarProps {
   shownSubmissions: 'none' | 'latest' | 'best';
   switchShownSubmissions: (event: React.MouseEvent<HTMLElement>, value: ('none' | 'latest' | 'best')) => void;
   clearSelection: () => void;
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { lecture, assignment, rows, selected, shownSubmissions, switchShownSubmissions, clearSelection } = props;
+  const {
+    lecture,
+    assignment,
+    rows,
+    selected,
+    shownSubmissions,
+    switchShownSubmissions,
+    clearSelection,
+    setSearch
+  } = props;
   const numSelected = selected.length;
+
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  let searchTimeout = null;
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    // debounce search term
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      setSearch(event.target.value.toLowerCase());
+    }, 250);
+  };
+
+  const handleClear = () => {
+    setSearchTerm('');
+    setSearch('');
+  };
 
   const optionName = () => {
     if (props.shownSubmissions === 'latest') {
@@ -152,8 +192,18 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     });
   };
 
+
+
+
   return (
     <>
+    <Stack direction={'row'} justifyContent={'flex-end'} alignItems={'center'} spacing={2} sx={{ mb: 1 }}>
+      <Button variant='outlined' startIcon={<AddIcon/>}
+      component={Link as any} to={'create'}
+      >
+        New Submission
+      </Button>
+    </Stack>
       <Toolbar
         sx={{
           pl: { sm: 2 },
@@ -174,14 +224,45 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
             {numSelected} selected
           </Typography>
         ) : (
-          <Typography
-            sx={{ flex: '1 1 100%' }}
-            variant='h6'
-            id='tableTitle'
-            component='div'
-          >
-            Submissions
-          </Typography>
+          <Stack direction='row' spacing={2} sx={{ flex: '1 1 100%' }}>
+            <Typography
+              variant='h6'
+              id='tableTitle'
+              component='div'
+            >
+              Submissions
+            </Typography>
+            <FormControl sx={{ m: 1, width: '25ch' }} variant='standard'>
+              <Input
+                id='search'
+                type='search'
+                value={searchTerm}
+                onChange={handleSearch}
+                size={'small'}
+                sx={{ width: 200 }}
+                startAdornment={
+                  <InputAdornment position='start'>
+                    <SearchIcon />
+                  </InputAdornment>
+                }
+                endAdornment={
+                  (searchTerm !== '')
+                    ? <InputAdornment position='end'>
+                      <IconButton
+                        size={'small'}
+                        aria-label='clear search'
+                        onClick={handleClear}
+                        edge='end'
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                    : null
+                }
+              />
+            </FormControl>
+          </Stack>
+
         )}
         {numSelected > 0 ? (
           <ButtonGroup size='small' aria-label='autograde feedback buttons'>

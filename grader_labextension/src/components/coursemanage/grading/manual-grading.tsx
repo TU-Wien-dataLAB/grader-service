@@ -172,6 +172,7 @@ export const ManualGrading = () => {
   };
 
   return (
+    <Box sx={{ overflow: 'auto' }}>
     <Stack direction={'column'} sx={{ flex: '1 1 100%' }}>
       <Box sx={{ m: 2, mt: 5 }}>
         <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
@@ -361,5 +362,6 @@ export const ManualGrading = () => {
         </IconButton>
       </Toolbar>
     </Stack>
+    </Box>
   );
 };

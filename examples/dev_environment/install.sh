@@ -17,7 +17,7 @@ pip install -r ../../grader_service/requirements.txt
 pip install --no-use-pep517 ../../grader_service
 
 echo "Installing grader_labextension..."
-pip install -r ../../grader_labextension/requirements.txt
+#pip install -r ../../grader_labextension/requirements.txt
 pip install ../../grader_labextension # no development install for grader_labextension
 
 jupyter server extension enable grader_labextension

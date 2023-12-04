@@ -31,7 +31,7 @@ import { pullAssignment, pushAssignment, resetAssignment } from '../../services/
 import { showDialog } from '../util/dialog-provider';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import { getFiles, lectureBasePath } from '../../services/file.service';
-import { openBrowser } from '../coursemanage/overview/util';
+
 
 /*
     * Buttons for AssignmentTable
@@ -138,7 +138,7 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
           >
             <TableCell component='th' scope='row' style={{ width: headerWidth(headers, 'Name') }}>
               <Typography variant={'subtitle2'} sx={{ fontSize: 16 }}>{row.name}</Typography>
-              {row.status !== 'released' ?
+              {row.status === 'created' || row.status === 'pushed' ?
                 <Typography
                   sx={{
                     display: 'inline-block',
@@ -148,6 +148,17 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                   }}
                 >
                   (not released)
+                </Typography> : null}
+              {row.status === 'complete' ?
+                <Typography
+                  sx={{
+                    display: 'inline-block',
+                    ml: 0.75,
+                    fontSize: 16,
+                    color: blue[400]
+                  }}
+                >
+                  (complete)
                 </Typography> : null}
             </TableCell>
             <TableCell style={{ width: headerWidth(headers, 'Points') }}>{row.points}</TableCell>

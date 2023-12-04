@@ -17,7 +17,6 @@ import { Lecture } from '../../model/lecture';
 import { AssignmentManageComponent } from './assignmentmanage.component';
 import { LectureComponent } from './lecture';
 import { AssignmentComponent } from './assignment';
-import { FileView } from './files/file-view';
 import { Feedback } from './feedback';
 
 export const loadPermissions = async () => {

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "grader-service"
 description = "Grader service"
-version = "0.2.8a1"
+version = "0.2.9a1"
 requires-python = ">=3.8"
 authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
 license = {text = "BSD-3-Clause"}
@@ -31,7 +31,7 @@ dependencies = [
     "json5>=0.9.6",
     "jsonschema>=3.2.0",
     "kubernetes>=17.17.0",
-    "grader-convert>=0.2.2",
+    "grader-convert>=0.2.3",
     "PyJWT>=2.4.0",
     "cryptography>=38.0.3",
     "psycopg2-binary>= 2.9.5",
@@ -57,7 +57,7 @@ Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
 github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
 
 [tool.tbump.version]
-current = "0.2.8a1"
+current = "0.2.9a1"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before

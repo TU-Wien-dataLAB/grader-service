@@ -22,7 +22,7 @@ hub:
       c.JupyterHub.tornado_settings = { 'headers': {'Content-Security-Policy': "frame-ancestors localhost 127.0.0.1 'self'"} }
 
       c.JupyterHub.load_groups = {
-        "lect1:instructor": ["instructor"],
+        "lect1:instructor": ["admin", "instructor"],
         "lect1:tutor": ["tutor"],
         "lect1:student": ["student"]
       }

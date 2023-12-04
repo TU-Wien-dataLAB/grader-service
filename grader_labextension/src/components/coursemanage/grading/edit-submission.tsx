@@ -28,8 +28,6 @@ import { LoadingButton } from '@mui/lab';
 import { lectureBasePath } from '../../../services/file.service';
 import { Link, useOutletContext } from 'react-router-dom';
 import Toolbar from '@mui/material/Toolbar';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { showDialog } from '../../util/dialog-provider';
 
 export const EditSubmission = () => {

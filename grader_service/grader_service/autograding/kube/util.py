@@ -230,6 +230,7 @@ def make_pod(
         volume_mounts=None,
         labels=None,
         annotations=None,
+        node_selector=None,
         tolerations=None,
         run_as_user=None,
 ) -> V1Pod:
@@ -246,7 +247,8 @@ def make_pod(
     pod.spec = V1PodSpec(
         containers=[],
         security_context=V1PodSecurityContext(),
-        restart_policy='Never'
+        restart_policy='Never',
+        node_selector=node_selector
     )
     # TODO maybe get userid of jupyterhub user
     autograde_container = V1Container(

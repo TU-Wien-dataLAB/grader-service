@@ -15,6 +15,10 @@ export class GradeBook {
     return Object.keys(this.properties['notebooks']);
   }
 
+  public getExtraFiles(): string[] {
+    return this.properties['extra_files']
+  }
+
   public setComment(notebook: string, cellId: string, comment: string) {
     this.properties['notebooks'][notebook]['comments_dict'][cellId][
       'manual_comment'

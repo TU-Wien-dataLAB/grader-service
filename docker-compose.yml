@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+
+  service:
+    build:
+      context: .
+      dockerfile: Dockerfile.Service
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - ./data:/data
+    network_mode: "host"
+
+  hub:
+    build:
+      context: .
+      dockerfile: Dockerfile.Hub
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jupyterhub_config.py:/app/jupyterhub_config.py
+      - ./data:/data
+    network_mode: "host"

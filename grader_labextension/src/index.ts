@@ -90,6 +90,12 @@ namespace ManualGradeCommandIDs {
   export const open = 'manualgrade:open';
 }
 
+namespace CreateSubmissionCommandsID {
+  export const create = 'create:create';
+
+  export const open = 'create:open';
+}
+
 namespace FeedbackCommandIDs {
   export const create = 'feedback:create';
 
