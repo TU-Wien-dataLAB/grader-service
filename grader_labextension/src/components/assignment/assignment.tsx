@@ -8,8 +8,8 @@ import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
 import { Submission } from '../../model/submission';
-import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
-
+import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { SubmissionList } from './submission-list';
 import { AssignmentStatus } from './assignment-status';
 import { Files } from './files/files';
@@ -262,6 +262,11 @@ export const AssignmentComponent = () => {
     const scope = permissions[lecture.code];
     return scope >= Scope.tutor;
   };
+  const [reloadFilesToggle, setReloadFiles] = React.useState(false);
+
+  const reloadFiles = () => {
+    setReloadFiles(!reloadFilesToggle);
+  };
 
   return (
     <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -279,9 +284,16 @@ export const AssignmentComponent = () => {
           <DeadlineDetail due_date={assignment.due_date} late_submissions={assignment.settings.late_submission || []} />
         </Box>
         <Box sx={{ mt: 4 }}>
-          <Typography variant={'h6'} sx={{ ml: 2 }}>
+        <Stack direction={'row'} justifyContent={'flex-start'} alignItems={'center'} spacing={2} sx={{ ml: 2 }} >
+        <Typography variant={'h6'} sx={{ ml: 2 }}>
             Files
           </Typography>
+          <Tooltip title='Reload Files'>
+            <IconButton aria-label='reload' onClick={() => reloadFiles()}>
+              <ReplayIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
           <Files
             lecture={lecture}
             assignment={assignment}

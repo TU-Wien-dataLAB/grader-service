@@ -333,7 +333,7 @@ export const Files = (props: IFilesProps) => {
           <Tab label='Source' value='source' />
           <Tab label='Release' value='release' />
         </Tabs>
-        <Box height={200}>
+        <Box>
           <FilesList
             path={`${lectureBasePath}${props.lecture.code}/${selectedDir}/${props.assignment.id}`}
           />

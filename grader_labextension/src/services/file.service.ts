@@ -51,15 +51,22 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
   let f = items.next();
   while (f.value !== undefined) {
     if (f.value.type === 'directory') {
-      files.push(...(await getFiles(f.value.path)).map((c: any) => {
-        return {value: {name: `${f.value.name}/${c.value.name}`, path: c.value.path, type: c.value.type}, done: c.done} as IteratorResult<IModel>;
-      }))
+      const nestedFiles = await getFiles(f.value.path);
+      files.push({
+        value: {
+          name: f.value.name,
+          path: f.value.path,
+          type: f.value.type,
+          content: nestedFiles 
+        },
+        done: f.done
+      });
     } else {
       files.push(f);
     }
     f = items.next();
   }
-  //console.log('getting files from path ' + path);
+  console.log('getting files from path ' + path);
   return files;
 };
 
