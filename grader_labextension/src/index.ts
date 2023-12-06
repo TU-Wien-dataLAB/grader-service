@@ -8,30 +8,24 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-prototype-builtins */
-import {
-  ILayoutRestorer,
-  JupyterFrontEnd,
-  JupyterFrontEndPlugin
-} from '@jupyterlab/application';
+import { ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 
 import {
-  ICommandPalette,
-  MainAreaWidget,
-  WidgetTracker,
-  showDialog,
   Dialog,
-  showErrorMessage
+  ICommandPalette,
+  IThemeManager,
+  MainAreaWidget,
+  showDialog,
+  showErrorMessage,
+  WidgetTracker
 } from '@jupyterlab/apputils';
 
 import { ILauncher } from '@jupyterlab/launcher';
-import { INotebookTools, Notebook, NotebookPanel } from '@jupyterlab/notebook';
-import { IThemeManager } from '@jupyterlab/apputils'
+import { INotebookTools, INotebookTracker, Notebook, NotebookPanel } from '@jupyterlab/notebook';
 
 import { CourseManageView } from './widgets/coursemanage';
 
 import { Cell } from '@jupyterlab/cells';
-
-import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { PanelLayout } from '@lumino/widgets';
 
@@ -46,14 +40,11 @@ import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
 import { AssignmentManageView } from './widgets/assignmentmanage';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
-import IModel = Contents.IModel;
-import {
-  listIcon,
-  undoIcon
-} from '@jupyterlab/ui-components/lib/icon/iconimports';
+import { listIcon, undoIcon } from '@jupyterlab/ui-components/lib/icon/iconimports';
 import { HintWidget } from './components/notebook/student-plugin/hint-widget';
 import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
 import { lectureSubPaths } from './services/file.service';
+import IModel = Contents.IModel;
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -156,6 +147,13 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.browserFactory = browserFactory;
     GlobalObjects.tracker = tracker;
     GlobalObjects.themeManager = themeManager;
+
+    // this connects the color-scheme CSS of base.css to the Jupyterlab themeManager
+    // the MUI theme provider is set in the corresponding widgets
+    // the CSS color-scheme property only applies to native input elements automatically so this does only apply to those (i.e. notebook grading mode and creation mode)
+    themeManager.themeChanged.connect(() => {
+      document.documentElement.dataset.theme = (themeManager.isLight(themeManager.theme)) ? 'light' : 'dark';
+    }, this);
 
     const assignmentTracker = new WidgetTracker<MainAreaWidget<AssignmentManageView>>(
       {
@@ -392,17 +390,17 @@ const extension: JupyterFrontEndPlugin<void> = {
       },
       execute: () => {
         showDialog({
-          title: "Do you want to revert the cell to it's original state?",
+          title: 'Do you want to revert the cell to it\'s original state?',
           body: 'This will overwrite your current changes!',
           buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
         }).then(result => {
           if (!result.button.accept) {
             return;
           }
-          tracker.activeCell.inputArea.model.sharedModel.setSource("")
+          tracker.activeCell.inputArea.model.sharedModel.setSource('');
           tracker.activeCell.inputArea.model.sharedModel.setSource(
-              tracker.activeCell.model.getMetadata("revert").toString()
-          )
+            tracker.activeCell.model.getMetadata('revert').toString()
+          );
         });
       },
       icon: undoIcon

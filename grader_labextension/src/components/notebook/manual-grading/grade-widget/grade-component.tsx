@@ -34,7 +34,6 @@ export const GradeComponent = (props: GradeComponentProps) => {
     props.toolData.type === 'manual' ||
     props.toolData.type === 'solution';
 
-  console.log('render grade component', this);
   return (
     <div style={{marginLeft: "72px"}}>
       {props.toolData.type !== 'readonly' && props.toolData.type !== '' && (
