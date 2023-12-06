@@ -132,6 +132,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
 
     this.setState({mode: !this.state.mode}, () => {
       this.onChange(this.state.mode);
+      console.time("map")
       this.notebook.widgets.map((c: Cell) => {
         const currentLayout = c.layout as PanelLayout;
         if (this.state.mode) {
@@ -159,6 +160,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
           });
         }
       });
+      console.timeEnd("map")
     });
   };
 

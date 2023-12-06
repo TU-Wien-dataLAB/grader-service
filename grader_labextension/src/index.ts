@@ -53,6 +53,7 @@ import {
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
 import { HintWidget } from './components/notebook/student-plugin/hint-widget';
 import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
+import { lectureSubPaths } from './services/file.service';
 
 namespace AssignmentsCommandIDs {
   export const create = 'assignments:create';
@@ -224,7 +225,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
         const notebookPaths: string[] = contentsModel.path.split('/');
 
-        if (notebookPaths[0] === 'manualgrade') {
+        if (notebookPaths[lectureSubPaths + 1] === 'manualgrade') {
           return;
         }
 

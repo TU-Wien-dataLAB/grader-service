@@ -5,16 +5,11 @@
 // LICENSE file in the root directory of this source tree.
 
 import * as React from 'react';
-import { Cell } from '@jupyterlab/cells';
-import { Box, createTheme, Divider, Grid, TextField, Typography } from '@mui/material';
-import { CellModel, NbgraderData, ToolData } from '../../model';
+import { NbgraderData, ToolData } from '../../model';
 import { GradeBook } from '../../../../services/gradebook';
 import { ExtraCreditComponent, PointsComponent } from './points-component';
 import { CommentComponent } from './comment-component';
 import { Notebook } from '@jupyterlab/notebook';
-import CssBaseline from '@mui/material/CssBaseline';
-import { GlobalObjects } from '../../../../index';
-import { ThemeProvider } from '@mui/system';
 
 export interface GradeComponentProps {
   notebook: Notebook;
@@ -39,57 +34,43 @@ export const GradeComponent = (props: GradeComponentProps) => {
     props.toolData.type === 'manual' ||
     props.toolData.type === 'solution';
 
-  const [theme, setTheme] = React.useState(
-    createTheme({
-      palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
-    })
-  );
-
-  GlobalObjects.themeManager.themeChanged.connect(() => {
-    const palette = (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark';
-    setTheme(createTheme({ palette: { mode: palette } }));
-  }, this);
-
+  console.log('render grade component', this);
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box>
-        {props.toolData.type !== 'readonly' && props.toolData.type !== '' && (
-          <Box sx={{ mt: 2, mb: 1, ml: 5 }}>
-            <Grid container spacing={2}>
-              {showCommment && (
-                <CommentComponent
-                  model={model}
-                  nbgraderData={props.nbgraderData}
-                  toolData={props.toolData}
-                  gradebook={props.gradebook}
-                  nbname={props.nbname}
-                />
-              )}
+    <div style={{marginLeft: "72px"}}>
+      {props.toolData.type !== 'readonly' && props.toolData.type !== '' && (
+        <div style={{ marginTop: 2, marginBottom: 1}}>
+          {showCommment && (
+            <CommentComponent
+              model={model}
+              nbgraderData={props.nbgraderData}
+              toolData={props.toolData}
+              gradebook={props.gradebook}
+              nbname={props.nbname}
+            />
+          )}
 
-              {gradableCell && (
-                <PointsComponent
-                  model={model}
-                  nbgraderData={props.nbgraderData}
-                  toolData={props.toolData}
-                  gradebook={props.gradebook}
-                  nbname={props.nbname}
-                />
-              )}
+          {gradableCell && (
+            <PointsComponent
+              model={model}
+              nbgraderData={props.nbgraderData}
+              toolData={props.toolData}
+              gradebook={props.gradebook}
+              nbname={props.nbname}
+            />
+          )}
 
-              {gradableCell && (
-                <ExtraCreditComponent
-                  model={model}
-                  nbgraderData={props.nbgraderData}
-                  toolData={props.toolData}
-                  gradebook={props.gradebook}
-                  nbname={props.nbname}
-                />
-              )}
-            </Grid>
-          </Box>
-        )}
-      </Box>
-    </ThemeProvider>
+          {gradableCell && (
+            <ExtraCreditComponent
+              model={model}
+              nbgraderData={props.nbgraderData}
+              toolData={props.toolData}
+              gradebook={props.gradebook}
+              nbname={props.nbname}
+            />
+          )}
+          <hr style={{borderTop: "1px", color: "lightgray"}}/>
+        </div>
+      )}
+    </div>
   );
 };
