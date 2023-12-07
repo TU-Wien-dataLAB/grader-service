@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import WarningIcon from '@mui/icons-material/Warning';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { Contents } from '@jupyterlab/services';
 import IModel = Contents.IModel; 
 
@@ -33,6 +34,7 @@ const FileItem = ({
     <ListItem disablePadding>
       <ListItemButton onClick={() => openFile(file.value.path)} dense={true}>
         <ListItemIcon>
+          <KeyboardArrowRightIcon sx={{visibility:'hidden'}}/>
           <InsertDriveFileRoundedIcon />
         </ListItemIcon>
         <ListItemText 
