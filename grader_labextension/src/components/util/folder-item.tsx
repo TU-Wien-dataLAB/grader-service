@@ -21,20 +21,19 @@ import { getFiles } from '../../services/file.service';
 interface IFolderItemProps {
   folder: { value: IModel; done: boolean };
   inContained: (file: string) => boolean;
-  extraFileHelp: string;
-  missingFileHelp: string;
   openFile: (path: string) => void;
   allowFiles?: boolean;
+  extraFileHelp: string;
+  missingFiles?: string[]
 }
 
 
 const FolderItem = ({
   folder,
-  inContained,
   extraFileHelp,
-  missingFileHelp,
+  inContained,
   openFile,
-  allowFiles,
+  allowFiles
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -78,10 +77,9 @@ const FolderItem = ({
                 key={file.value.path}
                 folder={file}
                 inContained={inContained}
-                extraFileHelp={extraFileHelp}
-                missingFileHelp={missingFileHelp}
                 openFile={openFile}
                 allowFiles={allowFiles}
+                extraFileHelp={extraFileHelp}
               />
             ) : (
               <FileItem
@@ -90,8 +88,7 @@ const FolderItem = ({
                 inContained={inContained}
                 extraFileHelp={extraFileHelp}
                 openFile={openFile}
-                allowFiles={allowFiles}
-               
+                allowFiles={allowFiles}   
               />
             )
           )}

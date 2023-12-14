@@ -27,6 +27,7 @@ interface IFileListProps {
   sx?: SxProps<Theme>;
   shouldContain?: string[];
   assignment?: Assignment;
+  missingFiles?: string[];
 }
 
 export const FilesList = (props: IFileListProps) => {
@@ -43,15 +44,37 @@ export const FilesList = (props: IFileListProps) => {
     return true;
   };
 
+
+
   const extraFileHelp = `This file is not part of the assignment and will be removed when grading! Did you rename a notebook file or added it manually?`;
   const missingFileHelp = `This file should be part of your assignment! Did you delete it?`;
 
   const generateItems = (files) => {
-    const fileNames = files.map((file) => file.value.name);
+    const extractRelativePaths = (file) => {
+      const getRelativePath = (path) => {
+        const regex = /assignments\/[^/]+\/(.+)/;
+        const match = path.match(regex);
+        return match ? match[1] : path;
+      };
+    
+      if (file.value.type === 'directory') {
+        const nestedPaths = file.value.content.flatMap((nestedFile) => extractRelativePaths(nestedFile));
+        return [getRelativePath(file.value.path), ...nestedPaths];
+      } else {
+        return [getRelativePath(file.value.path)];
+      }
+    };
+    
+    const filePaths = files.flatMap((file) => extractRelativePaths(file));
+      
     const missingFiles =
       props.shouldContain &&
-      props.shouldContain.filter((f) => !fileNames.includes(f));
-  
+      props.shouldContain.filter((f) => !filePaths.includes(f));
+
+    console.log('missing files: ' + missingFiles);
+    
+    console.log("try: "+ files.concat(missingFiles).map((f) => typeof f));
+
     const items = files.map((file) =>
       file.value.type === 'directory' ? (
         <FolderItem
@@ -59,7 +82,6 @@ export const FilesList = (props: IFileListProps) => {
           folder={file}
           inContained={inContained}
           extraFileHelp={extraFileHelp}
-          missingFileHelp={missingFileHelp}
           openFile={openFile}
           allowFiles={props.assignment?.allow_files}
         />
@@ -74,35 +96,35 @@ export const FilesList = (props: IFileListProps) => {
         />
       )
     );
-  
-    if (missingFiles && missingFiles.length > 0) {
-      const missingFileItems = missingFiles.map((file) => (
-        <ListItem disablePadding key={file}>
-          <ListItem>
-            <ListItemIcon>
-              <InsertDriveFileRoundedIcon color={'disabled'} />
-            </ListItemIcon>
-            <ListItemText
-              primary={<Typography color={'text.secondary'}>{file}</Typography>}
-              secondary={
-                <Stack direction={'row'} spacing={2}>
-                  <Tooltip title={missingFileHelp}>
-                    <Stack direction={'row'} spacing={2} flex={0}>
-                      <DangerousIcon color={'error'} fontSize={'small'} />
-                      <Typography sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
-                        File Missing
-                      </Typography>
-                    </Stack>
-                  </Tooltip>
-                </Stack>
-              }
-            />
-          </ListItem>
+    
+  if (missingFiles && missingFiles.length > 0) {
+    const missingFileItems = missingFiles.map((file) => (
+      <ListItem disablePadding key={file}>
+        <ListItem>
+          <ListItemIcon>
+            <InsertDriveFileRoundedIcon color={'disabled'} />
+          </ListItemIcon>
+          <ListItemText
+            primary={<Typography color={'text.secondary'}>{file}</Typography>}
+            secondary={
+              <Stack direction={'row'} spacing={2}>
+                <Tooltip title={missingFileHelp}>
+                  <Stack direction={'row'} spacing={2} flex={0}>
+                    <DangerousIcon color={'error'} fontSize={'small'} />
+                    <Typography sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
+                      File Missing
+                    </Typography>
+                  </Stack>
+                </Tooltip>
+              </Stack>
+            }
+          />
         </ListItem>
-      ));
-  
-      return [...items, ...missingFileItems];
-    }
+      </ListItem>
+    ));
+
+    return [...items, ...missingFileItems];
+  }
   
     return items;
   };

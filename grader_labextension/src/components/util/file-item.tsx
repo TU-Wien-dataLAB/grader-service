@@ -13,6 +13,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { Contents } from '@jupyterlab/services';
 import IModel = Contents.IModel; 
+import DangerousIcon from '@mui/icons-material/Dangerous';
 
 interface IFileItemProps {
   file: { value: IModel; done: boolean };
@@ -22,13 +23,21 @@ interface IFileItemProps {
   allowFiles?: boolean;
 }
 
+
+
 const FileItem = ({
   file,
   inContained,
   extraFileHelp,
   openFile,
-  allowFiles,
+  allowFiles
 }) => {
+
+  const getRelativePath = (file) => {
+    const regex = /assignments\/[^/]+\/(.+)/;
+    const match = file.value.path.match(regex);
+    return match ? match[1] : file.value.path;
+  }
 
   return (
     <ListItem disablePadding>
@@ -41,7 +50,7 @@ const FileItem = ({
           primary={<Typography>{file.value.name}</Typography>}
           secondary={
             <Stack direction={'row'} spacing={2}>
-              {!inContained(file.value.name) && !allowFiles && (
+              {!inContained(getRelativePath(file)) && !allowFiles && (
                 <Tooltip title={extraFileHelp}>
                   <Stack direction={'row'} spacing={2} flex={0}>
                     <WarningIcon color={'warning'} fontSize={'small'} />
