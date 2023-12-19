@@ -2,14 +2,13 @@ name: MAIN
 
 on:
   push:
-    tags:
-      - grader-service-*
-      - grader-convert-*
-      - grader-labextension-*
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+  release:
+    types:
+      - published
 
 jobs:
   init:
@@ -82,18 +81,18 @@ jobs:
   # ONLY ON TAGS
   release_grader-service:
     needs: dockerize_grader-service
-    if: startsWith(github.ref, 'refs/tags/grader-service')
+    if: startsWith(github.event.release.tag_name, 'grader-service')
     uses: ./.github/workflows/publish_service.yml
     secrets: inherit
 
   release_labextension:
     needs: build_labextension
-    if: startsWith(github.ref, 'refs/tags/grader-labextension')
+    if: startsWith(github.event.release.tag_name, 'grader-labextension')
     uses: ./.github/workflows/publish_labextension.yml
     secrets: inherit
 
   release_convert:
     needs: build_convert
-    if: startsWith(github.ref, 'refs/tags/grader-convert')
+    if: startsWith(github.event.release.tag_name, 'grader-convert')
     uses: ./.github/workflows/publish_convert.yml
     secrets: inherit
