@@ -11,14 +11,13 @@ packaging instructions are in the `pyproject.toml` file to wrap your extension i
 Python package. Before generating a package, you first need to install some tools:
 
 ```bash
-pip install build twine hatch
+pip install build twine hatch tbump
 ```
 
-Bump the version using `hatch`. By default this will create a tag.
-See the docs on [hatch-nodejs-version](https://github.com/agoose77/hatch-nodejs-version#semver) for details.
+Bump the version using `tbump`.
 
 ```bash
-hatch version <new-version>
+tbump <new-version>
 ```
 
 Make sure to clean up all the development files before building the package:

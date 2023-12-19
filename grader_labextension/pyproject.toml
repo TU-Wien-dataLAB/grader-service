@@ -43,6 +43,28 @@ test = [
     "pytest-jupyter[server]>=0.6.0"
 ]
 
+[tool.tbump.version]
+current = "0.2.11"
+
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  \-?
+  (?P<pre>((a|b|rc|dev|nightly)\d+)?)
+  '''
+
+[tool.tbump.git]
+message_template = "Bump labextension to {new_version}"
+tag_template = "grader-labextension-{new_version}"
+
+[[tool.tbump.file]]
+src = "package.json"
+search = "\"version\": \"{current_version}\""
+
+# hatch uses nodejs i.e. package.json to determine version -> tbump changes version there which hatch references for build etc.
 [tool.hatch.version]
 source = "nodejs"
 
@@ -59,9 +81,6 @@ exclude = [".github", "binder"]
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 "jupyter-config/nb-config" = "etc/jupyter/jupyter_notebook_config.d"
 
-
-[tool.tbump.version]
-current = "0.1.35"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
