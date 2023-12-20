@@ -405,11 +405,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             self.submission.auto_status = "grading_failed"
 
+        self.grading_logs = self.grading_logs.replace("\x00", "")
         logs = SubmissionLogs(logs=self.grading_logs,
                               sub_id=self.submission.id)
-
         self.session.merge(logs)
-
         self.session.commit()
 
     def _cleanup(self):
