@@ -29,6 +29,14 @@ if (lectureBasePath !== '') {
 // the number of sub paths in lecture base path e.g. grader/Lectures -> 2
 export const lectureSubPaths: number = lectureBasePath.split('/').reduce((acc, v) => (v.length > 0) ? acc + 1 : acc, 0);
 
+export interface File {
+  name: string;
+  path: string;
+  type: string;
+  content: File[];
+}
+
+// TODO: getFiles should return Promise<File[]>
 export const getFiles = async (path: string): Promise<IModel[]> => {
   if (path === null) {
     return [];
@@ -47,7 +55,7 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
     return [];
   }
   const items = model.items();
-  const files = [];
+  const files = []; // TODO: type files as File[] and getFiles() should also return File[]
   let f = items.next();
   while (f.value !== undefined) {
     if (f.value.type === 'directory') {
@@ -57,7 +65,7 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
           name: f.value.name,
           path: f.value.path,
           type: f.value.type,
-          content: nestedFiles 
+          content: nestedFiles
         },
         done: f.done
       });
@@ -101,13 +109,13 @@ export const makeDir = async (path: string, name: string) => {
   let f = items.next();
   while (f.value !== undefined) {
     if (f.value.type === 'directory') {
-      if(f.value.name === name){
+      if (f.value.name === name) {
         exists = true;
       }
-    } 
+    }
     f = items.next();
   }
-  
+
   console.log('direcory: ' + name + ' exists: ' + exists);
   if (!exists) {
     const model = await GlobalObjects.docManager.newUntitled({ path, type: 'directory' });
@@ -121,19 +129,19 @@ export const makeDir = async (path: string, name: string) => {
   }
   console.log('new path created: ' + newPath);
   return newPath;
-}
+};
 
-export const makeDirs = async(path: string, names: string[]) =>{
+export const makeDirs = async (path: string, names: string[]) => {
   let p = path;
   console.log('path: ' + path);
   for (let i = 0; i < names.length; i++) {
     const n = names[i];
-    console.log("try to create dir: "+ names[i]); 
-    p = await makeDir(p, n);  
-     
+    console.log('try to create dir: ' + names[i]);
+    p = await makeDir(p, n);
+
   }
   return p;
-}
+};
 
 export interface IGitLogObject {
   commit: string,

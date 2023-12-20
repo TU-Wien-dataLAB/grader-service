@@ -46,12 +46,14 @@ export const FilesList = (props: IFileListProps) => {
 
 
 
-  const extraFileHelp = `This file is not part of the assignment and will be removed when grading! Did you rename a notebook file or added it manually?`;
+  const extraFileHelp = `This file is not part of the assignment and will be removed when grading! Did you rename a notebook file or add it manually?`;
   const missingFileHelp = `This file should be part of your assignment! Did you delete it?`;
 
+  // TODO: we should use types everywhere (should be File[] from file.service.ts)
   const generateItems = (files) => {
     const extractRelativePaths = (file) => {
       const getRelativePath = (path) => {
+        // TODO: this should use the props.path as the base path -> this is the location for which the file list is displayed
         const regex = /assignments\/[^/]+\/(.+)/;
         const match = path.match(regex);
         return match ? match[1] : path;
@@ -86,8 +88,12 @@ export const FilesList = (props: IFileListProps) => {
           allowFiles={props.assignment?.allow_files}
         />
       ) : (
+        // TODO: FileItem should receive missingFiles (or we could implement a inMissing function similar to inContained)
+        //  it can calculate its relative path by using props.path (its path without props.path is the relative path)
+        //  if the relative path of the FileItem is contained in missingFiles then it knows it is this that exact file in the missingFiles list
         <FileItem
           key={file.value.path}
+          basePath={props.path}
           file={file}
           inContained={inContained}
           extraFileHelp={extraFileHelp}
@@ -96,7 +102,8 @@ export const FilesList = (props: IFileListProps) => {
         />
       )
     );
-    
+
+  // TODO: once missing status is implemented in FileItem we can remove this
   if (missingFiles && missingFiles.length > 0) {
     const missingFileItems = missingFiles.map((file) => (
       <ListItem disablePadding key={file}>
