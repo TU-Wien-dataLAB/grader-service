@@ -22,7 +22,6 @@ import {
   createAssignment, deleteAssignment,
   getAllAssignments
 } from '../../services/assignments.service';
-import { AssignmentComponent } from './assignment';
 import { CreateDialog, EditLectureDialog } from '../util/dialog';
 import {
   getLecture,
