@@ -12,50 +12,59 @@ import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRound
 import WarningIcon from '@mui/icons-material/Warning';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { Contents } from '@jupyterlab/services';
-import IModel = Contents.IModel; 
 import DangerousIcon from '@mui/icons-material/Dangerous';
+import {File, getRelativePathAssignment} from '../../services/file.service';
 
 interface IFileItemProps {
-  file: { value: IModel; done: boolean };
-  basePath: string;
+  file: File;
   inContained: (file: string) => boolean;
+  missingFiles?: File[],
   extraFileHelp: string;
+  missingFileHelp: string;
   openFile: (path: string) => void;
   allowFiles?: boolean;
 }
 
-
-
 const FileItem = ({
   file,
-  basePath,
   inContained,
   extraFileHelp,
+  missingFileHelp,
   openFile,
-  allowFiles
+  allowFiles,
+  missingFiles,
 }: IFileItemProps) => {
 
-  // TODO: this function is implemented twice -> in file list (to get missingFiles) and here to check inContained
-  //  in my opinion this should only be declared once here to check both missing and contained status of the FileItem
-  const getRelativePath = (file) => {
-    // TODO: use basePath here to calculate relative path (basePath is props.path from file list) and see comment in file list for same function
-    const regex = /assignments\/[^/]+\/(.+)/;
-    const match = file.value.path.match(regex);
-    return match ? match[1] : file.value.path;
-  }
+  const inMissing = (filePath: string) => {
+    return missingFiles.some((missingFile) => missingFile.path === filePath);
+  };
 
+  //console.log("Missing files (file-item): " + missingFiles.map(f => f.path));
   return (
     <ListItem disablePadding>
-      <ListItemButton onClick={() => openFile(file.value.path)} dense={true}>
+      <ListItemButton onClick={() => openFile(file.path)} dense={true}>
         <ListItemIcon>
           <KeyboardArrowRightIcon sx={{visibility:'hidden'}}/>
           <InsertDriveFileRoundedIcon />
         </ListItemIcon>
         <ListItemText 
-          primary={<Typography>{file.value.name}</Typography>}
-          secondary={
+          primary={<Typography>{file.name}</Typography>}
+          secondary=
+          {
             <Stack direction={'row'} spacing={2}>
-              {!inContained(getRelativePath(file)) && !allowFiles && (
+              {inMissing(file.path) && (
+                <Tooltip title={missingFileHelp}>
+                  <Stack direction={'row'} spacing={2} flex={0}>
+                    <DangerousIcon color={'error'} fontSize={'small'} />
+                    <Typography sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}>
+                      Missing File
+                    </Typography>
+                  </Stack>
+                </Tooltip>
+              )}
+              {
+            <Stack direction={'row'} spacing={2}>
+              {!inContained(getRelativePathAssignment(file.path)) && !allowFiles && (
                 <Tooltip title={extraFileHelp}>
                   <Stack direction={'row'} spacing={2} flex={0}>
                     <WarningIcon color={'warning'} fontSize={'small'} />
@@ -65,6 +74,8 @@ const FileItem = ({
                   </Stack>
                 </Tooltip>
               )}
+            </Stack>
+          }
             </Stack>
           }
         />

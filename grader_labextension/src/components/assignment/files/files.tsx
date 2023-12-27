@@ -35,7 +35,7 @@ export const Files = (
   openBrowser(path);
   return (
     <div>
-      <FilesList path={path} sx={{ m: 2, mt: 1 }} shouldContain={props.files} assignment={props.assignment} />
+      <FilesList path={path} sx={{ m: 2, mt: 1 }} lecture={props.lecture} shouldContain={props.files} assignment={props.assignment} />
     </div>
   );
 };

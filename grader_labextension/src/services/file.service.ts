@@ -37,14 +37,16 @@ export interface File {
 }
 
 // TODO: getFiles should return Promise<File[]>
-export const getFiles = async (path: string): Promise<IModel[]> => {
+export const getFiles = async (path: string): Promise<File[]> => {
   if (path === null) {
     return [];
   }
+
   const model = new FilterFileBrowserModel({
     auto: true,
-    manager: GlobalObjects.docManager
+    manager: GlobalObjects.docManager,
   });
+
   try {
     await model.cd(path);
   } catch (_) {
@@ -54,28 +56,48 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
   if (model.path !== path) {
     return [];
   }
+
   const items = model.items();
-  const files = []; // TODO: type files as File[] and getFiles() should also return File[]
+  const files: File[] = []; // Type files as File[]
+
   let f = items.next();
   while (f.value !== undefined) {
     if (f.value.type === 'directory') {
       const nestedFiles = await getFiles(f.value.path);
       files.push({
-        value: {
-          name: f.value.name,
-          path: f.value.path,
-          type: f.value.type,
-          content: nestedFiles
-        },
-        done: f.done
+        name: f.value.name,
+        path: f.value.path,
+        type: f.value.type,
+        content: nestedFiles,
       });
     } else {
-      files.push(f);
+      files.push({
+        name: f.value.name,
+        path: f.value.path,
+        type: f.value.type,
+        content: [],
+      });
     }
     f = items.next();
   }
+
   console.log('getting files from path ' + path);
   return files;
+};
+
+export const getRelativePathAssignment = (path: string) => {
+  const regex = /assignments\/[^/]+\/(.+)/;
+  const match = path.match(regex);
+  return match ? match[1] : path;
+};
+
+export const extractRelativePathsAssignment = (file: File) => {
+  if (file.type === 'directory') {
+    const nestedPaths = file.content.flatMap((nestedFile) => extractRelativePathsAssignment(nestedFile));
+    return [getRelativePathAssignment(file.path), ...nestedPaths];
+  } else {
+    return [getRelativePathAssignment(file.path)];
+  }
 };
 
 export const openFile = async (path: string) => {

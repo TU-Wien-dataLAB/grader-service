@@ -16,21 +16,24 @@ import FolderIcon from '@mui/icons-material/Folder';
 import FileItem from './file-item';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { getFiles } from '../../services/file.service';
+import { File, getFiles } from '../../services/file.service';
 
 interface IFolderItemProps {
-  folder: { value: IModel; done: boolean };
+  folder: File;
   inContained: (file: string) => boolean;
   openFile: (path: string) => void;
   allowFiles?: boolean;
   extraFileHelp: string;
-  missingFiles?: string[]
+  missingFiles?: File[];
+  missingFileHelp: string;
 }
 
 
 const FolderItem = ({
   folder,
+  missingFiles,
   extraFileHelp,
+  missingFileHelp,
   inContained,
   openFile,
   allowFiles
@@ -39,17 +42,31 @@ const FolderItem = ({
 
   const [nestedFiles, setNestedFiles] = useState([]);
 
+  const missingFilesByDirectory = missingFiles.reduce((acc, missingFile) => {
+    const directoryPath = missingFile.path.substring(0, missingFile.path.lastIndexOf("/"));
+    if (!acc[directoryPath]) {
+      acc[directoryPath] = [];
+    }
+    acc[directoryPath].push(missingFile);
+    return acc;
+  }, {});
+
   const handleToggle = async () => {
     if (!open) {
       try {
-        const nestedFiles = await getFiles(folder.value.path);
-        setNestedFiles(nestedFiles);
+        const nestedFiles = await getFiles(folder.path);
+        const missingFilesForDirectory = missingFilesByDirectory[folder.path] || [];
+        // Update nested files with missing files if there are any that should be in this folder
+        const folderContents = nestedFiles.concat(missingFilesForDirectory); 
+        setNestedFiles(folderContents);
       } catch (error) {
         console.error('Error fetching nested files:', error);
       }
     }
     setOpen(!open);
   };
+
+  //console.log("Folder " + folder.name + " contents: " + folder.content.map(f => f.path));
 
   return (
     <>
@@ -64,7 +81,7 @@ const FolderItem = ({
             <FolderIcon />
           </ListItemIcon>
           <ListItemText
-            primary={<Typography>{folder.value.name}</Typography>}
+            primary={<Typography>{folder.name}</Typography>}
           />
         </ListItemButton>
       </ListItem>
@@ -72,10 +89,12 @@ const FolderItem = ({
         <List sx={{ml: 3}}>
         {nestedFiles.length > 0 &&
           nestedFiles.map((file) =>
-            file.value.type === 'directory' ? (
+            file.type === 'directory' ? (
               <FolderItem
-                key={file.value.path}
+                key={file.path}
                 folder={file}
+                missingFiles={missingFiles || []}
+                missingFileHelp={missingFileHelp}
                 inContained={inContained}
                 openFile={openFile}
                 allowFiles={allowFiles}
@@ -83,8 +102,10 @@ const FolderItem = ({
               />
             ) : (
               <FileItem
-                key={file.value.path}
+                key={file.path}
                 file={file}
+                missingFiles={missingFiles || []}
+                missingFileHelp={missingFileHelp}
                 inContained={inContained}
                 extraFileHelp={extraFileHelp}
                 openFile={openFile}
