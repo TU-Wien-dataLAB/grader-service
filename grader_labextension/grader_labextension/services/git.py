@@ -140,6 +140,12 @@ class GitService(Configurable):
         self.log.info(f"Show commit with hash {commit_hash}")
         self._run_command(f"git checkout {commit_hash}", cwd=self.path)
 
+    def undo_commit(self, n: int = 1) -> None:
+        self.log.info(f"Undoing {n} commit(s)")
+        self._run_command(f"git reset --hard HEAD~{n}", cwd=self.path)
+        self._run_command(f"git gc", cwd=self.path)
+
+
     def pull(self, origin: str, branch="main", force=False):
         """Pulls a repository
 
