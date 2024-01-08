@@ -185,16 +185,6 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         """
 
         try:
-            assignment = await self.request_service.request(
-                method="GET",
-                endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}",
-                header=self.grader_authentication_header,
-            )
-            lecture = await self.request_service.request(
-                "GET",
-                f"{self.service_base_url}/lectures/{lecture_id}",
-                header=self.grader_authentication_header,
-            )
             await self.request_service.request(
                 method="DELETE",
                 endpoint=f"{self.service_base_url}/lectures/{lecture_id}/assignments/{assignment_id}",
@@ -202,11 +192,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
                 decode_response=False
             )
         except HTTPClientError as e:
-            self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
-
-        self.log.warn(f'Deleting directory {self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}')
-        shutil.rmtree(os.path.expanduser(f'{self.root_dir}/{lecture["code"]}/assignments/{assignment["id"]}'), ignore_errors=True)
+            
         self.write("OK")
 
 
