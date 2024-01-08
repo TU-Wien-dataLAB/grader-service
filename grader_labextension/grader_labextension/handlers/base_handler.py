@@ -124,10 +124,7 @@ class ExtensionBaseHandler(APIHandler):
             if exc_info:
                 e = exc_info[1]
                 if isinstance(e, HTTPError):
-                    # TODO currently we use a mixture of reason and message to display errors
-                    # we should only use reason, as the displayed user error message, like this:
-                    # reply["message"] = e.log_message or message
-                    reply["message"] = e.reason
+                    reply["message"] = e.log_message or message
                     reply["reason"] = e.reason
                 else:
                     reply["message"] = "Unhandled error"
