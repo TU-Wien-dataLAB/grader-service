@@ -1,7 +1,7 @@
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import * as React from 'react';
-import { ErrorMessage, useFormik } from 'formik';
+import { useFormik } from 'formik';
 import {
   Box,
   Button,
@@ -18,7 +18,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
-  deleteAssignment,
   updateAssignment
 } from '../../../services/assignments.service';
 import { enqueueSnackbar } from 'notistack';
@@ -28,7 +27,6 @@ import { SectionTitle } from '../../util/section-title';
 import { useRouteLoaderData } from 'react-router-dom';
 import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
 import { FormikValues } from 'formik/dist/types';
-import { SubmissionPeriod } from '../../../model/submissionPeriod';
 import moment from 'moment';
 import { red } from '@mui/material/colors';
 
