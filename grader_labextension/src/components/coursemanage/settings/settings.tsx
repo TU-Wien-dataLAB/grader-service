@@ -6,7 +6,7 @@ import {
   Box,
   Button,
   Checkbox,
-  FormControlLabel,
+  FormControlLabel, IconButton,
   InputLabel,
   MenuItem,
   Stack,
@@ -25,12 +25,14 @@ import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
-import { useRouteLoaderData } from 'react-router-dom';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
 import { FormikValues } from 'formik/dist/types';
 import { SubmissionPeriod } from '../../../model/submissionPeriod';
 import moment from 'moment';
 import { red } from '@mui/material/colors';
+import { showDialog } from '../../util/dialog-provider';
+import CloseIcon from '@mui/icons-material/Close';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -62,6 +64,7 @@ const validationSchema = yup.object({
 //}
 
 export const SettingsComponent = () => {
+  const navigate = useNavigate();
 
   const { lecture, assignments } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
@@ -341,9 +344,52 @@ export const SettingsComponent = () => {
                 <MenuItem value={'group'}>Group</MenuItem>
               </Select>*/}
         </Stack>
-        <Button sx={{ mt: 2 }} color='primary' variant='contained' type='submit'>
-          Save changes
-        </Button>
+        <Stack direction={'row'} spacing={2} sx={{ mt: 2 }}>
+          <Button sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }} color='primary' variant='contained' type='submit'>
+            Save changes
+          </Button>
+          <Box sx={{ flex: '1 1 100%' }}></Box>
+          <Tooltip title={assignment.status === 'released' || assignment.status === 'complete'
+            ? 'Released or Completed Assignments cannot be deleted'
+            : `Delete Assignment ${assignment.name}`
+          }>
+            <span> {/* span because of https://mui.com/material-ui/react-tooltip/#disabled-elements */}
+              <Button
+                sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+                aria-label='delete assignment'
+                size={'small'}
+                color={'error'}
+                variant='contained'
+                disabled={assignment.status === 'released' || assignment.status === 'complete'}
+                onClick={(e) => {
+                  showDialog(
+                    'Delete Assignment',
+                    'Do you wish to delete this assignment?',
+                    async () => {
+                      try {
+                        await deleteAssignment(
+                          lecture.id,
+                          assignment.id
+                        );
+                        enqueueSnackbar('Successfully Deleted Assignment', {
+                          variant: 'success'
+                        });
+                        navigate(`/lecture/${lecture.id}`);
+                      } catch (error: any) {
+                        enqueueSnackbar(error.message, {
+                          variant: 'error'
+                        });
+                      }
+                    });
+                  e.stopPropagation();
+                }}
+              >
+                Delete Assignment
+              </Button>
+            </span>
+          </Tooltip>
+        </Stack>
+
       </form>
     </Box>
   );
