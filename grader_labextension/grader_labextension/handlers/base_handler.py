@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import functools
+from http.client import responses
 import json
 import traceback
 from typing import Optional, Awaitable
@@ -111,24 +112,26 @@ class ExtensionBaseHandler(APIHandler):
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
-
-    def write_error(self, status_code: int, **kwargs) -> None:
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(status_code)
-        _, e, _ = kwargs.get("exc_info", (None, None, None))
-        error = httputil.responses.get(status_code, "Unknown")
-        reason = kwargs.get("reason", None)
-        if e and isinstance(e, HTTPError) and e.reason:
-            reason = e.reason
-        if self.settings.get("serve_traceback") and "exc_info" in kwargs:
-            # in debug mode, try to send a traceback
-            lines = []
-            for line in traceback.format_exception(*kwargs["exc_info"]):
-                lines.append(line)
-            self.finish(json.dumps(
-                ErrorMessage(status_code, error, self.request.path, reason,
-                             traceback=json.dumps(lines)).to_dict()))
-        else:
-            self.finish(json.dumps(ErrorMessage(status_code, error,
-                                                self.request.path,
-                                                reason).to_dict()))
+        
+    def write_error(self, status_code, **kwargs):
+            """APIHandler errors are JSON, not human pages"""
+            self.set_header("Content-Type", "application/json")
+            message = responses.get(status_code, "Unknown HTTP Error")
+            reply: dict = {
+                "message": message,
+            }
+            exc_info = kwargs.get("exc_info")
+            if exc_info:
+                e = exc_info[1]
+                if isinstance(e, HTTPError):
+                    # TODO currently we use a mixture of reason and message to display errors
+                    # we should only use reason, as the displayed user error message, like this:
+                    # reply["message"] = e.log_message or message
+                    reply["message"] = e.reason
+                    reply["reason"] = e.reason
+                else:
+                    reply["message"] = "Unhandled error"
+                    reply["reason"] = None
+                    reply["traceback"] = "".join(traceback.format_exception(*exc_info))
+            self.log.warning("wrote error: %r", reply["message"], exc_info=True)
+            self.finish(json.dumps(reply))
