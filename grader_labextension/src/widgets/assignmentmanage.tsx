@@ -26,7 +26,7 @@ export class AssignmentManageView extends ReactWidget {
 
   constructor(options: AssignmentManageView.IOptions = {}) {
     super();
-    this.id = options.id;
+    this.id = options.id || "assignment-view";
     this.addClass('GradingWidget');
 
     const savedPath = loadString('assignment-manage-react-router-path');
@@ -50,6 +50,8 @@ export class AssignmentManageView extends ReactWidget {
       <ThemeProvider theme={createTheme({ palette: { mode: this.theme } })}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3}
+                          // the parent of the parent is the main dock panel in JupyterLab
+                          domRoot={this.node.parentNode.parentElement}
                           action={(snackbarId) => (
                             <Button variant='outlined' size='small' style={{ color: 'white', borderColor: 'white' }}
                                     onClick={() => closeSnackbar(snackbarId)}>

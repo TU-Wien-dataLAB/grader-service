@@ -303,14 +303,8 @@ class PushHandler(ExtensionBaseHandler):
             self.log.error(e.response)
             raise HTTPError(e.code, reason=e.response.reason)
         
-        # TODO: similar logic for push instruction submission
-        #   however we cannot push to edit repository when no submission exists
-        #   reverse order:
-        #   first create submission (with fake commit hash since autograder does not need any commit hash if submission is set to edited),
-        #   then set submission to edited and update username to student username -> need to be able to set this later (in PUT?) -> also refactor SubmissionEditHandler? -> create new endpoint?
-        #   then push to edit repository directly (not using SubmissionEditHandler),
-        
-        # differentiate between "normal" edit and "create" edit by sub_id -> if it is None we know we are in submission creation mode instead of edit mode
+        # differentiate between "normal" edit and "create" edit by sub_id -> if it is None we know we are in
+        # submission creation mode instead of edit mode
         if repo == "edit" and sub_id is None:
             submission = Submission(commit_hash="0" * 40)
             response: dict = await self.request_service.request(
@@ -443,6 +437,7 @@ class PushHandler(ExtensionBaseHandler):
             git_service.push(f"grader_{repo}", force=True)
         except GitError as e:
             self.log.error("GitError:\n" + e.error)
+            git_service.undo_commit()
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=str(e.error))
 
         if submit and repo == "assignment":
