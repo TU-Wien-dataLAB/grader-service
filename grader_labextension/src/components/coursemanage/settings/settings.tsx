@@ -18,7 +18,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
-  updateAssignment
+  updateAssignment,
+  deleteAssignment
 } from '../../../services/assignments.service';
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
@@ -319,25 +320,6 @@ export const SettingsComponent = () => {
                   first!</Typography>}
             </Stack>
           </Stack>
-
-          {/* Not included in release 0.1
-              <InputLabel id="demo-simple-select-label">Type</InputLabel>
-              <Select
-                labelId="assignment-type-select-label"
-                id="assignment-type-select"
-                value={formik.values.type}
-                label="Type"
-                disabled={
-                  assignment.status === 'complete' ||
-                  assignment.status === 'released'
-                }
-                onChange={e => {
-                  formik.setFieldValue('type', e.target.value);
-                }}
-              >
-                <MenuItem value={'user'}>User</MenuItem>
-                <MenuItem value={'group'}>Group</MenuItem>
-              </Select>*/}
         </Stack>
         <Button sx={{ mt: 2 }} color='primary' variant='contained' type='submit'>
           Save changes
