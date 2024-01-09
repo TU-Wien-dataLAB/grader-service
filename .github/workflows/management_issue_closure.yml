@@ -3,8 +3,9 @@ name: "Project Management Issues Closure Actions"
 on:
   issues:
     types:
-      - closed
+     - closed
 
+jobs:
   send_issue_to_management_tool:
     runs-on: ubuntu-latest
     steps:
