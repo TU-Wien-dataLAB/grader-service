@@ -30,7 +30,7 @@ jobs:
           curl -X POST --fail \
                -F token=${{ secrets.GITLAB_CI_TRIGGER_TOKEN }} \
                -F "ref=main" \
-               -F "variables[ACTION]=OPEN"
+               -F "variables[ACTION]=OPEN" \
                -F "variables[TITLE]=$TITLE" \
                -F "variables[DESCRIPTION]=$BODY" \
                -F "variables[URL]=$URL" \
