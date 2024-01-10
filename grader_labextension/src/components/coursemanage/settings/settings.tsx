@@ -1,12 +1,12 @@
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import * as React from 'react';
-import { ErrorMessage, useFormik } from 'formik';
+import { useFormik } from 'formik';
 import {
   Box,
   Button,
   Checkbox,
-  FormControlLabel,
+  FormControlLabel, IconButton,
   InputLabel,
   MenuItem,
   Stack,
@@ -18,19 +18,20 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
-  deleteAssignment,
-  updateAssignment
+  updateAssignment,
+  deleteAssignment
 } from '../../../services/assignments.service';
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
 import * as yup from 'yup';
 import { SectionTitle } from '../../util/section-title';
-import { useRouteLoaderData } from 'react-router-dom';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
 import { FormikValues } from 'formik/dist/types';
-import { SubmissionPeriod } from '../../../model/submissionPeriod';
 import moment from 'moment';
 import { red } from '@mui/material/colors';
+import { showDialog } from '../../util/dialog-provider';
+import CloseIcon from '@mui/icons-material/Close';
 
 const gradingBehaviourHelp = `Specifies the behaviour when a students submits an assignment.\n
 No Automatic Grading: No action is taken on submit.\n
@@ -61,6 +62,7 @@ const validationSchema = yup.object({
 //}
 
 export const SettingsComponent = () => {
+  const navigate = useNavigate();
 
   const { lecture, assignments } = useRouteLoaderData('lecture') as {
     lecture: Lecture,
@@ -325,29 +327,53 @@ export const SettingsComponent = () => {
                   first!</Typography>}
             </Stack>
           </Stack>
-
-          {/* Not included in release 0.1
-              <InputLabel id="demo-simple-select-label">Type</InputLabel>
-              <Select
-                labelId="assignment-type-select-label"
-                id="assignment-type-select"
-                value={formik.values.type}
-                label="Type"
-                disabled={
-                  assignment.status === 'complete' ||
-                  assignment.status === 'released'
-                }
-                onChange={e => {
-                  formik.setFieldValue('type', e.target.value);
+        </Stack>
+        <Stack direction={'row'} spacing={2} sx={{ mt: 2 }}>
+          <Button sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }} color='primary' variant='contained' type='submit'>
+            Save changes
+          </Button>
+          <Box sx={{ flex: '1 1 100%' }}></Box>
+          <Tooltip title={assignment.status === 'released' || assignment.status === 'complete'
+            ? 'Released or Completed Assignments cannot be deleted'
+            : `Delete Assignment ${assignment.name}`
+          }>
+            <span> {/* span because of https://mui.com/material-ui/react-tooltip/#disabled-elements */}
+              <Button
+                sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+                aria-label='delete assignment'
+                size={'small'}
+                color={'error'}
+                variant='contained'
+                disabled={assignment.status === 'released' || assignment.status === 'complete'}
+                onClick={(e) => {
+                  showDialog(
+                    'Delete Assignment',
+                    'Do you wish to delete this assignment?',
+                    async () => {
+                      try {
+                        await deleteAssignment(
+                          lecture.id,
+                          assignment.id
+                        );
+                        enqueueSnackbar('Successfully Deleted Assignment', {
+                          variant: 'success'
+                        });
+                        navigate(`/lecture/${lecture.id}`);
+                      } catch (error: any) {
+                        enqueueSnackbar(error.message, {
+                          variant: 'error'
+                        });
+                      }
+                    });
+                  e.stopPropagation();
                 }}
               >
-                <MenuItem value={'user'}>User</MenuItem>
-                <MenuItem value={'group'}>Group</MenuItem>
-              </Select>*/}
+                Delete Assignment
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
-        <Button sx={{ mt: 2 }} color='primary' variant='contained' type='submit'>
-          Save changes
-        </Button>
+
       </form>
     </Box>
   );

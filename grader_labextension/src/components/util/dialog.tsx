@@ -235,7 +235,8 @@ export const CreateDialog = (props: ICreateDialogProps) => {
     },
     validationSchema: validationSchema,
     onSubmit: values => {
-      if (values.max_submissions !== null) {
+
+      if (values.max_submissions !== null && values.max_submissions !== undefined) {
         values.max_submissions = +values.max_submissions;
       }
       const newAssignment: Assignment = {
@@ -247,7 +248,9 @@ export const CreateDialog = (props: ICreateDialogProps) => {
         allow_files: values.allow_files
       };
       createAssignment(props.lecture.id, newAssignment).then(
-        a => props.handleSubmit(a),
+        a => {
+          props.handleSubmit(a);
+        },
 
         error => {
           enqueueSnackbar(error.message, {

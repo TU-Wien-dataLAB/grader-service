@@ -50,7 +50,6 @@ export const FilesList = (props: IFileListProps) => {
   };
 
   
-
   const extraFileHelp = `This file is not part of the assignment and will be removed when grading! Did you rename a notebook file or add it manually?`;
   const missingFileHelp = `This file should be part of your assignment! Did you delete it?`;
 
@@ -73,8 +72,7 @@ export const FilesList = (props: IFileListProps) => {
         return !relativePath.includes('/');
       });
 
-      //console.log("Top order missing: " + missingFilesTopOrder.map(f => f.path));
-
+    
     const items = files.concat(missingFilesTopOrder).map((file: File) => {
       if (file.type === 'directory') {
         

@@ -49,7 +49,7 @@ export function request<T, B = any>(
     async response => {
       if (!response.ok) {
         return response.text().then(text => {
-          throw new Error(JSON.parse(text)['message']);
+          throw new Error(JSON.parse(text)['reason']);
         });
       }
       let data: any = await response.text();

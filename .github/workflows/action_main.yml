@@ -3,13 +3,14 @@ name: MAIN
 on:
   push:
     tags:
-      - grader-service-*
-      - grader-convert-*
-      - grader-labextension-*
+      - grader-service-* # for release_helm action
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+  release:
+    types:
+      - published
 
 jobs:
   init:
@@ -37,6 +38,7 @@ jobs:
     uses: ./.github/workflows/build_service.yml
     needs: init
     if: contains(needs.init.outputs.changeDirs, 'grader_service')
+
   dockerize_grader-service:
     needs: build_grader-service
     uses: ./.github/workflows/docker_service.yml
@@ -56,12 +58,6 @@ jobs:
     if: contains(needs.init.outputs.changeDirs, 'grader_convert')
     uses: ./.github/workflows/build_convert.yml
 
-  release_helm:
-    needs: init
-    if: contains(needs.init.outputs.changeDirs, 'charts/grader-service') && startsWith(github.ref, 'refs/tags/grader-service') && !startsWith(github.ref, 'refs/tags/grader-service-helm')
-    uses: ./.github/workflows/publish_helm.yml
-    secrets: inherit
-
 #  docs:
 #    runs-on: ubuntu-latest
 #    steps:
@@ -79,21 +75,29 @@ jobs:
       - name: TODO use correct version tags for pre-release
         run: echo 'TODO use correct version tags for pre-release'
 
-  # ONLY ON TAGS
+  # ONLY ON RELEASES
+  release_helm:
+    needs: init
+    # both on grader-service and grader-service-chart release but not automatic helm release
+    if: startsWith(github.event.release.tag_name, 'grader-service') && !startsWith(github.event.release.tag_name, 'grader-service-helm')
+    uses: ./.github/workflows/publish_helm.yml
+    secrets: inherit
+
   release_grader-service:
     needs: dockerize_grader-service
-    if: startsWith(github.ref, 'refs/tags/grader-service')
+    # only on grader-service release but on grader-service-chart release nor automatic helm release
+    if: startsWith(github.event.release.tag_name, 'grader-service') && !startsWith(github.event.release.tag_name, 'grader-service-chart') && !startsWith(github.event.release.tag_name, 'grader-service-helm')
     uses: ./.github/workflows/publish_service.yml
     secrets: inherit
 
   release_labextension:
     needs: build_labextension
-    if: startsWith(github.ref, 'refs/tags/grader-labextension')
+    if: startsWith(github.event.release.tag_name, 'grader-labextension')
     uses: ./.github/workflows/publish_labextension.yml
     secrets: inherit
 
   release_convert:
     needs: build_convert
-    if: startsWith(github.ref, 'refs/tags/grader-convert')
+    if: startsWith(github.event.release.tag_name, 'grader-convert')
     uses: ./.github/workflows/publish_convert.yml
     secrets: inherit
