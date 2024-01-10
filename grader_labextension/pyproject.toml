@@ -44,7 +44,7 @@ test = [
 ]
 
 [tool.tbump.version]
-current = "0.2.11"
+current = "0.2.13"
 
 regex = '''
   (?P<major>\d+)
