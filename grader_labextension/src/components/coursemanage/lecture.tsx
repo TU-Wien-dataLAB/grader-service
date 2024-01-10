@@ -13,7 +13,7 @@ import {
   Grid,
   LinearProgress, Stack, TableCell, TableRow,
   Typography,
-  Box
+  Box, Tooltip
 } from '@mui/material';
 import * as React from 'react';
 import { Assignment } from '../../model/assignment';
@@ -22,14 +22,13 @@ import {
   createAssignment, deleteAssignment,
   getAllAssignments
 } from '../../services/assignments.service';
-import { AssignmentComponent } from './assignment';
 import { CreateDialog, EditLectureDialog } from '../util/dialog';
 import {
   getLecture,
   getUsers,
   updateLecture
 } from '../../services/lectures.service';
-import { red } from '@mui/material/colors';
+import { red, grey } from '@mui/material/colors';
 import { enqueueSnackbar } from 'notistack';
 import {
   deleteKey,
@@ -88,41 +87,49 @@ const AssignmentTable = (props: IAssignmentTableProps) => {
                 </IconButton>
               </TableCell>
               <TableCell>
-                <IconButton
-                  aria-label='delete assignment'
-                  size={'small'}
-                  onClick={(e) => {
-                    showDialog(
-                      'Delete Assignment',
-                      'Do you wish to delete this assignment?',
-                      async () => {
-                        try {
-                          await deleteAssignment(
-                            props.lecture.id,
-                            row.id
-                          );
-                          enqueueSnackbar('Successfully Deleted Assignment', {
-                            variant: 'success'
+                <Tooltip title={row.status === 'released' || row.status === 'complete'
+                  ? 'Released or Completed Assignments cannot be deleted'
+                  : `Delete Assignment ${row.name}`
+                }>
+                  <span> {/* span because of https://mui.com/material-ui/react-tooltip/#disabled-elements */}
+                    <IconButton
+                      aria-label='delete assignment'
+                      size={'small'}
+                      disabled={row.status === 'released' || row.status === 'complete'}
+                      onClick={(e) => {
+                        showDialog(
+                          'Delete Assignment',
+                          'Do you wish to delete this assignment?',
+                          async () => {
+                            try {
+                              await deleteAssignment(
+                                props.lecture.id,
+                                row.id
+                              );
+                              enqueueSnackbar('Successfully Deleted Assignment', {
+                                variant: 'success'
+                              });
+                              props.setAssignments(props.rows.filter(a => a.id !== row.id));
+                            } catch (error: any) {
+                              enqueueSnackbar(error.message, {
+                                variant: 'error'
+                              });
+                            }
                           });
-                          props.setAssignments(props.rows.filter(a => a.id !== row.id));
-                        } catch (error: any) {
-                          enqueueSnackbar(error.message, {
-                            variant: 'error'
-                          });
-                        }
-                      });
-                    e.stopPropagation();
-                  }}
-                >
-                  <CloseIcon sx={{ color: red[500] }} />
-                </IconButton>
+                        e.stopPropagation();
+                      }}
+                    >
+                    <CloseIcon
+                      sx={{ color: (row.status === 'released' || row.status === 'complete') ? grey[500] : red[500] }} />
+                  </IconButton>
+                  </span>
+                </Tooltip>
               </TableCell>
             </TableRow>
           );
         }}
       />
     </>
-
   );
 };
 

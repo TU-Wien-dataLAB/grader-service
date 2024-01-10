@@ -250,7 +250,5 @@ class PullFeedbackHandler(ExtensionBaseHandler):
         if not git_service.is_git():
             git_service.init()
         git_service.set_remote("feedback", sub_id=sub_id)
-        # we just need to fetch --all and switch branch (otherwise for pull we get "fatal: refusing to merge unrelated histories")
-        git_service.switch_branch(branch=f"feedback_{submission['commit_hash']}")
-        git_service.pull("feedback", branch=f"feedback_{submission['commit_hash']}", force=True)
+        git_service.pull("feedback", branch=f"feedback_{submission['commit_hash']}", force=False)
         self.write("Pulled Feedback")

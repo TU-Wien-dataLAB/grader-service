@@ -204,7 +204,7 @@ class GitBaseHandler(GraderBaseHandler):
         if extensions is None:
             req_handler_conf = RequestHandlerConfig.instance()
             extensions = req_handler_conf.git_allowed_file_extensions
-        elif len(extensions) > 0:
+        if len(extensions) > 0:
             allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]  # noqa E501
             pattern = "|".join(allow_patterns)
         return pattern
