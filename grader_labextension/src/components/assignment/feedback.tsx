@@ -60,7 +60,7 @@ export const Feedback = () => {
   }, [lecture, assignment, submission]);
 
   return (
-    <Box>
+    <Box sx={{overflow: 'auto'}}>
       <SectionTitle title={'Feedback for ' + assignment.name} />
       <Box sx={{ m: 2, mt: 12 }}>
         <Stack direction='row' spacing={2} sx={{ ml: 2 }}>
@@ -143,7 +143,8 @@ export const Feedback = () => {
         Feedback Files
       </Typography>
 
-      <FilesList path={path} sx={{ m: 2 }} />
+      <FilesList path={path} sx={{ m: 2, overflow: 'auto'}} />
+      
       <Stack direction={'row'} spacing={2} sx={{ m: 2 }}>
         <Button variant='outlined' component={Link as any} to={assignmentLink}>Back</Button>
         <Button

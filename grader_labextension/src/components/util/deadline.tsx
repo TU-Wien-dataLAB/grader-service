@@ -303,11 +303,13 @@ export function DeadlineDetail(props: IDeadlineDetailProps) {
           >
             {props.late_submissions.map(l => {
               const p = moment.duration(l.period);
+              const outputDays = p.days() > 1 ? `Days` : `Day`;
+              const outputHours = p.hours() == 1 ? `Hour` : `Hours`;
               return <ListItem sx={{ pl: 4 }}>
                 <ListItemIcon>
                   <AlarmAddIcon />
                 </ListItemIcon>
-                <ListItemText primary={`${p.days()} Days ${p.hours()} Hours`} />
+                <ListItemText primary={`${p.days()} ${outputDays} ${p.hours()} ${outputHours}`} />
                 <ListItemText primary={`Penalty: ${((1 - l.scaling) * 100).toFixed(1)}%`} />
               </ListItem>;
             })}

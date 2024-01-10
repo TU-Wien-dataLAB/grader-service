@@ -87,7 +87,7 @@ class ExtensionBaseHandler(APIHandler):
 
     @property
     def user_name(self):
-        return self.current_user.name
+        return self.current_user['name']
 
     async def get_lecture(self, lecture_id) -> dict:
         try:

@@ -1,8 +1,11 @@
 import { SectionTitle } from '../../util/section-title';
 import {
+  Alert,
+  AlertTitle,
   Box,
   Button, Checkbox, FormControlLabel,
   IconButton,
+  Modal,
   Stack, TextField,
   Tooltip,
   Typography
@@ -31,7 +34,55 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { getAutogradeChip, getFeedbackChip, getManualChip } from './grading';
 import { autogradeSubmissionsDialog, generateFeedbackDialog } from './table-toolbar';
 import { showDialog } from '../../util/dialog-provider';
+import InfoIcon from '@mui/icons-material/Info';
 
+const style = {
+  position: 'absolute' as 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '80%',
+  bgcolor: 'background.paper',
+  boxShadow: 3,
+  pt: 2,
+  px: 4,
+  pb: 3
+  
+};
+
+const InfoModal = () =>{
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+  return (
+    <React.Fragment>
+      <IconButton color="primary" onClick={handleOpen} sx={{mr: 2}}>
+          <InfoIcon/>
+      </IconButton>
+      <Modal
+        open={open}
+        onClose={handleClose}
+      >
+        <Box sx={{...style }}>
+          <h2>Manual Grading Information</h2>
+          <Alert severity="info" sx={{ m: 2 }}>
+            <AlertTitle>Info</AlertTitle>
+            If you want to manually grade an assignment, make sure to follow these steps: <br /><br />
+            1. &ensp; In order to grade a submission manually, the submission must first be auto-graded. This sets meta data for manual grading. However, we're actively working towards enabling direct manual grading without the necessity of auto-grading in the future.<br />
+            2. &ensp; Once the meta data was set for submission, you can pull the submission.<br />
+            3. &ensp; From file list access submission files and grade them manually.<br />
+            4. &ensp; After you've completed the grading of the submission, click "FINISH MANUAL GRADING." This action will save the grading and determine the points that the student receives for their submission.
+          </Alert>
+          <Button onClick={handleClose}>Close</Button>
+        </Box>
+      </Modal>
+    </React.Fragment>
+  );
+}
 
 export const ManualGrading = () => {
   const {
@@ -280,7 +331,13 @@ export const ManualGrading = () => {
           </Box>
         </Stack>
       </Box>
-      <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
+
+      <Stack direction={'row'} justifyContent={'space-between'}>
+        <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
+        <InfoModal/>
+      </Stack>
+      
+
       <FilesList path={manualPath} sx={{ m: 2 }} />
 
       <Stack direction={'row'} sx={{ ml: 2, mr: 2 }} spacing={2}>
@@ -289,7 +346,21 @@ export const ManualGrading = () => {
             <ReplayIcon />
           </IconButton>
         </Tooltip>
-
+        
+        {submission.auto_status !== 'automatically_graded' ?
+        <Tooltip title="Assinment is not auto-graded. To pull submission and finish manual grading, make sure to first autograde it.">
+              <Button
+                size={'small'}
+                variant='outlined'
+                color='primary'
+                onClick={handleAutogradeSubmission}
+                sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+              >
+                Autograde
+              </Button>
+        </Tooltip>
+     
+        : null}
         <LoadingButton
           size={'small'}
           loading={loading}
@@ -310,6 +381,7 @@ export const ManualGrading = () => {
           size={'small'}
           variant='outlined'
           color='success'
+          disabled={submission.auto_status !== 'automatically_graded'}
           onClick={openFinishDialog}
           sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
@@ -325,15 +397,19 @@ export const ManualGrading = () => {
           Edit Submission
         </Button>
         <Box sx={{ flex: '1 1 100%' }}></Box>
-        <Button
-          size={'small'}
-          variant='outlined'
-          color='primary'
-          onClick={handleAutogradeSubmission}
-          sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-        >
-          Autograde
-        </Button>
+        {submission.auto_status === 'automatically_graded' ?
+              <Button
+              size={'small'}
+              variant='outlined'
+              color='primary'
+              onClick={handleAutogradeSubmission}
+              sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+              >
+              Autograde
+              </Button>
+        : null}
+        
+        {submission.auto_status === 'automatically_graded' ?
         <Button
           size={'small'}
           variant='outlined'
@@ -343,8 +419,9 @@ export const ManualGrading = () => {
         >
           Generate Feedback
         </Button>
+        : null}
       </Stack>
-      <Box sx={{ flex: '1 1 100%' }}></Box>
+      <Box sx={{ flex: '1 1 100%', mt: 3 }}></Box>
       <Toolbar>
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
         <Box sx={{ flex: '1 1 100%' }}></Box>

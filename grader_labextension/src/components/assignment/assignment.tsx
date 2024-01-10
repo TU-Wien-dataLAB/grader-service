@@ -8,8 +8,8 @@ import * as React from 'react';
 import { Lecture } from '../../model/lecture';
 import { Assignment } from '../../model/assignment';
 import { Submission } from '../../model/submission';
-import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
-
+import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { SubmissionList } from './submission-list';
 import { AssignmentStatus } from './assignment-status';
 import { Files } from './files/files';
@@ -51,6 +51,21 @@ const calculateActiveStep = (submissions: Submission[]) => {
   return 0;
 };
 
+interface ISubmissionsLeft{
+  subLeft: number;
+}
+const SubmissionsLeftChip = (props: ISubmissionsLeft) =>{
+  const output = props.subLeft + ' submission' + (props.subLeft === 1 ? ' left' : 's left'); 
+  return(
+    <Chip
+      sx={{ ml: 2 }}
+      size='medium'
+      icon={<WarningIcon />}
+      label={output}
+                      />
+  )
+}
+
 /**
  * Renders the components available in the extended assignment modal view
  */
@@ -79,14 +94,17 @@ export const AssignmentComponent = () => {
 
   /* Now we can divvy this into a useReducer  */
   const [allSubmissions, setSubmissions] = React.useState(submissions);
-
   const [files, setFiles] = React.useState([]);
   const [activeStatus, setActiveStatus] = React.useState(0);
+  const [subLeft, setSubLeft] = React.useState(0);
+
 
   React.useEffect(() => {
     getAllSubmissions(lecture.id, assignment.id, 'none', false).then(
       response => {
         setSubmissions(response);
+        if(assignment.max_submissions - response.length < 0) setSubLeft(0);
+        else setSubLeft(assignment.max_submissions - response.length);
       }
     );
     getFiles(path).then(files => {
@@ -149,6 +167,8 @@ export const AssignmentComponent = () => {
           response => {
             console.log('Submitted');
             setSubmissions([response, ...allSubmissions]);
+            if(subLeft - 1 < 0) setSubLeft(0);
+            else setSubLeft(subLeft - 1);
             enqueueSnackbar('Successfully Submitted Assignment', {
               variant: 'success'
             });
@@ -242,7 +262,11 @@ export const AssignmentComponent = () => {
     const scope = permissions[lecture.code];
     return scope >= Scope.tutor;
   };
+  const [reloadFilesToggle, setReloadFiles] = React.useState(false);
 
+  const reloadFiles = () => {
+    setReloadFiles(!reloadFilesToggle);
+  };
 
   return (
     <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -260,9 +284,16 @@ export const AssignmentComponent = () => {
           <DeadlineDetail due_date={assignment.due_date} late_submissions={assignment.settings.late_submission || []} />
         </Box>
         <Box sx={{ mt: 4 }}>
-          <Typography variant={'h6'} sx={{ ml: 2 }}>
+        <Stack direction={'row'} justifyContent={'flex-start'} alignItems={'center'} spacing={2} sx={{ ml: 2 }} >
+        <Typography variant={'h6'} sx={{ ml: 2 }}>
             Files
           </Typography>
+          <Tooltip title='Reload Files'>
+            <IconButton aria-label='reload' onClick={() => reloadFiles()}>
+              <ReplayIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
           <Files
             lecture={lecture}
             assignment={assignment}
@@ -359,18 +390,24 @@ export const AssignmentComponent = () => {
       <Box sx={{ mt: 4 }}>
         <Typography variant={'h6'} sx={{ ml: 2, mt: 3 }}>
           Submissions
-          {assignment.max_submissions !== null ? (
-            <Chip
-              sx={{ ml: 2 }}
-              size='medium'
-              icon={<WarningIcon />}
-              label={
-                assignment.max_submissions -
-                submissions.length +
-                ' submissions left'
-              }
-            />
-          ) : null}
+          
+          { assignment.max_submissions !== null
+              ? ( hasPermissions()
+                  ? (
+                      <Stack direction={'row'}>
+                      <SubmissionsLeftChip subLeft={subLeft}/>
+                      <Chip sx={{ml: 2}}
+                       color="success" variant="outlined"
+                       label={'As instructor you have unlimited submissions'}/>
+                      </Stack>
+                    )
+                  : (
+                    <SubmissionsLeftChip subLeft={subLeft}/>
+                  )
+                )
+              : null
+          }
+
         </Typography>
         <SubmissionList
           submissions={allSubmissions}

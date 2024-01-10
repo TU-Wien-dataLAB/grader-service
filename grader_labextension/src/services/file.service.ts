@@ -29,14 +29,24 @@ if (lectureBasePath !== '') {
 // the number of sub paths in lecture base path e.g. grader/Lectures -> 2
 export const lectureSubPaths: number = lectureBasePath.split('/').reduce((acc, v) => (v.length > 0) ? acc + 1 : acc, 0);
 
-export const getFiles = async (path: string): Promise<IModel[]> => {
+export interface File {
+  name: string;
+  path: string;
+  type: string;
+  content: File[];
+}
+
+// TODO: getFiles should return Promise<File[]>
+export const getFiles = async (path: string): Promise<File[]> => {
   if (path === null) {
     return [];
   }
+
   const model = new FilterFileBrowserModel({
     auto: true,
-    manager: GlobalObjects.docManager
+    manager: GlobalObjects.docManager,
   });
+
   try {
     await model.cd(path);
   } catch (_) {
@@ -46,15 +56,48 @@ export const getFiles = async (path: string): Promise<IModel[]> => {
   if (model.path !== path) {
     return [];
   }
+
   const items = model.items();
-  const files = [];
+  const files: File[] = []; // Type files as File[]
+
   let f = items.next();
   while (f.value !== undefined) {
-    files.push(f);
+    if (f.value.type === 'directory') {
+      const nestedFiles = await getFiles(f.value.path);
+      files.push({
+        name: f.value.name,
+        path: f.value.path,
+        type: f.value.type,
+        content: nestedFiles,
+      });
+    } else {
+      files.push({
+        name: f.value.name,
+        path: f.value.path,
+        type: f.value.type,
+        content: [],
+      });
+    }
     f = items.next();
   }
+
   console.log('getting files from path ' + path);
   return files;
+};
+
+export const getRelativePathAssignment = (path: string) => {
+  const regex = /assignments\/[^/]+\/(.+)/;
+  const match = path.match(regex);
+  return match ? match[1] : path;
+};
+
+export const extractRelativePathsAssignment = (file: File) => {
+  if (file.type === 'directory') {
+    const nestedPaths = file.content.flatMap((nestedFile) => extractRelativePathsAssignment(nestedFile));
+    return [getRelativePathAssignment(file.path), ...nestedPaths];
+  } else {
+    return [getRelativePathAssignment(file.path)];
+  }
 };
 
 export const openFile = async (path: string) => {
@@ -74,11 +117,31 @@ export const openFile = async (path: string) => {
 
 export const makeDir = async (path: string, name: string) => {
   const newPath = PathExt.join(path, name);
-  const exists = (await getFiles(path)).map(f => (f as any).value.name).includes(name);
+  let exists = false;
+  const model = new FilterFileBrowserModel({
+    auto: true,
+    manager: GlobalObjects.docManager
+  });
+  try {
+    await model.cd(path);
+  } catch (_) {
+    exists = false;
+  }
+  const items = model.items();
+  let f = items.next();
+  while (f.value !== undefined) {
+    if (f.value.type === 'directory') {
+      if (f.value.name === name) {
+        exists = true;
+      }
+    }
+    f = items.next();
+  }
+
+  console.log('direcory: ' + name + ' exists: ' + exists);
   if (!exists) {
     const model = await GlobalObjects.docManager.newUntitled({ path, type: 'directory' });
     const oldPath = PathExt.join(path, model.name);
-    console.log(oldPath, newPath)
     await GlobalObjects.docManager.rename(oldPath, newPath).catch(error => {
       if (error.response.status !== 409) {
         // if it's not caused by an already existing file, rethrow
@@ -86,17 +149,21 @@ export const makeDir = async (path: string, name: string) => {
       }
     });
   }
+  console.log('new path created: ' + newPath);
   return newPath;
-}
+};
 
-export const makeDirs = async(path: string, names: string[]) =>{
+export const makeDirs = async (path: string, names: string[]) => {
   let p = path;
+  console.log('path: ' + path);
   for (let i = 0; i < names.length; i++) {
     const n = names[i];
-    p = await makeDir(p, n);    
+    console.log('try to create dir: ' + names[i]);
+    p = await makeDir(p, n);
+
   }
   return p;
-}
+};
 
 export interface IGitLogObject {
   commit: string,

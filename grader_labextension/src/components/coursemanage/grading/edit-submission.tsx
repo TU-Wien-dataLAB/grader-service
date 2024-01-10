@@ -2,6 +2,10 @@ import { SectionTitle } from '../../util/section-title';
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Stack,
   Tooltip,
@@ -13,6 +17,7 @@ import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import {
   createOrOverrideEditRepository,
+  getLogs,
   getProperties,
   pullSubmissionFiles,
   pushSubmissionFiles,
@@ -51,6 +56,24 @@ export const EditSubmission = () => {
 
   const [submission, setSubmission] = React.useState(manualGradeSubmission);
   const [loading, setLoading] = React.useState(false);
+
+  const [showLogs, setShowLogs] = React.useState(false);
+  const [logs, setLogs] = React.useState(undefined);
+
+  const openLogs = (event: React.MouseEvent<unknown>, submissionId: number) => {
+    getLogs(lecture.id, assignment.id, submissionId).then(
+      logs => {
+        setLogs(logs);
+        setShowLogs(true);
+      },
+      error => {
+        enqueueSnackbar('No logs for submission', {
+          variant: 'error'
+        });
+      }
+    );
+    event.stopPropagation();
+  };
 
   const pushEditedFiles = async () => {
     await pushSubmissionFiles(lecture, assignment, submission).then(
@@ -137,7 +160,17 @@ export const EditSubmission = () => {
           </Stack>
         </Stack>
       </Box>
+      <Stack direction = {'row'} justifyContent='space-between'>
       <Typography sx={{ m: 2, mb: 0 }}>Submission Files</Typography>
+      <Button
+        sx = {{mr: 2}}
+        variant='outlined'
+        size="small"
+        onClick={(event) => openLogs(event, manualGradeSubmission.id)}>
+          Show Logs
+        </Button>
+      </Stack>
+      
       <FilesList path={path} sx={{ m: 2 }} />
 
       <Stack direction={'row'} sx={{ ml: 2 }} spacing={2}>
@@ -191,6 +224,25 @@ export const EditSubmission = () => {
       <Toolbar>
         <Button variant='outlined' component={Link as any} to={submissionsLink}>Back</Button>
       </Toolbar>
+      <Dialog
+        open={showLogs}
+        onClose={() => setShowLogs(false)}
+        aria-labelledby='alert-dialog-title'
+        aria-describedby='alert-dialog-description'
+      >
+        <DialogTitle id='alert-dialog-title'>{'Logs'}</DialogTitle>
+        <DialogContent>
+          <Typography
+            id='alert-dialog-description'
+            sx={{ fontSize: 10, fontFamily: '\'Roboto Mono\', monospace' }}
+          >
+            {logs}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowLogs(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };
