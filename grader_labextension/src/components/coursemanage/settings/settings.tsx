@@ -1,7 +1,7 @@
 import { Assignment } from '../../../model/assignment';
 import { Submission } from '../../../model/submission';
 import * as React from 'react';
-import { ErrorMessage, useFormik } from 'formik';
+import { useFormik } from 'formik';
 import {
   Box,
   Button,
@@ -18,8 +18,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
-  deleteAssignment,
-  updateAssignment
+  updateAssignment,
+  deleteAssignment
 } from '../../../services/assignments.service';
 import { enqueueSnackbar } from 'notistack';
 import { Lecture } from '../../../model/lecture';
@@ -28,7 +28,6 @@ import { SectionTitle } from '../../util/section-title';
 import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { getLateSubmissionInfo, ILateSubmissionInfo, LateSubmissionForm } from './late-submission-form';
 import { FormikValues } from 'formik/dist/types';
-import { SubmissionPeriod } from '../../../model/submissionPeriod';
 import moment from 'moment';
 import { red } from '@mui/material/colors';
 import { showDialog } from '../../util/dialog-provider';
@@ -324,25 +323,6 @@ export const SettingsComponent = () => {
                   first!</Typography>}
             </Stack>
           </Stack>
-
-          {/* Not included in release 0.1
-              <InputLabel id="demo-simple-select-label">Type</InputLabel>
-              <Select
-                labelId="assignment-type-select-label"
-                id="assignment-type-select"
-                value={formik.values.type}
-                label="Type"
-                disabled={
-                  assignment.status === 'complete' ||
-                  assignment.status === 'released'
-                }
-                onChange={e => {
-                  formik.setFieldValue('type', e.target.value);
-                }}
-              >
-                <MenuItem value={'user'}>User</MenuItem>
-                <MenuItem value={'group'}>Group</MenuItem>
-              </Select>*/}
         </Stack>
         <Stack direction={'row'} spacing={2} sx={{ mt: 2 }}>
           <Button sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }} color='primary' variant='contained' type='submit'>
