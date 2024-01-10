@@ -1,11 +1,9 @@
-
-name: "Project Management Actions"
+name: "Project Management Issue Assign Actions"
 
 on:
   issues:
     types:
-      - opened
-      - reopened
+      - assigned
 
 jobs:
   send_issue_to_management_tool:
@@ -15,9 +13,15 @@ jobs:
         env:
           TITLE: ${{ github.event.issue.title }}
           BODY: ${{ github.event.issue.body }}
+          NUMBER: ${{ github.event.issue.number }}
+          URL: ${{ github.event.issue.html_url }}
+          ASSIGNEE: ${{ github.event.issue.assignee.login }}
         run: |
           echo "Issue title: $TITLE"
           echo "Issue body: $BODY"
+          echo "Issue number: $NUMBER"
+          echo "Issue url: $URL"
+          echo "Issue assignee: $ASSIGNEE"
 
       - name: Send issue to GitLab CI
         env:
@@ -27,7 +31,10 @@ jobs:
           curl -X POST --fail \
                -F token=${{ secrets.GITLAB_CI_TRIGGER_TOKEN }} \
                -F "ref=main" \
+               -F "variables[ACTION]=ASSIGN"
                -F "variables[TITLE]=$TITLE" \
                -F "variables[DESCRIPTION]=$BODY" \
+               -F "variables[ASSIGNEE]=$ASSIGNEE" \
+               -F "variables[URL]=$URL" \
                -F "variables[SOURCE]=github" \
                ${{ secrets.GITLAB_CI_TRIGGER_URL }}
