@@ -46,7 +46,6 @@ const validationSchema = yup.object({
     .required('Name is required'),
   due_date: yup
     .date()
-    .min(new Date(), 'Deadline must be set in the future')
     .nullable(),
   type: yup.mixed().oneOf(['user', 'group']),
   automatic_grading: yup.mixed().oneOf(['unassisted', 'auto', 'full_auto']),
