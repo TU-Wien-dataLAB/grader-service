@@ -381,6 +381,7 @@ export const ManualGrading = () => {
           size={'small'}
           variant='outlined'
           color='success'
+          disabled={submission.auto_status !== 'automatically_graded'}
           onClick={openFinishDialog}
           sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
         >
