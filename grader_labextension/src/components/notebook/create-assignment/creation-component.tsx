@@ -8,60 +8,8 @@ import * as React from 'react';
 import { Cell } from '@jupyterlab/cells';
 import { CellModel, CellType } from '../model';
 import {
-  Alert,
-  Box, createTheme,
-  Divider,
-  Grid,
-  MenuItem, styled, Switch,
-  TextField
+  Alert
 } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import { GlobalObjects } from '../../../index';
-import { ThemeProvider } from '@mui/system';
-
-export const AntSwitch = styled(Switch)(({ theme }) => ({
-  width: 28,
-  height: 16,
-  padding: 0,
-  display: 'flex',
-  '&:active': {
-    '& .MuiSwitch-thumb': {
-      width: 15
-    },
-    '& .MuiSwitch-switchBase.Mui-checked': {
-      transform: 'translateX(9px)'
-    }
-  },
-  '& .MuiSwitch-switchBase': {
-    padding: 2,
-    '&.Mui-checked': {
-      transform: 'translateX(12px)',
-      color: '#fff',
-      '& + .MuiSwitch-track': {
-        opacity: 1,
-        backgroundColor: theme.palette.mode === 'dark' ? '#177ddc' : '#1890ff'
-      }
-    }
-  },
-  '& .MuiSwitch-thumb': {
-    boxShadow: '0 2px 4px 0 rgb(0 35 11 / 20%)',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    transition: theme.transitions.create(['width'], {
-      duration: 200
-    })
-  },
-  '& .MuiSwitch-track': {
-    borderRadius: 16 / 2,
-    opacity: 1,
-    backgroundColor:
-      theme.palette.mode === 'dark'
-        ? 'rgba(255,255,255,.35)'
-        : 'rgba(0,0,0,.25)',
-    boxSizing: 'border-box'
-  }
-}));
 
 
 export interface ICreationComponentProps {
@@ -71,8 +19,7 @@ export interface ICreationComponentProps {
 const randomString = (length: number) => {
   let result = '';
   const chars = 'abcdef0123456789';
-  let i;
-  for (i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     result += chars[Math.floor(Math.random() * chars.length)];
   }
   return result;
@@ -104,7 +51,7 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     toolData.points = points;
     const data = CellModel.newNbgraderData(toolData);
     if (data === null) {
-      CellModel.deleteNbgraderData(props.cell.model)
+      CellModel.deleteNbgraderData(props.cell.model);
     } else {
       CellModel.setNbgraderData(data, props.cell.model);
     }
@@ -120,131 +67,113 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     updateMetadata();
   });
 
-  const alertStyle = { width: 250 };
+  const alertStyle = { width: "100%", mt: 2 };
   const gradableCell =
     type !== ('readonly' as CellType) &&
     type !== ('solution' as CellType) &&
     type !== '';
   const solutionCell = type === 'solution' || type === 'manual';
 
-  const [theme, setTheme] = React.useState(
-    createTheme({
-      palette: { mode: (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark' }
-    })
-  );
-
-  GlobalObjects.themeManager.themeChanged.connect(() => {
-    const palette = (GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)) ? 'light' : 'dark';
-    setTheme(createTheme({ palette: { mode: palette } }));
-  }, this);
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box>
-        <Divider />
-        <Box sx={{ mt: 2, mb: 1, ml: 3 }}>
-          <Grid container spacing={1}>
-            <Grid item>
-              <TextField
-                label='Type'
-                select
-                size='small'
-                sx={{ minWidth: 150 }}
-                value={type}
-                onChange={e => {
-                  setType(e.target.value as CellType);
-                }}
-              >
-                <MenuItem value=''>-</MenuItem>
-                <MenuItem value='readonly'>Readonly</MenuItem>
-                {props.cell.model.type === 'code' && (
-                  <MenuItem value='solution'>Autograded answer</MenuItem>
-                )}
-                {props.cell.model.type === 'code' && (
-                  <MenuItem value='tests'>Autograded tests</MenuItem>
-                )}
-                <MenuItem value='manual'>Manual graded answer</MenuItem>
-                {props.cell.model.type === 'markdown' && (
-                  <MenuItem value='task'>Manual graded task</MenuItem>
-                )}
-              </TextField>
-            </Grid>
+    <div className={"creation-container"} style={{ marginTop: '16px', marginBottom: '8px', marginLeft: '24px' }}>
+      <style>{`
+        input:invalid { border: 1px solid red; border-radius: 2px; background: rgba(255,0,0,0.2); }
+        .creation-container > span > * { margin-right: 16px; }
+      `}</style>
+      <span>
+          <select
+            placeholder='Type'
+            style={{ minWidth: 150 }}
+            value={type}
+            onChange={e => {
+              setType(e.target.value as CellType);
+            }}
+          >
+            <option value=''>-</option>
+            <option value='readonly'>Readonly</option>
+            {props.cell.model.type === 'code' && (
+              <option value='solution'>Autograded answer</option>
+            )}
+            {props.cell.model.type === 'code' && (
+              <option value='tests'>Autograded tests</option>
+            )}
+            <option value='manual'>Manual graded answer</option>
+            {props.cell.model.type === 'markdown' && (
+              <option value='task'>Manual graded task</option>
+            )}
+          </select>
+        </span>
 
-            {type !== '' && (
-              <Grid item>
-                <TextField
-                  size='small'
-                  label='ID'
-                  value={id}
-                  onChange={e => setId(e.target.value)}
-                  error={id === ''}
-                  helperText={id === '' ? 'ID not set' : ' '}
-                ></TextField>
-              </Grid>
-            )}
+      {type !== '' && (
+        <span>
+            <input
+              placeholder='ID'
+              type={'text'}
+              value={id}
+              onChange={e => setId(e.target.value)}
+              required
+              // onInput={(event) => {
+              //   const input = event.currentTarget;
+              //   input.setCustomValidity(input.value === '' ? 'Cell ID is required' : '');
+              //   input.reportValidity();
+              // }}
+            ></input>
+          </span>
+      )}
 
-            {gradableCell && (
-              <Grid item>
-                <TextField
-                  size='small'
-                  label='Points'
-                  value={points}
-                  type='number'
-                  onChange={e => setPoints(parseFloat(e.target.value))}
-                  InputProps={{
-                    inputProps: {
-                      max: 10000,
-                      min: 0,
-                      step: 0.25
-                    }
-                  }}
-                  error={points === undefined}
-                  helperText={points === undefined ? 'Points not set' : ' '}
-                />
-              </Grid>
-            )}
+      {gradableCell && (
+        <span>
+            Points:
+            <input
+              placeholder='Points'
+              value={points}
+              type='number'
+              max={10000}
+              min={0}
+              step={0.25}
+              onChange={e => setPoints(parseFloat(e.target.value))}
+              required
+            />
+          </span>
+      )}
 
-            {solutionCell && (
-              <Grid item>
-                <AntSwitch
-                  sx={{ mt: 2, ml: 1 }}
-                  checked={hintChecked}
-                  onChange={handleHintChange}
-                  inputProps={{ 'aria-label': 'controlled' }}
-                />
-              </Grid>
-            )}
-            {solutionCell && (
-              <Grid item>
-                <TextField
-                  size='small'
-                  label='Optional hint'
-                  value={hint}
-                  disabled={!hintChecked}
-                  onChange={e => setHint(e.target.value)}
-                ></TextField>
-              </Grid>
-            )}
+      {solutionCell && (
+        <span>
+            <input
+              type={'checkbox'}
+              style={{ marginTop: '16px', marginLeft: '8px' }}
+              checked={hintChecked}
+              onChange={handleHintChange}
+              aria-label={'controlled'}
+            />
+          </span>
+      )}
+      {solutionCell && (
+        <span>
+            <input
+              placeholder='Optional hint'
+              value={hint}
+              disabled={!hintChecked}
+              onChange={e => setHint(e.target.value)}
+            ></input>
+          </span>
+      )}
 
-            {type === '' && (
-              <Grid item>
-                <Alert variant='outlined' sx={alertStyle} severity='warning'>
-                  Type not set
-                </Alert>
-              </Grid>
-            )}
+      {type === '' && (
+        <span>
+            <Alert variant='outlined' sx={alertStyle} severity='warning'>
+              Type not set
+            </Alert>
+          </span>
+      )}
 
-            {points === 0 && (
-              <Grid item>
-                <Alert variant='outlined' sx={alertStyle} severity='warning'>
-                  Gradable cell with zero points
-                </Alert>
-              </Grid>
-            )}
-          </Grid>
-        </Box>
-      </Box>
-    </ThemeProvider>
+      {points === 0 && (
+        <span>
+            <Alert variant='outlined' sx={alertStyle} severity='warning'>
+              Gradable cell with zero points
+            </Alert>
+          </span>
+      )}
+    </div>
   );
 };
