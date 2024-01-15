@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import unittest
+
 import pytest
 import tempfile
 from nbformat import current_nbformat, read
@@ -270,14 +272,16 @@ def test_duplicate_cells():
         validator.validate_nb(nb)
 
 
-def test_celltype_changed(caplog):
-    caplog.set_level(logging.INFO, "traitlets")
+def test_celltype_changed():
     cell = create_solution_cell("", "code", "foo", 3)
     cell.metadata.nbgrader["cell_type"] = "code"
-    MetadataValidatorV3().validate_cell(cell)
-    assert "Cell type has changed from markdown to code!" not in caplog.text
+    logger = logging.getLogger('traitlets')
+    with unittest.mock.patch.object(logger, "warning") as mock_waring:
+        MetadataValidatorV3().validate_cell(cell)
+        mock_waring.assert_not_called()
 
     cell = create_solution_cell("", "code", "foo", 3)
     cell.metadata.nbgrader["cell_type"] = "markdown"
-    MetadataValidatorV3().validate_cell(cell)
-    assert "Cell type has changed from markdown to code!" in caplog.text
+    with unittest.mock.patch.object(logger, "warning") as mock_waring:
+        MetadataValidatorV3().validate_cell(cell)
+        mock_waring.assert_called_with("Cell type has changed from markdown to code!", cell)
