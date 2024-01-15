@@ -9,8 +9,7 @@ import tornado
 import os
 
 import isodate
-from sqlalchemy.orm import joinedload
-from grader_convert.gradebook.models import GradeBookModel
+from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.assignment import Assignment, AutoGradingBehaviour

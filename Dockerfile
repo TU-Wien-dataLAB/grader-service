@@ -35,7 +35,6 @@ RUN apt-get update \
 
 # INSTALL grader-service
 COPY ./grader_service /grader_service
-COPY ./grader_convert /grader_convert
 COPY ./grader_service.sh /usr/local/bin/grader_service.sh
 
 RUN python3 -m pip install /grader_service/
@@ -48,4 +47,4 @@ USER grader-service
 WORKDIR /var/lib/grader-service
 
 ENTRYPOINT ["tini", "-g", "--"]
-CMD ["grader_service.sh" ]
+CMD [ "grader_service.sh" ]

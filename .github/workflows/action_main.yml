@@ -6,8 +6,6 @@ on:
       - grader-service-* # for release_helm action
     branches:
       - main
-  pull_request:
-    types: [opened, synchronize, reopened]
   release:
     types:
       - published
@@ -19,61 +17,35 @@ jobs:
       changeDirs: ${{ steps.outputStep.outputs.changeDirs }}
     steps:
 
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
-    - name: Get changed dirs                  # To check if any files changed in a directory
-      id: changeDirsStep
-      uses: tj-actions/changed-files@v23.1
-      with:
-        dir_names: true
-        files: |
-          **/*
-    - id: outputStep
-      run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
+      - name: Get changed dirs                  # To check if any files changed in a directory
+        id: changeDirsStep
+        uses: tj-actions/changed-files@v23.1
+        with:
+          dir_names: true
+          files: |
+            **/*
+      - id: outputStep
+        run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
   # ON CHANGED FILES
   build_grader-service:
-    uses: ./.github/workflows/build_service.yml
+    uses: ./.github/workflows/build.yml
     needs: init
     if: contains(needs.init.outputs.changeDirs, 'grader_service')
 
   dockerize_grader-service:
     needs: build_grader-service
-    uses: ./.github/workflows/docker_service.yml
+    uses: ./.github/workflows/docker.yml
 
-  build_labextension:
-    uses: ./.github/workflows/build_labextension.yml
-    needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_labextension')
 
-  dockerize_labextension:
-    needs: build_labextension
-    uses: ./.github/workflows/docker_labextension.yml
-    secrets: inherit
-
-  build_convert:
-    needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_convert')
-    uses: ./.github/workflows/build_convert.yml
-
-#  docs:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: ./.github/workflows/reusable/build_docs
-
-  # ONLY ON MERGE SUCCEED
-  pre-release:
-    runs-on: ubuntu-latest
-    needs:
-    - dockerize_grader-service
-    - dockerize_labextension
-    - build_convert
-    if: always() && github.event.pull_request.merged == true && contains(needs.*.result, 'success') && !(contains(needs.*.result, 'failure'))
-    steps:
-      - name: TODO use correct version tags for pre-release
-        run: echo 'TODO use correct version tags for pre-release'
+  #  docs:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: ./.github/workflows/reusable/build_docs
 
   # ONLY ON RELEASES
   release_helm:
@@ -88,16 +60,4 @@ jobs:
     # only on grader-service release but on grader-service-chart release nor automatic helm release
     if: startsWith(github.event.release.tag_name, 'grader-service') && !startsWith(github.event.release.tag_name, 'grader-service-chart') && !startsWith(github.event.release.tag_name, 'grader-service-helm')
     uses: ./.github/workflows/publish_service.yml
-    secrets: inherit
-
-  release_labextension:
-    needs: build_labextension
-    if: startsWith(github.event.release.tag_name, 'grader-labextension')
-    uses: ./.github/workflows/publish_labextension.yml
-    secrets: inherit
-
-  release_convert:
-    needs: build_convert
-    if: startsWith(github.event.release.tag_name, 'grader-convert')
-    uses: ./.github/workflows/publish_convert.yml
     secrets: inherit
