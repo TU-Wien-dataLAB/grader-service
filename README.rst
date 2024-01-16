@@ -17,15 +17,6 @@ General
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/commits/
     :alt: GitHub commit activity
 
-Grader Convert
-
-.. image:: https://img.shields.io/pypi/v/grader-convert
-    :target: https://pypi.org/project/grader-convert/
-    :alt: PyPI
-
-.. image:: https://img.shields.io/pypi/pyversions/grader-convert
-    :target: https://pypi.org/project/grader-convert/
-    :alt: PyPI - Python Version
 
 
 
@@ -88,18 +79,18 @@ Installation
 
 .. installation-start
 
-This repository contains the packages for the jupyter extensions and the grader service as well as grader-convert.
+This repository contains the packages for the jupyter extensions and the grader service itself.
 
 The grader service has only been tested on Unix/macOS operating systems.
 
 This repository contains all the necessary packages for a full installation of the grader service.
 
 
-* ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
+* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments. This package also contains ``grader-convert``, a tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
 
 .. code-block::
 
-    pip install grader-convert
+    pip install grader-service
 
 * ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
 
@@ -107,11 +98,7 @@ This repository contains all the necessary packages for a full installation of t
 
     pip install grader-labextension
 
-* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
 
-.. code-block::
-
-    pip install grader-service
 
 .. installation-end
 
@@ -128,9 +115,6 @@ Local installation
 In the ``grader`` directory run:
 
 .. code-block:: bash
-
-   pip install -r ./grader_convert/requirements.txt
-   pip install ./grader_convert
 
    pip install -r ./grader_labextension/requirements.txt
    pip install ./grader_labextension
