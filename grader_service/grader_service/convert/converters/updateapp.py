@@ -17,7 +17,7 @@ from grader_service.convert.nbgraderformat import (
     write,
 )
 from grader_service.convert.utils import find_all_notebooks
-from converters.baseapp import ConverterApp
+from grader_service.convert.converters.baseapp import ConverterApp
 
 aliases = {
     "log-level": "Application.log_level",

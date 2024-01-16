@@ -3,7 +3,7 @@
 from textwrap import dedent
 
 from grader_service.convert.converters.autograde import AutogradeApp
-from converters.baseapp import (
+from grader_service.convert.converters.baseapp import (
     ConverterApp,
     base_converter_aliases,
     base_converter_flags,

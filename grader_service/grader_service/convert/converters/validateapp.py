@@ -9,7 +9,7 @@ from traitlets import default
 
 from grader_service.convert.nbgraderformat import SchemaTooNewError, SchemaTooOldError
 from grader_service.convert.validator import Validator
-from converters.baseapp import ConverterApp
+from grader_service.convert.converters.baseapp import ConverterApp
 
 aliases = {}
 flags = {
