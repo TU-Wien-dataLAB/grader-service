@@ -9,8 +9,7 @@ import tornado
 import os
 
 import isodate
-from sqlalchemy.orm import joinedload
-from grader_convert.gradebook.models import GradeBookModel
+from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
@@ -364,7 +363,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
 
     route: /lectures/{lecture_id}/assignments/{assignment_id}/properties."""
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         """
         Returns the properties of a specific assignment.
@@ -380,7 +379,14 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         self.validate_parameters()
         assignment = self.get_assignment(lecture_id, assignment_id)
         if assignment.properties is not None:
-            self.write(assignment.properties)
+            if self.get_role(lecture_id).role == Scope.student:
+                model = GradeBookModel.from_dict(
+                    json.loads(assignment.properties))
+                for notebook in model.notebooks.values():
+                    notebook.source_cells_dict = {}
+                self.write(json.dumps(model.to_dict()))
+            else:
+                self.write(assignment.properties)
         else:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Assignment not found")

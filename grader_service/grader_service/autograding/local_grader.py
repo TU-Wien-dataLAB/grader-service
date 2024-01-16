@@ -19,8 +19,8 @@ from typing import Optional
 
 from traitlets.config import Config
 
-from grader_convert.converters.autograde import Autograde
-from grader_convert.gradebook.models import GradeBookModel
+from grader_service.convert.converters.autograde import Autograde
+from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
@@ -60,7 +60,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     Runs an autograde job on the local machine
     with the current Python environment.
     Sets up the necessary directories
-    and the gradebook JSON file used by :mod:`grader_convert`.
+    and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
     relative_input_path = Unicode("convert_in",
                                   allow_none=True).tag(config=True)
@@ -148,7 +148,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     def _write_gradebook(self, gradebook_str: str):
         """
         Writes the gradebook to the output directory where it will be used by
-        :mod:`grader_convert` to load the data.
+        :mod:`grader_service.convert` to load the data.
         The name of the written file is gradebook.json.
         :param gradebook_str: The content of the gradebook.
         :return: None
@@ -405,11 +405,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             self.submission.auto_status = "grading_failed"
 
+        self.grading_logs = self.grading_logs.replace("\x00", "")
         logs = SubmissionLogs(logs=self.grading_logs,
                               sub_id=self.submission.id)
-
         self.session.merge(logs)
-
         self.session.commit()
 
     def _cleanup(self):
@@ -469,7 +468,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
     """Runs an autograde job on the local machine
     with the default Python environment in a separate process.
     Sets up the necessary directories
-    and the gradebook JSON file used by :mod:`grader_convert`.
+    and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
     convert_executable = Unicode("grader-convert",

@@ -12,18 +12,16 @@ import json
 import os
 import shutil
 import sys
-import traceback
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
 
-from traitlets import Type, Integer, TraitType, Unicode, Union, Bool
+from traitlets import Type, Integer, TraitType, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
-from grader_service.api.models.error_message import ErrorMessage
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
 from grader_service.orm.base import Serializable, DeleteState
@@ -321,28 +319,6 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
         chunk = GraderBaseHandler._serialize(obj)
         self.write(json.dumps(chunk))
 
-    def write_error(self, status_code: int, **kwargs) -> None:
-
-        self.set_header('Content-Type', 'application/json')
-        self.set_status(status_code)
-        _, e, _ = kwargs.get("exc_info", (None, None, None))
-        error = httputil.responses.get(status_code, "Unknown")
-        reason = kwargs.get("reason", None)
-        if e and isinstance(e, HTTPError) and e.reason:
-            reason = e.reason
-        if self.settings.get("serve_traceback") and "exc_info" in kwargs:
-            # in debug mode, try to send a traceback
-            lines = []
-            for line in traceback.format_exception(*kwargs["exc_info"]):
-                lines.append(line)
-            self.finish(json.dumps(
-                ErrorMessage(status_code, error, self.request.path, reason,
-                             traceback=json.dumps(lines)).to_dict()))
-        else:
-            self.finish(json.dumps(ErrorMessage(status_code, error,
-                                                self.request.path,
-                                                reason).to_dict()))
-
     @classmethod
     def _serialize(cls, obj: object):
         if isinstance(obj, list):
@@ -392,9 +368,6 @@ def authenticated(
 class VersionHandler(GraderBaseHandler):
     async def get(self):
         self.write("1.0")
-
-
-
 
 
 @register_handler(r"\/", VersionSpecifier.V1)

@@ -1,8 +1,0 @@
-{
-  "jupyter.lab.shortcuts": [],
-  "title": "grader-labextension",
-  "description": "grader-labextension settings.",
-  "type": "object",
-  "properties": {},
-  "additionalProperties": false
-}
