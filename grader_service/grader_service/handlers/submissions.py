@@ -30,7 +30,7 @@ from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
-from grader_convert.gradebook.models import GradeBookModel
+from grader_service.convert.gradebook.models import GradeBookModel
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
     RequestHandlerConfig

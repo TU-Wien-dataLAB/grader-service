@@ -1,2 +1,0 @@
-include grader_convert/templates/**/*
-include grader_convert/nbgraderformat/*.json
