@@ -92,7 +92,7 @@ This repository contains all the necessary packages for a full installation of t
 
     pip install grader-service
 
-* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
+* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments and so on. The package is located in its `own repo <https://github.com/TU-Wien-dataLAB/Grader-Labextension>`_.
 
 .. code-block::
 
