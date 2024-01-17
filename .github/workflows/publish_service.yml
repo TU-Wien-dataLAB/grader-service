@@ -37,7 +37,7 @@ jobs:
       working-directory: ./grader_service
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_SETUP_TOKEN }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_SERVICE_SETUP_TOKEN }}
       run: |
         ls ./dist
         twine upload --skip-existing dist/*

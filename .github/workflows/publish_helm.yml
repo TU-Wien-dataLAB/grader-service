@@ -49,6 +49,7 @@ jobs:
           ./cr upload \
               --owner "$owner" \
               --git-repo "$repo" \
+              --make-release-latest "false" \
 
           # Update index and push to github pages
           ./cr index \
