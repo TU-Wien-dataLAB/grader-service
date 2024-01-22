@@ -60,7 +60,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
           <ListItem
             disablePadding
             secondaryAction={
-              value.feedback_available ? (
+              value.feedback_status === 'generated' ? (
                 <Button
                   startIcon={<ChatRoundedIcon />}
                   size='small'
@@ -77,7 +77,7 @@ export const SubmissionList = (props: ISubmissionListProps) => {
             <ListItemText
               primary={utcToLocalFormat(value.submitted_at)}
               secondary={
-                value.feedback_available
+                value.feedback_status === 'generated'
                   ? `${value.score} Point` + (value.score === 1 ? '' : 's')
                   : null
               }

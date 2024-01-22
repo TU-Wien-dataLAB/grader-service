@@ -182,7 +182,15 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         pass
 
     def _set_db_state(self, success=True):
-        self.submission.feedback_available = True
+        """"
+        Sets the submission feedback status based on the success of the generation.
+        :param success: Whether feedback generation was succesfull or not.
+        :return: None
+        """
+        if success:
+            self.submission.feedback_status = "generated"
+        else:
+            self.submission.feedback_status = "generation_failed"
         self.session.commit()
 
 

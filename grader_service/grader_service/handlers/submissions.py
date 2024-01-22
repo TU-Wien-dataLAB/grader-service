@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+#grader_s/grader_s/handlers
 import json
 import shutil
 import time
@@ -39,7 +40,7 @@ import datetime
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if not s.feedback_available:
+        if not s.feedback_status == 'generated':
             s.score = None
     return submissions
 
@@ -256,7 +257,6 @@ class SubmissionHandler(GraderBaseHandler):
         submission.assignid = assignment.id
         submission.date = submission_ts
         submission.username = self.user.name
-        submission.feedback_available = False
         submission.score_scaling = score_scaling
 
         git_repo_path = self.construct_git_dir(
@@ -281,6 +281,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission.commit_hash = commit_hash
         submission.auto_status = "not_graded"
         submission.manual_status = "not_graded"
+        submission.feedback_status = "not_generated"
 
         automatic_grading = assignment.automatic_grading
 
@@ -303,6 +304,9 @@ class SubmissionHandler(GraderBaseHandler):
                 close_session=False, config=self.application.config
             )
             if automatic_grading == AutoGradingBehaviour.full_auto:
+                submission.feedback_status = "generating"
+                self.session.commit()
+
                 feedback_executor = GenerateFeedbackExecutor(
                     self.application.grader_service_dir, submission,
                     config=self.application.config
@@ -426,7 +430,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.edited = sub_model.edited
-        sub.feedback_available = sub_model.feedback_available or False
+        sub.feedback_status = sub_model.feedback_status
         if sub_model.score_scaling is not None and sub.score_scaling != sub_model.score_scaling:
             sub.score_scaling = sub_model.score_scaling
             sub.score = sub_model.score_scaling * sub.grading_score
@@ -701,7 +705,7 @@ class LtiSyncHandler(GraderBaseHandler):
     async def get(self, lecture_id: int, assignment_id: int):
         # build the subquery
         subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_available)
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_status)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -710,7 +714,7 @@ class LtiSyncHandler(GraderBaseHandler):
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_available)
+                          Submission.assignid == assignment_id) & Submission.feedback_status)
             .all())
 
         assignment: Assignment = self.get_assignment(lecture_id, assignment_id)

@@ -23,17 +23,13 @@ interface IFolderItemProps {
   inContained: (file: string) => boolean;
   openFile: (path: string) => void;
   allowFiles?: boolean;
-  extraFileHelp: string;
   missingFiles?: File[];
-  missingFileHelp: string;
 }
 
 
 const FolderItem = ({
   folder,
   missingFiles,
-  extraFileHelp,
-  missingFileHelp,
   inContained,
   openFile,
   allowFiles
@@ -94,20 +90,16 @@ const FolderItem = ({
                 key={file.path}
                 folder={file}
                 missingFiles={missingFiles || []}
-                missingFileHelp={missingFileHelp}
                 inContained={inContained}
                 openFile={openFile}
                 allowFiles={allowFiles}
-                extraFileHelp={extraFileHelp}
               />
             ) : (
               <FileItem
                 key={file.path}
                 file={file}
                 missingFiles={missingFiles || []}
-                missingFileHelp={missingFileHelp}
                 inContained={inContained}
-                extraFileHelp={extraFileHelp}
                 openFile={openFile}
                 allowFiles={allowFiles}   
               />

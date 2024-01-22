@@ -173,10 +173,11 @@ export function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         await Promise.all(
           selected.map(async id => {
             const row = rows.find(value => value.id === id);
+            row.feedback_status = 'generating';
             await generateFeedback(
-              lecture.id,
-              assignment.id,
-              row.id
+              lecture,
+              assignment,
+              row
             );
           })
         );

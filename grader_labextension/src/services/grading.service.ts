@@ -30,8 +30,8 @@ export function autogradeSubmission(lecture: Lecture, assignment: Assignment, su
   return request<Assignment>(HTTPMethod.GET, `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/auto`)
 }
 
-export function generateFeedback(lecture_id: number, assignment_id: number, submission_id: number): Promise<Submission> {
-  return request<Submission>(HTTPMethod.GET, `/lectures/${lecture_id}/assignments/${assignment_id}/grading/${submission_id}/feedback`)
+export function generateFeedback(lecture: Lecture, assignment: Assignment, submission: Submission): Promise<Submission> {
+  return request<Submission>(HTTPMethod.GET, `/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/feedback`)
 }
 
 //response is not a schema => any

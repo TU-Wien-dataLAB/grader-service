@@ -105,6 +105,9 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
         submission : Submission = self.get_submission(lecture_id, assignment_id, sub_id)
+        submission.feedback_status = "generating"
+        self.session.commit()
+        
         executor = GenerateFeedbackExecutor(
             self.application.grader_service_dir, submission,
             config=self.application.config
