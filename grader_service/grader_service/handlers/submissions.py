@@ -550,6 +550,13 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         self.session.merge(properties)
 
+        if submission.feedback_status == 'generated':
+            submission.feedback_status = 'feedback_outdated'
+        
+        if submission.manual_status == 'manually_graded':
+            submission.manually_graded = 'being_edited'
+        
+
         self.session.commit()
         self.write_json(submission)
 
