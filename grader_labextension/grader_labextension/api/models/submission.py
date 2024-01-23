@@ -341,7 +341,7 @@ class Submission(Model):
         :param feedback_status: The feedback_status of this Submission.
         :type feedback_status: str
         """
-        allowed_values = ["not_generated", "generating", "generated", "generation_failed"]  # noqa: E501
+        allowed_values = ["not_generated", "generating", "generated", "generation_failed", "feedback_outdated"]  # noqa: E501
         if feedback_status not in allowed_values:
             raise ValueError(
                 "Invalid value for `auto_status` ({0}), must be one of {1}"

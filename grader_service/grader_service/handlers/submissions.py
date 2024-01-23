@@ -40,7 +40,7 @@ import datetime
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if not s.feedback_status == 'generated':
+        if s.feedback_status not in ('generated', 'feedback_outdated') :
             s.score = None
     return submissions
 

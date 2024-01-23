@@ -168,6 +168,7 @@ components:
             - "generating"
             - "generated"
             - "generation_failed"
+            - "feedback_outdated"
         edited:
           type: boolean
       example:

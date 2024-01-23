@@ -45,7 +45,7 @@ import { loadNumber, loadString, storeNumber, storeString } from '../../../servi
  * @return chip color
  */
 const getColor = (value: string) => {
-  if (value === 'not_graded' || value === 'not_generated') {
+  if (value === 'not_graded' || value === 'not_generated' || value === 'feedback_outdated') {
     return 'warning';
   } else if (
     value === 'automatically_graded' ||
@@ -76,7 +76,6 @@ export const getManualChip = (submission: Submission) => {
 };
 
 export const getFeedbackChip = (submission: Submission) => {
-  console.log("Feedback status: " + submission.feedback_status)
   return <Chip
     sx={{ textTransform: 'capitalize' }}
     variant='outlined'

@@ -38,7 +38,7 @@ class Submission(Base, Serializable):
     username = Column(String(255), ForeignKey("user.name"))
     commit_hash = Column(String(length=40), nullable=False)
     feedback_status = Column(
-        Enum("not_generated", "generating", "generated", "generation_failed"),
+        Enum("not_generated", "generating", "generated", "generation_failed", "feedback_outdated"),
         default="not_generated",
         nullable=False)
     edited = Column(Boolean, nullable=False)
