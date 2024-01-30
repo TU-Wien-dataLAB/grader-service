@@ -38,7 +38,7 @@ Table submission as S {
   manual_status enum
   score int
   properties text
-  feedback_available boolean
+  feedback_status enum
 }
 
 Table group as G {

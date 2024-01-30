@@ -161,8 +161,14 @@ components:
           format: "int64"
         commit_hash:
           type: string
-        feedback_available:
-          type: boolean
+        feedback_status:
+          type: string
+          enum:
+            - "not_generated"
+            - "generating"
+            - "generated"
+            - "generation_failed"
+            - "feedback_outdated"
         edited:
           type: boolean
       example:
