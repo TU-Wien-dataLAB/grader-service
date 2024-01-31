@@ -290,6 +290,7 @@ class BaseConverter(LoggingConfigurable):
                 src_file = os.path.join(src, rel_path)
                 if not os.path.isfile(src_file):
                     self.log.warning(f"The file {rel_path} cannot be copied because it does not exist in {src}!")
+                    continue
 
                 # make sure the subdirectories of the file exists before copying
                 rel_dir = os.path.dirname(rel_path)
