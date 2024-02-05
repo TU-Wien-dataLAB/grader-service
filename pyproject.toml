@@ -40,6 +40,7 @@ dependencies = [
     "python-dateutil>=2.8.2",
     "jupyter-client>=7.1.1",
     "nbconvert>=6.4.0",
+    "celery>=5.3.6"
 ]
 
 [tool.setuptools]
