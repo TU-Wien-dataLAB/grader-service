@@ -24,12 +24,20 @@ from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
 
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
+from grader_service.autograding.celery_app import CeleryApp
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
 from grader_service.plugins.lti import LTISyncGrades
+
+
+def db(url):
+    is_sqlite = 'sqlite://' in url
+    return SQLAlchemy(
+        url, engine_options={} if is_sqlite else
+        {"pool_size": 50, "max_overflow": -1}
+    )
 
 
 class GraderService(config.Application):
@@ -163,7 +171,6 @@ class GraderService(config.Application):
         "config": "GraderService.config_file",
     }
 
-
     log_level = Enum(
         [0, 10, 20, 30, 40, 50, "CRITICAL", "FATAL", "ERROR", "WARNING",
          "WARN", "INFO", "DEBUG", "NOTSET"],
@@ -229,14 +236,12 @@ class GraderService(config.Application):
         with open(self.config_file, mode='w') as f:
             f.write(config_text)
 
-    def initialize(self, argv, *args, **kwargs):
+    def initialize(self, argv):
         self.log.info("Starting Initialization...")
         self.log.info("Loading config file...")
-        super().initialize(*args, **kwargs)
-        self.parse_command_line(argv)
+        super().initialize(argv)
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
-        
 
         self._start_future = asyncio.Future()
 
@@ -247,7 +252,6 @@ class GraderService(config.Application):
             msg = "No git executable found! " \
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
-
 
     async def cleanup(self):
         pass
@@ -262,16 +266,14 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        await self._setup_environment()
+        self._setup_environment()
 
         # pass config
-        GraderExecutor.config = self.config
         RequestHandlerConfig.config = self.config
         LTISyncGrades.config = self.config
-        
-        handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        CeleryApp.instance(config=self.config, config_file=self.config_file)
 
-        isSQLite = 'sqlite://' in self.db_url
+        handlers = HandlerPathRegistry.handler_list(self.base_url_path)
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
@@ -284,10 +286,7 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=SQLAlchemy(
-                    self.db_url, engine_options={} if isSQLite else
-                    {"pool_size": 50, "max_overflow": -1}
-                ),
+                db=db(self.db_url),
                 parent=self,
             ),
             # ssl_options=ssl_context,
@@ -297,11 +296,11 @@ class GraderService(config.Application):
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.listen(self.service_port, address=self.service_host,
-                              reuse_port=self.reuse_port)
+                                reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda s=s: asyncio.ensure_future(
+                s, lambda s: asyncio.ensure_future(
                     self.shutdown_cancel_tasks(s))
             )
 
@@ -311,15 +310,18 @@ class GraderService(config.Application):
         # finish start
         self._start_future.set_result(None)
 
-    async def _setup_environment(self):
+    def _setup_environment(self):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False, capture_output=True).stdout.decode().strip() != "main":
+        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False,
+                          capture_output=True).stdout.decode().strip() != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
-        if subprocess.run(['git', 'config', 'user.name'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.name'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.name has to be set!")
-        if subprocess.run(['git', 'config', 'user.email'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.email'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):

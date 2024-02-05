@@ -7,7 +7,6 @@ from http import HTTPStatus
 from tornado.web import HTTPError
 
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.plugins.lti import LTISyncGrades

@@ -16,7 +16,6 @@ from http import HTTPStatus
 import tornado
 
 from grader_service.plugins.lti import LTISyncGrades
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
