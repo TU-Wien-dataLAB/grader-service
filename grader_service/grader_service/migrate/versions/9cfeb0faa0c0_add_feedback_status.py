@@ -24,7 +24,7 @@ def upgrade():
     op.drop_column('submission', 'feedback_available')
 
 def downgrade():
-    sa.Column('feedback_available', sa.Boolean(),  nullable=False, server_default="false")
+    op.add_column('submission', sa.Column('feedback_available', sa.Boolean, server_default='false', nullable=False))
     op.execute("UPDATE submission SET feedback_available=false WHERE feedback_status='not_generated' OR feedback_status='generation_failed' OR feedback_status='generating'")
     op.execute("UPDATE submission SET feedback_available=true WHERE feedback_status='generated' OR feedback_status='feedback_outdated'")
     op.drop_column('submission', 'feedback_status')
