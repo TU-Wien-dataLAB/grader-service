@@ -3,7 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-#grader_s/grader_s/handlers
+# grader_s/grader_s/handlers
 import json
 import shutil
 import time
@@ -14,6 +14,7 @@ import os.path
 import subprocess
 from http import HTTPStatus
 import tornado
+from celery import chain
 
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
@@ -31,6 +32,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 from grader_service.convert.gradebook.models import GradeBookModel
+from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
     RequestHandlerConfig
@@ -39,7 +41,7 @@ import datetime
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if s.feedback_status not in ('generated', 'feedback_outdated') :
+        if s.feedback_status not in ('generated', 'feedback_outdated'):
             s.score = None
     return submissions
 
@@ -265,12 +267,11 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Git repository not found")
 
-
         try:
             # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user. 
             # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
             # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
-            if commit_hash != "0"*40:
+            if commit_hash != "0" * 40:
                 subprocess.run(
                     ["git", "branch", "main", "--contains", commit_hash],
                     cwd=git_repo_path, capture_output=True)
@@ -295,52 +296,25 @@ class SubmissionHandler(GraderBaseHandler):
                                  AutoGradingBehaviour.full_auto]:
             submission.auto_status = "pending"
             self.session.commit()
-
             self.set_status(HTTPStatus.ACCEPTED)
-            executor = RequestHandlerConfig.instance() \
-                .autograde_executor_class(
-                self.application.grader_service_dir, submission,
-                close_session=False, config=self.application.config
-            )
+
             if automatic_grading == AutoGradingBehaviour.full_auto:
                 submission.feedback_status = "generating"
                 self.session.commit()
 
-                feedback_executor = GenerateFeedbackExecutor(
-                    self.application.grader_service_dir, submission,
-                    config=self.application.config
+                # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
+                grading_chain = chain(
+                    autograde_task.si(lecture_id, assignment_id, submission.id),
+                    generate_feedback_task.si(lecture_id, assignment_id, submission.id),
+                    lti_sync_task.si(lecture_id, assignment_id, submission.id, sync_on_feedback=True)
                 )
-
-                async def feedback_and_sync():
-
-                    GraderExecutor.instance().submit(feedback_executor.start)
-                    lecture: Lecture = self.session.query(Lecture).get(lecture_id)
-
-                    lti_plugin = LTISyncGrades.instance()
-                    data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
-
-                    if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
-
-                        try:
-                            await lti_plugin.start(*data)
-                        except Exception as e:
-                            self.log.error("Could not sync grades: " + str(e))
-
-                    else:
-                        self.log.info("Skipping LTI plugin as it is not enabled")
-
-                GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
-
-                # Trigger LTI Plugin
             else:
-                GraderExecutor.instance().submit(
-                    executor.start,
-                    lambda: self.log.info(
-                        f"Autograding task of submission \
-                        {submission.id} exited!")
-                )
+                grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
+            grading_chain()
+
         if automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
+
 
     @staticmethod
     def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
@@ -422,7 +396,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub = self.get_submission(lecture_id, assignment_id, submission_id)
         # sub.date = sub_model.submitted_at
         # sub.assignid = assignment_id
-        
+
         role = self.get_role(lecture_id)
         if role.role >= Scope.instructor:
             sub.username = sub_model.username
@@ -551,10 +525,9 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         if submission.feedback_status == 'generated':
             submission.feedback_status = 'feedback_outdated'
-        
+
         if submission.manual_status == 'manually_graded':
             submission.manually_graded = 'being_edited'
-        
 
         self.session.commit()
         self.write_json(submission)
@@ -709,37 +682,10 @@ class LtiSyncHandler(GraderBaseHandler):
 
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
-        # build the subquery
-        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_status)
-                    .group_by(Submission.username)
-                    .subquery())
-
-        # build the main query
-        submissions: list[Submission] = (
-            self.session.query(Submission)
-            .join(subquery,
-                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_status)
-            .all())
-
-        assignment: Assignment = self.get_assignment(lecture_id, assignment_id)
-        lecture: Lecture = self.session.query(Lecture).get(lecture_id)
-
-        lti_plugin = LTISyncGrades.instance()
-        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
-
-        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
-
-            try:
-                results = await lti_plugin.start(*data)
-                self.write_json(results)
-            except HTTPError as e:
-                self.write_error(e.status_code, reason=e.reason)
-                self.log.info("Could not sync grades: " + e.reason)
-            except Exception as e:
-                self.log.error("Could not sync grades: " + str(e))
-
-        else:
+        # apply task synchronously without adding to queue
+        results = lti_sync_task.apply((lecture_id, assignment_id, None, False))
+        if results is None:
             self.log.info("Skipping LTI plugin as it is not enabled")
             self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+        else:
+            self.write_json(results)

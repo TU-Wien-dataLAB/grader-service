@@ -24,7 +24,7 @@ from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
 
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
-from grader_service.autograding.celery_app import CeleryApp
+from grader_service.autograding.celery.app import CeleryApp
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -253,6 +253,12 @@ class GraderService(config.Application):
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
 
+    def set_config(self):
+        """ Pass config to singletons. """
+        RequestHandlerConfig.config = self.config
+        LTISyncGrades.config = self.config
+        CeleryApp.instance(config=self.config, config_file=self.config_file)
+
     async def cleanup(self):
         pass
 
@@ -269,9 +275,7 @@ class GraderService(config.Application):
         self._setup_environment()
 
         # pass config
-        RequestHandlerConfig.config = self.config
-        LTISyncGrades.config = self.config
-        CeleryApp.instance(config=self.config, config_file=self.config_file)
+        self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
 
@@ -300,7 +304,7 @@ class GraderService(config.Application):
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda s: asyncio.ensure_future(
+                s, lambda: asyncio.ensure_future(
                     self.shutdown_cancel_tasks(s))
             )
 

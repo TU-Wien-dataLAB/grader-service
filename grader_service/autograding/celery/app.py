@@ -7,12 +7,15 @@ from celery import Celery
 
 class CeleryApp(SingletonConfigurable):
     conf = Dict(default_value=dict(
-        broker_url='pyamqp://',
+        broker_url='amqp://localhost',
         result_backend='rpc://',
         task_serializer='json',
         result_serializer='json',
-        accept_content=['json']
+        accept_content=['json'],
+        broker_connection_retry_on_startup=True
     ), help="Configuration for Celery app.").tag(config=True)
+
+    worker_kwargs = Dict(default_value={}, help="Keyword arguments to pass to celery Worker instance.").tag(config=True)
 
     _app: Union[Celery, None] = None
     _db: Union[SQLAlchemy, None] = None
@@ -26,14 +29,16 @@ class CeleryApp(SingletonConfigurable):
             # config might not be loaded if the celery app was not initialized by the service (e.g. in a worker)
             if not service.config:
                 service.load_config_file(self.config_file)
+                service.set_config()
                 self.update_config(service.config)
         except MultipleInstanceError:
-            # instance exists and probably has a different module (e.g. __main__) -> config exists
+            # instance exists and probably has a different module name (e.g. __main__) -> config exists
             pass
 
     @property
     def app(self):
         if self._app is None:
+            self.log.info('Instantiating Celery app')
             self._app = Celery(main="grader_service", include=['grader_service'])
             self._app.conf.update(self.conf)
         return self._app
@@ -41,10 +46,10 @@ class CeleryApp(SingletonConfigurable):
     @property
     def db(self) -> SQLAlchemy:
         if self._db is None:
+            self.log.info('Instantiating database connection')
             from grader_service.main import GraderService, db
             service = GraderService.instance()
             # service config is always loaded because it is either initialized when the service was started
             # or when this class was initialized so db_url must be set
             self._db = db(service.db_url)
         return self._db
-
