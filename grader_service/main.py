@@ -257,7 +257,7 @@ class GraderService(config.Application):
         """ Pass config to singletons. """
         RequestHandlerConfig.config = self.config
         LTISyncGrades.config = self.config
-        CeleryApp.instance(config=self.config, config_file=self.config_file)
+        CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
         pass

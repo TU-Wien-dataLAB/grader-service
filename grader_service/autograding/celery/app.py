@@ -2,7 +2,7 @@ from typing import Union
 from tornado_sqlalchemy import SQLAlchemy
 from traitlets import Dict
 from traitlets.config import SingletonConfigurable, MultipleInstanceError
-from celery import Celery
+from celery import Celery, current_app
 
 
 class CeleryApp(SingletonConfigurable):
@@ -17,39 +17,32 @@ class CeleryApp(SingletonConfigurable):
 
     worker_kwargs = Dict(default_value={}, help="Keyword arguments to pass to celery Worker instance.").tag(config=True)
 
-    _app: Union[Celery, None] = None
+    app: Celery
     _db: Union[SQLAlchemy, None] = None
 
-    def __init__(self, config_file: str, **kwargs):
+    def __init__(self, config_file: Union[str, None] = None, **kwargs):
         super().__init__(**kwargs)
-        self.config_file = config_file
-        try:
+        if not self.config:
+            self.config_file = config_file
+            if config_file is None:
+                raise ValueError("Neither config nor config_path were passed to CeleryApp!")
+
             from grader_service.main import GraderService
-            service = GraderService.instance()
+            service = GraderService()
             # config might not be loaded if the celery app was not initialized by the service (e.g. in a worker)
             if not service.config:
                 service.load_config_file(self.config_file)
                 service.set_config()
                 self.update_config(service.config)
-        except MultipleInstanceError:
-            # instance exists and probably has a different module name (e.g. __main__) -> config exists
-            pass
 
-    @property
-    def app(self):
-        if self._app is None:
-            self.log.info('Instantiating Celery app')
-            self._app = Celery(main="grader_service", include=['grader_service'])
-            self._app.conf.update(self.conf)
-        return self._app
+        from grader_service.autograding.celery.tasks import app
+        self.app = app  # update module level celery app from tasks.py
+        self.app.conf.update(self.conf)
 
     @property
     def db(self) -> SQLAlchemy:
         if self._db is None:
             self.log.info('Instantiating database connection')
             from grader_service.main import GraderService, db
-            service = GraderService.instance()
-            # service config is always loaded because it is either initialized when the service was started
-            # or when this class was initialized so db_url must be set
-            self._db = db(service.db_url)
+            self._db = db(GraderService(config=self.config).db_url)
         return self._db
