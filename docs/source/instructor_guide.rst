@@ -19,16 +19,6 @@ a tutor in one lecture.
     You can find how to enable extensions `here <https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager>`_.
     Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 
-One Instance Hub vs. Multiple Instances Hub
---------------------------------------------
-In winter semester 2023 we are introducing One Instance Hub, which allows you to have all of your lectures in one place and easily manage them. 
-If you are using Jupyter as a Service for multiple lectures, they are now shown in one list. In each lecture 
-you can manage as many assignments as needed and this process and navigation between assignments has been made
-easier. You can also switch between completed and current lectures and review assignments that were monitored in completed lectures. 
-Students who are enrolled in multiple lectures using Jupyter as a Service will see all of their lecturers and assignments in one place, 
-eliminating the need to follow a link provided in each TUWEL course that uses Jupyter as a Service. Once they are logged into JupyterHub,
-they can access all of their lectures and assignments released in those lectures.
-
 Create Your First Assignment
 -----------------------------
 Before students can access the notebooks, an assignment must be created.
