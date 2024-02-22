@@ -29,6 +29,7 @@ jobs:
           dir_names: true
           files: |
             **/*
+            *
       - id: outputStep
         run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
