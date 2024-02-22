@@ -158,13 +158,15 @@ def test_autograde_with_deleted_extra_file(tmp_path, caplog):
     assert not test_file.exists()
 
     from nbclient.client import NotebookClient
+    logger = logging.getLogger('traitlets')
     with patch.object(NotebookClient, "kernel_name", "python3"):
-        Autograde(
-            input_dir=str(output_dir),
-            output_dir=str(output_dir2),
-            file_pattern="*.ipynb",
-            copy_files=False,  # do not copy files since student copy is disabled
-            config=None
-        ).start()
+        with patch.object(logger, "warning") as mock_waring:
+            Autograde(
+                input_dir=str(output_dir),
+                output_dir=str(output_dir2),
+                file_pattern="*.ipynb",
+                copy_files=False,  # do not copy files since student copy is disabled
+                config=None
+            ).start()
 
-    assert caplog.records[-1].message == f"The file test.txt cannot be copied because it does not exist in {str(output_dir)}!"
+    mock_waring.assert_called_with(f"The file test.txt cannot be copied because it does not exist in {str(output_dir)}!")
