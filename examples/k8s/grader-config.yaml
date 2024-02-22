@@ -6,6 +6,11 @@ jupyterhub:
   apiUrl: http://proxy-public/hub/api
   baseUrl: /
 
+image:
+  repository: matthiasmatt/grader-service
+  pullPolicy: Never
+  tag: latest
+
 db:
   dialect: postgresql
   url: "postgresql://grader-service:Starfish@grader-db-postgresql.jupyter.svc.cluster.local:5432"
@@ -31,3 +36,13 @@ capacity: "5G"
 
 ingress:
   enabled: true
+
+rabbitmq:
+  resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+

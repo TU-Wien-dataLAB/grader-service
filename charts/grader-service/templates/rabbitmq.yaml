@@ -1,0 +1,11 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq-grader-service
+  labels:
+    {{- include "grader-service.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  resources:
+    {{- toYaml .Values.rabbitmq.resources | nindent 4 }}
