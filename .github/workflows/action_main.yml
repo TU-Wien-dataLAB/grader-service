@@ -36,7 +36,7 @@ jobs:
   build_grader-service:
     uses: ./.github/workflows/build.yml
     needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_service') || contains(needs.init.outputs.changeDirs, '.github/workflows')
+    if: contains(needs.init.outputs.changeDirs, 'grader_service') || contains(needs.init.outputs.changeDirs, '.github/workflows') || contains(needs.init.outputs.changeDirs, 'Dockerfile')
 
   dockerize_grader-service:
     needs: build_grader-service
