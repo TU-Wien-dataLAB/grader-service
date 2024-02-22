@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-ARG BASE_IMAGE=ubuntu:focal
+ARG BASE_IMAGE=python:3.10
 FROM ${BASE_IMAGE} as builder
 
 ENV GRADER_SERVICE_HOST="0.0.0.0"
@@ -20,10 +20,7 @@ RUN groupadd -g 1000 grader-service && \
 
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
-    python3 \
     gcc \
-    python3-dev \
-    python3-pip \
     git \
     vim \
     nano \
@@ -33,18 +30,17 @@ RUN apt-get update \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+WORKDIR /var/lib/grader-service
+
 # INSTALL grader-service
-COPY ./grader_service /grader_service
+COPY ./grader_service ./grader_service
+COPY pyproject.toml MANIFEST.in ./
 COPY ./grader_service.sh /usr/local/bin/grader_service.sh
 
-RUN python3 -m pip install /grader_service/
-    # && \
-    # rm -rf /convert/ && \
-    # rm -rf /grader_service/
+ENV PATH /var/lib/grader-service/.local/bin:$PATH
+RUN python3 -m pip install .
 
 USER grader-service
-
-WORKDIR /var/lib/grader-service
 
 ENTRYPOINT ["tini", "-g", "--"]
 CMD [ "grader_service.sh" ]
