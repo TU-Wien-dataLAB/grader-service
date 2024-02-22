@@ -6,6 +6,7 @@ on:
       - grader-service-* # for release_helm action
     branches:
       - main
+      - release-*
   release:
     types:
       - published
