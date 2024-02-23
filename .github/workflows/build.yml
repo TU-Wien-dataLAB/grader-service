@@ -53,5 +53,5 @@ jobs:
         name: dist-service
         retention-days: 1
         path: |
-          grader_service/dist
-          !grader_service/dist/**/*.md
+          ./dist
+          !./dist/**/*.md
