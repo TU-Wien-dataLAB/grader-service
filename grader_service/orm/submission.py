@@ -1,6 +1,6 @@
 # Copyright (c) 2022, TU Wien
 # All rights reserved.
-#
+# grader service orm
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from datetime import datetime
@@ -37,7 +37,10 @@ class Submission(Base, Serializable):
     assignid = Column(Integer, ForeignKey("assignment.id"))
     username = Column(String(255), ForeignKey("user.name"))
     commit_hash = Column(String(length=40), nullable=False)
-    feedback_available = Column(Boolean, nullable=False)
+    feedback_status = Column(
+        Enum("not_generated", "generating", "generated", "generation_failed", "feedback_outdated"),
+        default="not_generated",
+        nullable=False)
     edited = Column(Boolean, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow, nullable=False)
@@ -66,6 +69,6 @@ class Submission(Base, Serializable):
             score=self.score,
             assignid=self.assignid,
             commit_hash=self.commit_hash,
-            feedback_available=self.feedback_available,
+            feedback_status=self.feedback_status,
             edited=self.edited
         )

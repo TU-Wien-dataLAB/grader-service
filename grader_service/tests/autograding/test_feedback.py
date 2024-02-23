@@ -58,4 +58,4 @@ async def test_feedback(
         await executor.start()
 
     submission = session.query(Submission).get(s_id)
-    assert submission.feedback_available
+    assert submission.feedback_status == "generated"

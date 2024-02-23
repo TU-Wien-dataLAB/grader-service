@@ -55,6 +55,11 @@ class GradingAutoHandler(GraderBaseHandler):
         submission = self.get_submission(lecture_id, assignment_id, sub_id)
         submission.auto_status = "pending"
         self.session.commit()
+        
+        if submission.feedback_status == "generated":
+            submission.feedback_status = "feedback_outdated"
+            self.session.commit()
+        
 
         executor = RequestHandlerConfig.instance().autograde_executor_class(
             self.application.grader_service_dir, submission,
@@ -105,6 +110,9 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
         submission : Submission = self.get_submission(lecture_id, assignment_id, sub_id)
+        submission.feedback_status = "generating"
+        self.session.commit()
+        
         executor = GenerateFeedbackExecutor(
             self.application.grader_service_dir, submission,
             config=self.application.config
