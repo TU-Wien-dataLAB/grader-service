@@ -97,9 +97,9 @@ search = "__version__ = '{current_version}'"
 
 
 [[tool.tbump.file]]
-src = "../docs/source/_static/openapi/grader_api.yml"
+src = "./docs/source/_static/openapi/grader_api.yml"
 search = "version: '{current_version}'"
 
 [[tool.tbump.file]]
-src = "../charts/grader-service/Chart.yaml"
+src = "./charts/grader-service/Chart.yaml"
 search = "appVersion: \"{current_version}\""
