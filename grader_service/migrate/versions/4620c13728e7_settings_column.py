@@ -26,5 +26,5 @@ def upgrade():
 
 def downgrade():
     op.drop_column('assignment', 'settings')
-    op.drop_column('submission', 'grading_points')
-    op.drop_column('submission', 'point_scaling')
+    op.drop_column('submission', 'grading_score')
+    op.drop_column('submission', 'score_scaling')
