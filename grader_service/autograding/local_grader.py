@@ -405,7 +405,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             self.submission.auto_status = "grading_failed"
 
-        self.grading_logs = self.grading_logs.replace("\x00", "")
+        if self.grading_logs is not None:
+            self.grading_logs = self.grading_logs.replace("\x00", "")
         logs = SubmissionLogs(logs=self.grading_logs,
                               sub_id=self.submission.id)
         self.session.merge(logs)
