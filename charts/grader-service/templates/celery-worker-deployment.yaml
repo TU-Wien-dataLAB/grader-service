@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "grader-service.fullname" . }}-workers
+  name: {{ include "grader-service.fullname" . }}-worker
   labels:
     {{- include "grader-service.labels" . | nindent 4 }}
   namespace: {{ .Release.Namespace }}

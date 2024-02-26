@@ -112,6 +112,9 @@ rabbitmq:
       limits:
         cpu: 2
         memory: 4Gi
+  auth:
+      user: guest
+      password: guest
 
 workers:
   replication: 1

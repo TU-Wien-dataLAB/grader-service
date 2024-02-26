@@ -48,8 +48,8 @@ singleuser:
     type: none
   defaultUrl: /lab
   image:
-    name: ghcr.io/tu-wien-datalab/grader-service-labextension
-    tag: "main"
+    name: ghcr.io/tu-wien-datalab/grader-labextension
+    tag: "latest"
   extraEnv:
     GRADER_HOST_URL: http://grader-service:4010
 
