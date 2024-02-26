@@ -68,7 +68,7 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username, feedback=False, score=None):
+def _get_submission(assignment_id, username, feedback="not_generated", score=None):
     s = Submission()
     s.date = datetime.now()
     s.auto_status = "not_graded"
@@ -86,7 +86,7 @@ def _get_submission_properties(submission_id, properties=None):
     return s
 
 
-def insert_submission(ex, assignment_id=1, username="ubuntu", feedback=False, with_properties=True, score=None):
+def insert_submission(ex, assignment_id=1, username="ubuntu", feedback="not_generated", with_properties=True, score=None):
     # TODO Allows only one submission with properties per user because we do not have the submission id
     session: Session = sessionmaker(ex)()
     session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))

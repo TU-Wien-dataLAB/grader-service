@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 ARG BASE_IMAGE=python:3.10
-FROM ${BASE_IMAGE} as builder
+FROM ${BASE_IMAGE}
 
 ENV GRADER_SERVICE_HOST="0.0.0.0"
 ENV GRADER_HOST_URL="0.0.0.0"

@@ -122,7 +122,7 @@ def test_git_lookup_release_push_student_error(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 
-    with pytest.raises(HTTPError) as e, pytest.warns(DeprecationWarning):  # some deprecation warning in jupyter_server
+    with pytest.raises(HTTPError) as e:
         GitBaseHandler._check_git_repo_permissions(handler_mock, "send-pack", role, pathlets)
     assert e.value.status_code == 403
 
@@ -143,7 +143,7 @@ def test_git_lookup_source_push_student_error(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 
-    with pytest.raises(HTTPError) as e, pytest.warns(DeprecationWarning):  # some deprecation warning in jupyter_server
+    with pytest.raises(HTTPError) as e:
         GitBaseHandler._check_git_repo_permissions(handler_mock, "send-pack", role, pathlets)
     assert e.value.status_code == 403
 
@@ -164,7 +164,7 @@ def test_git_lookup_source_push_student_error(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 
-    with pytest.raises(HTTPError) as e, pytest.warns(DeprecationWarning):  # some deprecation warning in jupyter_server
+    with pytest.raises(HTTPError) as e:
         GitBaseHandler._check_git_repo_permissions(handler_mock, "send-pack", role, pathlets)
     assert e.value.status_code == 403
 

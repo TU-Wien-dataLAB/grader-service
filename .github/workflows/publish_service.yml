@@ -32,9 +32,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: dist-service
-        path: grader_service/dist
+        path: ./dist
     - name: Publish package
-      working-directory: ./grader_service
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_SERVICE_SETUP_TOKEN }}

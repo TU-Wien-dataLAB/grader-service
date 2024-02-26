@@ -601,7 +601,7 @@ async def test_put_submission(
     insert_submission(engine, a_id, default_user["name"])
 
     pre_submission = Submission(id=-1, submitted_at=None, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     response = await http_server_client.fetch(
         url, method="PUT", headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_submission.to_dict()),
@@ -613,7 +613,7 @@ async def test_put_submission(
     assert submission.auto_status == pre_submission.auto_status
     assert submission.manual_status == pre_submission.manual_status
     assert submission.commit_hash != pre_submission.commit_hash  # commit hash cannot be changed
-    assert not submission.feedback_available
+    assert submission.feedback_status == "not_generated"
     # assert submission.submitted_at.strftime("%Y-%m-%dT%H:%M:%S.%f")[0:-3] + "Z" == pre_submission.submitted_at
     assert submission.score is None
 
@@ -640,7 +640,7 @@ async def test_put_submission_lecture_assignment_missmatch(
 
     now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="PUT", headers={"Authorization": f"Token {default_token}"},
@@ -673,7 +673,7 @@ async def test_put_submission_assignment_submission_missmatch(
 
     now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="PUT", headers={"Authorization": f"Token {default_token}"},
@@ -706,7 +706,7 @@ async def test_put_submission_wrong_submission(
 
     now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="PUT", headers={"Authorization": f"Token {default_token}"},
@@ -738,7 +738,7 @@ async def test_post_submission(
 
     now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
 
     with patch.object(subprocess, "run", return_value=None):
         with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):

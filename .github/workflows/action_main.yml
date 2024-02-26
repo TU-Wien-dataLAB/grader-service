@@ -6,6 +6,7 @@ on:
       - grader-service-* # for release_helm action
     branches:
       - main
+      - release-*
   release:
     types:
       - published
@@ -28,6 +29,7 @@ jobs:
           dir_names: true
           files: |
             **/*
+            *
       - id: outputStep
         run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
 
@@ -35,7 +37,7 @@ jobs:
   build_grader-service:
     uses: ./.github/workflows/build.yml
     needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_service')
+    if: contains(needs.init.outputs.changeDirs, 'grader_service') || contains(needs.init.outputs.changeDirs, '.github/workflows') || contains(needs.init.outputs.changeDirs, 'Dockerfile')
 
   dockerize_grader-service:
     needs: build_grader-service
