@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 helm repo add grader-service https://tu-wien-datalab.github.io/Grader-Service
 helm repo update

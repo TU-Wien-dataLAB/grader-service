@@ -52,8 +52,6 @@ gitConfig:
 volumePermissions:
   enabled: true
 
-concurrentGradingTasks: 5
-
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension

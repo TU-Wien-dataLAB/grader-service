@@ -24,8 +24,6 @@ data:
     {{- end }}
     {{- end }}
 
-    c.GraderExecutor.n_concurrent_tasks = {{ .Values.concurrentGradingTasks | int }}
-
     c.KubeAutogradeExecutor.kube_context = None
 
     {{- if .Values.kubeAutogradeExecutor.namespace }}

@@ -11,9 +11,9 @@ image:
   pullPolicy: Never
   tag: latest
 
-db:
-  dialect: postgresql
-  url: "postgresql://grader-service:Starfish@grader-db-postgresql.jupyter.svc.cluster.local:5432"
+#db:
+#  dialect: postgresql
+#  url: "postgresql://grader-service:Starfish@grader-db-postgresql.jupyter.svc.cluster.local:5432"
 
 gitConfig:
   gitUser: "grader-service"
@@ -22,7 +22,8 @@ gitConfig:
 volumePermissions:
   enabled: true
 
-concurrentGradingTasks: 1
+extraConfig: |
+  c.CeleryApp.worker_kwargs=dict(loglevel="INFO", concurrency=1)
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
