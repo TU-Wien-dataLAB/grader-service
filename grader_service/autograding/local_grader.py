@@ -14,7 +14,7 @@ import stat
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError
+from subprocess import Popen, PIPE, CalledProcessError
 from typing import Optional
 
 from traitlets.config import Config
@@ -26,7 +26,6 @@ from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from sqlalchemy.orm import Session
-from tornado.process import Subprocess
 from traitlets.config.configurable import LoggingConfigurable
 
 from traitlets.traitlets import TraitError, Unicode, validate, Callable
@@ -426,7 +425,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if self.close_session:
             self.session.close()
 
-    async def _run_subprocess(self, command: str, cwd: str) -> Subprocess:
+    async def _run_subprocess(self, command: str, cwd: str) -> Popen[bytes]:
         """
         Execute the command as a subprocess.
         :param command: The command to execute as a string.
@@ -435,9 +434,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         which resulted from the execution.
         """
         try:
-            process = Subprocess(shlex.split(command),
-                                 stdout=PIPE, stderr=PIPE, cwd=cwd)
-            await process.wait_for_exit()
+            process = Popen(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
+            process.wait()
         except CalledProcessError:
             self.grading_logs = process.stderr.read().decode("utf-8")
             self.log.error(self.grading_logs)
