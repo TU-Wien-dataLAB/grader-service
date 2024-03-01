@@ -9,7 +9,4 @@ spec:
   replicas: 1
   resources:
     {{- toYaml .Values.rabbitmq.resources | nindent 4 }}
-  rabbitmq:
-    additionalConfig: |
-      default_user={{ .Values.rabbitmq.auth.user }}
-      default_pass={{ .Values.rabbitmq.auth.password }}
+

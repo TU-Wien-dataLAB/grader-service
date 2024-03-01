@@ -43,8 +43,11 @@ data:
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
 
+    import os
+    broker_url=f'amqp://{os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")}:{os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local'
+
     c.CeleryApp.conf = dict(
-        broker_url='amqp://{{.Values.rabbitmq.auth.user}}:{{.Values.rabbitmq.auth.password}}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local',
+        broker_url=broker_url,
         result_backend='rpc://',
         task_serializer='json',
         result_serializer='json',

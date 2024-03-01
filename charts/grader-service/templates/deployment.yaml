@@ -61,6 +61,16 @@ spec:
               value: {{ .Values.db.host }}
             - name: GRADER_DB_URL
               value: {{ .Values.db.url }}
+            - name: RABBITMQ_GRADER_SERVICE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: rabbitmq-grader-service-default-user
+            - name: RABBITMQ_GRADER_SERVICE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: rabbitmq-grader-service-default-user
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
