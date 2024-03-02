@@ -6,10 +6,6 @@ jupyterhub:
   apiUrl: http://proxy-public/hub/api
   baseUrl: /
 
-image:
-  repository: matthiasmatt/grader-service
-  pullPolicy: Never
-  tag: latest
 
 #db:
 #  dialect: postgresql
