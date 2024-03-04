@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import inspect
+import warnings
 from asyncio import Task, run
 
 from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta,
@@ -17,6 +18,7 @@ from traitlets import Callable, Unicode, Integer, List, Dict
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
+from grader_service.autograding.docker_grader import DockerImageExecutor
 from grader_service.autograding.kube.util import (make_pod,
                                                   get_current_namespace)
 from grader_service.autograding.local_grader import (LocalAutogradeExecutor,
@@ -73,20 +75,7 @@ class GraderPod(LoggingConfigurable):
             await asyncio.sleep(self.poll_interval / 1000)
 
 
-def _get_image_name(lecture: Lecture, assignment: Assignment = None) -> str:
-    """
-    Default implementation of the resolve_image_name method
-    which return the lecture code followed by '_image'.
-    All the functions have the lecture and assignment available as parameters.
-    The function can either be sync or async.
-    :param lecture: Lecture to build the image name.
-    :param assignment: Assignment to build the image name.
-    :return: The image name as a string.
-    """
-    return f"{lecture.code}_image"
-
-
-class KubeAutogradeExecutor(LocalAutogradeExecutor):
+class KubeAutogradeExecutor(DockerImageExecutor):
     """
     Runs an autograde job in a kubernetes cluster as a pod.
     The cluster has to have a shared persistent
@@ -96,11 +85,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     The service account of the grader service has to have
     permission to get, update, create and delete pods, pod status and pod logs.
     """
-
-    image_config_path = Unicode(default_value=None,
-                                allow_none=True).tag(config=True)
-    resolve_image_name = Callable(default_value=_get_image_name,
-                                  allow_none=False).tag(config=True)
     kube_context = Unicode(default_value=None, allow_none=True,
                            help="Kubernetes context to load config from. "
                                 "If the context is None (default), "
@@ -134,7 +118,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     def __init__(self, grader_service_dir: str,
                  submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
-        self.lecture = self.assignment.lecture
+        warnings.warn(
+            "KubeAutogradeExecutor has been deprecated in favor of DockerAutogradeExecutor in conjunction with "
+            "Celery workers!", DeprecationWarning
+        )
 
         if self.kube_context is None:
             self.log.info(f"Loading in-cluster config for kube executor "
@@ -151,36 +138,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.log.info(f"Setting Namespace "
                           f"for submission {self.submission.id}")
             self.namespace = get_current_namespace()
-
-    def get_image(self) -> str:
-        """
-        Returns the image name based on the lecture and assignment.
-        If an image config file exists and has
-        been specified it will first be queried for an image name.
-        If the image name cannot be found in the
-        config file or none has been specified
-        the image name will be determined by the resolve_image_name function
-        which takes the lecture
-        and assignment as parameters and is specified in the config.
-        The default implementation of this function is to
-         return the lecture code followed by '_image'.
-        :return: The image name as determined by this method.
-        """
-        cfg = {}
-        if self.image_config_path is not None:
-            with open(self.image_config_path, "r") as f:
-                cfg = json.load(f)
-        try:
-            lecture_cfg = cfg[self.lecture.code]
-            if isinstance(lecture_cfg, str):
-                return lecture_cfg
-            else:
-                return lecture_cfg[self.assignment.name]
-        except KeyError:
-            if inspect.iscoroutinefunction(self.resolve_image_name):
-                return run(self.resolve_image_name(self.lecture, self.assignment))
-            else:
-                return self.resolve_image_name(self.lecture, self.assignment)
 
     def start_pod(self) -> GraderPod:
         """
