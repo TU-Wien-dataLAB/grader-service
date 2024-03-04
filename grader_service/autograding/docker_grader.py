@@ -26,7 +26,7 @@ def _get_image_name(lecture: Lecture, assignment: Assignment = None) -> str:
     return f"{lecture.code}_image"
 
 
-class DockerImageExecutor(LocalAutogradeExecutor, abc.ABC):
+class DockerImageExecutor(LocalAutogradeExecutor):
     image_config_path = Unicode(default_value=None,
                                 allow_none=True).tag(config=True)
     resolve_image_name = Callable(default_value=_get_image_name,
@@ -105,7 +105,8 @@ class DockerAutogradeExecutor(DockerImageExecutor):
                 stdout=True,
                 stderr=True,
                 detach=False,
-            )
+                remove=True,
+            ).decode("utf-8")
             self.log.info(self.grading_logs)
             self.log.info("Container has successfully completed execution!")
         except ContainerError as e:
