@@ -118,10 +118,6 @@ class KubeAutogradeExecutor(DockerImageExecutor):
     def __init__(self, grader_service_dir: str,
                  submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
-        warnings.warn(
-            "KubeAutogradeExecutor has been deprecated in favor of DockerAutogradeExecutor in conjunction with "
-            "Celery workers!", DeprecationWarning
-        )
 
         if self.kube_context is None:
             self.log.info(f"Loading in-cluster config for kube executor "
