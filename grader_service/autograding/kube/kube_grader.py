@@ -192,7 +192,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         # The output path will not exist in the pod
         command = [self.convert_executable, "autograde", "-i",
                    self.input_path, "-o", self.output_path,
-                   "-p", "*.ipynb",
+                   "-p", "**/*.ipynb",
                    f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
                    f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
