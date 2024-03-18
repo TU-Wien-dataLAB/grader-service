@@ -1,6 +1,6 @@
 import pytest
 import os
-from nbformat.v4 import new_notebook
+from nbformat.v4 import new_notebook, new_markdown_cell
 
 from grader_service.convert.preprocessors import SaveCells, OverwriteCells
 from grader_service.convert.gradebook.gradebook import Gradebook
@@ -8,7 +8,7 @@ from grader_service.convert.utils import compute_checksum
 from .base import BaseTestPreprocessor
 from .. import (
     create_grade_cell, create_solution_cell, create_grade_and_solution_cell,
-    create_locked_cell)
+    create_locked_cell, create_task_cell)
 
 
 @pytest.fixture
@@ -227,6 +227,8 @@ class TestOverwriteCells(BaseTestPreprocessor):
         cell.metadata.nbgrader['grade'] = False
         nb = new_notebook()
         nb.cells.append(cell)
+        preprocessors[0].add_missing_cells = False
+        preprocessors[1].add_missing_cells = False
         nb, resources = preprocessors[0].preprocess(nb, resources)
         nb, resources = preprocessors[1].preprocess(nb, resources)
         assert 'grade_id' not in cell.metadata.nbgrader
@@ -235,7 +237,56 @@ class TestOverwriteCells(BaseTestPreprocessor):
         cell.metadata.nbgrader['grade'] = False
         nb = new_notebook()
         nb.cells.append(cell)
+        
         nb, resources = preprocessors[0].preprocess(nb, resources)
         nb, resources = preprocessors[1].preprocess(nb, resources)
         assert 'grade_id' not in cell.metadata.nbgrader
 
+    # Tests for adding missing cells back
+    def test_add_missing_cells(self, preprocessors, resources):
+        """
+        Current implementation of adding missing cells should:
+        - add missing cells right after the previous grade/solution cell, as the best approximation of their location
+        - add task cells at the end (because we can't detect their location in the notebook), in order of appearance
+        """
+        
+        cells = [
+            create_solution_cell("Code assignment", "code", "code_solution"),
+            create_grade_cell("some tests", "code", "code_test1", 1),
+            create_grade_cell("more tests", "code", "code_test2", 1),
+            new_markdown_cell("some description"),
+            create_grade_and_solution_cell("write answer here", "markdown", "md_manually_graded1", 1),
+            create_grade_and_solution_cell("write answer here", "markdown", "md_manually_graded2", 1),
+            new_markdown_cell("some description"),
+            create_task_cell("some task description", "markdown", "task_cell1", 1),
+            new_markdown_cell("some description"),
+            create_task_cell("some task description", "markdown", "task_cell2", 1),
+        ]
+        # Add checksums to suppress warning
+        nbgrader_cells = [0, 1, 2, 4, 5, 7, 9]
+        for idx, cell in enumerate(cells):
+            if idx in nbgrader_cells:
+                cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
+
+        expected_order = [0, 1, 2, 4, 5, 3, 6, 8, 7, 9]
+        expected = [cells[i].metadata.nbgrader["grade_id"] if "nbgrader" in cells[i].metadata else "markdown" for i in expected_order]
+
+        nb = new_notebook()
+        nb.cells = cells
+
+        # save to database
+        nb, resources = preprocessors[0].preprocess(nb, resources)
+
+        # remove grade/task cells to test their restoration
+        nb.cells.pop(9)
+        nb.cells.pop(7)
+        nb.cells.pop(5)
+        nb.cells.pop(4)
+        nb.cells.pop(2)
+        nb.cells.pop(1)
+
+        # restore
+        preprocessors[1].add_missing_cells = True
+        nb, resources = preprocessors[1].preprocess(nb, resources)
+        result = [cell["metadata"]["nbgrader"]["grade_id"] if "nbgrader" in cell["metadata"] else "markdown" for cell in nb.cells]
+        assert expected == result
