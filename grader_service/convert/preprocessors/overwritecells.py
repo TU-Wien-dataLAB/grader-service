@@ -9,7 +9,7 @@ from traitlets import Bool, Unicode
 
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert import utils
-from grader_service.convert.nbgraderformat.v3 import MetadataValidatorV3
+from grader_service.convert.nbgraderformat import MetadataValidator
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 class OverwriteCells(NbGraderPreprocessor):
@@ -95,7 +95,7 @@ class OverwriteCells(NbGraderPreprocessor):
             cell["metadata"]["nbgrader"]["schema_version"] = 3
 
         cell = NotebookNode(cell)
-        cell = MetadataValidatorV3().upgrade_cell_metadata(cell)
+        cell = MetadataValidator().upgrade_cell_metadata(cell)
         return cell
 
     def add_missing_grade_cells(self, nb: NotebookNode, resources: ResourcesDict) -> Tuple[NotebookNode, ResourcesDict]:
