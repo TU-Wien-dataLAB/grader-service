@@ -16,8 +16,10 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     link: https://shorturl.at/yDGHZ"""
 
     def __init__(self, grader_service_dir: str, base_url: str,
-                 auth_cls, **kwargs):
+                 auth_cls, git_server, **kwargs):
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.base_url = base_url
         self.auth_cls = auth_cls
+        from grader_service.handlers.git.base import GitServer
+        self.git_server_cls: GitServer = git_server

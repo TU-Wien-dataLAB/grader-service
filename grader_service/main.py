@@ -25,6 +25,8 @@ from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
 # run __init__.py to register handlers
 from grader_service.auth.hub import JupyterHubGroupAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.handlers.git.base import GitServer
+from grader_service.handlers.git.local import GitLocalServer
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
@@ -112,6 +114,11 @@ class GraderService(config.Application):
     authenticator_class = Type(
         default_value=JupyterHubGroupAuthenticator,
         klass=object, allow_none=False, config=True
+    )
+
+    git_server = Type(
+        default_value=GitLocalServer,
+        klass=GitServer, allow_none=False, config=True
     )
 
     @validate("config_file")
@@ -268,7 +275,9 @@ class GraderService(config.Application):
         GraderExecutor.config = self.config
         RequestHandlerConfig.config = self.config
         LTISyncGrades.config = self.config
-        
+        self.git_server.config = self.config
+
+        self.git_server.instance(grader_service_dir=self.grader_service_dir).register_handlers()
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
 
         isSQLite = 'sqlite://' in self.db_url
@@ -279,6 +288,7 @@ class GraderService(config.Application):
                 grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
                 auth_cls=self.authenticator_class,
+                git_server=self.git_server,
                 handlers=handlers,
                 cookie_secret=secrets.token_hex(
                     nbytes=32

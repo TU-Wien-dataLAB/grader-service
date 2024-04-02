@@ -3,7 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-#grader_s/grader_s/handlers
+# grader_s/grader_s/handlers
 import json
 import shutil
 import time
@@ -15,6 +15,7 @@ import subprocess
 from http import HTTPStatus
 import tornado
 
+from grader_service.handlers.git.base import RepoType
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
@@ -40,7 +41,7 @@ import datetime
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if s.feedback_status not in ('generated', 'feedback_outdated') :
+        if s.feedback_status not in ('generated', 'feedback_outdated'):
             s.score = None
     return submissions
 
@@ -259,23 +260,8 @@ class SubmissionHandler(GraderBaseHandler):
         submission.username = self.user.name
         submission.score_scaling = score_scaling
 
-        git_repo_path = self.construct_git_dir(
-            repo_type=assignment.type, lecture=assignment.lecture,
-            assignment=assignment)
-        if git_repo_path is None or not os.path.exists(git_repo_path):
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Git repository not found")
-
-
-        try:
-            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user. 
-            # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
-            # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
-            if commit_hash != "0"*40:
-                subprocess.run(
-                    ["git", "branch", "main", "--contains", commit_hash],
-                    cwd=git_repo_path, capture_output=True)
-        except subprocess.CalledProcessError:
+        git_server = self.application.git_server_cls.instance()
+        if not git_server.commit_hash_exists(commit_hash, RepoType(assignment.type), self.user, assignment, submission):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
         submission.commit_hash = commit_hash
@@ -423,7 +409,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub = self.get_submission(lecture_id, assignment_id, submission_id)
         # sub.date = sub_model.submitted_at
         # sub.assignid = assignment_id
-        
+
         role = self.get_role(lecture_id)
         if role.role >= Scope.instructor:
             sub.username = sub_model.username
@@ -552,10 +538,9 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         if submission.feedback_status == 'generated':
             submission.feedback_status = 'feedback_outdated'
-        
+
         if submission.manual_status == 'manually_graded':
             submission.manually_graded = 'being_edited'
-        
 
         self.session.commit()
         self.write_json(submission)
@@ -596,32 +581,17 @@ class SubmissionEditHandler(GraderBaseHandler):
         assignment = submission.assignment
         lecture = assignment.lecture
 
-        # Path to repository which will store edited submission files
-        git_repo_path = os.path.join(
-            self.gitbase,
-            lecture.code,
-            str(assignment.id),
-            "edit",
-            str(submission_id),
-        )
+        git_server = self.application.git_server_cls.instance()
 
-        # Path to repository of student which contains the submitted files
-        submission_repo_path = os.path.join(
-            self.gitbase,
-            lecture.code,
-            str(assignment.id),
-            assignment.type,
-            submission.username
-        )
+        # Location of repository which will store edited submission files
+        edit_repo_location = git_server.git_location(RepoType.EDIT, self.user, assignment, submission)
 
-        if os.path.exists(git_repo_path):
-            shutil.rmtree(git_repo_path)
+        # Location of repository of student which contains the submitted files
+        submission_repo_location = git_server.git_location(RepoType(assignment.type), self.user, assignment, submission)
 
-        # Creating bare repository
-        if not os.path.exists(git_repo_path):
-            os.makedirs(git_repo_path, exist_ok=True)
-
-        await self._run_command_async('git init --bare', git_repo_path)
+        # Creating repository
+        if not git_server.repo_exists(RepoType.EDIT, self.user, assignment, submission):
+            git_server.create_repo(RepoType.EDIT, self.user, assignment, submission)
 
         # Create temporary paths to copy the submission
         # files in the edit repository
@@ -654,7 +624,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         await self._run_command_async(command, tmp_input_path)
 
         # Pull user repository
-        command = f'git pull "{submission_repo_path}" main'
+        command = f'git pull "{submission_repo_location}" main'
         await self._run_command_async(command, tmp_input_path)
         self.log.info("Successfully cloned repo")
 
@@ -672,7 +642,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         await self._run_command_async(command, tmp_output_path)
 
         # Add edit remote
-        command = f"git remote add edit {git_repo_path}"
+        command = f"git remote add edit {edit_repo_location}"
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully added edit remote")
 
@@ -687,12 +657,12 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.log.info("Successfully added files to staging")
 
         # Commit Files
-        command = 'git commit -m "Initial commit" '
+        command = 'git commit -m "Edit" --allow-empty'
         await self._run_command_async(command, tmp_output_path)
-        self.log.info("Successfully commited files")
+        self.log.info("Successfully committed files")
 
         # Push copied files
-        command = "git push edit main"
+        command = "git push edit main --force"
         await self._run_command_async(command, tmp_output_path)
         self.log.info("Successfully pushed copied files")
 

@@ -320,36 +320,9 @@ class AssignmentResetHandler(GraderBaseHandler):
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        grader_service_dir = Path(self.application.grader_service_dir)
-        git_path_base = grader_service_dir.joinpath(
-            "tmp",
-            assignment.lecture.code,
-            assignment.name,
-            self.user.name)
-        self.log.info(git_path_base)
-        # Deleting dir
-        if os.path.exists(git_path_base):
-            shutil.rmtree(git_path_base)
-
-        self.log.info(f"DIR {git_path_base}")
-        os.makedirs(git_path_base, exist_ok=True)
-        git_path_release = os.path.join(git_path_base, "release")
-        git_path_user = os.path.join(git_path_base, self.user.name)
-        self.log.info(f"GIT BASE {git_path_base}")
-        self.log.info(f"GIT RELEASE {git_path_release}")
-        self.log.info(f"GIT USER {git_path_user}")
-
-        repo_path_release = self.construct_git_dir('release',
-                                                   assignment.lecture,
-                                                   assignment)
-        repo_path_user = self.construct_git_dir(assignment.type,
-                                                assignment.lecture,
-                                                assignment)
-
-        self.duplicate_release_repo(repo_path_release=repo_path_release,
-                                    repo_path_user=repo_path_user,
-                                    assignment=assignment,
-                                    message="Reset Assignment")
+        self.application.git_server_cls.instance().duplicate_release_repo(
+            self.user, assignment, message="Reset Assignment", checkout_main=False
+        )
 
         self.write_json(assignment)
 

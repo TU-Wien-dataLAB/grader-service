@@ -53,6 +53,7 @@ def app(tmpdir, sql_alchemy_db):
         grader_service_dir=service_dir,
         base_url="/services/grader",
         auth_cls=JupyterHubGroupAuthenticator,
+        git_server=None,
         handlers=handlers,
         db=sql_alchemy_db,
         cookie_secret="test",
