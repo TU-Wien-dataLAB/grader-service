@@ -214,7 +214,7 @@ class GitLocalServer(GitServer):
     def create_repo(self, repo_type: RepoType, user: User, assignment: Assignment,
                     submission: Optional[Submission] = None) -> None:
         git_location = self.git_location(repo_type, user, assignment, submission)
-        os.mkdir(git_location)
+        os.makedirs(git_location)
         # this path has to be a git dir -> call git init
         try:
             self.log.info("Running: git init --bare")

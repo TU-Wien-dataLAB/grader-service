@@ -25,6 +25,7 @@ from .tornado_test_utils import *
 from .db_util import insert_assignments
 from ...api.models.assignment import Assignment
 from ...handlers.base_handler import GraderBaseHandler
+from ...handlers.git.local import GitLocalServer
 from ...handlers.submissions import SubmissionHandler
 from ...orm import Role
 from ...orm.takepart import Scope
@@ -740,12 +741,11 @@ async def test_post_submission(
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
 
-    with patch.object(subprocess, "run", return_value=None):
-        with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):
-            response = await http_server_client.fetch(
-                url, method="POST", headers={"Authorization": f"Token {default_token}"},
-                body=json.dumps(pre_submission.to_dict()),
-            )
+    with patch.object(GitLocalServer, "commit_hash_exists", return_value=True):
+        response = await http_server_client.fetch(
+            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_submission.to_dict()),
+        )
 
     assert response.code == 201
 
@@ -1108,12 +1108,11 @@ async def test_max_submissions_assignment(
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded")
 
-    with patch.object(subprocess, "run", return_value=None):
-        with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):
-            response = await http_server_client.fetch(
-                url, method="POST", headers={"Authorization": f"Token {default_token}"},
-                body=json.dumps(pre_submission.to_dict()),
-            )
+    with patch.object(GitLocalServer, "commit_hash_exists", return_value=True):
+        response = await http_server_client.fetch(
+            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_submission.to_dict()),
+        )
     assert response.code == 201
 
     with pytest.raises(HTTPClientError) as exc_info:

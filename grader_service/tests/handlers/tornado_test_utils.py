@@ -19,6 +19,7 @@ from .db_util import insert_assignments, insert_lectures
 __all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user", "default_token"]
 
 from ...auth.hub import JupyterHubGroupAuthenticator
+from ...handlers.git.local import GitLocalServer
 
 
 @pytest.fixture(scope="function")
@@ -53,7 +54,7 @@ def app(tmpdir, sql_alchemy_db):
         grader_service_dir=service_dir,
         base_url="/services/grader",
         auth_cls=JupyterHubGroupAuthenticator,
-        git_server=None,
+        git_server=GitLocalServer.instance(grader_service_dir=service_dir),
         handlers=handlers,
         db=sql_alchemy_db,
         cookie_secret="test",
