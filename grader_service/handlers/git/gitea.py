@@ -7,10 +7,10 @@ from grader_service.handlers.git.local import GitServer
 from grader_service.orm import User, Lecture, Assignment, Submission
 
 
-class GitLabHandler(GitBaseHandler):
+class GiteaHandler(GitBaseHandler):
     @property
     def git_location(self):
-        return GitLabServer.instance().git_location(self.repo_type, self.user, self.assignment, self.submission)
+        return GiteaServer.instance().git_location(self.repo_type, self.user, self.assignment, self.submission)
 
     def repo_exists(self) -> bool:
         pass
@@ -20,15 +20,15 @@ class GitLabHandler(GitBaseHandler):
 
 
 # Actual implementations of handlers
-class RPCGitLabHandler(RPCPathMixin, GitLabHandler):
+class RPCGiteaHandler(RPCPathMixin, GiteaHandler):
     pass
 
 
-class InfoRefsGitLabHandler(InfoRefsPathMixin, GitLabHandler):
+class InfoRefsGiteaHandler(InfoRefsPathMixin, GiteaHandler):
     pass
 
 
-class GitLabServer(GitServer):
+class GiteaServer(GitServer):
     gitlab_url = Unicode().tag(config=True)
 
     def register_handlers(self):

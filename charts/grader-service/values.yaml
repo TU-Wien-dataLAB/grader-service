@@ -49,6 +49,64 @@ gitConfig:
   gitUser: "grader-service"
   gitEmail: "grader-service@mail.com"
 
+
+gitea:
+  # gitea is disabled by default and local git server is used
+  enabled: false
+
+  redis-cluster:
+    enabled: false
+  postgresql:
+    enabled: true
+  postgresql-ha:
+    enabled: false
+
+  persistence:
+    enabled: true
+
+  service:
+    http:
+      type: ClusterIP
+      port: 3000
+      clusterIP: None
+    ssh:
+      type: ClusterIP
+      port: 2222
+      clusterIP: None
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - host: git.grader.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  gitea:
+    config:
+      database:
+        DB_TYPE: postgres
+      session:
+        PROVIDER: db
+      cache:
+        ADAPTER: memory
+      queue:
+        TYPE: level
+      indexer:
+        ISSUE_INDEXER_TYPE: bleve
+        REPO_INDEXER_ENABLED: true
+      service:
+        DISABLE_REGISTRATION: true
+        REQUIRE_SIGNIN_VIEW: false
+        SHOW_REGISTRATION_BUTTON: false
+      server:
+        SSH_DOMAIN: gitea-ssh.grader.com
+
+
 volumePermissions:
   enabled: true
 

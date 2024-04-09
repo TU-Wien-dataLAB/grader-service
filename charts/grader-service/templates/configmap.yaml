@@ -17,7 +17,13 @@ data:
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
     {{ end }}
 
-
+    {{- if .Values.gitea.enabled }}
+    from grader_service.handlers.git.gitea import GiteaServer
+    c.GraderService.git_server = GiteaServer
+    {{- else }}
+    from grader_service.handlers.git.local import GitLocalServer
+    c.GraderService.git_server = GitLocalServer
+    {{- end }}
     {{- if .Values.requestHandlerConfig }}
     {{- if .Values.requestHandlerConfig.git_max_file_mb }}
     c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
