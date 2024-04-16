@@ -55,6 +55,30 @@ components:
         name: "Informationsvisualisierung"
         code: "ivs21"
         complete: false
+    AssignmentSettings:
+      type: "object"
+      properties:
+        late_submission:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/SubmissionPeriod'
+      example:  
+        late_submission:
+          - period: "P1W1D"
+            scaling: 0.5
+          - period: "P2W1D"
+            scaling: 0.2
+    SubmissionPeriod:
+      type: "object"
+      properties:
+        period:
+          type: "string"
+        scaling:
+          type: "number"
+          format: "float"
+      example:
+          period: "P1W1D"
+          scaling: 0.5  
     Assignment:
       type: "object"
       properties:
@@ -72,7 +96,7 @@ components:
         due_date:
           type: "string"
           format: "date-time"
-          example: "2021-07-21T23:55:00Z"
+          example: "2023-07-21T23:55:00Z"
         status:
           type: string
           enum:
@@ -93,13 +117,8 @@ components:
           type: integer
         allow_files:
           type: boolean
-      example:
-        id: 1
-        name: "assignment_1"
-        type: "user"
-        due_date: "2021-07-21T23:55:00Z"
-        status: "released"
-        points: 10.5
+        settings:
+          $ref: "#/components/schemas/AssignmentSettings"
     Submission:
       type: "object"
       properties:
@@ -109,7 +128,7 @@ components:
         submitted_at:
           type: "string"
           format: "date-time"
-          example: "2021-07-21T11:53:07Z"
+          example: "2023-07-21T11:53:07Z"
         auto_status:
           type: string
           enum:
@@ -126,21 +145,87 @@ components:
             - "grading_failed"
         username:
           type: string
+        grading_score:
+          type: number
+          format: float
+        score_scaling:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
         score:
           type: number
           format: float
+        assignid:
+          type: "integer"
+          format: "int64"
         commit_hash:
           type: string
-        feedback_available:
-          type: boolean
+        feedback_status:
+          type: string
+          enum:
+            - "not_generated"
+            - "generating"
+            - "generated"
+            - "generation_failed"
+            - "feedback_outdated"
         edited:
           type: boolean
       example:
         id: 2
-        submitted_at: "2021-07-21T11:53:07Z"
+        submitted_at: "2023-07-21T11:53:07Z"
         status: "not_graded"
         score: 10.0
         commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
+    AssignmentDetail:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+          example: "assignment_1"
+        type:
+          type: "string"
+          enum:
+            - user
+            - group
+        due_date:
+          type: "string"
+          format: "date-time"
+          example: "2023-07-21T23:55:00Z"
+        status:
+          type: string
+          enum:
+            - created # another state of an assignment (instructor only)
+            - pushed
+            - released
+            - complete # final state -> final grade is calculated
+        points:
+          type: number
+          format: float
+        automatic_grading:
+          type: string
+          enum:
+            - "unassisted"
+            - "auto"
+            - "full_auto"
+        max_submissions:
+          type: integer
+        allow_files:
+          type: boolean
+        submissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Submission'
+      example:
+        id: 1
+        name: "assignment_1"
+        type: "user"
+        due_date: "2023-07-21T23:55:00Z"
+        status: "released"
+        points: 10
     ErrorMessage:
       type: "object"
       required: [ "code", "error", "path" ]

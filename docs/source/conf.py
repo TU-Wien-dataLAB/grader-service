@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Jupyter Grader Service'
-copyright = '2022, Matthias Matt, Florian Jäger, Elias Wimmer'
-author = 'Matthias Matt, Florian Jäger, Elias Wimmer'
+copyright = '2023, Marijana Petojevic, Matthias Matt, Florian Jäger, Elias Wimmer'
+author = 'Marijana Petojevic, Matthias Matt, Florian Jäger, Elias Wimmer'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.2'
 
 # -- General configuration ---------------------------------------------------
 

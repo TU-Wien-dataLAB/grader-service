@@ -1,0 +1,5 @@
+include grader_service/migrate/alembic.ini
+include grader_service/handlers/git/hook_templates/*
+
+include grader_service/convert/templates/**/*
+include grader_service/convert/nbgraderformat/*.json

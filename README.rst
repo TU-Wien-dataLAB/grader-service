@@ -17,15 +17,6 @@ General
     :target: https://github.com/TU-Wien-dataLAB/Grader-Service/commits/
     :alt: GitHub commit activity
 
-Grader Convert
-
-.. image:: https://img.shields.io/pypi/v/grader-convert
-    :target: https://pypi.org/project/grader-convert/
-    :alt: PyPI
-
-.. image:: https://img.shields.io/pypi/pyversions/grader-convert
-    :target: https://pypi.org/project/grader-convert/
-    :alt: PyPI - Python Version
 
 
 
@@ -61,9 +52,16 @@ Grader Labextension
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
+Try out GraderService:
+
+.. image:: https://mybinder.org/badge_logo.svg
+    :target: https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-demo/HEAD?urlpath=lab
+    :alt: binder
+
+
 Read the `official documentation <https://grader-service.readthedocs.io/en/latest/index.html>`_.
 
-.. image:: ./docs/source/_static/assets/gifs/release2_small.gif
+.. image:: ./docs/source/_static/assets/gifs/labextension_update.gif
 
 Requirements
 ===========
@@ -81,32 +79,30 @@ Installation
 
 .. installation-start
 
-This repository contains the packages for the jupyter extensions and the grader service as well as grader-convert.
+This repository contains the packages for the jupyter extensions and the grader service itself.
 
 The grader service has only been tested on Unix/macOS operating systems.
 
 This repository contains all the necessary packages for a full installation of the grader service.
 
 
-* ``grader-convert``\ : A tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
-
-.. code-block::
-
-    pip install grader-convert
-
-* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments etc.
-
-.. code-block::
-
-    pip install grader-labextension
-
-* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments.
+* ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments. This package also contains ``grader-convert``, a tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
 
 .. code-block::
 
     pip install grader-service
 
+* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments and so on. The package is located in its `own repo <https://github.com/TU-Wien-dataLAB/Grader-Labextension>`_.
 
+.. code-block::
+
+    pip install grader-labextension
+
+
+
+.. installation-end
+
+.. installation-from-soruce-start
 
 Installation from Source
 --------------------------
@@ -120,14 +116,11 @@ In the ``grader`` directory run:
 
 .. code-block:: bash
 
-   pip install -r ./grader_convert/requirements.txt
-   pip install --no-use-pep517 ./grader_convert
-
    pip install -r ./grader_labextension/requirements.txt
    pip install ./grader_labextension
 
    pip install -r ./grader_service/requirements.txt
-   pip install --no-use-pep517 ./grader_service
+   pip install ./grader_service
 
 
 Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
@@ -138,7 +131,7 @@ Development Environment
 Alternatively you can run the installation scripts in ``examples/dev_environment``.
 Follow the documentation there. The directory also contains the config files for a local installation.
 
-.. installation-end
+.. installation-from-soruce-end
 
 
 Getting Started
@@ -192,10 +185,11 @@ The config could look like this:
     c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
     c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
 
+
     c.JupyterHub.load_groups = {
-        "lect1:instructor": ["user1"],
-        "lect1:tutor": ["user2"],
-        "lect1:student": ["user3", "user4"]
+        "lect1:instructor": {'users': ["user1"]},
+        "lect1:tutor": {'users': ["user2"]},
+        "lect1:student": {'users': ["user3", "user4"]},
     }
 
 Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.
@@ -216,8 +210,8 @@ In order to start the grader service we have to provide a configuration file for
 
     c.JupyterHubGroupAuthenticator.hub_api_url = "http://127.0.0.1:8081/hub/api"
 
-    c.LocalAutogradeExecutor.base_input_path = os.path.expanduser(os.path.join(service_dir, "convert_in"))
-    c.LocalAutogradeExecutor.base_output_path = os.path.expanduser(os.path.join(service_dir, "convert_out"))
+    c.LocalAutogradeExecutor.relative_input_path = "convert_in"
+    c.LocalAutogradeExecutor.relative_output_path = "convert_out"
 
 
 The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
@@ -239,7 +233,7 @@ When restarting the JupyterHub you should now see the following log message: ::
 
 Do not forget to set the log level to ``INFO`` in the JupyterHub config if you want to see this message.
 
-The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the `jupyter_notebook_config.py` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
+The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the ``jupyter_server_config.py`` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
 
 .. code-block:: python
 

@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grader-service"
+description = "Grader service"
+version = "0.4.1"
+requires-python = ">=3.8"
+authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "alembic>=1.6.4",
+    "SQLAlchemy==1.4.46",
+    "tornado>=6.2",
+    "isodate>=0.6.1",
+    "six==1.16.0",
+    "traitlets>=5.1.1",
+    "tornado_sqlalchemy>=0.7.0",
+    "typing-extensions>=3.10.0.2",
+    "urllib3>=1.26.6",
+    "json5>=0.9.6",
+    "jsonschema>=3.2.0",
+    "kubernetes>=17.17.0",
+    "PyJWT>=2.4.0",
+    "cryptography>=38.0.3",
+    "psycopg2-binary>= 2.9.5",
+    "jupyter_core>=4.7.1",
+    "nbformat>=5.4.0",
+    "python-dateutil>=2.8.2",
+    "jupyter-client>=7.1.1",
+    "nbconvert>=6.4.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["grader_service.tests", "grader_service.tests.*"]
+
+[project.scripts]
+grader-service = "grader_service.main:main"
+grader-service-migrate = "grader_service.migrate.migrate:main"
+grader-convert = "grader_service.convert.main:main"
+
+[project.urls]
+Homepage = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+Repository = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
+
+[tool.tbump]
+# Uncomment this if your project is hosted on GitHub:
+github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+
+[tool.tbump.version]
+current = "0.4.1"
+
+# Example of a semver regexp.
+# Make sure this matches current_version before
+# using tbump
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  \-?
+  (?P<pre>((a|b|rc|dev|nightly)\d+)?)
+  '''
+
+[tool.tbump.git]
+message_template = "Bump service to {new_version}"
+tag_template = "grader-service-{new_version}"
+
+# For each file to patch, add a [[tool.tbump.file]] config
+# section containing the path of the file, relative to the
+# pyproject.toml location.
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+search = "version = \"{current_version}\""
+
+
+[[tool.tbump.file]]
+src = "grader_service/_version.py"
+search = "__version__ = '{current_version}'"
+
+
+[[tool.tbump.file]]
+src = "./docs/source/_static/openapi/grader_api.yml"
+search = "version: '{current_version}'"
+
+[[tool.tbump.file]]
+src = "./charts/grader-service/Chart.yaml"
+search = "appVersion: \"{current_version}\""

@@ -1,0 +1,16 @@
+# Ignore everything by default
+*
+
+# Include the specific folders and file you want
+!./grader_service/
+!grader_service_config.py
+!jupyterhub_config.py
+!grader_service.sh
+!pyproject.toml
+!setup.py
+!MANIFEST.in
+
+# Ignore all *.yarn files and node_modules inside grader_labextension
+./grader_labextension/*.yarn
+./grader_labextension/node_modules/
+./grader_labextension/lib/

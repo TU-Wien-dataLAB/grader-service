@@ -8,7 +8,7 @@ Grader Service Documentation
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
-.. image:: ./_static/assets/gifs/release2_small.gif
+.. image:: ./_static/assets/gifs/labextension_update.gif
 
 Contents
 ==========
@@ -18,7 +18,9 @@ Contents
 
    installation
    get_started
-   user_guide
+   instructor_guide
+   student_guide
+   contribution
    grader_service/grader_service_rest_api
    about
 
@@ -33,8 +35,9 @@ The application consists of three main components.
 
 .. image:: ./_static/assets/images/arch.png
 
+
 Indices and tables
-###################
+===================
 
 * :ref:`genindex`
 * :ref:`modindex`
