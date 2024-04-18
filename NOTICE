@@ -9,6 +9,18 @@ Also includes unmodified files.
 nbgrader is licensed under the terms of the Modified BSD License (also known as New or Revised or 3-Clause BSD).
 See below for the full text of the Modified BSD (3-clause) License.
 
+
+JupyterHub
+----------
+Copyright (c) 2014-, Jupyter Development Team
+All rights reserved.
+
+Reused most of the logic for the authenticators as well as the OAuth provider.
+
+JupyterHub is licensed under the terms of the Modified BSD License (also known as New or Revised or 3-Clause BSD).
+See below for the full text of the Modified BSD (3-clause) License.
+
+
 3-Clause ("Modified") BSD License
 ---------------------------------
 

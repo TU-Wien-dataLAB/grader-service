@@ -227,8 +227,6 @@ class OAuthTokenHandler(OAuthHandler, BaseHandler):
             self.send_oauth_response(headers, body, status)
 
 
-
-
 default_handlers = [
     (r"/api/authorizations/cookie/([^/]+)(?:/([^/]+))?", CookieAPIHandler),
     (r"/api/authorizations/token/([^/]+)", TokenAPIHandler),

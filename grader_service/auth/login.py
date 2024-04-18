@@ -22,7 +22,6 @@ class LogoutHandler(BaseHandler):
         """
         self.log.info("User logged out: %s", name)
 
-
     async def default_handle_logout(self):
         """The default logout action
 
@@ -140,7 +139,6 @@ class LoginHandler(BaseHandler):
         # register current user for subsequent requests to user (e.g. logging the request)
         self._jupyterhub_user = user
         self.redirect(self.get_next_url(user))
-
 
 
 # /login renders the login page or the "Login with..." link,

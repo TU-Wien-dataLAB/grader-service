@@ -267,7 +267,6 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             self.session.commit()
         return user_model
 
-
     async def login_user(self, data=None):
         """Login a user"""
         # auth_timer = self.statsd.timer('login.authenticate').start()
@@ -287,9 +286,60 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 (data or {}).get('username', 'unknown user')
             )
 
+    def get_template(self, name, sync=False):
+        """
+        Return the jinja template object for a given name
+
+        If sync is True, we return a Template that is compiled without async support.
+        Only those can be used in synchronous code.
+
+        If sync is False, we return a Template that is compiled with async support
+        """
+        if sync:
+            key = 'jinja2_env_sync'
+        else:
+            key = 'jinja2_env'
+        return self.settings[key].get_template(name)
+
+    def render_template(self, name, sync=False, **ns):
+        """
+        Render jinja2 template
+
+        If sync is set to True, we render the template & return a string
+        If sync is set to False, we return an awaitable
+        """
+        template_ns = {}
+        template_ns.update(self.template_namespace)
+        template_ns["xsrf_token"] = self.xsrf_token.decode("ascii")
+        template_ns.update(ns)
+        template = self.get_template(name, sync)
+        if sync:
+            return template.render(**template_ns)
+        else:
+            return template.render_async(**template_ns)
+
     @property
-    def user(self) -> User:
-        return self.current_user
+    def template_namespace(self):
+        user = self.current_user
+        ns = dict(
+            base_url=self.hub.base_url,
+            prefix=self.base_url,
+            user=user,
+            login_url=self.settings['login_url'],
+            login_service=self.authenticator.login_service,
+            logout_url=self.settings['logout_url'],
+            static_url=self.static_url,
+            version_hash=self.version_hash,
+            parsed_scopes=self.parsed_scopes,
+            expanded_scopes=self.expanded_scopes,
+            xsrf=self.xsrf_token.decode('ascii'),
+        )
+        if self.settings['template_vars']:
+            for key, value in self.settings['template_vars'].items():
+                if callable(value):
+                    value = value(user)
+                ns[key] = value
+        return ns
 
 
 class GraderBaseHandler(BaseHandler):

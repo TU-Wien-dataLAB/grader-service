@@ -24,8 +24,9 @@ from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
+from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
-from grader_service.auth.lti13oauthenticator import LTI13OAuthenticator
+from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.oauth2.provider import make_provider
 from grader_service.registry import HandlerPathRegistry
@@ -79,6 +80,10 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
+    def __init__(self):
+        super().__init__()
+        self.oauth_provider = None
+
     @default('db_url')
     def _default_db_url(self):
         db_path = os.path.join(self.grader_service_dir, "grader.db")
@@ -115,11 +120,11 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     authenticator_class = Type(
-        default_value=LTI13OAuthenticator,
-        klass=object, allow_none=False, config=True
+        default_value=DummyAuthenticator,
+        klass=Authenticator, allow_none=False, config=True
     )
 
-    authenticator = Instance(object)
+    authenticator = Instance(klass=Authenticator)
 
     # TODO make configurable
     oauth_token_expires_in = int(1 * 24 * 3600)
@@ -268,9 +273,9 @@ class GraderService(config.Application):
 
     def init_oauth(self):
         engine = create_engine(self.db_url)
-        session = sessionmaker(engine)()
+        session = sessionmaker(engine)
         self.oauth_provider = make_provider(
-            lambda: session,
+            session,
             url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
             login_url=url_path_join(self.base_url_path, 'login'),
             token_expires_in=self.oauth_token_expires_in,
@@ -324,7 +329,9 @@ class GraderService(config.Application):
                     {"pool_size": 50, "max_overflow": -1}
                 ),
                 parent=self,
-                login_url='authorize'
+                settings=dict(
+                    login_url=url_path_join(self.base_url_path, 'login')
+                ),
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,

@@ -609,7 +609,7 @@ class JupyterHubRequestValidator(RequestValidator):
         return True
 
 
-class JupyterHubOAuthServer(WebApplicationServer):
+class GraderOAuthServer(WebApplicationServer):
     def __init__(self, db, validator, *args, **kwargs):
         self.db = db
         super().__init__(validator, *args, **kwargs)
@@ -678,5 +678,5 @@ def make_provider(session_factory, url_prefix, login_url,
     """Make an OAuth provider"""
     db = session_factory()
     validator = JupyterHubRequestValidator(db)
-    server = JupyterHubOAuthServer(db, validator, **oauth_server_kwargs)
+    server = GraderOAuthServer(db, validator, **oauth_server_kwargs)
     return server
