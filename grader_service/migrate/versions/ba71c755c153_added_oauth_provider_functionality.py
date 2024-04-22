@@ -1,7 +1,7 @@
 """Added oauth provider functionality
 
 Revision ID: ba71c755c153
-Revises: a1791b1371ed
+Revises: 9cfeb0faa0c0
 Create Date: 2023-08-18 10:30:24.465356
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy import Column, Unicode, Integer, DateTime, Text, \
 
 # revision identifiers, used by Alembic.
 revision = 'ba71c755c153'
-down_revision = 'a1791b1371ed'
+down_revision = '9cfeb0faa0c0'
 branch_labels = None
 depends_on = None
 
