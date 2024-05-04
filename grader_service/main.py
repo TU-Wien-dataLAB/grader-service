@@ -28,6 +28,7 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
 from grader_service.oauth2.provider import make_provider
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -182,7 +183,6 @@ class GraderService(config.Application):
         "config": "GraderService.config_file",
     }
 
-
     log_level = Enum(
         [0, 10, 20, 30, 40, 50, "CRITICAL", "FATAL", "ERROR", "WARNING",
          "WARN", "INFO", "DEBUG", "NOTSET"],
@@ -256,7 +256,6 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
-
         self._start_future = asyncio.Future()
 
         if sys.version_info.major < 3 or sys.version_info.minor < 8:
@@ -266,7 +265,6 @@ class GraderService(config.Application):
             msg = "No git executable found! " \
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
-
 
     async def cleanup(self):
         pass
@@ -306,8 +304,7 @@ class GraderService(config.Application):
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         # Add the handlers of the authenticator
-        # TODO this should be done in the HandlerPathRegistry
-        handlers.extend(self.authenticator.get_handlers(self))
+        handlers.extend(self.authenticator.get_handlers(self.base_url_path))
         handlers.extend(oauth_handlers.default_handlers)
         self.log.info(oauth_handlers.default_handlers)
         isSQLite = 'sqlite://' in self.db_url
@@ -329,9 +326,10 @@ class GraderService(config.Application):
                     {"pool_size": 50, "max_overflow": -1}
                 ),
                 parent=self,
-                settings=dict(
-                    login_url=url_path_join(self.base_url_path, 'login')
-                ),
+                login_url=self.authenticator.login_url(self.base_url_path),
+                logout_url=self.authenticator.logout_url(self.base_url_path),
+                static_url_prefix=url_path_join(self.base_url_path, 'static/'),
+                static_handler_class=CacheControlStaticFilesHandler,
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,
@@ -340,11 +338,11 @@ class GraderService(config.Application):
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.listen(self.service_port, address=self.service_host,
-                              reuse_port=self.reuse_port)
+                                reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda s=s: asyncio.ensure_future(
+                s, lambda: asyncio.ensure_future(
                     self.shutdown_cancel_tasks(s))
             )
 
@@ -358,11 +356,14 @@ class GraderService(config.Application):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False, capture_output=True).stdout.decode().strip() != "main":
+        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False,
+                          capture_output=True).stdout.decode().strip() != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
-        if subprocess.run(['git', 'config', 'user.name'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.name'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.name has to be set!")
-        if subprocess.run(['git', 'config', 'user.email'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.email'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):

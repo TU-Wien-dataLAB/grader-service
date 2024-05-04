@@ -19,15 +19,17 @@ from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qsl
 
+from sqlalchemy.exc import SQLAlchemyError
+from tornado.httputil import url_concat
 from traitlets import Type, Integer, TraitType, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
-from grader_service.utils import maybe_future, url_path_join
+from grader_service.utils import maybe_future, url_path_join, get_browser_protocol
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission
 from grader_service.orm.base import Serializable, DeleteState
@@ -118,13 +120,25 @@ class BaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
         # add type hint for application
+        self._accept_cookie_auth = True
+
         self.application: GraderServer = self.application
         self.authenticator = self.application.authenticator
         self.log = self.application.log
 
-    @property
-    def user(self) -> User:
-        return self.current_user
+    async def prepare(self) -> Optional[Awaitable[None]]:
+        try:
+            await self.get_current_user()
+        except Exception as e:
+            # ensure get_current_user is never called again for this handler,
+            # since it failed
+            self._grader_user = None
+            self.log.exception("Failed to get current user")
+            if isinstance(e, SQLAlchemyError):
+                self.log.error("Rolling back session due to database error")
+                self.session.rollback()
+        await maybe_future(super().prepare())
+        return
 
     @property
     def csp_report_uri(self):
@@ -184,7 +198,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
     def _user_for_cookie(self, cookie_name, cookie_value=None):
         """Get the User for a given cookie, if there is one"""
         cookie_id = self.get_secure_cookie(
-            cookie_name, cookie_value, max_age_days=self.cookie_max_age_days
+            cookie_name, cookie_value, max_age_days=self.application.cookie_max_age_days
         )
 
         def clear():
@@ -196,21 +210,112 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 clear()
             return
         cookie_id = cookie_id.decode('utf8', 'replace')
-        u = self.db.query(User).filter(
+        user = self.session.query(User).filter(
             User.cookie_id == cookie_id).first()
-        user = self._user_from_orm(u)
+        # user = self._user_from_orm(u)
         if user is None:
             self.log.warning("Invalid cookie token")
             # have cookie, but it's not valid. Clear it and start over.
             clear()
             return
-        # update user activity
-        if self._record_activity(user):
-            self.db.commit()
+        # TODO: update user activity
+        # if self._record_activity(user):
+        #     self.session.commit()
         return user
+
     def get_current_user_cookie(self):
         """get_current_user from a cookie token"""
-        return self._user_for_cookie(self.hub.cookie_name)
+        return self._user_for_cookie(self.application.cookie_name)
+
+    async def refresh_auth(self, user, force=False):
+        """Refresh user authentication info
+
+        Calls `authenticator.refresh_user(user)`
+
+        Called at most once per user per request.
+
+        Args:
+            user (User): the user whose auth info is to be refreshed
+            force (bool): force a refresh instead of checking last refresh time
+        Returns:
+            user (User): the user having been refreshed,
+                or None if the user must login again to refresh auth info.
+        """
+        refresh_age = self.authenticator.auth_refresh_age
+        if not refresh_age:
+            return user
+        now = time.monotonic()
+        if (
+                not force
+                and user._auth_refreshed
+                and (now - user._auth_refreshed < refresh_age)
+        ):
+            # auth up-to-date
+            return user
+
+        # refresh a user at most once per request
+        if not hasattr(self, '_refreshed_users'):
+            self._refreshed_users = set()
+        if user.name in self._refreshed_users:
+            # already refreshed during this request
+            return user
+        self._refreshed_users.add(user.name)
+
+        self.log.debug("Refreshing auth for %s", user.name)
+        auth_info = await self.authenticator.refresh_user(user, self)
+
+        if not auth_info:
+            self.log.warning(
+                "User %s has stale auth info. Login is required to refresh.", user.name
+            )
+            return
+
+        user._auth_refreshed = now
+
+        if auth_info == True:
+            # refresh_user confirmed that it's up-to-date,
+            # nothing to refresh
+            return user
+
+        # Ensure name field is set. It cannot be updated.
+        auth_info['name'] = user.name
+
+        if 'auth_state' not in auth_info:
+            # refresh didn't specify auth_state,
+            # so preserve previous value to avoid clearing it
+            auth_info['auth_state'] = await user.get_auth_state()
+        return await self.auth_to_user(auth_info, user)
+
+    async def get_current_user(self):
+        """get current username"""
+        if not hasattr(self, '_grader_user'):
+            user = None
+            try:
+                if user is None and self._accept_cookie_auth:
+                    user = self.get_current_user_cookie()
+                if user and isinstance(user, User):
+                    user = await self.refresh_auth(user)
+                self._grader_user = user
+            except Exception:
+                # don't let errors here raise more than once
+                self._grader_user = None
+                # but still raise, which will get handled in .prepare()
+                raise
+        return self._grader_user
+
+    @property
+    def current_user(self):
+        """Override .current_user accessor from tornado
+
+        Allows .get_current_user to be async.
+        """
+        if not hasattr(self, '_grader_user'):
+            raise RuntimeError("Must call async get_current_user first!")
+        return self._grader_user
+
+    @property
+    def user(self) -> User:
+        return self.current_user
 
     def set_session_cookie(self):
         """Set a new session id cookie
@@ -259,8 +364,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
 
         user_model = self.session.query(User).get(username)
         if user_model is None:
-            self.log.info(
-                f'User {username} does not exist and will be created.')
+            self.log.info(f'User {username} does not exist and will be created.')
             user_model = User()
             user_model.name = username
             self.session.add(user_model)
@@ -296,10 +400,9 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         If sync is False, we return a Template that is compiled with async support
         """
         if sync:
-            key = 'jinja2_env_sync'
+            return self.application.jinja_env_sync.get_template(name)
         else:
-            key = 'jinja2_env'
-        return self.settings[key].get_template(name)
+            return self.application.jinja_env.get_template(name)
 
     def render_template(self, name, sync=False, **ns):
         """
@@ -319,27 +422,154 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             return template.render_async(**template_ns)
 
     @property
+    def parsed_scopes(self) -> set:
+        # TODO: if user is admin, the scopes should contain "admin-ui" for login.html template
+        scopes = set()
+        return scopes
+
+    @property
     def template_namespace(self):
         user = self.current_user
+        base_url = os.path.join(self.application.base_url, "")  # make sure "/" is at the end
         ns = dict(
-            base_url=self.hub.base_url,
-            prefix=self.base_url,
+            base_url=base_url,
+            prefix=base_url,
             user=user,
             login_url=self.settings['login_url'],
             login_service=self.authenticator.login_service,
             logout_url=self.settings['logout_url'],
             static_url=self.static_url,
-            version_hash=self.version_hash,
+            version_hash='',
             parsed_scopes=self.parsed_scopes,
-            expanded_scopes=self.expanded_scopes,
             xsrf=self.xsrf_token.decode('ascii'),
         )
-        if self.settings['template_vars']:
-            for key, value in self.settings['template_vars'].items():
+        if self.application.template_vars:
+            for key, value in self.application.template_vars.items():
                 if callable(value):
                     value = value(user)
                 ns[key] = value
         return ns
+
+    def _validate_next_url(self, next_url):
+        """Validate next_url handling
+
+        protects against external redirects, etc.
+
+        Returns empty string if next_url is not considered safe,
+        resulting in same behavior as if next_url is not specified.
+        """
+        # protect against some browsers' buggy handling of backslash as slash
+        next_url = next_url.replace('\\', '%5C')
+        public_url = self.settings.get("public_url")
+        if public_url:
+            proto = public_url.scheme
+            host = public_url.netloc
+        else:
+            # guess from request
+            proto = get_browser_protocol(self.request)
+            host = self.request.host
+
+        if next_url.startswith("///"):
+            # strip more than 2 leading // down to 2
+            # because urlparse treats that as empty netloc,
+            # whereas browsers treat more than two leading // the same as //,
+            # so netloc is the first non-/ bit
+            next_url = "//" + next_url.lstrip("/")
+        parsed_next_url = urlparse(next_url)
+
+        if (next_url + '/').startswith(
+                (
+                        f'{proto}://{host}/',
+                        f'//{host}/',
+                )
+        ) or (
+                self.subdomain_host
+                and parsed_next_url.netloc
+                and ("." + parsed_next_url.netloc).endswith(
+            "." + urlparse(self.subdomain_host).netloc
+        )
+        ):
+            # treat absolute URLs for our host as absolute paths:
+            # below, redirects that aren't strictly paths are rejected
+            next_url = parsed_next_url.path
+            if parsed_next_url.query:
+                next_url = next_url + '?' + parsed_next_url.query
+            if parsed_next_url.fragment:
+                next_url = next_url + '#' + parsed_next_url.fragment
+            parsed_next_url = urlparse(next_url)
+
+        # if it still has host info, it didn't match our above check for *this* host
+        if next_url and (parsed_next_url.netloc or not next_url.startswith('/')):
+            self.log.warning("Disallowing redirect outside JupyterHub: %r", next_url)
+            next_url = ''
+
+        return next_url
+
+    def get_next_url(self, user=None, default=None):
+        """Get the next_url for login redirect
+
+        Default URL after login:
+
+        - if redirect_to_server (default): send to user's own server
+        - else: /hub/home
+        """
+        next_url = self.get_argument('next', default='')
+        next_url = self._validate_next_url(next_url)
+
+        # this is where we know if next_url is coming from ?next= param or we are using a default url
+        if next_url:
+            next_url_from_param = True
+        else:
+            next_url_from_param = False
+
+        if not next_url:
+            # custom default URL, usually passed because user landed on that page but was not logged in
+            if default:
+                next_url = default
+            else:
+                # As set in jupyterhub_config.py
+                if callable(self.authenticator.login_redirect_url):
+                    next_url = self.authenticator.login_redirect_url(self)
+                else:
+                    next_url = self.authenticator.login_redirect_url
+
+        if not next_url_from_param:
+            # when a request made with ?next=... assume all the params have already been encoded
+            # otherwise, preserve params from the current request across the redirect
+            next_url = self.append_query_parameters(next_url, exclude=['next', '_xsrf'])
+        return next_url
+
+    def append_query_parameters(self, url, exclude=None):
+        """Append the current request's query parameters to the given URL.
+
+        Supports an extra optional parameter ``exclude`` that when provided must
+        contain a list of parameters to be ignored, i.e. these parameters will
+        not be added to the URL.
+
+        This is important to avoid infinite loops with the next parameter being
+        added over and over, for instance.
+
+        The default value for ``exclude`` is an array with "next". This is useful
+        as most use cases in JupyterHub (all?) won't want to include the next
+        parameter twice (the next parameter is added elsewhere to the query
+        parameters).
+
+        :param str url: a URL
+        :param list exclude: optional list of parameters to be ignored, defaults to
+        a list with "next" (to avoid redirect-loops)
+        :rtype (str)
+        """
+        if exclude is None:
+            exclude = ['next']
+        if self.request.query:
+            query_string = [
+                param
+                for param in parse_qsl(self.request.query)
+                if param[0] not in exclude
+            ]
+            if query_string:
+                url = url_concat(url, query_string)
+        return url
 
 
 class GraderBaseHandler(BaseHandler):
@@ -626,5 +856,3 @@ class RequestHandlerConfig(SingletonConfigurable):
                                             default_value=[],
                                             allow_none=False,
                                             config=True)
-
-

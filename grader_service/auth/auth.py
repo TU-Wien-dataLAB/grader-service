@@ -10,8 +10,9 @@ from functools import partial
 from shutil import which
 from subprocess import PIPE, STDOUT, Popen
 from textwrap import dedent
+from typing import Union
 
-from traitlets import Any, Bool, Dict, Integer, Set, Unicode, default, observe
+from traitlets import Any, Bool, Dict, Integer, Set, Unicode, default, observe, Union, Callable
 from traitlets.config import LoggingConfigurable
 
 from .login import LoginHandler
@@ -21,24 +22,28 @@ from grader_service.utils import maybe_future, url_path_join
 class Authenticator(LoggingConfigurable):
     """Base class for implementing an authentication provider for JupyterHub"""
 
-    db = Any()
+    login_redirect_url = Union(
+        [Unicode(), Callable()],
+        default_value=None,
+        allow_none=False,
+        help="""
+        The default URL to redirect users when they successfully logged in.
 
-    @default("db")
-    def _deprecated_db(self):
-        self.log.warning(
-            dedent(
-                """
-                The shared database session at Authenticator.db is deprecated, and will be removed.
-                Please manage your own database and connections.
+        By default, this will likely be the URL of the JupyterHub server.
 
-                Contact JupyterHub at https://github.com/jupyterhub/jupyterhub/issues/3700
-                if you have questions or ideas about direct database needs for your Authenticator.
-                """
-            ),
-        )
-        return self._deprecated_db_session
+        Can be a Unicode string (e.g. '/hub/home') or a callable based on the handler object:
 
-    _deprecated_db_session = Any()
+        ::
+
+            def login_redirect_url_fn(handler):
+                user = handler.current_user
+                if user and user.admin:
+                    return '/hub/admin'
+                return '/hub/home'
+
+            c.Authenticator.login_redirect_url = login_redirect_url_fn
+        """,
+    ).tag(config=True)
 
     enable_auth_state = Bool(
         False,
@@ -887,17 +892,17 @@ class Authenticator(LoggingConfigurable):
         """
         return url_path_join(base_url, 'logout')
 
-    def get_handlers(self, app):
+    def get_handlers(self, base_url: str):
         """Return any custom handlers the authenticator needs to register
 
         Used in conjugation with `login_url` and `logout_url`.
 
         Args:
-            app (JupyterHub Application):
+            base_url (str):
                 the application object, in case it needs to be accessed for info.
         Returns:
             handlers (list):
                 list of ``('/url', Handler)`` tuples passed to tornado.
                 The Hub prefix is added to any URLs.
         """
-        return [('/login', LoginHandler)]
+        return [(self.login_url(base_url), LoginHandler)]

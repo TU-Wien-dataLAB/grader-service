@@ -1,4 +1,6 @@
 """HTTP Handlers for the hub server"""
+from typing import Optional, Awaitable
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
@@ -77,7 +79,7 @@ class LoginHandler(BaseHandler):
             "login_error": login_error,
             "login_url": self.settings['login_url'],
             "authenticator_login_url": url_concat(
-                self.authenticator.login_url(self.hub.base_url),
+                self.authenticator.login_url(self.application.base_url),
                 {
                     'next': self.get_argument('next', ''),
                 },
@@ -86,13 +88,17 @@ class LoginHandler(BaseHandler):
             "xsrf": self.xsrf_token.decode('ascii'),
         }
         custom_html = Template(
-            self.authenticator.get_custom_html(self.hub.base_url)
+            self.authenticator.get_custom_html(self.application.base_url)
         ).render(**context)
         return self.render_template(
-            'login.html',
+            'auth/login.html.j2',
             **context,
             custom_html=custom_html,
         )
+
+    async def prepare(self) -> Optional[Awaitable[None]]:
+        await super().prepare()
+        return
 
     async def get(self):
         user = self.current_user
@@ -122,6 +128,7 @@ class LoginHandler(BaseHandler):
                     self.redirect(auto_login_url)
                 return
             username = self.get_argument('username', default='')
+            self.finish(await self._render(username=username))
 
     async def post(self):
         # parse the arguments dict
@@ -130,7 +137,7 @@ class LoginHandler(BaseHandler):
             if arg == "_xsrf":
                 # don't include xsrf token in auth input
                 continue
-            # strip username, but not other fields like passwords,
+            # strip username, but not other fields like passwords,
             # which should be allowed to start or end with space
             data[arg] = self.get_argument(arg, strip=arg == "username")
 
