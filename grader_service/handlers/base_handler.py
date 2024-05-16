@@ -129,6 +129,13 @@ class BaseHandler(SessionMixin, web.RequestHandler):
     async def prepare(self) -> Optional[Awaitable[None]]:
         try:
             await self.get_current_user()
+
+            if not self.current_user and self.request.path not in [
+                self.settings["login_url"],
+                url_path_join(self.application.base_url, r"/api/oauth2/token")
+            ]:
+                url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
+                self.redirect(url)
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
             # since it failed
@@ -139,6 +146,10 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 self.session.rollback()
         await maybe_future(super().prepare())
         return
+
+    @property
+    def oauth_provider(self):
+        return self.application.oauth_provider
 
     @property
     def csp_report_uri(self):
@@ -180,7 +191,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         self.log.debug("Setting cookie %s: %s", key, kwargs)
         set_cookie(key, value, expires_days=expires_days, **kwargs)
 
-    def _set_user_cookie(self, user, server):
+    def _set_user_cookie(self, user, server: "GraderServer"):
         self.log.debug("Setting cookie for %s: %s", user.name,
                        server.cookie_name)
         self._set_cookie(
@@ -291,7 +302,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         if not hasattr(self, '_grader_user'):
             user = None
             try:
-                if user is None and self._accept_cookie_auth:
+                if self._accept_cookie_auth:
                     user = self.get_current_user_cookie()
                 if user and isinstance(user, User):
                     user = await self.refresh_auth(user)
@@ -332,11 +343,29 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         )
         return session_id
 
+    def set_grader_cookie(self, user):
+        """set the login cookie for the Hub"""
+        self._set_user_cookie(user, self.application)
+
     def set_login_cookie(self, user):
         """Set login cookies for the Hub and single-user server."""
 
         if not self.get_session_cookie():
             self.set_session_cookie()
+
+        # create and set a new cookie for the hub
+        cookie_user = self.get_current_user_cookie()
+        if cookie_user is None or cookie_user.id != user.id:
+            if cookie_user:
+                self.log.info(f"User {cookie_user.name} is logging in as {user.name}")
+            self.set_grader_cookie(user)
+
+        # make sure xsrf cookie is updated
+        # this avoids needing a second request to set the right xsrf cookie
+        self._grader_user = user
+        # _set_xsrf_cookie(
+        #     self, self._xsrf_token_id, cookie_path=self.application.base_url, authenticated=True
+        # )
 
     def authenticate(self, data):
         return maybe_future(
@@ -369,6 +398,15 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             user_model.name = username
             self.session.add(user_model)
             self.session.commit()
+
+        # always set auth_state and commit,
+        # because there could be key-rotation or clearing of previous values
+        # going on.
+        if not self.authenticator.enable_auth_state:
+            # auth_state is not enabled. Force None.
+            auth_state = None
+
+        await user_model.save_auth_state(auth_state)
         return user_model
 
     async def login_user(self, data=None):
@@ -482,12 +520,6 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                         f'{proto}://{host}/',
                         f'//{host}/',
                 )
-        ) or (
-                self.subdomain_host
-                and parsed_next_url.netloc
-                and ("." + parsed_next_url.netloc).endswith(
-            "." + urlparse(self.subdomain_host).netloc
-        )
         ):
             # treat absolute URLs for our host as absolute paths:
             # below, redirects that aren't strictly paths are rejected

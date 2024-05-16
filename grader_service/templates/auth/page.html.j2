@@ -80,11 +80,6 @@
         {% else %}
         admin_access: false,
         {% endif %}
-        {% if not no_spawner_check and user and user.spawner.options_form %}
-        options_form: true,
-        {% else %}
-        options_form: false,
-        {% endif %}
         xsrf_token: "{{ xsrf_token }}",
       };
 

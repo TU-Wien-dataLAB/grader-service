@@ -4,6 +4,7 @@
 import json
 from abc import ABC
 from datetime import datetime
+from typing import Optional, Awaitable
 from unittest import mock
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
@@ -11,19 +12,8 @@ from oauthlib import oauth2
 from tornado import web
 
 from grader_service.orm.api_token import APIToken
-from grader_service.utils import get_browser_protocol, token_authenticated
+from grader_service.utils import get_browser_protocol, token_authenticated, url_path_join
 from grader_service.handlers.base_handler import BaseHandler
-
-
-class TokenAPIHandler(BaseHandler):
-    def check_xsrf_cookie(self):
-        # no xsrf check needed here
-        # post is just a 404
-        return
-
-
-class CookieAPIHandler(BaseHandler):
-    pass
 
 
 class OAuthHandler:
@@ -57,10 +47,10 @@ class OAuthHandler:
         # make absolute local redirects full URLs
         # to satisfy oauthlib's absolute URI requirement
         redirect_uri = (
-            get_browser_protocol(self.request)
-            + "://"
-            + self.request.host
-            + redirect_uri
+                get_browser_protocol(self.request)
+                + "://"
+                + self.request.host
+                + redirect_uri
         )
         parsed_url = urlparse(uri)
         query_list = parse_qsl(parsed_url.query, keep_blank_values=True)
@@ -110,6 +100,9 @@ class OAuthHandler:
 class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
     """Implement OAuth authorization endpoint(s)"""
 
+    def prepare(self) -> Optional[Awaitable[None]]:
+        return super().prepare()
+
     def _complete_login(self, uri, headers, scopes, credentials):
         try:
             headers, body, status = self.application.oauth_provider.create_authorization_response(
@@ -139,11 +132,11 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
             spawner.oauth_client_id for spawner in user.spawners.values()
         }
         if (
-            # it's the user's own server
-            oauth_client.identifier in own_oauth_client_ids
-            # or it's in the global no-confirm list
-            or oauth_client.identifier
-            in self.settings.get('oauth_no_confirm_list', set())
+                # it's the user's own server
+                oauth_client.identifier in own_oauth_client_ids
+                # or it's in the global no-confirm list
+                or oauth_client.identifier
+                in self.settings.get('oauth_no_confirm_list', set())
         ):
             return False
 
@@ -187,8 +180,41 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
         Users accessing their own server or a blessed service
         will skip confirmation.
         """
-
         uri, http_method, body, headers = self.extract_oauth_params()
+        try:
+            with mock.patch.object(
+                self.oauth_provider.request_validator,
+                "_current_user",
+                self.current_user,
+                create=True,
+            ):
+                (
+                    requested_scopes,
+                    credentials,
+                ) = self.oauth_provider.validate_authorization_request(
+                    uri, http_method, body, headers
+                )
+            credentials = self.add_credentials(credentials)
+            client = self.oauth_provider.fetch_by_client_id(credentials['client_id'])
+
+            # Render oauth 'Authorize application...' page
+            auth_state = await self.current_user.get_auth_state()
+            self.write(
+                await self.render_template(
+                    "auth/oauth.html.j2",
+                    auth_state=auth_state,
+                    oauth_client=client,
+                )
+            )
+
+        # Errors that should be shown to the user on the provider website
+        except oauth2.FatalClientError as e:
+            raise web.HTTPError(e.status_code, e.description)
+
+        # Errors embedded in the redirect URI back to the client
+        except oauth2.OAuth2Error as e:
+            self.log.error("OAuth error: %s", e.description)
+            self.redirect(e.in_uri(e.redirect_uri))
 
     def post(self):
         uri, http_method, body, headers = self.extract_oauth_params()
@@ -227,10 +253,8 @@ class OAuthTokenHandler(OAuthHandler, BaseHandler):
             self.send_oauth_response(headers, body, status)
 
 
-default_handlers = [
-    (r"/api/authorizations/cookie/([^/]+)(?:/([^/]+))?", CookieAPIHandler),
-    (r"/api/authorizations/token/([^/]+)", TokenAPIHandler),
-    (r"/api/authorizations/token", TokenAPIHandler),
-    (r"/api/oauth2/authorize", OAuthAuthorizeHandler),
-    (r"/api/oauth2/token", OAuthTokenHandler),
-]
+def get_oauth_default_handlers(base_path: str):
+    return [
+        (url_path_join(base_path, r"/api/oauth2/authorize"), OAuthAuthorizeHandler),
+        (url_path_join(base_path, r"/api/oauth2/token"), OAuthTokenHandler),
+    ]

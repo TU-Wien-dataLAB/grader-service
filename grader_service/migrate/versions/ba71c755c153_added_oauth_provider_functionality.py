@@ -50,6 +50,7 @@ def upgrade():
                     Column('code', Unicode(36)),
                     Column('expires_at', Integer),
                     Column('redirect_uri', Unicode(1023)),
+                    Column('session_id', Unicode(255)),
                     Column('username', Unicode(255)),
                     Column('scopes', Text),
                     PrimaryKeyConstraint("id"),
@@ -58,8 +59,12 @@ def upgrade():
                     ForeignKeyConstraint(['username'], ['user.name'])
                     )
 
+    op.add_column('user', sa.Column('encrypted_auth_state', sa.types.LargeBinary, nullable=True))
+    op.add_column('user', sa.Column('cookie_id', Unicode(255), nullable=False))  # TODO: add unique
 
 def downgrade():
     op.drop_table('api_token')
     op.drop_table('oauth_code')
     op.drop_table('oauth_client')
+    op.drop_column('user', 'encrypted_auth_state')
+    op.drop_column('user', 'cookie_id')

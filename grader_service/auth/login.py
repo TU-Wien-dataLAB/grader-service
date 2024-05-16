@@ -143,9 +143,16 @@ class LoginHandler(BaseHandler):
 
         user = await self.login_user(data)
 
-        # register current user for subsequent requests to user (e.g. logging the request)
-        self._jupyterhub_user = user
-        self.redirect(self.get_next_url(user))
+        if user:
+            # register current user for subsequent requests to user (e.g. logging the request)
+            self._grader_user = user
+            self.redirect(self.get_next_url(user))
+        else:
+            html = await self._render(
+                login_error='Invalid username or password', username=data['username']
+            )
+            await self.finish(html)
+
 
 
 # /login renders the login page or the "Login with..." link,

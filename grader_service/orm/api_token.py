@@ -146,7 +146,7 @@ class APIToken(Hashed, Base):
     __tablename__ = 'api_token'
 
     username = Column(
-        Integer,
+        Unicode,
         ForeignKey('user.name', ondelete="CASCADE"),
         nullable=True,
     )
@@ -214,7 +214,7 @@ class APIToken(Hashed, Base):
 
         """
         prefix_match = cls.find_prefix(db, token)
-        prefix_match = prefix_match.filter(cls.user_id is not None)
+        prefix_match = prefix_match.filter(cls.username is not None)
         for orm_token in prefix_match:
             if orm_token.match(token):
                 if not orm_token.client_id:
@@ -254,8 +254,6 @@ class APIToken(Hashed, Base):
         else:
             cls.check_token(db, token)
 
-        roles = db.query(Role).filter(Role.user == user).all()
-
         # Avoid circular import
         from .oauthclient import OAuthClient
 
@@ -276,7 +274,7 @@ class APIToken(Hashed, Base):
             note=note or '',
             client_id=client_id,
             session_id=session_id,
-            scopes=list(roles),
+            scopes=scopes if scopes else [],
         )
         db.add(orm_token)
         orm_token.token = token

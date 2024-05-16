@@ -2,6 +2,7 @@
 
 implements https://oauthlib.readthedocs.io/en/latest/oauth2/server.html
 """
+import oauthlib.common
 from oauthlib import uri_validate
 from oauthlib.oauth2 import RequestValidator, WebApplicationServer
 from oauthlib.oauth2.rfc6749.grant_types import authorization_code, base
@@ -90,7 +91,7 @@ class JupyterHubRequestValidator(RequestValidator):
         return True
 
     def confirm_redirect_uri(
-            self, client_id, code, redirect_uri, client, *args, **kwargs
+            self, client_id, code, redirect_uri, client: OAuthClient, *args, **kwargs
     ):
         """Ensure that the authorization process represented by this authorization
         code began with this 'redirect_uri'.
@@ -102,7 +103,7 @@ class JupyterHubRequestValidator(RequestValidator):
         :param client_id: Unicode client identifier
         :param code: Unicode authorization_code.
         :param redirect_uri: Unicode absolute URI
-        :param client: Client object set by you, see authenticate_client.
+        :param client: OAuthClient object set by you, see authenticate_client.
         :rtype: True or False
         Method is used by:
             - Authorization Code Grant (during token request)
@@ -239,10 +240,10 @@ class JupyterHubRequestValidator(RequestValidator):
             scopes=list(request.scopes),
             redirect_uri=orm_client.redirect_uri,
             session_id=request.session_id,
+            username=request.user.name
         )
         self.db.add(orm_code)
         orm_code.client = orm_client
-        orm_code.user = request.user.orm_user
         self.db.commit()
 
     def get_authorization_code_scopes(self, client_id, code, redirect_uri,
@@ -523,6 +524,16 @@ class JupyterHubRequestValidator(RequestValidator):
         # TODO
         return True
 
+    def get_default_scopes(self, client_id: str, request: oauthlib.common.Request, *args, **kwargs):
+        """
+        Grader Service now can only provide identification.
+
+        :param client_id: Unicode client identifier.
+        :param request: OAuthlib request.
+        :return: List of default scopes
+        """
+        return ["identify"]
+
     def validate_scopes(self, client_id, scopes, client, request, *args,
                         **kwargs):
         """Ensure the client is authorized access to requested scopes.
@@ -545,67 +556,7 @@ class JupyterHubRequestValidator(RequestValidator):
             app_log.warning("No such oauth client %s", client_id)
             return False
 
-        requested_scopes = set(scopes)
-        # explicitly allow 'identify', which was the only allowed scope previously
-        # requesting 'identify' gets no actual permissions other than self-identification
-        if "identify" in requested_scopes:
-            app_log.warning(
-                f"Ignoring deprecated 'identify' scope, requested by {client_id}"
-            )
-            requested_scopes.discard("identify")
-
-        # TODO: handle roles->scopes transition
-        # In 2.x, `?scopes=` only accepted _role_ names,
-        # but in 3.0 we accept and prefer scopes.
-        # For backward-compatibility, we still accept both.
-        # Should roles be deprecated here, or kept as a convenience?
-        try:
-            _check_scopes_exist(requested_scopes)
-        except KeyError as e:
-            # scopes don't exist, maybe they are role names
-            requested_roles = list(
-                self.db.query(orm.Role).filter(
-                    orm.Role.name.in_(requested_scopes))
-            )
-            if len(requested_roles) != len(requested_scopes):
-                # did not find roles
-                app_log.warning(f"No such scopes: {requested_scopes}")
-                return False
-            app_log.info(
-                f"OAuth client {client_id} requesting roles: {requested_scopes}"
-            )
-            requested_scopes = roles_to_scopes(requested_roles)
-
-        client_allowed_scopes = set(orm_client.allowed_scopes)
-
-        # scope resolution only works if we have a user defined
-        user = request.user or getattr(self, "_current_user")
-
-        # always grant reading the token-owner's name
-        # and accessing the service itself
-        required_scopes = {*identify_scopes(), *access_scopes(orm_client)}
-        requested_scopes.update(required_scopes)
-        client_allowed_scopes.update(required_scopes)
-
-        allowed_scopes, disallowed_scopes = _resolve_requested_scopes(
-            requested_scopes,
-            client_allowed_scopes,
-            user=user.orm_user,
-            client=orm_client,
-            db=self.db,
-        )
-
-        if disallowed_scopes:
-            app_log.error(
-                f"Scope(s) not allowed for {client_id}: {', '.join(disallowed_scopes)}"
-            )
-            return False
-
-        # store resolved scopes on request
-        app_log.debug(
-            f"Allowing request for scope(s) for {client_id}:  {','.join(requested_scopes) or '[]'}"
-        )
-        request.scopes = requested_scopes
+        # we always grant 'identify' scope to a valid client (JupyterHub)
         return True
 
 
@@ -677,6 +628,7 @@ def make_provider(session_factory, url_prefix, login_url,
                   **oauth_server_kwargs):
     """Make an OAuth provider"""
     db = session_factory()
+    oauth_server_kwargs.update(dict(url_prefix=url_prefix, login_url=login_url))
     validator = JupyterHubRequestValidator(db)
     server = GraderOAuthServer(db, validator, **oauth_server_kwargs)
     return server

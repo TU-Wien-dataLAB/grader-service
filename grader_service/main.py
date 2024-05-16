@@ -215,6 +215,12 @@ class GraderService(config.Application):
         sql_handler.setFormatter(formatter)
         sql_logger.addHandler(sql_handler)
 
+        oauth_log = logging.getLogger('oauthlib')
+        oauth_handler = stream_handler(stream=sys.stdout)
+        oauth_handler.setFormatter(formatter)
+        oauth_log.setLevel(log_level)
+        oauth_log.addHandler(oauth_handler)
+
         traitlet_logger = traitlets_log.get_logger()
         traitlet_logger.removeHandler(traitlet_logger.handlers[0])
         traitlet_logger.setLevel(log_level)
@@ -278,9 +284,9 @@ class GraderService(config.Application):
             login_url=url_path_join(self.base_url_path, 'login'),
             token_expires_in=self.oauth_token_expires_in,
         )
-        self.oauth_provider.add_client('ihaveadream',
-                                       'ihaveadream',
-                                       'http:localhost:8000',
+        self.oauth_provider.add_client('hub',
+                                       'hub',
+                                       'http://localhost:8080/hub/oauth_callback',
                                        ['openid'])
 
     async def start(self):
@@ -305,8 +311,8 @@ class GraderService(config.Application):
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         # Add the handlers of the authenticator
         handlers.extend(self.authenticator.get_handlers(self.base_url_path))
-        handlers.extend(oauth_handlers.default_handlers)
-        self.log.info(oauth_handlers.default_handlers)
+        handlers.extend(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
+        self.log.info(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
         isSQLite = 'sqlite://' in self.db_url
 
         # start the webserver
