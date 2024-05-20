@@ -12,8 +12,33 @@ from oauthlib import oauth2
 from tornado import web
 
 from grader_service.orm.api_token import APIToken
-from grader_service.utils import get_browser_protocol, token_authenticated, url_path_join
+from grader_service.utils import get_browser_protocol, token_authenticated, url_path_join, utcnow
 from grader_service.handlers.base_handler import BaseHandler
+
+
+class SelfAPIHandler(BaseHandler):
+    """Return the authenticated user's model
+
+    Based on the authentication info. Acts as a 'whoami' for auth tokens.
+    """
+
+    async def get(self):
+        user = self.current_user
+        if user is None:
+            raise web.HTTPError(403)
+        model = user.model.to_dict()
+
+        # add session_id associated with token
+        # added in 2.0
+        # token_id added in 5.0
+        token = self.get_token()
+        if token:
+            model["token_id"] = token.api_id
+            model["session_id"] = token.session_id
+        else:
+            model["token_id"] = None
+            model["session_id"] = None
+        self.write(json.dumps(model))
 
 
 class OAuthHandler:
@@ -255,6 +280,7 @@ class OAuthTokenHandler(OAuthHandler, BaseHandler):
 
 def get_oauth_default_handlers(base_path: str):
     return [
+        (url_path_join(base_path, r"/api/user"), SelfAPIHandler),
         (url_path_join(base_path, r"/api/oauth2/authorize"), OAuthAuthorizeHandler),
         (url_path_join(base_path, r"/api/oauth2/token"), OAuthTokenHandler),
     ]

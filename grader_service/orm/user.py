@@ -7,6 +7,7 @@
 from sqlalchemy import Column, String, LargeBinary, Unicode
 from sqlalchemy.orm import relationship, Session
 
+from grader_service.api.models import user
 from grader_service.auth.crypto import encrypt, decrypt, InvalidToken, EncryptionUnavailable, CryptKeeper
 from grader_service.orm.base import Base, Serializable
 from grader_service.orm.group import group_assignment_table
@@ -59,3 +60,8 @@ class User(Base, Serializable):
 
     def serialize(self):
         return {"name": self.name}
+
+
+    @property
+    def model(self) -> user.User:
+        return user.User(name=self.name)

@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import asyncio
+import re
 import shlex
 import subprocess
 import datetime
@@ -29,9 +30,9 @@ from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
 from grader_service.api.models.error_message import ErrorMessage
-from grader_service.utils import maybe_future, url_path_join, get_browser_protocol
+from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Group, Assignment, Submission
+from grader_service.orm import Group, Assignment, Submission, APIToken
 from grader_service.orm.base import Serializable, DeleteState
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
@@ -45,6 +46,8 @@ from tornado.web import HTTPError
 from tornado_sqlalchemy import SessionMixin
 
 SESSION_COOKIE_NAME = 'grader-session-id'
+
+auth_header_pat = re.compile(r'^(?:token|bearer)\s+([^\s]+)$', flags=re.IGNORECASE)
 
 
 def authorize(scopes: List[Scope]):
@@ -121,6 +124,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         super().__init__(application, request, **kwargs)
         # add type hint for application
         self._accept_cookie_auth = True
+        self._accept_token_auth = True
 
         self.application: GraderServer = self.application
         self.authenticator = self.application.authenticator
@@ -234,6 +238,66 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         #     self.session.commit()
         return user
 
+    def _record_activity(self, obj, timestamp=None):
+        """record activity on an ORM object
+
+        If last_activity was more recent than self.activity_resolution seconds ago,
+        do nothing to avoid unnecessarily frequent database commits.
+
+        Args:
+            obj: an ORM object with a last_activity attribute
+            timestamp (datetime, optional): the timestamp of activity to register.
+        Returns:
+            recorded (bool): True if activity was recorded, False if not.
+        """
+        if timestamp is None:
+            timestamp = utcnow(with_tz=False)
+        resolution = self.settings.get("activity_resolution", 0)
+        if not obj.last_activity or resolution == 0:
+            self.log.debug("Recording first activity for %s", obj)
+            obj.last_activity = timestamp
+            return True
+        if (timestamp - obj.last_activity).total_seconds() > resolution:
+            # this debug line will happen just too often
+            # uncomment to debug last_activity updates
+            # self.log.debug("Recording activity for %s", obj)
+            obj.last_activity = timestamp
+            return True
+        return False
+
+    def get_auth_token(self):
+        """Get the authorization token from Authorization header"""
+        auth_header = self.request.headers.get('Authorization', '')
+        match = auth_header_pat.match(auth_header)
+        if not match:
+            return None
+        return match.group(1)
+
+    @functools.lru_cache
+    def get_token(self):
+        """get token from authorization header"""
+        token = self.get_auth_token()
+        if token is None:
+            return None
+        orm_token = APIToken.find(self.session, token)
+        return orm_token
+
+    def get_current_user_token(self):
+        """get_current_user from Authorization header token"""
+        # record token activity
+        orm_token = self.get_token()
+        if orm_token is None:
+            return None
+        now = utcnow(with_tz=False)
+        recorded = self._record_activity(orm_token, now)
+        if recorded:
+            self.session.commit()
+
+        # record that we've been token-authenticated
+        # XSRF checks are skipped when using token auth
+        self._token_authenticated = True
+        return orm_token.user
+
     def get_current_user_cookie(self):
         """get_current_user from a cookie token"""
         return self._user_for_cookie(self.application.cookie_name)
@@ -302,7 +366,9 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         if not hasattr(self, '_grader_user'):
             user = None
             try:
-                if self._accept_cookie_auth:
+                if self._accept_token_auth:
+                    user = self.get_current_user_token()
+                if user is None and self._accept_cookie_auth:
                     user = self.get_current_user_cookie()
                 if user and isinstance(user, User):
                     user = await self.refresh_auth(user)
@@ -315,7 +381,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         return self._grader_user
 
     @property
-    def current_user(self):
+    def current_user(self) -> User:
         """Override .current_user accessor from tornado
 
         Allows .get_current_user to be async.
@@ -613,7 +679,8 @@ class GraderBaseHandler(BaseHandler):
                      != self.application.base_url.strip("/") + "/health")):
             app_config = self.application.config
             # await self.authenticator.authenticate(self, self.request.body)
-        return super().prepare()
+        await super().prepare()
+        return
 
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:

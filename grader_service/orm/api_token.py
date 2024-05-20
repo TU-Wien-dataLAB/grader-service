@@ -233,7 +233,6 @@ class APIToken(Hashed, Base):
             token=None,
             *,
             user=None,
-            roles=None,
             scopes=None,
             note='',
             generated=True,
