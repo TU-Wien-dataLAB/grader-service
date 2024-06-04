@@ -772,6 +772,7 @@ class Authenticator(LoggingConfigurable):
         """
         self.allowed_users.discard(user.name)
 
+    # TODO: remove manage_groups since we only have roles
     manage_groups = Bool(
         False,
         config=True,

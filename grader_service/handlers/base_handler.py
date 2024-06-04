@@ -465,6 +465,26 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             self.session.add(user_model)
             self.session.commit()
 
+        # apply authenticator-managed groups
+        if self.authenticator.manage_groups:
+            if "groups" not in authenticated:
+                # to use manage_groups, group membership must always be specified
+                # Authenticators that don't support this feature will omit it,
+                # which should fail here rather than silently not implement the requested behavior
+                auth_cls = self.authenticator.__class__.__name__
+                raise ValueError(
+                    f"Authenticator.manage_groups is enabled, but auth_model for {username} specifies no groups."
+                    f" Does {auth_cls} support manage_groups=True?"
+                )
+            group_names = authenticated["groups"]
+            if group_names is not None:
+                user.sync_groups(group_names)
+        # apply authenticator-managed roles
+        if self.authenticator.manage_roles:
+            auth_roles = authenticated.get("roles")
+            if auth_roles is not None:
+                user.sync_roles(auth_roles)
+
         # always set auth_state and commit,
         # because there could be key-rotation or clearing of previous values
         # going on.

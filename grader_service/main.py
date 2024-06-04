@@ -16,10 +16,10 @@ import sys
 import inspect
 import tornado
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
-from traitlets import config, Bool, Type, Instance
+from traitlets import config, Bool, Type, Instance, Dict, Union, List
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
@@ -30,6 +30,10 @@ from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
 from grader_service.oauth2.provider import make_provider
+from grader_service.orm import Lecture, Role, User
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import LectureState
+from grader_service.orm.takepart import Scope
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.autograding.grader_executor import GraderExecutor
@@ -83,6 +87,7 @@ class GraderService(config.Application):
 
     def __init__(self):
         super().__init__()
+        self.db = None
         self.oauth_provider = None
 
     @default('db_url')
@@ -129,6 +134,26 @@ class GraderService(config.Application):
 
     # TODO make configurable
     oauth_token_expires_in = int(1 * 24 * 3600)
+
+    load_roles = Dict(List(),
+                      help="""
+        Dict of `{'lecture:role': ['usernames']}`  to load at startup.
+
+        Example::
+
+            c.GraderService.load_groups = {
+                'groupname:role': ['usernames']
+                },
+            }
+
+        This strictly *adds* groups and users to groups.
+        Properties, if defined, replace all existing properties.
+
+        Loading one set of groups, then starting JupyterHub again with a different
+        set will not remove users or groups from previous launches.
+        That must be done through the API.
+        """,
+                      ).tag(config=True)
 
     @default('authenticator')
     def _authenticator_default(self):
@@ -262,6 +287,13 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
+        isSQLite = 'sqlite://' in self.db_url
+        self.db = SQLAlchemy(
+            self.db_url, engine_options={} if isSQLite else
+            {"pool_size": 50, "max_overflow": -1}
+        )
+        self.init_roles()
+
         self._start_future = asyncio.Future()
 
         if sys.version_info.major < 3 or sys.version_info.minor < 8:
@@ -284,10 +316,57 @@ class GraderService(config.Application):
             login_url=url_path_join(self.base_url_path, 'login'),
             token_expires_in=self.oauth_token_expires_in,
         )
+        # TODO: make oauth clients configurable
         self.oauth_provider.add_client('hub',
                                        'hub',
                                        'http://localhost:8080/hub/oauth_callback',
                                        ['openid'])
+
+    def init_roles(self):
+        """Load predefined groups into the database"""
+        with Session(self.db.engine) as db:
+            # if self.authenticator.manage_groups and self.load_groups:
+            #     raise ValueError("Group management has been offloaded to the authenticator")
+            for k, users in self.load_roles.items():
+                lecture_code, role = k.split(":", 1)
+                lecture = (
+                    db.query(Lecture)
+                    .filter(Lecture.code == lecture_code)
+                    .one_or_none()
+                )
+                # create lecture if no lecture with that name exists yet
+                # (code is set in create)
+                if lecture is None:
+                    self.log.info(
+                        f"Adding new lecture with lecture_code {lecture_code}")
+                    lecture = Lecture()
+                    lecture.code = lecture_code
+                    lecture.name = lecture_code
+                    lecture.state = LectureState.active
+                    lecture.deleted = DeleteState.active
+                    db.add(lecture)
+                db.commit()
+
+                for username in users:
+                    user = (
+                        db.query(User)
+                        .filter(User.name == username)
+                        .one_or_none()
+                    )
+                    if user is None:
+                        self.log.info(f"Adding new user with username {username}")
+                        user = User()
+                        user.name = username
+                        db.add(user)
+                        db.commit()
+
+                    db.query(Role).filter(Role.username == user.name).delete()
+                    try:
+                        db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
+                    except KeyError:
+                        self.log.error(f"Invalid role name: {role}")
+                        raise ValueError(f"Invalid role name: {role}")
+                db.commit()
 
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
@@ -313,7 +392,6 @@ class GraderService(config.Application):
         handlers.extend(self.authenticator.get_handlers(self.base_url_path))
         handlers.extend(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
         self.log.info(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
-        isSQLite = 'sqlite://' in self.db_url
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
@@ -327,10 +405,7 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=SQLAlchemy(
-                    self.db_url, engine_options={} if isSQLite else
-                    {"pool_size": 50, "max_overflow": -1}
-                ),
+                db=self.db,
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),
