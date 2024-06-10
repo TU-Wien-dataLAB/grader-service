@@ -146,14 +146,21 @@ class GraderService(config.Application):
                 },
             }
 
-        This strictly *adds* groups and users to groups.
-        Properties, if defined, replace all existing properties.
-
-        Loading one set of groups, then starting JupyterHub again with a different
-        set will not remove users or groups from previous launches.
-        That must be done through the API.
+        This will replace all existing roles.
         """,
                       ).tag(config=True)
+
+    oauth_clients = List(Dict(), default_value=[], help="""
+        List of OAuth clients `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]` to register for the provider.
+        
+        Example::
+            
+            c.GraderService.oauth_clients = [{
+                'client_id': 'hub',
+                'client_secret': 'hub',
+                'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
+            }]
+    """).tag(config=True)
 
     @default('authenticator')
     def _authenticator_default(self):
@@ -316,11 +323,11 @@ class GraderService(config.Application):
             login_url=url_path_join(self.base_url_path, 'login'),
             token_expires_in=self.oauth_token_expires_in,
         )
-        # TODO: make oauth clients configurable
-        self.oauth_provider.add_client('hub',
-                                       'hub',
-                                       'http://localhost:8080/hub/oauth_callback',
-                                       ['openid'])
+        for client in self.oauth_clients:
+            self.oauth_provider.add_client(client["client_id"],
+                                           client['client_secret'],
+                                           client['redirect_uri'],
+                                           ['identify'])
 
     def init_roles(self):
         """Load predefined groups into the database"""

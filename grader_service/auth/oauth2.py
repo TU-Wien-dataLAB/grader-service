@@ -25,7 +25,7 @@ def guess_callback_uri(protocol, host, server_url):
     return f'{protocol}://{host}{url_path_join(server_url, "oauth_callback")}'
 
 
-STATE_COOKIE_NAME = "oauthenticator-state"
+STATE_COOKIE_NAME = "grader-oauthenticator-state"
 
 
 def _serialize_state(state):
@@ -699,12 +699,12 @@ class OAuthenticator(Authenticator):
                 "Specify callback oauth_callback_url or give me a handler to guess with"
             )
 
-    def get_handlers(self, app):
-        self.log.info(app.base_url_path)
+    def get_handlers(self, base_url_path):
+        self.log.info(base_url_path)
         return [
-            (f"{app.base_url_path}/oauth_login", self.login_handler),
-            (f"{app.base_url_path}/oauth_callback", self.callback_handler),
-            (f"{app.base_url_path}/logout", self.logout_handler),
+            (f"{base_url_path}/oauth_login", self.login_handler),
+            (f"{base_url_path}/oauth_callback", self.callback_handler),
+            (f"{base_url_path}/logout", self.logout_handler),
         ]
 
     def build_userdata_request_headers(self, access_token, token_type):
