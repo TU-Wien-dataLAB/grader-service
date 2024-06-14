@@ -396,9 +396,13 @@ class GraderService(config.Application):
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         # Add the handlers of the authenticator
-        handlers.extend(self.authenticator.get_handlers(self.base_url_path))
-        handlers.extend(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
-        self.log.info(oauth_handlers.get_oauth_default_handlers(self.base_url_path))
+        auth_handlers = self.authenticator.get_handlers(self.base_url_path)
+        handlers.extend(auth_handlers)
+        self.log.info(f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
+
+        oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
+        handlers.extend(oauth_provider_handlers)
+        self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(

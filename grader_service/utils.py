@@ -19,6 +19,7 @@ from binascii import b2a_hex
 from datetime import datetime, timezone
 from hmac import compare_digest
 from operator import itemgetter
+from typing import Dict, List, Any
 from urllib.parse import quote
 
 from async_generator import aclosing
@@ -95,12 +96,12 @@ def can_connect(ip, port):
 
 
 def make_ssl_context(
-    keyfile,
-    certfile,
-    cafile=None,
-    verify=None,
-    check_hostname=None,
-    purpose=ssl.Purpose.SERVER_AUTH,
+        keyfile,
+        certfile,
+        cafile=None,
+        verify=None,
+        check_hostname=None,
+        purpose=ssl.Purpose.SERVER_AUTH,
 ):
     """Setup context for starting an https server or making requests over ssl.
 
@@ -149,15 +150,15 @@ AnyTimeoutError = (gen.TimeoutError, asyncio.TimeoutError, TimeoutError)
 
 
 async def exponential_backoff(
-    pass_func,
-    fail_message,
-    start_wait=0.2,
-    scale_factor=2,
-    max_wait=5,
-    timeout=10,
-    timeout_tolerance=0.1,
-    *args,
-    **kwargs,
+        pass_func,
+        fail_message,
+        start_wait=0.2,
+        scale_factor=2,
+        max_wait=5,
+        timeout=10,
+        timeout_tolerance=0.1,
+        *args,
+        **kwargs,
 ):
     """
     Exponentially backoff until `pass_func` is true.
@@ -511,6 +512,7 @@ def print_ps_info(file=sys.stderr):
     # trailing blank line
     print('', file=file)
 
+
 def maybe_future(obj):
     """Return an asyncio Future
 
@@ -730,3 +732,19 @@ def get_browser_protocol(request):
 
     # no forwarded headers
     return request.protocol
+
+
+def convert_request_to_dict(arguments: Dict[str, List[bytes]]) -> Dict[str, Any]:
+    """
+    Converts the arguments obtained from a request to a dict.
+
+    Args:
+        handler: a tornado.web.RequestHandler object
+
+    Returns:
+        A decoded dict with keys/values extracted from the request's arguments
+    """
+    args = {}
+    for k, values in arguments.items():
+        args[k] = values[0].decode()
+    return args
