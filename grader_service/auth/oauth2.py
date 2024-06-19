@@ -195,8 +195,7 @@ class OAuthCallbackHandler(BaseHandler):
         # JupyterHub 0.8 adds default .get_next_url for a fallback
         if hasattr(BaseHandler, "get_next_url"):
             return super().get_next_url(user)
-        # TODO MAKE THE REDIRECT URL CONFIGURABLE
-        return "http://localhost:8000"
+        return self.authenticator.default_next_url
 
     async def get(self):
         self.check_arguments()
@@ -581,6 +580,9 @@ class OAuthenticator(Authenticator):
     @default("http_client")
     def _default_http_client(self):
         return AsyncHTTPClient()
+
+    default_next_url = Unicode(default_value="http://localhost:8080", config=True,
+                               help="""The URL to use when no next URL is specified in the OAuth request.""")
 
     async def fetch(self, req, label="fetching", parse_json=True, **kwargs):
         """Wrapper for http requests
