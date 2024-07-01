@@ -51,7 +51,7 @@ class LocalAuthenticator(Authenticator):
     def _add_user_cmd_default(self):
         """Guess the most likely-to-work adduser command for each platform"""
         if sys.platform == 'darwin':
-            raise ValueError("I don't know how to create users on OS X")
+            raise ValueError("I don't know how to create users on macOS")
         elif which('pw'):
             # Probably BSD
             return ['pw', 'useradd', '-m', '-n']
@@ -68,17 +68,9 @@ class LocalAuthenticator(Authenticator):
         """
     ).tag(config=True)
 
-    group_whitelist = Set(
-        help="""DEPRECATED: use allowed_groups""",
-    ).tag(config=True)
-
     allowed_groups = Set(
         help="""
         Allow login from all users in these UNIX groups.
-
-        .. versionchanged:: 5.0
-            `allowed_groups` may be specified together with allowed_users,
-            to grant access by group OR name.
         """
     ).tag(config=True, allow_config=True)
 
