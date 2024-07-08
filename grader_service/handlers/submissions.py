@@ -8,6 +8,7 @@ import json
 import shutil
 import time
 
+from grader_service.orm.base import DeleteState
 import isodate
 import jwt
 import os.path
@@ -113,7 +114,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active    
+                                  ))
                     .order_by(Submission.id)
                     .all())
 
@@ -134,12 +137,17 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active    
+                                  ))
                     .order_by(Submission.id)
                     .all())
 
             else:
-                submissions = assignment.submissions
+                submissions = [
+                s for s in assignment.submissions if (s.deleted
+                                                        == DeleteState.active)
+                ]
         else:
             if submission_filter == 'latest':
                 # build the subquery
@@ -156,7 +164,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active    
+                                  ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -178,7 +188,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active    
+                                  ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -192,6 +204,7 @@ class SubmissionHandler(GraderBaseHandler):
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
+                        Submission.deleted == DeleteState.active
                     )
                     .order_by(Submission.id)
                     .all()
@@ -436,6 +449,39 @@ class SubmissionObjectHandler(GraderBaseHandler):
             sub.score = sub_model.score_scaling * sub.grading_score
         self.session.commit()
         self.write_json(sub)
+
+
+    def delete(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Soft-Deletes a specific submission.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        :param submission_id: id of the submission
+        :type submission_id: int
+        :raises HTTPError: throws err if assignment was not found or deleted
+        """
+        lecture_id, assignment_id, submission_id = parse_ids(lecture_id, assignment_id, submission_id)
+        self.validate_parameters()
+        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+
+        previously_deleted = (
+            self.session.query(Submission)
+            .filter(
+                Submission.id == submission_id,
+                Submission.assignid == assignment_id,
+                Submission.deleted == DeleteState.deleted,
+            )
+            .one_or_none()
+        )
+        if previously_deleted is not None:
+            self.session.delete(previously_deleted)
+            self.session.commit()
+
+        submission.deleted = DeleteState.deleted
+        self.session.commit()
 
 
 @register_handler(

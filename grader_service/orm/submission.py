@@ -18,7 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from grader_service.orm.base import Base, Serializable
+from grader_service.orm.base import Base, DeleteState, Serializable
 
 
 class Submission(Base, Serializable):
@@ -41,6 +41,7 @@ class Submission(Base, Serializable):
         Enum("not_generated", "generating", "generated", "generation_failed", "feedback_outdated"),
         default="not_generated",
         nullable=False)
+    deleted = Column(Enum(DeleteState), nullable=False, unique=False, default=DeleteState.active)
     edited = Column(Boolean, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow, nullable=False)
