@@ -790,3 +790,33 @@ class LtiSyncHandler(GraderBaseHandler):
         else:
             self.log.info("Skipping LTI plugin as it is not enabled")
             self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
+)
+class SubmissionCountHandler(GraderBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/count.
+    """
+
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int, assignment_id: int):
+        """ Returns the count of submissions made by the student for an assignment.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        """
+        lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+        
+        role = self.get_role(lecture_id)
+        
+        usersubmissions_count = self.session.query(Submission).filter(
+            Submission.assignid == assignment_id,
+            Submission.username == role.username,
+        ).count()
+
+        self.write_json(usersubmissions_count)
+        self.session.close()          
