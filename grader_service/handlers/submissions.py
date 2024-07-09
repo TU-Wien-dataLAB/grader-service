@@ -818,5 +818,5 @@ class SubmissionCountHandler(GraderBaseHandler):
             Submission.username == role.username,
         ).count()
 
-        self.write_json(usersubmissions_count)
+        self.write_json({"submission_count": usersubmissions_count})
         self.session.close()          
