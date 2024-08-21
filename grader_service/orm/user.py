@@ -35,6 +35,7 @@ class User(Base, Serializable):
         else:
             self.encrypted_auth_state = await encrypt(auth_state)
         session: Session = Session.object_session(self)
+        session.expire_on_commit = False
         session.commit()
 
     async def get_auth_state(self):

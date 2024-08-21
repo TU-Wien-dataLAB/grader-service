@@ -15,6 +15,7 @@ import subprocess
 import sys
 import inspect
 import tornado
+from jupyterhub.log import log_request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
@@ -422,6 +423,7 @@ class GraderService(config.Application):
                 logout_url=self.authenticator.logout_url(self.base_url_path),
                 static_url_prefix=url_path_join(self.base_url_path, 'static/'),
                 static_handler_class=CacheControlStaticFilesHandler,
+                log_function=log_request
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,

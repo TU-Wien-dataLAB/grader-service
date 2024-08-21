@@ -3,12 +3,12 @@ import hashlib
 import json
 import re
 import uuid
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, Awaitable
 from urllib.parse import quote, unquote, urlparse
 
 from grader_service.utils import url_path_join  # type: ignore
 from oauthlib.common import generate_token  # type: ignore
-from tornado.httputil import url_concat
+from tornado.httputil import url_concat, HTTPHeaders
 from tornado.log import app_log
 from tornado.web import HTTPError, MissingArgumentError, RequestHandler
 
@@ -161,13 +161,13 @@ class LTI13LoginInitHandler(BaseHandler):
         return
 
     def authorize_redirect(
-        self,
-        redirect_uri: str,
-        login_hint: str,
-        nonce: str,
-        client_id: str,
-        state: str,
-        lti_message_hint: Optional[str] = None,
+            self,
+            redirect_uri: str,
+            login_hint: str,
+            nonce: str,
+            client_id: str,
+            state: str,
+            lti_message_hint: Optional[str] = None,
     ) -> None:
         """
         Overrides the OAuth2Mixin.authorize_redirect method to to initiate the LTI 1.3 / OIDC
@@ -321,7 +321,7 @@ class LTI13LoginInitHandler(BaseHandler):
         return "{proto}://{host}{path}".format(
             proto=self.authenticator.get_uri_scheme(self.request),
             host=self.request.host,
-            path=self.authenticator.callback_url(self.hub.server.base_url),
+            path=self.authenticator.callback_url(self.application.base_url),
         )
 
     def _get_optional_arg(self, args: Dict[str, str], arg: str) -> Optional[str]:
@@ -399,7 +399,7 @@ class LTI13CallbackHandler(BaseHandler):
         """Redirect user agent to next url that has been received in the login initiation request."""
         next_url = self.get_next_url(user)
         self.redirect(next_url)
-        self.log.debug(f"Redirecting user {user.id} to {next_url}")
+        self.log.debug(f"Redirecting user {user.name} to {next_url}")
 
     def decode_and_validate_launch_request(self) -> Dict[str, Any]:
         """Decrypt, verify and validate launch request parameters.

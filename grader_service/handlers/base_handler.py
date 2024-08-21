@@ -138,6 +138,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 self.settings["login_url"],
                 url_path_join(self.application.base_url, r"/api/oauth2/token"),
                 url_path_join(self.application.base_url, r"/oauth_callback"),
+                url_path_join(self.application.base_url, r"/lti13/oauth_callback"),
             ]:
                 url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                 self.redirect(url)
@@ -173,7 +174,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             ["frame-ancestors 'self'", "report-uri " + self.csp_report_uri]
         )
 
-    def _set_cookie(self, key, value, encrypted=True, expires_days=1.0, **overrides):
+    def _set_cookie(self, key, value, encrypted=True, **overrides):
         """Setting any cookie should go through here
 
         if encrypted use tornado's set_secure_cookie,
@@ -181,12 +182,22 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         """
         # tornado <4.2 have a bug that consider secure==True as soon as
         # 'secure' kwarg is passed to set_secure_cookie
-        kwargs = {}
+        kwargs = {'httponly': True}
+        public_url = self.settings.get("public_url")
+        if public_url:
+            if public_url.scheme == 'https':
+                kwargs['secure'] = True
+        else:
+            if self.request.protocol == 'https':
+                kwargs['secure'] = True
+
         kwargs.update(self.settings.get('cookie_options', {}))
         kwargs.update(overrides)
-        kwargs.update({'httponly': True})
-        if self.request.protocol == 'https':
-            kwargs['secure'] = True
+
+        if key.startswith("__Host-"):
+            # __Host- cookies must be secure and on /
+            kwargs["path"] = "/"
+            kwargs["secure"] = True
 
         if encrypted:
             set_cookie = self.set_secure_cookie
@@ -194,7 +205,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             set_cookie = self.set_cookie
 
         self.log.debug("Setting cookie %s: %s", key, kwargs)
-        set_cookie(key, value, expires_days=expires_days, **kwargs)
+        set_cookie(key, value, **kwargs)
 
     def _set_user_cookie(self, user, server: "GraderServer"):
         self.log.debug("Setting cookie for %s: %s", user.name,
@@ -422,7 +433,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
 
         # create and set a new cookie for the hub
         cookie_user = self.get_current_user_cookie()
-        if cookie_user is None or cookie_user.id != user.id:
+        if cookie_user is None or cookie_user.name != user.name:
             if cookie_user:
                 self.log.info(f"User {cookie_user.name} is logging in as {user.name}")
             self.set_grader_cookie(user)

@@ -167,7 +167,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
 
         # Check existing authorization
         existing_tokens = self.session.query(APIToken).filter_by(
-            user_id=user.id,
+            username=user.name,
             client_id=oauth_client.identifier,
         )
         authorized_scopes = set()
