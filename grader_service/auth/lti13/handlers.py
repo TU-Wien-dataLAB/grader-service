@@ -231,14 +231,9 @@ class LTI13LoginInitHandler(BaseHandler):
             elif not target_link.endswith("/hub"):
                 next_url = target_link
         if next_url:
+            # Note: allow hostname-having urls
             # avoid browsers treating \ as /
             next_url = next_url.replace("\\", quote("\\"))
-            # disallow hostname-having urls,
-            # force absolute path redirect
-            urlinfo = urlparse(next_url)
-            next_url = urlinfo._replace(
-                scheme="", netloc="", path="/" + urlinfo.path.lstrip("/")
-            ).geturl()
             if next_url != original_next_url:
                 self.log.warning(
                     "Ignoring next_url %r, using %r", original_next_url, next_url
