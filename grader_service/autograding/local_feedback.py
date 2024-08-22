@@ -94,7 +94,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         self._write_gradebook(self.submission.properties.properties)
 
         autograder = GenerateFeedback(self.input_path, self.output_path,
-                                      "*.ipynb", copy_files=False)
+                                      "**/*.ipynb", copy_files=False)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -207,7 +207,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
         self._write_gradebook(self.submission.properties)
 
         command = f'{self.convert_executable} generate_feedback -i ' \
-                  f'"{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
+                  f'"{self.input_path}" -o "{self.output_path}" -p "**/*.ipynb"'
         self.log.info(f"Running {command}")
         process = await self._run_subprocess(command, None)
         self.grading_logs = process.stderr.read().decode("utf-8")
