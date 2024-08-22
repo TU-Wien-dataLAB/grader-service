@@ -239,7 +239,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         c = Config()
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
 
-        autograder = Autograde(self.input_path, self.output_path, "*.ipynb",
+        autograder = Autograde(self.input_path, self.output_path, "**/*.ipynb",
                                copy_files=self.assignment.allow_files, config=c)
         autograder.force = True
 
@@ -489,7 +489,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         command = f'{self.convert_executable} autograde ' \
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb" ' \
+                  f'-p "**/*.ipynb" ' \
                   f'--copy_files={self.assignment.allow_files} ' \
                   f'--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}'
         self.log.info(f"Running {command}")

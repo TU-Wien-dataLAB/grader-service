@@ -43,7 +43,7 @@ class ConverterApp(Application):
 
     input_directory = Unicode(None, allow_none=False).tag(config=True)
     output_directory = Unicode(None, allow_none=False).tag(config=True)
-    file_pattern = Unicode("*.ipynb", allow_none=False).tag(config=True)
+    file_pattern = Unicode("**/*.ipynb", allow_none=False).tag(config=True)
     copy_files = Bool(False, allow_none=False).tag(config=True)
 
     def _log_level_default(self):
