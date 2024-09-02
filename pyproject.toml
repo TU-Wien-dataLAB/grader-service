@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "grader-service"
 description = "Grader service"
-version = "0.4.1"
+version = "0.4.2"
 requires-python = ">=3.8"
 authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
 license = {text = "BSD-3-Clause"}
@@ -40,6 +40,8 @@ dependencies = [
     "python-dateutil>=2.8.2",
     "jupyter-client>=7.1.1",
     "nbconvert>=6.4.0",
+    "async_generator>=1.10",
+    "celery>=5.3.6"
 ]
 
 [tool.setuptools]
@@ -52,6 +54,7 @@ exclude = ["grader_service.tests", "grader_service.tests.*"]
 grader-service = "grader_service.main:main"
 grader-service-migrate = "grader_service.migrate.migrate:main"
 grader-convert = "grader_service.convert.main:main"
+grader-worker = "grader_service.autograding.celery.worker:main"
 
 [project.urls]
 Homepage = "https://github.com/TU-Wien-dataLAB/Grader-Service"
@@ -63,7 +66,7 @@ Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
 github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
 
 [tool.tbump.version]
-current = "0.4.1"
+current = "0.4.2"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before

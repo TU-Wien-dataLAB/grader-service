@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import asyncio
+import re
 import shlex
 import subprocess
 import datetime
@@ -12,18 +13,26 @@ import json
 import os
 import shutil
 import sys
+import time
+import traceback
+import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional
+from urllib.parse import urlparse, parse_qsl
 
+from sqlalchemy.exc import SQLAlchemyError
+from tornado.httputil import url_concat
 from traitlets import Type, Integer, TraitType, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.error_message import ErrorMessage
+from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Group, Assignment, Submission
+from grader_service.orm import Group, Assignment, Submission, APIToken
 from grader_service.orm.base import Serializable, DeleteState
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
@@ -35,6 +44,10 @@ from tornado import httputil, web
 from tornado.escape import json_decode
 from tornado.web import HTTPError
 from tornado_sqlalchemy import SessionMixin
+
+SESSION_COOKIE_NAME = 'grader-session-id'
+
+auth_header_pat = re.compile(r'^(?:token|bearer)\s+([^\s]+)$', flags=re.IGNORECASE)
 
 
 def authorize(scopes: List[Scope]):
@@ -94,10 +107,13 @@ def authorize(scopes: List[Scope]):
     return wrapper
 
 
-class GraderBaseHandler(SessionMixin, web.RequestHandler):
+class BaseHandler(SessionMixin, web.RequestHandler):
     """Base class of all handler classes
 
     Implements validation and request functions"""
+
+    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+        pass
 
     def __init__(
             self,
@@ -107,21 +123,596 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
         # add type hint for application
+        self._accept_cookie_auth = True
+        self._accept_token_auth = True
+
         self.application: GraderServer = self.application
+        self.authenticator = self.application.authenticator
         self.log = self.application.log
 
-    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
-        pass
+    async def prepare(self) -> Optional[Awaitable[None]]:
+        try:
+            await self.get_current_user()
+
+            if not self.current_user and self.request.path not in [
+                self.settings["login_url"],
+                url_path_join(self.application.base_url, r"/api/oauth2/token"),
+                url_path_join(self.application.base_url, r"/oauth_callback"),
+                url_path_join(self.application.base_url, r"/lti13/oauth_callback"),
+            ]:
+                url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
+                self.redirect(url)
+        except Exception as e:
+            # ensure get_current_user is never called again for this handler,
+            # since it failed
+            self._grader_user = None
+            self.log.exception("Failed to get current user")
+            if isinstance(e, SQLAlchemyError):
+                self.log.error("Rolling back session due to database error")
+                self.session.rollback()
+        await maybe_future(super().prepare())
+        return
+
+    @property
+    def oauth_provider(self):
+        return self.application.oauth_provider
+
+    @property
+    def csp_report_uri(self):
+        return self.settings.get(
+            'csp_report_uri',
+            url_path_join(self.application.base_url, 'security/csp-report')
+        )
+
+    @property
+    def content_security_policy(self):
+        """The default Content-Security-Policy header
+
+        Can be overridden by defining Content-Security-Policy in settings['headers']
+        """
+        return '; '.join(
+            ["frame-ancestors 'self'", "report-uri " + self.csp_report_uri]
+        )
+
+    def _set_cookie(self, key, value, encrypted=True, **overrides):
+        """Setting any cookie should go through here
+
+        if encrypted use tornado's set_secure_cookie,
+        otherwise set plaintext cookies.
+        """
+        # tornado <4.2 have a bug that consider secure==True as soon as
+        # 'secure' kwarg is passed to set_secure_cookie
+        kwargs = {'httponly': True}
+        public_url = self.settings.get("public_url")
+        if public_url:
+            if public_url.scheme == 'https':
+                kwargs['secure'] = True
+        else:
+            if self.request.protocol == 'https':
+                kwargs['secure'] = True
+
+        kwargs.update(self.settings.get('cookie_options', {}))
+        kwargs.update(overrides)
+
+        if key.startswith("__Host-"):
+            # __Host- cookies must be secure and on /
+            kwargs["path"] = "/"
+            kwargs["secure"] = True
+
+        if encrypted:
+            set_cookie = self.set_secure_cookie
+        else:
+            set_cookie = self.set_cookie
+
+        self.log.debug("Setting cookie %s: %s", key, kwargs)
+        set_cookie(key, value, **kwargs)
+
+    def _set_user_cookie(self, user, server: "GraderServer"):
+        self.log.debug("Setting cookie for %s: %s", user.name,
+                       server.cookie_name)
+        self._set_cookie(
+            server.cookie_name, user.cookie_id, encrypted=True,
+            path=server.base_url
+        )
+
+    def get_session_cookie(self):
+        """Get the session id from a cookie
+
+        Returns None if no session id is stored
+        """
+        return self.get_cookie(SESSION_COOKIE_NAME, None)
+
+    def _user_for_cookie(self, cookie_name, cookie_value=None):
+        """Get the User for a given cookie, if there is one"""
+        cookie_id = self.get_secure_cookie(
+            cookie_name, cookie_value, max_age_days=self.application.cookie_max_age_days
+        )
+
+        def clear():
+            self.clear_cookie(cookie_name, path=self.application.base_url)
+
+        if cookie_id is None:
+            if self.get_cookie(cookie_name):
+                self.log.warning("Invalid or expired cookie token")
+                clear()
+            return
+        cookie_id = cookie_id.decode('utf8', 'replace')
+        user = self.session.query(User).filter(
+            User.cookie_id == cookie_id).first()
+        # user = self._user_from_orm(u)
+        if user is None:
+            self.log.warning("Invalid cookie token")
+            # have cookie, but it's not valid. Clear it and start over.
+            clear()
+            return
+        # TODO: update user activity
+        # if self._record_activity(user):
+        #     self.session.commit()
+        return user
+
+    def _record_activity(self, obj, timestamp=None):
+        """record activity on an ORM object
+
+        If last_activity was more recent than self.activity_resolution seconds ago,
+        do nothing to avoid unnecessarily frequent database commits.
+
+        Args:
+            obj: an ORM object with a last_activity attribute
+            timestamp (datetime, optional): the timestamp of activity to register.
+        Returns:
+            recorded (bool): True if activity was recorded, False if not.
+        """
+        if timestamp is None:
+            timestamp = utcnow(with_tz=False)
+        resolution = self.settings.get("activity_resolution", 0)
+        if not obj.last_activity or resolution == 0:
+            self.log.debug("Recording first activity for %s", obj)
+            obj.last_activity = timestamp
+            return True
+        if (timestamp - obj.last_activity).total_seconds() > resolution:
+            # this debug line will happen just too often
+            # uncomment to debug last_activity updates
+            # self.log.debug("Recording activity for %s", obj)
+            obj.last_activity = timestamp
+            return True
+        return False
+
+    def get_auth_token(self):
+        """Get the authorization token from Authorization header"""
+        auth_header = self.request.headers.get('Authorization', '')
+        match = auth_header_pat.match(auth_header)
+        if not match:
+            return None
+        return match.group(1)
+
+    @functools.lru_cache
+    def get_token(self):
+        """get token from authorization header"""
+        token = self.get_auth_token()
+        if token is None:
+            return None
+        orm_token = APIToken.find(self.session, token)
+        return orm_token
+
+    def get_current_user_token(self):
+        """get_current_user from Authorization header token"""
+        # record token activity
+        orm_token = self.get_token()
+        if orm_token is None:
+            return None
+        now = utcnow(with_tz=False)
+        recorded = self._record_activity(orm_token, now)
+        if recorded:
+            self.session.commit()
+
+        # record that we've been token-authenticated
+        # XSRF checks are skipped when using token auth
+        self._token_authenticated = True
+        return orm_token.user
+
+    def get_current_user_cookie(self):
+        """get_current_user from a cookie token"""
+        return self._user_for_cookie(self.application.cookie_name)
+
+    async def refresh_auth(self, user, force=False):
+        """Refresh user authentication info
+
+        Calls `authenticator.refresh_user(user)`
+
+        Called at most once per user per request.
+
+        Args:
+            user (User): the user whose auth info is to be refreshed
+            force (bool): force a refresh instead of checking last refresh time
+        Returns:
+            user (User): the user having been refreshed,
+                or None if the user must login again to refresh auth info.
+        """
+        refresh_age = self.authenticator.auth_refresh_age
+        if not refresh_age:
+            return user
+        now = time.monotonic()
+        if (
+                not force
+                and user._auth_refreshed
+                and (now - user._auth_refreshed < refresh_age)
+        ):
+            # auth up-to-date
+            return user
+
+        # refresh a user at most once per request
+        if not hasattr(self, '_refreshed_users'):
+            self._refreshed_users = set()
+        if user.name in self._refreshed_users:
+            # already refreshed during this request
+            return user
+        self._refreshed_users.add(user.name)
+
+        self.log.debug("Refreshing auth for %s", user.name)
+        auth_info = await self.authenticator.refresh_user(user, self)
+
+        if not auth_info:
+            self.log.warning(
+                "User %s has stale auth info. Login is required to refresh.", user.name
+            )
+            return
+
+        user._auth_refreshed = now
+
+        if auth_info == True:
+            # refresh_user confirmed that it's up-to-date,
+            # nothing to refresh
+            return user
+
+        # Ensure name field is set. It cannot be updated.
+        auth_info['name'] = user.name
+
+        if 'auth_state' not in auth_info:
+            # refresh didn't specify auth_state,
+            # so preserve previous value to avoid clearing it
+            auth_info['auth_state'] = await user.get_auth_state()
+        return await self.auth_to_user(auth_info, user)
+
+    async def get_current_user(self):
+        """get current username"""
+        if not hasattr(self, '_grader_user'):
+            user = None
+            try:
+                if self._accept_token_auth:
+                    user = self.get_current_user_token()
+                if user is None and self._accept_cookie_auth:
+                    user = self.get_current_user_cookie()
+                if user and isinstance(user, User):
+                    user = await self.refresh_auth(user)
+                self._grader_user = user
+            except Exception:
+                # don't let errors here raise more than once
+                self._grader_user = None
+                # but still raise, which will get handled in .prepare()
+                raise
+        return self._grader_user
+
+    @property
+    def current_user(self) -> User:
+        """Override .current_user accessor from tornado
+
+        Allows .get_current_user to be async.
+        """
+        if not hasattr(self, '_grader_user'):
+            raise RuntimeError("Must call async get_current_user first!")
+        return self._grader_user
+
+    @property
+    def user(self) -> User:
+        return self.current_user
+
+    def set_session_cookie(self):
+        """Set a new session id cookie
+
+        new session id is returned
+
+        Session id cookie is *not* encrypted,
+        so other services on this domain can read it.
+        """
+        session_id = uuid.uuid4().hex
+        self._set_cookie(
+            SESSION_COOKIE_NAME, session_id, encrypted=False,
+            path=self.application.base_url
+        )
+        return session_id
+
+    def set_grader_cookie(self, user):
+        """set the login cookie for the Hub"""
+        self._set_user_cookie(user, self.application)
+
+    def set_login_cookie(self, user):
+        """Set login cookies for the Hub and single-user server."""
+
+        if not self.get_session_cookie():
+            self.set_session_cookie()
+
+        # create and set a new cookie for the hub
+        cookie_user = self.get_current_user_cookie()
+        if cookie_user is None or cookie_user.name != user.name:
+            if cookie_user:
+                self.log.info(f"User {cookie_user.name} is logging in as {user.name}")
+            self.set_grader_cookie(user)
+
+        # make sure xsrf cookie is updated
+        # this avoids needing a second request to set the right xsrf cookie
+        self._grader_user = user
+        # _set_xsrf_cookie(
+        #     self, self._xsrf_token_id, cookie_path=self.application.base_url, authenticated=True
+        # )
+
+    def authenticate(self, data):
+        return maybe_future(
+            self.authenticator.get_authenticated_user(self, data))
+
+    async def auth_to_user(self, authenticated, user=None):
+        """Persist data from .authenticate() or .refresh_user() to the User database
+
+        Args:
+            authenticated(dict): return data from .authenticate or .refresh_user
+            user(User, optional): the User object to refresh, if refreshing
+        Return:
+            user(User): the constructed User object
+        """
+        if isinstance(authenticated, str):
+            authenticated = {'name': authenticated}
+        username = authenticated['name']
+        auth_state = authenticated.get('auth_state')
+        admin = authenticated.get('admin')
+        refreshing = user is not None
+
+        if user and username != user.name:
+            raise ValueError(
+                f"Username doesn't match! {username} != {user.name}")
+
+        user_model = self.session.query(User).get(username)
+        if user_model is None:
+            self.log.info(f'User {username} does not exist and will be created.')
+            user_model = User()
+            user_model.name = username
+            self.session.add(user_model)
+            self.session.commit()
+
+        # apply authenticator-managed groups
+        if self.authenticator.manage_groups:
+            if "groups" not in authenticated:
+                # to use manage_groups, group membership must always be specified
+                # Authenticators that don't support this feature will omit it,
+                # which should fail here rather than silently not implement the requested behavior
+                auth_cls = self.authenticator.__class__.__name__
+                raise ValueError(
+                    f"Authenticator.manage_groups is enabled, but auth_model for {username} specifies no groups."
+                    f" Does {auth_cls} support manage_groups=True?"
+                )
+            group_names = authenticated["groups"]
+            if group_names is not None:
+                user.sync_groups(group_names)
+        # apply authenticator-managed roles
+        if self.authenticator.manage_roles:
+            auth_roles = authenticated.get("roles")
+            if auth_roles is not None:
+                user.sync_roles(auth_roles)
+
+        # always set auth_state and commit,
+        # because there could be key-rotation or clearing of previous values
+        # going on.
+        if not self.authenticator.enable_auth_state:
+            # auth_state is not enabled. Force None.
+            auth_state = None
+
+        await user_model.save_auth_state(auth_state)
+        return user_model
+
+    async def login_user(self, data=None):
+        """Login a user"""
+        # auth_timer = self.statsd.timer('login.authenticate').start()
+        authenticated = await self.authenticate(data)
+        # auth_timer.stop(send=False)
+
+        if authenticated:
+            user = await self.auth_to_user(authenticated)
+            self.set_login_cookie(user)
+
+            self.log.info("User logged in: %s", user.name)
+            user._auth_refreshed = time.monotonic()
+            return user
+        else:
+            self.log.warning(
+                "Failed login for %s",
+                (data or {}).get('username', 'unknown user')
+            )
+
+    def get_template(self, name, sync=False):
+        """
+        Return the jinja template object for a given name
+
+        If sync is True, we return a Template that is compiled without async support.
+        Only those can be used in synchronous code.
+
+        If sync is False, we return a Template that is compiled with async support
+        """
+        if sync:
+            return self.application.jinja_env_sync.get_template(name)
+        else:
+            return self.application.jinja_env.get_template(name)
+
+    def render_template(self, name, sync=False, **ns):
+        """
+        Render jinja2 template
+
+        If sync is set to True, we render the template & return a string
+        If sync is set to False, we return an awaitable
+        """
+        template_ns = {}
+        template_ns.update(self.template_namespace)
+        template_ns["xsrf_token"] = self.xsrf_token.decode("ascii")
+        template_ns.update(ns)
+        template = self.get_template(name, sync)
+        if sync:
+            return template.render(**template_ns)
+        else:
+            return template.render_async(**template_ns)
+
+    @property
+    def parsed_scopes(self) -> set:
+        # TODO: if user is admin, the scopes should contain "admin-ui" for login.html template
+        scopes = set()
+        return scopes
+
+    @property
+    def template_namespace(self):
+        user = self.current_user
+        base_url = os.path.join(self.application.base_url, "")  # make sure "/" is at the end
+        ns = dict(
+            base_url=base_url,
+            prefix=base_url,
+            user=user,
+            login_url=self.settings['login_url'],
+            login_service=self.authenticator.login_service,
+            logout_url=self.settings['logout_url'],
+            static_url=self.static_url,
+            version_hash='',
+            parsed_scopes=self.parsed_scopes,
+            xsrf=self.xsrf_token.decode('ascii'),
+        )
+        if self.application.template_vars:
+            for key, value in self.application.template_vars.items():
+                if callable(value):
+                    value = value(user)
+                ns[key] = value
+        return ns
+
+    def _validate_next_url(self, next_url):
+        """Validate next_url handling
+
+        protects against external redirects, etc.
+
+        Returns empty string if next_url is not considered safe,
+        resulting in same behavior as if next_url is not specified.
+        """
+        # protect against some browsers' buggy handling of backslash as slash
+        next_url = next_url.replace('\\', '%5C')
+        public_url = self.settings.get("public_url")
+        if public_url:
+            proto = public_url.scheme
+            host = public_url.netloc
+        else:
+            # guess from request
+            proto = get_browser_protocol(self.request)
+            host = self.request.host
+
+        if next_url.startswith("///"):
+            # strip more than 2 leading // down to 2
+            # because urlparse treats that as empty netloc,
+            # whereas browsers treat more than two leading // the same as //,
+            # so netloc is the first non-/ bit
+            next_url = "//" + next_url.lstrip("/")
+        parsed_next_url = urlparse(next_url)
+
+        if (next_url + '/').startswith(
+                (
+                        f'{proto}://{host}/',
+                        f'//{host}/',
+                )
+        ):
+            # treat absolute URLs for our host as absolute paths:
+            # below, redirects that aren't strictly paths are rejected
+            next_url = parsed_next_url.path
+            if parsed_next_url.query:
+                next_url = next_url + '?' + parsed_next_url.query
+            if parsed_next_url.fragment:
+                next_url = next_url + '#' + parsed_next_url.fragment
+            parsed_next_url = urlparse(next_url)
+
+        # if it still has host info, it didn't match our above check for *this* host
+        if next_url and (parsed_next_url.netloc or not next_url.startswith('/')):
+            self.log.warning("Disallowing redirect outside JupyterHub: %r", next_url)
+            next_url = ''
+
+        return next_url
+
+    def get_next_url(self, user=None, default=None):
+        """Get the next_url for login redirect
+
+        Default URL after login:
+
+        - if redirect_to_server (default): send to user's own server
+        - else: /hub/home
+        """
+        next_url = self.get_argument('next', default='')
+        next_url = self._validate_next_url(next_url)
+
+        # this is where we know if next_url is coming from ?next= param or we are using a default url
+        if next_url:
+            next_url_from_param = True
+        else:
+            next_url_from_param = False
+
+        if not next_url:
+            # custom default URL, usually passed because user landed on that page but was not logged in
+            if default:
+                next_url = default
+            else:
+                # As set in jupyterhub_config.py
+                if callable(self.authenticator.login_redirect_url):
+                    next_url = self.authenticator.login_redirect_url(self)
+                else:
+                    next_url = self.authenticator.login_redirect_url
+
+        if not next_url_from_param:
+            # when a request made with ?next=... assume all the params have already been encoded
+            # otherwise, preserve params from the current request across the redirect
+            next_url = self.append_query_parameters(next_url, exclude=['next', '_xsrf'])
+        return next_url
+
+    def append_query_parameters(self, url, exclude=None):
+        """Append the current request's query parameters to the given URL.
+
+        Supports an extra optional parameter ``exclude`` that when provided must
+        contain a list of parameters to be ignored, i.e. these parameters will
+        not be added to the URL.
+
+        This is important to avoid infinite loops with the next parameter being
+        added over and over, for instance.
+
+        The default value for ``exclude`` is an array with "next". This is useful
+        as most use cases in JupyterHub (all?) won't want to include the next
+        parameter twice (the next parameter is added elsewhere to the query
+        parameters).
+
+        :param str url: a URL
+        :param list exclude: optional list of parameters to be ignored, defaults to
+        a list with "next" (to avoid redirect-loops)
+        :rtype (str)
+        """
+        if exclude is None:
+            exclude = ['next']
+        if self.request.query:
+            query_string = [
+                param
+                for param in parse_qsl(self.request.query)
+                if param[0] not in exclude
+            ]
+            if query_string:
+                url = url_concat(url, query_string)
+        return url
+
+
+class GraderBaseHandler(BaseHandler):
 
     async def prepare(self) -> Optional[Awaitable[None]]:
         if ((self.request.path.strip("/")
              != self.application.base_url.strip("/"))
-            and (self.request.path.strip("/")
-                 != self.application.base_url.strip("/") + "/health")):
+                and (self.request.path.strip("/")
+                     != self.application.base_url.strip("/") + "/health")):
             app_config = self.application.config
-            authenticator = self.application.auth_cls(config=app_config)
-            await authenticator.authenticate_user(self)
-        return super().prepare()
+            # await self.authenticator.authenticate(self, self.request.body)
+        await super().prepare()
+        return
 
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
@@ -232,11 +823,11 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
                                assignment: Assignment, message: str,
                                checkout_main: bool = False):
         tmp_path_base = Path(
-                self.application.grader_service_dir,
-                "tmp",
-                assignment.lecture.code,
-                str(assignment.id),
-                str(self.user.name))
+            self.application.grader_service_dir,
+            "tmp",
+            assignment.lecture.code,
+            str(assignment.id),
+            str(self.user.name))
 
         # Deleting dir
         if os.path.exists(tmp_path_base):
@@ -310,10 +901,10 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             GitError: returns appropriate git error"""
         self.log.info(f"Running: {command}")
         ret = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd)
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=cwd)
         await ret.wait()
 
     def write_json(self, obj) -> None:
@@ -341,9 +932,9 @@ class GraderBaseHandler(SessionMixin, web.RequestHandler):
             return cls._serialize(obj.to_dict())
         return None
 
-    @property
-    def user(self) -> User:
-        return self.current_user
+
+class LogoutHandler(BaseHandler):
+    pass
 
 
 def authenticated(
@@ -398,5 +989,3 @@ class RequestHandlerConfig(SingletonConfigurable):
                                             default_value=[],
                                             allow_none=False,
                                             config=True)
-
-    

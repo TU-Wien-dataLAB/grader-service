@@ -20,6 +20,7 @@ Contents
    get_started
    instructor_guide
    student_guide
+   administrator
    contribution
    grader_service/grader_service_rest_api
    about

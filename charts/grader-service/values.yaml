@@ -52,8 +52,6 @@ gitConfig:
 volumePermissions:
   enabled: true
 
-concurrentGradingTasks: 5
-
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
@@ -103,6 +101,19 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+rabbitmq:
+  resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+
+workers:
+  replication: 1
+  resources: {}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
