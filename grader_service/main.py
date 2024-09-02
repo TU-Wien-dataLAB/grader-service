@@ -15,20 +15,32 @@ import subprocess
 import sys
 import inspect
 import tornado
+from jupyterhub.log import log_request
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
-from traitlets import config, Bool, Type
+from traitlets import config, Bool, Type, Instance, Dict, Union, List
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
+from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
-from grader_service.auth.hub import JupyterHubGroupAuthenticator
-from grader_service.autograding.celery.app import CeleryApp
+from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.autograding.celery.app import CeleryApp
+from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
+from grader_service.oauth2.provider import make_provider
+from grader_service.orm import Lecture, Role, User
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import LectureState
+from grader_service.orm.takepart import Scope
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service._version import __version__
+from grader_service.utils import url_path_join
+from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.plugins.lti import LTISyncGrades
 
 
@@ -82,6 +94,11 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
+    def __init__(self):
+        super().__init__()
+        self.db = None
+        self.oauth_provider = None
+
     @default('db_url')
     def _default_db_url(self):
         db_path = os.path.join(self.grader_service_dir, "grader.db")
@@ -118,9 +135,45 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     authenticator_class = Type(
-        default_value=JupyterHubGroupAuthenticator,
-        klass=object, allow_none=False, config=True
+        default_value=DummyAuthenticator,
+        klass=Authenticator, allow_none=False, config=True
     )
+
+    authenticator = Instance(klass=Authenticator)
+
+    # TODO make configurable
+    oauth_token_expires_in = int(1 * 24 * 3600)
+
+    load_roles = Dict(List(),
+                      help="""
+        Dict of `{'lecture:role': ['usernames']}`  to load at startup.
+
+        Example::
+
+            c.GraderService.load_groups = {
+                'groupname:role': ['usernames']
+                },
+            }
+
+        This will replace all existing roles.
+        """,
+                      ).tag(config=True)
+
+    oauth_clients = List(Dict(), default_value=[], help="""
+        List of OAuth clients `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]` to register for the provider.
+        
+        Example::
+            
+            c.GraderService.oauth_clients = [{
+                'client_id': 'hub',
+                'client_secret': 'hub',
+                'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
+            }]
+    """).tag(config=True)
+
+    @default('authenticator')
+    def _authenticator_default(self):
+        return self.authenticator_class(parent=self)
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
@@ -203,6 +256,12 @@ class GraderService(config.Application):
         sql_handler.setFormatter(formatter)
         sql_logger.addHandler(sql_handler)
 
+        oauth_log = logging.getLogger('oauthlib')
+        oauth_handler = stream_handler(stream=sys.stdout)
+        oauth_handler.setFormatter(formatter)
+        oauth_log.setLevel(log_level)
+        oauth_log.addHandler(oauth_handler)
+
         traitlet_logger = traitlets_log.get_logger()
         traitlet_logger.removeHandler(traitlet_logger.handlers[0])
         traitlet_logger.setLevel(log_level)
@@ -236,12 +295,15 @@ class GraderService(config.Application):
         with open(self.config_file, mode='w') as f:
             f.write(config_text)
 
-    def initialize(self, argv):
+    def initialize(self, argv, *args, **kwargs):
         self.log.info("Starting Initialization...")
         self.log.info("Loading config file...")
-        super().initialize(argv)
+        super().initialize(*args, **kwargs)
+        self.parse_command_line(argv)
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
+
+        self.init_roles()
 
         self._start_future = asyncio.Future()
 
@@ -262,6 +324,67 @@ class GraderService(config.Application):
     async def cleanup(self):
         pass
 
+    def init_oauth(self):
+        engine = create_engine(self.db_url)
+        session = sessionmaker(engine)
+        self.oauth_provider = make_provider(
+            session,
+            url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
+            login_url=url_path_join(self.base_url_path, 'login'),
+            token_expires_in=self.oauth_token_expires_in,
+        )
+        for client in self.oauth_clients:
+            self.oauth_provider.add_client(client["client_id"],
+                                           client['client_secret'],
+                                           client['redirect_uri'],
+                                           ['identify'])
+
+    def init_roles(self):
+        """Load predefined groups into the database"""
+        with Session(self.db.engine) as db:
+            # if self.authenticator.manage_groups and self.load_groups:
+            #     raise ValueError("Group management has been offloaded to the authenticator")
+            for k, users in self.load_roles.items():
+                lecture_code, role = k.split(":", 1)
+                lecture = (
+                    db.query(Lecture)
+                    .filter(Lecture.code == lecture_code)
+                    .one_or_none()
+                )
+                # create lecture if no lecture with that name exists yet
+                # (code is set in create)
+                if lecture is None:
+                    self.log.info(
+                        f"Adding new lecture with lecture_code {lecture_code}")
+                    lecture = Lecture()
+                    lecture.code = lecture_code
+                    lecture.name = lecture_code
+                    lecture.state = LectureState.active
+                    lecture.deleted = DeleteState.active
+                    db.add(lecture)
+                db.commit()
+
+                for username in users:
+                    user = (
+                        db.query(User)
+                        .filter(User.name == username)
+                        .one_or_none()
+                    )
+                    if user is None:
+                        self.log.info(f"Adding new user with username {username}")
+                        user = User()
+                        user.name = username
+                        db.add(user)
+                        db.commit()
+
+                    db.query(Role).filter(Role.username == user.name).delete()
+                    try:
+                        db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
+                    except KeyError:
+                        self.log.error(f"Invalid role name: {role}")
+                        raise ValueError(f"Invalid role name: {role}")
+                db.commit()
+
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
 
@@ -274,24 +397,40 @@ class GraderService(config.Application):
 
         self._setup_environment()
 
+        self.init_oauth()
+
         # pass config
         self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        # Add the handlers of the authenticator
+        auth_handlers = self.authenticator.get_handlers(self.base_url_path)
+        handlers.extend(auth_handlers)
+        self.log.info(f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
+
+        oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
+        handlers.extend(oauth_provider_handlers)
+        self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
-                auth_cls=self.authenticator_class,
+                authenticator=self.authenticator,
                 handlers=handlers,
+                oauth_provider=self.oauth_provider,
                 cookie_secret=secrets.token_hex(
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
                 db=db(self.db_url),
                 parent=self,
+                login_url=self.authenticator.login_url(self.base_url_path),
+                logout_url=self.authenticator.logout_url(self.base_url_path),
+                static_url_prefix=url_path_join(self.base_url_path, 'static/'),
+                static_handler_class=CacheControlStaticFilesHandler,
+                log_function=log_request
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,

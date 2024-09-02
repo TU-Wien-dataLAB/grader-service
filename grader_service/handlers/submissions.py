@@ -268,7 +268,7 @@ class SubmissionHandler(GraderBaseHandler):
                             reason="Git repository not found")
 
         try:
-            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user. 
+            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user.
             # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
             # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
             if commit_hash != "0" * 40:
@@ -528,6 +528,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         if submission.manual_status == 'manually_graded':
             submission.manually_graded = 'being_edited'
+
 
         self.session.commit()
         self.write_json(submission)
