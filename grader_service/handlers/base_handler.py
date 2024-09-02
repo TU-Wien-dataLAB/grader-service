@@ -741,12 +741,14 @@ class GraderBaseHandler(BaseHandler):
                        submission_id: int) -> Submission:
         submission = self.session.query(Submission).get(submission_id)
         if (
-                submission is None
-                or submission.assignid != assignment_id
-                or submission.assignment.lectid != lecture_id
+                (submission is None)
+                or (submission.assignid != assignment_id)
+                or (int(submission.assignment.lectid) != int(lecture_id))
+                or (submission.deleted == DeleteState.deleted)
         ):
+            msg = "Submission with id " + str(submission_id) + " was not found"
             raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Submission was not found")
+                            reason=msg)
         return submission
 
     @property
