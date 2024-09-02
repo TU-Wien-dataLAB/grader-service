@@ -40,6 +40,7 @@ dependencies = [
     "python-dateutil>=2.8.2",
     "jupyter-client>=7.1.1",
     "nbconvert>=6.4.0",
+    "celery>=5.3.6"
 ]
 
 [tool.setuptools]
@@ -52,6 +53,7 @@ exclude = ["grader_service.tests", "grader_service.tests.*"]
 grader-service = "grader_service.main:main"
 grader-service-migrate = "grader_service.migrate.migrate:main"
 grader-convert = "grader_service.convert.main:main"
+grader-worker = "grader_service.autograding.celery.worker:main"
 
 [project.urls]
 Homepage = "https://github.com/TU-Wien-dataLAB/Grader-Service"

@@ -1,4 +1,3 @@
-
 # hub relates to the hub pod, responsible for running JupyterHub, its configured
 # Authenticator class KubeSpawner, and its configured Proxy class
 # ConfigurableHTTPProxy. KubeSpawner creates the user pods, and
@@ -22,9 +21,18 @@ hub:
       c.JupyterHub.tornado_settings = { 'headers': {'Content-Security-Policy': "frame-ancestors localhost 127.0.0.1 'self'"} }
 
       c.JupyterHub.load_groups = {
-        "lect1:instructor": ["admin", "instructor"],
-        "lect1:tutor": ["tutor"],
-        "lect1:student": ["student"]
+        "lect1:instructor": {
+          'users': ['admin', 'instructor'],
+          'properties': {},
+        },
+        "lect1:tutor": {
+          'users': ['tutor'],
+          'properties': {},
+        },
+        "lect1:student":{
+          'users': ['student'],
+          'properties': {},
+        }
       }
       
       c.KubeSpawner.debug = True
@@ -48,8 +56,8 @@ singleuser:
     type: none
   defaultUrl: /lab
   image:
-    name: ghcr.io/tu-wien-datalab/grader-service-labextension
-    tag: "main"
+    name: ghcr.io/tu-wien-datalab/grader-labextension
+    tag: "latest"
   extraEnv:
     GRADER_HOST_URL: http://grader-service:4010
 
