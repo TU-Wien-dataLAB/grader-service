@@ -16,9 +16,8 @@ from alembic import config
 from alembic.command import upgrade
 from .db_util import insert_assignments, insert_lectures
 
-__all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user", "default_token"]
-
-from ...auth.hub import JupyterHubGroupAuthenticator
+__all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user",
+           "default_token"]
 
 
 @pytest.fixture(scope="function")
@@ -28,6 +27,7 @@ def db_test_config():
     )
     cfg.set_main_option("script_location", os.path.abspath(os.path.dirname(__file__) + "../../../migrate"))
     yield cfg
+
 
 @pytest.fixture(scope="function")
 def sql_alchemy_db(db_test_config):
@@ -76,6 +76,7 @@ def jupyter_hub_mock_server(httpserver):
 
     yield for_user
 
+
 @pytest.fixture(scope="function")
 def default_user():
     user = {
@@ -85,6 +86,7 @@ def default_user():
         "groups": ["20wle2:instructor", "21wle1:student", "22wle1:instructor"],
     }
     yield user
+
 
 @pytest.fixture(scope="function")
 def default_token():
