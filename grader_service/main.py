@@ -29,6 +29,7 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.autograding.celery.app import CeleryApp
 from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
 from grader_service.oauth2.provider import make_provider
 from grader_service.orm import Lecture, Role, User
@@ -37,11 +38,18 @@ from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
 from grader_service.utils import url_path_join
 from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.plugins.lti import LTISyncGrades
+
+
+def db(url):
+    is_sqlite = 'sqlite://' in url
+    return SQLAlchemy(
+        url, engine_options={} if is_sqlite else
+        {"pool_size": 50, "max_overflow": -1}
+    )
 
 
 class GraderService(config.Application):
@@ -295,11 +303,6 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
-        isSQLite = 'sqlite://' in self.db_url
-        self.db = SQLAlchemy(
-            self.db_url, engine_options={} if isSQLite else
-            {"pool_size": 50, "max_overflow": -1}
-        )
         self.init_roles()
 
         self._start_future = asyncio.Future()
@@ -311,6 +314,12 @@ class GraderService(config.Application):
             msg = "No git executable found! " \
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
+
+    def set_config(self):
+        """ Pass config to singletons. """
+        RequestHandlerConfig.config = self.config
+        LTISyncGrades.config = self.config
+        CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
         pass
@@ -386,14 +395,12 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        await self._setup_environment()
+        self._setup_environment()
 
         self.init_oauth()
 
         # pass config
-        GraderExecutor.config = self.config
-        RequestHandlerConfig.config = self.config
-        LTISyncGrades.config = self.config
+        self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         # Add the handlers of the authenticator
@@ -417,7 +424,7 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=self.db,
+                db=db(self.db_url),
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),
@@ -446,7 +453,7 @@ class GraderService(config.Application):
         # finish start
         self._start_future.set_result(None)
 
-    async def _setup_environment(self):
+    def _setup_environment(self):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
