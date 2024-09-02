@@ -303,6 +303,7 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
+        self.db = db(self.db_url)
         self.init_roles()
 
         self._start_future = asyncio.Future()
@@ -424,7 +425,7 @@ class GraderService(config.Application):
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=db(self.db_url),
+                db=self.db,
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),
