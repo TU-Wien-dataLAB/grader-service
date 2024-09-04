@@ -36,7 +36,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         return os.path.join(self.grader_service_dir, self.relative_output_path,
                             f"feedback_{self.submission.id}")
 
-    async def _pull_submission(self):
+    def _pull_submission(self):
         if not os.path.exists(self.input_path):
             os.mkdir(self.input_path)
 
@@ -72,7 +72,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command}")
         try:
-            await self._run_subprocess(command, self.input_path)
+            self._run_subprocess(command, self.input_path)
         except CalledProcessError:
             pass
 
@@ -80,12 +80,12 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
                   f'submission_{self.submission.commit_hash}'
         self.log.info(f"Running {command}")
         try:
-            await self._run_subprocess(command, self.input_path)
+            self._run_subprocess(command, self.input_path)
         except CalledProcessError:
             pass
         self.log.info("Successfully cloned repo")
 
-    async def _run(self):
+    def _run(self):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
@@ -105,7 +105,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         self.grading_logs = log_stream.getvalue()
         autograder.log.removeHandler(log_handler)
 
-    async def _push_results(self):
+    def _push_results(self):
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
 
         assignment: Assignment = self.submission.assignment
@@ -134,7 +134,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
             try:
-                await self._run_subprocess(
+                self._run_subprocess(
                     f'git init --bare "{git_repo_path}"', self.output_path
                 )
             except CalledProcessError:
@@ -143,7 +143,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command} at {self.output_path}")
         try:
-            await self._run_subprocess(command, self.output_path)
+            self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
 
@@ -154,17 +154,17 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             f"feedback_{self.submission.commit_hash}"
         )
         try:
-            await self._run_subprocess(command, self.output_path)
+            self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
         self.log.info(f"Now at branch "
                       f"feedback_{self.submission.commit_hash}")
 
         self.log.info(f"Commiting all files in {self.output_path}")
-        await self._run_subprocess(
+        self._run_subprocess(
             f"{self.git_executable} add -A", self.output_path
         )
-        await self._run_subprocess(
+        self._run_subprocess(
             f'{self.git_executable} commit -m "{self.submission.commit_hash}"',
             self.output_path,
         )
@@ -174,7 +174,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         )
         command = f'{self.git_executable} push -uf "{git_repo_path}" ' \
                   f'feedback_{self.submission.commit_hash}'
-        await self._run_subprocess(command, self.output_path)
+        self._run_subprocess(command, self.output_path)
         self.log.info("Pushing complete")
 
     def _set_properties(self):
@@ -198,7 +198,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert",
                                  allow_none=False).tag(config=True)
 
-    async def _run(self):
+    def _run(self):
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
 
@@ -208,7 +208,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
         command = f'{self.convert_executable} generate_feedback -i ' \
                   f'"{self.input_path}" -o "{self.output_path}" -p "**/*.ipynb"'
         self.log.info(f"Running {command}")
-        process = await self._run_subprocess(command, None)
+        process = self._run_subprocess(command, None)
         self.grading_logs = process.stderr.read().decode("utf-8")
         self.log.info(self.grading_logs)
         if process.returncode == 0:
