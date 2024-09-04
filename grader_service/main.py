@@ -94,10 +94,8 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
-    def __init__(self):
-        super().__init__()
-        self.db = None
-        self.oauth_provider = None
+    db: SQLAlchemy = None
+    oauth_provider = None
 
     @default('db_url')
     def _default_db_url(self):
@@ -343,8 +341,7 @@ class GraderService(config.Application):
     def init_roles(self):
         """Load predefined groups into the database"""
         with Session(self.db.engine) as db:
-            # if self.authenticator.manage_groups and self.load_groups:
-            #     raise ValueError("Group management has been offloaded to the authenticator")
+            users_loaded = set()
             for k, users in self.load_roles.items():
                 lecture_code, role = k.split(":", 1)
                 lecture = (
@@ -378,7 +375,11 @@ class GraderService(config.Application):
                         db.add(user)
                         db.commit()
 
-                    db.query(Role).filter(Role.username == user.name).delete()
+                    # delete all roles of users the first time a new role is added for the user
+                    if user.name not in users_loaded:
+                        db.query(Role).filter(Role.username == user.name).delete()
+                        users_loaded.add(user.name)
+
                     try:
                         db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
                     except KeyError:
@@ -407,7 +408,8 @@ class GraderService(config.Application):
         # Add the handlers of the authenticator
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
-        self.log.info(f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
+        self.log.info(
+            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
 
         oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
         handlers.extend(oauth_provider_handlers)
@@ -542,9 +544,3 @@ class GraderService(config.Application):
         git_path = os.path.join(path, "git")
         if not os.path.isdir(git_path):
             os.mkdir(git_path, mode=0o700)
-
-
-main = GraderService.launch_instance
-
-if __name__ == "__main__":
-    main(sys.argv)

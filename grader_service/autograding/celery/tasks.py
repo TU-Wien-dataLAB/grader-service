@@ -48,7 +48,7 @@ def add(self: GraderTask, x, y):
 @app.task(bind=True, base=GraderTask)
 def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
-    grader_service_dir = GraderService(config=self.celery.config).grader_service_dir
+    grader_service_dir = GraderService.instance().grader_service_dir
 
     submission = self.session.query(Submission).get(sub_id)
     if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
@@ -58,6 +58,7 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
         grader_service_dir, submission,
         config=self.celery.config
     )
+    self.log.info(f"Running autograding task for submission {submission.id}")
     asyncio.run(executor.start())
     self.log.info(f"Autograding task of submission {submission.id} exited!")
 

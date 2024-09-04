@@ -13,16 +13,14 @@ from .tornado_test_utils import *
 
 # @pytest.mark.asyncio
 async def test_version_handler(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        default_roles,
+        default_user_login,
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")
-
     url = service_base_url + "/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200
@@ -30,16 +28,14 @@ async def test_version_handler(
 
 
 async def test_version_handler_with_specifier(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        default_roles,
+        default_user_login,
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")
-
     url = service_base_url + "/v1/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200

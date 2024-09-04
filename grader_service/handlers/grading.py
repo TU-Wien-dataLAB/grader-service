@@ -5,13 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
 
-from celery import chain
+import celery
 from tornado.web import HTTPError
 
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
-from grader_service.plugins.lti import LTISyncGrades
 from .handler_utils import parse_ids
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Scope
@@ -87,6 +83,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         if self.session:
             self.session.commit()
 
+    @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int, sub_id):
         """
         Starts the process of generating feedback for a submission.
@@ -107,7 +104,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         self.session.commit()
 
         # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
-        generate_feedback_chain = chain(
+        generate_feedback_chain = celery.chain(
             generate_feedback_task.si(lecture_id, assignment_id, sub_id),
             lti_sync_task.si(lecture_id, assignment_id, sub_id, sync_on_feedback=True)
         )

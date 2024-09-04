@@ -19,7 +19,6 @@ from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
-from grader_service.handlers.base_handler import RequestHandlerConfig
 
 
 class GenerateFeedbackExecutor(LocalAutogradeExecutor):

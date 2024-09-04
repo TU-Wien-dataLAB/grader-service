@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import asyncio
+import base64
 import re
 import shlex
 import subprocess
@@ -19,7 +20,7 @@ import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, List, Optional, Union
 from urllib.parse import urlparse, parse_qsl
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -47,10 +48,50 @@ from tornado_sqlalchemy import SessionMixin
 
 SESSION_COOKIE_NAME = 'grader-session-id'
 
-auth_header_pat = re.compile(r'^(?:token|bearer)\s+([^\s]+)$', flags=re.IGNORECASE)
+auth_header_pat = re.compile(r'^(token|bearer|basic)\s+([^\s]+)$', flags=re.IGNORECASE)
 
 
-def authorize(scopes: List[Scope]):
+def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]) -> bool:
+    if (("/permissions" in self.request.path)
+            or ("/config" in self.request.path)):
+        return True
+    if (
+            lecture_id is None
+            and "/lectures" in self.request.path
+            and self.request.method == "POST"
+    ):
+        # lecture name and semester is in post body
+        try:
+            data = json_decode(self.request.body)
+            lecture_id = (
+                self.session.query(Lecture)
+                .filter(Lecture.code == data["code"])
+                .one()
+                .id
+            )
+        except MultipleResultsFound:
+            raise HTTPError(403)
+        except NoResultFound:
+            raise HTTPError(404, "Lecture not found")
+        except json.decoder.JSONDecodeError:
+            raise HTTPError(403)
+    elif (
+            lecture_id is None
+            and "/lectures" in self.request.path
+            and self.request.method == "GET"
+    ):
+        return True
+
+    role = self.session.query(Role).get((self.user.name, lecture_id))
+    if (role is None) or (role.role not in scopes):
+        msg = f"User {self.user.name} tried to access "
+        msg += f"{self.request.path} with insufficient privileges"
+        self.log.warn(msg)
+        raise HTTPError(403)
+    return True
+
+
+def authorize(scopes: list[Scope]):
     """Checks if user is authorized.
     :param scopes: the user's roles
     :return: wrapper function
@@ -63,43 +104,8 @@ def authorize(scopes: List[Scope]):
         @functools.wraps(handler_method)
         async def request_handler_wrapper(self: "GraderBaseHandler", *args,
                                           **kwargs):
-            lect_id = self.path_kwargs.get("lecture_id", None)
-            if (("/permissions" in self.request.path)
-                    or ("/config" in self.request.path)):
-                return await handler_method(self, *args, **kwargs)
-            if (
-                    lect_id is None
-                    and "/lectures" in self.request.path
-                    and self.request.method == "POST"
-            ):
-                # lecture name and semester is in post body
-                try:
-                    data = json_decode(self.request.body)
-                    lect_id = (
-                        self.session.query(Lecture)
-                        .filter(Lecture.code == data["code"])
-                        .one()
-                        .id
-                    )
-                except MultipleResultsFound:
-                    raise HTTPError(403)
-                except NoResultFound:
-                    raise HTTPError(404, "Lecture not found")
-                except json.decoder.JSONDecodeError:
-                    raise HTTPError(403)
-            elif (
-                    lect_id is None
-                    and "/lectures" in self.request.path
-                    and self.request.method == "GET"
-            ):
-                return await handler_method(self, *args, **kwargs)
-
-            role = self.session.query(Role).get((self.user.name, lect_id))
-            if (role is None) or (role.role not in scopes):
-                msg = f"User {self.user.name} tried to access "
-                msg += f"{self.request.path} with insufficient privileges"
-                self.log.warn(msg)
-                raise HTTPError(403)
+            lecture_id = self.path_kwargs.get("lecture_id", None)
+            check_authorization(self, scopes, lecture_id)  # raises appropriate HTTPError if not authorized
             return await handler_method(self, *args, **kwargs)
 
         return request_handler_wrapper
@@ -140,6 +146,10 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 url_path_join(self.application.base_url, r"/oauth_callback"),
                 url_path_join(self.application.base_url, r"/lti13/oauth_callback"),
             ]:
+                # require git to authenticate with token -> otherwise return 401 code
+                if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+                    raise HTTPError(401)
+
                 url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                 self.redirect(url)
         except Exception as e:
@@ -150,6 +160,8 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             if isinstance(e, SQLAlchemyError):
                 self.log.error("Rolling back session due to database error")
                 self.session.rollback()
+            if isinstance(e, HTTPError) and e.status_code == 401:
+                raise e
         await maybe_future(super().prepare())
         return
 
@@ -283,7 +295,13 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         match = auth_header_pat.match(auth_header)
         if not match:
             return None
-        return match.group(1)
+
+        if match.group(1).lower() == "basic":
+            auth_decoded = base64.b64decode(match.group(2)).decode('ascii')
+            _, token = auth_decoded.split(":", 2)
+            return token
+        else:
+            return match.group(2)
 
     @functools.lru_cache
     def get_token(self):

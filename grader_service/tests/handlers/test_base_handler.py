@@ -3,10 +3,11 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import base64
 
 import pytest
 import json
-from grader_service.handlers.base_handler import GraderBaseHandler
+from grader_service.handlers.base_handler import GraderBaseHandler, BaseHandler
 from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
 from datetime import datetime
 from grader_service.api.models.error_message import ErrorMessage
@@ -31,8 +32,10 @@ def test_number_serialization():
 def test_list_serialization():
     assert GraderBaseHandler._serialize([1, 2, 3]) == [1, 2, 3]
 
+
 def test_list_serialization_empty():
     assert GraderBaseHandler._serialize([]) == []
+
 
 def test_tuple_serialization():
     assert GraderBaseHandler._serialize((1, 2, 3)) == (1, 2, 3)
@@ -43,16 +46,19 @@ def test_dict_serialization():
     s = GraderBaseHandler._serialize(d)
     assert d == s
 
+
 def test_dict_serialization_empty():
     d = {}
     s = GraderBaseHandler._serialize(d)
     assert d == s
+
 
 def test_datetime_serialization():
     d = datetime.now()
     s = GraderBaseHandler._serialize(d)
     assert type(s) == str
     assert str(d) == s
+
 
 def test_assignment_serialization():
     d = {
@@ -83,10 +89,20 @@ def test_assignment_serialization():
     d["automatic_grading"] = d["automatic_grading"].name
     assert GraderBaseHandler._serialize(a) == d
 
+
 def test_nested_serialization():
     o = [{"b": None}, {"a": 2}, "test", {"z": []}]
     s = GraderBaseHandler._serialize(o)
     assert o == s
 
+
 def test_api_model_serialization():
     err = ErrorMessage("")
+
+
+@pytest.mark.parametrize(["token_str"],
+                         [("Token test",), ("Bearer test",), (f"Basic {base64.b64encode(b'test').decode('utf-8')}",)])
+def test_get_auth_token(token_str):
+    handler = MagicMock()
+    handler.request.headers.get = MagicMock(return_value=token_str)
+    assert BaseHandler.get_auth_token(self=handler) == "test"

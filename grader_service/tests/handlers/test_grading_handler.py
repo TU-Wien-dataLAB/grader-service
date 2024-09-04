@@ -7,7 +7,11 @@
 from datetime import datetime
 from re import sub
 import secrets
+
+import celery
 import pytest
+
+import grader_service
 from grader_service.server import GraderServer
 import json
 from grader_service.api.models.submission import Submission
@@ -24,89 +28,83 @@ from .tornado_test_utils import *
 
 
 async def test_auto_grading(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token,
-    sql_alchemy_db,
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_token,
+        default_user,
+        sql_alchemy_db,
+        default_roles,
+        default_user_login
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    l_id = 3 # default user is student
-    a_id = 4
+    l_id = 3  # default user is instructor
+    a_id = 3
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
     engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user.name)
 
-    with patch.object(LocalAutogradeExecutor, "start", return_value=None) as start_mock:
-        response = await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"}
-        )
-        assert response.code == 202
-        submission = Submission.from_dict(json.loads(response.body.decode()))
-        assert submission.id == 1
+    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
+        with patch.object(grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None) as task_mock:
+            response = await http_server_client.fetch(
+                url, method="GET", headers={"Authorization": f"Token {default_token}"}
+            )
 
-    start_mock.assert_called()
+    assert response.code == 202
+    submission = Submission.from_dict(json.loads(response.body.decode()))
+    assert submission.id == 1
+
+    task_mock.assert_called()
 
 
 async def test_auto_grading_wrong_assignment(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token,
-    sql_alchemy_db,
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+        default_roles,
+        default_user_login
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    l_id = 3 # default user is student
+    l_id = 3  # default user is instructor
     a_id = 3
 
     engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user.name)
 
     a_id = 99
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"}
-        )
+    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
+        with patch.object(grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None):
+            with pytest.raises(HTTPClientError) as exc_info:
+                await http_server_client.fetch(
+                    url, method="GET", headers={"Authorization": f"Token {default_token}"}
+                )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_auto_grading_wrong_lecture(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token,
-    sql_alchemy_db,
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+        default_roles,
+        default_user_login
 ):
-    default_user["groups"] = ["20wle2:instructor", "21wle1:instructor", "22wle1:instructor"]
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    l_id = 3 # default user is student
-    a_id = 3
+    a_id = 1
 
     engine = sql_alchemy_db.engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user.name)
 
     l_id = 99
-    # default user now instructor -> passes authorization for handler
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -118,56 +116,54 @@ async def test_auto_grading_wrong_lecture(
 
 
 async def test_feedback(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token,
-    sql_alchemy_db,
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+        default_roles,
+        default_user_login
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    l_id = 3 # default user is student
-    a_id = 4
+    l_id = 3  # default user is instructor
+    a_id = 3
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
 
     engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user.name)
 
-    with patch.object(GenerateFeedbackExecutor, "start", return_value=None) as start_mock:
-        with patch.object(GraderExecutor, "submit", return_value=None) as submit_mock:
-            response = await http_server_client.fetch(
-                url, method="GET", headers={"Authorization": f"Token {default_token}"}
-            )
-            assert response.code == 202
-            submission = Submission.from_dict(json.loads(response.body.decode()))
-            assert submission.id == 1
+    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
+        with patch.object(grader_service.autograding.celery.tasks.generate_feedback_task, "si", return_value=None):
+            with patch.object(grader_service.autograding.celery.tasks.lti_sync_task, "si", return_value=None):
+                with patch.object(celery, "chain", return_value=MagicMock) as chain_mock:
+                    response = await http_server_client.fetch(
+                        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+                    )
+    assert response.code == 202
+    submission = Submission.from_dict(json.loads(response.body.decode()))
+    assert submission.id == 1
 
-    submit_mock.assert_called()
+    chain_mock.assert_called()
 
 
 async def test_feedback_wrong_assignment(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    jupyter_hub_mock_server,
-    default_user,
-    default_token,
-    sql_alchemy_db,
+        app: GraderServer,
+        service_base_url,
+        http_server_client,
+        default_user,
+        default_token,
+        sql_alchemy_db,
+        default_roles,
+        default_user_login
 ):
-    http_server = jupyter_hub_mock_server(default_user, default_token)
-    app.auth_cls.hub_api_url = http_server.url_for("")[0:-1]
-
-    l_id = 3 # default user is student
+    l_id = 3  # default user is instructor
     a_id = 3
 
     engine = sql_alchemy_db.engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user["name"])
+    insert_submission(engine, a_id, default_user.name)
 
     a_id = 99
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
@@ -178,4 +174,3 @@ async def test_feedback_wrong_assignment(
         )
     e = exc_info.value
     assert e.code == 404
-
