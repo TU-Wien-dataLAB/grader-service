@@ -1,6 +1,7 @@
 from traitlets import default, Unicode
 
 from grader_service.auth.auth import Authenticator
+from grader_service.auth.login import LogoutHandler
 
 
 class DummyAuthenticator(Authenticator):
@@ -16,6 +17,8 @@ class DummyAuthenticator(Authenticator):
         `allow_all` defaults to True,
         preserving default behavior.
     """
+    
+    logout_handler = LogoutHandler
 
     @default("allow_all")
     def _allow_all_default(self):
@@ -47,3 +50,8 @@ class DummyAuthenticator(Authenticator):
                 return data['username']
             return None
         return data['username']
+    
+    def get_handlers(self, base_url_path: str):
+        base_handlers = super().get_handlers(base_url_path)
+        dummy_handlers = [(self.logout_url(base_url_path), self.logout_handler)]
+        return base_handlers + dummy_handlers

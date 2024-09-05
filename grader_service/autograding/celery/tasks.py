@@ -59,7 +59,7 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
         config=self.celery.config
     )
     self.log.info(f"Running autograding task for submission {submission.id}")
-    asyncio.run(executor.start())
+    executor.start()
     self.log.info(f"Autograding task of submission {submission.id} exited!")
 
 
@@ -76,7 +76,7 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
         grader_service_dir, submission,
         config=self.celery.config
     )
-    asyncio.run(executor.start())
+    executor.start()
     self.log.info(f"Successfully generated feedback for submission {submission.id}!")
 
 

@@ -38,6 +38,7 @@ class SelfAPIHandler(BaseHandler):
         else:
             model["token_id"] = None
             model["session_id"] = None
+        model["roles"] = [f"{r.lecture.code}:{r.role.name}" for r in user.roles]
         self.write(json.dumps(model))
 
 

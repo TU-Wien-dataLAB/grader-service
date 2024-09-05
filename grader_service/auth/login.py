@@ -15,9 +15,6 @@ from grader_service.handlers.base_handler import BaseHandler
 class LogoutHandler(BaseHandler):
     """Log a user out by clearing their login cookie."""
 
-    @property
-    def shutdown_on_logout(self):
-        return self.settings.get('shutdown_on_logout', False)
 
     def _backend_logout_cleanup(self, name):
         """Default backend logout actions
@@ -33,9 +30,6 @@ class LogoutHandler(BaseHandler):
         """
         user = self.current_user
         if user:
-            if self.shutdown_on_logout:
-                await self._shutdown_servers(user)
-
             self._backend_logout_cleanup(user.name)
 
     async def handle_logout(self):
@@ -63,9 +57,9 @@ class LogoutHandler(BaseHandler):
         """
         await self.default_handle_logout()
         await self.handle_logout()
-        # clear jupyterhub user before rendering logout page
+        # clear grader user before rendering logout page
         # ensures the login button is shown instead of logout
-        self._jupyterhub_user = None
+        self._grader_user = None
         await self.render_logout_page()
 
 

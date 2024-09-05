@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, List
 
+from grader_service.auth.oauth2 import OAuthLogoutHandler
 from grader_service.utils import url_path_join  # type: ignore
 from traitlets import CaselessStrEnum
 from traitlets import List as TraitletsList
@@ -36,6 +37,7 @@ class LTI13Authenticator(Authenticator):
     login_handler = LTI13LoginInitHandler
     callback_handler = LTI13CallbackHandler
     config_handler = LTI13ConfigHandler
+    logout_handler = OAuthLogoutHandler
 
     authorize_url = Unicode(
         config=True,
@@ -162,6 +164,7 @@ class LTI13Authenticator(Authenticator):
             (self.login_url(base_url_path), self.login_handler),
             (self.callback_url(base_url_path), self.callback_handler),
             (self.config_json_url(base_url_path), self.config_handler),
+            (self.logout_url(base_url_path), self.logout_handler),
         ]
 
     async def authenticate(
