@@ -51,12 +51,12 @@ spec:
             {{- range .Values.extraEnv }}
             - name: {{ .name }}
               {{- if .value }}
-                value: {{ .value }}
+              value: {{ .value }}
               {{- else if .secretKeyRef }}
-                valueFrom:
-                  secretKeyRef:
-                    name: {{ .secretKeyRef.name }}
-                    key: {{ .secretKeyRef.key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretKeyRef.name }}
+                  key: {{ .secretKeyRef.key }}
               {{- end }}
             {{- end }}
             - name: JUPYTERHUB_API_URL
