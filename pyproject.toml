@@ -41,7 +41,8 @@ dependencies = [
     "jupyter-client>=7.1.1",
     "nbconvert>=6.4.0",
     "async_generator>=1.10",
-    "celery>=5.3.6"
+    "celery>=5.3.6",
+    "jupyterhub>=5"
 ]
 
 [tool.setuptools]
