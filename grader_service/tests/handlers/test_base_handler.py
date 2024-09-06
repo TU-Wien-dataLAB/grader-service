@@ -101,7 +101,7 @@ def test_api_model_serialization():
 
 
 @pytest.mark.parametrize(["token_str"],
-                         [("Token test",), ("Bearer test",), (f"Basic {base64.b64encode(b'test').decode('utf-8')}",)])
+                         [("Token test",), ("Bearer test",), (f"Basic {base64.b64encode(b'test:test').decode('utf-8')}",)])
 def test_get_auth_token(token_str):
     handler = MagicMock()
     handler.request.headers.get = MagicMock(return_value=token_str)
