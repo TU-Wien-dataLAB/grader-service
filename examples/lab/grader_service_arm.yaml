@@ -125,7 +125,7 @@ spec:
                 key: hub.services.grader.apiToken
           - name: JUPYTERHUB_API_URL
             value: 'http://hub:8081/hub/api'
-          - name: GRADER_SERVICE_PORT
+          - name: GRADER_PORT
             value: "4010"
           - name: JUPYTERHUB_BASE_URL
             value: '/'

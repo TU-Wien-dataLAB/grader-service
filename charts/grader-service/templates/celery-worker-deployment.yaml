@@ -38,7 +38,7 @@ spec:
           resources:
             {{- toYaml .Values.workers.resources | nindent 12 }}
           env:
-            - name: GRADER_SERVICE_PORT
+            - name: GRADER_PORT
               value: {{ .Values.port | quote }}
             - name: RABBITMQ_GRADER_SERVICE_USERNAME
               valueFrom:

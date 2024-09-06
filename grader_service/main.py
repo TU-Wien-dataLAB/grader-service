@@ -73,12 +73,12 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     service_host = Unicode(
-        os.getenv("GRADER_SERVICE_HOST", "0.0.0.0"),
+        os.getenv("GRADER_HOST", "0.0.0.0"),
         help="The host address of the service"
     ).tag(config=True)
 
     service_port = Int(
-        int(os.getenv("GRADER_SERVICE_PORT", "4010")),
+        int(os.getenv("GRADER_PORT", "4010")),
         help="The port the service runs on"
     ).tag(config=True)
 
