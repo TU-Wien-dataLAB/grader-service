@@ -38,6 +38,17 @@ spec:
           resources:
             {{- toYaml .Values.workers.resources | nindent 12 }}
           env:
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ .value }}
+              {{- else if .secretKeyRef }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretKeyRef.name }}
+                  key: {{ .secretKeyRef.key }}
+              {{- end }}
+            {{- end }}
             - name: GRADER_PORT
               value: {{ .Values.port | quote }}
             - name: RABBITMQ_GRADER_SERVICE_USERNAME
