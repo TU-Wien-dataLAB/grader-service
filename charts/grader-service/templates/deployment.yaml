@@ -49,7 +49,7 @@ spec:
           env:
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}
-            - name: GRADER_SERVICE_PORT
+            - name: GRADER_PORT
               value: {{ .Values.port | quote }}
             - name: JUPYTERHUB_BASE_URL
               value: {{ .Values.jupyterhub.baseUrl }}
