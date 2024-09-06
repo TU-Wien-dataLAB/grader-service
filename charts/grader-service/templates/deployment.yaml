@@ -47,6 +47,18 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
+          # Include extra environment variables if they exist
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              {{- if .value }}
+                value: {{ .value }}
+              {{- else if .secretKeyRef }}
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ .secretKeyRef.name }}
+                    key: {{ .secretKeyRef.key }}
+              {{- end }}
+            {{- end }}
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}
             - name: GRADER_PORT

@@ -110,7 +110,7 @@ from grader_service.auth.lti13.auth import LTI13Authenticator
 
 c.GraderService.authenticator_class = DummyAuthenticator
 #
-# c.Authenticator.allowed_users = {'instructor', 'tutor', 'student1', 'student2', 'matti.matt456@gmail.com', 'matthiasmatt', '2'}
+# c.Authenticator.allowed_users = {'instructor', 'tutor', 'student1', 'student2' }
 c.Authenticator.allow_all = True
 
 c.DummyAuthenticator.password = 'test'

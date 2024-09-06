@@ -31,6 +31,8 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+extraEnv: []
+
 service:
   type: ClusterIP
   port: 4010
