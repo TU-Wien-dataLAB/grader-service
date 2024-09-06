@@ -15,21 +15,41 @@ import subprocess
 import sys
 import inspect
 import tornado
+from jupyterhub.log import log_request
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
 from tornado_sqlalchemy import SQLAlchemy
-from traitlets import config, Bool, Type
+from traitlets import config, Bool, Type, Instance, Dict, Union, List
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
 
+from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
-from grader_service.auth.hub import JupyterHubGroupAuthenticator
+from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.autograding.celery.app import CeleryApp
+from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
+from grader_service.oauth2.provider import make_provider
+from grader_service.orm import Lecture, Role, User
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import LectureState
+from grader_service.orm.takepart import Scope
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service._version import __version__
+from grader_service.utils import url_path_join
+from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.plugins.lti import LTISyncGrades
+
+
+def db(url):
+    is_sqlite = 'sqlite://' in url
+    return SQLAlchemy(
+        url, engine_options={} if is_sqlite else
+        {"pool_size": 50, "max_overflow": -1}
+    )
 
 
 class GraderService(config.Application):
@@ -74,6 +94,9 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
+    db: SQLAlchemy = None
+    oauth_provider = None
+
     @default('db_url')
     def _default_db_url(self):
         db_path = os.path.join(self.grader_service_dir, "grader.db")
@@ -110,9 +133,45 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     authenticator_class = Type(
-        default_value=JupyterHubGroupAuthenticator,
-        klass=object, allow_none=False, config=True
+        default_value=DummyAuthenticator,
+        klass=Authenticator, allow_none=False, config=True
     )
+
+    authenticator = Instance(klass=Authenticator)
+
+    # TODO make configurable
+    oauth_token_expires_in = int(1 * 24 * 3600)
+
+    load_roles = Dict(List(),
+                      help="""
+        Dict of `{'lecture:role': ['usernames']}`  to load at startup.
+
+        Example::
+
+            c.GraderService.load_groups = {
+                'groupname:role': ['usernames']
+                },
+            }
+
+        This will replace all existing roles.
+        """,
+                      ).tag(config=True)
+
+    oauth_clients = List(Dict(), default_value=[], help="""
+        List of OAuth clients `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]` to register for the provider.
+        
+        Example::
+            
+            c.GraderService.oauth_clients = [{
+                'client_id': 'hub',
+                'client_secret': 'hub',
+                'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
+            }]
+    """).tag(config=True)
+
+    @default('authenticator')
+    def _authenticator_default(self):
+        return self.authenticator_class(parent=self)
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
@@ -163,7 +222,6 @@ class GraderService(config.Application):
         "config": "GraderService.config_file",
     }
 
-
     log_level = Enum(
         [0, 10, 20, 30, 40, 50, "CRITICAL", "FATAL", "ERROR", "WARNING",
          "WARN", "INFO", "DEBUG", "NOTSET"],
@@ -195,6 +253,12 @@ class GraderService(config.Application):
         sql_handler.setLevel("WARN")
         sql_handler.setFormatter(formatter)
         sql_logger.addHandler(sql_handler)
+
+        oauth_log = logging.getLogger('oauthlib')
+        oauth_handler = stream_handler(stream=sys.stdout)
+        oauth_handler.setFormatter(formatter)
+        oauth_log.setLevel(log_level)
+        oauth_log.addHandler(oauth_handler)
 
         traitlet_logger = traitlets_log.get_logger()
         traitlet_logger.removeHandler(traitlet_logger.handlers[0])
@@ -236,7 +300,9 @@ class GraderService(config.Application):
         self.parse_command_line(argv)
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
-        
+
+        self.db = db(self.db_url)
+        self.init_roles()
 
         self._start_future = asyncio.Future()
 
@@ -248,9 +314,78 @@ class GraderService(config.Application):
                   "Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
 
+    def set_config(self):
+        """ Pass config to singletons. """
+        RequestHandlerConfig.config = self.config
+        LTISyncGrades.config = self.config
+        CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
         pass
+
+    def init_oauth(self):
+        engine = create_engine(self.db_url)
+        session = sessionmaker(engine)
+        self.oauth_provider = make_provider(
+            session,
+            url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
+            login_url=url_path_join(self.base_url_path, 'login'),
+            token_expires_in=self.oauth_token_expires_in,
+        )
+        for client in self.oauth_clients:
+            self.oauth_provider.add_client(client["client_id"],
+                                           client['client_secret'],
+                                           client['redirect_uri'],
+                                           ['identify'])
+
+    def init_roles(self):
+        """Load predefined groups into the database"""
+        with Session(self.db.engine) as db:
+            users_loaded = set()
+            for k, users in self.load_roles.items():
+                lecture_code, role = k.split(":", 1)
+                lecture = (
+                    db.query(Lecture)
+                    .filter(Lecture.code == lecture_code)
+                    .one_or_none()
+                )
+                # create lecture if no lecture with that name exists yet
+                # (code is set in create)
+                if lecture is None:
+                    self.log.info(
+                        f"Adding new lecture with lecture_code {lecture_code}")
+                    lecture = Lecture()
+                    lecture.code = lecture_code
+                    lecture.name = lecture_code
+                    lecture.state = LectureState.active
+                    lecture.deleted = DeleteState.active
+                    db.add(lecture)
+                db.commit()
+
+                for username in users:
+                    user = (
+                        db.query(User)
+                        .filter(User.name == username)
+                        .one_or_none()
+                    )
+                    if user is None:
+                        self.log.info(f"Adding new user with username {username}")
+                        user = User()
+                        user.name = username
+                        db.add(user)
+                        db.commit()
+
+                    # delete all roles of users the first time a new role is added for the user
+                    if user.name not in users_loaded:
+                        db.query(Role).filter(Role.username == user.name).delete()
+                        users_loaded.add(user.name)
+
+                    try:
+                        db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
+                    except KeyError:
+                        self.log.error(f"Invalid role name: {role}")
+                        raise ValueError(f"Invalid role name: {role}")
+                db.commit()
 
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
@@ -262,33 +397,43 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        await self._setup_environment()
+        self._setup_environment()
+
+        self.init_oauth()
 
         # pass config
-        GraderExecutor.config = self.config
-        RequestHandlerConfig.config = self.config
-        LTISyncGrades.config = self.config
-        
-        handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        self.set_config()
 
-        isSQLite = 'sqlite://' in self.db_url
+        handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        # Add the handlers of the authenticator
+        auth_handlers = self.authenticator.get_handlers(self.base_url_path)
+        handlers.extend(auth_handlers)
+        self.log.info(
+            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
+
+        oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
+        handlers.extend(oauth_provider_handlers)
+        self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 base_url=self.base_url_path,
-                auth_cls=self.authenticator_class,
+                authenticator=self.authenticator,
                 handlers=handlers,
+                oauth_provider=self.oauth_provider,
                 cookie_secret=secrets.token_hex(
                     nbytes=32
                 ),  # generate new cookie secret at startup
                 config=self.config,
-                db=SQLAlchemy(
-                    self.db_url, engine_options={} if isSQLite else
-                    {"pool_size": 50, "max_overflow": -1}
-                ),
+                db=self.db,
                 parent=self,
+                login_url=self.authenticator.login_url(self.base_url_path),
+                logout_url=self.authenticator.logout_url(self.base_url_path),
+                static_url_prefix=url_path_join(self.base_url_path, 'static/'),
+                static_handler_class=CacheControlStaticFilesHandler,
+                log_function=log_request
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,
@@ -297,11 +442,11 @@ class GraderService(config.Application):
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
         self.http_server.listen(self.service_port, address=self.service_host,
-                              reuse_port=self.reuse_port)
+                                reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda s=s: asyncio.ensure_future(
+                s, lambda: asyncio.ensure_future(
                     self.shutdown_cancel_tasks(s))
             )
 
@@ -311,15 +456,18 @@ class GraderService(config.Application):
         # finish start
         self._start_future.set_result(None)
 
-    async def _setup_environment(self):
+    def _setup_environment(self):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False, capture_output=True).stdout.decode().strip() != "main":
+        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False,
+                          capture_output=True).stdout.decode().strip() != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
-        if subprocess.run(['git', 'config', 'user.name'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.name'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.name has to be set!")
-        if subprocess.run(['git', 'config', 'user.email'], check=False, capture_output=True).stdout.decode().strip() == "":
+        if subprocess.run(['git', 'config', 'user.email'], check=False,
+                          capture_output=True).stdout.decode().strip() == "":
             raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):
@@ -396,9 +544,3 @@ class GraderService(config.Application):
         git_path = os.path.join(path, "git")
         if not os.path.isdir(git_path):
             os.mkdir(git_path, mode=0o700)
-
-
-main = GraderService.launch_instance
-
-if __name__ == "__main__":
-    main(sys.argv)

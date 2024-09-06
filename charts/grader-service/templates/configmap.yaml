@@ -21,13 +21,11 @@ data:
     {{- if .Values.requestHandlerConfig }}
     {{- if .Values.requestHandlerConfig.git_max_file_mb }}
     c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
-    {{- end }}    
+    {{- end }}
     {{- end }}
 
-    c.GraderExecutor.n_concurrent_tasks = {{ .Values.concurrentGradingTasks | int }}
-    
     c.KubeAutogradeExecutor.kube_context = None
-    
+
     {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
     {{- end }}
@@ -44,6 +42,18 @@ data:
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
+
+    import os
+    broker_url=f'amqp://{os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")}:{os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local'
+
+    c.CeleryApp.conf = dict(
+        broker_url=broker_url,
+        result_backend='rpc://',
+        task_serializer='json',
+        result_serializer='json',
+        accept_content=['json'],
+        broker_connection_retry_on_startup=True,
+    )
 
     c.LTISyncGrades.enable_lti_features = {{ .Values.ltiSyncGrades.enabled }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}

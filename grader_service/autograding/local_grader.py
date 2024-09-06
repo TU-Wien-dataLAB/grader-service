@@ -103,7 +103,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.autograding_status: Optional[str] = None
         self.grading_logs: Optional[str] = None
 
-    async def start(self):
+    def start(self):
         """
         Starts the autograding job.
         This is the only method that is exposed to the client.
@@ -112,12 +112,12 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.log.info(f"Starting autograding job for submission "
                       f"{self.submission.id} in {self.__class__.__name__}")
         try:
-            await self._pull_submission()
+            self._pull_submission()
             self.autograding_start = datetime.now()
-            await self._run()
+            self._run()
             self.autograding_finished = datetime.now()
             self._set_properties()
-            await self._push_results()
+            self._push_results()
             self._set_db_state()
             ts = round((self.autograding_finished - self.autograding_start)
                        .total_seconds())
@@ -159,7 +159,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         with open(path, "w") as f:
             f.write(gradebook_str)
 
-    async def _pull_submission(self):
+    def _pull_submission(self):
         """
         Pulls the submission repository into the input path
         based on the assignment type.
@@ -209,11 +209,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, self.input_path)
+        self._run_subprocess(command, self.input_path)
 
         command = f'{self.git_executable} pull "{git_repo_path}" main'
         self.log.info(f"Running {command}")
-        await self._run_subprocess(command, self.input_path)
+        self._run_subprocess(command, self.input_path)
         self.log.info("Successfully cloned repo")
 
         # Checkout to commit of submission except when it was manually edited
@@ -221,10 +221,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             command = f"{self.git_executable} checkout " \
                       f"{self.submission.commit_hash}"
             self.log.info(f"Running {command}")
-            await self._run_subprocess(command, self.input_path)
+            self._run_subprocess(command, self.input_path)
             self.log.info(f"Now at commit {self.submission.commit_hash}")
 
-    async def _run(self):
+    def _run(self):
         """
         Runs the autograding in the current interpreter
         and captures the output.
@@ -280,7 +280,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.log.info("Added grades dict to properties")
         return properties_str
 
-    async def _push_results(self):
+    def _push_results(self):
         """
         Pushes the results to the autograde repository
         as a separate branch named after the commit hash of the submission.
@@ -316,7 +316,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
             try:
-                await self._run_subprocess(
+                self._run_subprocess(
                     f'git init --bare "{git_repo_path}"', self.output_path
                 )
             except CalledProcessError:
@@ -325,7 +325,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command} at {self.output_path}")
         try:
-            await self._run_subprocess(command, self.output_path)
+            self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
 
@@ -336,7 +336,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             f"submission_{self.submission.commit_hash}"
         )
         try:
-            await self._run_subprocess(command, self.output_path)
+            self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
         self.log.info(f"Now at branch "
@@ -344,10 +344,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         self.log.info(f"Commiting all files in {self.output_path}")
         try:
-            await self._run_subprocess(
+            self._run_subprocess(
                 f"{self.git_executable} add -A", self.output_path
             )
-            await self._run_subprocess(
+            self._run_subprocess(
                 f'{self.git_executable} commit -m '
                 f'"{self.submission.commit_hash}"',
                 self.output_path,
@@ -362,7 +362,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         command = f'{self.git_executable} push -uf ' \
                   f'"{git_repo_path}" submission_{self.submission.commit_hash}'
         try:
-            await self._run_subprocess(command, self.output_path)
+            self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             raise RuntimeError(f"Failed to push to {git_repo_path}")
         self.log.info("Pushing complete")
@@ -425,7 +425,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if self.close_session:
             self.session.close()
 
-    async def _run_subprocess(self, command: str, cwd: str) -> Popen[bytes]:
+    def _run_subprocess(self, command: str, cwd: str) -> Popen[bytes]:
         """
         Execute the command as a subprocess.
         :param command: The command to execute as a string.
@@ -473,7 +473,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
     convert_executable = Unicode("grader-convert",
                                  allow_none=False).tag(config=True)
 
-    async def _run(self):
+    def _run(self):
         """
         Runs the autograding in a separate python interpreter
         as a sub-process and captures the output.
@@ -493,7 +493,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
                   f'--copy_files={self.assignment.allow_files} ' \
                   f'--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}'
         self.log.info(f"Running {command}")
-        process = await self._run_subprocess(command, None)
+        process = self._run_subprocess(command, None)
         if process.returncode == 0:
             self.grading_logs = process.stderr.read().decode("utf-8")
             self.log.info(self.grading_logs)

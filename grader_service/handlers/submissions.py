@@ -3,20 +3,21 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-#grader_s/grader_s/handlers
+# grader_s/grader_s/handlers
 import json
 import shutil
 import time
 
+from grader_service.orm.base import DeleteState
 import isodate
 import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
 import tornado
+from celery import chain
 
 from grader_service.plugins.lti import LTISyncGrades
-from grader_service.autograding.grader_executor import GraderExecutor
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
@@ -32,6 +33,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 from grader_service.convert.gradebook.models import GradeBookModel
+from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
 
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
     RequestHandlerConfig
@@ -40,7 +42,7 @@ import datetime
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if s.feedback_status not in ('generated', 'feedback_outdated') :
+        if s.feedback_status not in ('generated', 'feedback_outdated'):
             s.score = None
     return submissions
 
@@ -113,7 +115,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active
+                                  ))
                     .order_by(Submission.id)
                     .all())
 
@@ -134,12 +138,17 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active
+                                  ))
                     .order_by(Submission.id)
                     .all())
 
             else:
-                submissions = assignment.submissions
+                submissions = [
+                s for s in assignment.submissions if (s.deleted
+                                                        == DeleteState.active)
+                ]
         else:
             if submission_filter == 'latest':
                 # build the subquery
@@ -156,7 +165,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active
+                                  ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -178,7 +189,9 @@ class SubmissionHandler(GraderBaseHandler):
                     .join(subquery,
                           (Submission.username == subquery.c.username) & (
                                   Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id))
+                                  Submission.assignid == assignment_id) & (
+                                  Submission.deleted == DeleteState.active
+                                  ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -192,6 +205,7 @@ class SubmissionHandler(GraderBaseHandler):
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username,
+                        Submission.deleted == DeleteState.active
                     )
                     .order_by(Submission.id)
                     .all()
@@ -266,12 +280,11 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Git repository not found")
 
-
         try:
-            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user. 
+            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user.
             # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
             # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
-            if commit_hash != "0"*40:
+            if commit_hash != "0" * 40:
                 subprocess.run(
                     ["git", "branch", "main", "--contains", commit_hash],
                     cwd=git_repo_path, capture_output=True)
@@ -296,52 +309,25 @@ class SubmissionHandler(GraderBaseHandler):
                                  AutoGradingBehaviour.full_auto]:
             submission.auto_status = "pending"
             self.session.commit()
-
             self.set_status(HTTPStatus.ACCEPTED)
-            executor = RequestHandlerConfig.instance() \
-                .autograde_executor_class(
-                self.application.grader_service_dir, submission,
-                close_session=False, config=self.application.config
-            )
+
             if automatic_grading == AutoGradingBehaviour.full_auto:
                 submission.feedback_status = "generating"
                 self.session.commit()
 
-                feedback_executor = GenerateFeedbackExecutor(
-                    self.application.grader_service_dir, submission,
-                    config=self.application.config
+                # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
+                grading_chain = chain(
+                    autograde_task.si(lecture_id, assignment_id, submission.id),
+                    generate_feedback_task.si(lecture_id, assignment_id, submission.id),
+                    lti_sync_task.si(lecture_id, assignment_id, submission.id, sync_on_feedback=True)
                 )
-
-                async def feedback_and_sync():
-
-                    GraderExecutor.instance().submit(feedback_executor.start)
-                    lecture: Lecture = self.session.query(Lecture).get(lecture_id)
-
-                    lti_plugin = LTISyncGrades.instance()
-                    data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
-
-                    if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=True):
-
-                        try:
-                            await lti_plugin.start(*data)
-                        except Exception as e:
-                            self.log.error("Could not sync grades: " + str(e))
-
-                    else:
-                        self.log.info("Skipping LTI plugin as it is not enabled")
-
-                GraderExecutor.instance().submit(executor.start, on_finish=feedback_and_sync)
-
-                # Trigger LTI Plugin
             else:
-                GraderExecutor.instance().submit(
-                    executor.start,
-                    lambda: self.log.info(
-                        f"Autograding task of submission \
-                        {submission.id} exited!")
-                )
+                grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
+            grading_chain()
+
         if automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
+
 
     @staticmethod
     def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
@@ -423,7 +409,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         sub = self.get_submission(lecture_id, assignment_id, submission_id)
         # sub.date = sub_model.submitted_at
         # sub.assignid = assignment_id
-        
+
         role = self.get_role(lecture_id)
         if role.role >= Scope.instructor:
             sub.username = sub_model.username
@@ -436,6 +422,39 @@ class SubmissionObjectHandler(GraderBaseHandler):
             sub.score = sub_model.score_scaling * sub.grading_score
         self.session.commit()
         self.write_json(sub)
+
+
+    def delete(self, lecture_id: int, assignment_id: int,
+                  submission_id: int):
+        """Soft-Deletes a specific submission.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        :param submission_id: id of the submission
+        :type submission_id: int
+        :raises HTTPError: throws err if assignment was not found or deleted
+        """
+        lecture_id, assignment_id, submission_id = parse_ids(lecture_id, assignment_id, submission_id)
+        self.validate_parameters()
+        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+
+        previously_deleted = (
+            self.session.query(Submission)
+            .filter(
+                Submission.id == submission_id,
+                Submission.assignid == assignment_id,
+                Submission.deleted == DeleteState.deleted,
+            )
+            .one_or_none()
+        )
+        if previously_deleted is not None:
+            self.session.delete(previously_deleted)
+            self.session.commit()
+
+        submission.deleted = DeleteState.deleted
+        self.session.commit()
 
 
 @register_handler(
@@ -552,10 +571,10 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         if submission.feedback_status == 'generated':
             submission.feedback_status = 'feedback_outdated'
-        
+
         if submission.manual_status == 'manually_graded':
             submission.manually_graded = 'being_edited'
-        
+
 
         self.session.commit()
         self.write_json(submission)
@@ -710,37 +729,41 @@ class LtiSyncHandler(GraderBaseHandler):
 
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
-        # build the subquery
-        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_status)
-                    .group_by(Submission.username)
-                    .subquery())
-
-        # build the main query
-        submissions: list[Submission] = (
-            self.session.query(Submission)
-            .join(subquery,
-                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_status)
-            .all())
-
-        assignment: Assignment = self.get_assignment(lecture_id, assignment_id)
-        lecture: Lecture = self.session.query(Lecture).get(lecture_id)
-
-        lti_plugin = LTISyncGrades.instance()
-        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
-
-        if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=False):
-
-            try:
-                results = await lti_plugin.start(*data)
-                self.write_json(results)
-            except HTTPError as e:
-                self.write_error(e.status_code, reason=e.reason)
-                self.log.info("Could not sync grades: " + e.reason)
-            except Exception as e:
-                self.log.error("Could not sync grades: " + str(e))
-
-        else:
+        # apply task synchronously without adding to queue
+        results = lti_sync_task.apply((lecture_id, assignment_id, None, False))
+        if results is None:
             self.log.info("Skipping LTI plugin as it is not enabled")
             self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+        else:
+            self.write_json(results)
+
+
+
+@register_handler(
+    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
+)
+class SubmissionCountHandler(GraderBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/assignments/{assignment_id}/submissions/count.
+    """
+
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int, assignment_id: int):
+        """ Returns the count of submissions made by the student for an assignment.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        """
+        lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+
+        role = self.get_role(lecture_id)
+
+        usersubmissions_count = self.session.query(Submission).filter(
+            Submission.assignid == assignment_id,
+            Submission.username == role.username,
+        ).count()
+
+        self.write_json({"submission_count": usersubmissions_count})
+        self.session.close()

@@ -4,11 +4,14 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from sqlalchemy import Column, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, LargeBinary, Unicode
+from sqlalchemy.orm import relationship, Session
 
+from grader_service.api.models import user
+from grader_service.auth.crypto import encrypt, decrypt, InvalidToken, EncryptionUnavailable, CryptKeeper
 from grader_service.orm.base import Base, Serializable
 from grader_service.orm.group import group_assignment_table
+from grader_service.utils import new_token
 
 
 class User(Base, Serializable):
@@ -19,6 +22,47 @@ class User(Base, Serializable):
     submissions = relationship("Submission", back_populates="user")
     groups = relationship("Group", secondary=group_assignment_table,
                           back_populates="users")
+    api_tokens = relationship("APIToken", back_populates="user")
+    oauth_codes = relationship("OAuthCode", back_populates="user")
+
+    encrypted_auth_state = Column(LargeBinary)
+    cookie_id = Column(Unicode(255), default=new_token, nullable=False, unique=True)
+    _auth_refreshed = None
+
+    async def save_auth_state(self, auth_state):
+        if auth_state is None:
+            self.encrypted_auth_state = None
+        else:
+            self.encrypted_auth_state = await encrypt(auth_state)
+        session: Session = Session.object_session(self)
+        session.expire_on_commit = False
+        session.commit()
+
+    async def get_auth_state(self):
+        """Retrieve and decrypt auth_state for the user"""
+        encrypted = self.encrypted_auth_state
+        if encrypted is None:
+            return None
+        try:
+            auth_state = await decrypt(encrypted)
+        except (ValueError, InvalidToken, EncryptionUnavailable) as e:
+            self.log.warning(
+                "Failed to retrieve encrypted auth_state for %s because %s",
+                self.name,
+                e,
+            )
+            return
+        # loading auth_state
+        if auth_state:
+            # Crypt has multiple keys, store again with new key for rotation.
+            if len(CryptKeeper.instance().keys) > 1:
+                await self.save_auth_state(auth_state)
+        return auth_state
 
     def serialize(self):
         return {"name": self.name}
+
+
+    @property
+    def model(self) -> user.User:
+        return user.User(name=self.name)

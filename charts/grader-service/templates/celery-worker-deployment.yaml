@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grader-service.fullname" . }}-worker
+  labels:
+    {{- include "grader-service.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.workers.replication }}
+  selector:
+    matchLabels:
+      {{- include "grader-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "grader-service.selectorLabels" . | nindent 8 }}
+        hub.jupyter.org/network-access-hub: "true"
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "grader-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-worker
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [ "grader-worker" ]
+          args: [ "-f", "/etc/grader-service/grader_service_config.py" ]
+          resources:
+            {{- toYaml .Values.workers.resources | nindent 12 }}
+          env:
+            - name: GRADER_SERVICE_PORT
+              value: {{ .Values.port | quote }}
+            - name: RABBITMQ_GRADER_SERVICE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: rabbitmq-grader-service-default-user
+            - name: RABBITMQ_GRADER_SERVICE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: rabbitmq-grader-service-default-user
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
+            - name: config
+              mountPath: /etc/grader-service/grader_service_config.py
+              subPath: grader_service_config.py
+            - name: config
+              mountPath: /var/lib/grader-service/.gitconfig
+              subPath: .gitconfig
+      volumes:
+        - name: data
+{{- if .Values.hostpath }}
+          hostPath:
+            path: {{ .Values.hostpath }}
+            type: DirectoryOrCreate
+{{- else }}
+          persistentVolumeClaim:
+            claimName: grader-service
+            readOnly: false
+{{- end }}
+        - name: config
+          configMap:
+            defaultMode: 444
+            name: grader-service

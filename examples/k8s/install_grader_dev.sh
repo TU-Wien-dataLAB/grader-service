@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 helm upgrade --cleanup-on-fail \
   --install my-grader ../../charts/grader-service \

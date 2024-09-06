@@ -139,8 +139,12 @@ Getting Started
 
 .. running-start
 
+Grader service uses RabbitMQ as a task broker to delegate grading tasks to separate worker instances.
+Please follow their `tutorials <https://www.rabbitmq.com/docs/download>`_ on how to set up and run a RabbitMQ server on your host machine.
+Our `helm` chart automatically deploys a RabbitMQ cluster when installing the grader service through the `RabbitMQ Kubernetes Operator <https://www.rabbitmq.com/docs/kubernetes/operator/operator-overview>`_.
+
 Running grader service
-=======================
+--------------------------
 
 To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config:
 
@@ -160,7 +164,7 @@ You can verify the config by running ``jupyterhub -f <config_file.py>`` and you 
     Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
 
 Specifying user roles
-======================
+--------------------------
 
 Since the JupyterHub is the only source of authentication for the service, it has to rely on the JupyterHub to provide all the necessary information for user groups.
 
@@ -195,7 +199,7 @@ The config could look like this:
 Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.
 
 Starting the service
-=====================
+--------------------------
 
 In order to start the grader service we have to provide a configuration file for it as well:
 

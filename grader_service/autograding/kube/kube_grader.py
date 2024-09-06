@@ -46,6 +46,9 @@ class GraderPod(LoggingConfigurable):
     def stop_polling(self) -> None:
         self._polling_task.cancel()
 
+    def poll(self) -> str:
+        return self.loop.run_until_complete(self.polling)
+
     @property
     def polling(self) -> Task:
         return self._polling_task
@@ -103,6 +106,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                   allow_none=False).tag(config=True)
     kube_context = Unicode(default_value=None, allow_none=True,
                            help="Kubernetes context to load config from. "
+
                                 "If the context is None (default), "
                                 "the incluster config "
                                 "will be used.").tag(config=True)
@@ -197,8 +201,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                    "--log-level=INFO",
                    f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
 
-        # command = "sleep 10000"
-
         volumes = [self.volume] + self.extra_volumes
 
         volume_mounts = [{"name": "data", "mountPath": self.input_path,
@@ -230,7 +232,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                                 body=pod)
         return GraderPod(pod, self.client, config=self.config)
 
-    async def _run(self):
+    def _run(self):
         """
         Runs the autograding process in a kubernetes pod
         which has to have access to the files in the
@@ -249,7 +251,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             grader_pod = self.start_pod()
             self.log.info(f"Started pod {grader_pod.name} in namespace "
                           f"{grader_pod.namespace}")
-            status = await grader_pod.polling
+            status = grader_pod.poll()
             self.grading_logs = self._get_pod_logs(grader_pod)
             self.log.info("Pod logs:\n" + self.grading_logs)
             if status == "Succeeded":

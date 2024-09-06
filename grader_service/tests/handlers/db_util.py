@@ -10,10 +10,20 @@ from datetime import datetime
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from grader_service.orm import Lecture, Assignment, Submission
+from grader_service.orm import Lecture, Assignment, Submission, Role
 from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission_properties import SubmissionProperties
+from grader_service.orm.takepart import Scope
+
+
+def add_role(engine: Engine, username: str, l_id: int, scope: Scope) -> Role:
+    session: Session = sessionmaker(engine)()
+    role = Role(username=username, lectid=l_id, role=scope)
+    session.add(role)
+    session.commit()
+    session.flush()
+    return role
 
 
 def insert_users(session):
@@ -23,8 +33,9 @@ def insert_users(session):
     session.execute('INSERT INTO "user" ("name") VALUES ("user4")')
 
 
-def _get_lecture(name, code):
+def _get_lecture(id, name, code):
     l = Lecture()
+    l.id = id
     l.name = name
     l.code = code
     l.state = "active"
@@ -34,11 +45,11 @@ def _get_lecture(name, code):
 
 def insert_lectures(session: Engine):
     session: Session = sessionmaker(session)()
-    session.add(_get_lecture("lecture1", "21wle1"))
-    session.add(_get_lecture("lecture1", "21sle1"))
-    session.add(_get_lecture("lecture2", "20wle2"))
-    session.add(_get_lecture("lecture3", "22sle3"))
-    session.add(_get_lecture("lecture4", "21sle4"))
+    session.add(_get_lecture(1, "lecture1", "21wle1"))
+    session.add(_get_lecture(2, "lecture2", "20wle2"))
+    session.add(_get_lecture(3, "lecture2", "22wle1"))
+    # session.add(_get_lecture("lecture3", "22sle3"))
+    # session.add(_get_lecture("lecture4", "21sle4"))
     session.commit()
     session.flush()
 
@@ -86,13 +97,15 @@ def _get_submission_properties(submission_id, properties=None):
     return s
 
 
-def insert_submission(ex, assignment_id=1, username="ubuntu", feedback="not_generated", with_properties=True, score=None):
+def insert_submission(ex, assignment_id=1, username="ubuntu", feedback="not_generated", with_properties=True,
+                      score=None):
     # TODO Allows only one submission with properties per user because we do not have the submission id
     session: Session = sessionmaker(ex)()
     session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
     session.commit()
     if with_properties:
-        id = session.query(Submission).filter(Submission.assignid==assignment_id,Submission.username==username).first().id
+        id = session.query(Submission).filter(Submission.assignid == assignment_id,
+                                              Submission.username == username).first().id
         session.add(_get_submission_properties(id))
         session.commit()
     session.flush()

@@ -5,8 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+from functools import wraps
 from re import S
+from unittest.mock import patch, MagicMock
+
 import pytest
+from sqlalchemy.orm import Session, sessionmaker
+
+import grader_service.handlers.base_handler
 from grader_service import handlers  # need import to register handlers
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -16,9 +22,44 @@ from alembic import config
 from alembic.command import upgrade
 from .db_util import insert_assignments, insert_lectures
 
-__all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "jupyter_hub_mock_server", "default_user", "default_token"]
+__all__ = ["db_test_config", "sql_alchemy_db", "app", "service_base_url", "default_user",
+           "default_token", "no_auth", "default_roles", "default_user_login", "default_roles_dict"]
 
-from ...auth.hub import JupyterHubGroupAuthenticator
+from ...auth.dummy import DummyAuthenticator
+from ...main import GraderService
+from ...orm import User, Role, Lecture
+from ...orm.takepart import Scope
+
+
+@pytest.fixture(scope="function")
+def default_user_login(default_user, sql_alchemy_db):
+    engine = sql_alchemy_db.engine
+    session: Session = sessionmaker(engine)()
+    user = session.query(User).get(default_user.name)
+
+    with patch.object(handlers.base_handler.BaseHandler, "_grader_user", new=user, create=True):
+        yield
+
+
+@pytest.fixture(scope="function")
+def default_roles_dict():
+    return {"20wle2:instructor": ["ubuntu"],
+            "21wle1:student": ["ubuntu"],
+            "22wle1:instructor": ["ubuntu"]}
+
+
+@pytest.fixture(scope="function")
+def default_roles(sql_alchemy_db, default_roles_dict):
+    service_mock = MagicMock()
+    service_mock.db.engine = sql_alchemy_db.engine
+    service_mock.load_roles = default_roles_dict
+    GraderService.init_roles(self=service_mock)
+
+
+@pytest.fixture(scope='function')
+def no_auth():
+    with patch.object(grader_service.handlers.base_handler, attribute="check_authorization", return_value=True):
+        yield
 
 
 @pytest.fixture(scope="function")
@@ -28,6 +69,7 @@ def db_test_config():
     )
     cfg.set_main_option("script_location", os.path.abspath(os.path.dirname(__file__) + "../../../migrate"))
     yield cfg
+
 
 @pytest.fixture(scope="function")
 def sql_alchemy_db(db_test_config):
@@ -48,12 +90,12 @@ def app(tmpdir, sql_alchemy_db):
     service_dir = str(tmpdir.mkdir("grader_service"))
     handlers = HandlerPathRegistry.handler_list()
 
-    JupyterHubGroupAuthenticator.hub_api_url = ""
     application = GraderServer(
         grader_service_dir=service_dir,
         base_url="/services/grader",
-        auth_cls=JupyterHubGroupAuthenticator,
+        authenticator=DummyAuthenticator(),
         handlers=handlers,
+        oauth_provider=None,
         db=sql_alchemy_db,
         cookie_secret="test",
     )
@@ -67,24 +109,10 @@ def service_base_url():
 
 
 @pytest.fixture(scope="function")
-def jupyter_hub_mock_server(httpserver):
-    def for_user(login_user: dict, token: str):
-        httpserver.expect_request(f"/user").respond_with_json(
-            login_user
-        )
-        return httpserver
-
-    yield for_user
-
-@pytest.fixture(scope="function")
 def default_user():
-    user = {
-        "kind": "user",
-        "name": "ubuntu",
-        "admin": False,
-        "groups": ["20wle2:instructor", "21wle1:student", "22wle1:instructor"],
-    }
+    user = User(name="ubuntu")
     yield user
+
 
 @pytest.fixture(scope="function")
 def default_token():

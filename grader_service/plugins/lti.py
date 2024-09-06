@@ -53,36 +53,36 @@ class LTISyncGrades(SingletonConfigurable):
     )
     resolve_lti_urls = Callable(default_value=None,
                                          config=True,
-                                         allow_none=False,
+                                         allow_none=True,
                                          help="Returns membership and lineitem URL needed for grade sync")
 
     # cache for lti token    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
-    
+
     def check_if_lti_enabled(self, lecture, assignment, submissions, sync_on_feedback):
         if callable(self.enable_lti_features):
             enable_lti = self.enable_lti_features(lecture, assignment, submissions)
         else:
             enable_lti = self.enable_lti_features
-        
+
         if enable_lti["enable_lti"]:
             if sync_on_feedback:
                 if enable_lti["sync_on_feedback"]:
                     return True
-                else: 
+                else:
                     return False
             else:
                 return True
         else:
             return False
-            
+
     async def start(self, lecture, assignment, submissions):
 
         # # Check if the LTI plugin should be used
         # if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
         #     self.log.info("Skipping LTI plugin as it is not enabled")
         #     return {"syncable_users": 0, "synced_user": 0}
-        
+
         self.log.info("LTI: start grade sync")
         # if len(submissions) == 0:
         #     raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
@@ -120,7 +120,7 @@ class LTISyncGrades(SingletonConfigurable):
             self.log.error(e.response)
             raise HTTPError(e.code, reason="Unable to get users of course:" + e.response.reason)
         members = json_decode(response.body)["members"]
-    
+
         # 4. match usernames of submissions to lti memberships
         # and generate for each submission a request body -> grades list
         self.log.debug("LTI: match grader usernames with lti identifier")
@@ -150,7 +150,7 @@ class LTISyncGrades(SingletonConfigurable):
             raise HTTPError(e.code, reason="Unable to get lineitems of course:" + e.response.reason)
         lineitems = json_decode(response.body)
         self.log.debug(f"LTI found lineitems: {lineitems}")
-        
+
         # 7. check if a lineitem with assignment name exists
         lineitem = None
         for item in lineitems:
@@ -159,7 +159,7 @@ class LTISyncGrades(SingletonConfigurable):
                 self.log.debug(f"LTI found lineitem: {item}")
                 lineitem = item
                 break
-        
+
         # 8. if not create a lineitem with the assignment name
         if lineitem is None:
             lineitem_body = {"scoreMaximum": float(assignment["points"]), "label": assignment["name"],
@@ -189,7 +189,7 @@ class LTISyncGrades(SingletonConfigurable):
             else:
                 self.log.error("LTI: lineitem request response does not match dict or list")
                 raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, "lineitem request response does not match dict or list")
-        
+
         # 9. push grades to lineitem
         url_parsed = urlparse(lineitem["id"])
         lineitem = url_parsed._replace(path=url_parsed.path + "/scores").geturl()
@@ -207,7 +207,7 @@ class LTISyncGrades(SingletonConfigurable):
         self.log.info("LTI Grade Sync finished successfully")
         return {"syncable_users": syncable_user_count, "synced_user": synced_user}
 
-    
+
     def build_grade_publish_body(self, uid: str, score: float, max_score: float):
         return {
             "timestamp": str(datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()),
@@ -218,7 +218,7 @@ class LTISyncGrades(SingletonConfigurable):
             "gradingProgress": "FullyGraded",
             "userId": uid
         }
-    
+
     async def request_bearer_token(self):
         # get config variables
         if self.client_id is None:
