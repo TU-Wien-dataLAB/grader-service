@@ -32,6 +32,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['grader-service', '-f', '/etc/grader-service/grader_service_config.py']
           ports:
             - name: http
               containerPort: {{ .Values.port }}
