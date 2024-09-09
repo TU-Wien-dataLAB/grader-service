@@ -10,6 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy import Column, Unicode, Integer, DateTime, Text, \
     PrimaryKeyConstraint, ForeignKeyConstraint
 
+from grader_service.utils import new_token
+
 # revision identifiers, used by Alembic.
 revision = 'ba71c755c153'
 down_revision = '9cfeb0faa0c0'
@@ -60,11 +62,32 @@ def upgrade():
                     )
 
     op.add_column('user', sa.Column('encrypted_auth_state', sa.types.LargeBinary, nullable=True))
-    op.add_column('user', sa.Column('cookie_id', Unicode(255), nullable=False))  # TODO: add unique
+    op.add_column('user', sa.Column('cookie_id', Unicode(255), nullable=True))
+
+    connection = op.get_bind()
+    result = connection.execute(sa.text('select * from user'))
+    for row in result:
+        connection.execute(sa.text('UPDATE user SET cookie_id = :uuid WHERE id = :name'), uuid=new_token(), name=row["name"])
+
+    if connection.dialect.name != "sqlite":
+        op.alter_column('user', 'cookie_id', nullable=False)
+        op.create_unique_constraint('uq_user_cookie', 'user', ['cookie_id'])
+    else:
+        with op.batch_alter_table('user') as batch_op:
+            batch_op.alter_column('cookie_id', nullable=False)
+            batch_op.create_unique_constraint('uq_user_cookie', ['cookie_id'])
+
 
 def downgrade():
+    connection = op.get_bind()
     op.drop_table('api_token')
     op.drop_table('oauth_code')
     op.drop_table('oauth_client')
     op.drop_column('user', 'encrypted_auth_state')
+    if connection.dialect.name != "sqlite":
+        op.drop_constraint('uq_user_cookie', 'user')
+    else:
+        with op.batch_alter_table('user') as batch_op:
+            batch_op.drop_constraint('uq_user_cookie')
+
     op.drop_column('user', 'cookie_id')
