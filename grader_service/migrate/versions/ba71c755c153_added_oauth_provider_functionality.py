@@ -67,7 +67,7 @@ def upgrade():
     connection = op.get_bind()
     result = connection.execute(sa.text('select * from "user"'))
     for row in result:
-        connection.execute(sa.text('UPDATE user SET cookie_id = :uuid WHERE name = :name'), uuid=new_token(), name=row["name"])
+        connection.execute(sa.text('UPDATE "user" SET cookie_id = :uuid WHERE name = :name'), uuid=new_token(), name=row["name"])
 
     if connection.dialect.name != "sqlite":
         op.alter_column('user', 'cookie_id', nullable=False)

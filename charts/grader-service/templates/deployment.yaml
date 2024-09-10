@@ -123,7 +123,7 @@ spec:
 
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: ["/bin/sh","-c", "grader-service-migrate", "-f", "/etc/grader-service/grader_service_config.py"]
+          command: ["grader-service-migrate", "-f", "/etc/grader-service/grader_service_config.py"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             - name: config
