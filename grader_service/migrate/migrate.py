@@ -6,51 +6,80 @@
 
 # Python script that will apply the migrations up to head
 import argparse
+import logging
 import alembic.config
 import os
 import re
+from urllib.parse import urlparse, urlunparse
 
-here = os.path.dirname(os.path.abspath(__file__))
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Path to the directory containing this script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Alembic command arguments
 alembic_args = [
-    '-c', os.path.join(here, 'alembic.ini'),
+    '-c', os.path.join(script_dir, 'alembic.ini'),
     'upgrade', 'head'
 ]
 
+def redact_db_url(url):
+    """Redact sensitive parts of the database URL for logging."""
+    parsed_url = urlparse(url)
+    netloc = parsed_url.netloc
 
-def getargs():
-    "Give the option of passing args on the commandline"
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", "-f", action='store',
-                        default=None,
-                        help="Path to grader service config")
+    if '@' in netloc:
+        userinfo, hostinfo = netloc.split('@', 1)
+        username = re.sub(r':.*$', '', userinfo)  # Extract username
+        netloc = f"{username}:REDACTED@{hostinfo}"
+    
+    redacted_url = urlunparse((
+        parsed_url.scheme,
+        netloc,
+        parsed_url.path,
+        parsed_url.params,
+        parsed_url.query,
+        parsed_url.fragment
+    ))
+    return redacted_url
+
+def get_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Apply Alembic migrations up to head.")
+    parser.add_argument("--config", "-f", default=None, help="Path to custom config file")
     return parser.parse_args()
 
-
-def load_custom_config(config):
-    """Load a custom config file that uses the same format as Juypterhub and
-    GraderService"""
+def load_custom_config(config_path):
+    """Load and apply configuration from a custom file."""
     from grader_service.main import GraderService
-    service = GraderService.instance()
-    service.load_config_file(config)
-    service.set_config()
-    db_url = service.db_url
-    if db_url is None:  # no match, do nothing
-        return
-    environment = {}
-    environment.update({
-        "GRADER_DB_URL": db_url,
-    })
-    # use environment to set global env vars
-    os.environ.update(environment)
 
+    try:
+        service = GraderService.instance()
+        service.load_config_file(config_path)
+        service.set_config()
+        db_url = service.db_url
+        logger.info(f'Database URL: {redact_db_url(db_url)}')
+        
+        if db_url:
+            os.environ["GRADER_DB_URL"] = db_url
+        else:
+            logger.info('No db_url configuration found, using default db_url')
+    except Exception as e:
+        logger.error(f"Failed to load custom config: {e}")
+        raise
 
 def main():
-    args = getargs()
+    args = get_args()
     if args.config:
         load_custom_config(args.config)
-    alembic.config.main(argv=alembic_args)
-
+    
+    try:
+        alembic.config.main(argv=alembic_args)
+    except SystemExit as e:
+        logger.error(f"Migration failed: {e}")
+        raise
 
 if __name__ == '__main__':
     main()
