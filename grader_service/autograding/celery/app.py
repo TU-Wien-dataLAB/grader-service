@@ -28,11 +28,11 @@ class CeleryApp(SingletonConfigurable):
                 raise ValueError("Neither config nor config_path were passed to CeleryApp!")
 
             from grader_service.main import GraderService
-            service = GraderService()
+            service = GraderService.instance()
             # config might not be loaded if the celery app was not initialized by the service (e.g. in a worker)
-            if not service.config:
+            if len(service.loaded_config_files) == 0:
+                self.log.info(f"Loading GraderService config from {config_file}")
                 service.load_config_file(self.config_file)
-                service.set_config()
                 self.update_config(service.config)
 
         from grader_service.autograding.celery.tasks import app
@@ -44,5 +44,7 @@ class CeleryApp(SingletonConfigurable):
         if self._db is None:
             self.log.info('Instantiating database connection')
             from grader_service.main import GraderService, db
-            self._db = db(GraderService.instance().db_url)
+            db_url = GraderService.instance().db_url
+            self.log.info(f"Database URL: {db_url}")
+            self._db = db(db_url)
         return self._db

@@ -142,6 +142,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
 
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
+                url_path_join(self.application.base_url, "/"),
                 url_path_join(self.application.base_url, r"/api/oauth2/token"),
                 url_path_join(self.application.base_url, r"/oauth_callback"),
                 url_path_join(self.application.base_url, r"/lti13/oauth_callback"),

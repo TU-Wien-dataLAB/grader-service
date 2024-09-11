@@ -51,8 +51,10 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
     grader_service_dir = GraderService.instance().grader_service_dir
 
     submission = self.session.query(Submission).get(sub_id)
-    if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError("incorrect submission")
+    if submission is None:
+        raise ValueError("Submission not found")
+    if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
 
     executor = RequestHandlerConfig.instance().autograde_executor_class(
         grader_service_dir, submission,
@@ -69,8 +71,10 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
     grader_service_dir = GraderService(config=self.celery.config).grader_service_dir
 
     submission = self.session.query(Submission).get(sub_id)
-    if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError("incorrect submission")
+    if submission is None:
+        raise ValueError("Submission not found")
+    if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
 
     executor = GenerateFeedbackExecutor(
         grader_service_dir, submission,
@@ -107,8 +111,10 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
         data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
     else:
         submission: Submission = self.session.query(Submission).get(sub_id)
-        if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-            raise ValueError("incorrect submission")
+        if submission is None:
+            raise ValueError("Submission not found")
+        if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+            raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
         data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
 
     lti_plugin = LTISyncGrades.instance()
