@@ -111,53 +111,7 @@
               </a>
             </span>
           {% endblock logo %}
-          {% if user %}
-            <button class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#thenavbar"
-                    aria-controls="thenavbar"
-                    aria-expanded="false"
-                    aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-          {% endif %}
           <div class="collapse navbar-collapse" id="thenavbar">
-            {% if user %}
-              <ul class="navbar-nav me-auto mb-0">
-                {% block nav_bar_left_items %}
-                  <li class="nav-item">
-                    <a class="nav-link" href="{{ base_url }}home">Home</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="{{ base_url }}token">Token</a>
-                  </li>
-                  {% if 'admin-ui' in parsed_scopes %}
-                    <li class="nav-item">
-                      <a class="nav-link" href="{{ base_url }}admin">Admin</a>
-                    </li>
-                  {% endif %}
-                  {% if services %}
-                    <li class="nav-item dropdown">
-                      <a href="#"
-                         class="nav-link dropdown-toggle"
-                         data-bs-toggle="dropdown"
-                         role="button"
-                         aria-expanded="false">Services</a>
-                      <ul class="dropdown-menu">
-                        {% for service in services %}
-                          {% block service scoped %}
-                            <li>
-                              <a class="dropdown-item" href="{{ service.href }}">{{ service.name }}</a>
-                            </li>
-                          {% endblock service %}
-                        {% endfor %}
-                      </ul>
-                    </li>
-                  {% endif %}
-                {% endblock nav_bar_left_items %}
-              </ul>
-            {% endif %}
             <ul class="nav navbar-nav me-2">
               {% block nav_bar_right_items %}
                 <li class="nav-item">
