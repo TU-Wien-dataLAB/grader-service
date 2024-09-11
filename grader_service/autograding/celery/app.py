@@ -33,6 +33,7 @@ class CeleryApp(SingletonConfigurable):
             if len(service.loaded_config_files) == 0:
                 self.log.info(f"Loading GraderService config from {config_file}")
                 service.load_config_file(self.config_file)
+                service.set_config()
                 self.update_config(service.config)
 
         from grader_service.autograding.celery.tasks import app
