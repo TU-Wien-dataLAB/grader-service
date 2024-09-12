@@ -259,7 +259,8 @@ class LTI13LoginInitHandler(BaseHandler):
         except ValidationError as e:
             self.log.error(str(e))
             html = await self.render_template('auth/lti_no_auth.html.j2')
-            self.finish(html)
+            await self.finish(html)
+            return
             
 
         login_hint = args["login_hint"]
