@@ -19,8 +19,7 @@ c.GenericOAuthenticator.token_url = "http://localhost:4010/services/grader/api/o
 c.GenericOAuthenticator.userdata_url = "http://localhost:4010/services/grader/api/user"
 c.GenericOAuthenticator.username_claim = "name"
 
-##############################
-# PASS GRADER TOKEN TO SPAWNER
+
 
 
 def post_auth_hook(authenticator, handler, authentication):
@@ -52,9 +51,10 @@ def post_auth_hook(authenticator, handler, authentication):
     
 
 c.Authenticator.post_auth_hook = post_auth_hook
-
 c.Authenticator.enable_auth_state = True
 
+##############################
+# PASS GRADER TOKEN TO SPAWNER
 
 def userdata_hook(spawner, auth_state):
     token = auth_state["access_token"]

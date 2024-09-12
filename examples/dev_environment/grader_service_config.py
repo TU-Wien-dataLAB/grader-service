@@ -92,7 +92,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     return authentication
 
 
-c.Authenticator.post_auth_hook = post_auth_hook
+#c.Authenticator.post_auth_hook = post_auth_hook
 
 ## authenticator
 
