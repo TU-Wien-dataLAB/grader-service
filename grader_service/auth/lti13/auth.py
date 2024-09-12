@@ -1,7 +1,8 @@
 import logging
 from typing import Any, Dict, List
 
-from grader_service.auth.oauth2 import OAuthLogoutHandler
+from grader_service.auth.login import LogoutHandler
+from grader_service.auth.oauth2 import STATE_COOKIE_NAME, OAuthLogoutHandler
 from grader_service.utils import url_path_join  # type: ignore
 from traitlets import CaselessStrEnum
 from traitlets import List as TraitletsList
@@ -16,6 +17,19 @@ from ..auth import Authenticator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+class LTI13LogoutHandler(LogoutHandler):
+    async def handle_logout(self):
+        self.clear_cookie(STATE_COOKIE_NAME)
+        
+    async def render_logout_page(self):
+        """Render the logout page, if any
+
+        Override this function to set a custom logout page.
+        """
+        html = await self.render_template('auth/logout.html.j2')
+        self.finish(html)
+       
 
 
 class LTI13Authenticator(Authenticator):
@@ -37,7 +51,7 @@ class LTI13Authenticator(Authenticator):
     login_handler = LTI13LoginInitHandler
     callback_handler = LTI13CallbackHandler
     config_handler = LTI13ConfigHandler
-    logout_handler = OAuthLogoutHandler
+    logout_handler = LTI13LogoutHandler
 
     authorize_url = Unicode(
         config=True,
