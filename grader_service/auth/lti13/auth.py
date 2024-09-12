@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List
 
 from grader_service.auth.login import LogoutHandler
-from grader_service.auth.oauth2 import STATE_COOKIE_NAME, OAuthLogoutHandler
+from grader_service.auth.oauth2 import OAuthLogoutHandler
 from grader_service.utils import url_path_join  # type: ignore
 from traitlets import CaselessStrEnum
 from traitlets import List as TraitletsList
@@ -12,7 +12,7 @@ from traitlets import Unicode
 from grader_service.utils import get_browser_protocol
 from .constants import LTI13_CUSTOM_CLAIM
 from .error import LoginError
-from .handlers import LTI13CallbackHandler, LTI13ConfigHandler, LTI13LoginInitHandler
+from .handlers import STATE_COOKIE_NAME, LTI13CallbackHandler, LTI13ConfigHandler, LTI13LoginInitHandler
 from ..auth import Authenticator
 
 logger = logging.getLogger(__name__)
