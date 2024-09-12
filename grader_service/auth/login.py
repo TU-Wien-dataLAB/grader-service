@@ -46,7 +46,7 @@ class LogoutHandler(BaseHandler):
         Override this function to set a custom logout page.
         """
         if self.authenticator.auto_login:
-            html = await self.render_template('logout.html')
+            html = await self.render_template('auth/logout.html.j2')
             self.finish(html)
         else:
             self.redirect(self.settings['login_url'], permanent=False)

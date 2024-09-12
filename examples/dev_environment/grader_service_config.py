@@ -108,7 +108,7 @@ from grader_service.auth.pam import PAMAuthenticator
 from grader_service.auth.oauth2 import OAuthenticator
 from grader_service.auth.lti13.auth import LTI13Authenticator
 
-c.GraderService.authenticator_class = DummyAuthenticator
+c.GraderService.authenticator_class = LTI13Authenticator
 #
 # c.Authenticator.allowed_users = {'instructor', 'tutor', 'student1', 'student2' }
 c.Authenticator.allow_all = True
@@ -120,11 +120,11 @@ c.GraderService.load_roles = {"lect1:instructor": ["admin", "instructor", "user1
 
 # Moodle/LTI auth
 
-# c.LTI13Authenticator.issuer = "http://localhost:8000"
-# c.LTI13Authenticator.authorize_url = "http://localhost:8000/mod/lti/auth.php"
-# # The platform's JWKS endpoint url providing public key sets used to verify the ID token
-# c.LTI13Authenticator.jwks_endpoint = "http://localhost:8000/mod/lti/certs.php"
-# # The external tool's client id as represented within the platform (LMS)
-# c.LTI13Authenticator.client_id = ["ItOB9qSSRwH2yDa"]
-# # calculate username using function defined in username.py
-# c.LTI13Authenticator.uri_scheme = 'http'
+c.LTI13Authenticator.issuer = "http://localhost:8000"
+c.LTI13Authenticator.authorize_url = "http://localhost:8000/mod/lti/auth.php"
+# The platform's JWKS endpoint url providing public key sets used to verify the ID token
+c.LTI13Authenticator.jwks_endpoint = "http://localhost:8000/mod/lti/certs.php"
+# The external tool's client id as represented within the platform (LMS)
+c.LTI13Authenticator.client_id = ["ItOB9qSSRwH2yDa"]
+# calculate username using function defined in username.py
+c.LTI13Authenticator.uri_scheme = 'http'

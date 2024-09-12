@@ -244,7 +244,7 @@ class LTI13LoginInitHandler(BaseHandler):
             )
         return self._state
 
-    def post(self):
+    async def post(self):
         """
         Validates required login arguments sent from platform and then uses the authorize_redirect() method
         to redirect users to the authorization url.
@@ -257,7 +257,10 @@ class LTI13LoginInitHandler(BaseHandler):
         try:
             validator.validate_login_request(args)
         except ValidationError as e:
-            raise HTTPError(400, str(e))
+            self.log.error(str(e))
+            html = await self.render_template('auth/lti_no_auth.html.j2')
+            self.finish(html)
+            
 
         login_hint = args["login_hint"]
         self.log.debug(f"login_hint is {login_hint}")
