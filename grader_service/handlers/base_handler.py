@@ -953,10 +953,6 @@ class GraderBaseHandler(BaseHandler):
         return None
 
 
-class LogoutHandler(BaseHandler):
-    pass
-
-
 def authenticated(
         method: Callable[..., Optional[Awaitable[None]]]
 ) -> Callable[..., Optional[Awaitable[None]]]:

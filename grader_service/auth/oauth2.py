@@ -11,7 +11,8 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from .auth import Authenticator
 from .crypto import EncryptionUnavailable, InvalidToken, decrypt
-from grader_service.handlers.base_handler import BaseHandler, LogoutHandler
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.auth.login import LogoutHandler
 from grader_service.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
