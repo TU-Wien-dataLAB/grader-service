@@ -9,6 +9,8 @@ from jinja2 import ChoiceLoader, PrefixLoader, FileSystemLoader, Environment
 from tornado import web
 from traitlets import config, Float, Dict, List, default, Unicode
 
+GRADER_COOKIE_NAME = "grader_service_login"
+
 
 class GraderServer(config.LoggingConfigurable, web.Application):
     """As an unmanage jupyter hub service, the application gets these
@@ -84,7 +86,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         self.base_url = base_url
         self.authenticator = authenticator
         self.oauth_provider = oauth_provider
-        self.cookie_name = "grader_service"
+        self.cookie_name = GRADER_COOKIE_NAME
 
         jinja_options = dict(autoescape=True, enable_async=True)
         jinja_options.update(self.jinja_environment_options)

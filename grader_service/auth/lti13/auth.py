@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from grader_service.auth.login import LogoutHandler
 from grader_service.auth.oauth2 import OAuthLogoutHandler
-from grader_service.handlers.base_handler import SESSION_COOKIE_NAME
+from grader_service.server import GRADER_COOKIE_NAME
 from grader_service.utils import url_path_join  # type: ignore
 from traitlets import CaselessStrEnum
 from traitlets import List as TraitletsList
@@ -19,10 +19,8 @@ from ..auth import Authenticator
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class LTI13LogoutHandler(LogoutHandler):
-    async def handle_logout(self):
-        self.clear_cookie(SESSION_COOKIE_NAME)
-        
     async def render_logout_page(self):
         """Render the logout page, if any
 
@@ -30,7 +28,6 @@ class LTI13LogoutHandler(LogoutHandler):
         """
         html = await self.render_template('auth/logout.html.j2')
         self.finish(html)
-       
 
 
 class LTI13Authenticator(Authenticator):
@@ -183,7 +180,7 @@ class LTI13Authenticator(Authenticator):
         ]
 
     async def authenticate(
-        self, handler: LTI13LoginInitHandler, data: Dict[str, str] = None
+            self, handler: LTI13LoginInitHandler, data: Dict[str, str] = None
     ) -> Dict[str, Any]:
         """
         Handles LTI 1.3 launch requests based on a passed JWT.
@@ -221,7 +218,7 @@ class LTI13Authenticator(Authenticator):
         if username_key.startswith("custom_"):
             data = token.get(LTI13_CUSTOM_CLAIM, {})
             # when dropping support for Python 3.8 we can replace the following by `username_key.removeprefix`
-            username_key = username_key[len("custom_") :]
+            username_key = username_key[len("custom_"):]
 
         username = data.get(username_key)
         if not username:

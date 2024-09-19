@@ -229,6 +229,36 @@ class BaseHandler(SessionMixin, web.RequestHandler):
             path=server.base_url
         )
 
+    def clear_login_cookies(self):
+        kwargs = {}
+        user = self.get_current_user_cookie()
+        session_id = self.get_session_cookie()
+        if session_id:
+            # clear session id
+            session_cookie_kwargs = {}
+            session_cookie_kwargs.update(kwargs)
+
+            self.clear_cookie(
+                SESSION_COOKIE_NAME, path=self.application.base_url, **session_cookie_kwargs
+            )
+
+            if user:
+                # user is logged in, clear any tokens associated with the current session
+                # don't clear session tokens if not logged in,
+                # because that could be a malicious logout request!
+                count = 0
+                for access_token in self.session.query(APIToken).filter_by(
+                        user_id=user.id, session_id=session_id
+                ):
+                    self.session.delete(access_token)
+                    count += 1
+                if count:
+                    self.log.debug("Deleted %s access tokens for %s", count, user.name)
+                    self.session.commit()
+
+        # clear hub cookie
+        self.clear_cookie(self.application.cookie_name, path=self.application.base_url, **kwargs)
+
     def get_session_cookie(self):
         """Get the session id from a cookie
 

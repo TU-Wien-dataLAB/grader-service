@@ -20,6 +20,7 @@ class LogoutHandler(BaseHandler):
         """Default backend logout actions
         """
         self.log.info("User logged out: %s", name)
+        self.clear_login_cookies()
 
     async def default_handle_logout(self):
         """The default logout action
