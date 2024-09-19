@@ -108,7 +108,7 @@ from grader_service.auth.pam import PAMAuthenticator
 from grader_service.auth.oauth2 import OAuthenticator
 from grader_service.auth.lti13.auth import LTI13Authenticator
 
-c.GraderService.authenticator_class = LTI13Authenticator
+c.GraderService.authenticator_class = DummyAuthenticator
 #
 # c.Authenticator.allowed_users = {'instructor', 'tutor', 'student1', 'student2' }
 c.Authenticator.allow_all = True
