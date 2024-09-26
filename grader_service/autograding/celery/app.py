@@ -46,6 +46,5 @@ class CeleryApp(SingletonConfigurable):
             self.log.info('Instantiating database connection')
             from grader_service.main import GraderService, db
             db_url = GraderService.instance().db_url
-            self.log.info(f"Database URL: {db_url}")
             self._db = db(db_url)
         return self._db
