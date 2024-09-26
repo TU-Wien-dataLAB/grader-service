@@ -103,6 +103,9 @@ class GraderService(config.Application):
         service_dir_url = f'sqlite:///{db_path}'
         return os.getenv("GRADER_DB_URL", service_dir_url)
 
+    grader_cookie_secret = Unicode(default_value=os.getenv("GRADER_COOKIE_SECRET", secrets.token_hex(nbytes=32)),
+                                   allow_none=False).tag(config=True)
+
     max_body_size = Int(
         104857600,
         help="Sets the max buffer size in bytes, default to 100mb"
@@ -423,9 +426,7 @@ class GraderService(config.Application):
                 authenticator=self.authenticator,
                 handlers=handlers,
                 oauth_provider=self.oauth_provider,
-                cookie_secret=secrets.token_hex(
-                    nbytes=32
-                ),  # generate new cookie secret at startup
+                cookie_secret=self.grader_cookie_secret,  # generate new cookie secret at startup
                 config=self.config,
                 db=self.db,
                 parent=self,
