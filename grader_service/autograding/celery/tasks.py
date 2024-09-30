@@ -97,7 +97,7 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
     if sub_id is None:
         # build the subquery
         subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_status)
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_status == "generated")
                     .group_by(Submission.username)
                     .subquery())
 
@@ -106,7 +106,7 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_status)
+                          Submission.assignid == assignment_id) & Submission.feedback_status == "generated")
             .all())
 
         data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
