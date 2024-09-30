@@ -740,6 +740,7 @@ class LtiSyncHandler(GraderBaseHandler):
     async def get(self, lecture_id: int, assignment_id: int):
         # apply task synchronously without adding to queue
         results = lti_sync_task.delay(lecture_id, assignment_id, None, False)
+        results = results.get(timeout=120)
         if results is None:
             # TODO results can also be None if there was an error during sync
             # therefore this message could be misleading
