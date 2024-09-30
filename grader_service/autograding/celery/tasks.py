@@ -106,7 +106,7 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_status == "generated")
+                          Submission.assignid == assignment_id) & (Submission.feedback_status == "generated"))
             .all())
 
         data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
