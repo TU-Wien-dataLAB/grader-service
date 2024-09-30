@@ -91,6 +91,7 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
     if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
             or (int(assignment.lectid) != int(lecture_id))):
         self.log.error("Assignment with id " + str(assignment_id) + " was not found")
+        return None
     lecture: Lecture = assignment.lecture
 
     if sub_id is None:

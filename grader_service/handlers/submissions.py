@@ -730,8 +730,10 @@ class LtiSyncHandler(GraderBaseHandler):
     @authorize([Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         # apply task synchronously without adding to queue
-        results = lti_sync_task.apply((lecture_id, assignment_id, None, False))
+        results = lti_sync_task.delay(lecture_id, assignment_id, None, False)
         if results is None:
+            # TODO results can also be None if there was an error during sync
+            # therefore this message could be misleading
             self.log.info("Skipping LTI plugin as it is not enabled")
             self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
         else:
