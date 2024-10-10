@@ -17,7 +17,6 @@ DummyAuthenticator
     c.Authenticator.allow_all = True
 
 
-
 PAMAuthenticator
 ^^^^^^^^^^^^^^^^^^
 
@@ -225,4 +224,14 @@ In this case we are using the LTI 1.3 authenticator and map every user the has a
     c.Authenticator.post_auth_hook = post_auth_hook
 
 
+Task Queue
+---------------
 
+..  TODO: grader service uses celery task queue with rabbit mq as broker -> refer to rabbit mq docs to run locally
+        run rabbit mq + grader service worker as additional processes
+    TODO: refer to examples/k8s to see how rabbit mq is set up in deployment
+
+How To Scale
+---------------
+
+.. TODO: after it runs locally how to scale up to k8s deployment? what to consider when doing so? helm commands/values?
