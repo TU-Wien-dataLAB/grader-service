@@ -50,7 +50,7 @@ def test_calculate_late_submission_scaling(period, expected):
     a = AssignmentORM()
     role = Role()
     role.role = Scope.student
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     a.duedate = now
 
     settings = {
@@ -68,7 +68,7 @@ def test_calculate_late_submission_scaling_error():
     a = AssignmentORM()
     role = Role()
     role.role = Scope.student
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     a.duedate = now
 
     settings = {
@@ -599,7 +599,7 @@ async def test_put_submission_lecture_assignment_missmatch(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -630,7 +630,7 @@ async def test_put_submission_assignment_submission_missmatch(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/1/"
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -661,7 +661,7 @@ async def test_put_submission_wrong_submission(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/99/"
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -691,7 +691,7 @@ async def test_post_submission(
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
 
@@ -723,7 +723,7 @@ async def test_post_submission_git_repo_not_found(
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1038,7 +1038,7 @@ async def test_max_submissions_assignment(
 
     url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/submissions/"
 
-    now = datetime.utcnow().isoformat("T", "milliseconds") + "Z"
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") + "Z"
     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
                                 auto_status="automatically_graded", manual_status="manually_graded")
 

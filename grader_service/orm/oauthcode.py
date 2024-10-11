@@ -33,7 +33,7 @@ class OAuthCode(Base):
 
     @staticmethod
     def now():
-        return datetime.utcnow().timestamp()
+        return datetime.now(datetime.timezone.utc).timestamp()
 
     @classmethod
     def find(cls, db, code):
