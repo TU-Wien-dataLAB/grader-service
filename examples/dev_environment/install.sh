@@ -8,9 +8,6 @@ which python
 python -m pip install --upgrade pip
 pip install jupyterhub jupyterlab
 
-echo "Installing grader_convert..."
-pip install ../../grader_convert
-
 echo "Installing grader_service..."
 pip install ../../grader_service
 

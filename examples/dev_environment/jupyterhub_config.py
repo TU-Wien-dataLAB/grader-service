@@ -61,7 +61,7 @@ def userdata_hook(spawner, auth_state):
 
     # The environment variable GRADER_API_TOKEN is used by the lab-extension
     # to identify the user in API calls to the Grader Service.
-    spawner.environment.update({"GRADER_API_TOKEN": token})
+    spawner.environment.update({"GRADER_API_TOKEN": "dsadasdsadadasdasd"})
 
 
 # We have access to the authentication data, which we can use to set
