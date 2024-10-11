@@ -254,7 +254,7 @@ class SubmissionHandler(GraderBaseHandler):
                             reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
-        submission_ts = datetime.datetime.utcnow()
+        submission_ts = datetime.datetime.now(datetime.timezone.utc)
 
         score_scaling = 1.0
         if assignment.duedate is not None:
@@ -444,7 +444,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         if submission is not None:
             if submission.feedback_status is not "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
-            elif submission.assignment.duedate < datetime.datetime.utcnow():
+            elif submission.assignment.duedate < datetime.datetime.now(datetime.timezone.utc):
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment has passed.")
             else:
                 previously_deleted = (
