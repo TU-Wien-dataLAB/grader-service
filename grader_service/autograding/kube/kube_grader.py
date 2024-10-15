@@ -73,7 +73,7 @@ class GraderPod(LoggingConfigurable):
             for event in w.stream(self._client.read_namespaced_pod_status, 
                                   name=meta.name, 
                                   namespace=meta.namespace,
-                                  timeout_seconds=1200):  # Optional timeout
+                                  _request_timeout=1200):  # Optional timeout
 
                 pod = event['object']
                 status: V1PodStatus = pod.status
@@ -247,7 +247,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onexc=rm_error)
+            shutil.rmtree(self.output_path, onerror=rm_error)
         os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_assignment_properties())
         grader_pod = None
