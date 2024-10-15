@@ -7,5 +7,6 @@ Installation
 
 Installation from Source
 -------------------------
+.. TODO: completely outdated
 
 For further information on Installation from Source, please refer to the :doc:`Developer Guide and contribution </contribution>`
