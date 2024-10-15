@@ -10,6 +10,7 @@ import inspect
 import json
 import os
 import shutil
+import time
 
 from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta,
                                V1PodStatus, ApiException)
@@ -67,29 +68,31 @@ class GraderPod(LoggingConfigurable):
     # Watch for pod status changes instead of polling in intervals.
     async def _poll_status(self) -> str:
         meta: V1ObjectMeta = self.pod.metadata
-        w = watch.Watch()
-        
-        try:
-            for event in w.stream(self._client.read_namespaced_pod_status, 
-                                  name=meta.name, 
-                                  namespace=meta.namespace,
-                                  _request_timeout=1200):  # Optional timeout
+        start_time = time.time()
+        interval = 5
+        timeout = 1200
 
-                pod = event['object']
-                status: V1PodStatus = pod.status
-                
-                if status.phase in ["Succeeded", "Failed"]:
-                    w.stop()  # Stop watching once the pod is done
-                    return status.phase
+        while True:
+            # Read the pod status using read_namespaced_pod_status
+            pod_status = self._client.read_namespaced_pod_status(name=meta.name, namespace=meta.namespace)
+            
+            # Extract the pod phase (status)
+            phase = pod_status.status.phase
+            self.log.debug(f"Pod {meta.name} is currently in {phase} phase.")
 
-                # Continue watching for other states like Running, Pending, etc.
-                
-        except ApiException as e:
-            self.log.error(f"Error watching pod status: {e}")
-            raise
+            # Exit conditions
+            if phase in ["Succeeded", "Failed"]:  # Stop polling if pod completes or fails
+                self.log.info(f"Pod {meta.name} has finished with phase: {phase}.")
+                return phase
 
-        finally:
-            w.stop()  # Ensure watch is stopped if something goes wrong
+            # Check if timeout is reached
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                print(f"Polling timed out after {timeout} seconds.")
+                return "Failed"
+
+            # Wait for the next poll
+            time.sleep(interval)
 
 
 def _get_image_name(lecture: Lecture, assignment: Assignment = None) -> str:
