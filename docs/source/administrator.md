@@ -209,3 +209,20 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
 
 c.Authenticator.post_auth_hook = post_auth_hook
 ```
+
+## Task Queue
+
+
+<!--  TODO: grader service uses celery task queue with rabbit mq as broker -> refer to rabbit mq docs to run locally
+        run rabbit mq + grader service worker as additional processes 
+
+    TODO: refer to examples/k8s to see how rabbit mq is set up in deployment
+-->
+    
+
+## How To Scale
+
+<!--
+    TODO: after it runs locally how to scale up to k8s deployment? what to consider when doing so? helm commands/values? describe local k8s deployment (minikube etc.) using examples
+    TODO: write test cases for examples (at least for local dev_environment)
+-->

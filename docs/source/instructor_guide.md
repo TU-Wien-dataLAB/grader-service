@@ -50,6 +50,44 @@ In the overview window of the assignment, you will find many ways to monitor, gr
 :alt: overview window
 ```
 
+## Deadlines
+
+As an instructor, you can set deadlines for assignments.
+
+**Deadline Enforcement**:  
+After the set deadline, students will no longer be able to submit assignments unless you extend the deadline. This ensures that no submissions are accepted beyond the initial due date.
+
+**Extending Deadlines**:  
+While students cannot submit after the deadline by default, you have the option to extend the deadline for all students at any point. This can be done through the assignment settings, allowing flexibility if needed. Please note that deadlines cannot be extended for individual students.
+
+## Limit Number of Submissions
+
+You can set a limit on the number of times students can submit an assignment.
+
+**Submission Limits**:  
+You can define a maximum number of submissions for each assignment (e.g., students can submit up to 3 times). Once a student reaches this limit, they will no longer be able to make additional submissions unless you increase the limit for all students.
+
+## Late Submissions
+
+You can allow students to submit assignments after the deadline, with applied penalties on the total score.
+
+**Penalty for Late Submissions**:  
+When students submit assignments after the initial deadline, a penalty multiplier can be applied to their score. This penalty increases with time, reducing their overall grade based on how late the submission is. You can customize the penalty system according to your course policies.
+
+**Late Submission Period**:  
+You can define a grace period for late submissions (e.g., allowing submissions up to a week after the deadline). Once this period expires, no further submissions are allowed unless you manually extend the deadline or late submission period. Since the late submission period is relative to the deadline, extending the deadline automatically extends the late submission period.
+
+## Manual Submissions
+
+You have the ability to manually add submissions for students, even after the deadline has passed.
+
+**Manual Submission Creation**:  
+In cases where a student is unable to submit their work on time due to technical issues or other circumstances, you can manually upload and submit files on their behalf. This option is available even after the deadline has expired, giving you flexibility in handling special cases.
+
+**Submission Process**:  
+To manually submit on behalf of a student, you will need to obtain the necessary files from the student. Once you have the files, you can upload them to the system, and the submission will be recorded as if the student had submitted it themselves.
+
+
 ## Files
 
 Every assignment includes two crucial directories.

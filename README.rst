@@ -53,6 +53,7 @@ Grader Labextension
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
 Try out GraderService:
+.. TODO: update binder
 
 .. image:: https://mybinder.org/badge_logo.svg
     :target: https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-demo/HEAD?urlpath=lab
@@ -65,6 +66,9 @@ Read the `official documentation <https://grader-service.readthedocs.io/en/lates
 
 Requirements
 ===========
+
+.. TODO: is this still correct?
+
 ..
 
    JupyterHub,
@@ -136,6 +140,12 @@ Follow the documentation there. The directory also contains the config files for
 
 Getting Started
 ===============
+
+.. TODO: completely outdated -> refer to config in dev environment instead + clean up configs there (only minimal config with lots of comments)
+                what is confusing about configs? write comments!
+                what parts can be omitted? should we set default values explicitly?
+                describe --show-config command -> does this even work?
+
 
 .. running-start
 
