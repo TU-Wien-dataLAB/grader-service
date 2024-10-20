@@ -1,13 +1,9 @@
 # Installation
 
-```{eval-rst}
-.. include:: ../../README.rst
-   :start-after: installation-start
-   :end-before: installation-end
+```{toctree}
+:maxdepth: 3
+
+package_installation
+installation_from_source
 ```
 
-# Installation from Source
- 
-<!-- TODO: This is completely outdated. -->
-
-For further information on Installation from Source, please refer to the {doc}`Developer Guide and contribution </contribution>`
