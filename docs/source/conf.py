@@ -114,7 +114,13 @@ html_theme_options = {
         {
             "name": "PyPI Grader Service",
             "url": "https://pypi.org/project/grader-service/",
-            "icon": "https://img.shields.io/pypi/dw/grader-service",
+            "icon": "https://img.shields.io/pypi/v/grader-service",
+            "type": "url",
+        },
+        {
+            "name": "TU Wien dataLAB",
+            "url": "https://www.it.tuwien.ac.at/en/services/network-and-servers/datalab",
+            "icon": "_static/assets/images/tu-logo.svg",
             "type": "url",
         }
     ],

@@ -8,14 +8,16 @@ which python
 python -m pip install --upgrade pip
 pip install jupyterhub jupyterlab
 
-echo "Installing grader_convert..."
-pip install ../../grader_convert
 
 echo "Installing grader_service..."
-pip install ../../grader_service
+cd ../../
+pip install -e .
 
 echo "Installing grader_labextension..."
-pip install ../../grader_labextension # no development install for grader_labextension
+cd ../Grader_Labextension
+pip install -e .
+
+jupyter labextension develop . --overwrite
 
 jupyter server extension enable grader_labextension
 
