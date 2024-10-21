@@ -14,7 +14,7 @@ cd ../../
 pip install -e .
 
 echo "Installing grader_labextension..."
-cd ../Grader_Labextension
+cd ../Grader-Labextension
 pip install -e .
 
 jupyter labextension develop . --overwrite
