@@ -54,13 +54,17 @@ data:
         accept_content=['json'],
         broker_connection_retry_on_startup=True,
     )
-
-    c.LTISyncGrades.enable_lti_features = {{ .Values.ltiSyncGrades.enabled }}
+    {{- if .Values.ltiSyncGrades.enabled }}
+    c.LTISyncGrades.enabled = True
+    {{- if .Values.ltiSyncGrades.sync_on_feedback }}
+    c.LTISyncGrades.sync_on_feedback = True
+    {{- end }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
     c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
     c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
     c.LTISyncGrades.username_match = {{ .Values.ltiSyncGrades.username_match | quote }}
+    {{- end }}
 
     c.GraderService.log_level = "{{ .Values.logLevel }}"
 

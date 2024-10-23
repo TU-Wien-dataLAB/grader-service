@@ -742,10 +742,7 @@ class LtiSyncHandler(GraderBaseHandler):
         results = lti_sync_task.delay(lecture_id, assignment_id, None, False)
         results = results.get(timeout=120)
         if results is None:
-            # TODO results can also be None if there was an error during sync
-            # therefore this message could be misleading
-            self.log.info("Skipping LTI plugin as it is not enabled")
-            self.write_error(HTTPStatus.CONFLICT, reason="LTI Plugin is not enabled")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Did not find syncable submissions.")
         else:
             self.write_json(results)
 
