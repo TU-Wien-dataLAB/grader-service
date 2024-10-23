@@ -91,7 +91,7 @@ The `dev_enviroment` directory contains following files:
 To install Grader Service and Grader Labextension navigate to directory `example/dev_environment`. Start installation script by running command:
 
 ```bash
-bash -/install.sh
+bash ./install.sh
 ```
 
 Installation script creates a virtual environment and adds all needed packages to it.

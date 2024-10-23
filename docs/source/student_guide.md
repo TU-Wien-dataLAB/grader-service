@@ -14,7 +14,11 @@ You can also access the assignments through the 'Assignments' menu bar item.
 
 <!-- TODO: Add image of menu bar item. -->
 
-| When clicking on the assignment panel, you are presented with a list of courses you are enrolled in. They can also see completed lectures from previous semesters as well and take a look at your old assignments:dnets are presented with a list of courses they are enrolled in. They can also see completed lectures from previous semesters as well and take a look at their old assignments:
+```{image} _static/assets/images/assignments_menu_item.png
+:alt: menu bar items
+```
+
+When clicking on the assignment panel, you are presented with a list of courses you are enrolled in. They can also see completed lectures from previous semesters as well and take a look at your old assignments.
 
 ```{image} _static/assets/images/student_lecture_list.png
 :alt: student lecture list

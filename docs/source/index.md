@@ -10,16 +10,18 @@ Grader Service offers lecturers and students a well integrated teaching environm
 ```{image} ./_static/assets/gifs/labextension_update.gif
 ```
 
+<!-- TODO: Organize files in directories and sub directories -->
+
 ## Contents
 
 ```{toctree}
 :maxdepth: 3
 
-installation
+installation/installation
 get_started
 instructor_guide
 student_guide
-administrator
+admin/administrator
 contribution
 grader_service/grader_service_rest_api
 about

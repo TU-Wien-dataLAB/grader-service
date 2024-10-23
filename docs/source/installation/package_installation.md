@@ -3,7 +3,7 @@
 ## Install Grader Service and Grader Labextension
 
 ```{eval-rst}
-.. include:: ../../README.rst
+.. include:: ../../../README.rst
    :start-after: installation-start
    :end-before: installation-end
 ```
