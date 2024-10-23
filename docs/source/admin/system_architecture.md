@@ -1,6 +1,10 @@
 # System Architecture
 
-![grader architecture](./_static/assets/images/grader_architecture.svg "Grader Architecture Overview")
+![grader architecture](../_static/assets/images/grader_architecture.svg "Grader Architecture Overview")
+
+## How To Scale
+
+## Task Queue
 
 
 This documentation provides an overview of the architecture and the various components of the system.

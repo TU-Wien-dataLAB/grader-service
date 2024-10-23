@@ -434,7 +434,7 @@ class OAuthenticator(Authenticator):
     )
 
     custom_403_message = Unicode(
-        "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
+        "Sorry, you are not currently authorized to use this hub. Please contact the hub admin.",
         config=True,
         help="""
         The message to be shown when user was not allowed
