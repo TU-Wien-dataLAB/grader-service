@@ -10,8 +10,6 @@ Grader Service offers lecturers and students a well integrated teaching environm
 ```{image} ./_static/assets/gifs/labextension_update.gif
 ```
 
-<!-- TODO: Organize files in directories and sub directories -->
-
 ## Contents
 
 ```{toctree}
