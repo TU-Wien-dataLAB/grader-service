@@ -4,7 +4,7 @@ from urllib.request import urlopen
 from pathlib import Path
 
 project = "Grader Service"
-copyright = "2023"
+copyright = "2024"
 author = "TU Wien DataLab"
 # language = "fr"  # For testing language translations
 

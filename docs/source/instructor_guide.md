@@ -1,56 +1,57 @@
 # Instructor Guide
 
-After installation and configuration of the grader labextension and service you should
-be able to access the frontend interface of the extension.
-The labextension consists of two launchers.
-The assignment launcher opens a window where students can pull and submit their
-given assignments.
-The course management launcher opens a dashboard
-for instructors where you can add, edit and delete assignments.
-The course management launcher is only visible if the current user is at least
-a tutor in one lecture.
+The labextension consists of two launchers:
 
-```{image} _static/assets/images/launcher.png
-:alt: launcher window
-```
+- **Assignment Launcher**:  Opens a window where students can pull and work on assignments you have published for them. You as instructor can also access this launcher and see how the assignment looks like for students.
+
+- **Course Management launcher** : Opens a dashboard  for instructors where you can add, edit and delete assignments. The course management launcher is only visible if the current user is at least a tutor in one lecture.
+
+
+![Launcher Window](_static/assets/images/instructor_guide/launcher.png)
 
 :::{note}
-If you do not see the launcher items, it may be the case that extensions might be disabled in JupyterLab.
-You can find how to enable extensions [here](https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager).
-Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
+If you do not see the launcher items, it may be the case that extensions might be disabled in JupyterLab. You can find how to enable extensions [here](https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager). Another reason might be that the grader service is not running. However, there will be a warning if this is the case.
 :::
+
+# Rename Lecture
+
+When JupyterHub is set up for your lecture for the first time, it is named after the lecture code followed by the semester for which it was created. To make it clearer for students (and for yourself), you may want to rename the lecture to its actual title. The system will prompt you to do this if the lecture name displayed in JupyterHub matches the lecture code.
+
+![Rename Lecture](_static/assets/gifs/instructor_guide/rename_lecture.gif)
 
 # Create Your First Assignment
 
 Before students can access the notebooks, an assignment must be created.
 To access this feature, open the course management dashboard and navigate to desired lecture:
 
-```{image} _static/assets/images/courses.png
-:alt: course management list
-```
+![Course List](_static/assets/images/instructor_guide/course_list.png)
+
 
 The course management table lists all assignments in the chosen lecture and lets you easily manage them:
 
-```{image} _static/assets/images/assignments.png
-:alt: assignment list
-```
+![Assignment List](_static/assets/images/instructor_guide/assignment_list.png)
 
-By pressing on the "+ NEW" button on top of the assignment list, instructors can add new assignments to the lecture:
 
-```{image} _static/assets/images/add_assignment.png
-:alt: add assignment dialog
-```
+By pressing on the "+ NEW" button on top of the assignment list, you can add new assignments to the lecture:
 
-## Working With Assignments
+![Add Assignment Dialog](_static/assets/images/instructor_guide/add_assignment.png)
+
+After you initially created an assignment, you can allways change its properties in the "SETTINGS" panel:
+
+![Change Assignment Settings](_static/assets/gifs/instructor_guide/assignments_settings.gif)
+
+# Working With Assignments
 
 Once an assignment has been created it can be opened, which will display the overview window.
 In the overview window of the assignment, you will find many ways to monitor, grade and extend the current assignment.
 
-```{image} _static/assets/images/overview_user_guide.png
-:alt: overview window
-```
+![Assignment Overview](_static/assets/images/instructor_guide/assignment_overview.png)
 
-## Deadlines
+## Assignment Settings
+
+![Assignment Settings](_static/assets/images/instructor_guide/assignment_settings.png)
+
+### Deadlines
 
 As an instructor, you can set deadlines for assignments.
 
@@ -60,22 +61,40 @@ After the set deadline, students will no longer be able to submit assignments un
 **Extending Deadlines**:  
 While students cannot submit after the deadline by default, you have the option to extend the deadline for all students at any point. This can be done through the assignment settings, allowing flexibility if needed. Please note that deadlines cannot be extended for individual students.
 
-## Limit Number of Submissions
+### Limit Number of Submissions
 
 You can set a limit on the number of times students can submit an assignment.
 
 **Submission Limits**:  
 You can define a maximum number of submissions for each assignment (e.g., students can submit up to 3 times). Once a student reaches this limit, they will no longer be able to make additional submissions unless you increase the limit for all students.
 
-## Late Submissions
+### Late Submissions
 
 You can allow students to submit assignments after the deadline, with applied penalties on the total score.
+
+![Late Submission Settings](_static/assets/images/instructor_guide/late_submission_settings.png)
 
 **Penalty for Late Submissions**:  
 When students submit assignments after the initial deadline, a penalty multiplier can be applied to their score. This penalty increases with time, reducing their overall grade based on how late the submission is. You can customize the penalty system according to your course policies.
 
 **Late Submission Period**:  
-You can define a grace period for late submissions (e.g., allowing submissions up to a week after the deadline). Once this period expires, no further submissions are allowed unless you manually extend the deadline or late submission period. Since the late submission period is relative to the deadline, extending the deadline automatically extends the late submission period.
+You can define a grace period for late submissions (e.g., allowing submissions up to a week after the deadline). Once this period expires, no further submissions are allowed unless you manually extend the deadline or late submission period. **Since the late submission period is relative to the deadline, extending the deadline automatically extends the late submission period.**
+
+## Auto-Grading Behavior
+
+In the settings and creation menu of an assignment, it is possible to select the auto-grading behavior for the assignment.
+It specifies the action taken when a user submits an assignment.
+
+- No Automatic Grading
+  : No action is taken when users submit the assignment.
+- Automatic Grading (Recommended)
+  : The assignment is being auto-graded as soon as the user submits the assignment.
+    This means that submissions in the grading view are always auto-graded.
+- Fully Automatic Grading
+  : The assignment is auto-graded and feedback is generated as soon as the student submits their assignment.
+    This requires that no manually graded cells are part of the assignment.
+
+![Autograding behaviour](_static/assets/images/instructor_guide/grading_behavior.png)
 
 ## Manual Submissions
 
@@ -85,20 +104,22 @@ You have the ability to manually add submissions for students, even after the de
 In cases where a student is unable to submit their work on time due to technical issues or other circumstances, you can manually upload and submit files on their behalf. This option is available even after the deadline has expired, giving you flexibility in handling special cases.
 
 **Submission Process**:  
-To manually submit on behalf of a student, you will need to obtain the necessary files from the student. Once you have the files, you can upload them to the system, and the submission will be recorded as if the student had submitted it themselves.
+To manually submit on behalf of a student, you will need to obtain the necessary files from the student. Once you have the files, you can upload them to the system, and the submission will be recorded as if the student had submitted it themselves. Afterward the submission is handled as any other and can be graded as usually.
 
+Following video illustrates the procedure:
+
+![Manual Submission](_static/assets/gifs/instructor_guide/manual_submission.gif)
 
 ## Files
 
 Every assignment includes two crucial directories.
 The **source directory** contains the source notebooks which instructors create for their assignment.
-The **release directory** contains the release versions of the notebooks, which are the converted source notebooks and is used as a preview of what the student version of the notebook looks.
+The **release directory** contains the release versions of the notebooks, which are the converted source notebooks and are used as a preview of what the student version of the notebook looks like.
 To view these directories, use the files card in the overview window of the assignment.
 By switching between source and release file viewer, the extension will convert the source notebooks to their release versions.
 
-```{image} _static/assets/images/file_view.png
-:alt: file view
-```
+![Files View](_static/assets/images/instructor_guide/file_view.png)
+
 
 :::{note}
 Just the source notebooks and files should be edited! Changes to files in the release directory will be lost when generating the files again.
@@ -114,13 +135,11 @@ The source directory can also be revealed in the JupyterLab file browser or be o
 Up until now, no files have been added to the assignment. To have tasks for students to work on, notebooks have to be added to the assignment.
 As mentioned previously, we can either add a notebook from the file view or create it using the JupyterLab launcher.
 
-```{image} _static/assets/images/creation_mode.png
-:align: center
-:alt: creation mode
-:width: 500
-```
+![Creation Mode Notebook](_static/assets/images/instructor_guide/creation_mode.png)
 
 For notebooks which are in the source directory, a creation mode can be enabled in the notebook toolbar. It adds widgets around notebook cells that can be used to control the function of the code cell.
+
+![Cell Types in Notebook Creation Mode](_static/assets/gifs/instructor_guide/cell_types.gif)
 
 Grader Cell Types:
 
@@ -132,11 +151,7 @@ Grader Cell Types:
     Due to the directives, the code will be replaced by placeholder code such as `raise NotImplementedError()`.
     Also, a hint can be given to students and solutions can be commented while grading.
 
-    ```{image} _static/assets/images/autograded_answer.png
-    :align: center
-    :alt: autograded answer
-    :width: 500
-    ```
+  ![Autograded Answer](_static/assets/images/instructor_guide/autograded_answer_cell.png)
 
     :::{warning}
     If the `BEGIN SOLUTION` and `END SOLUTION` directives are omitted, the solution code will end up in the released files!
@@ -145,40 +160,52 @@ Grader Cell Types:
   : This cell contains the test cases to test the auto-graded answer given by students.
     These may be `assert` statements that check the implemented code.
     Invalid solutions have to lead to an exception.
+  
+  ![Autograded Test](_static/assets/images/instructor_guide/autograded_test_cell.png)
 
     :::{note}
     Part or all of the tests can be hidden with `BEGIN HIDDEN TESTS` and `END HIDDEN TESTS` directives.
     :::
 
-    ```{image} _static/assets/images/autograded_test.png
-    :align: center
-    :alt: autograded test
-    :width: 500
-    ```
+    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, but want to let them know how meny points a submission granted  them, this a perfect option for you.
 
-    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. This means that students won't see tests which were run in the generated feedback. This behavior might be desired for **automatic** and **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments.
+    ![Always Hidden tests](_static/assets/images/instructor_guide/always_hidden.png)
 
-    ```{image} _static/assets/images/always_hidden_tests.png
-    :align: center
-    :alt: allways hidden test
-    :width: 500
-    ```
-
-    The following image shows both an always hidden and a hidden test cell in the feedback view. For always hidden tests, only the points reached in the submission are shown, whereas for hidden tests, the run tests are also displayed.
-
-    ```{image} _static/assets/images/student_feedback_always_hidden_tests.png
-    :alt: feedback for always hidden tests
-    ```
+    The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
+    
+    ![Feedback when Always Hidden Tests are set](_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
+   
 - Manual graded answer
   : This cell type supports free-form answers from students.
     They should not be tested with automatic tests but are intended to be manually graded.
-    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text.
+    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen. 
 
-    ```{image} _static/assets/images/manual_answer.png
-    :align: center
-    :alt: manual answer
-    :width: 500
-    ```
+  ![Manual Answer Cell](_static/assets/images/instructor_guide/manual_answer_cell.png)
+   
+  ### How To Grade Manual Answer Cells?
+  - Once a student submits their work, it will appear in the "Submissions" list. To manually grade a submission, it must first be automatically graded (this sets the necessary metadata for successful grading). If you selected "Automatic Grading" when creating the assignment, this will be done automatically and you may immediately proceed with manual grading. If you chose "No Automatic Grading," you must first select the submission and click "AUTOGRADE." Afterward, you will be able to manually grade the submission.
+  - Click on submission in the Submission List and pull it. This will reveal files the student has submitted.
+  - Click on notebook that you want to manually grade and when the notebook opens up enable "Grading Mode".
+  - You can now assign points, leave comments or even give extra credits for the solution.
+  - When you are done with grading, save the notebook.
+  - In the "Detail Submission View" click on "Finish Manual Grading". This will save points you grated the student.
+  - When you are ready, you can also generate feedback for the submission. If you left any comments for the student while grading, they will be included in the feedback as well.
+  
+  Following video illustrates the procedure:
+
+  ![Manual grading](_static/assets/gifs/instructor_guide/manually_grade_submission.gif)
+
+  Student revives following feedback:
+  ![Feedback manual Grading](_static/assets/images/instructor_guide/manual_grading_comments_and_feedback.png)
+
+  :::{note}
+  If your assignment has cells that are automatically graded, you can always change points that the automated test granted for solution manually.
+  
+  In following example, student had to implement a python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
+  ![Manually Change points Granted From Auto Grading](_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
+  :::
+
+<!-- TODO: Following sections have to be updated -->
 
 ### Customizing Assignment Creation with grader_config.py
 
@@ -350,22 +377,4 @@ Generally, submissions have to be auto-graded first before anything else can be 
 If manual grading is not needed or not wanted, it can be skipped.
 The last step is feedback generation, at which point students will see their results.
 
-## Auto-Grading Behavior
 
-In the edit and creation menu for an assignment, it is possible to select the auto-grading behavior for the assignment.
-It specifies the action taken when a user submits an assignment.
-
-- No Automatic Grading
-  : No action is taken when users submit the assignment.
-- Automatic Grading (Recommended)
-  : The assignment is being auto-graded as soon as the user submits the assignment.
-    This means that submissions in the grading view are always auto-graded.
-- Fully Automatic Grading
-  : The assignment is auto-graded and feedback is generated as soon as the student submits their assignment.
-    This requires that no manually graded cells are part of the assignment.
-
-```{image} _static/assets/images/autograding_behavior.png
-:align: center
-:alt: autograding behavior
-:width: 350
-```
