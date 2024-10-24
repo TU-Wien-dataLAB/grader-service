@@ -373,7 +373,7 @@ def metrics_authentication(self):
         return
     scope = 'read:metrics'
     if scope not in self.parsed_scopes:
-        raise web.HTTPError(403, f"Access to metrics requires scope '{scope}'")
+        raise web.HTTPError(403, reason=f"Access to metrics requires scope '{scope}'")
 
 
 # Token utilities
@@ -673,24 +673,6 @@ def get_accepted_mimetype(accept_header, choices=None):
         else:
             return mime
     return None
-
-
-def catch_db_error(f):
-    """Catch and rollback database errors"""
-
-    @functools.wraps(f)
-    async def catching(self, *args, **kwargs):
-        try:
-            r = f(self, *args, **kwargs)
-            if inspect.isawaitable(r):
-                r = await r
-        except SQLAlchemyError:
-            self.log.exception("Rolling back session due to database error")
-            self.db.rollback()
-        else:
-            return r
-
-    return catching
 
 
 def get_browser_protocol(request):

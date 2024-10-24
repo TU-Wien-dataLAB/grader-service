@@ -381,17 +381,17 @@ class LTI13CallbackHandler(BaseHandler):
         try:
             id_token = self.decode_and_validate_launch_request()
         except InvalidAudienceError as e:
-            raise HTTPError(401, str(e))
+            raise HTTPError(401, reason=str(e))
         except ValidationError as e:
-            raise HTTPError(400, str(e))
+            raise HTTPError(400, reason=str(e))
 
         try:
             user = await self.login_user(id_token)
         except LoginError as e:
-            raise HTTPError(400, str(e))
+            raise HTTPError(400, reason=str(e))
         self.log.debug(f"user logged in: {user}")
         if user is None:
-            raise HTTPError(403, "User missing or null")
+            raise HTTPError(403, reason="User missing or null")
         await self.redirect_to_next_url(user)
 
     async def redirect_to_next_url(self, user):
@@ -448,11 +448,11 @@ class LTI13CallbackHandler(BaseHandler):
         """
         cookie_state = self._get_state_cookie()
         if not cookie_state:
-            raise HTTPError(400, "OAuth state missing from cookies")
+            raise HTTPError(400, reason="OAuth state missing from cookies")
         url_state = self._get_state_from_url()
         if cookie_state != url_state:
             self.log.warning(f"OAuth state mismatch: {cookie_state} != {url_state}")
-            raise HTTPError(400, "OAuth state mismatch")
+            raise HTTPError(400, reason="OAuth state mismatch")
 
     def check_nonce(self, id_token: Dict[str, Any]) -> None:
         """Check if received nonce corresponds to hash of nonce state cookie"""
@@ -460,13 +460,13 @@ class LTI13CallbackHandler(BaseHandler):
 
         nonce_state = self._get_nonce_state_cookie()
         if not nonce_state:
-            raise HTTPError(400, "Missing nonce state cookie")
+            raise HTTPError(400, reason="Missing nonce state cookie")
 
         nonce = get_nonce(nonce_state)
 
         if nonce != received_nonce:
             self.log.warning("OAuth nonce mismatch: %s != %s", nonce, received_nonce)
-            raise HTTPError(400, "OAuth nonce mismatch")
+            raise HTTPError(400, reason="OAuth nonce mismatch")
 
     def get_next_url(self, user=None):
         """Get the redirect target from the state field"""
@@ -485,7 +485,7 @@ class LTI13CallbackHandler(BaseHandler):
         try:
             return self.get_argument("state")
         except MissingArgumentError:
-            raise HTTPError(400, "OAuth state missing from URL")
+            raise HTTPError(400, reason="OAuth state missing from URL")
 
     def _get_nonce_state_cookie(self):
         """Get OAuth nonce state from cookies
