@@ -1,12 +1,12 @@
-openapi: '3.0.2'
+openapi: '3.1.0'
 info:
   title: Grader Extension API
   description: The REST API for grader server extension
   license:
     name: BSD-3-Clause
-  version: '0.2.0a3'
+  version: '0.6.0'
 servers:
-  - url: /services/mock
+  - url: /api
     description: relative path to mock
 
 ###### Tags of API endpoints

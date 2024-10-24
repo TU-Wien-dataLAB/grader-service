@@ -352,12 +352,7 @@ remoteStatus:
         content:
           text/plain:
             schema:
-              type: string
-              enum:
-                - "up_to_date"
-                - "pull_needed"
-                - "push_needed"
-                - "divergent"
+              $ref: "./schemas.yml#/components/schemas/RemoteStatus"
       403:
         description: Forbidden
       404:

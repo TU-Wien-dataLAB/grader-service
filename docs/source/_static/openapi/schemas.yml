@@ -1,15 +1,17 @@
 ## Model generation:
 #  
 # Typescript:
-# java -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g typescript-angular -o grader_labextension/src --global-property models
+# java -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g typescript-angular -o src --global-property models
 #
 # Python (service):
-# call in grader_service directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
+# call in service root directory
+# java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py,__init__.py -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
+
 # 
 # Python (labextension):
-# call in grader_labextension directory
-# java -Dmodels -DsupportingFiles=util.py,base_model_.py,typing_utils.py -jar ../../openapi-generator-cli.jar generate -i ../docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_labextension.api' ; rm -r grader_labextension/api/test grader_labextension/api/controllers grader_labextension/api/openapi
+# call in labextension root directory
+# java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_labextension.api' ; rm -r grader_labextension/api/test grader_labextension/api/controllers grader_labextension/api/openapi .openapi-generator/
+
 
 openapi: '3.0.2'
 info:
@@ -251,3 +253,10 @@ components:
             type: "array"
             items:
               $ref: "#/components/schemas/Submission"
+    RemoteFileStatus:
+      type: "object"
+      required: ["status"]
+      properties:
+        status:
+          type: string
+          enum: ["UP_TO_DATE", "DIVERGENT", "PULL_NEEDED", "PUSH_NEEDED", "NO_REMOTE_REPO"]
