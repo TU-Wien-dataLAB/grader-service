@@ -6,7 +6,7 @@ info:
     name: BSD-3-Clause
   version: '0.5.2-a10'
 servers:
-  - url: /services/mock
+  - url: /api
     description: relative path to mock
 
 ###### Tags of API endpoints
