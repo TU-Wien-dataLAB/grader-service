@@ -8,7 +8,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.handlers.base_handler import GraderBaseHandler
 
 
-@register_handler(path=r"\/health\/?", version_specifier=VersionSpecifier.ALL)
+@register_handler(path=r"api\/health\/?", version_specifier=VersionSpecifier.ALL)
 class HealthHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /health.

@@ -27,7 +27,7 @@ async def test_get_permission(
         default_user_login,
         default_roles_dict
 ):
-    url = service_base_url + f"/permissions"
+    url = service_base_url + f"permissions"
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}

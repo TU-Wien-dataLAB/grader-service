@@ -31,7 +31,7 @@ async def test_get_lectures(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures"
+    url = service_base_url + "lectures"
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -52,7 +52,7 @@ async def test_get_lectures_with_some_parameter(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures?some_param=WS21"
+    url = service_base_url + "lectures?some_param=WS21"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -70,7 +70,7 @@ async def test_post_lectures(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures"
+    url = service_base_url + "lectures"
 
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -115,7 +115,7 @@ async def test_post_not_found(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures"
+    url = service_base_url + "lectures"
 
     pre_lecture = Lecture(
         id=-1, name="pytest_lecture", code="abc", complete=False
@@ -142,7 +142,7 @@ async def test_post_unknown_parameter(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures?some_param=asdf"
+    url = service_base_url + "lectures?some_param=asdf"
     # same code not in user groups
     pre_lecture = Lecture(
         id=-1, name="pytest_lecture", code="20wle2", complete=False
@@ -167,7 +167,7 @@ async def test_put_lecture(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3"
+    url = service_base_url + "lectures/3"
 
     get_response = await http_server_client.fetch(
         url,
@@ -204,7 +204,7 @@ async def test_put_lecture_unauthorized(
         default_user_login,
 ):
     #  default user is a student in lecture with lecture_id 1
-    url = service_base_url + "/lectures/1"
+    url = service_base_url + "lectures/1"
 
     get_response = await http_server_client.fetch(
         url,
@@ -235,7 +235,7 @@ async def test_get_lecture(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/lectures/1"
+    url = service_base_url + "lectures/1"
 
     get_response = await http_server_client.fetch(
         url,
@@ -254,7 +254,7 @@ async def test_get_lecture_not_found(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/lectures/999"
+    url = service_base_url + "lectures/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -274,7 +274,7 @@ async def test_delete_lecture(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/lectures/3"
+    url = service_base_url + "lectures/3"
 
     delete_response = await http_server_client.fetch(
         url,
@@ -301,7 +301,7 @@ async def test_delete_lecture_unauthorized(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/lectures/1"
+    url = service_base_url + "lectures/1"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -318,16 +318,16 @@ async def test_delete_lecture_assignment_with_submissions(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login,
         default_user
 ):
     l_id = 3
     a_id = 2
-    url = service_base_url + f"/lectures/{l_id}"
+    url = service_base_url + f"lectures/{l_id}"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, lecture_id=3)
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
 
@@ -346,14 +346,14 @@ async def test_delete_lecture_assignment_released(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login,
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}"
+    url = service_base_url + f"lectures/{l_id}"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, lecture_id=3)  # assignment with id 1 is status released
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -375,7 +375,7 @@ async def test_delete_lecture_assignment_complete(
         default_user_login,
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}/assignments"
+    url = service_base_url + f"lectures/{l_id}/assignments"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="complete", points=None,
                                 automatic_grading="unassisted")
@@ -387,7 +387,7 @@ async def test_delete_lecture_assignment_complete(
     )
     assert post_response.code == 201
 
-    url = service_base_url + f"/lectures/{l_id}"
+    url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -403,13 +403,13 @@ async def test_delete_lecture_not_found(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login,
 ):
     l_id = -5
 
-    url = service_base_url + f"/lectures/{l_id}"
+    url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,

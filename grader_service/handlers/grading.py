@@ -18,7 +18,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/auto\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -56,7 +56,7 @@ class GradingAutoHandler(GraderBaseHandler):
             submission.feedback_status = "feedback_outdated"
         self.session.commit()
 
-        submission = self.session.query(Submission).get(sub_id)
+        submission = self.session.get(Submission, sub_id)
 
         autograde_task.delay(lecture_id, assignment_id, sub_id)
         self.set_status(HTTPStatus.ACCEPTED,
@@ -66,7 +66,7 @@ class GradingAutoHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/feedback\/?',
     version_specifier=VersionSpecifier.ALL,
 )

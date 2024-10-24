@@ -53,7 +53,7 @@ def get_query_side_effect(lid=1, code="ivs21s", a_type="user", scope=Scope.stude
 
 
 def test_git_lookup_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/source"
+    path = "/git/iv21s/1/source"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -80,7 +80,7 @@ def test_git_lookup_instructor(tmpdir):
 
 
 def test_git_lookup_release_pull_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/release"
+    path = "/git/iv21s/1/release"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -107,8 +107,8 @@ def test_git_lookup_release_pull_instructor(tmpdir):
 
 
 def test_git_lookup_release_push_student_error(tmpdir):
-    path = "services/grader/git/iv21s/assign_1/release"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/release"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -128,8 +128,8 @@ def test_git_lookup_release_push_student_error(tmpdir):
 
 
 def test_git_lookup_source_push_student_error(tmpdir):
-    path = "services/grader/git/iv21s/assign_1/source"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/source"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -149,8 +149,8 @@ def test_git_lookup_source_push_student_error(tmpdir):
 
 
 def test_git_lookup_source_push_student_error(tmpdir):
-    path = "services/grader/git/iv21s/assign_1/source"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/source"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -193,8 +193,8 @@ def test_get_gitdir(tmpdir):
 
 
 def test_git_lookup_push_autograde_instructor_error():
-    path = "services/grader/git/iv21s/assign_1/autograde"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/autograde"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -212,8 +212,8 @@ def test_git_lookup_push_autograde_instructor_error():
 
 
 def test_git_lookup_push_autograde_student_error():
-    path = "services/grader/git/iv21s/assign_1/autograde"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/autograde"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -230,8 +230,8 @@ def test_git_lookup_push_autograde_student_error():
 
 
 def test_git_lookup_push_feedback_instructor_error():
-    path = "services/grader/git/iv21s/assign_1/feedback"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/feedback"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -248,8 +248,8 @@ def test_git_lookup_push_feedback_instructor_error():
 
 
 def test_git_lookup_push_feedback_student_error():
-    path = "services/grader/git/iv21s/assign_1/feedback"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/feedback"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -266,7 +266,7 @@ def test_git_lookup_push_feedback_student_error():
 
 
 def test_git_lookup_pull_autograde_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/autograde/1"
+    path = "/git/iv21s/1/autograde/1"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -296,8 +296,8 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
 
 
 def test_git_lookup_pull_autograde_student_error():
-    path = "services/grader/git/iv21s/assign_1/autograde"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/autograde"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -315,7 +315,7 @@ def test_git_lookup_pull_autograde_student_error():
 
 
 def test_git_lookup_pull_feedback_instructor(tmpdir):
-    path = "services/grader/git/iv21s/1/feedback/1"
+    path = "/git/iv21s/1/feedback/1"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -341,7 +341,7 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
-    path = "services/grader/git/iv21s/1/feedback/1"
+    path = "/git/iv21s/1/feedback/1"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -367,7 +367,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
-    path = "services/grader/git/iv21s/1/feedback/1/info/refs&service=git-upload-pack"
+    path = "/git/iv21s/1/feedback/1/info/refs&service=git-upload-pack"
     git_dir = str(tmpdir.mkdir("git"))
 
     handler_mock = Mock()
@@ -393,8 +393,8 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
 
 
 def test_git_lookup_pull_feedback_student_with_invalid_id_error():
-    path = "services/grader/git/iv21s/assign_1/feedback/1"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/feedback/1"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -412,10 +412,10 @@ def test_git_lookup_pull_feedback_student_with_invalid_id_error():
     assert e.value.status_code == 403
 
 
-# /services/grader/git/20wle2/Assignment%201/feedback/2/info/refs&service=git-upload-pack
+# //git/20wle2/Assignment%201/feedback/2/info/refs&service=git-upload-pack
 def test_git_lookup_pull_feedback_student_no_id_error():
-    path = "services/grader/git/iv21s/assign_1/feedback"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/feedback"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -433,8 +433,8 @@ def test_git_lookup_pull_feedback_student_no_id_error():
 
 
 def test_git_lookup_pull_feedback_student_no_id_error_extra():
-    path = "/services/grader/git/20wle2/Assignment%201/feedback/info/refs&service=git-upload-pack"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/20wle2/Assignment%201/feedback/info/refs&service=git-upload-pack"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()
@@ -452,8 +452,8 @@ def test_git_lookup_pull_feedback_student_no_id_error_extra():
 
 
 def test_git_lookup_pull_feedback_student_bad_id_error():
-    path = "services/grader/git/iv21s/assign_1/feedback/abc/"
-    pathlets = path.strip("/").split("/")[3:]
+    path = "/git/iv21s/assign_1/feedback/abc/"
+    pathlets = path.strip("/").split("/")[1:]
     git_dir = "/tmp"
 
     handler_mock = Mock()

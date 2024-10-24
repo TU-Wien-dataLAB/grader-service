@@ -19,7 +19,6 @@ from jupyterhub.log import log_request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
-from tornado_sqlalchemy import SQLAlchemy
 from traitlets import config, Bool, Type, Instance, Dict, Union, List
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
@@ -42,14 +41,13 @@ from grader_service._version import __version__
 from grader_service.utils import url_path_join
 from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.plugins.lti import LTISyncGrades
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 
-def db(url):
-    is_sqlite = 'sqlite://' in url
-    return SQLAlchemy(
-        url, engine_options={} if is_sqlite else
-        {"pool_size": 50, "max_overflow": -1}
-    )
+
+def get_session_maker(url) -> scoped_session:
+    engine = create_engine(url)
+    return scoped_session(sessionmaker(bind=engine))
 
 
 class GraderService(config.Application):
@@ -94,7 +92,6 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
-    db: SQLAlchemy = None
     oauth_provider = None
 
     @default('db_url')
@@ -131,7 +128,7 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     base_url_path = Unicode(
-        "/services/grader",
+        "/",
         allow_none=False
     ).tag(config=True)
 
@@ -304,7 +301,7 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
-        self.db = db(self.db_url)
+        self.session_maker = get_session_maker(self.db_url)
         self.init_roles()
 
         self._start_future = asyncio.Future()
@@ -343,7 +340,7 @@ class GraderService(config.Application):
 
     def init_roles(self):
         """Load predefined groups into the database"""
-        with Session(self.db.engine) as db:
+        with self.session_maker() as db:
             users_loaded = set()
             for k, users in self.load_roles.items():
                 lecture_code, role = k.split(":", 1)
@@ -408,6 +405,7 @@ class GraderService(config.Application):
         self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
+        self.log.info(handlers)
         # Add the handlers of the authenticator
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
@@ -428,7 +426,7 @@ class GraderService(config.Application):
                 oauth_provider=self.oauth_provider,
                 cookie_secret=self.grader_cookie_secret,  # generate new cookie secret at startup
                 config=self.config,
-                db=self.db,
+                session_maker=self.session_maker,
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),

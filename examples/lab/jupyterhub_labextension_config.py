@@ -1,6 +1,6 @@
 import os
 c.GitService.git_access_token = os.environ.get("JUPYTERHUB_API_TOKEN")
-c.GitService.git_remote_url = "grader_service:4010/services/grader/git"
+c.GitService.git_remote_url = "grader_service:4010/git"
 c.GitService.git_http_scheme = "http"
     
 c.RequestService.port = 4010

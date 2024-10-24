@@ -49,7 +49,7 @@ def remove_points_from_submission(submissions):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/submissions\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -254,7 +254,11 @@ class SubmissionHandler(GraderBaseHandler):
                             reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND)
+        # set utc time
         submission_ts = datetime.datetime.now(datetime.timezone.utc)
+        # use implicit utc time to compare with database objects
+        submission_ts = submission_ts.replace(tzinfo=None)
+        
 
         score_scaling = 1.0
         if assignment.duedate is not None:
@@ -320,7 +324,7 @@ class SubmissionHandler(GraderBaseHandler):
                 grading_chain = chain(
                     autograde_task.si(lecture_id, assignment_id, submission.id),
                     generate_feedback_task.si(lecture_id, assignment_id, submission.id),
-                    lti_sync_task.si(lecture_id, assignment_id, submission.id, sync_on_feedback=True)
+                    lti_sync_task.si(lecture_id, assignment_id, submission.id, feedback_sync=True)
                 )
             else:
                 grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
@@ -333,6 +337,7 @@ class SubmissionHandler(GraderBaseHandler):
     @staticmethod
     def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
         assignment_settings = AssignmentSettingsModel.from_dict(json.loads(assignment.settings))
+        # make duedate aware
         if assignment_settings.late_submission and len(assignment_settings.late_submission) > 0:
             scaling = 0.0
             if submission_ts <= assignment.duedate:
@@ -358,7 +363,7 @@ class SubmissionHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -467,7 +472,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
                             reason="Submission to delete not found.")
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/logs\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -497,7 +502,7 @@ class SubmissionLogsHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/' +
          r'properties\/?',
     version_specifier=VersionSpecifier.ALL,
@@ -525,8 +530,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        properties = self.session.query(SubmissionProperties).get(
-            submission_id)
+        properties = self.session.get(SubmissionProperties, submission_id)
         if properties is not None and properties.properties is not None:
             # delete source cells from properties if user is student
             if self.get_role(lecture_id).role == Scope.student:
@@ -600,7 +604,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -730,7 +734,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
@@ -749,7 +753,7 @@ class LtiSyncHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
 )
 class SubmissionCountHandler(GraderBaseHandler):
     """
