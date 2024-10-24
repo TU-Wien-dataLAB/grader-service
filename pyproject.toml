@@ -22,27 +22,25 @@ classifiers = [
 dependencies = [
     "alembic>=1.13",
     "async_generator>=1.10",
-    "celery>=5.3.6",
-    "cryptography>=38.0.3",
-    "isodate>=0.6.1",
-    "jupyter-client>=7.1.1",
-    "jupyter_core>=4.7.1",
-    "jupyterhub>=5"
-    "json5>=0.9.6",
-    "jsonschema>=3.2.0",
-    "kubernetes>=17.17.0",
-    "nbconvert>=6.4.0",
+    "celery>=5.4",
+    "cryptography>=43",
+    "isodate>=0.7",
+    "json5>=0.9",
+    "jsonschema>=4",
+    "jupyter-client>=8.6",
+    "jupyter_core>=5.7",
+    "jupyterhub>=5",
+    "kubernetes>=31",
+    "nbconvert>=7.16",
     "nbformat>=5.4.0",
-    "psycopg2-binary>= 2.9.5",
-    "PyJWT>=2.4.0",
-    "python-dateutil>=2.8.2", 
-    "SQLAlchemy==1.4.46",
-    "tornado>=6.2",
-    "six==1.16.0",
-    "traitlets>=5.1.1",
-    "tornado_sqlalchemy>=0.8.0",
-    "typing-extensions>=3.10.0.2",
-    "urllib3>=1.26.6",
+    "psycopg2-binary>= 2.9",
+    "PyJWT>=2.9",
+    "python-dateutil>=2.9", 
+    "SQLAlchemy>=2.0.35",
+    "tornado>=6.4",
+    "traitlets>=5.14",
+    "typing-extensions>=4.12",
+    "urllib3>=2.2",
 ]
 
 [tool.setuptools]
@@ -58,13 +56,13 @@ grader-convert = "grader_service.convert.main:main"
 grader-worker = "grader_service.autograding.celery.worker:main"
 
 [project.urls]
-Homepage = "https://github.com/TU-Wien-dataLAB/Grader-Service"
-Repository = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+Homepage = "https://github.com/TU-Wien-dataLAB/grader-service"
+Repository = "https://github.com/TU-Wien-dataLAB/grader-service"
 Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
 
 [tool.tbump]
 # Uncomment this if your project is hosted on GitHub:
-github_url = "https://github.com/TU-Wien-dataLAB/Grader-Service"
+github_url = "https://github.com/TU-Wien-dataLAB/grader-service"
 
 [tool.tbump.version]
 current = "0.5.2-a10"
