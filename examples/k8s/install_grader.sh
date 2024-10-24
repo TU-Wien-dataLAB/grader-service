@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-helm repo add grader-service https://tu-wien-datalab.github.io/Grader-Service
+helm repo add grader-service https://tu-wien-datalab.github.io/grader-service
 helm repo update
 
 helm upgrade --cleanup-on-fail \

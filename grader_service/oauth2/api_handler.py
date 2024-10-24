@@ -118,7 +118,7 @@ class APIHandler(BaseHandler):
         except Exception:
             self.log.debug("Bad JSON: %r", body)
             self.log.error("Couldn't parse JSON", exc_info=True)
-            raise web.HTTPError(400, 'Invalid JSON in body of request')
+            raise web.HTTPError(400, reason='Invalid JSON in body of request')
         return model
 
     def write_error(self, status_code, **kwargs):
@@ -244,9 +244,9 @@ class APIHandler(BaseHandler):
             name (str): name of the model, used in error messages
         """
         if not isinstance(model, dict):
-            raise web.HTTPError(400, "Invalid JSON data: %r" % model)
+            raise web.HTTPError(400, reason="Invalid JSON data: %r" % model)
         if not set(model).issubset(set(model_types)):
-            raise web.HTTPError(400, "Invalid JSON keys: %r" % model)
+            raise web.HTTPError(400, reason="Invalid JSON keys: %r" % model)
         for key, value in model.items():
             if not isinstance(value, model_types[key]):
                 raise web.HTTPError(
