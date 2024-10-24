@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api.models.submission import Submission
 from grader_service.api.models.user import User
 from grader_service.api import util
@@ -52,7 +49,7 @@ class UserSubmissionsInner(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def user(self):
+    def user(self) -> User:
         """Gets the user of this UserSubmissionsInner.
 
 
@@ -62,7 +59,7 @@ class UserSubmissionsInner(Model):
         return self._user
 
     @user.setter
-    def user(self, user):
+    def user(self, user: User):
         """Sets the user of this UserSubmissionsInner.
 
 
@@ -73,7 +70,7 @@ class UserSubmissionsInner(Model):
         self._user = user
 
     @property
-    def submissions(self):
+    def submissions(self) -> List[Submission]:
         """Gets the submissions of this UserSubmissionsInner.
 
 
@@ -83,7 +80,7 @@ class UserSubmissionsInner(Model):
         return self._submissions
 
     @submissions.setter
-    def submissions(self, submissions):
+    def submissions(self, submissions: List[Submission]):
         """Sets the submissions of this UserSubmissionsInner.
 
 

@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api.models.submission_period import SubmissionPeriod
 from grader_service.api import util
 
@@ -45,7 +42,7 @@ class AssignmentSettings(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def late_submission(self):
+    def late_submission(self) -> List[SubmissionPeriod]:
         """Gets the late_submission of this AssignmentSettings.
 
 
@@ -55,7 +52,7 @@ class AssignmentSettings(Model):
         return self._late_submission
 
     @late_submission.setter
-    def late_submission(self, late_submission):
+    def late_submission(self, late_submission: List[SubmissionPeriod]):
         """Sets the late_submission of this AssignmentSettings.
 
 

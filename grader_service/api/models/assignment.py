@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api import util
 
@@ -90,7 +87,7 @@ class Assignment(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self):
+    def id(self) -> int:
         """Gets the id of this Assignment.
 
 
@@ -100,7 +97,7 @@ class Assignment(Model):
         return self._id
 
     @id.setter
-    def id(self, id):
+    def id(self, id: int):
         """Sets the id of this Assignment.
 
 
@@ -111,7 +108,7 @@ class Assignment(Model):
         self._id = id
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Gets the name of this Assignment.
 
 
@@ -121,7 +118,7 @@ class Assignment(Model):
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name: str):
         """Sets the name of this Assignment.
 
 
@@ -132,7 +129,7 @@ class Assignment(Model):
         self._name = name
 
     @property
-    def type(self):
+    def type(self) -> str:
         """Gets the type of this Assignment.
 
 
@@ -142,7 +139,7 @@ class Assignment(Model):
         return self._type
 
     @type.setter
-    def type(self, type):
+    def type(self, type: str):
         """Sets the type of this Assignment.
 
 
@@ -159,7 +156,7 @@ class Assignment(Model):
         self._type = type
 
     @property
-    def due_date(self):
+    def due_date(self) -> datetime:
         """Gets the due_date of this Assignment.
 
 
@@ -169,7 +166,7 @@ class Assignment(Model):
         return self._due_date
 
     @due_date.setter
-    def due_date(self, due_date):
+    def due_date(self, due_date: datetime):
         """Sets the due_date of this Assignment.
 
 
@@ -180,7 +177,7 @@ class Assignment(Model):
         self._due_date = due_date
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Gets the status of this Assignment.
 
 
@@ -190,7 +187,7 @@ class Assignment(Model):
         return self._status
 
     @status.setter
-    def status(self, status):
+    def status(self, status: str):
         """Sets the status of this Assignment.
 
 
@@ -207,7 +204,7 @@ class Assignment(Model):
         self._status = status
 
     @property
-    def points(self):
+    def points(self) -> float:
         """Gets the points of this Assignment.
 
 
@@ -217,7 +214,7 @@ class Assignment(Model):
         return self._points
 
     @points.setter
-    def points(self, points):
+    def points(self, points: float):
         """Sets the points of this Assignment.
 
 
@@ -228,7 +225,7 @@ class Assignment(Model):
         self._points = points
 
     @property
-    def automatic_grading(self):
+    def automatic_grading(self) -> str:
         """Gets the automatic_grading of this Assignment.
 
 
@@ -238,7 +235,7 @@ class Assignment(Model):
         return self._automatic_grading
 
     @automatic_grading.setter
-    def automatic_grading(self, automatic_grading):
+    def automatic_grading(self, automatic_grading: str):
         """Sets the automatic_grading of this Assignment.
 
 
@@ -255,7 +252,7 @@ class Assignment(Model):
         self._automatic_grading = automatic_grading
 
     @property
-    def max_submissions(self):
+    def max_submissions(self) -> int:
         """Gets the max_submissions of this Assignment.
 
 
@@ -265,7 +262,7 @@ class Assignment(Model):
         return self._max_submissions
 
     @max_submissions.setter
-    def max_submissions(self, max_submissions):
+    def max_submissions(self, max_submissions: int):
         """Sets the max_submissions of this Assignment.
 
 
@@ -276,7 +273,7 @@ class Assignment(Model):
         self._max_submissions = max_submissions
 
     @property
-    def allow_files(self):
+    def allow_files(self) -> bool:
         """Gets the allow_files of this Assignment.
 
 
@@ -286,7 +283,7 @@ class Assignment(Model):
         return self._allow_files
 
     @allow_files.setter
-    def allow_files(self, allow_files):
+    def allow_files(self, allow_files: bool):
         """Sets the allow_files of this Assignment.
 
 
@@ -297,7 +294,7 @@ class Assignment(Model):
         self._allow_files = allow_files
 
     @property
-    def settings(self):
+    def settings(self) -> AssignmentSettings:
         """Gets the settings of this Assignment.
 
 
@@ -307,7 +304,7 @@ class Assignment(Model):
         return self._settings
 
     @settings.setter
-    def settings(self, settings):
+    def settings(self, settings: AssignmentSettings):
         """Sets the settings of this Assignment.
 
 
