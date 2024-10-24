@@ -11,7 +11,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
 @register_handler(
-    path=r"\/permissions\/?",
+    path=r"api\/permissions\/?",
     version_specifier=VersionSpecifier.ALL
 )
 class PermissionHandler(GraderBaseHandler):

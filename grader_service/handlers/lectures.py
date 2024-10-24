@@ -18,7 +18,7 @@ from tornado.web import HTTPError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
-@register_handler(r"\/lectures\/?", VersionSpecifier.ALL)
+@register_handler(r"api\/lectures\/?", VersionSpecifier.ALL)
 class LectureBaseHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures.
@@ -74,7 +74,7 @@ class LectureBaseHandler(GraderBaseHandler):
         self.write_json(lecture)
 
 
-@register_handler(r"\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
+@register_handler(r"api\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
 class LectureObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}.
@@ -90,7 +90,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture_model = LectureModel.from_dict(body)
-        lecture = self.session.query(Lecture).get(lecture_id)
+        lecture = self.session.get(Lecture, lecture_id)
 
         lecture.name = lecture_model.name
         lecture.state = (
@@ -131,7 +131,7 @@ class LectureObjectHandler(GraderBaseHandler):
         """
         self.validate_parameters()
         try:
-            lecture = self.session.query(Lecture).get(lecture_id)
+            lecture = self.session.get(Lecture, lecture_id)
             if lecture.deleted == 1:
                 raise HTTPError(404)
             lecture.deleted = 1
@@ -155,7 +155,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/users\/?",
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/users\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LectureStudentsHandler(GraderBaseHandler):

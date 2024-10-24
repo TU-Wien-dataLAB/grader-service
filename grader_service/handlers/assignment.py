@@ -51,7 +51,7 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/?",
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentBaseHandler(GraderBaseHandler):
@@ -126,7 +126,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
             assignment_model = AssignmentModel.from_dict(body)
         except ValueError as e:
             # TODO Return useful error message
-            raise HTTPError(HTTPStatus.BAD_REQUEST, log_message=str(e))
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=str(e))
         assignment = Assignment()
 
         assignment.name = assignment_model.name
@@ -181,7 +181,7 @@ def get_allow_files(assignment_model: AssignmentModel):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",  # noqa E501 
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",  # noqa E501 
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentObjectHandler(GraderBaseHandler):
@@ -249,24 +249,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         :raises HTTPError: throws err if assignment was not found
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
-        self.validate_parameters("instructor-version")
-        instructor = self.get_argument("instructor-version", "false") == "true"
-        instructor_version = instructor
-
-        role = self.session.query(Role).get((self.user.name, lecture_id))
-        if instructor_version and role.role < Scope.instructor:
-            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
-        assignment = self.session.query(Assignment).get(assignment_id)
-        if (
-                assignment is None
-                or (assignment.deleted == DeleteState.deleted)
-                or ((role.role == Scope.student)
-                    and ((assignment.status == "created")
-                         or (assignment.status == "pushed")))
-                or (assignment.lectid != lecture_id)
-        ):
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Assignment was not found")
+        assignment = self.get_assignment(lecture_id=lecture_id, assignment_id=assignment_id)
         self.write_json(assignment)
 
     @authorize([Scope.instructor])
@@ -306,7 +289,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",  # noqa E501
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",  # noqa E501
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentResetHandler(GraderBaseHandler):
@@ -355,7 +338,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
+    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentPropertiesHandler(GraderBaseHandler):

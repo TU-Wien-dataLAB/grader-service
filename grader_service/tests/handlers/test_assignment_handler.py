@@ -26,11 +26,10 @@ async def test_get_assignments(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/1/assignments/"
+    url = service_base_url + "lectures/1/assignments/"
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -47,14 +46,14 @@ async def test_get_assignments_instructor(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     num_inserted = insert_assignments(engine, l_id)
 
     response = await http_server_client.fetch(
@@ -72,14 +71,13 @@ async def test_get_assignments_lecture_deleted(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
 
     # delete lecture
-    url = service_base_url + f"/lectures/{l_id}/"
+    url = service_base_url + f"lectures/{l_id}/"
     delete_response = await http_server_client.fetch(
         url,
         method="DELETE",
@@ -87,7 +85,7 @@ async def test_get_assignments_lecture_deleted(
     )
     assert delete_response.code == 200
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -105,7 +103,7 @@ async def test_post_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -148,7 +146,7 @@ async def test_post_assignment_name_already_used(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     post_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                  automatic_grading="unassisted")
@@ -177,7 +175,7 @@ async def test_delete_assignment_not_found(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/-5"
+    url = service_base_url + "lectures/3/assignments/-5"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -196,7 +194,7 @@ async def test_put_assignment_name_already_used(
         default_roles,
         default_user_login
 ):
-    post_url = service_base_url + "/lectures/3/assignments/"
+    post_url = service_base_url + "lectures/3/assignments/"
 
     # Add assignments first
     post_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
@@ -241,7 +239,7 @@ async def test_post_assignment_lecture_deleted(
     l_id = 3  # default user is instructor
 
     # delete lecture
-    url = service_base_url + f"/lectures/{l_id}/"
+    url = service_base_url + f"lectures/{l_id}/"
     delete_response = await http_server_client.fetch(
         url,
         method="DELETE",
@@ -249,7 +247,7 @@ async def test_post_assignment_lecture_deleted(
     )
     assert delete_response.code == 200
 
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created")
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -270,7 +268,7 @@ async def test_post_assignment_decode_error(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -304,7 +302,7 @@ async def test_post_assignment_database_error(
         default_user_login
 ):
     l_id = 3  # default user is instructor
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -326,7 +324,7 @@ async def test_post_no_status_error(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user")
     with pytest.raises(HTTPClientError) as exc_info:
@@ -348,7 +346,7 @@ async def test_put_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -390,7 +388,7 @@ async def test_put_assignment_wrong_lecture_id(
         default_user_login
 ):
     # default user becomes instructor in lecture with id 1
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -404,7 +402,7 @@ async def test_put_assignment_wrong_lecture_id(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     # now with lecture id 2 because user would be instructor there too
-    url = service_base_url + "/lectures/2/assignments/" + str(post_assignment.id)
+    url = service_base_url + "lectures/2/assignments/" + str(post_assignment.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -426,7 +424,7 @@ async def test_put_assignment_wrong_assignment_id(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -459,7 +457,7 @@ async def test_put_assignment_deleted_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -500,7 +498,7 @@ async def test_put_assignment_no_point_changes(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -543,7 +541,7 @@ async def test_get_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -583,7 +581,7 @@ async def test_get_assignment_created_student(
 ):
     l_id = 1  # default user is student
     a_id = 3  # assignment is created
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -603,7 +601,7 @@ async def test_get_assignment_wrong_lecture_id(
         default_user_login
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -617,7 +615,7 @@ async def test_get_assignment_wrong_lecture_id(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     l_id = 1
-    url = service_base_url + f"/lectures/{l_id}/assignments/{post_assignment.id}"
+    url = service_base_url + f"lectures/{l_id}/assignments/{post_assignment.id}"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -637,7 +635,7 @@ async def test_get_assignment_wrong_assignment_id(
         default_user_login
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}/assignments/"
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -649,7 +647,7 @@ async def test_get_assignment_wrong_assignment_id(
     )
     assert post_response.code == 201
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/99"
+    url = service_base_url + f"lectures/{l_id}/assignments/99"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -665,14 +663,14 @@ async def test_get_assignment_incorrect_param(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}/assignments/3/?some_param=true"
+    url = service_base_url + f"lectures/{l_id}/assignments/3/?some_param=true"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, 3)
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -690,14 +688,14 @@ async def test_get_assignment_instructor_version(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3
-    url = service_base_url + f"/lectures/{l_id}/assignments/4/?instructor-version=true"
+    url = service_base_url + f"lectures/{l_id}/assignments/4/?instructor-version=true"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, 3)
 
     get_response = await http_server_client.fetch(
@@ -718,7 +716,7 @@ async def test_get_assignment_instructor_version_forbidden(
 ):
     l_id = 1
     a_id = 1
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/?instructor-version=true"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/?instructor-version=true"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -738,7 +736,7 @@ async def test_delete_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -779,7 +777,7 @@ async def test_delete_assignment_deleted_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -820,7 +818,7 @@ async def test_delete_assignment_not_created(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/999"
+    url = service_base_url + "lectures/3/assignments/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -837,15 +835,15 @@ async def test_delete_assignment_with_submissions(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_user,
         default_roles,
         default_user_login
 ):
     a_id = 1
-    url = service_base_url + f"/lectures/3/assignments/{a_id}"
+    url = service_base_url + f"lectures/3/assignments/{a_id}"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -866,7 +864,7 @@ async def test_delete_assignment_same_name_twice(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="unassisted")
@@ -888,7 +886,7 @@ async def test_delete_assignment_same_name_twice(
     )
     assert delete_response.code == 200
 
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     post_response = await http_server_client.fetch(
         url,
@@ -918,7 +916,7 @@ async def test_delete_released_assignment(
         default_user_login
 
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="released",
                                 automatic_grading="unassisted")
@@ -951,7 +949,7 @@ async def test_delete_complete_assignment(
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="complete",
                                 automatic_grading="unassisted")
@@ -981,16 +979,16 @@ async def test_assignment_properties_lecture_assignment_missmatch(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3
     a_id = 1
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/properties"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
     prop = {"notebooks": {}}
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1018,16 +1016,16 @@ async def test_assignment_properties_wrong_assignment_id(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3
     a_id = 99
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/properties"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
     prop = {"notebooks": {}}
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1055,16 +1053,16 @@ async def test_assignment_properties_not_found(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3
     a_id = 3
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/properties"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1081,11 +1079,11 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="full_auto")
@@ -1098,7 +1096,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
     assert post_response.code == 201
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.automatic_grading == "full_auto"
-    url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
+    url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
     prop = {
         "_type": "GradeBookModel",
         "notebooks": {
@@ -1274,11 +1272,11 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         service_base_url,
         http_server_client,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
-    url = service_base_url + "/lectures/3/assignments/"
+    url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(id=-1, name="pytest", type="user", status="created",
                                 automatic_grading="full_auto")
@@ -1291,7 +1289,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
     assert post_response.code == 201
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.automatic_grading == "full_auto"
-    url = service_base_url + f"/lectures/3/assignments/{post_assignment.id}/properties"
+    url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
     prop = {
         "_type": "GradeBookModel",
         "notebooks": {
@@ -1449,18 +1447,18 @@ async def test_delete_assignment_with_submissions(
         http_server_client,
         default_token,
         default_user,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
 
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(

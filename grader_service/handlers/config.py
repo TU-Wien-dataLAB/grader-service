@@ -6,7 +6,7 @@ from grader_service.registry import register_handler, VersionSpecifier
 
 
 @register_handler(
-    path=r"\/config\/?",
+    path=r"api\/config\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class ConfigHandler(GraderBaseHandler):

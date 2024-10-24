@@ -33,16 +33,16 @@ async def test_auto_grading(
         http_server_client,
         default_token,
         default_user,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
     a_id = 3
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
@@ -65,19 +65,19 @@ async def test_auto_grading_wrong_assignment(
         http_server_client,
         default_user,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
     a_id = 3
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
     a_id = 99
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
     with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
         with patch.object(grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None):
@@ -95,17 +95,17 @@ async def test_auto_grading_wrong_lecture(
         http_server_client,
         default_user,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     a_id = 1
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_submission(engine, a_id, default_user.name)
 
     l_id = 99
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/auto"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -121,16 +121,16 @@ async def test_feedback(
         http_server_client,
         default_user,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
     a_id = 3
 
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
@@ -154,19 +154,19 @@ async def test_feedback_wrong_assignment(
         http_server_client,
         default_user,
         default_token,
-        sql_alchemy_db,
+        sql_alchemy_engine,
         default_roles,
         default_user_login
 ):
     l_id = 3  # default user is instructor
     a_id = 3
 
-    engine = sql_alchemy_db.engine
+    engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
     a_id = 99
-    url = service_base_url + f"/lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
