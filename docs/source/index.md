@@ -17,7 +17,7 @@ Grader Service offers lecturers and students a well integrated teaching environm
 
 installation/installation
 get_started
-instructor_guide
+instructor_guide/instructor_guide
 student_guide
 admin/administrator
 contribution
