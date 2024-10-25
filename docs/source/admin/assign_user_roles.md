@@ -6,13 +6,20 @@ The achieve this, the `post_auth_hook` from the `Authenticator` class can be use
 In this case we are using the LTI 1.3 authenticator and map every user the has an instructor role defined by the IMS standard to Instructors in the Grader Service.
 
 ```python
+
+from grader_service.auth.auth import Authenticator
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.orm import Lecture, User, Role
+from grader_service.orm.lecture import LectureState, DeleteState
+from grader_service.orm.takepart import Scope
+
 def get_role_from_auth(auth_state):
-user_role = 'student'
-for role in auth_state['https://purl.imsglobal.org/spec/lti/claim/roles']:
-    if role.find('Instructor') >= 1:
-        user_role = 'instructor'
-        break
-return user_role
+    user_role = 'student'
+    for role in auth_state['https://purl.imsglobal.org/spec/lti/claim/roles']:
+        if role.find('Instructor') >= 1:
+            user_role = 'instructor'
+            break
+    return user_role
 
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
@@ -59,4 +66,5 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
 
 
 c.Authenticator.post_auth_hook = post_auth_hook
+
 ```
