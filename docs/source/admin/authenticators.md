@@ -15,10 +15,10 @@ c.Authenticator.allow_all = True
 
 Uses [PAM](https://en.wikipedia.org/wiki/Pluggable_authentication_module)-based authentication to log in local system users.
 
-> ```python
-> from grader_service.auth.pam import PAMAuthenticator
-> c.GraderService.authenticator_class = PAMAuthenticator
-> ```
+```python
+from grader_service.auth.pam import PAMAuthenticator
+c.GraderService.authenticator_class = PAMAuthenticator
+```
 
 ## OAuthenticator
 
