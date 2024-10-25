@@ -1,16 +1,16 @@
 # System Architecture
 
-![grader architecture](../_static/assets/images/grader_architecture.svg "Grader Architecture Overview")
-
-## How To Scale
-
-## Task Queue
-
+![grader architecture](../_static/assets/images/grader_architecture.excalidraw.svg "Grader Architecture Overview")
 
 This documentation provides an overview of the architecture and the various components of the system.
 
 First off: the JupyterLab extension (browser) and the extension (backend) are part of the Grader-Labextension repository. 
 However, they are tightly integrated, and it makes sense to show them alongside the Grader-Service architecture.
+
+Grader Service is deployed using Helm. The repository also contains the chart definition. 
+All components that are deployed as part of the Grader Service Helm chart are indicated by a red dot 🔴 in the architecture overview.
+JupyterHub has to be deployed alongside the Grader Service and the Jupyter team provides their own Helm chart for this.
+The database is a completely separate deployment. However, when using sqlite, a local file is automatically used without the need for any separate deployment.
 
 The following sections will cover all components shown in the overview and discuss their interactions with other components.
 
@@ -37,7 +37,9 @@ all requests from users are authorized using token authentication before being r
 
 JupyterHub manages user authentication and spawns notebook servers. It uses OAuth for authenticating users with the Identity Provider (IDP) 
 and ensures that each authenticated user receives a separate, isolated notebook server environment. JupyterHub acts as the gateway 
-for users to access the system i.e. users will access the system first through JuptyerHub, which will first authenticate them and then spawn the notebook servers.
+for users to access the system i.e. users will access the system first through JupyterHub, which will first authenticate 
+them and then spawn the notebook servers. The notebook servers host JupyterLab with the Grader Labextension plugin.
+JupyterHub needs a configuration file that has the Grader Service set up as an OAuth provider.
 
 ## Grader Service
 
@@ -79,16 +81,30 @@ The RabbitMQ broker is a message queue that facilitates communication between th
 It ensures that tasks are distributed to the appropriate worker processes for execution. The broker queues tasks from 
 Celery and delegates them to workers for processing.
 
+## Grader Service Worker(s)
+
+Grader Service workers are processes that execute auto-grading jobs. They handle tasks delegated by the RabbitMQ broker, 
+perform grading, and report the results back to the Grader Service by updating the database and pushing results to the relevant repositories. 
+The workers enable parallel processing of multiple grading tasks, thereby improving system throughput. 
+These workers are created using Celery with the `worker` argument, which configures them to 
+perform the tasks described above. The workers have a separate CLI entry point and use the same configuration file as the actual Grader Service.
+
 ## Database
 
 The database stores information related to grading tasks, user submissions, and results. It acts as a persistent data store, 
 tracking the state of various grading operations and user interactions with the system.
+The database is deployed as a separate service, but SQLite can also be used as an alternative.
+When SQLite is used, no external database has to be deployed. 
+
 
 ## File System
 
 The file system is used to store temporary files and artifacts needed for grading (e.g., student submissions) or 
 generated during grading (e.g., `gradebook.json` files that store grading information and are subsequently stored in the database). 
 It also holds the bare repositories used by the Git server.
+The file system needs to be shared between the Grader Service and the Grader Service workers, 
+or the pods spawned by the Kubernetes-based auto-grader.
+
 
 ## Auto-Grading Jobs
 
@@ -101,10 +117,8 @@ Different executors are available to manage this:
 - **LocalProcessAutogradeExecutor**: Runs the submodule in a separate process.
 - **KubeAutogradeExecutor**: Spawns a Kubernetes pod to run the submodule. This is the only approach that allows different images for lectures, as the grading code must be executed in the same environment as the lecture.
 
-## Grader Service Worker(s)
 
-Grader Service workers are processes that execute auto-grading jobs. They handle tasks delegated by the RabbitMQ broker, 
-perform grading, and report the results back to the Grader Service by updating the database and pushing results to the relevant repositories. 
-The workers enable parallel processing of multiple grading tasks, thereby improving system throughput. 
-These workers are created using Celery with the `worker` argument, which configures them to 
-perform the tasks described above.
+# How To Scale
+
+[//]: # (TODO: what is the minimal setup? what is the most sophisticated setup)
+
