@@ -225,6 +225,16 @@ Grader Cell Types:
   ![Manually Change points Granted From Auto Grading](../_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
   :::
 
-<!-- TODO: Add documentation of Edit Student Submission feature -->
 ## Edit Student's Submission
 
+Sometimes a student may make a minor mistake in their submission that causes them to lose many points in grading, or autograding may fail due to an error in the student's submission. As an instructor, you have the option to edit a student's submission and grade it. The workflow is as follows:
+
+- Click on the submission in the "Submissions" list to open the manual grading window.
+- Click the "EDIT SUBMISSION" button.
+- In the Edit Submission window, create a repository for the edited files, then pull the student's submission. By clicking on a file in the list, you will be able to edit the student's submission.
+- After saving the edited files, push them back.
+- When you return to the manual grading view, you can autograde the assignment again, and you’ll see that the changes are applied (autograding works, or the points reflect your changes).
+
+The following example illustrates a scenario where a student received 0 points due to a minor spelling mistake. The instructor decided to correct the mistake, so the student receives the points. After editing and pushing the submission files, the submission is autograded again, and the student receives points for the exercise the instructor edited.
+
+![Edit Submission](../_static/assets/gifs/instructor_guide/edit_submission.gif)
