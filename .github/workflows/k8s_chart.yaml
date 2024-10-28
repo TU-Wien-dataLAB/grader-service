@@ -43,3 +43,4 @@ jobs:
           kubectl rollout status deployment/grader-service -n jupyter --timeout=300s
           kubectl rollout status deployment/grader-service-worker -n jupyter --timeout=300s
           kubectl rollout status deployment/hub -n jupyter --timeout=300s
+          kubectl wait --for=condition=Ready pod/rabbitmq-grader-service-server-0 -n jupyter --timeout=300s
