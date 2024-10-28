@@ -202,7 +202,7 @@ Grader Cell Types:
 
   ![Manual Answer Cell](../_static/assets/images/instructor_guide/manual_answer_cell.png)
    
-  ### How To Grade Manual Answer Cells?
+### How To Grade Manual Answer Cells?
   - Once a student submits their work, it will appear in the "Submissions" list. To manually grade a submission, it must first be automatically graded (this sets the necessary metadata for successful grading). If you selected "Automatic Grading" when creating the assignment, this will be done automatically and you may immediately proceed with manual grading. If you chose "No Automatic Grading," you must first select the submission and click "AUTOGRADE." Afterward, you will be able to manually grade the submission.
   - Click on submission in the Submission List and pull it. This will reveal files the student has submitted.
   - Click on notebook that you want to manually grade and when the notebook opens up enable "Grading Mode".
@@ -224,6 +224,13 @@ Grader Cell Types:
   In following example, student had to implement a python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
   ![Manually Change points Granted From Auto Grading](../_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
   :::
+
+## Pushing only Selected Files from the Source Repository
+
+As an instructor, you also have the option **not to push all files** you edited in your source repository. If you made changes to assignment files but only want to push specific files, you can do so by clicking the "PUSH" button, then expanding the dropdown list and selecting the files you want to push. The default behavior is to push all files from the source repository. This feature is helpful if you're working on multiple assignment files, have finished one but not another, and need the changes in one file to be available to students—or if you want to push it for yourself before releasing the assignment to students.
+
+In the following example, the instructor has edited both assignment files, *Arrays.ipynb* and *Functions.ipynb*, but has only finished editing *Functions.ipynb*. Therefore, they select only this file to push. If the assignment is released, students will see the changes the instructor made only in the file that was pushed.
+![Selecting Files to push](../_static/assets/gifs/instructor_guide/pushing_only_selected_files.gif)
 
 ## Edit Student's Submission
 
