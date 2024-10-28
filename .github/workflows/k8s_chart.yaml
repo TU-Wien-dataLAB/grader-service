@@ -37,6 +37,9 @@ jobs:
 
       - name: Run test
         run: |
+          kubectl get deployments.apps -n jupyter
           kubectl get pods -n jupyter
+          
           kubectl rollout status deployment/grader-service -n jupyter --timeout=300s
           kubectl rollout status deployment/grader-service-worker -n jupyter --timeout=300s
+          kubectl rollout status deployment/hub -n jupyter --timeout=300s
