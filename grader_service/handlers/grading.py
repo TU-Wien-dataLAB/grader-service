@@ -18,7 +18,7 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/auto\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -66,7 +66,7 @@ class GradingAutoHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/grading\/(?P<sub_id>\d*)\/feedback\/?',
     version_specifier=VersionSpecifier.ALL,
 )

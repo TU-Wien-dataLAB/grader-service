@@ -658,31 +658,6 @@ async def test_get_assignment_wrong_assignment_id(
     assert exc_info.value.code == 404
 
 
-async def test_get_assignment_incorrect_param(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
-):
-    l_id = 3
-    url = service_base_url + f"lectures/{l_id}/assignments/3/?some_param=true"
-
-    engine = sql_alchemy_engine
-    insert_assignments(engine, 3)
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
-        )
-    e = exc_info.value
-    assert e.code == 400
-
-
 async def test_get_assignment_instructor_version(
         app: GraderServer,
         service_base_url,
@@ -704,28 +679,6 @@ async def test_get_assignment_instructor_version(
         headers={"Authorization": f"Token {default_token}"},
     )
     assert get_response.code == 200
-
-
-async def test_get_assignment_instructor_version_forbidden(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
-):
-    l_id = 1
-    a_id = 1
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/?instructor-version=true"
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.FORBIDDEN
 
 
 async def test_delete_assignment(

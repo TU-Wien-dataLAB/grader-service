@@ -128,7 +128,8 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     base_url_path = Unicode(
-        "/",
+        "/services/grader/",
+        help="base url path",
         allow_none=False
     ).tag(config=True)
 
@@ -430,7 +431,7 @@ class GraderService(config.Application):
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),
-                static_url_prefix=url_path_join(self.base_url_path, 'static/'),
+                static_url_prefix=url_path_join(self.base_url_path, '/static/'),
                 static_handler_class=CacheControlStaticFilesHandler,
                 log_function=log_request
             ),

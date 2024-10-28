@@ -281,7 +281,7 @@ class OAuthTokenHandler(OAuthHandler, BaseHandler):
 
 def get_oauth_default_handlers(base_path: str):
     return [
-        (url_path_join(base_path, r"/api/user"), SelfAPIHandler),
-        (url_path_join(base_path, r"/api/oauth2/authorize"), OAuthAuthorizeHandler),
-        (url_path_join(base_path, r"/api/oauth2/token"), OAuthTokenHandler),
+        (url_path_join(base_path, "/api/user"), SelfAPIHandler),
+        (url_path_join(base_path, "/api/oauth2/authorize"), OAuthAuthorizeHandler),
+        (url_path_join(base_path, "/api/oauth2/token"), OAuthTokenHandler),
     ]

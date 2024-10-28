@@ -246,7 +246,7 @@ class GitBaseHandler(GraderBaseHandler):
         return gitdir
 
 
-@register_handler(path=".*/git-(.*)", version_specifier=VersionSpecifier.NONE)
+@register_handler(path="/.*/git-(.*)", version_specifier=VersionSpecifier.NONE)
 @stream_request_body
 class RPCHandler(GitBaseHandler):
     """Request handler for RPC calls
@@ -276,7 +276,7 @@ class RPCHandler(GitBaseHandler):
         await self.finish()
 
 
-@register_handler(path=".*/info/refs",
+@register_handler(path="/.*/info/refs",
                   version_specifier=VersionSpecifier.NONE)
 class InfoRefsHandler(GitBaseHandler):
     """Request handler for info/refs

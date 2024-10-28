@@ -106,7 +106,7 @@ def sql_alchemy_engine(sql_alchemy_sessionmaker):
 
 @pytest.fixture(scope="module")
 def service_base_url():
-    base_url = "/"
+    base_url = "/api/"
     yield base_url
 
 

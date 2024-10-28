@@ -51,7 +51,7 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/?",
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentBaseHandler(GraderBaseHandler):
@@ -181,7 +181,7 @@ def get_allow_files(assignment_model: AssignmentModel):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",  # noqa E501 
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",  # noqa E501 
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentObjectHandler(GraderBaseHandler):
@@ -242,7 +242,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
     async def get(self, lecture_id: int, assignment_id: int):
         """Returns a specific assignment of a lecture.
 
-        :param lecture_id: id of the lecturef
+        :param lecture_id: id of the lecture
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
@@ -289,7 +289,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",  # noqa E501
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",  # noqa E501
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentResetHandler(GraderBaseHandler):
@@ -338,7 +338,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentPropertiesHandler(GraderBaseHandler):
