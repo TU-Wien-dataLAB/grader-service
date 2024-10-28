@@ -7,8 +7,7 @@
 
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
-```{image} ./_static/assets/gifs/labextension_update.gif
-```
+![Grader Extension Overview](_static/assets/gifs/overview.gif)
 
 ## Contents
 
