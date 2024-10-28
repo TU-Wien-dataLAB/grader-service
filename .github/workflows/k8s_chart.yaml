@@ -37,55 +37,6 @@ jobs:
 
       - name: Run test
         run: |
-          # Function to check pod status
-          check_pod_status() {
-              namespace=$1
-              # Check for any pods in "Error" state
-              error_pods=$(kubectl get pods -n "$namespace" --no-headers | awk '$3 == "Error" {count++} END {print count+0}')
-
-              if [ "$error_pods" -gt 0 ]; then
-                  return 1  # Fail if any pod is in "Error" state
-              fi
-
-              # Check if all pods are in "Running" state
-              running_pods=$(kubectl get pods -n "$namespace" --no-headers | awk '$3 == "Running" {count++} END {print count+0}')
-              total_pods=$(kubectl get pods -n "$namespace" --no-headers | wc -l)
-
-              if [ "$running_pods" -eq "$total_pods" ]; then
-                  return 0  # Succeed if all pods are in "Running" state
-              fi
-
-              # Not all pods are in "Running" state yet
-              return 2
-          }
-
-          # Set the namespace variable
-          namespace="jupyter"
-
-          # Maximum wait time in seconds
-          max_wait_time=300  # 5 minutes
-          interval=5         # Check every 5 seconds
-          elapsed_time=0
-
-          echo "Checking if all pods in namespace '$namespace' reach 'Running' state..."
-
-          # Loop to continually check the pods' status
-          while [ "$elapsed_time" -lt "$max_wait_time" ]; do
-              check_pod_status "$namespace"
-              status=$?
-
-              if [ "$status" -eq 0 ]; then
-                  echo "All pods are in 'Running' state. Helm chart deployment succeeded."
-                  exit 0
-              elif [ "$status" -eq 1 ]; then
-                  echo "A pod is in 'Error' state. Failing the test."
-                  exit 1
-              fi
-
-              # Wait before the next check
-              sleep "$interval"
-              elapsed_time=$((elapsed_time + interval))
-          done
-
-          echo "Timed out waiting for all pods to reach 'Running' state. Helm chart deployment failed."
-          exit 1
+          kubectl get pods -n jupyter
+          kubectl rollout status deployment/grader-service -n jupyter --timeout=300s
+          kubectl rollout status deployment/grader-service-worker -n jupyter --timeout=300s
