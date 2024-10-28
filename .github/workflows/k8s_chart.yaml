@@ -38,6 +38,7 @@ jobs:
       - name: Check deployments
         run: |
           kubectl get deployments.apps -n jupyter
+          kubectl get svc -n jupyter
           kubectl get pods -n jupyter
           
           kubectl rollout status deployment/grader-service -n jupyter --timeout=300s
@@ -47,6 +48,7 @@ jobs:
 
       - name: Check connectivity
         run: |
-          kubectl run curl-grader --rm -i --tty --image=curlimages/curl --restart=Never -- \
-          curl http://grader-service:4010
+          kubectl run curl-grader --rm -i --tty --image=curlimages/curl --restart=Never --namespace=jupyter -- \
+          curl http://grader-service.jupyter:4010/
+
           
