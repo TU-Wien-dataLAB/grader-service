@@ -28,9 +28,10 @@ jobs:
 
       - name: Install chart
         run: |
-          bash examples/k8s/install_postgresql.sh
-          bash examples/k8s/install_grader.sh
-          bash examples/k8s/install_hub.sh      
+          cd examples/k8s
+          bash install_postgresql.sh
+          bash install_grader.sh
+          bash install_hub.sh      
 
       - name: Run test
         run: |
