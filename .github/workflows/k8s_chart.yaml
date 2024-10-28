@@ -51,5 +51,5 @@ jobs:
           kubectl get pods -n jupyter
           
           kubectl run curl-grader -i --rm --image=curlimages/curl --restart=Never --namespace=jupyter -- \
-          curl http://grader-service.jupyter.svc.cluster.local:4010/services/grader6
+          curl http://grader-service.jupyter.svc.cluster.local:4010/services/grader/
         
