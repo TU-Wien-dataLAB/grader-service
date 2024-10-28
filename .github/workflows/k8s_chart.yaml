@@ -29,6 +29,8 @@ jobs:
       - name: Install chart
         run: |
           cd examples/k8s
+          kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"
+          
           bash install_postgresql.sh
           bash install_grader.sh
           bash install_hub.sh      
