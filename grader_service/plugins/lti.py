@@ -5,7 +5,7 @@ import time
 from urllib.parse import urlparse
 
 import jwt
-from traitlets import Callable, Dict, Unicode, Union
+from traitlets import Callable, Dict, Unicode, Union, Bool
 from traitlets.config import SingletonConfigurable
 from http import HTTPStatus
 from tornado.escape import url_escape, json_decode
@@ -16,18 +16,34 @@ def default_lti_username_convert(username: str) -> str:
     return username
 
 def default_enable_lti(lecture, assignment, submissions):
-    return {"enable_lti": False, "sync_on_feedback": False}
+    return False
+
+def default_enable_sync_on_feedback(lecture, assignment, submissions):
+    return False
 
 class LTISyncGrades(SingletonConfigurable):
-    enable_lti_features = Union(
-        [Dict({"enable_lti": False, "sync_on_feedback": False}),
+    enabled = Union(
+        [Bool(False),
          Callable(default_enable_lti)],
         allow_none=True,
         config=True,
         help="""
-        Determines if the LTI plugin should be used, defaults to False.
-        Is either a dictionary containing the keys "enable_lti":bool and "sync_on_feedback":bool or
-        a function returning a dict with these keys.
+        Determines if the LTI Sync Grades plugin should be used, defaults to False.
+        Is either a bool value or
+        a function with the params (lecture, assignment, submissions) returning a bool.
+        """,
+    )
+    
+    sync_on_feedback = Union(
+        [Bool(False),
+         Callable(default_enable_sync_on_feedback)],
+        allow_none=True,
+        config=True,
+        help="""
+        Determines if submissions should be automatically synchronised, on feedback generation, defaults to False.
+        Only synchronises scores when LTISyncGrades.enabled is True.
+        Is either a bool value or
+        a function with the params (lecture, assignment, submissions) returning a bool.
         """,
     )
     client_id = Unicode(None, config=True, allow_none=True)
@@ -59,15 +75,15 @@ class LTISyncGrades(SingletonConfigurable):
     # cache for lti token    
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
-    def check_if_lti_enabled(self, lecture, assignment, submissions, sync_on_feedback):
-        if callable(self.enable_lti_features):
-            enable_lti = self.enable_lti_features(lecture, assignment, submissions)
+    def check_if_lti_enabled(self, lecture, assignment, submissions, feedback_sync):
+        if callable(self.enabled):
+            enable_lti = self.enabled(lecture, assignment, submissions)
         else:
-            enable_lti = self.enable_lti_features
+            enable_lti = self.enabled
 
-        if enable_lti["enable_lti"]:
-            if sync_on_feedback:
-                if enable_lti["sync_on_feedback"]:
+        if enable_lti:
+            if feedback_sync:
+                if self.sync_on_feedback:
                     return True
                 else:
                     return False

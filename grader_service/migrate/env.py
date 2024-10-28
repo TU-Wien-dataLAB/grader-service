@@ -42,26 +42,43 @@ def run_migrations_offline():
 
 def run_migrations_online():
     """Run migrations in 'online' mode."""
+    # Retrieve the existing connection if it has already been initialized
     connectable = config.attributes.get('connection', None)
+    
     if connectable is None:
+        # No existing connection, so we create a new one
         connectable = engine_from_config(
             config.get_section(config.config_ini_section),
             prefix='sqlalchemy.',
-            poolclass=pool.NullPool
+            poolclass=pool.NullPool,
+            future=True
         )
-
-    try:
+        
+        # New connection case: Begin a transaction and run migrations
         with connectable.connect() as connection:
+            # Configure the Alembic context with the new connection
             context.configure(
                 connection=connection,
                 target_metadata=target_metadata,
-                render_as_batch=True
+                render_as_batch=True  # Needed for SQLite or other databases
             )
 
+            # Run migrations within a transaction
             with context.begin_transaction():
                 context.run_migrations()
-    except Exception as e:
-        raise
+    else:
+        # Existing connection case: Simply run migrations without reconnecting
+        # Configure the Alembic context with the provided connection
+        context.configure(
+            connection=connectable,
+            target_metadata=target_metadata,
+            render_as_batch=True
+        )
+        
+        # Run migrations within a transaction
+        with context.begin_transaction():
+            context.run_migrations()
+
 
 # Run migrations according to the mode
 if context.is_offline_mode():

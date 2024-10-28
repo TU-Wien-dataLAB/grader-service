@@ -77,7 +77,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     ).tag(config=True)
 
     def __init__(self, grader_service_dir: str, base_url: str,
-                 authenticator, oauth_provider, **kwargs):
+                 authenticator, oauth_provider, session_maker, **kwargs):
         kwargs.update(dict(
             static_path=self.static_file_path,
         ))
@@ -87,6 +87,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         self.authenticator = authenticator
         self.oauth_provider = oauth_provider
         self.cookie_name = GRADER_COOKIE_NAME
+        self.session_maker = session_maker
 
         jinja_options = dict(autoescape=True, enable_async=True)
         jinja_options.update(self.jinja_environment_options)

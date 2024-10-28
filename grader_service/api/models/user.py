@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api import util
 
 
@@ -43,7 +40,7 @@ class User(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Gets the name of this User.
 
 
@@ -53,7 +50,7 @@ class User(Model):
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name: str):
         """Sets the name of this User.
 
 

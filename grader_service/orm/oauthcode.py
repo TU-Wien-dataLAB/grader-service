@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, Integer, Unicode, ForeignKey, or_
 from sqlalchemy.orm import relationship, joinedload
@@ -33,7 +33,7 @@ class OAuthCode(Base):
 
     @staticmethod
     def now():
-        return datetime.utcnow().timestamp()
+        return datetime.now(timezone.utc).timestamp()
 
     @classmethod
     def find(cls, db, code):

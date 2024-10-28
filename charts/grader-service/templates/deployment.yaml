@@ -103,7 +103,7 @@ spec:
           livenessProbe:
             httpGet:
               port: {{ .Values.port }}
-              path: services/grader/health #TODO should be configurable
+              path: /health #TODO should be configurable
             initialDelaySeconds: 60
             periodSeconds: 60
   
