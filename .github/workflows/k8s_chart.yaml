@@ -48,15 +48,6 @@ jobs:
 
       - name: Check connectivity
         run: |
-          true || kubectl run curl-grader --rm -i --image=curlimages/curl --restart=Never --namespace=jupyter -- \
-          curl http://grader-service:4010/
-          
-          true || kubectl run curl-grader --rm -i --image=curlimages/curl --restart=Never --namespace=jupyter -- \
+          kubectl run curl-grader --rm -i --image=curlimages/curl --restart=Never --namespace=jupyter -- \
           curl https://grader-service:4010/
-          
-          true || kubectl run curl-grader --rm -i --image=curlimages/curl --restart=Never --namespace=jupyter -- \
-          curl https://grader-service.jupyter.svc.cluster.local:4010/
-
-          true || kubectl run curl-grader --rm -i --image=curlimages/curl --restart=Never --namespace=jupyter -- \
-          curl http://grader-service.jupyter.svc.cluster.local:4010/
-          
+        
