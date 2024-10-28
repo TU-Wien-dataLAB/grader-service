@@ -30,7 +30,7 @@ class HandlerPathRegistry(object, metaclass=Singleton):
         return list(
             zip(
                 [
-                    base_url.replace("/", "\\/") + path
+                    base_url.rstrip('/').replace("/", "\\/") + path
                     for path in HandlerPathRegistry.registry.values()
                 ],
                 HandlerPathRegistry.registry.keys(),
@@ -65,10 +65,10 @@ class VersionSpecifier(enum.Enum):
 def register_handler(
         path: str, version_specifier: VersionSpecifier = VersionSpecifier.NONE
 ):
+    # TODO
     # add optional /services/grader prefix regex
     # any endpoint can also be accessed through /services/grader/<endpoint> 
     # this enables the service to hide behind a jupyterhub as a managed service
-    jupyterhub_service_prefix = ""
     
      
     # add version specifier if set
@@ -82,7 +82,7 @@ def register_handler(
             or (version_specifier is None)):
         v = ""
     else:
-        v = f"v{version_specifier.value}\/"
+        v = rf"\/v{version_specifier.value}"
     path = v + path
 
     def _register_class(cls):

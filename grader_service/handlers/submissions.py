@@ -49,7 +49,7 @@ def remove_points_from_submission(submissions):
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/submissions\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -363,7 +363,7 @@ class SubmissionHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -472,7 +472,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
                             reason="Submission to delete not found.")
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/logs\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -502,7 +502,7 @@ class SubmissionLogsHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/' +
          r'properties\/?',
     version_specifier=VersionSpecifier.ALL,
@@ -604,7 +604,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r'api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
          r'(?P<assignment_id>\d*)\/submissions\/(?P<submission_id>\d*)\/edit\/?',
     version_specifier=VersionSpecifier.ALL,
 )
@@ -734,7 +734,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/lti\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
@@ -753,7 +753,7 @@ class LtiSyncHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/count\/?"
 )
 class SubmissionCountHandler(GraderBaseHandler):
     """

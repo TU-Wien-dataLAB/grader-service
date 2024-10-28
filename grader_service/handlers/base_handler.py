@@ -146,20 +146,24 @@ class BaseHandler(web.RequestHandler):
             # if user is not authenticated and is not actively trying to authenticate
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
-                "/",
-                "/health",
-                "/api/oauth2/token",
-                "/oauth_callback",
-                "/lti13/oauth_callback",
-            ]:
+                url_path_join(self.application.base_url, "/"),
+                url_path_join(self.application.base_url, "/health"),
+                url_path_join(self.application.base_url, "/api/oauth2/token"),
+                url_path_join(self.application.base_url, "/oauth_callback"),
+                url_path_join(self.application.base_url, "/lti13/oauth_callback")
+                ]:
                 # require git to authenticate with token -> otherwise return 401 code
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
                     raise HTTPError(401, reason="Git: authenticate request")
                 
                 # send to login page if ui page request
-                if self.request.path in ["/api/oauth2/authorize"] or self.request.path.startswith("/ui"):
+                if self.request.path in [url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
                     url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                     self.redirect(url)
+                    return
+                    
+                if self.request.headers.get("Authorization") is None:
+                    raise HTTPError(401, reason="No API token in auth header")
                     
                 # do not redirect to login page if we hit api endpoints
                 raise HTTPError(401, reason="API Token is invalid or expired.")
@@ -238,7 +242,7 @@ class BaseHandler(web.RequestHandler):
                        server.cookie_name)
         self._set_cookie(
             server.cookie_name, user.cookie_id, encrypted=True,
-            path=server.base_url
+            path=server.base_url.rstrip('/')
         )
 
     def clear_login_cookies(self):
@@ -1009,13 +1013,13 @@ def authenticated(
     return wrapper
 
 
-@register_handler(r"", VersionSpecifier.NONE)
+@register_handler(r"\/", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
         self.write("1.0")
 
 
-@register_handler(r"", VersionSpecifier.V1)
+@register_handler(r"\/", VersionSpecifier.V1)
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
         self.write("1.0")

@@ -18,7 +18,7 @@ from tornado.web import HTTPError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
-@register_handler(r"api\/lectures\/?", VersionSpecifier.ALL)
+@register_handler(r"\/api\/lectures\/?", VersionSpecifier.ALL)
 class LectureBaseHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures.
@@ -74,7 +74,7 @@ class LectureBaseHandler(GraderBaseHandler):
         self.write_json(lecture)
 
 
-@register_handler(r"api\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
+@register_handler(r"\/api\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
 class LectureObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}.
@@ -155,7 +155,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"api\/lectures\/(?P<lecture_id>\d*)\/users\/?",
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/users\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class LectureStudentsHandler(GraderBaseHandler):
