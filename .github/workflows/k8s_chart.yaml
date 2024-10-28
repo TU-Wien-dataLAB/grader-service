@@ -35,7 +35,7 @@ jobs:
           bash install_grader.sh
           bash install_hub.sh      
 
-      - name: Run test
+      - name: Check deployments
         run: |
           kubectl get deployments.apps -n jupyter
           kubectl get pods -n jupyter
@@ -44,3 +44,9 @@ jobs:
           kubectl rollout status deployment/grader-service-worker -n jupyter --timeout=300s
           kubectl rollout status deployment/hub -n jupyter --timeout=300s
           kubectl wait --for=condition=Ready pod/rabbitmq-grader-service-server-0 -n jupyter --timeout=300s
+
+      - name: Check connectivity
+        run: |
+          kubectl run curl-grader --rm -i --tty --image=curlimages/curl --restart=Never -- \
+          curl http://grader-service:4010
+          
