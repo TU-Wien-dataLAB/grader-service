@@ -54,7 +54,7 @@ def test_dict_serialization_empty():
 
 
 def test_datetime_serialization():
-    d = datetime.now()
+    d = datetime.now(tz=timezone.utc)
     s = GraderBaseHandler._serialize(d)
     assert type(s) == str
     assert str(d) == s
@@ -64,7 +64,7 @@ def test_assignment_serialization():
     d = {
         "id": 1,
         "name": "test",
-        "due_date": datetime.now(),
+        "due_date": str(datetime.now(tz=timezone.utc)),
         "status": "created",
         'type': None,
         'points': 0,
@@ -85,7 +85,6 @@ def test_assignment_serialization():
         settings='{}'
     )
 
-    d["due_date"] = (d["due_date"].isoformat("T", "milliseconds") + "Z")
     d["automatic_grading"] = d["automatic_grading"].name
     assert GraderBaseHandler._serialize(a) == d
 

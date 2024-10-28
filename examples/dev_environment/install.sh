@@ -8,7 +8,6 @@ which python
 python -m pip install --upgrade pip
 pip install jupyterhub jupyterlab
 
-
 echo "Installing grader_service..."
 cd ../../
 pip install -e .

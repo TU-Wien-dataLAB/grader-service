@@ -21,7 +21,7 @@ async def test_version_handler(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/"
+    url = "/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200
     assert response.body.decode() == "1.0"
@@ -36,7 +36,7 @@ async def test_version_handler_with_specifier(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/v1/"
+    url = "/v1/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200
     assert response.body.decode() == "1.0"

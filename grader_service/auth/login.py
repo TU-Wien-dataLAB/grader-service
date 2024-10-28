@@ -149,8 +149,3 @@ class LoginHandler(BaseHandler):
             await self.finish(html)
 
 
-
-# /login renders the login page or the "Login with..." link,
-# so it should always be registered.
-# /logout clears cookies.
-default_handlers = [(r"/login", LoginHandler), (r"/logout", LogoutHandler)]
