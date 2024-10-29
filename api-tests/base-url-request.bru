@@ -12,5 +12,5 @@ get {
 
 assert {
   res.status: eq 200
-  res.body: matches 1.0
+  res.body: matches (?:Version) [0-9]\.[0-9]\.[0-9]
 }
