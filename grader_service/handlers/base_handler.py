@@ -23,6 +23,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Iterator, List, Optional, Union
 from urllib.parse import urlparse, parse_qsl
+from grader_service._version import __version__
 
 from sqlalchemy.exc import SQLAlchemyError
 from tornado.httputil import url_concat
@@ -136,6 +137,9 @@ class BaseHandler(web.RequestHandler):
         self.log = self.application.log
 
     async def prepare(self) -> Optional[Awaitable[None]]:
+        #strip trailing slash
+        self.request.path = self.request.path.rstrip("/")
+        
         #start session
         self.session: Session = self.application.session_maker()
         
@@ -146,7 +150,7 @@ class BaseHandler(web.RequestHandler):
             # if user is not authenticated and is not actively trying to authenticate
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
-                self.application.base_url,
+                self.application.base_url.rstrip('/'),
                 url_path_join(self.application.base_url, "/health"),
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
@@ -1016,13 +1020,13 @@ def authenticated(
 @register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
-        self.write("1.0")
+        self.write(f"Version {__version__}")
 
 
 @register_handler(r"\/?", VersionSpecifier.V1)
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
-        self.write("1.0")
+        self.write("Version 1.0")
 
 
 class RequestHandlerConfig(SingletonConfigurable):
