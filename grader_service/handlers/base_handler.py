@@ -146,7 +146,7 @@ class BaseHandler(web.RequestHandler):
             # if user is not authenticated and is not actively trying to authenticate
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
-                url_path_join(self.application.base_url, "/"),
+                self.application.base_url,
                 url_path_join(self.application.base_url, "/health"),
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
@@ -1013,13 +1013,13 @@ def authenticated(
     return wrapper
 
 
-@register_handler(r"\/", VersionSpecifier.NONE)
+@register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
         self.write("1.0")
 
 
-@register_handler(r"\/", VersionSpecifier.V1)
+@register_handler(r"\/?", VersionSpecifier.V1)
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
         self.write("1.0")

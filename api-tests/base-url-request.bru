@@ -1,0 +1,16 @@
+meta {
+  name: base-url-request
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: matches 1.0
+}
