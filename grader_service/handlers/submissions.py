@@ -449,8 +449,11 @@ class SubmissionObjectHandler(GraderBaseHandler):
         if submission is not None:
             if submission.feedback_status is not "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
-            elif submission.assignment.duedate < datetime.datetime.now(datetime.timezone.utc):
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment has passed.")
+            # if assignment has deadline
+            if submission.assignment.duedate:
+                # if assignment's deadline has passed
+                if submission.assignment.duedate < datetime.datetime.now(datetime.timezone.utc):
+                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment has passed.")
             else:
                 previously_deleted = (
                     self.session.query(Submission)
