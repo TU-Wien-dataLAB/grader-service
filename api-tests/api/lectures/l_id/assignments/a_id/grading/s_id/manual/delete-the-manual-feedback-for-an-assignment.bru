@@ -1,0 +1,15 @@
+meta {
+  name: delete-the-manual-feedback-for-an-assignment
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/grading/1/manual?submission_id=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  submission_id: 1
+}

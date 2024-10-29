@@ -1,0 +1,29 @@
+meta {
+  name: request-creation-of-an-assignment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{grader-base-url}}/api/lectures/1/assignments
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+          "id": 1,
+          "name": "Assignment 6",
+          "type": "user",
+          "due_date": null,
+          "status": "created",
+          "points": 0,
+          "automatic_grading": "auto",
+          "max_submissions": null,
+          "allow_files": true
+      }
+}
