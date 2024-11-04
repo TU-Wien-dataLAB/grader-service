@@ -97,9 +97,12 @@ spec:
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
         - name: liveness
-          image: registry.k8s.io/liveness
+          image: busybox
+          tag: stable
           args:
-          - /server
+            - /bin/sh
+            - -c
+            - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
           livenessProbe:
             httpGet:
               port: {{ .Values.port }}
