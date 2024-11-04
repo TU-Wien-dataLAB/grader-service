@@ -25,6 +25,6 @@ helm upgrade --cleanup-on-fail \
   --install my-jupyterhub jupyterhub/jupyterhub \
   --namespace jupyter \
   --create-namespace \
-  --version=3.2.1 \
+  --version=3.3.8 \
   --values hub-config.yaml
   
