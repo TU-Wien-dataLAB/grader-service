@@ -96,19 +96,6 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
-        - name: liveness
-          image: busybox
-          tag: stable
-          args:
-            - /bin/sh
-            - -c
-            - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
-          livenessProbe:
-            httpGet:
-              port: {{ .Values.port }}
-              path: /health #TODO should be configurable
-            initialDelaySeconds: 60
-            periodSeconds: 60
   
       initContainers:
 {{ if .Values.volumePermissions.enabled }}
