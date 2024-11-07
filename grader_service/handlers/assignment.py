@@ -152,7 +152,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignment.type = assignment_model.type
         assignment.points = 0
         assignment.deleted = DeleteState.active
-        assignment.automatic_grading = assignment_model.automatic_grading
+        assignment.automatic_grading = AutoGradingBehaviour[assignment_model.automatic_grading]
         assignment.max_submissions = assignment_model.max_submissions
         assignment.allow_files = get_allow_files(assignment_model)
         if assignment_model.settings:
