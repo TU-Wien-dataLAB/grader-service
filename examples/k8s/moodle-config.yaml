@@ -1,0 +1,19 @@
+mariadb:
+  enabled: true
+
+  initdbScripts:
+    my_init_script.sh: |
+      #!/bin/bash
+      echo "###### DB INIT ######"
+
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hostname: moodle.localhost
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080

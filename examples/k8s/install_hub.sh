@@ -3,10 +3,6 @@
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
 helm repo update
 
-helm upgrade --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress-nginx --create-namespace
-
 echo "Waiting for the ingress-nginx-controller service to be available..."
 
 kubectl wait --namespace ingress-nginx \
