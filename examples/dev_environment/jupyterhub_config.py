@@ -27,6 +27,7 @@ c.Authenticator.enable_auth_state = True
 
 def auth_state_hook(spawner, auth_state):
     token = auth_state["access_token"]
+    print("TOKEN: ", token)
 
     # The environment variable GRADER_API_TOKEN is used by the lab-extension
     # to identify the user in API calls to the Grader Service.

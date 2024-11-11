@@ -1,0 +1,3 @@
+# TODO: how to expose moodle on localhost? (jhub has localhost domain so we need to expose port on localhost)
+tcp:
+    8080: "jupyter/grader-moodle:8080"
