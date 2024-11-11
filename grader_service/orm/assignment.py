@@ -20,6 +20,10 @@ class AutoGradingBehaviour(enum.Enum):
     unassisted = 0  # assignments not automatically graded
     auto = 1  # assignments auto graded when submitted
     full_auto = 2  # assignments auto graded, feedback generated on submit
+    
+    @classmethod
+    def get(cls, name):
+        return cls.__members__.get(name, None)
 
 def get_utc_time():
     return datetime.now(tz=timezone.utc)
