@@ -37,14 +37,6 @@ spec:
             - name: http
               containerPort: {{ .Values.port }}
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
@@ -96,16 +88,6 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
-        - name: liveness
-          image: registry.k8s.io/liveness
-          args:
-          - /server
-          livenessProbe:
-            httpGet:
-              port: {{ .Values.port }}
-              path: /health #TODO should be configurable
-            initialDelaySeconds: 60
-            periodSeconds: 60
   
       initContainers:
 {{ if .Values.volumePermissions.enabled }}
