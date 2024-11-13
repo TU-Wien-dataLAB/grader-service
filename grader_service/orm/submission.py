@@ -61,7 +61,7 @@ class Submission(Base, Serializable):
             id=self.id,
             submitted_at=None
             if self.date is None
-            else (self.date.isoformat("T", "milliseconds") + "Z"),
+            else (self.date.isoformat("T", "milliseconds") ),
             username=self.username,
             auto_status=self.auto_status,
             manual_status=self.manual_status,

@@ -6,7 +6,7 @@
 
 import enum
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from grader_service.api.models import assignment
 from sqlalchemy import (Column, DateTime, Enum, ForeignKey,
@@ -20,7 +20,13 @@ class AutoGradingBehaviour(enum.Enum):
     unassisted = 0  # assignments not automatically graded
     auto = 1  # assignments auto graded when submitted
     full_auto = 2  # assignments auto graded, feedback generated on submit
+    
+    @classmethod
+    def get(cls, name):
+        return cls.__members__.get(name, None)
 
+def get_utc_time():
+    return datetime.now(tz=timezone.utc)
 
 class Assignment(Base, Serializable):
     __tablename__ = "assignment"
@@ -42,9 +48,9 @@ class Assignment(Base, Serializable):
                              default=None, unique=False)
     allow_files = Column(Boolean, nullable=False, default=False)
     properties = Column(Text, nullable=True, unique=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=get_utc_time, nullable=False)
+    updated_at = Column(DateTime, default=get_utc_time,
+                        onupdate=get_utc_time, nullable=False)
     settings = Column(Text, server_default='', nullable=False)
 
     lecture = relationship("Lecture", back_populates="assignments")
@@ -57,7 +63,7 @@ class Assignment(Base, Serializable):
             name=self.name,
             due_date=None
             if self.duedate is None
-            else (self.duedate.isoformat("T", "milliseconds") + "Z"),
+            else self.duedate,
             status=self.status,
             type=self.type,
             points=self.points,

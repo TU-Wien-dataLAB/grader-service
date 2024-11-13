@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import asyncio
 import base64
+from contextlib import contextmanager
 import re
 import shlex
 import subprocess
@@ -20,8 +21,9 @@ import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Awaitable, Callable, List, Optional, Union
+from typing import Any, Awaitable, Callable, Iterator, List, Optional, Union
 from urllib.parse import urlparse, parse_qsl
+from grader_service._version import __version__
 
 from sqlalchemy.exc import SQLAlchemyError
 from tornado.httputil import url_concat
@@ -29,7 +31,7 @@ from traitlets import Type, Integer, TraitType, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api.models.error_message import ErrorMessage
 from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
@@ -44,12 +46,11 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from tornado import httputil, web
 from tornado.escape import json_decode
 from tornado.web import HTTPError
-from tornado_sqlalchemy import SessionMixin
+from sqlalchemy.orm.session import Session
 
 SESSION_COOKIE_NAME = 'grader-session-id'
 
 auth_header_pat = re.compile(r'^(token|bearer|basic)\s+([^\s]+)$', flags=re.IGNORECASE)
-
 
 def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]) -> bool:
     if (("/permissions" in self.request.path)
@@ -72,7 +73,7 @@ def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_
         except MultipleResultsFound:
             raise HTTPError(403)
         except NoResultFound:
-            raise HTTPError(404, "Lecture not found")
+            raise HTTPError(404, reason="Lecture not found")
         except json.decoder.JSONDecodeError:
             raise HTTPError(403)
     elif (
@@ -82,11 +83,11 @@ def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_
     ):
         return True
 
-    role = self.session.query(Role).get((self.user.name, lecture_id))
+    role = self.session.get(Role, (self.user.name, lecture_id))
     if (role is None) or (role.role not in scopes):
         msg = f"User {self.user.name} tried to access "
         msg += f"{self.request.path} with insufficient privileges"
-        self.log.warn(msg)
+        self.log.warning(msg)
         raise HTTPError(403)
     return True
 
@@ -112,8 +113,7 @@ def authorize(scopes: list[Scope]):
 
     return wrapper
 
-
-class BaseHandler(SessionMixin, web.RequestHandler):
+class BaseHandler(web.RequestHandler):
     """Base class of all handler classes
 
     Implements validation and request functions"""
@@ -137,21 +137,43 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         self.log = self.application.log
 
     async def prepare(self) -> Optional[Awaitable[None]]:
+        #strip trailing slash
+        self.request.path = self.request.path.rstrip("/")
+        
+        #start session
+        self.session: Session = self.application.session_maker()
+        
+        #authenticate
         try:
             await self.get_current_user()
 
+            # if user is not authenticated and is not actively trying to authenticate
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
-                url_path_join(self.application.base_url, r"/api/oauth2/token"),
-                url_path_join(self.application.base_url, r"/oauth_callback"),
-                url_path_join(self.application.base_url, r"/lti13/oauth_callback"),
-            ]:
+                self.application.base_url.rstrip('/'),
+                url_path_join(self.application.base_url, "/health"),
+                url_path_join(self.application.base_url, "/api/oauth2/token"),
+                url_path_join(self.application.base_url, "/oauth_callback"),
+                url_path_join(self.application.base_url, "/lti13/oauth_callback")
+                ]:
                 # require git to authenticate with token -> otherwise return 401 code
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
-                    raise HTTPError(401)
-
-                url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
-                self.redirect(url)
+                    raise HTTPError(401, reason="Git: authenticate request")
+                
+                # send to login page if ui page request
+                if self.request.path in [url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
+                    url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
+                    self.redirect(url)
+                    return
+                    
+                if self.request.headers.get("Authorization") is None:
+                    raise HTTPError(401, reason="No API token in auth header")
+                    
+                # do not redirect to login page if we hit api endpoints
+                raise HTTPError(401, reason="API Token is invalid or expired.")
+                
+                
+                
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
             # since it failed
@@ -224,8 +246,38 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                        server.cookie_name)
         self._set_cookie(
             server.cookie_name, user.cookie_id, encrypted=True,
-            path=server.base_url
+            path=server.base_url.rstrip('/')
         )
+
+    def clear_login_cookies(self):
+        kwargs = {}
+        user = self.get_current_user_cookie()
+        session_id = self.get_session_cookie()
+        if session_id:
+            # clear session id
+            session_cookie_kwargs = {}
+            session_cookie_kwargs.update(kwargs)
+
+            self.clear_cookie(
+                SESSION_COOKIE_NAME, path=self.application.base_url.rstrip('/'), **session_cookie_kwargs
+            )
+
+            if user:
+                # user is logged in, clear any tokens associated with the current session
+                # don't clear session tokens if not logged in,
+                # because that could be a malicious logout request!
+                count = 0
+                for access_token in self.session.query(APIToken).filter_by(
+                        username=user.name, session_id=session_id
+                ):
+                    self.session.delete(access_token)
+                    count += 1
+                if count:
+                    self.log.debug("Deleted %s access tokens for %s", count, user.name)
+                    self.session.commit()
+
+        # clear hub cookie
+        self.clear_cookie(self.application.cookie_name, path=self.application.base_url.rstrip('/'), **kwargs)
 
     def get_session_cookie(self):
         """Get the session id from a cookie
@@ -241,7 +293,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         )
 
         def clear():
-            self.clear_cookie(cookie_name, path=self.application.base_url)
+            self.clear_cookie(cookie_name, path=self.application.base_url.rstrip('/'))
 
         if cookie_id is None:
             if self.get_cookie(cookie_name):
@@ -410,6 +462,9 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 raise
         return self._grader_user
 
+    def on_finish(self):
+        self.session.close()
+
     @property
     def current_user(self) -> User:
         """Override .current_user accessor from tornado
@@ -435,7 +490,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
         session_id = uuid.uuid4().hex
         self._set_cookie(
             SESSION_COOKIE_NAME, session_id, encrypted=False,
-            path=self.application.base_url
+            path=self.application.base_url.rstrip('/')
         )
         return session_id
 
@@ -679,7 +734,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
                 if callable(self.authenticator.login_redirect_url):
                     next_url = self.authenticator.login_redirect_url(self)
                 else:
-                    next_url = self.authenticator.login_redirect_url
+                    next_url = url_path_join(self.application.base_url, self.authenticator.login_redirect_url)
 
         if not next_url_from_param:
             # when a request made with ?next=... assume all the params have already been encoded
@@ -721,17 +776,7 @@ class BaseHandler(SessionMixin, web.RequestHandler):
 
 
 class GraderBaseHandler(BaseHandler):
-
-    async def prepare(self) -> Optional[Awaitable[None]]:
-        if ((self.request.path.strip("/")
-             != self.application.base_url.strip("/"))
-                and (self.request.path.strip("/")
-                     != self.application.base_url.strip("/") + "/health")):
-            app_config = self.application.config
-            # await self.authenticator.authenticate(self, self.request.body)
-        await super().prepare()
-        return
-
+        
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -740,14 +785,14 @@ class GraderBaseHandler(BaseHandler):
             raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
     def get_role(self, lecture_id: int) -> Role:
-        role = self.session.query(Role).get((self.user.name, lecture_id))
+        role = self.session.get(Role, (self.user.name, lecture_id))
         if role is None:
             raise HTTPError(403)
         return role
 
     def get_assignment(self, lecture_id: int,
                        assignment_id: int) -> Assignment:
-        assignment = self.session.query(Assignment).get(assignment_id)
+        assignment: Assignment = self.session.get(Assignment, assignment_id)
         if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
                 or (int(assignment.lectid) != int(lecture_id))):
             msg = "Assignment with id " + str(assignment_id) + " was not found"
@@ -757,7 +802,7 @@ class GraderBaseHandler(BaseHandler):
 
     def get_submission(self, lecture_id: int, assignment_id: int,
                        submission_id: int) -> Submission:
-        submission = self.session.query(Submission).get(submission_id)
+        submission = self.session.get(Submission, submission_id)
         if (
                 (submission is None)
                 or (submission.assignid != assignment_id)
@@ -943,16 +988,13 @@ class GraderBaseHandler(BaseHandler):
         if isinstance(obj, (str, int, float, complex)) or obj is None:
             return obj
         if isinstance(obj, datetime.datetime):
+            obj = obj.replace(tzinfo=datetime.timezone.utc)
             return str(obj)
         if isinstance(obj, Decimal):
             return float(obj)
         if isinstance(obj, Model):
             return cls._serialize(obj.to_dict())
         return None
-
-
-class LogoutHandler(BaseHandler):
-    pass
 
 
 def authenticated(
@@ -975,16 +1017,16 @@ def authenticated(
     return wrapper
 
 
-@register_handler(r"\/", VersionSpecifier.NONE)
+@register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
-        self.write("1.0")
+        self.write(f"Version {__version__}")
 
 
-@register_handler(r"\/", VersionSpecifier.V1)
+@register_handler(r"\/?", VersionSpecifier.V1)
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
-        self.write("1.0")
+        self.write("Version 1.0")
 
 
 class RequestHandlerConfig(SingletonConfigurable):

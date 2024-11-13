@@ -24,7 +24,7 @@ class CacheControlStaticFilesHandler(StaticFileHandler):
             self.add_header("Cache-Control", "no-cache")
 
 
-@register_handler("/logo")
+@register_handler(r"\/logo")
 class LogoHandler(StaticFileHandler):
     """A singular handler for serving the logo."""
 

@@ -86,11 +86,19 @@ class GitBaseHandler(GraderBaseHandler):
 
     def gitlookup(self, rpc: str):
         pathlets = self.request.path.strip("/").split("/")
-        # pathlets = ['services', 'grader', 'git',
+        # check if request is sent using jupyterhub as a proxy
+        # if yes, remove services/grader path prefix
+        assert len(pathlets) > 0
+        if pathlets[0] == 'services':
+            pathlets = pathlets[2:]
+            
+        # pathlets should look like this
+        # pathlets = ['git',
         #             'lecture_code', 'assignment_id', 'repo_type', ...]
-        if len(pathlets) < 6:
+        if len(pathlets) < 4:
             return None
-        pathlets = pathlets[3:]
+        # cut git prefix
+        pathlets = pathlets[1:]
         lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, pathlets[0], pathlets[1])
@@ -117,13 +125,13 @@ class GitBaseHandler(GraderBaseHandler):
         except MultipleResultsFound:
             raise HTTPError(500, reason="Found more than one lecture")
 
-        role = self.session.query(Role).get((self.user.name, lecture.id))
+        role = self.session.get(Role, (self.user.name, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:
             assignment = self.get_assignment(lecture.id, int(pathlets[1]))
         except ValueError:
-            raise HTTPError(404, "Assignment not found")
+            raise HTTPError(404, reason="Assignment not found")
 
         if repo_type == "assignment":
             repo_type: str = assignment.type
@@ -140,7 +148,7 @@ class GitBaseHandler(GraderBaseHandler):
                 sub_id = int(pathlets[3])
             except (ValueError, IndexError):
                 raise HTTPError(403)
-            submission = self.session.query(Submission).get(sub_id)
+            submission = self.session.get(Submission, sub_id)
 
         path = self.construct_git_dir(repo_type, lecture, assignment,
                                       submission=submission)
@@ -232,7 +240,7 @@ class GitBaseHandler(GraderBaseHandler):
         """Determine the git repository for this request"""
         gitdir = self.gitlookup(rpc)
         if gitdir is None:
-            raise HTTPError(404, "unable to find repository")
+            raise HTTPError(404, reason="unable to find repository")
         self.log.info("Accessing git at: %s", gitdir)
 
         return gitdir

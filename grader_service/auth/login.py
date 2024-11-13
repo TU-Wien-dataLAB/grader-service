@@ -20,6 +20,7 @@ class LogoutHandler(BaseHandler):
         """Default backend logout actions
         """
         self.log.info("User logged out: %s", name)
+        self.clear_login_cookies()
 
     async def default_handle_logout(self):
         """The default logout action
@@ -46,7 +47,7 @@ class LogoutHandler(BaseHandler):
         Override this function to set a custom logout page.
         """
         if self.authenticator.auto_login:
-            html = await self.render_template('logout.html')
+            html = await self.render_template('auth/logout.html.j2')
             self.finish(html)
         else:
             self.redirect(self.settings['login_url'], permanent=False)
@@ -148,8 +149,3 @@ class LoginHandler(BaseHandler):
             await self.finish(html)
 
 
-
-# /login renders the login page or the "Login with..." link,
-# so it should always be registered.
-# /logout clears cookies.
-default_handlers = [(r"/login", LoginHandler), (r"/logout", LogoutHandler)]

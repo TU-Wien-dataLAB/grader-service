@@ -1,0 +1,15 @@
+meta {
+  name: request-the-latest-submission-to-be-autograded
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/grading/1/auto?submission_id=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  submission_id: 2
+}

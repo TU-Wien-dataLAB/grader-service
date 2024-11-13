@@ -218,7 +218,7 @@ class BaseConverter(LoggingConfigurable):
     def init_notebooks(self) -> None:
         self.notebooks = []
         notebook_glob = self._format_source()
-        self.notebooks = glob.glob(notebook_glob, recursive=True)
+        self.notebooks = glob.glob(notebook_glob)
         if len(self.notebooks) == 0:
             self.log.warning("No notebooks were matched by '%s'", notebook_glob)
 

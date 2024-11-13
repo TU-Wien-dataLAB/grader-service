@@ -215,7 +215,7 @@ def parse_utc(ts: Union[datetime, str]) -> datetime:
 
 def to_numeric_tz(timezone):
     """Converts a timezone to a format which can be read by parse_utc."""
-    return as_timezone(datetime.utcnow(), timezone).strftime("%z")
+    return as_timezone(datetime.now(timezone.utc), timezone).strftime("%z")
 
 
 def as_timezone(ts, timezone):

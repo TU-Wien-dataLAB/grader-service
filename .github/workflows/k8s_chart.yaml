@@ -1,0 +1,55 @@
+name: k8s-example-chart-deploy
+
+on:
+  push:
+    branches:
+      - main
+      - docs-branch # testing TODO: remove
+      - release-*
+  pull_request:
+    branches: '*'
+
+jobs:
+  chart-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+
+      - name: Setup k3s test cluster
+        uses: nolar/setup-k3d-k3s@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install chart
+        run: |
+          cd examples/k8s
+          kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"
+          
+          bash install_postgresql.sh
+          bash install_grader.sh
+          bash install_hub.sh      
+
+      - name: Check deployments
+        run: |
+          kubectl get deployments.apps -n jupyter
+          kubectl get svc -n jupyter
+          kubectl get pods -n jupyter
+          
+          kubectl rollout status deployment/grader-service -n jupyter --timeout=300s
+          kubectl rollout status deployment/grader-service-worker -n jupyter --timeout=300s
+          kubectl rollout status deployment/hub -n jupyter --timeout=300s
+          kubectl wait --for=condition=Ready pod/rabbitmq-grader-service-server-0 -n jupyter --timeout=300s
+
+      - name: Check connectivity
+        run: |
+          kubectl get pods -n jupyter
+          
+          kubectl run curl-grader -i --rm --image=curlimages/curl --restart=Never --namespace=jupyter -- \
+          curl http://grader-service.jupyter.svc.cluster.local:4010/services/grader/
+        

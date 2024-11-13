@@ -1,4 +1,12 @@
 sphinx
-pydata-sphinx-theme
+sphinx_book_theme
 myst-parser
 numpydoc
+sphinx_design
+ablog
+myst_nb
+sphinx_examples
+sphinx_tabs
+sphinx_thebe
+sphinx_togglebutton
+sphinxcontrib.bibtex

@@ -1,0 +1,11 @@
+meta {
+  name: request-the-assignment-to-be-fetched
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1
+  body: none
+  auth: inherit
+}

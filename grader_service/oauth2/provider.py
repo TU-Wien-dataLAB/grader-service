@@ -333,9 +333,11 @@ class JupyterHubRequestValidator(RequestValidator):
         token.pop("refresh_token", None)
 
         # APIToken.new commits the token to the db
+        # TODO the expires in value is hard coded
         APIToken.new(
             oauth_client=client,
-            expires_in=token['expires_in'],
+            #expires_in=token['expires_in']
+            expires_in=1209600,
             scopes=request.scopes,
             token=token['access_token'],
             session_id=request.session_id,

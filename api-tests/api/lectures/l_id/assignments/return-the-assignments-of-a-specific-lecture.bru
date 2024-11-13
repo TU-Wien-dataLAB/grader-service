@@ -1,0 +1,11 @@
+meta {
+  name: return-the-assignments-of-a-specific-lecture
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1/assignments
+  body: none
+  auth: inherit
+}

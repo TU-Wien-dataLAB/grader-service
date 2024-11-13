@@ -3,7 +3,6 @@ from typing import Union
 
 from celery import Task, Celery
 from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker
 from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp
@@ -21,7 +20,7 @@ class GraderTask(Task):
     def __init__(self) -> None:
         self.celery = CeleryApp.instance()
         self.log = self.celery.log
-        self.Session = sessionmaker(bind=self.celery.db.engine)
+        self.Session = self.celery.sessionmaker
         self._sessions = {}
 
     def before_start(self, task_id, args, kwargs):
@@ -50,9 +49,11 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
     from grader_service.main import GraderService
     grader_service_dir = GraderService.instance().grader_service_dir
 
-    submission = self.session.query(Submission).get(sub_id)
-    if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError("incorrect submission")
+    submission = self.session.get(Submission, sub_id)
+    if submission is None:
+        raise ValueError("Submission not found")
+    if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
 
     executor = RequestHandlerConfig.instance().autograde_executor_class(
         grader_service_dir, submission,
@@ -68,9 +69,11 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
     from grader_service.main import GraderService
     grader_service_dir = GraderService(config=self.celery.config).grader_service_dir
 
-    submission = self.session.query(Submission).get(sub_id)
-    if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError("incorrect submission")
+    submission = self.session.get(Submission, sub_id)
+    if submission is None:
+        raise ValueError("Submission not found")
+    if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
 
     executor = GenerateFeedbackExecutor(
         grader_service_dir, submission,
@@ -82,17 +85,18 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 @app.task(bind=True, base=GraderTask)
 def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: Union[int, None],
-                  sync_on_feedback: bool) -> Union[dict, None]:
-    assignment: Assignment = self.session.query(Assignment).get(assignment_id)
+                  feedback_sync: bool = False) -> Union[dict, None]:
+    assignment: Assignment = self.session.get(Assignment,assignment_id)
     if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
             or (int(assignment.lectid) != int(lecture_id))):
         self.log.error("Assignment with id " + str(assignment_id) + " was not found")
+        return None
     lecture: Lecture = assignment.lecture
 
     if sub_id is None:
         # build the subquery
         subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id, Submission.feedback_status)
+                    .filter(Submission.assignid == assignment_id, Submission.feedback_status == "generated")
                     .group_by(Submission.username)
                     .subquery())
 
@@ -101,26 +105,37 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
             self.session.query(Submission)
             .join(subquery,
                   (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & Submission.feedback_status)
+                          Submission.assignid == assignment_id) & (Submission.feedback_status == "generated"))
             .all())
 
         data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
     else:
-        submission: Submission = self.session.query(Submission).get(sub_id)
-        if submission is None or submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-            raise ValueError("incorrect submission")
+        submission: Submission = self.session.get(Submission, sub_id)
+        if submission is None:
+            raise ValueError("Submission not found")
+        if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
+            raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
         data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
 
     lti_plugin = LTISyncGrades.instance()
-    if lti_plugin.check_if_lti_enabled(*data, sync_on_feedback=sync_on_feedback):
+    # check if the lti plugin is enabled
+    if lti_plugin.check_if_lti_enabled(*data, feedback_sync=feedback_sync):
         try:
             results = asyncio.run(lti_plugin.start(*data))
             return results
         except HTTPError as e:
-            self.log.info("Could not sync grades: " + e.reason)
+            err_msg = f"Could not sync grades: {e.reason}"
+            self.log.info(err_msg)
+            raise e
         except Exception as e:
             self.log.error("Could not sync grades: " + str(e))
+            raise HTTPError(500, reason="An unexpected error occured.")
     else:
-        self.log.info("Skipping LTI plugin as it is not enabled")
+        # if the synchronisation task is automatic only log event
+        if feedback_sync:
+            self.log.info("Skipping LTI grade synchronisation, because it is not enabled")
+        else:
+            # else tell the user that the plugin is disabled
+            raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
 
     return None
