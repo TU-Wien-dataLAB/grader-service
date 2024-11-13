@@ -1,0 +1,11 @@
+meta {
+  name: return-the-lecture-with-specified-id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1
+  body: none
+  auth: inherit
+}

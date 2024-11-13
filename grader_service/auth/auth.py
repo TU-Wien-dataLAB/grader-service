@@ -24,7 +24,7 @@ class Authenticator(LoggingConfigurable):
 
     login_redirect_url = Union(
         [Unicode(), Callable()],
-        default_value=None,
+        default_value='/',
         allow_none=False,
         help="""
         The default URL to redirect users when they successfully logged in.
@@ -871,10 +871,10 @@ class Authenticator(LoggingConfigurable):
         method.
 
         Args:
-            base_url (str): the base URL of the Hub (e.g. /hub/)
+            base_url (str): the base URL of the Grader Service (e.g. /services/grader)
 
         Returns:
-            str: The login URL, e.g. '/hub/login'
+            str: The login URL, e.g. '/services/grader/login'
         """
         return url_path_join(base_url, 'login')
 

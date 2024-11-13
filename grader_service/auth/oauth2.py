@@ -11,7 +11,8 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from .auth import Authenticator
 from .crypto import EncryptionUnavailable, InvalidToken, decrypt
-from grader_service.handlers.base_handler import BaseHandler, LogoutHandler
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.auth.login import LogoutHandler
 from grader_service.utils import url_path_join
 from tornado import web
 from tornado.auth import OAuth2Mixin
@@ -144,24 +145,24 @@ class OAuthCallbackHandler(BaseHandler):
         cookie_state = self.get_state_cookie()
         url_state = self.get_state_url()
         if not cookie_state:
-            raise web.HTTPError(400, "OAuth state missing from cookies")
+            raise web.HTTPError(400, reason="OAuth state missing from cookies")
         if not url_state:
-            raise web.HTTPError(400, "OAuth state missing from URL")
+            raise web.HTTPError(400, reason="OAuth state missing from URL")
         if cookie_state != url_state:
             self.log.warning(f"OAuth state mismatch: {cookie_state} != {url_state}")
-            raise web.HTTPError(400, "OAuth state mismatch")
+            raise web.HTTPError(400, reason="OAuth state mismatch")
 
     def check_error(self):
         """Check the OAuth code"""
         error = self.get_argument("error", False)
         if error:
             message = self.get_argument("error_description", error)
-            raise web.HTTPError(400, f"OAuth error: {message}")
+            raise web.HTTPError(400, reason=f"OAuth error: {message}")
 
     def check_code(self):
         """Check the OAuth code"""
         if not self.get_argument("code", False):
-            raise web.HTTPError(400, "OAuth callback made without a code")
+            raise web.HTTPError(400, reason="OAuth callback made without a code")
 
     def check_arguments(self):
         """Validate the arguments of the redirect
@@ -201,7 +202,7 @@ class OAuthCallbackHandler(BaseHandler):
         self.check_arguments()
         user = await self.login_user()
         if user is None:
-            raise web.HTTPError(403, self.authenticator.custom_403_message)
+            raise web.HTTPError(403, reason=self.authenticator.custom_403_message)
 
         self.redirect(self.get_next_url(user))
 
@@ -433,7 +434,7 @@ class OAuthenticator(Authenticator):
     )
 
     custom_403_message = Unicode(
-        "Sorry, you are not currently authorized to use this hub. Please contact the hub administrator.",
+        "Sorry, you are not currently authorized to use this hub. Please contact the hub admin.",
         config=True,
         help="""
         The message to be shown when user was not allowed
@@ -800,7 +801,7 @@ class OAuthenticator(Authenticator):
         """
         code = handler.get_argument("code")
         if not code:
-            raise web.HTTPError(400, "Authentication Cancelled.")
+            raise web.HTTPError(400, reason="Authentication Cancelled.")
 
         params = {
             "code": code,
@@ -845,7 +846,7 @@ class OAuthenticator(Authenticator):
                 f'An access token was not returned: {token_info["error_description"]}',
             )
         elif "access_token" not in token_info:
-            raise web.HTTPError(500, f"Bad response: {token_info}")
+            raise web.HTTPError(500, reason=f"Bad response: {token_info}")
 
         return token_info
 

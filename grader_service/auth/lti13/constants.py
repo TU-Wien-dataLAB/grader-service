@@ -188,7 +188,7 @@ LTI13_ROLE_VOCABULARIES = {
             "http://purl.imsglobal.org/vocab/lis/v2/membership#Officer",
         },
         "CONTEXT_SUB_ROLES": {
-            # administrator role
+            # admin role
             "http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator#Administrator",
             "http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator#Developer",
             "http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator#ExternalDeveloper",

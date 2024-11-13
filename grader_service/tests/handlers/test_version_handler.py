@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pytest
+from grader_service._version import __version__
 from grader_service.server import GraderServer
 
 ## Imports are important otherwise they will not be found
@@ -21,10 +22,10 @@ async def test_version_handler(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/"
+    url = "/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200
-    assert response.body.decode() == "1.0"
+    assert response.body.decode() == f"Version {__version__}"
 
 
 async def test_version_handler_with_specifier(
@@ -36,7 +37,7 @@ async def test_version_handler_with_specifier(
         default_roles,
         default_user_login,
 ):
-    url = service_base_url + "/v1/"
+    url = "/v1/"
     response = await http_server_client.fetch(url, headers={"Authorization": f"Token {default_token}"})
     assert response.code == 200
-    assert response.body.decode() == "1.0"
+    assert response.body.decode() == "Version 1.0"

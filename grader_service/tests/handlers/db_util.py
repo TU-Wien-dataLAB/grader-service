@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -58,7 +58,7 @@ def _get_assignment(name, lectid, due_date, points, status):
     a = Assignment()
     a.name = name
     a.lectid = lectid
-    a.duedate = datetime.fromisoformat(due_date)
+    a.duedate = due_date
     a.points = points
     a.status = status
     a.allow_files = False
@@ -71,8 +71,8 @@ def _get_assignment(name, lectid, due_date, points, status):
 
 def insert_assignments(ex, lecture_id=1):
     session: Session = sessionmaker(ex)()
-    session.add(_get_assignment("assignment_1", lecture_id, "2055-06-06 23:59:00.000", 20, "released"))
-    session.add(_get_assignment("assignment_2", lecture_id, "2055-07-07 23:59:00.000", 10, "created"))
+    session.add(_get_assignment("assignment_1", lecture_id, datetime.now(tz=timezone.utc) + timedelta(weeks=2), 20, "released"))
+    session.add(_get_assignment("assignment_2", lecture_id, datetime.now(tz=timezone.utc) + timedelta(weeks=1), 10, "created"))
     session.commit()
     session.flush()
     num_inserts = 2
@@ -81,7 +81,7 @@ def insert_assignments(ex, lecture_id=1):
 
 def _get_submission(assignment_id, username, feedback="not_generated", score=None):
     s = Submission()
-    s.date = datetime.now()
+    s.date = datetime.now(tz=timezone.utc)
     s.auto_status = "not_graded"
     s.manual_status = "not_graded"
     s.assignid = assignment_id

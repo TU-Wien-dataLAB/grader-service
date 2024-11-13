@@ -32,21 +32,26 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['grader-service', '-f', '/etc/grader-service/grader_service_config.py']
           ports:
             - name: http
               containerPort: {{ .Values.port }}
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
+          # Include extra environment variables if they exist
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ .value }}
+              {{- else if .secretKeyRef }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretKeyRef.name }}
+                  key: {{ .secretKeyRef.key }}
+              {{- end }}
+            {{- end }}
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}
             - name: GRADER_PORT
@@ -83,16 +88,6 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
-        - name: liveness
-          image: registry.k8s.io/liveness
-          args:
-          - /server
-          livenessProbe:
-            httpGet:
-              port: {{ .Values.port }}
-              path: services/grader/health #TODO should be configurable
-            initialDelaySeconds: 60
-            periodSeconds: 60
   
       initContainers:
 {{ if .Values.volumePermissions.enabled }}
@@ -110,9 +105,12 @@ spec:
 
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: ["/bin/sh","-c", "grader-service-migrate"]
+          command: ["grader-service-migrate", "-f", "/etc/grader-service/grader_service_config.py"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
+            - name: config
+              mountPath: /etc/grader-service/grader_service_config.py
+              subPath: grader_service_config.py
             - name: data
               mountPath: /var/lib/grader-service
 {{- if .Values.subPath }}

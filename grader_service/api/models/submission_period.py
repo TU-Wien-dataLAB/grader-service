@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api import util
 
 
@@ -48,7 +45,7 @@ class SubmissionPeriod(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def period(self):
+    def period(self) -> str:
         """Gets the period of this SubmissionPeriod.
 
 
@@ -58,7 +55,7 @@ class SubmissionPeriod(Model):
         return self._period
 
     @period.setter
-    def period(self, period):
+    def period(self, period: str):
         """Sets the period of this SubmissionPeriod.
 
 
@@ -69,7 +66,7 @@ class SubmissionPeriod(Model):
         self._period = period
 
     @property
-    def scaling(self):
+    def scaling(self) -> float:
         """Gets the scaling of this SubmissionPeriod.
 
 
@@ -79,7 +76,7 @@ class SubmissionPeriod(Model):
         return self._scaling
 
     @scaling.setter
-    def scaling(self, scaling):
+    def scaling(self, scaling: float):
         """Sets the scaling of this SubmissionPeriod.
 
 

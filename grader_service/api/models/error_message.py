@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api import util
 
 
@@ -63,7 +60,7 @@ class ErrorMessage(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def code(self):
+    def code(self) -> int:
         """Gets the code of this ErrorMessage.
 
 
@@ -73,7 +70,7 @@ class ErrorMessage(Model):
         return self._code
 
     @code.setter
-    def code(self, code):
+    def code(self, code: int):
         """Sets the code of this ErrorMessage.
 
 
@@ -86,7 +83,7 @@ class ErrorMessage(Model):
         self._code = code
 
     @property
-    def error(self):
+    def error(self) -> str:
         """Gets the error of this ErrorMessage.
 
 
@@ -96,7 +93,7 @@ class ErrorMessage(Model):
         return self._error
 
     @error.setter
-    def error(self, error):
+    def error(self, error: str):
         """Sets the error of this ErrorMessage.
 
 
@@ -109,7 +106,7 @@ class ErrorMessage(Model):
         self._error = error
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Gets the path of this ErrorMessage.
 
 
@@ -119,7 +116,7 @@ class ErrorMessage(Model):
         return self._path
 
     @path.setter
-    def path(self, path):
+    def path(self, path: str):
         """Sets the path of this ErrorMessage.
 
 
@@ -132,7 +129,7 @@ class ErrorMessage(Model):
         self._path = path
 
     @property
-    def message(self):
+    def message(self) -> str:
         """Gets the message of this ErrorMessage.
 
 
@@ -142,7 +139,7 @@ class ErrorMessage(Model):
         return self._message
 
     @message.setter
-    def message(self, message):
+    def message(self, message: str):
         """Sets the message of this ErrorMessage.
 
 
@@ -153,7 +150,7 @@ class ErrorMessage(Model):
         self._message = message
 
     @property
-    def traceback(self):
+    def traceback(self) -> str:
         """Gets the traceback of this ErrorMessage.
 
 
@@ -163,7 +160,7 @@ class ErrorMessage(Model):
         return self._traceback
 
     @traceback.setter
-    def traceback(self, traceback):
+    def traceback(self, traceback: str):
         """Sets the traceback of this ErrorMessage.
 
 

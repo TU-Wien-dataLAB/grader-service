@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import
 from datetime import date, datetime  # noqa: F401
 
 from typing import List, Dict  # noqa: F401
 
-from grader_service.api.models.base_model_ import Model
+from grader_service.api.models.base_model import Model
 from grader_service.api import util
 
 
@@ -58,7 +55,7 @@ class Lecture(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self):
+    def id(self) -> int:
         """Gets the id of this Lecture.
 
 
@@ -68,7 +65,7 @@ class Lecture(Model):
         return self._id
 
     @id.setter
-    def id(self, id):
+    def id(self, id: int):
         """Sets the id of this Lecture.
 
 
@@ -79,7 +76,7 @@ class Lecture(Model):
         self._id = id
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Gets the name of this Lecture.
 
 
@@ -89,7 +86,7 @@ class Lecture(Model):
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name: str):
         """Sets the name of this Lecture.
 
 
@@ -100,7 +97,7 @@ class Lecture(Model):
         self._name = name
 
     @property
-    def code(self):
+    def code(self) -> str:
         """Gets the code of this Lecture.
 
 
@@ -110,7 +107,7 @@ class Lecture(Model):
         return self._code
 
     @code.setter
-    def code(self, code):
+    def code(self, code: str):
         """Sets the code of this Lecture.
 
 
@@ -121,7 +118,7 @@ class Lecture(Model):
         self._code = code
 
     @property
-    def complete(self):
+    def complete(self) -> bool:
         """Gets the complete of this Lecture.
 
 
@@ -131,7 +128,7 @@ class Lecture(Model):
         return self._complete
 
     @complete.setter
-    def complete(self, complete):
+    def complete(self, complete: bool):
         """Sets the complete of this Lecture.
 
 

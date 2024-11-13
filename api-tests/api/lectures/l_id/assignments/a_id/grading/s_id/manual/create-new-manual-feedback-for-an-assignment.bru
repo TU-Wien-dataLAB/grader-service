@@ -1,0 +1,35 @@
+meta {
+  name: create-new-manual-feedback-for-an-assignment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/grading/1/manual?submission_id=1
+  body: json
+  auth: inherit
+}
+
+params:query {
+  submission_id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+      "id": -67858018,
+      "feedback_cells": [
+          {
+              "cell_id": 0,
+              "feedback": "cillum nostrud veniam laboris"
+          },
+          {
+              "cell_id": 0,
+              "feedback": "magna culpa ex occaecat esse"
+          }
+      ]
+  }
+}
