@@ -107,6 +107,7 @@ class SubmissionHandler(GraderBaseHandler):
                                        func.max(Submission.date).label(
                                            "max_date"))
                     .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.deleted == DeleteState.active)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -130,6 +131,7 @@ class SubmissionHandler(GraderBaseHandler):
                                        func.max(Submission.score).label(
                                            "max_score"))
                     .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.deleted == DeleteState.active)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -157,6 +159,7 @@ class SubmissionHandler(GraderBaseHandler):
                                                func.max(Submission.date).label(
                                                    "max_date"))
                             .filter(Submission.assignid == assignment_id)
+                            .filter(Submission.deleted == DeleteState.active)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -181,6 +184,7 @@ class SubmissionHandler(GraderBaseHandler):
                 subquery = (self.session.query(Submission.username, func.max(
                     Submission.score).label("max_score"))
                             .filter(Submission.assignid == assignment_id)
+                            .filter(Submission.deleted == DeleteState.active)
                             .group_by(Submission.username)
                             .subquery())
 
