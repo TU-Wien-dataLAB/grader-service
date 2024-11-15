@@ -1,0 +1,20 @@
+meta {
+  name: invalid-auth-token
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 123456789
+}
+
+assert {
+  res.status: eq 401
+  res.body: contains API Token is invalid or expired
+}

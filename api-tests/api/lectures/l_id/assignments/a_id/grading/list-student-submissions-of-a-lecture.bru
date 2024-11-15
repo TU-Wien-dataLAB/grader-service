@@ -1,0 +1,17 @@
+meta {
+  name: list-student-submissions-of-a-lecture
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/grading?metadata_only=false&latest=false&student_id=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  metadata_only: false
+  latest: false
+  student_id: 1
+}

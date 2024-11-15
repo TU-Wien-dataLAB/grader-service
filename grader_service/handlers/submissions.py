@@ -107,6 +107,7 @@ class SubmissionHandler(GraderBaseHandler):
                                        func.max(Submission.date).label(
                                            "max_date"))
                     .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.deleted == DeleteState.active)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -130,6 +131,7 @@ class SubmissionHandler(GraderBaseHandler):
                                        func.max(Submission.score).label(
                                            "max_score"))
                     .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.deleted == DeleteState.active)
                     .group_by(Submission.username)
                     .subquery())
 
@@ -157,6 +159,7 @@ class SubmissionHandler(GraderBaseHandler):
                                                func.max(Submission.date).label(
                                                    "max_date"))
                             .filter(Submission.assignid == assignment_id)
+                            .filter(Submission.deleted == DeleteState.active)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -181,6 +184,7 @@ class SubmissionHandler(GraderBaseHandler):
                 subquery = (self.session.query(Submission.username, func.max(
                     Submission.score).label("max_score"))
                             .filter(Submission.assignid == assignment_id)
+                            .filter(Submission.deleted == DeleteState.active)
                             .group_by(Submission.username)
                             .subquery())
 
@@ -449,8 +453,12 @@ class SubmissionObjectHandler(GraderBaseHandler):
         if submission is not None:
             if submission.feedback_status != "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
-            elif submission.assignment.duedate < datetime.datetime.now(datetime.timezone.utc):
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment has passed.")
+            # if assignment has deadline
+            if submission.assignment.duedate:
+                # if assignment's deadline has passed
+                if submission.assignment.duedate < datetime.datetime.now().replace(tzinfo=None):
+                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment "
+                                                                 "has passed.")
             else:
                 previously_deleted = (
                     self.session.query(Submission)
