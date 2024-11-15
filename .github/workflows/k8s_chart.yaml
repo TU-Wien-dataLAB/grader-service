@@ -46,10 +46,3 @@ jobs:
           kubectl rollout status deployment/hub -n jupyter --timeout=300s
           kubectl wait --for=condition=Ready pod/rabbitmq-grader-service-server-0 -n jupyter --timeout=300s
 
-      - name: Check connectivity
-        run: |
-          kubectl get pods -n jupyter
-          
-          kubectl run curl-grader -i --rm --image=curlimages/curl --restart=Never --namespace=jupyter -- \
-          curl http://grader-service.jupyter.svc.cluster.local:4010/services/grader/
-        

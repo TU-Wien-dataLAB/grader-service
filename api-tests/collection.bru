@@ -1,0 +1,11 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{api-token}}
+}
+
+vars:pre-request {
+  grader-base-url: http://localhost:4010/services/grader
+}

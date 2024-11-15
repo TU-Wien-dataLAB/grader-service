@@ -1,0 +1,11 @@
+meta {
+  name: delete-an-existing-assignment
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1
+  body: none
+  auth: inherit
+}

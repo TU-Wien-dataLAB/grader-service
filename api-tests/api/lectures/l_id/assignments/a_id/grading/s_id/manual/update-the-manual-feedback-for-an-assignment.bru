@@ -1,0 +1,35 @@
+meta {
+  name: update-the-manual-feedback-for-an-assignment
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/grading/1/manual?submission_id=2
+  body: json
+  auth: inherit
+}
+
+params:query {
+  submission_id: 2
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+      "id": -40166498,
+      "feedback_cells": [
+          {
+              "cell_id": 0,
+              "feedback": "laborum"
+          },
+          {
+              "cell_id": 0,
+              "feedback": "cillum sit"
+          }
+      ]
+  }
+}

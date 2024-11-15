@@ -1,4 +1,4 @@
-# Fist Time in Grader Service
+# First Time in Grader Service
 
 The labextension consists of two launchers:
 

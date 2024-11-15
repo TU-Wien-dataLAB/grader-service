@@ -15,6 +15,7 @@ c.GenericOAuthenticator.client_id = "my_id"
 c.GenericOAuthenticator.client_secret = "my_secret"
 c.GenericOAuthenticator.authorize_url = "http://localhost:4010/services/grader/api/oauth2/authorize"
 c.GenericOAuthenticator.token_url = "http://localhost:4010/services/grader/api/oauth2/token"
+c.GenericOAuthenticator.logout_redirect_url = "http://localhost:4010/services/grader/logout"
 
 c.GenericOAuthenticator.userdata_url = "http://localhost:4010/services/grader/api/user"
 c.GenericOAuthenticator.username_claim = "name"

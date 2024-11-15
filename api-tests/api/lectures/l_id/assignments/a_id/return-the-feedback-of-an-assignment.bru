@@ -1,0 +1,11 @@
+meta {
+  name: return-the-feedback-of-an-assignment
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/feedback
+  body: none
+  auth: inherit
+}

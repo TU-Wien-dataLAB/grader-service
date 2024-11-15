@@ -1,0 +1,24 @@
+meta {
+  name: update-an-existing-assignment--also-handles-release-
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+      "id": 1,
+      "name": "assignment_1",
+      "due_date": "2021-07-21T23:55:00Z",
+      "status": "released"
+  }
+}

@@ -1,0 +1,11 @@
+meta {
+  name: return-the-submissions-of-an-assignment
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/1/assignments/1/submissions
+  body: none
+  auth: inherit
+}

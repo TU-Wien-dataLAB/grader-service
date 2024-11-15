@@ -1,0 +1,33 @@
+meta {
+  name: git-receive-pack
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{grader-base-url}}/git/git_test/info/refs?service=git-receive-pack
+  body: none
+  auth: basic
+}
+
+params:query {
+  service: git-receive-pack
+}
+
+headers {
+  Host: 127.0.0.1:4010
+  User-Agent: git/2.25.1
+  Accept: */*
+  Accept-Encoding: deflate, gzip, br
+  Accept-Language: C, *;q=0.9
+  Pragma: no-cache
+}
+
+auth:basic {
+  username: git-receive-pack
+  password: {{api-token}}
+}
+
+docs {
+  get info refs of git dir
+}

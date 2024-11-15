@@ -1,1 +1,0 @@
-**Purpose of `cm-push/` directory is to build an image that has the `kubectl`, `helm` cli and a plugin called `helm-push` - which makes it possible to package the helm chart.**

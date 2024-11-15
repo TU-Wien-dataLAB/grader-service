@@ -24,7 +24,7 @@ class Authenticator(LoggingConfigurable):
 
     login_redirect_url = Union(
         [Unicode(), Callable()],
-        default_value=None,
+        default_value='/',
         allow_none=False,
         help="""
         The default URL to redirect users when they successfully logged in.

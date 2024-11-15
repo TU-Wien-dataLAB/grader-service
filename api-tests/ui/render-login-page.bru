@@ -1,0 +1,16 @@
+meta {
+  name: render-login-page
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{grader-base-url}}/login
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: eq text/html; charset=UTF-8
+}

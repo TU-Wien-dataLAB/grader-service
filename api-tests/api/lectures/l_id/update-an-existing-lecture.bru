@@ -1,0 +1,24 @@
+meta {
+  name: update-an-existing-lecture
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{grader-base-url}}/api/lectures/1
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+      "id": 1,
+      "name": "Informationsvisualisierung",
+      "code": "ivs21",
+      "complete": false
+  }
+}
