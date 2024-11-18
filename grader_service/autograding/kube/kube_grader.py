@@ -5,24 +5,21 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
+from asyncio import Task, run
+import inspect
 import json
 import os
 import shutil
-import inspect
-from asyncio import Task, run
+import time
 
-from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta,
-                               V1PodStatus, ApiException)
+from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, ApiException)
 from traitlets import Callable, Unicode, Integer, List, Dict
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
-
-from grader_service.autograding.kube.util import (make_pod,
-                                                  get_current_namespace)
-from grader_service.autograding.local_grader import (LocalAutogradeExecutor,
-                                                     rm_error)
+from grader_service.autograding.kube.util import get_current_namespace, make_pod
+from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+                                                     
 from kubernetes import config
-
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
 
@@ -40,7 +37,13 @@ class GraderPod(LoggingConfigurable):
         super().__init__(**kwargs)
         self.pod = pod
         self._client = api
-        self.loop = asyncio.get_event_loop()
+        # Ensure the event loop exists or create a new one
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # Create a new event loop if none exists
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
         self._polling_task = self.loop.create_task(self._poll_status())
 
     def stop_polling(self) -> None:
@@ -61,19 +64,34 @@ class GraderPod(LoggingConfigurable):
     def namespace(self) -> str:
         return self.pod.metadata.namespace
 
-    # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+    # Watch for pod status changes instead of polling in intervals.
     async def _poll_status(self) -> str:
         meta: V1ObjectMeta = self.pod.metadata
-        while True:
-            status: V1PodStatus = \
-                self._client.read_namespaced_pod_status(
-                    name=meta.name,
-                    namespace=meta.namespace).status
+        start_time = time.time()
+        interval = 5
+        timeout = 1200
 
-            if status.phase == "Succeeded" or status.phase == "Failed":
-                return status.phase
-            # continue for Running, Unknown and Pending
-            await asyncio.sleep(self.poll_interval / 1000)
+        while True:
+            # Read the pod status using read_namespaced_pod_status
+            pod_status = self._client.read_namespaced_pod_status(name=meta.name, namespace=meta.namespace)
+            
+            # Extract the pod phase (status)
+            phase = pod_status.status.phase
+            self.log.debug(f"Pod {meta.name} is currently in {phase} phase.")
+
+            # Exit conditions
+            if phase in ["Succeeded", "Failed"]:  # Stop polling if pod completes or fails
+                self.log.info(f"Pod {meta.name} has finished with phase: {phase}.")
+                return phase
+
+            # Check if timeout is reached
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                print(f"Polling timed out after {timeout} seconds.")
+                return "Failed"
+
+            # Wait for the next poll
+            time.sleep(interval)
 
 
 def _get_image_name(lecture: Lecture, assignment: Assignment = None) -> str:
@@ -139,7 +157,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                  submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
         self.lecture = self.assignment.lecture
-
         if self.kube_context is None:
             self.log.info(f"Loading in-cluster config for kube executor "
                           f"of submission {self.submission.id}")
@@ -150,12 +167,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 f"for kube executor of submission {self.submission.id}")
             config.load_kube_config(context=self.kube_context)
         self.client = CoreV1Api()
-
         if self.namespace is None:
             self.log.info(f"Setting Namespace "
                           f"for submission {self.submission.id}")
             self.namespace = get_current_namespace()
-
     def get_image(self) -> str:
         """
         Returns the image name based on the lecture and assignment.
@@ -185,7 +200,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 return run(self.resolve_image_name(self.lecture, self.assignment))
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
-
     def start_pod(self) -> GraderPod:
         """
         Starts a pod in the default namespace
@@ -200,9 +214,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                    f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
                    f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
-
         volumes = [self.volume] + self.extra_volumes
-
         volume_mounts = [{"name": "data", "mountPath": self.input_path,
                           "subPath": self.relative_input_path +
                                      "/submission_" + str(self.submission.id)},
@@ -210,7 +222,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                           "subPath": self.relative_output_path +
                                      "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
-
         pod = make_pod(
             name=self.submission.commit_hash,
             cmd=command,
@@ -225,13 +236,11 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             tolerations=None,
             run_as_user=self.uid,
         )
-
         self.log.info(f"Starting pod {pod.metadata.name}"
                       f" with command: {command}")
         pod = self.client.create_namespaced_pod(namespace=self.namespace,
                                                 body=pod)
         return GraderPod(pod, self.client, config=self.config)
-
     def _run(self):
         """
         Runs the autograding process in a kubernetes pod
@@ -241,11 +250,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         """
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
-
         os.makedirs(self.output_path, exist_ok=True)
-
         self._write_gradebook(self._put_grades_in_assignment_properties())
-
         grader_pod = None
         try:
             grader_pod = self.start_pod()
@@ -279,7 +285,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.log.error("Kubernetes client could not connect to cluster! "
                            "Is it running and specified correctly?")
             raise RuntimeError("Pod has failed execution!")
-
     def _delete_pod(self, pod: GraderPod):
         """
         Deletes the pod from the cluster after successful or failed execution.
@@ -291,7 +296,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             f"after execution status {pod.polling.result()}")
         self.client.delete_namespaced_pod(name=pod.name,
                                           namespace=pod.namespace)
-
     def _get_pod_logs(self, pod: GraderPod) -> str:
         """
         Returns the logs of the pod that were output during execution.
