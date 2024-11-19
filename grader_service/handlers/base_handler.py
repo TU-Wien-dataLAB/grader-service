@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 import asyncio
 import base64
-from contextlib import contextmanager
 import re
 import shlex
 import subprocess
@@ -16,12 +15,11 @@ import os
 import shutil
 import sys
 import time
-import traceback
 import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterator, List, Optional, Union
+from typing import Any, Awaitable, Callable, Optional, Union
 from urllib.parse import urlparse, parse_qsl
 from grader_service._version import __version__
 
@@ -32,7 +30,6 @@ from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model import Model
-from grader_service.api.models.error_message import ErrorMessage
 from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission, APIToken
