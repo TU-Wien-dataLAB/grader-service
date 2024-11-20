@@ -259,10 +259,14 @@ class OverwriteCells(NbGraderPreprocessor):
             old_checksum = source_cell.checksum
             new_checksum = utils.compute_checksum(cell)
             if old_checksum != new_checksum:
-                self.report_change(grade_id, "checksum", old_checksum, new_checksum)
+                self.log.debug(
+                    "Source '{}' must be set for cell {} in order to prove checksum.".format(source_cell.source, grade_id)
+                )
                 cell.source = source_cell.source
-                # double check the the checksum is correct now
-                if utils.compute_checksum(cell) != source_cell.checksum:
+                # check the checksum is correct now
+                double_checksum = utils.compute_checksum(cell)
+                if double_checksum != old_checksum:
+                    self.report_change(grade_id, "checksum", double_checksum, new_checksum)
                     raise RuntimeError(
                         "Inconsistent checksums for cell {}".format(source_cell.name)
                     )
