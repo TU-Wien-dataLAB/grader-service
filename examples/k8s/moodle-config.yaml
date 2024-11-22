@@ -1,19 +1,17 @@
 mariadb:
   enabled: true
+  auth:
+    rootPassword: ""
 
-  initdbScripts:
-    my_init_script.sh: |
-      #!/bin/bash
-      echo "###### DB INIT ######"
+moodleUsername: "admin"
+moodlePassword: "1234"
 
 
 ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: nginx
-  hostname: moodle.localhost
+  hostname: localhost
 
 service:
   type: ClusterIP
-  ports:
-    http: 8080
