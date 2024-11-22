@@ -4,6 +4,7 @@
 # ConfigurableHTTPProxy speaks with the actual ConfigurableHTTPProxy server in
 # the proxy pod.
 hub:
+  # baseUrl: /jupyter # added to Ingress path
   config:
     JupyterHub:
       admin_access: true
@@ -24,11 +25,11 @@ hub:
       from oauthenticator.generic import GenericOAuthenticator
       
       c.JupyterHub.authenticator_class = GenericOAuthenticator
-      c.GenericOAuthenticator.oauth_callback_url = "http://localhost/hub/oauth_callback"
+      c.GenericOAuthenticator.oauth_callback_url = "http://localhost/jupyter/hub/oauth_callback"
       
       c.GenericOAuthenticator.client_id = "my_id"
       c.GenericOAuthenticator.client_secret = "my_secret"
-      c.GenericOAuthenticator.authorize_url = "http://localhost/services/grader/api/oauth2/authorize"
+      c.GenericOAuthenticator.authorize_url = "http://localhost/jupyter/services/grader/api/oauth2/authorize"
       c.GenericOAuthenticator.token_url = "http://grader-service:4010/services/grader/api/oauth2/token" # NOTE: request from hub does not go to proxy (need grader-service:4010)
       
       c.GenericOAuthenticator.userdata_url = "http://grader-service:4010/services/grader/api/user" # NOTE: request from hub does not go to proxy (need grader-service:4010)

@@ -122,3 +122,11 @@ Different executors are available to manage this:
 
 [//]: # (TODO: what is the minimal setup? what is the most sophisticated setup)
 
+minimal setup, of course single instance on one node
+grader-service helm chart provides a simple way to deploy the different components
+of the whole architecture (jhub, grader, database etc.)
+
+this allows for better scalability and availability of 
+
+[//]: # (TODO: grader-service can scale to multiple lectures -> how to do it e.g. with config-server-operator)
+
