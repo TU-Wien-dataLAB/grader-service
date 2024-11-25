@@ -68,12 +68,34 @@ It specifies the action taken when a user submits an assignment.
 
 - No Automatic Grading
   : No action is taken when users submit the assignment.
+
 - Automatic Grading (Recommended)
   : The assignment is being auto-graded as soon as the user submits the assignment.
     This means that submissions in the grading view are always auto-graded.
+
 - Fully Automatic Grading
   : The assignment is auto-graded and feedback is generated as soon as the student submits their assignment.
     This requires that no manually graded cells are part of the assignment.
+
+**Tip**: if you have long-running tasks, for example training an ML model, customize your assignment to
+save the students local model as a file and enable *student file upload* in the settings menu. Then load the model
+in your auto-grading tests. This cuts the model training time from the auto-grading step and
+improves the throughput of the system for your and other lectures. To detect if the notebook
+is being auto-graded or executed as part of the assignment you could put 
+
+```python
+running = True
+### BEGIN HIDDEN TESTS
+running = False
+### END HIDDEN TESTS
+```
+
+at the start of the notebook. Then add the long-running code segments in `if`-statements checking the running condition.
+In the student version of the notebook, the hidden tests will be removed from the cell code, so running will be true.
+Before auto-grading, all hidden tests are added again so the `running` flag will be set to false.
+For safety, you should also set running to `False` before each test so that students 
+cannot modify it by accident.
+
 
 ## Assignment Lifecycle
 
@@ -84,6 +106,7 @@ An assignment can have 3 states that can be switched between and represent the l
 - Edit
   : When first created, the assignment is in "Edit mode", where the assignment files can be added and edited.
     In this stage, the assignment is not visible to students. However, when an instructor opens the student view ("Assignments" card in launcher), it will be displayed to them.
+
 - Released
   : The assignment is released to students and the students can work on it.
     The released files are identical to the files in the release directory at the time of the release.
@@ -94,6 +117,7 @@ An assignment can have 3 states that can be switched between and represent the l
     :::{warning}
     Revoking a released assignment may lead to diverging states of student files and submissions that fail auto-grading.
     :::
+
 - Completed
   : The assignment is over and cannot be worked on anymore and new submissions will be rejected, but it is still visible.
     This state can be revoked without any consideration and will return to a released state.
