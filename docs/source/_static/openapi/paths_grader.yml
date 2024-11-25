@@ -1,3 +1,59 @@
+submissionsForLecture:
+  get:
+    security:
+    - hub_auth:
+        - instructor
+        - tutor
+    summary: Return the submissions of a lecture
+    tags:
+      - "Submissions"
+    parameters:
+      - name: lect_id
+        in: path
+        description: ID of the lecture
+        required: true
+        example: 1
+        schema:
+          type: integer
+          format: int64
+      - name: filter
+        in: query
+        description: Filter submissions
+        required: false
+        schema:
+          type: string
+          enum: [ "latest", "best" ]
+          default: "best"
+      - name: format
+        in: query
+        description: Return format
+        required: false
+        schema:
+          type: string
+          enum: [ "json", "csv" ]
+          default: "json"
+    responses: # TODO add text/csv
+      200:
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas.yml#/components/schemas/UserSubmissions"
+      403:
+        description: Unautorized
+      404:
+        description: Lecture id or assignment id not found
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas.yml#/components/schemas/ErrorMessage"
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas.yml#/components/schemas/ErrorMessage"
+
 submissions:
   get:
     security:

@@ -41,6 +41,7 @@ dependencies = [
     "traitlets>=5.14",
     "typing-extensions>=4.12",
     "urllib3>=2.2",
+    "pandas>=2.2.3"
 ]
 
 [tool.setuptools]

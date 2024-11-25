@@ -45,7 +45,7 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
         if s <= 0.0 or s >= 1.0:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling has to be between 0.0 and 1.0 exclusive!")
         if s >= curr_scaling:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling is not decreasing!)")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling is not decreasing!")
         current_period = d
         curr_scaling = s
 
@@ -297,7 +297,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 
     route: /lectures/{lecture_id}/assignments/{assignment_id}/reset."""
 
-    @authorize([Scope.instructor, Scope.tutor, Scope.student])
+    @authorize( [Scope.instructor, Scope.tutor, Scope.student])
     async def get(self, lecture_id: int, assignment_id: int):
         self.validate_parameters()
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
