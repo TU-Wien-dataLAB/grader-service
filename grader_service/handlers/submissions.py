@@ -62,13 +62,15 @@ class SubmissionLectureHandler(GraderBaseHandler):
 
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int):
-        """Return the submissions of an assignment.
+        """Return the submissions of a specific lecture.
 
-        Two query parameter: latest, instructor-version.
-
-        latest: only get the latest submissions of users.
-        instructor-version: if true, get the submissions of all users in
-        lecture if false, get own submissions.
+        Two query parameter:
+        1 - filter
+            latest: only get the latest submissions of users.
+            best: only get the best submissions by score of users.
+        2 - format:
+            csv: return list as comma separated values
+            json: return list as JSON
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
