@@ -28,10 +28,13 @@ class GraderPod(LoggingConfigurable):
     """
     Wrapper for a kubernetes pod that supports polling of the pod's status.
     """
-    poll_interval = Integer(default_value=1000,
+    poll_interval = Integer(default_value=5,
                             allow_none=False,
-                            help="Time in ms to wait before "
+                            help="Time in sec to wait before "
                                  "status is polled again.").tag(config=True)
+    max_grading_time = Integer(default_value=3600,
+                            allow_none=False,
+                            help="Maximal grading time in sec before the grading fails").tag(config=True)
 
     def __init__(self, pod: V1Pod, api: CoreV1Api, **kwargs):
         super().__init__(**kwargs)
@@ -68,8 +71,8 @@ class GraderPod(LoggingConfigurable):
     async def _poll_status(self) -> str:
         meta: V1ObjectMeta = self.pod.metadata
         start_time = time.time()
-        interval = 5
-        timeout = 1200
+        interval = self.poll_interval
+        timeout = self.max_grading_time
 
         while True:
             # Read the pod status using read_namespaced_pod_status
