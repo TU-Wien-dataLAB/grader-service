@@ -9,6 +9,8 @@ import logging
 import shutil
 import time
 
+from sqlalchemy import label
+
 from grader_service.orm.base import DeleteState
 import isodate
 import jwt
@@ -17,6 +19,7 @@ import subprocess
 from http import HTTPStatus
 import tornado
 from celery import chain
+import pandas as pd
 
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
@@ -46,6 +49,84 @@ def remove_points_from_submission(submissions):
         if s.feedback_status not in ('generated', 'feedback_outdated'):
             s.score = None
     return submissions
+
+
+@register_handler(
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/submissions\/?',
+    version_specifier=VersionSpecifier.ALL,
+)
+class SubmissionLectureHandler(GraderBaseHandler):
+    """Tornado Handler class for http requests to
+    /lectures/{lecture_id}/submissions.
+    """
+
+    @authorize([Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int):
+        """Return the submissions of an assignment.
+
+        Two query parameter: latest, instructor-version.
+
+        latest: only get the latest submissions of users.
+        instructor-version: if true, get the submissions of all users in
+        lecture if false, get own submissions.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :raises HTTPError: throws err if user is not authorized or
+        the assignment was not found
+        """
+        lecture_id = parse_ids(lecture_id)
+        self.validate_parameters("filter", "format")
+        submission_filter = self.get_argument("filter", "best")
+        if submission_filter not in ["latest", "best"]:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Filter parameter \
+            has to be either 'latest' or 'best'")
+        response_format = self.get_argument("format", "json")
+        if response_format not in ["json", "csv"]:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format \
+            can either be 'json' or 'csv'")
+
+        role: Role = self.get_role(lecture_id)
+        if role.role < Scope.tutor:
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+
+        if submission_filter == "latest":
+            subquery = (
+                self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                .join(Assignment, Submission.assignid == Assignment.id)
+                .filter(Assignment.lectid == lecture_id)
+                .filter(Submission.deleted == DeleteState.active)
+                .group_by(Submission.username, Assignment.id)
+                .subquery())
+        else:
+            subquery = (
+                self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                .join(Assignment, Submission.assignid == Assignment.id)
+                .filter(Assignment.lectid == lecture_id)
+                .filter(Submission.deleted == DeleteState.active)
+                .group_by(Submission.username, Assignment.id)
+                .subquery())
+
+        submissions_query = self.session.query(
+            label('username', Submission.username),
+            label('score', Submission.score),
+            label('assignment', Assignment.name)
+        ).join(Assignment, Submission.assignid == Assignment.id).filter(Assignment.lectid == lecture_id).filter(Submission.deleted == DeleteState.active)
+
+        if submission_filter == "latest":
+            submissions = submissions_query.join(subquery, (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date)).order_by(Assignment.id).all()
+        else:
+            submissions = submissions_query.join(subquery, (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score)).order_by(Submission.id).all()
+
+        df = pd.DataFrame(submissions, columns=['Username', 'Score', 'Assignment'])
+        pivoted_df = df.pivot_table(values='Score', index='Username', columns='Assignment', aggfunc='first', dropna=False).fillna('-')
+
+        if response_format == "csv":
+            self.set_header("Content-Type", "text/csv")
+            self.write(pivoted_df.to_csv(header=True, index=True))
+        else:
+            self.set_header("Content-Type", "application/json")
+            self.write(pivoted_df.to_json(orient='columns', force_ascii=False))
 
 
 @register_handler(
@@ -104,8 +185,7 @@ class SubmissionHandler(GraderBaseHandler):
                 # build the subquery
                 subquery = (
                     self.session.query(Submission.username,
-                                       func.max(Submission.date).label(
-                                           "max_date"))
+                                       func.max(Submission.date).label("max_date"))
                     .filter(Submission.assignid == assignment_id)
                     .filter(Submission.deleted == DeleteState.active)
                     .group_by(Submission.username)
@@ -119,7 +199,7 @@ class SubmissionHandler(GraderBaseHandler):
                                   Submission.date == subquery.c.max_date) & (
                                   Submission.assignid == assignment_id) & (
                                   Submission.deleted == DeleteState.active
-                                  ))
+                          ))
                     .order_by(Submission.id)
                     .all())
 
@@ -143,14 +223,14 @@ class SubmissionHandler(GraderBaseHandler):
                                   Submission.score == subquery.c.max_score) & (
                                   Submission.assignid == assignment_id) & (
                                   Submission.deleted == DeleteState.active
-                                  ))
+                          ))
                     .order_by(Submission.id)
                     .all())
 
             else:
                 submissions = [
-                s for s in assignment.submissions if (s.deleted
-                                                        == DeleteState.active)
+                    s for s in assignment.submissions if (s.deleted
+                                                          == DeleteState.active)
                 ]
         else:
             if submission_filter == 'latest':
@@ -171,7 +251,7 @@ class SubmissionHandler(GraderBaseHandler):
                                   Submission.date == subquery.c.max_date) & (
                                   Submission.assignid == assignment_id) & (
                                   Submission.deleted == DeleteState.active
-                                  ))
+                          ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -196,7 +276,7 @@ class SubmissionHandler(GraderBaseHandler):
                                   Submission.score == subquery.c.max_score) & (
                                   Submission.assignid == assignment_id) & (
                                   Submission.deleted == DeleteState.active
-                                  ))
+                          ))
                     .filter(
                         Submission.assignid == assignment_id,
                         Submission.username == role.username, )
@@ -262,7 +342,6 @@ class SubmissionHandler(GraderBaseHandler):
         submission_ts = datetime.datetime.now(datetime.timezone.utc)
         # use implicit utc time to compare with database objects
         submission_ts = submission_ts.replace(tzinfo=None)
-        
 
         score_scaling = 1.0
         if assignment.duedate is not None:
@@ -336,7 +415,6 @@ class SubmissionHandler(GraderBaseHandler):
 
         if automatic_grading == AutoGradingBehaviour.unassisted:
             self.session.close()
-
 
     @staticmethod
     def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
@@ -433,9 +511,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(sub)
 
-
     def delete(self, lecture_id: int, assignment_id: int,
-                  submission_id: int):
+               submission_id: int):
         """Soft-Deletes a specific submission.
 
         :param lecture_id: id of the lecture
@@ -451,7 +528,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
 
         if submission is not None:
-            if submission.feedback_status is not "not_generated":
+            if submission.feedback_status != "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
             # if assignment has deadline
             if submission.assignment.duedate:
@@ -478,6 +555,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         else:
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason="Submission to delete not found.")
+
 
 @register_handler(
     path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/' +
@@ -595,7 +673,6 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         if submission.manual_status == 'manually_graded':
             submission.manually_graded = 'being_edited'
-
 
         self.session.commit()
         self.write_json(submission)
@@ -757,7 +834,6 @@ class LtiSyncHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Did not find syncable submissions.")
         else:
             self.write_json(results)
-
 
 
 @register_handler(
