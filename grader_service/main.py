@@ -15,11 +15,11 @@ import subprocess
 import sys
 import inspect
 import tornado
+import uvloop as uvloop
 from jupyterhub.log import log_request
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpserver import HTTPServer
-from traitlets import config, Bool, Type, Instance, Dict, Union, List
+from traitlets import config, Bool, Type, Instance, Dict, List
 from traitlets import log as traitlets_log
 from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
     default, HasTraits
@@ -304,7 +304,8 @@ class GraderService(config.Application):
 
         self.session_maker = get_session_maker(self.db_url)
         self.init_roles()
-
+        # use uvloop instead of default asyncio loop
+        # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self._start_future = asyncio.Future()
 
         if sys.version_info.major < 3 or sys.version_info.minor < 8:

@@ -5,27 +5,20 @@
 # LICENSE file in the root directory of this source tree.
 # grader_s/grader_s/handlers
 import json
-import logging
 import shutil
-import time
 
 from grader_service.orm.base import DeleteState
 import isodate
-import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
 import tornado
 from celery import chain
 
-from grader_service.plugins.lti import LTISyncGrades
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
 from grader_service.orm.assignment import AutoGradingBehaviour
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -36,8 +29,7 @@ from tornado.web import HTTPError
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
 
-from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
-    RequestHandlerConfig
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 import datetime
 
 

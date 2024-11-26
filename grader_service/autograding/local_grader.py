@@ -245,6 +245,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         log_stream = io.StringIO()
         log_handler = logging.StreamHandler(log_stream)
+        log_handler.setFormatter(logging.Formatter(
+            fmt='[%(asctime)s] [%(levelname)s] %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        ))
         autograder.log.addHandler(log_handler)
 
         try:
