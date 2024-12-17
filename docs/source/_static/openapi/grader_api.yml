@@ -28,6 +28,9 @@ paths:
   /lectures/{lect_id}:
     $ref: './paths_shared.yml#/lecturesById'
 
+  /lectures/{lect_id}/submissions:
+    $ref: './paths_grader.yml#/submissionsForLecture'
+
   /lectures/{lect_id}/users:
     $ref: './paths_shared.yml#/lectureUsers'
 
