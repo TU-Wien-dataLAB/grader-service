@@ -21,7 +21,7 @@ import pandas as pd
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
-from grader_service.orm.assignment import AutoGradingBehaviour
+from grader_service.orm.assignment import AutoGradingBehaviour, Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
