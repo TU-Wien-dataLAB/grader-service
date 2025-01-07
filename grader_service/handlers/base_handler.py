@@ -23,6 +23,8 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Iterator, List, Optional, Union
 from urllib.parse import urlparse, parse_qsl
+
+from sqlalchemy import func
 from grader_service._version import __version__
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -790,6 +792,10 @@ class GraderBaseHandler(BaseHandler):
             raise HTTPError(403)
         return role
 
+    def get_lecture(self, lecture_id: int) -> Lecture:
+        lecture: Lecture = self.session.get(Lecture, lecture_id)
+        return lecture
+
     def get_assignment(self, lecture_id: int,
                        assignment_id: int) -> Assignment:
         assignment: Assignment = self.session.get(Assignment, assignment_id)
@@ -813,6 +819,57 @@ class GraderBaseHandler(BaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason=msg)
         return submission
+    
+    def get_latest_submissions(self, assignment_id, must_have_feedback = False):
+        subquery = (
+            self.session.query(Submission.username,
+                                func.max(Submission.date).label(
+                                    "max_date"))
+            .filter(Submission.assignid == assignment_id)
+            .filter(Submission.deleted == DeleteState.active)
+            .group_by(Submission.username)
+            .subquery())
+        if must_have_feedback:
+            subquery = subquery.filter(Submission.feedback_status != "not_generated")
+
+        # build the main query
+        submissions = (
+            self.session.query(Submission)
+            .join(subquery,
+                    (Submission.username == subquery.c.username) & (
+                            Submission.date == subquery.c.max_date) & (
+                            Submission.assignid == assignment_id) & (
+                            Submission.deleted == DeleteState.active
+                            ))
+            .order_by(Submission.id)
+            .all())
+        return submissions
+    
+    def get_best_submissions(self, assignment_id, must_have_feedback = False):
+        # build the subquery
+        subquery = (self.session.query(Submission.username, func.max(
+            Submission.score).label("max_score"))
+                    .filter(Submission.assignid == assignment_id)
+                    .filter(Submission.deleted == DeleteState.active)
+                    .group_by(Submission.username)
+                    .subquery())
+        
+        if must_have_feedback:
+            subquery = subquery.filter(Submission.feedback_status != "not_generated")
+
+        # build the main query
+        submissions = (
+            self.session.query(Submission)
+            .join(subquery,
+                    (Submission.username == subquery.c.username) & (
+                            Submission.score == subquery.c.max_score) & (
+                            Submission.assignid == assignment_id) & (
+                            Submission.deleted == DeleteState.active
+                            ))
+            .group_by(Submission.username)
+            .order_by(Submission.id)
+            .all())
+        return submissions
 
     @property
     def gitbase(self):

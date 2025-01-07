@@ -176,7 +176,7 @@ class LTISyncGrades(SingletonConfigurable):
                 lineitem = item
                 break
 
-        # 8. if not create a lineitem with the assignment name
+        # 8. if does not exist, create a lineitem with the assignment name
         if lineitem is None:
             lineitem_body = {"scoreMaximum": float(assignment["points"]), "label": assignment["name"],
                              "resourceId": assignment["id"],

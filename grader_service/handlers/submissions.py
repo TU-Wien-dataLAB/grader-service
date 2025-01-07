@@ -47,7 +47,6 @@ def remove_points_from_submission(submissions):
             s.score = None
     return submissions
 
-
 @register_handler(
     path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
          r'\/(?P<assignment_id>\d*)\/submissions\/?',
@@ -100,53 +99,9 @@ class SubmissionHandler(GraderBaseHandler):
 
         if instr_version:
             if submission_filter == 'latest':
-
-                # build the subquery
-                subquery = (
-                    self.session.query(Submission.username,
-                                       func.max(Submission.date).label(
-                                           "max_date"))
-                    .filter(Submission.assignid == assignment_id)
-                    .filter(Submission.deleted == DeleteState.active)
-                    .group_by(Submission.username)
-                    .subquery())
-
-                # build the main query
-                submissions = (
-                    self.session.query(Submission)
-                    .join(subquery,
-                          (Submission.username == subquery.c.username) & (
-                                  Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id) & (
-                                  Submission.deleted == DeleteState.active
-                                  ))
-                    .order_by(Submission.id)
-                    .all())
-
+                submissions = self.get_latest_submissions(assignment_id)
             elif submission_filter == 'best':
-
-                # build the subquery
-                subquery = (
-                    self.session.query(Submission.username,
-                                       func.max(Submission.score).label(
-                                           "max_score"))
-                    .filter(Submission.assignid == assignment_id)
-                    .filter(Submission.deleted == DeleteState.active)
-                    .group_by(Submission.username)
-                    .subquery())
-
-                # build the main query
-                submissions = (
-                    self.session.query(Submission)
-                    .join(subquery,
-                          (Submission.username == subquery.c.username) & (
-                                  Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id) & (
-                                  Submission.deleted == DeleteState.active
-                                  ))
-                    .order_by(Submission.id)
-                    .all())
-
+                submissions = self.get_best_submissions(assignment_id)
             else:
                 submissions = [
                 s for s in assignment.submissions if (s.deleted
@@ -749,9 +704,48 @@ class LtiSyncHandler(GraderBaseHandler):
     cache_token = {"token": None, "ttl": datetime.datetime.now()}
 
     @authorize([Scope.instructor])
-    async def get(self, lecture_id: int, assignment_id: int):
+    async def put(self, lecture_id: int, assignment_id: int):
+        """ Starts the LTI sync process (if enabled).
+        Request can have an optional parameter 'option'.
+        if 'option' == 'latest': sync all latest submissions with feedback 
+           'option' == 'best': sync all best submissions
+           'option' == 'selection': sync all submissions in body (default, if no param is set)
+        
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :param assignment_id: id of the assignment
+        :type assignment_id: int
+        """
+        lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+        self.validate_parameters("option")
+        lti_option = self.get_argument("option", "latest")
+
+        assignment: Assignment = self.session.get(Assignment, assignment_id)
+        if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
+                or (int(assignment.lectid) != int(lecture_id))):
+            self.log.error("Assignment with id " + str(assignment_id) + " was not found")
+            return None
+        lecture: Lecture = assignment.lecture
+        
+        # get all latest submissions with feedback
+        if lti_option == 'latest':
+            submissions = self.get_latest_submissions(assignment_id, must_have_feedback=True)
+        # get all best submissions with feedback
+        elif lti_option == 'best':
+            submissions = self.get_best_submissions(assignment_id, must_have_feedback=True)
+        else:
+            try:
+                body = tornado.escape.json_decode(self.request.body)
+                submissions = body["submissions"]
+            except Exception as e:
+                err_msg = f"Could not process body: {e}"
+                self.log.error(err_msg)
+                raise HTTPError(HTTPStatus.BAD_REQUEST, reason=err_msg)
+
+        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
+
         # apply task synchronously without adding to queue
-        results = lti_sync_task.delay(lecture_id, assignment_id, None, False)
+        results = lti_sync_task.delay(data, False)
         results = results.get(timeout=120)
         if results is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Did not find syncable submissions.")

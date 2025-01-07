@@ -99,14 +99,16 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         lecture_id, assignment_id, sub_id = parse_ids(
             lecture_id, assignment_id, sub_id)
         self.validate_parameters()
+        lecture = self.get_lecture(lecture_id)
+        assignment = self.get_assignment(lecture_id, assignment_id)
         submission: Submission = self.get_submission(lecture_id, assignment_id, sub_id)
         submission.feedback_status = "generating"
         self.session.commit()
-
+        data = (lecture, assignment, [submission])
         # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
         generate_feedback_chain = celery.chain(
             generate_feedback_task.si(lecture_id, assignment_id, sub_id),
-            lti_sync_task.si(lecture_id, assignment_id, sub_id, sync_on_feedback=True)
+            lti_sync_task.si(data, sync_on_feedback=True)
         )
         generate_feedback_chain()
 
