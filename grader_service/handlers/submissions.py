@@ -5,27 +5,25 @@
 # LICENSE file in the root directory of this source tree.
 # grader_s/grader_s/handlers
 import json
-import logging
 import shutil
-import time
+
+from sqlalchemy import label
 
 from grader_service.orm.base import DeleteState
 import isodate
-import jwt
 import os.path
 import subprocess
 from http import HTTPStatus
 import tornado
 from celery import chain
+import pandas as pd
 
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
-from grader_service.orm.assignment import AutoGradingBehaviour
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
+from grader_service.orm.assignment import AutoGradingBehaviour, Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -36,8 +34,7 @@ from tornado.web import HTTPError
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
 
-from grader_service.handlers.base_handler import GraderBaseHandler, authorize, \
-    RequestHandlerConfig
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 import datetime
 
 
@@ -46,6 +43,87 @@ def remove_points_from_submission(submissions):
         if s.feedback_status not in ('generated', 'feedback_outdated'):
             s.score = None
     return submissions
+
+
+@register_handler(
+    path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/submissions\/?',
+    version_specifier=VersionSpecifier.ALL,
+)
+class SubmissionLectureHandler(GraderBaseHandler):
+    """Tornado Handler class for http requests to
+    /lectures/{lecture_id}/submissions.
+    """
+
+    @authorize([Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int):
+        """Return the submissions of a specific lecture.
+
+        Two query parameter:
+        1 - filter
+            latest: only get the latest submissions of users.
+            best: only get the best submissions by score of users.
+        2 - format:
+            csv: return list as comma separated values
+            json: return list as JSON
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :raises HTTPError: throws err if user is not authorized or
+        the assignment was not found
+        """
+        lecture_id = parse_ids(lecture_id)
+        self.validate_parameters("filter", "format")
+        submission_filter = self.get_argument("filter", "best")
+        if submission_filter not in ["latest", "best"]:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Filter parameter \
+            has to be either 'latest' or 'best'")
+        response_format = self.get_argument("format", "json")
+        if response_format not in ["json", "csv"]:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format \
+            can either be 'json' or 'csv'")
+
+        role: Role = self.get_role(lecture_id)
+        if role.role < Scope.tutor:
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+
+        if submission_filter == "latest":
+            subquery = (
+                self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                .join(Assignment, Submission.assignid == Assignment.id)
+                .filter(Assignment.lectid == lecture_id)
+                .filter(Submission.deleted == DeleteState.active)
+                .group_by(Submission.username, Assignment.id)
+                .subquery())
+        else:
+            subquery = (
+                self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+                .join(Assignment, Submission.assignid == Assignment.id)
+                .filter(Assignment.lectid == lecture_id)
+                .filter(Submission.deleted == DeleteState.active)
+                .group_by(Submission.username, Assignment.id)
+                .subquery())
+
+        submissions_query = self.session.query(
+            label('username', Submission.username),
+            label('score', Submission.score),
+            label('assignment', Assignment.name)
+        ).join(Assignment, Submission.assignid == Assignment.id).filter(Assignment.lectid == lecture_id).filter(Submission.deleted == DeleteState.active)
+
+        if submission_filter == "latest":
+            submissions = submissions_query.join(subquery, (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date)).order_by(Assignment.id).all()
+        else:
+            submissions = submissions_query.join(subquery, (Submission.username == subquery.c.username) & (Submission.score == subquery.c.max_score)).order_by(Submission.id).all()
+
+        df = pd.DataFrame(submissions, columns=['Username', 'Score', 'Assignment'])
+        pivoted_df = df.pivot_table(values='Score', index='Username', columns='Assignment', aggfunc='first', dropna=False).fillna('-')
+
+        if response_format == "csv":
+            self.set_header("Content-Type", "text/csv")
+            self.write(pivoted_df.to_csv(header=True, index=True))
+        else:
+            self.set_header("Content-Type", "application/json")
+            self.write(pivoted_df.to_json(orient='columns', force_ascii=False))
+
 
 @register_handler(
     path=r'\/api\/lectures\/(?P<lecture_id>\d*)\/assignments' +
@@ -406,7 +484,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
 
         if submission is not None:
-            if submission.feedback_status is not "not_generated":
+            if submission.feedback_status != "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
             # if assignment has deadline
             if submission.assignment.duedate:
@@ -707,10 +785,10 @@ class LtiSyncHandler(GraderBaseHandler):
     async def put(self, lecture_id: int, assignment_id: int):
         """ Starts the LTI sync process (if enabled).
         Request can have an optional parameter 'option'.
-        if 'option' == 'latest': sync all latest submissions with feedback 
+        if 'option' == 'latest': sync all latest submissions with feedback
            'option' == 'best': sync all best submissions
            'option' == 'selection': sync all submissions in body (default, if no param is set)
-        
+
         :param lecture_id: id of the lecture
         :type lecture_id: int
         :param assignment_id: id of the assignment
@@ -726,7 +804,7 @@ class LtiSyncHandler(GraderBaseHandler):
             self.log.error("Assignment with id " + str(assignment_id) + " was not found")
             return None
         lecture: Lecture = assignment.lecture
-        
+
         # get all latest submissions with feedback
         if lti_option == 'latest':
             submissions = self.get_latest_submissions(assignment_id, must_have_feedback=True)
