@@ -9,6 +9,7 @@ import shutil
 
 from sqlalchemy import label
 
+from grader_service.api.models import Lecture
 from grader_service.orm.base import DeleteState
 import isodate
 import os.path
@@ -173,83 +174,24 @@ class SubmissionHandler(GraderBaseHandler):
         role: Role = self.get_role(lecture_id)
         if instr_version and role.role < Scope.tutor:
             raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
-        assignment = self.get_assignment(lecture_id, assignment_id)
 
-        if instr_version:
-            if submission_filter == 'latest':
-                submissions = self.get_latest_submissions(assignment_id)
-            elif submission_filter == 'best':
-                submissions = self.get_best_submissions(assignment_id)
-            else:
-                submissions = [
-                s for s in assignment.submissions if (s.deleted
-                                                        == DeleteState.active)
-                ]
+        username = None if instr_version else role.username
+        if submission_filter == "latest":
+            submissions = self.get_latest_submissions(
+                assignment_id, username=username)
+        elif submission_filter == "best":
+            submissions = self.get_best_submissions(
+                assignment_id, username=username)
         else:
-            if submission_filter == 'latest':
-                # build the subquery
-                subquery = (self.session.query(Submission.username,
-                                               func.max(Submission.date).label(
-                                                   "max_date"))
-                            .filter(Submission.assignid == assignment_id)
-                            .filter(Submission.deleted == DeleteState.active)
-                            .group_by(Submission.username)
-                            .subquery())
+            query = self.session.query(Submission).filter(
+                Submission.assignid == assignment_id,
+                Submission.deleted == DeleteState.active
+            )
+            if username:
+                query = query.filter(Submission.username == username)
+            submissions = query.order_by(Submission.id).all()
 
-                # build the main query
-                submissions = (
-                    self.session.query(Submission)
-                    .join(subquery,
-                          (Submission.username == subquery.c.username) & (
-                                  Submission.date == subquery.c.max_date) & (
-                                  Submission.assignid == assignment_id) & (
-                                  Submission.deleted == DeleteState.active
-                                  ))
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username, )
-                    .order_by(Submission.id)
-                    .all())
-
-            elif submission_filter == 'best':
-
-                # build the subquery
-                subquery = (self.session.query(Submission.username, func.max(
-                    Submission.score).label("max_score"))
-                            .filter(Submission.assignid == assignment_id)
-                            .filter(Submission.deleted == DeleteState.active)
-                            .group_by(Submission.username)
-                            .subquery())
-
-                # build the main query
-                submissions = (
-                    self.session.query(Submission)
-                    .join(subquery,
-                          (Submission.username == subquery.c.username) & (
-                                  Submission.score == subquery.c.max_score) & (
-                                  Submission.assignid == assignment_id) & (
-                                  Submission.deleted == DeleteState.active
-                                  ))
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username, )
-                    .order_by(Submission.id)
-                    .all())
-            else:
-                submissions = (
-                    self.session.query(
-                        Submission
-                    )
-                    .filter(
-                        Submission.assignid == assignment_id,
-                        Submission.username == role.username,
-                        Submission.deleted == DeleteState.active
-                    )
-                    .order_by(Submission.id)
-                    .all()
-                )
         if response_format == "csv":
-            # csv format does not include logs
             self.set_header("Content-Type", "text/csv")
             for i, s in enumerate(submissions):
                 d = s.model.to_dict()
@@ -263,7 +205,7 @@ class SubmissionHandler(GraderBaseHandler):
                 submissions = remove_points_from_submission(submissions)
 
             self.write_json(submissions)
-        self.session.close()  # manually close here because on_finish overwrite
+        self.session.close()
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def post(self, lecture_id: int, assignment_id: int):

@@ -51,6 +51,7 @@ SESSION_COOKIE_NAME = 'grader-session-id'
 
 auth_header_pat = re.compile(r'^(token|bearer|basic)\s+([^\s]+)$', flags=re.IGNORECASE)
 
+
 def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]) -> bool:
     if (("/permissions" in self.request.path)
             or ("/config" in self.request.path)):
@@ -112,6 +113,7 @@ def authorize(scopes: list[Scope]):
 
     return wrapper
 
+
 class BaseHandler(web.RequestHandler):
     """Base class of all handler classes
 
@@ -136,13 +138,13 @@ class BaseHandler(web.RequestHandler):
         self.log = self.application.log
 
     async def prepare(self) -> Optional[Awaitable[None]]:
-        #strip trailing slash
+        # strip trailing slash
         self.request.path = self.request.path.rstrip("/")
-        
-        #start session
+
+        # start session
         self.session: Session = self.application.session_maker()
-        
-        #authenticate
+
+        # authenticate
         try:
             await self.get_current_user()
 
@@ -154,25 +156,27 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback")
-                ]:
+            ]:
                 # require git to authenticate with token -> otherwise return 401 code
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
                     raise HTTPError(401, reason="Git: authenticate request")
-                
+
                 # send to login page if ui page request
-                if self.request.path in [url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
+                if self.request.path in [
+                    url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(
+                    url_path_join(self.application.base_url, "/ui")):
                     url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                     self.redirect(url)
                     return
-                    
+
                 if self.request.headers.get("Authorization") is None:
                     raise HTTPError(401, reason="No API token in auth header")
-                    
+
                 # do not redirect to login page if we hit api endpoints
                 raise HTTPError(401, reason="API Token is invalid or expired.")
-                
-                
-                
+
+
+
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
             # since it failed
@@ -775,7 +779,7 @@ class BaseHandler(web.RequestHandler):
 
 
 class GraderBaseHandler(BaseHandler):
-        
+
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -816,56 +820,65 @@ class GraderBaseHandler(BaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason=msg)
         return submission
-    
-    def get_latest_submissions(self, assignment_id, must_have_feedback = False):
+
+    def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None):
         subquery = (
             self.session.query(Submission.username,
-                                func.max(Submission.date).label(
-                                    "max_date"))
+                               func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
             .group_by(Submission.username)
             .subquery())
+
         if must_have_feedback:
             subquery = subquery.filter(Submission.feedback_status != "not_generated")
 
-        # build the main query
+        if username:
+            subquery = subquery.filter(Submission.username == username)
+
+        # Build the main query
         submissions = (
             self.session.query(Submission)
             .join(subquery,
-                    (Submission.username == subquery.c.username) & (
-                            Submission.date == subquery.c.max_date) & (
-                            Submission.assignid == assignment_id) & (
-                            Submission.deleted == DeleteState.active
-                            ))
+                  (Submission.username == subquery.c.username) & (
+                          Submission.date == subquery.c.max_date) & (
+                          Submission.assignid == assignment_id) & (
+                          Submission.deleted == DeleteState.active
+                  ))
             .order_by(Submission.id)
-            .all())
+            .all()
+        )
+
         return submissions
-    
-    def get_best_submissions(self, assignment_id, must_have_feedback = False):
-        # build the subquery
-        subquery = (self.session.query(Submission.username, func.max(
-            Submission.score).label("max_score"))
-                    .filter(Submission.assignid == assignment_id)
-                    .filter(Submission.deleted == DeleteState.active)
-                    .group_by(Submission.username)
-                    .subquery())
-        
+
+    def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None):
+        subquery = (
+            self.session.query(Submission.username,
+                               func.max(Submission.score).label("max_score"))
+            .filter(Submission.assignid == assignment_id)
+            .filter(Submission.deleted == DeleteState.active)
+            .group_by(Submission.username)
+            .subquery())
+
         if must_have_feedback:
             subquery = subquery.filter(Submission.feedback_status != "not_generated")
 
-        # build the main query
+        if username:
+            subquery = subquery.filter(Submission.username == username)
+
+        # Build the main query
         submissions = (
             self.session.query(Submission)
             .join(subquery,
-                    (Submission.username == subquery.c.username) & (
-                            Submission.score == subquery.c.max_score) & (
-                            Submission.assignid == assignment_id) & (
-                            Submission.deleted == DeleteState.active
-                            ))
+                  (Submission.username == subquery.c.username) & (
+                          Submission.score == subquery.c.max_score) & (
+                          Submission.assignid == assignment_id) & (
+                          Submission.deleted == DeleteState.active
+                  ))
             .group_by(Submission.username)
             .order_by(Submission.id)
-            .all())
+            .all()
+        )
         return submissions
 
     @property
