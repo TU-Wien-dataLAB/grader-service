@@ -40,8 +40,8 @@ c.Spawner.auth_state_hook = auth_state_hook
 
 ##############################
 
-c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
 c.Authenticator.admin_users = {"admin"}
+c.Authenticator.allow_all = True
 
 ## spawner
 c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
