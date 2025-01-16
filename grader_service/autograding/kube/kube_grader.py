@@ -200,6 +200,13 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 return run(self.resolve_image_name(self.lecture, self.assignment))
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
+            
+    def get_autograde_pod_name(self) -> str:
+        """
+        Return autograde pod name.
+        """
+        return f"autograde-job-{self.submission.username}-{self.submission.id}"
+    
     def start_pod(self) -> GraderPod:
         """
         Starts a pod in the default namespace
@@ -223,7 +230,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                      "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
         pod = make_pod(
-            name=self.submission.commit_hash,
+            name=self.get_autograde_pod_name(),
             cmd=command,
             image=self.get_image(),
             image_pull_policy=None,
