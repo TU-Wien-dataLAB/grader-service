@@ -7,6 +7,7 @@
 import copy
 import hashlib
 import os
+from typing import Optional
 from kubernetes import config
 
 from kubernetes.client.models import (V1Container, V1ObjectMeta, V1Pod,
@@ -221,19 +222,41 @@ def _get_k8s_model_attribute(model_type, field_name):
 
 
 def make_pod(
-        name,
-        cmd,
-        image,
-        image_pull_policy,
-        working_dir=None,
-        volumes=None,
-        volume_mounts=None,
-        labels=None,
-        annotations=None,
-        node_selector=None,
-        tolerations=None,
-        run_as_user=None,
+        name: str,
+        cmd: list[str],
+        image: str,
+        image_pull_policy: str,
+        image_pull_secrets: Optional[list] = None,
+        working_dir: Optional[str] = None,
+        volumes: Optional[list] = None,
+        volume_mounts: Optional[list] = None,
+        labels: Optional[dict] = None,
+        annotations: Optional[dict] = None,
+        node_selector: Optional[dict] = None,
+        tolerations: Optional[list] = None,
+        run_as_user: Optional[int] = None,
 ) -> V1Pod:
+    """
+    Creates a Kubernetes Pod specification (V1Pod) with the given parameters.
+
+    Args:
+        name (str): The name of the pod.
+        cmd (list[str]): The command to run in the pod.
+        image (str): The Docker image to use for the pod's container.
+        image_pull_policy (str): The image pull policy.
+        image_pull_secrets (Optional[list], default None): List of secrets to pull images from private registries.
+        working_dir (Optional[str], default None): The working directory for the container.
+        volumes (Optional[list], default None): List of volumes to attach to the pod.
+        volume_mounts (Optional[list], default None): List of volume mounts for the container.
+        labels (Optional[dict], default None): Labels to associate with the pod.
+        annotations (Optional[dict], default None): Annotations to associate with the pod.
+        node_selector (Optional[dict], default None): Node selectors to determine where the pod should be scheduled.
+        tolerations (Optional[list], default None): Tolerations to apply for the pod.
+        run_as_user (Optional[int], default None): The user ID under which the container should run.
+
+    Returns:
+        V1Pod: The Kubernetes Pod specification object.
+    """
     pod = V1Pod()
     pod.kind = "Pod"
     pod.api_version = "v1"
@@ -247,6 +270,7 @@ def make_pod(
     pod.spec = V1PodSpec(
         containers=[],
         security_context=V1PodSecurityContext(),
+        image_pull_secrets=image_pull_secrets,
         restart_policy='Never',
         node_selector=node_selector
     )
