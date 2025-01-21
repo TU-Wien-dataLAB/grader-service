@@ -144,7 +144,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     # Configuration for the image name, with a callable for resolution
     image_config_path = Unicode(default_value=None,
                                 allow_none=True,
-                                help="Path to the configuration for the image. Default is None.").tag(config=True)
+                                help="Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically change the autograding pod image.").tag(config=True)
     
     # Image pull policy for the Kubernetes pod
     image_pull_policy = Unicode(default_value="Always",
@@ -173,7 +173,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     # Namespace where grader pods will be deployed
     namespace = Unicode(default_value=None, 
                         allow_none=True,
-                        help="Namespace for deploying grader pods. If None, the default namespace will be used. "
+                        help="Namespace for deploying grader pods. If None, the current namespace will be used. "
                              "If changed, roles for ServiceAccount need to be applied.").tag(config=True)
     
     # Pre-spawn Hook configuration
