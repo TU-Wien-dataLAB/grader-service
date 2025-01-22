@@ -34,11 +34,11 @@ Running this command will make sure that all dependencies from `pyproject.toml` 
 
 ### Grader Labextension
 
-To locally install Grader Labextension, make sure to clone [Grader Labextension project](https://github.com/TU-Wien-dataLAB/Grader-Labextension) or download the corresponding [zip file](https://github.com/TU-Wien-dataLAB/Grader-Labextension/archive/refs/heads/main.zip).
+To locally install Grader Labextension, make sure to clone [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) or download the corresponding [zip file](https://github.com/TU-Wien-dataLAB/Grader-Labextension/archive/refs/heads/main.zip).
 
 Grader Labextension is composed of a Python package named `grader_labextension` for the server extension and an NPM package `grader-labextension` for the frontend extensio.
 
-To install the extension in development mode, navigate to your local `Grader_Labextension` directory and run:
+To install the extension in development mode, navigate to your local `grader-labextension` directory and run:
 
 ```bash
 pip install -e .
@@ -76,6 +76,7 @@ Keep in mind that `jlpm watch` continues running until you stop it and can consu
 ## Installation Scripts
 
 Alternatively you can use installation scripts which you can find in `examples/dev_environment` directory. This directory provides you with local development environment and serves as a guide for more complex setups. The bash scripts have to be run in the `dev_environment` directory.
+Ensure that you cloned the [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) and it is located in the same directory as the grader service repository.
 
 The `dev_enviroment` directory contains following files:
 
