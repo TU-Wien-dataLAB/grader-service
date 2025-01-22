@@ -1,4 +1,5 @@
 from jupyterhub import orm
+import os
 
 ## generic
 c.JupyterHub.admin_access = True
@@ -45,7 +46,7 @@ c.Authenticator.admin_users = {"admin"}
 
 ## spawner
 c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
-c.SimpleLocalProcessSpawner.home_dir_template = '/tmp/lab_dir/{username}'
+c.SimpleLocalProcessSpawner.home_dir_template = os.path.join(os.getcwd(), "home_dir", "{username}")
 
 ## simple setup
 c.JupyterHub.ip = '127.0.0.1'
