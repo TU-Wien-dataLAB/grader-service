@@ -43,7 +43,6 @@ data:
     ### RabbitMQ
     import os
     broker_url=f'amqp://{os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")}:{os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local'
-
     c.CeleryApp.conf = dict(
         broker_url=broker_url,
         result_backend='rpc://',

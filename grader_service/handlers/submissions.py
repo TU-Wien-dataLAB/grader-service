@@ -240,14 +240,14 @@ class SubmissionHandler(GraderBaseHandler):
         
 
         score_scaling = 1.0
-        if assignment.duedate is not None:
+        if assignment.settings.deadline is not None:
             score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
 
-        if assignment.max_submissions:
+        if assignment.settings.max_submissions:
             submissions = assignment.submissions
             usersubmissions = [s for s in submissions if
                                s.username == role.username]
-            if len(usersubmissions) >= assignment.max_submissions and role.role < Scope.tutor:
+            if len(usersubmissions) >= assignment.settings.max_submissions and role.role < Scope.tutor:
                 raise HTTPError(HTTPStatus.CONFLICT, reason="Maximum number \
                 of submissions reached!")
 
@@ -258,7 +258,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission.score_scaling = score_scaling
 
         git_repo_path = self.construct_git_dir(
-            repo_type=assignment.type, lecture=assignment.lecture,
+            repo_type=assignment.settings.assignment_type, lecture=assignment.lecture,
             assignment=assignment)
         if git_repo_path is None or not os.path.exists(git_repo_path):
             raise HTTPError(HTTPStatus.NOT_FOUND,
@@ -280,7 +280,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission.manual_status = "not_graded"
         submission.feedback_status = "not_generated"
 
-        automatic_grading = assignment.automatic_grading
+        automatic_grading = assignment.settings.autograde_type
 
         self.session.add(submission)
         self.session.commit()
@@ -314,16 +314,15 @@ class SubmissionHandler(GraderBaseHandler):
 
 
     @staticmethod
-    def calculate_late_submission_scaling(assignment, submission_ts, role: Role) -> float:
-        assignment_settings = AssignmentSettingsModel.from_dict(json.loads(assignment.settings))
+    def calculate_late_submission_scaling(assignment: Assignment, submission_ts, role: Role) -> float:
         # make duedate aware
-        if assignment_settings.late_submission and len(assignment_settings.late_submission) > 0:
+        if assignment.settings.late_submission and len(assignment.settings.late_submission) > 0:
             scaling = 0.0
-            if submission_ts <= assignment.duedate:
+            if submission_ts <= assignment.settings.deadline:
                 scaling = 1.0
             else:
-                for period in assignment_settings.late_submission:
-                    late_submission_date = assignment.duedate + isodate.parse_duration(period.period)
+                for period in assignment.settings.late_submission:
+                    late_submission_date = assignment.settings.deadline + isodate.parse_duration(period.period)
                     if submission_ts < late_submission_date:
                         scaling = period.scaling
                         break
@@ -331,7 +330,7 @@ class SubmissionHandler(GraderBaseHandler):
                     raise HTTPError(HTTPStatus.CONFLICT,
                                     reason="Submission after last late submission period of assignment!")
         else:
-            if submission_ts < assignment.duedate:
+            if submission_ts < assignment.settings.deadline:
                 scaling = 1.0
             else:
                 if role.role < Scope.tutor:
@@ -429,9 +428,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
             if submission.feedback_status != "not_generated":
                 raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted.")
             # if assignment has deadline
-            if submission.assignment.duedate:
+            if submission.assignment.settings.deadline:
                 # if assignment's deadline has passed
-                if submission.assignment.duedate < datetime.datetime.now().replace(tzinfo=None):
+                if submission.assignment.settings.deadline < datetime.datetime.now().replace(tzinfo=None):
                     raise HTTPError(HTTPStatus.FORBIDDEN, reason="Submission can't be deleted, due date of assigment "
                                                                  "has passed.")
             else:
@@ -625,7 +624,7 @@ class SubmissionEditHandler(GraderBaseHandler):
             self.gitbase,
             lecture.code,
             str(assignment.id),
-            assignment.type,
+            assignment.settings.assignment_type,
             submission.username
         )
 
@@ -764,13 +763,22 @@ class LtiSyncHandler(GraderBaseHandler):
 
         data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
 
-        # apply task synchronously without adding to queue
-        results = lti_sync_task.delay(data, False)
-        results = results.get(timeout=120)
-        if results is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Did not find syncable submissions.")
+        lti_plugin = LTISyncGrades.instance()
+        # check if the lti plugin is enabled
+        if lti_plugin.check_if_lti_enabled(*data, feedback_sync=False):
+            try:
+                results = await lti_plugin.start(*data)
+                return self.write_json(results)
+            except HTTPError as e:
+                err_msg = f"Could not sync grades: {e.reason}"
+                self.log.info(err_msg)
+                raise e
+            except Exception as e:
+                self.log.error("Could not sync grades: " + str(e))
+                raise HTTPError(500, reason="An unexpected error occured.")
         else:
-            self.write_json(results)
+            raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
+        return None
 
 
 

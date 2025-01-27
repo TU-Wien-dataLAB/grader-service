@@ -323,7 +323,7 @@ assignments:
           type: integer
           format: int64
     requestBody:
-      description: The initial state of an assignment. Every field can be empty except `due_date` and `name`.
+      description: The initial state of an assignment. Every field can be empty except `name` and `settings`.
       required: true
       content:
         application/json:

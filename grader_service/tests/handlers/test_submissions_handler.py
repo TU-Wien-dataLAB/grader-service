@@ -1031,7 +1031,7 @@ async def test_max_submissions_assignment(
     session = sql_alchemy_sessionmaker()
     assignment_orm = _get_assignment("pytest", l_id, datetime.now(tz=timezone.utc) + timedelta(weeks=2), 20, "released")
     assignment_orm.max_submissions = 1
-    assignment_orm.automatic_grading = "unassisted"
+    assignment_orm.settings.autograde_type = "unassisted"
     session.add(assignment_orm)
     session.commit()
 

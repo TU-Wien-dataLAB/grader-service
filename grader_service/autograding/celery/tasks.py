@@ -84,7 +84,7 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 
 @app.task(bind=True, base=GraderTask)
-def lti_sync_task(self: GraderTask, data,
+async def lti_sync_task(self: GraderTask, data,
                   feedback_sync: bool = False) -> Union[dict, None]:
     """Gathers submissions based on params and starts LTI sync process
     :param lecture_id: id of lecture
@@ -98,7 +98,7 @@ def lti_sync_task(self: GraderTask, data,
     # check if the lti plugin is enabled
     if lti_plugin.check_if_lti_enabled(*data, feedback_sync=feedback_sync):
         try:
-            results = asyncio.run(lti_plugin.start(*data))
+            results = await lti_plugin.start(*data)
             return results
         except HTTPError as e:
             err_msg = f"Could not sync grades: {e.reason}"
@@ -114,5 +114,4 @@ def lti_sync_task(self: GraderTask, data,
         else:
             # else tell the user that the plugin is disabled
             raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
-
     return None

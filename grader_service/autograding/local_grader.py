@@ -171,7 +171,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
 
-        if assignment.type == "user":
+        if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
             # TODO: fix query to work with group.name
@@ -197,7 +197,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 "git",
                 lecture.code,
                 str(assignment.id),
-                assignment.type,
+                assignment.settings.assignment_type,
                 repo_name,
             )
 
@@ -297,7 +297,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
 
-        if assignment.type == "user":
+        if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
             group = self.session.query(Group).get(
@@ -313,7 +313,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             lecture.code,
             str(assignment.id),
             "autograde",
-            assignment.type,
+            assignment.settings.assignment_type,
             repo_name,
         )
 

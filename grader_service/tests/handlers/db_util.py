@@ -62,7 +62,7 @@ def _get_assignment(name, lectid, due_date, points, status):
     a.points = points
     a.status = status
     a.allow_files = False
-    a.automatic_grading = AutoGradingBehaviour.unassisted
+    a.settings.autograde_type = AutoGradingBehaviour.unassisted
     a.deleted = DeleteState.active
     a.max_submissions = None
     a.properties = None

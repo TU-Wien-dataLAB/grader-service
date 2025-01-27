@@ -822,19 +822,20 @@ class GraderBaseHandler(BaseHandler):
         return submission
 
     def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None):
-        subquery = (
+        query = (
             self.session.query(Submission.username,
                                func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
-            .subquery())
+            .group_by(Submission.username))
 
         if must_have_feedback:
-            subquery = subquery.filter(Submission.feedback_status != "not_generated")
+            query = query.filter(Submission.feedback_status != "not_generated")
 
         if username:
-            subquery = subquery.filter(Submission.username == username)
+            query = query.filter(Submission.username == username)
+
+        subquery = query.subquery()
 
         # Build the main query
         submissions = (
@@ -852,19 +853,20 @@ class GraderBaseHandler(BaseHandler):
         return submissions
 
     def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None):
-        subquery = (
+        query = (
             self.session.query(Submission.username,
                                func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
-            .subquery())
+            .group_by(Submission.username))
 
         if must_have_feedback:
-            subquery = subquery.filter(Submission.feedback_status != "not_generated")
+            query = query.filter(Submission.feedback_status != "not_generated")
 
         if username:
-            subquery = subquery.filter(Submission.username == username)
+            query = query.filter(Submission.username == username)
+
+        subquery = query.subquery()
 
         # Build the main query
         submissions = (
@@ -906,8 +908,8 @@ class GraderBaseHandler(BaseHandler):
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
             type_path = os.path.join(assignment_path, repo_type,
-                                     assignment.type)
-            if assignment.type == "user":
+                                     assignment.settings.assignment_type)
+            if assignment.settings.assignment_type == "user":
                 if repo_type == "autograde":
                     if ((submission is None)
                             or (self.get_role(lecture.id).role < Scope.tutor)):
