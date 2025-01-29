@@ -23,7 +23,9 @@ data:
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
     c.KubeAutogradeExecutor.labels = {{- .Values.kubeAutogradeExecutor.labels | toJson -}}
+
     c.KubeAutogradeExecutor.image_pull_secrets = {{ .Values.kubeAutogradeExecutor.imagePullSecrets | toJson }}
+    
 {{- else }}
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
