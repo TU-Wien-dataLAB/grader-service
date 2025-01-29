@@ -14,7 +14,7 @@ from kubernetes.client.models import (V1Container, V1ObjectMeta, V1Pod,
                                       V1PodSpec, V1ResourceRequirements,
                                       V1Toleration, V1SecurityContext,
                                       V1Volume, V1VolumeMount,
-                                      V1PodSecurityContext)
+                                      V1PodSecurityContext, V1EnvVar)
 
 
 def get_current_namespace():
@@ -224,6 +224,7 @@ def _get_k8s_model_attribute(model_type, field_name):
 def make_pod(
         name: str,
         cmd: list[str],
+        env: list[V1EnvVar],
         image: str,
         image_pull_policy: str,
         image_pull_secrets: Optional[list] = None,
@@ -280,6 +281,7 @@ def make_pod(
         image=image,
         working_dir=working_dir,
         args=cmd,
+        env=env,
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
         security_context=V1SecurityContext(

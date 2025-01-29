@@ -1,5 +1,6 @@
 
 
+import json
 import os
 from textwrap import dedent
 from typing import Any
@@ -119,7 +120,8 @@ class Autograde(BaseConverter):
 
 class AutogradeApp(ConverterApp):
     version = ConverterApp.__version__
-
+    settings_json = os.getenv("ASSIGNMENT_SETTINGS", "{}")
+    assignment_settings = AssignmentSettings.from_dict(json.loads(settings_json))
     def start(self):
         Autograde(
             input_dir=self.input_directory,

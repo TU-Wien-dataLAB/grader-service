@@ -530,7 +530,6 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
                   f'-i "{self.input_path}" ' \
                   f'-o "{self.output_path}" ' \
                   f'-p "*.ipynb" ' \
-                  f'--copy_files={self.assignment.allow_files} ' \
                   f'--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}'
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)

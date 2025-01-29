@@ -12,7 +12,7 @@ import os
 import shutil
 import time
 
-from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, ApiException)
+from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, V1EnvVar, ApiException)
 from traitlets import Callable, Unicode, Integer, List, Dict
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
@@ -283,6 +283,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         """
         return f"autograde-job-{self.submission.username}-{self.submission.id}"
     
+    def create_env(self) -> list[V1EnvVar]:
+        env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=self.assignment.settings.to_str())]
+        return env
+    
     def start_pod(self) -> GraderPod:
         """
         Starts a pod in the namespace
@@ -294,7 +298,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         command = [self.convert_executable, "autograde", "-i",
                    self.input_path, "-o", self.output_path,
                    "-p", "*.ipynb",
-                   f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
                    f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
         volumes = [self.volume] + self.extra_volumes
@@ -305,10 +308,14 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                           "subPath": self.relative_output_path +
                                      "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
+
+        env = self.create_env()
+
         # create pod spec
         pod = make_pod(
             name=self.get_autograde_pod_name(),
             cmd=command,
+            env=env,
             image=self.get_image(),
             image_pull_policy=self.image_pull_policy,
             working_dir="/",

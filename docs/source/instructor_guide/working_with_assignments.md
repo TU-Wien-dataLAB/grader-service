@@ -19,6 +19,79 @@ After you initially created an assignment, you can allways change its properties
 
 ![Change Assignment Settings](../_static/assets/gifs/instructor_guide/assignments_settings.gif)
 
+## Files
+
+Every assignment includes two crucial directories.
+The **source directory** contains the source notebooks which instructors create for their assignment.
+The **release directory** contains the release versions of the notebooks, which are the converted source notebooks and are used as a preview of what the student version of the notebook looks like.
+To view these directories, use the files card in the overview window of the assignment.
+By switching between source and release file viewer, the extension will convert the source notebooks to their release versions.
+
+![Files View](../_static/assets/images/instructor_guide/file_view.png)
+
+
+:::{note}
+Just the source notebooks and files should be edited! Changes to files in the release directory will be lost when generating the files again.
+:::
+
+The grader service and labextension use git to support the collaborative creation of assignments. Also, it provides a simple way to distribute the files to the students.
+Notebooks can be added by either using the "Create a new notebook" button or by copying files directly into the correct source directory via the file browser on left-hand side.
+
+The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
+
+(creating-a-notebook-target)=
+## Creating a Notebook for an Assignment
+
+Up until now, no files have been added to the assignment. To have tasks for students to work on, notebooks have to be added to the assignment.
+As mentioned previously, we can either add a notebook from the file view or create it using the JupyterLab launcher.
+
+![Creation Mode Notebook](../_static/assets/images/instructor_guide/creation_mode.png)
+
+For notebooks which are in the source directory, a creation mode can be enabled in the notebook toolbar. It adds widgets around notebook cells that can be used to control the function of the code cell.
+
+![Cell Types in Notebook Creation Mode](../_static/assets/gifs/instructor_guide/cell_types.gif)
+
+Grader Cell Types:
+
+- Readonly
+  : This cell is locked and editing is disabled.
+- Autograded answer
+  : This cell contains the code for the solution of a task.
+    It has to be surrounded by  `BEGIN SOLUTION` and `END SOLUTION` directives as comments around the actual solution code.
+    Due to the directives, the code will be replaced by placeholder code such as `raise NotImplementedError()`.
+    Also, a hint can be given to students and solutions can be commented while grading.
+
+  ![Autograded Answer](../_static/assets/images/instructor_guide/autograded_answer_cell.png)
+
+    :::{warning}
+    If the `BEGIN SOLUTION` and `END SOLUTION` directives are omitted, the solution code will end up in the released files!
+    :::
+- Autograded tests
+  : This cell contains the test cases to test the auto-graded answer given by students.
+    These may be `assert` statements that check the implemented code.
+    Invalid solutions have to lead to an exception.
+  
+  ![Autograded Test](../_static/assets/images/instructor_guide/autograded_test_cell.png)
+
+    :::{note}
+    Part or all of the tests can be hidden with `BEGIN HIDDEN TESTS` and `END HIDDEN TESTS` directives.
+    :::
+
+    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, but want to let them know how meny points a submission granted  them, this a perfect option for you.
+
+    ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
+
+    The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
+    
+    ![Feedback when Always Hidden Tests are set](../_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
+   
+- Manual graded answer
+  : This cell type supports free-form answers from students.
+    They should not be tested with automatic tests but are intended to be manually graded.
+    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen. 
+
+  ![Manual Answer Cell](../_static/assets/images/instructor_guide/manual_answer_cell.png)
+
 # Working With Assignments
 
 Once an assignment has been created it can be opened, which will display the overview window.
@@ -128,79 +201,6 @@ To manually submit on behalf of a student, you will need to obtain the necessary
 Following video illustrates the procedure:
 
 ![Manual Submission](../_static/assets/gifs/instructor_guide/manual_submission.gif)
-
-## Files
-
-Every assignment includes two crucial directories.
-The **source directory** contains the source notebooks which instructors create for their assignment.
-The **release directory** contains the release versions of the notebooks, which are the converted source notebooks and are used as a preview of what the student version of the notebook looks like.
-To view these directories, use the files card in the overview window of the assignment.
-By switching between source and release file viewer, the extension will convert the source notebooks to their release versions.
-
-![Files View](../_static/assets/images/instructor_guide/file_view.png)
-
-
-:::{note}
-Just the source notebooks and files should be edited! Changes to files in the release directory will be lost when generating the files again.
-:::
-
-The grader service and labextension use git to support the collaborative creation of assignments. Also, it provides a simple way to distribute the files to the students.
-Notebooks can be added by either using the "Create a new notebook" button or by copying files directly into the correct source directory via the file browser on left-hand side.
-
-The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
-
-(creating-a-notebook-target)=
-## Creating a Notebook for an Assignment
-
-Up until now, no files have been added to the assignment. To have tasks for students to work on, notebooks have to be added to the assignment.
-As mentioned previously, we can either add a notebook from the file view or create it using the JupyterLab launcher.
-
-![Creation Mode Notebook](../_static/assets/images/instructor_guide/creation_mode.png)
-
-For notebooks which are in the source directory, a creation mode can be enabled in the notebook toolbar. It adds widgets around notebook cells that can be used to control the function of the code cell.
-
-![Cell Types in Notebook Creation Mode](../_static/assets/gifs/instructor_guide/cell_types.gif)
-
-Grader Cell Types:
-
-- Readonly
-  : This cell is locked and editing is disabled.
-- Autograded answer
-  : This cell contains the code for the solution of a task.
-    It has to be surrounded by  `BEGIN SOLUTION` and `END SOLUTION` directives as comments around the actual solution code.
-    Due to the directives, the code will be replaced by placeholder code such as `raise NotImplementedError()`.
-    Also, a hint can be given to students and solutions can be commented while grading.
-
-  ![Autograded Answer](../_static/assets/images/instructor_guide/autograded_answer_cell.png)
-
-    :::{warning}
-    If the `BEGIN SOLUTION` and `END SOLUTION` directives are omitted, the solution code will end up in the released files!
-    :::
-- Autograded tests
-  : This cell contains the test cases to test the auto-graded answer given by students.
-    These may be `assert` statements that check the implemented code.
-    Invalid solutions have to lead to an exception.
-  
-  ![Autograded Test](../_static/assets/images/instructor_guide/autograded_test_cell.png)
-
-    :::{note}
-    Part or all of the tests can be hidden with `BEGIN HIDDEN TESTS` and `END HIDDEN TESTS` directives.
-    :::
-
-    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, but want to let them know how meny points a submission granted  them, this a perfect option for you.
-
-    ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
-
-    The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
-    
-    ![Feedback when Always Hidden Tests are set](../_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
-   
-- Manual graded answer
-  : This cell type supports free-form answers from students.
-    They should not be tested with automatic tests but are intended to be manually graded.
-    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen. 
-
-  ![Manual Answer Cell](../_static/assets/images/instructor_guide/manual_answer_cell.png)
    
 ### How To Grade Manual Answer Cells?
   - Once a student submits their work, it will appear in the "Submissions" list. To manually grade a submission, it must first be automatically graded (this sets the necessary metadata for successful grading). If you selected "Automatic Grading" when creating the assignment, this will be done automatically and you may immediately proceed with manual grading. If you chose "No Automatic Grading," you must first select the submission and click "AUTOGRADE." Afterward, you will be able to manually grade the submission.
