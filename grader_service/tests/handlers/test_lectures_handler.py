@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import sessionmaker, Session
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.server import GraderServer
 import json
 
@@ -377,8 +378,7 @@ async def test_delete_lecture_assignment_complete(
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments"
 
-    pre_assignment = Assignment(id=-1, name="pytest", type="user", due_date=None, status="complete", points=None,
-                                automatic_grading="unassisted")
+    pre_assignment = Assignment(id=-1, name="pytest", status="complete", settings=AssignmentSettings(autograde_type="unassisted"))
     post_response = await http_server_client.fetch(
         url,
         method="POST",

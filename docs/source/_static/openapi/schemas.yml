@@ -60,10 +60,33 @@ components:
     AssignmentSettings:
       type: "object"
       properties:
+        deadline:
+          type: "string"
+          format: "date-time"
+        assignment_type:
+          type: "string"
+          enum:
+            - "user"
+            - "group"
+          default: "user"
+        max_submissions:
+          type: "integer"
+        allowed_files:
+          type: "array"
+          items:
+            type: "string"
+          default: []
         late_submission:
           type: "array"
           items:
             $ref: '#/components/schemas/SubmissionPeriod'
+        autograde_type:
+          type: "string"
+          enum:
+            - "auto"
+            - "full_auto"
+            - "unassisted"
+          default: "auto"
       example:  
         late_submission:
           - period: "P1W1D"
@@ -90,15 +113,6 @@ components:
         name:
           type: "string"
           example: "assignment_1"
-        type:
-          type: "string"
-          enum:
-            - user
-            - group
-        due_date:
-          type: "string"
-          format: "date-time"
-          example: "2023-07-21T23:55:00Z"
         status:
           type: string
           enum:
@@ -109,16 +123,6 @@ components:
         points:
           type: number
           format: float
-        automatic_grading:
-          type: string
-          enum:
-            - "unassisted"
-            - "auto"
-            - "full_auto"
-        max_submissions:
-          type: integer
-        allow_files:
-          type: boolean
         settings:
           $ref: "#/components/schemas/AssignmentSettings"
     Submission:
@@ -188,15 +192,8 @@ components:
         name:
           type: "string"
           example: "assignment_1"
-        type:
-          type: "string"
-          enum:
-            - user
-            - group
-        due_date:
-          type: "string"
-          format: "date-time"
-          example: "2023-07-21T23:55:00Z"
+        settings:
+          $ref: "#/components/schemas/AssignmentSettings"
         status:
           type: string
           enum:
@@ -207,27 +204,10 @@ components:
         points:
           type: number
           format: float
-        automatic_grading:
-          type: string
-          enum:
-            - "unassisted"
-            - "auto"
-            - "full_auto"
-        max_submissions:
-          type: integer
-        allow_files:
-          type: boolean
         submissions:
           type: array
           items:
             $ref: '#/components/schemas/Submission'
-      example:
-        id: 1
-        name: "assignment_1"
-        type: "user"
-        due_date: "2023-07-21T23:55:00Z"
-        status: "released"
-        points: 10
     ErrorMessage:
       type: "object"
       required: [ "code", "error", "path" ]

@@ -5,14 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-from functools import wraps
 from re import S
 from unittest.mock import patch, MagicMock
 
 import pytest
 from sqlalchemy.orm import Session, sessionmaker, scoped_session
 
-import grader_service.handlers.base_handler
 from grader_service import handlers  # need import to register handlers
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer

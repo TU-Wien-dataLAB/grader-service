@@ -9,6 +9,7 @@ import logging
 import os
 import shutil
 from subprocess import CalledProcessError
+import sys
 
 from traitlets import Unicode
 
@@ -43,7 +44,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
 
-        if assignment.type == "user":
+        if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
             group = self.session.query(Group).get(
@@ -59,12 +60,16 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             lecture.code,
             str(assignment.id),
             "autograde",
-            assignment.type,
+            assignment.settings.assignment_type,
             repo_name,
         )
 
         if os.path.exists(self.input_path):
-            shutil.rmtree(self.input_path, onerror=rm_error)
+            #onerror is deprecated in 3.12, use onexc
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(self.input_path, onexc=rm_error)
+            else:
+                shutil.rmtree(self.input_path, onerror=rm_error)
         os.mkdir(self.input_path)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
@@ -93,7 +98,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         self._write_gradebook(self.submission.properties.properties)
 
         autograder = GenerateFeedback(self.input_path, self.output_path,
-                                      "*.ipynb", copy_files=False)
+                                      "*.ipynb", assignment_settings=self.assignment.settings)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -111,7 +116,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
 
-        if assignment.type == "user":
+        if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
             group = self.session.query(Group).get(
@@ -127,7 +132,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             lecture.code,
             str(assignment.id),
             "feedback",
-            assignment.type,
+            assignment.settings.assignment_type,
             repo_name,
         )
 

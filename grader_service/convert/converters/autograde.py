@@ -1,5 +1,6 @@
 
 
+import json
 import os
 from textwrap import dedent
 from typing import Any
@@ -7,6 +8,7 @@ from typing import Any
 from traitlets import Bool, Dict, List
 from traitlets.config.loader import Config
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.preprocessors import (
@@ -107,9 +109,9 @@ class Autograde(BaseConverter):
         super(Autograde, self)._load_config(cfg, **kwargs)
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: Any
+        self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
     ) -> None:
-        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, copy_files, **kwargs)
+        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
 
     def start(self) -> None:
@@ -118,12 +120,13 @@ class Autograde(BaseConverter):
 
 class AutogradeApp(ConverterApp):
     version = ConverterApp.__version__
-
+    settings_json = os.getenv("ASSIGNMENT_SETTINGS", "{}")
+    assignment_settings = AssignmentSettings.from_dict(json.loads(settings_json))
     def start(self):
         Autograde(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
-            copy_files=self.copy_files,
+            assignment_settings=self.assignment_settings,
             config=self.config
         ).start()
