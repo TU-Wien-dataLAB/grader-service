@@ -17,6 +17,13 @@ down_revision = 'a0718dae969d'
 branch_labels = None
 depends_on = None
 
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
+
 
 def upgrade():
     # Migrate data from old columns to the settings column
@@ -36,7 +43,7 @@ def upgrade():
         existing_settings.update(new_settings)
         conn.execute(
             sa.text("UPDATE assignment SET settings = :settings WHERE id = :id"),
-            {"settings": json.dumps(existing_settings), "id": assignment['id']}
+            {"settings": json.dumps(existing_settings, default=json_serial), "id": assignment['id']}
         )
 
     # Drop the old columns
