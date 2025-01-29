@@ -1,6 +1,10 @@
 name: MAIN
 
 on:
+  pull_request:
+    branches:
+      - main
+      - release-*
   push:
     tags:
       - grader-service-* # for release_helm action
