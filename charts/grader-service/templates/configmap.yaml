@@ -22,8 +22,7 @@ data:
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
-    c.KubeAutogradeExecutor.labels = {{- .Values.kubeAutogradeExecutor.labels | toJson -}}
-
+    c.KubeAutogradeExecutor.labels = {{ .Values.kubeAutogradeExecutor.labels | toJson }}
     c.KubeAutogradeExecutor.image_pull_secrets = {{ .Values.kubeAutogradeExecutor.imagePullSecrets | toJson }}
     
 {{- else }}
