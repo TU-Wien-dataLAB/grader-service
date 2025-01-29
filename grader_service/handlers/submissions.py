@@ -20,17 +20,16 @@ from celery import chain
 import pandas as pd
 
 from grader_service.plugins.lti import LTISyncGrades
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
-from grader_service.api.models.assignment_settings import AssignmentSettings as AssignmentSettingsModel
-from grader_service.orm.assignment import AutoGradingBehaviour, Assignment
+from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from sqlalchemy.sql.expression import func
+from sqlalchemy.orm.exc import NoResultFound
 from tornado.web import HTTPError
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
@@ -142,6 +141,24 @@ class SubmissionHandler(GraderBaseHandler):
         # still need it
         pass
 
+    def validate_assignment(self, lecture_id, assignment_id):
+        """Checks if assignment is part of lecture
+
+        Args:
+            lecture_id (int): lecture id
+            assignment_id (int): assignment id
+
+        Raises:
+            HTTPError: raises 404 error if no assignment in lecture is found
+        """
+        try:
+            # Query the Assignment table to check if the assignment exists and is linked to the correct lecture
+            self.session.query(Assignment).filter_by(id=assignment_id, lectid=lecture_id).one()
+        except NoResultFound:
+            # Raise an error if no such assignment exists for the provided lecture
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"Assignment {assignment_id} does not exist for lecture {lecture_id}")
+        return True
+
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int, assignment_id: int):
         """Return the submissions of an assignment.
@@ -171,10 +188,14 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format \
             can either be 'json' or 'csv'")
 
+        # check required scopes for instructor version
         role: Role = self.get_role(lecture_id)
         if instr_version and role.role < Scope.tutor:
             raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+        # validate that assignment is part of lecture
+        self.validate_assignment(lecture_id, assignment_id)
 
+        # get list of submissions based on arguments
         username = None if instr_version else role.username
         if submission_filter == "latest":
             submissions = self.get_latest_submissions(
@@ -236,9 +257,8 @@ class SubmissionHandler(GraderBaseHandler):
         # set utc time
         submission_ts = datetime.datetime.now(datetime.timezone.utc)
         # use implicit utc time to compare with database objects
-        submission_ts = submission_ts.replace(tzinfo=None)
+        # submission_ts = submission_ts.replace(tzinfo=None)
         
-
         score_scaling = 1.0
         if assignment.settings.deadline is not None:
             score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
@@ -289,13 +309,12 @@ class SubmissionHandler(GraderBaseHandler):
 
         # If the assignment has automatic grading or fully
         # automatic grading perform necessary operations
-        if automatic_grading in [AutoGradingBehaviour.auto,
-                                 AutoGradingBehaviour.full_auto]:
+        if automatic_grading in ["auto","full_auto"]:
             submission.auto_status = "pending"
             self.session.commit()
             self.set_status(HTTPStatus.ACCEPTED)
 
-            if automatic_grading == AutoGradingBehaviour.full_auto:
+            if automatic_grading == "full_auto":
                 submission.feedback_status = "generating"
                 self.session.commit()
 
@@ -309,7 +328,7 @@ class SubmissionHandler(GraderBaseHandler):
                 grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
             grading_chain()
 
-        if automatic_grading == AutoGradingBehaviour.unassisted:
+        if automatic_grading == "unassisted":
             self.session.close()
 
 

@@ -68,12 +68,14 @@ components:
           enum:
             - "user"
             - "group"
+          default: "user"
         max_submissions:
           type: "integer"
         allowed_files:
           type: "array"
           items:
             type: "string"
+          default: []
         late_submission:
           type: "array"
           items:
@@ -84,6 +86,7 @@ components:
             - "auto"
             - "full_auto"
             - "unassisted"
+          default: "auto"
       example:  
         late_submission:
           - period: "P1W1D"

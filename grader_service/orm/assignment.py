@@ -6,7 +6,7 @@
 
 import enum
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from grader_service.api.models import assignment
@@ -17,18 +17,15 @@ from sqlalchemy.orm import relationship
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.base import Base, DeleteState, Serializable
 
-
-class AutoGradingBehaviour(enum.Enum):
-    unassisted = 0  # assignments not automatically graded
-    auto = 1  # assignments auto graded when submitted
-    full_auto = 2  # assignments auto graded, feedback generated on submit
-    
-    @classmethod
-    def get(cls, name):
-        return cls.__members__.get(name, None)
-
 def get_utc_time():
     return datetime.now(tz=timezone.utc)
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
 
 class Assignment(Base, Serializable):
     __tablename__ = "assignment"
@@ -53,11 +50,16 @@ class Assignment(Base, Serializable):
 
     @property
     def settings(self) -> AssignmentSettings:
+        if self._settings is None:
+            return AssignmentSettings()
         return AssignmentSettings.from_dict(json.loads(self._settings))
     
     @settings.setter
-    def settings(self, settings: AssignmentSettings):
-        self._settings = settings.to_str()
+    def settings(self, settings: AssignmentSettings | dict):
+        if isinstance(settings, dict):
+            self._settings = json.dumps(settings, default=json_serial)
+            return settings
+        self._settings = json.dumps(settings.to_dict(), default=json_serial)
         return settings
     
     def update_settings(self, **kwargs: Any):

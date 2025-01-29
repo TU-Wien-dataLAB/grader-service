@@ -14,7 +14,7 @@ class AssignmentSettings(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, deadline=None, assignment_type=None, max_submissions=None, allowed_files=None, late_submission=None, autograde_type=None):  # noqa: E501
+    def __init__(self, deadline=None, assignment_type='user', max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto'):  # noqa: E501
         """AssignmentSettings - a model defined in OpenAPI
 
         :param deadline: The deadline of this AssignmentSettings.  # noqa: E501

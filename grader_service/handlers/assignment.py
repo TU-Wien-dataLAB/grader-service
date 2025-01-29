@@ -12,7 +12,7 @@ import isodate
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
+from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Role, Scope
@@ -136,9 +136,12 @@ class AssignmentBaseHandler(GraderBaseHandler):
                     Assignment.lectid == lecture_id) \
             .one_or_none()
 
-        if (assignment_with_name is not None):
+        if assignment_with_name is not None:
             raise HTTPError(HTTPStatus.CONFLICT,
                             reason="Assignment name is already being used")
+        if assignment_model.settings is None:
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Assignment missing settings key")
         if ((assignment_model.settings.max_submissions is not None)
                 and (assignment_model.settings.max_submissions < 1)):
             msg = "Maximum number of submissions cannot be smaller than 1!"
@@ -150,8 +153,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignment.status = assignment_model.status
         assignment.points = 0
         assignment.deleted = DeleteState.active
-        if assignment_model.settings:
-            assignment.settings = json.dumps(assignment_model.settings.to_dict())
+        assignment.settings = assignment_model.settings
 
         self.session.add(assignment)
         try:
@@ -218,7 +220,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment.status = assignment_model.status
-        if ((assignment_model.settings.autograde_type == AutoGradingBehaviour.full_auto.name)  # noqa E501
+        if ((assignment_model.settings.autograde_type == "full_auto")  # noqa E501
                 and (assignment.properties is not None)):
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
             _check_full_auto_grading(self, model)
@@ -382,8 +384,8 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
 
         model = GradeBookModel.from_dict(json.loads(properties_string))
         # Check if assignment contains no cells that
-        # need manual grading if assignment is fully auto graded
-        if assignment.settings.autograde_type == AutoGradingBehaviour.full_auto:
+        # need manual grading if assignment is fully auto grade        
+        if assignment.settings.autograde_type == "full_auto":
             _check_full_auto_grading(self, model)
 
         assignment.properties = properties_string

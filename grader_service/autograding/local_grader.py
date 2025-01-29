@@ -4,6 +4,8 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+import fnmatch
+import subprocess
 import io
 import json
 import logging
@@ -200,10 +202,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 assignment.settings.assignment_type,
                 repo_name,
             )
-
+        # clean start to autograde process
         if os.path.exists(self.input_path):
             shutil.rmtree(self.input_path, onerror=rm_error)
         os.mkdir(self.input_path)
+        if os.path.exists(self.output_path):
+            shutil.rmtree(self.output_path, onerror=rm_error)
+        os.mkdir(self.output_path)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
 
@@ -240,7 +245,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
 
         autograder = Autograde(self.input_path, self.output_path, "*.ipynb",
-                               copy_files=self.assignment.allow_files, config=c)
+                               assignment_settings=self.assignment.settings, config=c)
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -323,15 +328,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 self._run_subprocess(
                     f'git init --bare "{git_repo_path}"', self.output_path
                 )
-            except CalledProcessError:
-                raise
+            except CalledProcessError as e:
+                raise e
 
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command} at {self.output_path}")
         try:
             self._run_subprocess(command, self.output_path)
-        except CalledProcessError:
-            pass
+        except CalledProcessError as e:
+            raise e
 
         self.log.info(f"Creating new branch "
                       f"submission_{self.submission.commit_hash}")
@@ -341,23 +346,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         try:
             self._run_subprocess(command, self.output_path)
-        except CalledProcessError:
-            pass
+        except CalledProcessError as e:
+            raise e
         self.log.info(f"Now at branch "
                       f"submission_{self.submission.commit_hash}")
-
-        self.log.info(f"Commiting all files in {self.output_path}")
-        try:
-            self._run_subprocess(
-                f"{self.git_executable} add -A", self.output_path
-            )
-            self._run_subprocess(
-                f'{self.git_executable} commit -m '
-                f'"{self.submission.commit_hash}"',
-                self.output_path,
-            )
-        except CalledProcessError:
-            raise RuntimeError("Failed to commit changes")
+        self.commit_whitelisted_files()
 
         self.log.info(
             f"Pushing to {git_repo_path} at branch "
@@ -365,12 +358,49 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         command = f'{self.git_executable} push -uf ' \
                   f'"{git_repo_path}" submission_{self.submission.commit_hash}'
+        self.log.info(command)
         try:
             self._run_subprocess(command, self.output_path)
-        except CalledProcessError:
+        except Exception:
             raise RuntimeError(f"Failed to push to {git_repo_path}")
         self.log.info("Pushing complete")
 
+    def commit_whitelisted_files(self):
+        self.log.info(f"Committing filtered files in {self.output_path}")
+        
+        base_filter = ["*.ipynb"]
+        extra_files = json.loads(self.assignment.properties).get("extra_files", [])
+        allowed_file_patterns = self.assignment.settings.allowed_files
+        
+        # Combine all file patterns
+        file_patterns = set(base_filter + extra_files + allowed_file_patterns)
+        
+        # Get all files in the directory
+        files_to_commit = []
+        for root, _, files in os.walk(self.output_path):
+            rel_root = os.path.relpath(root, self.output_path)
+            for file in files:
+                file_path = os.path.join(rel_root, file) if rel_root != '.' else file
+                if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
+                    files_to_commit.append(file_path)
+        
+        if not files_to_commit:
+            self.log.info("No files to commit.")
+            return
+        
+        try:
+            # Add only the filtered files
+            self._run_subprocess(f"{self.git_executable} add -- " + " ".join(files_to_commit), self.output_path)
+            
+            # Commit
+            self._run_subprocess(
+                f'{self.git_executable} commit -m "{self.submission.commit_hash}"',
+                self.output_path,
+            )
+            
+        except CalledProcessError:
+            raise RuntimeError("Failed to commit changes")
+    
     def _set_properties(self):
         """
         Loads the contents of the gradebook.json file
@@ -429,25 +459,31 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if self.close_session:
             self.session.close()
 
-    def _run_subprocess(self, command: str, cwd: str) -> Popen[bytes]:
+    def _run_subprocess(self, command: str, cwd: str) -> subprocess.CompletedProcess:
         """
         Execute the command as a subprocess.
         :param command: The command to execute as a string.
         :param cwd: The working directory the subprocess should run in.
-        :return: Coroutine which resolves to a Subprocess object
-        which resulted from the execution.
+        :return: CompletedProcess object which contains information about the execution.
         """
         try:
-            process = Popen(shlex.split(command), stdout=PIPE, stderr=PIPE, cwd=cwd)
-            process.wait()
-        except CalledProcessError:
-            self.grading_logs = process.stderr.read().decode("utf-8")
+            result = subprocess.run(
+                shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=cwd,
+                text=True,  # Decodes output to string
+                check=True  # Raises a CalledProcessError on non-zero exit code
+            )
+            return result
+        except subprocess.CalledProcessError as e:
+            self.grading_logs = e.stderr
             self.log.error(self.grading_logs)
-        except FileNotFoundError as e:
-            self.grading_logs = str(e)
-            self.log.error(self.grading_logs)
-            raise e
-        return process
+            raise
+        except Exception as e:
+            self.grading_logs = (self.grading_logs or "") + str(e)
+            self.log.error(e)
+            raise
 
     @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
