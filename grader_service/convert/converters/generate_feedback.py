@@ -10,6 +10,7 @@ from traitlets import List, default, Bool
 from traitlets.config import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert import utils
 from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import GetGrades
 from grader_service.convert.converters.base import BaseConverter
@@ -58,14 +59,12 @@ class GenerateFeedback(BaseConverter):
 
 class GenerateFeedbackApp(ConverterApp):
     version = ConverterApp.__version__
-    settings_json = os.getenv("ASSIGNMENT_SETTINGS", "{}")
-    assignment_settings = AssignmentSettings.from_dict(json.loads(settings_json))
 
     def start(self, assignment_settings: AssignmentSettings):
         GenerateFeedback(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
-            assignment_settings=self.assignment_settings,
+            assignment_settings=utils.get_assignment_settings_from_env(),
             config=self.config
         ).start()

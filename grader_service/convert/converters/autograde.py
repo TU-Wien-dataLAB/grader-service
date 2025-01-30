@@ -120,13 +120,12 @@ class Autograde(BaseConverter):
 
 class AutogradeApp(ConverterApp):
     version = ConverterApp.__version__
-    settings_json = os.getenv("ASSIGNMENT_SETTINGS", "{}")
-    assignment_settings = AssignmentSettings.from_dict(json.loads(settings_json))
+    
     def start(self):
         Autograde(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
-            assignment_settings=self.assignment_settings,
+            assignment_settings=utils.get_assignment_settings_from_env(),
             config=self.config
         ).start()
