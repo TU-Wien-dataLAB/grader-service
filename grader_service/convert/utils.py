@@ -5,6 +5,7 @@ import fnmatch
 import glob
 import hashlib
 import io
+import json
 import logging
 import os
 import shutil
@@ -36,8 +37,8 @@ def get_assignment_settings_from_env() -> AssignmentSettings:
     Returns:
         AssignmentSettings: assignment settings
     """
-    settings_json = os.getenv("ASSIGNMENT_SETTINGS", "{}")
-    settings_dict = dict(settings_json)
+    settings_json_str = os.getenv("ASSIGNMENT_SETTINGS", "{}")
+    settings_dict = json.loads(settings_json_str)
     return AssignmentSettings.from_dict(settings_dict)
 
 def is_task(cell: NotebookNode) -> bool:

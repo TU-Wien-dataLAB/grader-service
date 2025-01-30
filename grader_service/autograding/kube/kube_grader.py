@@ -22,6 +22,7 @@ from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_e
 from kubernetes import config
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
+from grader_service.orm.assignment import json_serial
 
 
 class GraderPod(LoggingConfigurable):
@@ -284,7 +285,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         return f"autograde-job-{self.submission.username}-{self.submission.id}"
     
     def create_env(self) -> list[V1EnvVar]:
-        env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=self.assignment.settings.to_str())]
+        env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=json.dumps(self.assignment.settings.to_dict(),default=json_serial))]
         return env
     
     def start_pod(self) -> GraderPod:
