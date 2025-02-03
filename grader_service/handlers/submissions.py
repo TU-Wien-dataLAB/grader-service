@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 # grader_s/grader_s/handlers
 import json
+import pickle
 import shutil
 
 from sqlalchemy import label
@@ -326,7 +327,7 @@ class SubmissionHandler(GraderBaseHandler):
                 grading_chain = chain(
                     autograde_task.si(lecture_id, assignment_id, submission.id),
                     generate_feedback_task.si(lecture_id, assignment_id, submission.id),
-                    lti_sync_task.si(Lecture.from_dict(lecture.serialize()), Assignment.from_dict(assignment.serialize()), [Submission.from_dict(submission.serialize())], feedback_sync=True)
+                    lti_sync_task.si(pickle.dumps(lecture), pickle.dumps(assignment), pickle.dumps([submission]), feedback_sync=True)
                 )
             else:
                 grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
