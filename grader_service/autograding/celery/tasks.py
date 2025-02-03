@@ -84,7 +84,7 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 
 @app.task(bind=True, base=GraderTask)
-async def lti_sync_task(self: GraderTask, lecture: Lecture, assignment: Assignment, submissions: list[Submission],
+async def lti_sync_task(self: GraderTask, lecture: dict, assignment: dict, submissions: list[dict],
                   feedback_sync: bool = False) -> Union[dict, None]:
     """Gathers submissions based on params and starts LTI sync process
     :param lecture: lecture object
