@@ -109,7 +109,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
         generate_feedback_chain = celery.chain(
             generate_feedback_task.si(lecture_id, assignment_id, sub_id),
-            lti_sync_task.si(pickle.dumps(lecture), pickle.dumps(assignment), pickle.dumps([submission]), sync_on_feedback=True)
+            lti_sync_task.si(lecture.serialize(), assignment.serialize(), [submission.serialize()], sync_on_feedback=True)
         )
         generate_feedback_chain()
 
