@@ -48,7 +48,7 @@ jobs:
 
     # Upload Artifacts
     - name: Archive service artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-service
         retention-days: 1
