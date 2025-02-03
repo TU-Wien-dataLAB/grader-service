@@ -8,8 +8,8 @@ from tornado.web import HTTPError
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
-from grader_service.api.models import Submission, Assignment, Lecture
 from grader_service.orm.base import DeleteState
+from grader_service.orm.submission import Submission
 from grader_service.plugins.lti import LTISyncGrades
 
 # Note: The celery instance is lazy so we can still add configuration later
