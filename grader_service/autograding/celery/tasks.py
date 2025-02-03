@@ -8,7 +8,7 @@ from tornado.web import HTTPError
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
-from grader_service.orm import Submission, Assignment, Lecture
+from grader_service.api.models import Submission, Assignment, Lecture
 from grader_service.orm.base import DeleteState
 from grader_service.plugins.lti import LTISyncGrades
 
@@ -84,21 +84,19 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 
 @app.task(bind=True, base=GraderTask)
-async def lti_sync_task(self: GraderTask, data,
+async def lti_sync_task(self: GraderTask, lecture: Lecture, assignment: Assignment, submissions: list[Submission],
                   feedback_sync: bool = False) -> Union[dict, None]:
     """Gathers submissions based on params and starts LTI sync process
-    :param lecture_id: id of lecture
-    :param assignment_id: id of assignment
-    :param sub_id(optional): submission id, if sub_id is set, only this submission will be synced
-                                                else: all latest submission with feedback are synced
+    :param lecture: lecture object
+    :param assignment: assignment object
+    :param submissions: submissions to be synced
     :param feedback_sync(optional): if True, the given submission is part of a fully automated grading assignment
     """
-    
     lti_plugin = LTISyncGrades.instance()
     # check if the lti plugin is enabled
-    if lti_plugin.check_if_lti_enabled(*data, feedback_sync=feedback_sync):
+    if lti_plugin.check_if_lti_enabled(lecture, assignment, submissions, feedback_sync=feedback_sync):
         try:
-            results = await lti_plugin.start(*data)
+            results = await lti_plugin.start(lecture, assignment, submissions)
             return results
         except HTTPError as e:
             err_msg = f"Could not sync grades: {e.reason}"

@@ -22,6 +22,9 @@ import pandas as pd
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.handlers.handler_utils import parse_ids
 from grader_service.api.models.submission import Submission as SubmissionModel
+from grader_service.api.models import Assignment as AssignmentModel
+from grader_service.api.models import Lecture as LectureModel
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
@@ -248,6 +251,7 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(400, reason="Commit hash not found in body")
 
         role = self.get_role(lecture_id)
+        lecture = self.get_lecture(lecture_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
         if assignment.status == "complete":
             raise HTTPError(HTTPStatus.BAD_REQUEST,
@@ -322,7 +326,7 @@ class SubmissionHandler(GraderBaseHandler):
                 grading_chain = chain(
                     autograde_task.si(lecture_id, assignment_id, submission.id),
                     generate_feedback_task.si(lecture_id, assignment_id, submission.id),
-                    lti_sync_task.si(lecture_id, assignment_id, submission.id, feedback_sync=True)
+                    lti_sync_task.si(Lecture.from_dict(lecture.serialize()), Assignment.from_dict(assignment.serialize()), [Submission.from_dict(submission.serialize())], feedback_sync=True)
                 )
             else:
                 grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
@@ -780,13 +784,15 @@ class LtiSyncHandler(GraderBaseHandler):
                 self.log.error(err_msg)
                 raise HTTPError(HTTPStatus.BAD_REQUEST, reason=err_msg)
 
-        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
 
         lti_plugin = LTISyncGrades.instance()
+        lecture_model = LectureModel.from_dict(lecture.serialize())
+        assignment_model = AssignmentModel.from_dict(assignment.serialize())
+        submissions_model = [SubmissionModel.from_dict(sub.serialize()) for sub in submissions]
         # check if the lti plugin is enabled
-        if lti_plugin.check_if_lti_enabled(*data, feedback_sync=False):
+        if lti_plugin.check_if_lti_enabled(lecture_model,assignment_model, submissions_model, feedback_sync=False):
             try:
-                results = await lti_plugin.start(*data)
+                results = await lti_plugin.start(lecture_model, assignment_model, submissions_model)
                 return self.write_json(results)
             except HTTPError as e:
                 err_msg = f"Could not sync grades: {e.reason}"
