@@ -10,7 +10,7 @@ from tornado.web import HTTPError
 
 from .handler_utils import parse_ids
 from grader_service.orm.submission import Submission
-from grader_service.api.models import Lecture, Assignment, Submission
+from grader_service.api.models import Lecture, Assignment, Submission as SubmissionModel
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.autograding.celery.tasks import autograde_task, generate_feedback_task, lti_sync_task
@@ -108,7 +108,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
         generate_feedback_chain = celery.chain(
             generate_feedback_task.si(lecture_id, assignment_id, sub_id),
-            lti_sync_task.si(Lecture.from_dict(lecture.serialize()), Assignment.from_dict(assignment.serialize()), [Submission.from_dict(submission.serialize())], sync_on_feedback=True)
+            lti_sync_task.si(Lecture.from_dict(lecture.serialize()), Assignment.from_dict(assignment.serialize()), [SubmissionModel.from_dict(submission.serialize())], sync_on_feedback=True)
         )
         generate_feedback_chain()
 

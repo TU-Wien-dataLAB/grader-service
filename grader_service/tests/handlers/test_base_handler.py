@@ -67,7 +67,7 @@ def test_assignment_serialization():
         "status": "created",
         'points': 0,
         'settings': {'late_submission': None,
-                     'deadline':str(datetime.now(tz=timezone.utc)),
+                     'deadline':datetime.now(tz=timezone.utc).isoformat(),
                      'max_submissions': 1,
                      'autograde_type': 'unassisted',
                      'assignment_type': "user",
