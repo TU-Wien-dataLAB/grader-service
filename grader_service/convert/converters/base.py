@@ -166,7 +166,20 @@ class BaseConverter(LoggingConfigurable):
             self.logfile = self.parent.logfile
         else:
             self.logfile = None
-        c = Config(assignment_settings.to_dict())
+        
+        c = Config()
+
+        custom_config_path = f'{self._input_directory}/grader_config.py'
+        if os.path.exists(custom_config_path):
+
+            local_vars = {'c': c}
+            with open(custom_config_path) as f:
+                code = compile(f.read(), 'config.py', 'exec')
+                exec(code, {}, local_vars)
+
+            c = local_vars['c']
+
+        c.Exporter.default_preprocessors = []
         self.update_config(c)
 
     # register pre-processors to self.exporter
