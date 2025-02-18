@@ -12,7 +12,7 @@ from tornado.escape import url_escape, json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.web import HTTPError
 
-def default_lti_username_match(member, submission) -> bool:
+def default_lti_username_match(member, submission, log) -> bool:
     return False
 
 def default_enable_lti(lecture, assignment, submissions):
@@ -51,7 +51,7 @@ class LTISyncGrades(SingletonConfigurable):
     username_match = Callable(default_value=default_lti_username_match,
                                          config=True,
                                          allow_none=True,
-                                         help="Function used to match lti member object with submission object to. Is given member and submission object as params and returns boolean if it is the users submission")
+                                         help="Function used to match lti member object with submission object to. Is given member, submission object and log as params and returns boolean if it is the users submission")
 
     token_private_key = Union(
         [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)),
@@ -112,7 +112,7 @@ class LTISyncGrades(SingletonConfigurable):
             membership_url = lti_urls["membership_url"]
         except Exception as e:
             self.log.error(e)
-            return
+            raise e
         # 3. get all members
         self.log.debug("LTI: request all members of lti course")
         httpclient = AsyncHTTPClient()
@@ -133,7 +133,7 @@ class LTISyncGrades(SingletonConfigurable):
         syncable_user_count = 0
         for submission in submissions:
             for member in members:
-                if self.username_match(member, submission):
+                if self.username_match(member, submission, self.log):
                     syncable_user_count += 1
                     grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
                                                            float(assignment["points"])))
