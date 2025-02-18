@@ -750,7 +750,7 @@ class LtiSyncHandler(GraderBaseHandler):
         """ Starts the LTI sync process (if enabled).
         Request can have an optional parameter 'option'.
         if 'option' == 'latest': sync all latest submissions with feedback
-           'option' == 'best': sync all best submissions
+           'option' == 'best': sync all best submissions with feedback
            'option' == 'selection': sync all submissions in body (default, if no param is set)
 
         :param lecture_id: id of the lecture
@@ -786,9 +786,9 @@ class LtiSyncHandler(GraderBaseHandler):
 
 
         lti_plugin = LTISyncGrades.instance()
-        lecture_model = LectureModel.from_dict(lecture.serialize())
-        assignment_model = AssignmentModel.from_dict(assignment.serialize())
-        submissions_model = [SubmissionModel.from_dict(sub.serialize()) for sub in submissions]
+        lecture_model = lecture.serialize()
+        assignment_model = assignment.serialize()
+        submissions_model = [sub.serialize() for sub in submissions if isinstance(sub, Submission)]
         # check if the lti plugin is enabled
         if lti_plugin.check_if_lti_enabled(lecture_model,assignment_model, submissions_model, feedback_sync=False):
             try:
@@ -797,7 +797,7 @@ class LtiSyncHandler(GraderBaseHandler):
             except HTTPError as e:
                 err_msg = f"Could not sync grades: {e.reason}"
                 self.log.info(err_msg)
-                raise e
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=err_msg)
             except Exception as e:
                 self.log.error("Could not sync grades: " + str(e))
                 raise HTTPError(500, reason="An unexpected error occured.")

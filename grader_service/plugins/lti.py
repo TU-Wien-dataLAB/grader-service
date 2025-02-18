@@ -242,9 +242,7 @@ class LTISyncGrades(SingletonConfigurable):
                    "iat": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
         try:
-            self.log.info(payload)
             encoded = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
-            self.log.info(encoded)
         except Exception as e:
             raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=f"Unable to encode payload: {str(e)}")
 
