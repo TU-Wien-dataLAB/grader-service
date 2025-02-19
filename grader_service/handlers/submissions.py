@@ -6,6 +6,7 @@
 # grader_s/grader_s/handlers
 import json
 import shutil
+from typing import List
 
 from sqlalchemy import label
 
@@ -743,7 +744,7 @@ class SubmissionEditHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
-    cache_token = {"token": None, "ttl": datetime.datetime.now()}
+    cache_token = {"token": None, "ttl": datetime.datetime.now()}        
 
     @authorize([Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int):
@@ -776,11 +777,25 @@ class LtiSyncHandler(GraderBaseHandler):
         elif lti_option == 'best':
             submissions = self.get_best_submissions(assignment_id, must_have_feedback=True)
         else:
+            # get submissions with given submission ids
             try:
                 body = tornado.escape.json_decode(self.request.body)
-                submissions = body["submissions"]
+                submission_ids: List[int] = body.get("submission_ids", [])
+                
+                if not submission_ids:
+                    raise ValueError("No submission IDs provided")
+                
+                # Fetch and validate submissions
+                submissions = self.session.query(Submission).filter(
+                    Submission.id.in_(submission_ids),
+                    Submission.auto_status == "automatically_graded",
+                    Submission.assignment_id == assignment_id
+                ).all()
+                if len(submissions) != len(submission_ids):
+                    raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Some submission IDs are invalid or do not belong to this assignment.")
+
             except Exception as e:
-                err_msg = f"Could not process body: {e}"
+                err_msg = f"Could not process submission IDs: {e}"
                 self.log.error(err_msg)
                 raise HTTPError(HTTPStatus.BAD_REQUEST, reason=err_msg)
 
