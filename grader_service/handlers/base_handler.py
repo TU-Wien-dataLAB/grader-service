@@ -877,7 +877,6 @@ class GraderBaseHandler(BaseHandler):
                           Submission.assignid == assignment_id) & (
                           Submission.deleted == DeleteState.active
                   ))
-            .group_by(Submission.username)
             .order_by(Submission.id)
             .all()
         )
