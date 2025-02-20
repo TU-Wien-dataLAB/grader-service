@@ -15,6 +15,18 @@ data:
 {{- if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
+    {{ else }}
+    from grader_service.autograding.local_grader import LocalAutogradeExecutor
+    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+    {{ end }}
+
+
+    {{- if .Values.requestHandlerConfig }}
+    {{- if .Values.requestHandlerConfig.git_max_file_mb }}
+    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
+    {{- end }}
+    {{- end }}
+
     c.KubeAutogradeExecutor.kube_context = None
 {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}

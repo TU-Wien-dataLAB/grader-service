@@ -1,19 +1,21 @@
 #!/bin/bash
 
+DEV_ENV_DIR=$PWD
+
 echo "Creating virtual environment..."
 python -m venv venv
 source ./venv/bin/activate
 which python
 
 python -m pip install --upgrade pip
-pip install jupyterhub jupyterlab
+pip install jupyterhub jupyterlab oauthenticator
 
 echo "Installing grader_service..."
 cd ../../
 pip install -e .
 
 echo "Installing grader_labextension..."
-cd ../Grader-Labextension
+cd ../grader-labextension
 pip install -e .
 
 jupyter labextension develop . --overwrite
@@ -25,6 +27,8 @@ jupyter server extension list
 jupyter labextension list
 
 # home directory for users
+cd $DEV_ENV_DIR
+
 mkdir -p ./home_dir
 
 mkdir -p ./service_dir

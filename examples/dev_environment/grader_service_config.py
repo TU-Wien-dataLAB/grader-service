@@ -17,7 +17,7 @@ print("### loading service config")
 
 c.GraderService.service_host = "127.0.0.1"
 # existing directory to use as the base directory for the grader service
-service_dir = os.path.expanduser("~/grader_service_dir")
+service_dir = os.path.join(os.getcwd(), "service_dir")
 c.GraderService.grader_service_dir = service_dir
 
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor

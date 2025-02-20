@@ -51,7 +51,6 @@ SESSION_COOKIE_NAME = 'grader-session-id'
 
 auth_header_pat = re.compile(r'^(token|bearer|basic)\s+([^\s]+)$', flags=re.IGNORECASE)
 
-
 def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]) -> bool:
     if (("/permissions" in self.request.path)
             or ("/config" in self.request.path)):
@@ -112,7 +111,6 @@ def authorize(scopes: list[Scope]):
         return request_handler_wrapper
 
     return wrapper
-
 
 class BaseHandler(web.RequestHandler):
     """Base class of all handler classes
@@ -779,7 +777,6 @@ class BaseHandler(web.RequestHandler):
 
 
 class GraderBaseHandler(BaseHandler):
-
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return

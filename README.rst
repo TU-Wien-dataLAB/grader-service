@@ -103,8 +103,13 @@ This repository contains all the necessary packages for a full installation of t
     pip install grader-labextension
 
 
+Development Environment
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. installation-end
+Alternatively you can run the installation scripts in ``examples/dev_environment``.
+Follow the documentation there. The directory also contains the config files for a local installation.
+
+.. installation-from-soruce-end
 
 .. installation-from-soruce-start
 
@@ -137,131 +142,9 @@ Follow the documentation there. The directory also contains the config files for
 
 .. installation-from-soruce-end
 
-
-Getting Started
+Configuration
 ===============
-
-.. TODO: completely outdated -> refer to config in dev environment instead + clean up configs there (only minimal config with lots of comments)
-                what is confusing about configs? write comments!
-                what parts can be omitted? should we set default values explicitly?
-                describe --show-config command -> does this even work?
-
-
-.. running-start
-
-Grader service uses RabbitMQ as a task broker to delegate grading tasks to separate worker instances.
-Please follow their `tutorials <https://www.rabbitmq.com/docs/download>`_ on how to set up and run a RabbitMQ server on your host machine.
-Our `helm` chart automatically deploys a RabbitMQ cluster when installing the grader service through the `RabbitMQ Kubernetes Operator <https://www.rabbitmq.com/docs/kubernetes/operator/operator-overview>`_.
-
-Running grader service
---------------------------
-
-To run the grader service you first have to register the service in JupyterHub as an unmanaged service in the config:
-
-.. code-block:: python
-
-    c.JupyterHub.services.append(
-        {
-            'name': 'grader',
-            'url': 'http://127.0.0.1:4010',
-            'api_token': '<token>'
-        }
-    )
-
-The api token can be generated in the jupyterhub control panel.
-You can verify the config by running ``jupyterhub -f <config_file.py>`` and you should see the following error message: ::
-
-    Cannot connect to external service grader at http://127.0.0.1:4010. Is it running?
-
-Specifying user roles
---------------------------
-
-Since the JupyterHub is the only source of authentication for the service, it has to rely on the JupyterHub to provide all the necessary information for user groups.
-
-Users have to be added to specific groups which maps the users to lectures and roles. They have to be separated by colons.
-
-The config could look like this:
-
-.. code-block:: python
-
-    ## generic
-    c.JupyterHub.admin_access = True
-    c.Spawner.default_url = '/lab'
-    c.Spawner.cmd=["jupyter-labhub"]
-
-
-    ## authenticator
-    c.JupyterHub.authenticator_class = 'jupyterhub.auth.DummyAuthenticator'
-    c.Authenticator.allowed_users = {'user1', 'user2', 'user3', 'user4'}
-    c.Authenticator.admin_users = {'user1', 'user2', 'user3', 'user4'}
-
-    ## spawner
-    c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
-    c.SimpleLocalProcessSpawner.home_dir_template = '/path/to/lab_dir/{username}'
-
-
-    c.JupyterHub.load_groups = {
-        "lect1:instructor": {'users': ["user1"]},
-        "lect1:tutor": {'users': ["user2"]},
-        "lect1:student": {'users': ["user3", "user4"]},
-    }
-
-Here, ``user1`` is an instructor of the lecture with the code ``lect1`` and so on.
-
-Starting the service
---------------------------
-
-In order to start the grader service we have to provide a configuration file for it as well:
-
-.. code-block:: python
-
-    import os
-
-    c.GraderService.service_host = "127.0.0.1"
-    # existing directory to use as the base directory for the grader service
-    service_dir = os.path.expanduser("<grader_service_dir>")
-    c.GraderService.grader_service_dir = service_dir
-
-    c.JupyterHubGroupAuthenticator.hub_api_url = "http://127.0.0.1:8081/hub/api"
-
-    c.LocalAutogradeExecutor.relative_input_path = "convert_in"
-    c.LocalAutogradeExecutor.relative_output_path = "convert_out"
-
-
-The ``<token>`` has to be the same value as the JupyterHub service token specified earlier. The ``grader_service_dir`` directory has to be an existing directory with appropriate permissions to let the grader service read and write from it.
-
-Alternatively, you can run ``grader-service --generate-config -f /path/to/grader_service_config.py`` to generate the skeleton for the config file that show all possible configuration options.
-
-Furthermore the database must be initialized before we can start the service.
-To do this navigate to the ``grader_service_dir`` that was specified and execute the following command: ::
-
-    grader-service-migrate
-
-Then the grader service can be started by specifying the config file as such: ::
-
-    grader-service -f <grader_service_config.py>
-
-When restarting the JupyterHub you should now see the following log message: ::
-
-    Adding external service grader at http://127.0.0.1:4010
-
-Do not forget to set the log level to ``INFO`` in the JupyterHub config if you want to see this message.
-
-The last thing we have to configure is the server-side of the JupyterLab plugin which also needs information where to access the endpoints of the service. This can be done in the ``jupyter_server_config.py`` file. When using the defaults from above we do not need to explicitly configure this but it would look like this:
-
-.. code-block:: python
-
-    import os
-    c.GitService.git_access_token = os.environ.get("JUPYTERHUB_API_TOKEN")
-    c.GitService.git_remote_url = "http://127.0.0.1:4010/services/grader/git"
-
-    c.RequestService.url = "http://127.0.0.1:4010"
-
-
-.. running-end
-
-Using LTI3 Authenticator
-=========================
+Check out the ``examples/dev_environment`` directory which contains configuration details or the (Administrator Guide)[https://grader-service.readthedocs.io/en/latest/admin/administrator.html].
 
 In order to use the grader service with an LMS like Moodle, the groups first have to be added to the JupyterHub so the grader service gets the necessary information from the hub.
 
