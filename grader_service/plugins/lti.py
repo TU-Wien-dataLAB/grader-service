@@ -245,7 +245,6 @@ class LTISyncGrades(SingletonConfigurable):
             encoded = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
         except Exception as e:
             raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=f"Unable to encode payload: {str(e)}")
-
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
@@ -254,7 +253,6 @@ class LTISyncGrades(SingletonConfigurable):
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
                f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes}"
-        self.log.info(data)
         httpclient = AsyncHTTPClient()
         try:
             response = await httpclient.fetch(HTTPRequest(url=self.token_url, method="POST", body=data,

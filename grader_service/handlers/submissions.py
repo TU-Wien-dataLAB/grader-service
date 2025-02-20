@@ -339,14 +339,20 @@ class SubmissionHandler(GraderBaseHandler):
 
     @staticmethod
     def calculate_late_submission_scaling(assignment: Assignment, submission_ts, role: Role) -> float:
-        # make duedate aware
+        # make submission timestamp timezone aware
+        deadline = assignment.settings.deadline
+        if submission_ts.tzinfo is None:
+            submission_ts = submission_ts.replace(tzinfo=datetime.timezone.utc)
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=datetime.timezone.utc)
+
         if assignment.settings.late_submission and len(assignment.settings.late_submission) > 0:
             scaling = 0.0
-            if submission_ts <= assignment.settings.deadline:
+            if submission_ts <= deadline:
                 scaling = 1.0
             else:
                 for period in assignment.settings.late_submission:
-                    late_submission_date = assignment.settings.deadline + isodate.parse_duration(period.period)
+                    late_submission_date = deadline + isodate.parse_duration(period.period)
                     if submission_ts < late_submission_date:
                         scaling = period.scaling
                         break
@@ -354,7 +360,7 @@ class SubmissionHandler(GraderBaseHandler):
                     raise HTTPError(HTTPStatus.CONFLICT,
                                     reason="Submission after last late submission period of assignment!")
         else:
-            if submission_ts < assignment.settings.deadline:
+            if submission_ts < deadline:
                 scaling = 1.0
             else:
                 if role.role < Scope.tutor:
@@ -789,7 +795,7 @@ class LtiSyncHandler(GraderBaseHandler):
                 submissions = self.session.query(Submission).filter(
                     Submission.id.in_(submission_ids),
                     Submission.auto_status == "automatically_graded",
-                    Submission.assignment_id == assignment_id
+                    Submission.assignid == assignment_id
                 ).all()
                 if len(submissions) != len(submission_ids):
                     raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Some submission IDs are invalid or do not belong to this assignment.")
@@ -818,7 +824,6 @@ class LtiSyncHandler(GraderBaseHandler):
                 raise HTTPError(500, reason="An unexpected error occured.")
         else:
             raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
-        return None
 
 
 
