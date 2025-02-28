@@ -200,7 +200,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         **Default:**
         None (no modifications will be applied unless a callable is provided).
         """
-        )
+        ).tag(config=True)
     
     # Callable to resolve the image name
     resolve_image_name = Callable(default_value=_get_image_name,
