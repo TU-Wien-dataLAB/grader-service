@@ -367,15 +367,14 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     def commit_whitelisted_files(self):
         self.log.info(f"Committing filtered files in {self.output_path}")
-        
         base_filter = ["*.ipynb"]
         extra_files = json.loads(self.assignment.properties).get("extra_files", [])
         allowed_file_patterns = self.assignment.settings.allowed_files
         
-        # Combine all file patterns
+        # combine all file patterns
         file_patterns = set(base_filter + extra_files + allowed_file_patterns)
         
-        # Get all files in the directory
+        # get all files in the directory
         files_to_commit = []
         for root, _, files in os.walk(self.output_path):
             rel_root = os.path.relpath(root, self.output_path)
@@ -389,17 +388,21 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             return
         
         try:
-            # Add only the filtered files
-            self._run_subprocess(f"{self.git_executable} add -- " + " ".join(files_to_commit), self.output_path)
+            # escape filenames to handle special characters and whitespaces
+            escaped_files = [shlex.quote(f) for f in files_to_commit]
             
-            # Commit
-            self._run_subprocess(
-                f'{self.git_executable} commit -m "{self.submission.commit_hash}"',
-                self.output_path,
-            )
+            # add only the filtered files
+            add_command = f"{self.git_executable} add -- " + " ".join(escaped_files)
+            self._run_subprocess(add_command, self.output_path)
             
-        except CalledProcessError:
-            raise RuntimeError("Failed to commit changes")
+            # commit files
+            commit_command = f'{self.git_executable} commit -m "{self.submission.commit_hash}"'
+            self._run_subprocess(commit_command, self.output_path)
+        
+        except CalledProcessError as e:
+            err_msg = f"Failed to commit changes: {e.output}"
+            self.log.error(err_msg)
+            raise RuntimeError(err_msg)
     
     def _set_properties(self):
         """
