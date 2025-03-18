@@ -24,7 +24,7 @@ jobs:
 
       - name: Get changed dirs                  # To check if any files changed in a directory
         id: changeDirsStep
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           dir_names: true
           files: |
