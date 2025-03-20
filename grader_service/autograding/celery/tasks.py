@@ -8,8 +8,8 @@ from tornado.web import HTTPError
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
-from grader_service.orm import Submission, Assignment, Lecture
 from grader_service.orm.base import DeleteState
+from grader_service.orm.submission import Submission
 from grader_service.plugins.lti import LTISyncGrades
 
 # Note: The celery instance is lazy so we can still add configuration later
@@ -84,47 +84,19 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 
 @app.task(bind=True, base=GraderTask)
-def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: Union[int, None],
+async def lti_sync_task(self: GraderTask, lecture: dict, assignment: dict, submissions: list[dict],
                   feedback_sync: bool = False) -> Union[dict, None]:
-    assignment: Assignment = self.session.get(Assignment, assignment_id)
-    if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
-            or (int(assignment.lectid) != int(lecture_id))):
-        self.log.error("Assignment with id " + str(assignment_id) + " was not found")
-        return None
-    lecture: Lecture = assignment.lecture
-
-    if sub_id is None:
-        # build the subquery
-        subquery = (self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
-                    .filter(Submission.assignid == assignment_id,
-                            Submission.feedback_status == "generated",
-                            Submission.deleted == DeleteState.active)
-                    .group_by(Submission.username)
-                    .subquery())
-
-        # build the main query
-        submissions: list[Submission] = (
-            self.session.query(Submission)
-            .join(subquery,
-                  (Submission.username == subquery.c.username) & (Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & (Submission.feedback_status == "generated") & (
-                              Submission.deleted == DeleteState.active))
-            .all())
-
-        data = (lecture.serialize(), assignment.serialize(), [s.serialize() for s in submissions])
-    else:
-        submission: Submission = self.session.get(Submission, sub_id)
-        if submission is None:
-            raise ValueError("Submission not found")
-        if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-            raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
-        data = (lecture.serialize(), assignment.serialize(), [submission.serialize()])
-
+    """Gathers submissions based on params and starts LTI sync process
+    :param lecture: lecture object
+    :param assignment: assignment object
+    :param submissions: submissions to be synced
+    :param feedback_sync(optional): if True, the given submission is part of a fully automated grading assignment
+    """
     lti_plugin = LTISyncGrades.instance()
     # check if the lti plugin is enabled
-    if lti_plugin.check_if_lti_enabled(*data, feedback_sync=feedback_sync):
+    if lti_plugin.check_if_lti_enabled(lecture, assignment, submissions, feedback_sync=feedback_sync):
         try:
-            results = asyncio.run(lti_plugin.start(*data))
+            results = await lti_plugin.start(lecture, assignment, submissions)
             return results
         except HTTPError as e:
             err_msg = f"Could not sync grades: {e.reason}"
@@ -140,5 +112,4 @@ def lti_sync_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id:
         else:
             # else tell the user that the plugin is disabled
             raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
-
     return None

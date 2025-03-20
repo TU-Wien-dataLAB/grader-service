@@ -7,45 +7,43 @@ metadata:
     {{- include "grader-service.labels" . | nindent 4 }}
 data:
   grader_service_config.py: |
-{{ .Values.extraConfig | indent 4 }}
+    # Grader Service Config
+    ### Log Level
+    c.GraderService.log_level = "{{ .Values.logLevel }}"
 
-    {{ if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
+    ### Autograde Executor
+{{- if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
     c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
-    {{ else }}
-    from grader_service.autograding.local_grader import LocalAutogradeExecutor
-    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
-    {{ end }}
-
-
-    {{- if .Values.requestHandlerConfig }}
-    {{- if .Values.requestHandlerConfig.git_max_file_mb }}
-    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
-    {{- end }}
-    {{- end }}
-
     c.KubeAutogradeExecutor.kube_context = None
-
-    {{- if .Values.kubeAutogradeExecutor.namespace }}
+{{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
-    {{- end }}
-    {{- if .Values.kubeAutogradeExecutor.resolveImageName }}
-    c.KubeAutogradeExecutor.resolve_image_name = {{ .Values.kubeAutogradeExecutor.resolveImageName }}
-    {{- else }}
-
-    c.KubeAutogradeExecutor.resolve_image_name = lambda l, a: "{{ .Values.kubeAutogradeExecutor.image }}:{{ .Values.kubeAutogradeExecutor.tag | default .Chart.AppVersion }}"
-    {{- end }}
+{{- end }}
     c.KubeAutogradeExecutor.volume = {"name": "data", {{- if .Values.hostpath -}}"hostPath": {"path": "{{ .Values.hostpath }}", "type": "DirectoryOrCreate"} {{- else -}} "persistentVolumeClaim": {"claimName": "{{ include "grader-service.fullname" . }}"}{{- end -}} }
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
+    c.KubeAutogradeExecutor.labels = {{ .Values.kubeAutogradeExecutor.labels | toJson }}
+    c.KubeAutogradeExecutor.image_pull_secrets = {{ .Values.kubeAutogradeExecutor.imagePullSecrets | toJson }}
+    
+{{- else }}
+    from grader_service.autograding.local_grader import LocalAutogradeExecutor
+    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+{{- end }}
 
+{{- if .Values.requestHandlerConfig }}
+{{- if .Values.requestHandlerConfig.git_max_file_mb }}
+    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
+{{- end }}
+{{- end }}
+
+    ### Database
     c.GraderService.db_url = "{{ .Values.db.url }}"
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
 
+    ### RabbitMQ
     import os
     broker_url=f'amqp://{os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")}:{os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local'
-
     c.CeleryApp.conf = dict(
         broker_url=broker_url,
         result_backend='rpc://',
@@ -54,20 +52,21 @@ data:
         accept_content=['json'],
         broker_connection_retry_on_startup=True,
     )
-    {{- if .Values.ltiSyncGrades.enabled }}
+{{- if .Values.ltiSyncGrades.enabled }}
+    ### LTI Grade Sync Plugin 
     c.LTISyncGrades.enabled = True
-    {{- if .Values.ltiSyncGrades.sync_on_feedback }}
+{{- if .Values.ltiSyncGrades.sync_on_feedback }}
     c.LTISyncGrades.sync_on_feedback = True
-    {{- end }}
+{{- end }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
     c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
-    c.LTISyncGrades.resolve_lti_urls = {{ .Values.ltiSyncGrades.resolve_lti_urls }}
-    c.LTISyncGrades.username_match = {{ .Values.ltiSyncGrades.username_match | quote }}
-    {{- end }}
+{{- end }}
 
-    c.GraderService.log_level = "{{ .Values.logLevel }}"
-
+{{- if .Values.extraConfig }}
+    ### Extra Config
+{{ .Values.extraConfig | indent 4 }}
+{{- end }}
   .gitconfig: |
     [user]
       name = {{ .Values.gitConfig.gitUser }}

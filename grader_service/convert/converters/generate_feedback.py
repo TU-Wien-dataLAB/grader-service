@@ -1,5 +1,6 @@
 
 
+import json
 import os
 from typing import Any
 
@@ -8,6 +9,8 @@ from nbconvert.preprocessors import CSSHTMLHeaderPreprocessor
 from traitlets import List, default, Bool
 from traitlets.config import Config
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert import utils
 from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import GetGrades
 from grader_service.convert.converters.base import BaseConverter
@@ -31,10 +34,10 @@ class GenerateFeedback(BaseConverter):
         return 664
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: Any
+        self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
     ):
         super(GenerateFeedback, self).__init__(
-            input_dir, output_dir, file_pattern, **kwargs
+            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
         )
         c = Config()
         # Note: nbconvert 6.0 completely changed how templates work: they can now be installed separately
@@ -57,13 +60,11 @@ class GenerateFeedback(BaseConverter):
 class GenerateFeedbackApp(ConverterApp):
     version = ConverterApp.__version__
 
-    copy_files = Bool(False, allow_none=False).tag(config=False)
-
-    def start(self):
+    def start(self, assignment_settings: AssignmentSettings):
         GenerateFeedback(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
-            copy_files=self.copy_files,
+            assignment_settings=utils.get_assignment_settings_from_env(),
             config=self.config
         ).start()

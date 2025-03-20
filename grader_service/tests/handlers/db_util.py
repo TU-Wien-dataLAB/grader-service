@@ -10,8 +10,8 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm import Lecture, Assignment, Submission, Role
-from grader_service.orm.assignment import AutoGradingBehaviour
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope
@@ -54,25 +54,22 @@ def insert_lectures(session: Engine):
     session.flush()
 
 
-def _get_assignment(name, lectid, due_date, points, status):
+def _get_assignment(name, lectid, points, status, settings):
     a = Assignment()
     a.name = name
     a.lectid = lectid
-    a.duedate = due_date
     a.points = points
     a.status = status
-    a.allow_files = False
-    a.automatic_grading = AutoGradingBehaviour.unassisted
+    a.settings = settings
     a.deleted = DeleteState.active
-    a.max_submissions = None
     a.properties = None
     return a
 
 
 def insert_assignments(ex, lecture_id=1):
     session: Session = sessionmaker(ex)()
-    session.add(_get_assignment("assignment_1", lecture_id, datetime.now(tz=timezone.utc) + timedelta(weeks=2), 20, "released"))
-    session.add(_get_assignment("assignment_2", lecture_id, datetime.now(tz=timezone.utc) + timedelta(weeks=1), 10, "created"))
+    session.add(_get_assignment("assignment_1", lecture_id, 20, "released", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2))))
+    session.add(_get_assignment("assignment_2", lecture_id, 10, "created", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=1))))
     session.commit()
     session.flush()
     num_inserts = 2

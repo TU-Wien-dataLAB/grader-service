@@ -1,3 +1,4 @@
+import fnmatch
 import glob
 import importlib
 import os
@@ -25,6 +26,7 @@ from traitlets import (
 )
 from traitlets.config import Config, LoggingConfigurable
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.nbgraderformat import SchemaTooNewError, SchemaTooOldError
 from grader_service.convert.nbgraderformat.common import ValidationError
@@ -49,9 +51,8 @@ class BaseConverter(LoggingConfigurable):
             ".ipynb_checkpoints",
             "*.pyc",
             "__pycache__",
-            "feedback",
             ".git",
-            "grader_config.py",
+            "*.ipynb"
         ],
         help=dedent(
             """
@@ -154,18 +155,18 @@ class BaseConverter(LoggingConfigurable):
     #     return sanitized_config
 
     def __init__(
-            self, input_dir: str, output_dir: str, file_pattern: str, copy_files: bool, **kwargs: typing.Any
+            self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: typing.Any
     ) -> None:
         super(BaseConverter, self).__init__(**kwargs)
         self._input_directory = os.path.abspath(os.path.expanduser(input_dir))
         self._output_directory = os.path.abspath(os.path.expanduser(output_dir))
         self._file_pattern = file_pattern
-        self._copy_files = copy_files
+        self._assignment_settings = assignment_settings
         if self.parent and hasattr(self.parent, "logfile"):
             self.logfile = self.parent.logfile
         else:
             self.logfile = None
-
+        
         c = Config()
 
         custom_config_path = f'{self._input_directory}/grader_config.py'
@@ -267,37 +268,61 @@ class BaseConverter(LoggingConfigurable):
 
     def copy_unmatched_files(self, gb: Gradebook):
         """
-        Copy the files from source to the output directory that were not matched by the file pattern.
+        Copy the files from source to the output directory that match the allowed file patterns,
+        excluding files and directories that match any of the ignore patterns.
         :return: None
         """
         dst = self._output_directory
         src = self._input_directory
 
-        if self._copy_files:
-            copied_files = []
+        allowed_files = self._assignment_settings.allowed_files
+        ignore_patterns = self.ignore  # List of patterns to ignore
 
-            def save_copy2(src_c, dst_c, *, follow_symlinks=True):
-                shutil.copy2(src_c, dst_c, follow_symlinks=follow_symlinks)
-                rel_file_name = os.path.relpath(src_c, src)
-                copied_files.append(rel_file_name)
-
-            self.log.info(f"Copying unmatched files from {src} to {dst}")
-            ignore = shutil.ignore_patterns(*self.ignore + [self._file_pattern])
-            shutil.copytree(src, dst, copy_function=save_copy2, ignore=ignore, dirs_exist_ok=True)
-            gb.set_extra_files(copied_files)
+        if allowed_files is None:
+            self.log.info("No additional file patterns specified; only copying files included in release version")
+            files_patterns = gb.get_extra_files()
         else:
-            for rel_path in gb.get_extra_files():
-                src_file = os.path.join(src, rel_path)
-                if not os.path.isfile(src_file):
-                    self.log.warning(f"The file {rel_path} cannot be copied because it does not exist in {src}!")
-                    continue
+            self.log.info(f"Found additional file patterns: {allowed_files}")
+            files_patterns = allowed_files + gb.get_extra_files()
 
-                # make sure the subdirectories of the file exists before copying
-                rel_dir = os.path.dirname(rel_path)
-                os.makedirs(os.path.join(dst, rel_dir), exist_ok=True)
+        copied_files = []
 
-                dst_file = os.path.join(dst, rel_path)
-                shutil.copy2(src_file, dst_file)
+        def matches_allowed_patterns(file_path):
+            """
+            Check if a file matches any of the allowed glob patterns.
+            """
+            return any(fnmatch.fnmatch(file_path, pattern) for pattern in files_patterns)
+
+        def is_ignored(file_path):
+            """
+            Check if a file or directory matches any of the ignore glob patterns.
+            """
+            # Ensure to check both files and directories
+            return any(fnmatch.fnmatch(file_path, pattern) for pattern in ignore_patterns)
+
+        self.log.info(f"Copying files from {src} to {dst} that match allowed patterns and don't match ignored patterns.")
+
+        for root, dirs, files in os.walk(src, topdown=True):
+            # Exclude directories that match ignore patterns
+            dirs[:] = [d for d in dirs if not is_ignored(d)]  # Modify dirs in-place to ignore unwanted dirs
+
+            for file in files:
+                abs_file_path = os.path.join(root, file)
+                rel_file_path = os.path.relpath(abs_file_path, src)
+
+                if matches_allowed_patterns(rel_file_path) and not is_ignored(rel_file_path):
+                    dst_file_path = os.path.join(dst, rel_file_path)
+
+                    # Ensure the destination directory exists
+                    os.makedirs(os.path.dirname(dst_file_path), exist_ok=True)
+
+                    # Copy the file
+                    shutil.copy2(abs_file_path, dst_file_path)
+                    copied_files.append(rel_file_path)
+
+        # Update the Gradebook with the copied files
+        gb.set_extra_files(copied_files)
+        self.log.info(f"Copied the following files: {copied_files}")
 
     def set_permissions(self) -> None:
         self.log.info("Setting destination file permissions to %s", self.permissions)

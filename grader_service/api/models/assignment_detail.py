@@ -3,9 +3,11 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from grader_service.api.models.base_model import Model
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.submission import Submission
 from grader_service.api import util
 
+from grader_service.api.models.assignment_settings import AssignmentSettings  # noqa: E501
 from grader_service.api.models.submission import Submission  # noqa: E501
 
 class AssignmentDetail(Model):
@@ -14,65 +16,45 @@ class AssignmentDetail(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, type=None, due_date=None, status=None, points=None, automatic_grading=None, max_submissions=None, allow_files=None, submissions=None):  # noqa: E501
+    def __init__(self, id=None, name=None, settings=None, status=None, points=None, submissions=None):  # noqa: E501
         """AssignmentDetail - a model defined in OpenAPI
 
         :param id: The id of this AssignmentDetail.  # noqa: E501
         :type id: int
         :param name: The name of this AssignmentDetail.  # noqa: E501
         :type name: str
-        :param type: The type of this AssignmentDetail.  # noqa: E501
-        :type type: str
-        :param due_date: The due_date of this AssignmentDetail.  # noqa: E501
-        :type due_date: datetime
+        :param settings: The settings of this AssignmentDetail.  # noqa: E501
+        :type settings: AssignmentSettings
         :param status: The status of this AssignmentDetail.  # noqa: E501
         :type status: str
         :param points: The points of this AssignmentDetail.  # noqa: E501
         :type points: float
-        :param automatic_grading: The automatic_grading of this AssignmentDetail.  # noqa: E501
-        :type automatic_grading: str
-        :param max_submissions: The max_submissions of this AssignmentDetail.  # noqa: E501
-        :type max_submissions: int
-        :param allow_files: The allow_files of this AssignmentDetail.  # noqa: E501
-        :type allow_files: bool
         :param submissions: The submissions of this AssignmentDetail.  # noqa: E501
         :type submissions: List[Submission]
         """
         self.openapi_types = {
             'id': int,
             'name': str,
-            'type': str,
-            'due_date': datetime,
+            'settings': AssignmentSettings,
             'status': str,
             'points': float,
-            'automatic_grading': str,
-            'max_submissions': int,
-            'allow_files': bool,
             'submissions': List[Submission]
         }
 
         self.attribute_map = {
             'id': 'id',
             'name': 'name',
-            'type': 'type',
-            'due_date': 'due_date',
+            'settings': 'settings',
             'status': 'status',
             'points': 'points',
-            'automatic_grading': 'automatic_grading',
-            'max_submissions': 'max_submissions',
-            'allow_files': 'allow_files',
             'submissions': 'submissions'
         }
 
         self._id = id
         self._name = name
-        self._type = type
-        self._due_date = due_date
+        self._settings = settings
         self._status = status
         self._points = points
-        self._automatic_grading = automatic_grading
-        self._max_submissions = max_submissions
-        self._allow_files = allow_files
         self._submissions = submissions
 
     @classmethod
@@ -129,52 +111,25 @@ class AssignmentDetail(Model):
         self._name = name
 
     @property
-    def type(self) -> str:
-        """Gets the type of this AssignmentDetail.
+    def settings(self) -> AssignmentSettings:
+        """Gets the settings of this AssignmentDetail.
 
 
-        :return: The type of this AssignmentDetail.
-        :rtype: str
+        :return: The settings of this AssignmentDetail.
+        :rtype: AssignmentSettings
         """
-        return self._type
+        return self._settings
 
-    @type.setter
-    def type(self, type: str):
-        """Sets the type of this AssignmentDetail.
-
-
-        :param type: The type of this AssignmentDetail.
-        :type type: str
-        """
-        allowed_values = ["user", "group"]  # noqa: E501
-        if type not in allowed_values:
-            raise ValueError(
-                "Invalid value for `type` ({0}), must be one of {1}"
-                .format(type, allowed_values)
-            )
-
-        self._type = type
-
-    @property
-    def due_date(self) -> datetime:
-        """Gets the due_date of this AssignmentDetail.
+    @settings.setter
+    def settings(self, settings: AssignmentSettings):
+        """Sets the settings of this AssignmentDetail.
 
 
-        :return: The due_date of this AssignmentDetail.
-        :rtype: datetime
-        """
-        return self._due_date
-
-    @due_date.setter
-    def due_date(self, due_date: datetime):
-        """Sets the due_date of this AssignmentDetail.
-
-
-        :param due_date: The due_date of this AssignmentDetail.
-        :type due_date: datetime
+        :param settings: The settings of this AssignmentDetail.
+        :type settings: AssignmentSettings
         """
 
-        self._due_date = due_date
+        self._settings = settings
 
     @property
     def status(self) -> str:
@@ -223,75 +178,6 @@ class AssignmentDetail(Model):
         """
 
         self._points = points
-
-    @property
-    def automatic_grading(self) -> str:
-        """Gets the automatic_grading of this AssignmentDetail.
-
-
-        :return: The automatic_grading of this AssignmentDetail.
-        :rtype: str
-        """
-        return self._automatic_grading
-
-    @automatic_grading.setter
-    def automatic_grading(self, automatic_grading: str):
-        """Sets the automatic_grading of this AssignmentDetail.
-
-
-        :param automatic_grading: The automatic_grading of this AssignmentDetail.
-        :type automatic_grading: str
-        """
-        allowed_values = ["unassisted", "auto", "full_auto"]  # noqa: E501
-        if automatic_grading not in allowed_values:
-            raise ValueError(
-                "Invalid value for `automatic_grading` ({0}), must be one of {1}"
-                .format(automatic_grading, allowed_values)
-            )
-
-        self._automatic_grading = automatic_grading
-
-    @property
-    def max_submissions(self) -> int:
-        """Gets the max_submissions of this AssignmentDetail.
-
-
-        :return: The max_submissions of this AssignmentDetail.
-        :rtype: int
-        """
-        return self._max_submissions
-
-    @max_submissions.setter
-    def max_submissions(self, max_submissions: int):
-        """Sets the max_submissions of this AssignmentDetail.
-
-
-        :param max_submissions: The max_submissions of this AssignmentDetail.
-        :type max_submissions: int
-        """
-
-        self._max_submissions = max_submissions
-
-    @property
-    def allow_files(self) -> bool:
-        """Gets the allow_files of this AssignmentDetail.
-
-
-        :return: The allow_files of this AssignmentDetail.
-        :rtype: bool
-        """
-        return self._allow_files
-
-    @allow_files.setter
-    def allow_files(self, allow_files: bool):
-        """Sets the allow_files of this AssignmentDetail.
-
-
-        :param allow_files: The allow_files of this AssignmentDetail.
-        :type allow_files: bool
-        """
-
-        self._allow_files = allow_files
 
     @property
     def submissions(self) -> List[Submission]:

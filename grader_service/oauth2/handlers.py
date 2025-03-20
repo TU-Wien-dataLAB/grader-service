@@ -198,7 +198,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
         return super().get_login_url()
 
     async def get(self):
-        """GET /oauth/authorization
+        """GET /api/oauth2/authorize
 
         Render oauth confirmation page:
         "Server at ... would like permission to ...".

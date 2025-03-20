@@ -56,15 +56,20 @@ volumePermissions:
 
 autogradeExecutorClass: KubeAutogradeExecutor
 kubeAutogradeExecutor:
+  annotations: {}
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
   tag: latest
+  imagePullPolicy: "Always"
+  imagePullSecrets: {}
+  labels: {}
+  namespace: null
   extraVolumes: ""
   extraVolumeMounts: ""
-  resolveImageName: null
 
 extraConfig: ""
 
 requestHandlerConfig:
+  git_max_file_size_mb: 500
   max_buffer_size: 104857600
   max_body_size: 104857600
 
@@ -74,10 +79,7 @@ ltiSyncGrades:
   sync_on_feedback: false
   client_id: ""
   token_url: ""
-  username_convert: null
-  username_match: "user_id"
   token_private_key: ""
-  resolve_lti_urls: "None"
 
 logLevel: "INFO"
 

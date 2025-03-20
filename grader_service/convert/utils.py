@@ -5,6 +5,7 @@ import fnmatch
 import glob
 import hashlib
 import io
+import json
 import logging
 import os
 import shutil
@@ -21,6 +22,8 @@ from nbformat.notebooknode import NotebookNode
 from setuptools.archive_util import unpack_archive, unpack_tarfile, unpack_zipfile
 from tornado.log import LogFormatter
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
+
 # pwd is for unix passwords only, so we shouldn't import it on
 # windows machines
 if sys.platform != "win32":
@@ -28,6 +31,15 @@ if sys.platform != "win32":
 else:
     pwd = None
 
+def get_assignment_settings_from_env() -> AssignmentSettings:
+    """Read env var and returns assignment settings
+
+    Returns:
+        AssignmentSettings: assignment settings
+    """
+    settings_json_str = os.getenv("ASSIGNMENT_SETTINGS", "{}")
+    settings_dict = json.loads(settings_json_str)
+    return AssignmentSettings.from_dict(settings_dict)
 
 def is_task(cell: NotebookNode) -> bool:
     """Returns True if the cell is a task cell."""

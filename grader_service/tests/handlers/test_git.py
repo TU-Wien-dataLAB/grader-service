@@ -31,7 +31,7 @@ def get_query_side_effect(lid=1, code="ivs21s", a_type="user", scope=Scope.stude
         elif input is Assignment:
             assignment = Assignment()
             assignment.id = a_id
-            assignment.type = a_type
+            assignment.settings.assignment_type = a_type
             m.filter.return_value.one.return_value = assignment
         elif input is Role:
             role = Role()

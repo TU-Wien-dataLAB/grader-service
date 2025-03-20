@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 import asyncio
 import base64
-from contextlib import contextmanager
 import re
 import shlex
 import subprocess
@@ -16,13 +15,14 @@ import os
 import shutil
 import sys
 import time
-import traceback
 import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterator, List, Optional, Union
+from typing import Any, Awaitable, Callable, Optional, Union
 from urllib.parse import urlparse, parse_qsl
+
+from sqlalchemy import func
 from grader_service._version import __version__
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -32,7 +32,6 @@ from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
 from grader_service.api.models.base_model import Model
-from grader_service.api.models.error_message import ErrorMessage
 from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Group, Assignment, Submission, APIToken
@@ -137,13 +136,13 @@ class BaseHandler(web.RequestHandler):
         self.log = self.application.log
 
     async def prepare(self) -> Optional[Awaitable[None]]:
-        #strip trailing slash
+        # strip trailing slash
         self.request.path = self.request.path.rstrip("/")
-        
-        #start session
+
+        # start session
         self.session: Session = self.application.session_maker()
-        
-        #authenticate
+
+        # authenticate
         try:
             await self.get_current_user()
 
@@ -155,25 +154,27 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback")
-                ]:
+            ]:
                 # require git to authenticate with token -> otherwise return 401 code
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
                     raise HTTPError(401, reason="Git: authenticate request")
-                
+
                 # send to login page if ui page request
-                if self.request.path in [url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
+                if self.request.path in [
+                    url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(
+                    url_path_join(self.application.base_url, "/ui")):
                     url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                     self.redirect(url)
                     return
-                    
+
                 if self.request.headers.get("Authorization") is None:
                     raise HTTPError(401, reason="No API token in auth header")
-                    
+
                 # do not redirect to login page if we hit api endpoints
                 raise HTTPError(401, reason="API Token is invalid or expired.")
-                
-                
-                
+
+
+
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
             # since it failed
@@ -776,7 +777,6 @@ class BaseHandler(web.RequestHandler):
 
 
 class GraderBaseHandler(BaseHandler):
-        
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -789,6 +789,10 @@ class GraderBaseHandler(BaseHandler):
         if role is None:
             raise HTTPError(403)
         return role
+
+    def get_lecture(self, lecture_id: int) -> Lecture:
+        lecture: Lecture = self.session.get(Lecture, lecture_id)
+        return lecture
 
     def get_assignment(self, lecture_id: int,
                        assignment_id: int) -> Assignment:
@@ -813,6 +817,67 @@ class GraderBaseHandler(BaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND,
                             reason=msg)
         return submission
+
+    def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None):
+        query = (
+            self.session.query(Submission.username,
+                               func.max(Submission.date).label("max_date"))
+            .filter(Submission.assignid == assignment_id)
+            .filter(Submission.deleted == DeleteState.active)
+            .group_by(Submission.username))
+
+        if must_have_feedback:
+            query = query.filter(Submission.feedback_status != "not_generated")
+
+        if username:
+            query = query.filter(Submission.username == username)
+
+        subquery = query.subquery()
+
+        # Build the main query
+        submissions = (
+            self.session.query(Submission)
+            .join(subquery,
+                  (Submission.username == subquery.c.username) & (
+                          Submission.date == subquery.c.max_date) & (
+                          Submission.assignid == assignment_id) & (
+                          Submission.deleted == DeleteState.active
+                  ))
+            .order_by(Submission.id)
+            .all()
+        )
+
+        return submissions
+
+    def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None):
+        query = (
+            self.session.query(Submission.username,
+                               func.max(Submission.score).label("max_score"))
+            .filter(Submission.assignid == assignment_id)
+            .filter(Submission.deleted == DeleteState.active)
+            .group_by(Submission.username))
+
+        if must_have_feedback:
+            query = query.filter(Submission.feedback_status != "not_generated")
+
+        if username:
+            query = query.filter(Submission.username == username)
+
+        subquery = query.subquery()
+
+        # Build the main query
+        submissions = (
+            self.session.query(Submission)
+            .join(subquery,
+                  (Submission.username == subquery.c.username) & (
+                          Submission.score == subquery.c.max_score) & (
+                          Submission.assignid == assignment_id) & (
+                          Submission.deleted == DeleteState.active
+                  ))
+            .order_by(Submission.id)
+            .all()
+        )
+        return submissions
 
     @property
     def gitbase(self):
@@ -839,8 +904,8 @@ class GraderBaseHandler(BaseHandler):
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
             type_path = os.path.join(assignment_path, repo_type,
-                                     assignment.type)
-            if assignment.type == "user":
+                                     assignment.settings.assignment_type)
+            if assignment.settings.assignment_type == "user":
                 if repo_type == "autograde":
                     if ((submission is None)
                             or (self.get_role(lecture.id).role < Scope.tutor)):

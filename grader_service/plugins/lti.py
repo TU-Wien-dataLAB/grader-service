@@ -12,8 +12,8 @@ from tornado.escape import url_escape, json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.web import HTTPError
 
-def default_lti_username_convert(username: str) -> str:
-    return username
+def default_lti_username_match(member, submission, log) -> bool:
+    return False
 
 def default_enable_lti(lecture, assignment, submissions):
     return False
@@ -48,16 +48,11 @@ class LTISyncGrades(SingletonConfigurable):
     )
     client_id = Unicode(None, config=True, allow_none=True)
     token_url = Unicode(None, config=True, allow_none=True)
-    # function used to change the hub username to the lti sourcedid value
-    help_msg = "Converts the grader service username to the lti sourced id."
-    username_convert = Callable(default_value=default_lti_username_convert,
+    username_match = Callable(default_value=default_lti_username_match,
                                          config=True,
                                          allow_none=True,
-                                         help=help_msg)
-    username_match = Unicode("user_id",
-                             config=True,
-                             allow_none=False,
-                             help="Sets which membership container attribute should be matched against the submission username")
+                                         help="Function used to match lti member object with submission object to. Is given member, submission object and log as params and returns boolean if it is the users submission")
+
     token_private_key = Union(
         [Unicode(os.environ.get('LTI_PRIVATE_KEY', None)),
          Callable(None)],
@@ -93,15 +88,9 @@ class LTISyncGrades(SingletonConfigurable):
             return False
 
     async def start(self, lecture, assignment, submissions):
-
-        # # Check if the LTI plugin should be used
-        # if not self._check_if_lti_enabled(lecture, assignment, submissions, sync_on_feedback):
-        #     self.log.info("Skipping LTI plugin as it is not enabled")
-        #     return {"syncable_users": 0, "synced_user": 0}
-
         self.log.info("LTI: start grade sync")
-        # if len(submissions) == 0:
-        #     raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
+        if len(submissions) == 0:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="No submissions to sync")
 
         # 1. request bearer token
         self.log.debug("LTI: request bearer token")
@@ -123,7 +112,7 @@ class LTISyncGrades(SingletonConfigurable):
             membership_url = lti_urls["membership_url"]
         except Exception as e:
             self.log.error(e)
-            return
+            raise e
         # 3. get all members
         self.log.debug("LTI: request all members of lti course")
         httpclient = AsyncHTTPClient()
@@ -144,12 +133,7 @@ class LTISyncGrades(SingletonConfigurable):
         syncable_user_count = 0
         for submission in submissions:
             for member in members:
-                try:
-                    user_match = member[self.username_match]
-                except KeyError:
-                    self.log.error(f"LTI Error: Given username_match key '{self.username_match}' does not exist in LTI membership user")
-                    continue
-                if user_match == self.username_convert(submission["username"]):
+                if self.username_match(member, submission, self.log):
                     syncable_user_count += 1
                     grades.append(self.build_grade_publish_body(member["user_id"], submission["score"],
                                                            float(assignment["points"])))
@@ -176,7 +160,7 @@ class LTISyncGrades(SingletonConfigurable):
                 lineitem = item
                 break
 
-        # 8. if not create a lineitem with the assignment name
+        # 8. if does not exist, create a lineitem with the assignment name
         if lineitem is None:
             lineitem_body = {"scoreMaximum": float(assignment["points"]), "label": assignment["name"],
                              "resourceId": assignment["id"],
@@ -250,15 +234,17 @@ class LTISyncGrades(SingletonConfigurable):
                             reason="Unable to request bearer token: token_private_key is not set in grader config")
         if callable(private_key):
             private_key = private_key()
-
-        payload = {"iss": "grader-service", "sub": self.client_id, "aud": [self.token_url],
-                   "ist": str(int(time.time())), "exp": str(int(time.time()) + 60),
+        headers = {
+            "typ": "JWT",
+            "alg": "RS256"
+        }
+        payload = {"iss": "grader-service", "sub": self.client_id, "aud": ["http://127.0.0.1/mod/lti/token.php"],
+                   "iat": str(int(time.time())), "exp": str(int(time.time()) + 60),
                    "jti": str(int(time.time())) + "123"}
         try:
-            encoded = jwt.encode(payload, private_key, algorithm="RS256")
+            encoded = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
         except Exception as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, f"Unable to encode payload: {str(e)}")
-
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=f"Unable to encode payload: {str(e)}")
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",
             "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
@@ -266,13 +252,13 @@ class LTISyncGrades(SingletonConfigurable):
         ]
         scopes = url_escape(" ".join(scopes))
         data = f"grant_type=client_credentials&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion" \
-               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes} "
-
+               f"-type%3Ajwt-bearer&client_assertion={encoded}&scope={scopes}"
         httpclient = AsyncHTTPClient()
         try:
             response = await httpclient.fetch(HTTPRequest(url=self.token_url, method="POST", body=data,
                                                           headers={
-                                                              "Content-Type": "application/x-www-form-urlencoded"}))
+                                                              "Content-Type": "application/x-www-form-urlencoded",
+                                                              "Content-Length": len(data)}))
         except HTTPClientError as e:
             self.log.error(e.response)
             raise HTTPError(e.code, reason="Unable to request token:" + e.response.reason)

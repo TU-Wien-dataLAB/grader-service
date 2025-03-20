@@ -12,7 +12,7 @@ import os
 import shutil
 import time
 
-from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, ApiException)
+from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, V1EnvVar, ApiException)
 from traitlets import Callable, Unicode, Integer, List, Dict
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
@@ -22,6 +22,7 @@ from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_e
 from kubernetes import config
 from grader_service.orm import Lecture, Submission
 from grader_service.orm import Assignment
+from grader_service.orm.assignment import json_serial
 
 
 class GraderPod(LoggingConfigurable):
@@ -121,40 +122,113 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     permission to get, update, create and delete pods, pod status and pod logs.
     """
 
-    image_config_path = Unicode(default_value=None,
-                                allow_none=True).tag(config=True)
-    resolve_image_name = Callable(default_value=_get_image_name,
-                                  allow_none=False).tag(config=True)
-    kube_context = Unicode(default_value=None, allow_none=True,
-                           help="Kubernetes context to load config from. "
-
-                                "If the context is None (default), "
-                                "the incluster config "
-                                "will be used.").tag(config=True)
-
-    resolve_node_selector = Callable(default_value=lambda _: None, allow_none=False,
-                                     help="""Function that takes a lecture as input and outputs a node selector for 
-                                     this lecture. The returned value has to be a dict[str, str] or None and is directly 
-                                     passed to the Kubernetes API.""").tag(config=True)
-
-    volume = Dict(default_value={},
-                  allow_none=False).tag(config=True)
-
-    extra_volumes = List(default_value=[],
-                         allow_none=False).tag(config=True)
-
-    extra_volume_mounts = List(default_value=[],
-                               allow_none=False).tag(config=True)
-
+    # Annotations to attach to the Kubernetes pod
+    annotations = Dict(default_value={},
+                       allow_none=True,
+                       help="Annotations to associate with the pod. Defaults to an empty dictionary.").tag(config=True)
+    
+    # Name of the executable for converting the grader
     convert_executable = Unicode("grader-convert",
-                                 allow_none=False).tag(config=True)
+                                 allow_none=False,
+                                 help="The executable name for the grader container conversion. Defaults to 'grader-convert'.").tag(config=True)
 
-    namespace = Unicode(default_value=None, allow_none=True,
-                        help="Namespace to deploy grader pods into. "
-                             "If changed, correct roles to Serviceaccount "
-                             "need to be applied.").tag(config=True)
-    uid = Integer(default_value=1000, allow_none=False,
-                  help="The User ID for the grader container").tag(config=True)
+    # List of extra volumes to attach to the pod
+    extra_volumes = List(default_value=[],
+                         allow_none=False,
+                         help="List of extra volumes to attach to the pod. Defaults to an empty list.").tag(config=True)
+
+    # List of extra volume mounts to attach to the container
+    extra_volume_mounts = List(default_value=[],
+                               allow_none=False,
+                               help="List of extra volume mounts for the container. Defaults to an empty list.").tag(config=True)
+    
+    # Configuration for the image name, with a callable for resolution
+    image_config_path = Unicode(default_value=None,
+                                allow_none=True,
+                                help="Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically change the autograding pod image.").tag(config=True)
+    
+    # Image pull policy for the Kubernetes pod
+    image_pull_policy = Unicode(default_value="Always",
+                                allow_none=False,
+                                help="The image pull policy for the pod. Defaults to 'Always'.").tag(config=True)
+    
+    # Dictionary to store image pull secrets, helpful when pulling from private registries
+    image_pull_secrets = Dict(default_value=None,
+                              help="""Autograding pod image pull secrets dictionary (str, str). 
+                                      Used for pulling images from private registries. Defaults to None.""",
+                              key_trait=Unicode(), 
+                              value_trait=Unicode(),
+                              allow_none=True).tag(config=True)
+    
+    # Kubernetes context to load configuration from (in-cluster if None)
+    kube_context = Unicode(default_value=None,
+                           allow_none=True,
+                           help="Kubernetes context to load the config from. "
+                                "If None, the in-cluster config is used.").tag(config=True)
+    
+    # Labels to attach to the Kubernetes pod
+    labels = Dict(default_value={},
+                  allow_none=True,
+                  help="Labels to associate with the pod. Defaults to an empty dictionary.").tag(config=True)
+    
+    # Namespace where grader pods will be deployed
+    namespace = Unicode(default_value=None, 
+                        allow_none=True,
+                        help="Namespace for deploying grader pods. If None, the current namespace will be used. "
+                             "If changed, roles for ServiceAccount need to be applied.").tag(config=True)
+    
+    # Pre-spawn Hook configuration
+    pre_spawn_hook = Callable(
+        default_value=None,
+        allow_none=True,
+        help="""
+        A callable function that executes before the autograding pod spawns. 
+        Use this hook to customize pod configurations based on the specific lecture and assignment.
+
+        **Parameters:**
+        - `lecture` (Lecture): The lecture associated with the submission.
+        - `assignment` (Assignment): The assignment associated with the submission.
+        - `autograding_pod` (V1Pod): The current Kubernetes pod object for autograding.
+        **Returns:**
+        - V1Pod spec for autograding pod
+        **Purpose:**
+        This hook allows dynamic modification of pod specifications, such as:
+        - Updating selectors.
+        - Changing the container image.
+        - Adjusting resource requests and limits.
+        
+        **Default:**
+        None (no modifications will be applied unless a callable is provided).
+        """
+        ).tag(config=True)
+    
+    # Callable to resolve the image name
+    resolve_image_name = Callable(default_value=_get_image_name,
+                                  allow_none=False,
+                                  help="Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically change the autograding pod image.").tag(config=True)
+    
+    # Callable for resolving node selector for a lecture
+    resolve_node_selector = Callable(default_value=lambda _: None, 
+                                     allow_none=False,
+                                     help="""Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically set the node selectors of autograding pods.""").tag(config=True)
+    
+     # Tolerations for the autograding pod
+    tolerations = Dict(default_value=None,
+                       help="""Autograding pod tolerations dictionary (str, str). 
+                               Used to schedule pods on nodes with specific taints. Defaults to None.""",
+                       key_trait=Unicode(), 
+                       value_trait=Unicode(),
+                       allow_none=True).tag(config=True)
+
+    # User ID for the grader container (used to set user permissions inside the container)
+    uid = Integer(default_value=1000, 
+                  allow_none=False,
+                  help="User ID for the grader container. Defaults to 1000.").tag(config=True)
+    
+    # Dictionary for additional volume configuration
+    volume = Dict(default_value={},
+                  allow_none=False,
+                  help="Dictionary for volume configuration. Defaults to an empty dictionary.").tag(config=True)
 
     def __init__(self, grader_service_dir: str,
                  submission: Submission, **kwargs):
@@ -203,18 +277,28 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                 return run(self.resolve_image_name(self.lecture, self.assignment))
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
+            
+    def get_autograde_pod_name(self) -> str:
+        """
+        Return autograde pod name.
+        """
+        return f"autograde-job-{self.submission.username}-{self.submission.id}"
+    
+    def create_env(self) -> list[V1EnvVar]:
+        env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=json.dumps(self.assignment.settings.to_dict(),default=json_serial))]
+        return env
+    
     def start_pod(self) -> GraderPod:
         """
-        Starts a pod in the default namespace
+        Starts a pod in the namespace
         with the commit hash as the name of the pod.
         The image is determined by the get_image method.
         :return:
         """
-        # The output path will not exist in the pod
+        # set standard config
         command = [self.convert_executable, "autograde", "-i",
                    self.input_path, "-o", self.output_path,
                    "-p", "*.ipynb",
-                   f"--copy_files={self.assignment.allow_files}",
                    "--log-level=INFO",
                    f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"]
         volumes = [self.volume] + self.extra_volumes
@@ -225,24 +309,36 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                           "subPath": self.relative_output_path +
                                      "/submission_" + str(self.submission.id)}]
         volume_mounts = volume_mounts + self.extra_volume_mounts
+
+        env = self.create_env()
+
+        # create pod spec
         pod = make_pod(
-            name=self.submission.commit_hash,
+            name=self.get_autograde_pod_name(),
             cmd=command,
+            env=env,
             image=self.get_image(),
-            image_pull_policy=None,
+            image_pull_policy=self.image_pull_policy,
             working_dir="/",
             volumes=volumes,
             volume_mounts=volume_mounts,
-            labels=None,
-            annotations=None,
+            labels=self.labels,
+            annotations=self.annotations,
             node_selector=self.resolve_node_selector(self.lecture),
-            tolerations=None,
+            tolerations=self.tolerations,
             run_as_user=self.uid,
         )
+        # run prespawn hook if it exists
+        if callable(self.pre_spawn_hook):
+            self.log.info(f"Running pre spawn hook for pod {pod.metadata.name}")
+            pod = self.pre_spawn_hook(self.lecture, self.assignment, pod)
+
+        # run grading pod
         self.log.info(f"Starting pod {pod.metadata.name}"
                       f" with command: {command}")
         pod = self.client.create_namespaced_pod(namespace=self.namespace,
                                                 body=pod)
+        # handle state of grading pod
         return GraderPod(pod, self.client, config=self.config)
     def _run(self):
         """
@@ -264,11 +360,11 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.grading_logs = self._get_pod_logs(grader_pod)
             self.log.info("Pod logs:\n" + self.grading_logs)
             if status == "Succeeded":
-                self.log.info("Pod has successfully completed execution!")
+                self.log.info(f"Pod {grader_pod.name} has successfully completed execution!")
             else:
-                self.log.info("Pod has failed execution:")
+                self.log.error(f"Pod {grader_pod.name} has failed execution!")
                 self._delete_pod(grader_pod)
-                raise RuntimeError("Pod has failed execution!")
+                raise RuntimeError(f"Pod {grader_pod.name} has failed execution!")
             # cleanup
             self._delete_pod(grader_pod)
         except ApiException as e:

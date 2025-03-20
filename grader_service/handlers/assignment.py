@@ -12,7 +12,7 @@ import isodate
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
+from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Role, Scope
@@ -45,7 +45,7 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
         if s <= 0.0 or s >= 1.0:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling has to be between 0.0 and 1.0 exclusive!")
         if s >= curr_scaling:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling is not decreasing!)")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=f"Score scaling is not decreasing!")
         current_period = d
         curr_scaling = s
 
@@ -136,27 +136,24 @@ class AssignmentBaseHandler(GraderBaseHandler):
                     Assignment.lectid == lecture_id) \
             .one_or_none()
 
-        if (assignment_with_name is not None):
+        if assignment_with_name is not None:
             raise HTTPError(HTTPStatus.CONFLICT,
                             reason="Assignment name is already being used")
-        if ((assignment_model.max_submissions is not None)
-                and (assignment_model.max_submissions < 1)):
+        if assignment_model.settings is None:
+            raise HTTPError(HTTPStatus.BAD_REQUEST,
+                            reason="Assignment missing settings key")
+        if ((assignment_model.settings.max_submissions is not None)
+                and (assignment_model.settings.max_submissions < 1)):
             msg = "Maximum number of submissions cannot be smaller than 1!"
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason=msg)
         validate_assignment_settings(assignment_model.settings)
 
         assignment.lectid = lecture_id
-        assignment.duedate = assignment_model.due_date
         assignment.status = assignment_model.status
-        assignment.type = assignment_model.type
         assignment.points = 0
         assignment.deleted = DeleteState.active
-        assignment.automatic_grading = AutoGradingBehaviour.get(assignment_model.automatic_grading)
-        assignment.max_submissions = assignment_model.max_submissions
-        assignment.allow_files = get_allow_files(assignment_model)
-        if assignment_model.settings:
-            assignment.settings = json.dumps(assignment_model.settings.to_dict())
+        assignment.settings = assignment_model.settings
 
         self.session.add(assignment)
         try:
@@ -215,26 +212,21 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 and (assignment_with_name.id != assignment_id)):
             raise HTTPError(HTTPStatus.CONFLICT,
                             reason="Assignment name is already being used")
-        if ((assignment_model.max_submissions is not None)
-                and (assignment_model.max_submissions < 1)):
+        if ((assignment_model.settings.max_submissions is not None)
+                and (assignment_model.settings.max_submissions < 1)):
             raise HTTPError(HTTPStatus.BAD_REQUEST,
                             reason="Max num submissions < 1!")
         validate_assignment_settings(assignment_model.settings)
 
         assignment.name = assignment_model.name
-        assignment.duedate = assignment_model.due_date
         assignment.status = assignment_model.status
-        assignment.type = assignment_model.type
-        assignment.automatic_grading = AutoGradingBehaviour[assignment_model.automatic_grading]
-        assignment.max_submissions = assignment_model.max_submissions
-        assignment.allow_files = get_allow_files(assignment_model)
-        if assignment_model.settings:
-            assignment.settings = json.dumps(assignment_model.settings.to_dict())
-
-        if ((assignment.automatic_grading == AutoGradingBehaviour.full_auto.name)  # noqa E501
+        if ((assignment_model.settings.autograde_type == "full_auto")  # noqa E501
                 and (assignment.properties is not None)):
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
             _check_full_auto_grading(self, model)
+
+        assignment.settings = assignment_model.settings
+        
         self.session.commit()
         self.write_json(assignment)
 
@@ -297,7 +289,7 @@ class AssignmentResetHandler(GraderBaseHandler):
 
     route: /lectures/{lecture_id}/assignments/{assignment_id}/reset."""
 
-    @authorize([Scope.instructor, Scope.tutor, Scope.student])
+    @authorize( [Scope.instructor, Scope.tutor, Scope.student])
     async def get(self, lecture_id: int, assignment_id: int):
         self.validate_parameters()
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
@@ -325,7 +317,7 @@ class AssignmentResetHandler(GraderBaseHandler):
         repo_path_release = self.construct_git_dir('release',
                                                    assignment.lecture,
                                                    assignment)
-        repo_path_user = self.construct_git_dir(assignment.type,
+        repo_path_user = self.construct_git_dir(assignment.settings.assignment_type,
                                                 assignment.lecture,
                                                 assignment)
 
@@ -392,8 +384,8 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
 
         model = GradeBookModel.from_dict(json.loads(properties_string))
         # Check if assignment contains no cells that
-        # need manual grading if assignment is fully auto graded
-        if assignment.automatic_grading == AutoGradingBehaviour.full_auto:
+        # need manual grading if assignment is fully auto grade        
+        if assignment.settings.autograde_type == "full_auto":
             _check_full_auto_grading(self, model)
 
         assignment.properties = properties_string

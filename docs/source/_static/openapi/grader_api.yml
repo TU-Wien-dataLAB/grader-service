@@ -4,7 +4,7 @@ info:
   description: The REST API for the grader service
   license:
     name: BSD-3-Clause
-  version: '0.6.3'
+  version: '0.7.3'
 servers:
   - url: /api
     description: relative path to mock
@@ -27,6 +27,9 @@ paths:
 
   /lectures/{lect_id}:
     $ref: './paths_shared.yml#/lecturesById'
+
+  /lectures/{lect_id}/submissions:
+    $ref: './paths_grader.yml#/submissionsForLecture'
 
   /lectures/{lect_id}/users:
     $ref: './paths_shared.yml#/lectureUsers'

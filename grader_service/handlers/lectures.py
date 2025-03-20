@@ -32,12 +32,14 @@ class LectureBaseHandler(GraderBaseHandler):
         complete = self.get_argument("complete", "false") == "true"
 
         state = LectureState.complete if complete else LectureState.active
-        lectures = [
-            role.lecture
-            for role in self.user.roles if
-            role.lecture.state == state and
-            role.lecture.deleted == DeleteState.active
-        ]
+        lectures = sorted(
+            [
+             role.lecture for role in self.user.roles if
+             role.lecture.state == state and
+             role.lecture.deleted == DeleteState.active
+            ],
+            key=lambda lecture: lecture.id
+        )
 
         self.write_json(lectures)
 

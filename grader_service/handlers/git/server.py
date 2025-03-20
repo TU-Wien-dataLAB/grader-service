@@ -134,7 +134,7 @@ class GitBaseHandler(GraderBaseHandler):
             raise HTTPError(404, reason="Assignment not found")
 
         if repo_type == "assignment":
-            repo_type: str = assignment.type
+            repo_type: str = assignment.settings.assignment_type
 
         # create directories once we know they exist in the database
         if not os.path.exists(lecture_path):

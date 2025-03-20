@@ -8,7 +8,7 @@ import base64
 import pytest
 import json
 from grader_service.handlers.base_handler import GraderBaseHandler, BaseHandler
-from grader_service.orm.assignment import Assignment, AutoGradingBehaviour
+from grader_service.orm.assignment import Assignment
 from datetime import datetime
 from grader_service.api.models.error_message import ErrorMessage
 from grader_service.orm.lecture import Lecture
@@ -64,28 +64,24 @@ def test_assignment_serialization():
     d = {
         "id": 1,
         "name": "test",
-        "due_date": str(datetime.now(tz=timezone.utc)),
         "status": "created",
-        'type': None,
         'points': 0,
-        'automatic_grading': AutoGradingBehaviour.unassisted,
-        'max_submissions': 1,
-        'allow_files': None,
-        'settings': {'late_submission': None}
+        'settings': {'late_submission': None,
+                     'deadline':datetime.now(tz=timezone.utc).isoformat(),
+                     'max_submissions': 1,
+                     'autograde_type': 'unassisted',
+                     'assignment_type': "user",
+                     'allowed_files': None}
     }
     a = Assignment(
         id=d["id"],
         name=d["name"],
         lectid=1,
-        duedate=d["due_date"],
         points=0,
         status=d["status"],
-        automatic_grading=d["automatic_grading"],
-        max_submissions=1,
-        settings='{}'
+        settings=d["settings"]
     )
 
-    d["automatic_grading"] = d["automatic_grading"].name
     assert GraderBaseHandler._serialize(a) == d
 
 

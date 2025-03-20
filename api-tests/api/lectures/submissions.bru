@@ -1,0 +1,14 @@
+meta {
+  name: submissions
+  type: http
+  seq: 4
+}
+get {
+  url: {{grader-base-url}}/api/lectures/1/submissions?filter=latest&format=json
+  body: none
+  auth: inherit
+}
+params:query {
+  filter: latest
+  format: json
+}
