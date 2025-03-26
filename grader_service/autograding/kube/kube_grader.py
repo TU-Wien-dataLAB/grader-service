@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import time
+import re
 
 from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, V1EnvVar, ApiException)
 from traitlets import Callable, Unicode, Integer, List, Dict
@@ -278,11 +279,19 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
             
+
     def get_autograde_pod_name(self) -> str:
-        """
-        Return autograde pod name.
-        """
-        return f"autograde-job-{self.submission.username}-{self.submission.id}"
+        #sanitize username by converting to lowercase and replacing non-alphanumeric chars
+        sanitized_username = re.sub(r'[^a-zA-Z0-9]+', '-', self.submission.username.lower())
+        
+        #trim leading/trailing hyphens
+        sanitized_username = sanitized_username.strip('-')
+        
+        #truncate if too long to meet k8s pod name limits
+        max_username_length = 50
+        sanitized_username = sanitized_username[:max_username_length]
+        
+        return f"autograde-job-{sanitized_username}-{self.submission.id}"
     
     def create_env(self) -> list[V1EnvVar]:
         env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=json.dumps(self.assignment.settings.to_dict(),default=json_serial))]
