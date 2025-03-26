@@ -154,7 +154,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     
     # Dictionary to store image pull secrets, helpful when pulling from private registries
     image_pull_secrets = List(default_value=[],
-                              help="""Autograding pod image pull secrets dictionary (str, str). 
+                              help="""Autograding pod image pull secrets list (str). 
                                       Used for pulling images from private registries. Defaults to None.""",
                               key_trait=Unicode(),
                               value_trait=Unicode(),
