@@ -153,10 +153,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                 help="The image pull policy for the pod. Defaults to 'Always'.").tag(config=True)
     
     # Dictionary to store image pull secrets, helpful when pulling from private registries
-    image_pull_secrets = Dict(default_value=None,
+    image_pull_secrets = List(default_value=[],
                               help="""Autograding pod image pull secrets dictionary (str, str). 
                                       Used for pulling images from private registries. Defaults to None.""",
-                              key_trait=Unicode(), 
+                              key_trait=Unicode(),
                               value_trait=Unicode(),
                               allow_none=True).tag(config=True)
     
@@ -319,6 +319,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             env=env,
             image=self.get_image(),
             image_pull_policy=self.image_pull_policy,
+            image_pull_secrets=self.image_pull_secrets,
             working_dir="/",
             volumes=volumes,
             volume_mounts=volume_mounts,
