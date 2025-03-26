@@ -284,12 +284,12 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         #sanitize username by converting to lowercase and replacing non-alphanumeric chars
         sanitized_username = re.sub(r'[^a-zA-Z0-9]+', '-', self.submission.username.lower())
         
-        #trim leading/trailing hyphens
-        sanitized_username = sanitized_username.strip('-')
-        
         #truncate if too long to meet k8s pod name limits
         max_username_length = 50
         sanitized_username = sanitized_username[:max_username_length]
+
+        #trim leading/trailing hyphens
+        sanitized_username = sanitized_username.strip('-')
         
         return f"autograde-job-{sanitized_username}-{self.submission.id}"
     
