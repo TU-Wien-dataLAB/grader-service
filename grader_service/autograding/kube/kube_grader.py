@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import time
+import re
 
 from kubernetes.client import (V1Pod, CoreV1Api, V1ObjectMeta, V1EnvVar, ApiException)
 from traitlets import Callable, Unicode, Integer, List, Dict
@@ -153,10 +154,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
                                 help="The image pull policy for the pod. Defaults to 'Always'.").tag(config=True)
     
     # Dictionary to store image pull secrets, helpful when pulling from private registries
-    image_pull_secrets = Dict(default_value=None,
-                              help="""Autograding pod image pull secrets dictionary (str, str). 
+    image_pull_secrets = List(default_value=[],
+                              help="""Autograding pod image pull secrets list (str). 
                                       Used for pulling images from private registries. Defaults to None.""",
-                              key_trait=Unicode(), 
+                              key_trait=Unicode(),
                               value_trait=Unicode(),
                               allow_none=True).tag(config=True)
     
@@ -278,11 +279,19 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
             
+
     def get_autograde_pod_name(self) -> str:
-        """
-        Return autograde pod name.
-        """
-        return f"autograde-job-{self.submission.username}-{self.submission.id}"
+        #sanitize username by converting to lowercase and replacing non-alphanumeric chars
+        sanitized_username = re.sub(r'[^a-zA-Z0-9]+', '-', self.submission.username.lower())
+        
+        #truncate if too long to meet k8s pod name limits
+        max_username_length = 50
+        sanitized_username = sanitized_username[:max_username_length]
+
+        #trim leading/trailing hyphens
+        sanitized_username = sanitized_username.strip('-')
+        
+        return f"autograde-job-{sanitized_username}-{self.submission.id}"
     
     def create_env(self) -> list[V1EnvVar]:
         env = [V1EnvVar(name="ASSIGNMENT_SETTINGS",value=json.dumps(self.assignment.settings.to_dict(),default=json_serial))]
@@ -319,6 +328,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             env=env,
             image=self.get_image(),
             image_pull_policy=self.image_pull_policy,
+            image_pull_secrets=self.image_pull_secrets,
             working_dir="/",
             volumes=volumes,
             volume_mounts=volume_mounts,

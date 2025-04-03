@@ -60,7 +60,7 @@ kubeAutogradeExecutor:
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
   tag: latest
   imagePullPolicy: "Always"
-  imagePullSecrets: {}
+  imagePullSecrets: []
   labels: {}
   namespace: null
   extraVolumes: ""
