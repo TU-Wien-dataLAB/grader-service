@@ -205,10 +205,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         # clean start to autograde process
         if os.path.exists(self.input_path):
             shutil.rmtree(self.input_path, onerror=rm_error)
-        os.mkdir(self.input_path)
+        os.makedirs(self.input_path, exist_ok=True)
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path, onerror=rm_error)
-        os.mkdir(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
 
