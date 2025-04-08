@@ -12,21 +12,26 @@ class User(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, name=None):  # noqa: E501
+    def __init__(self, name=None, display_name=None):  # noqa: E501
         """User - a model defined in OpenAPI
 
         :param name: The name of this User.  # noqa: E501
         :type name: str
+        :param display_name: The display_name of this User.  # noqa: E501
+        :type display_name: str
         """
         self.openapi_types = {
-            'name': str
+            'name': str,
+            'display_name': str
         }
 
         self.attribute_map = {
-            'name': 'name'
+            'name': 'name',
+            'display_name': 'display_name'
         }
 
         self._name = name
+        self._display_name = display_name
 
     @classmethod
     def from_dict(cls, dikt) -> 'User':
@@ -59,3 +64,24 @@ class User(Model):
         """
 
         self._name = name
+
+    @property
+    def display_name(self) -> str:
+        """Gets the display_name of this User.
+
+
+        :return: The display_name of this User.
+        :rtype: str
+        """
+        return self._display_name
+
+    @display_name.setter
+    def display_name(self, display_name: str):
+        """Sets the display_name of this User.
+
+
+        :param display_name: The display_name of this User.
+        :type display_name: str
+        """
+
+        self._display_name = display_name

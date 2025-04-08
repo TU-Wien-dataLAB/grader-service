@@ -5,7 +5,7 @@
 #
 # Python (service):
 # call in service root directory
-# java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py,__init__.py -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
+# java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py,__init__.py -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
 
 # 
 # Python (labextension):
@@ -34,8 +34,12 @@ components:
         name:
           type: "string"
           example: "Baz Bar"
+        display_name:
+          type: "string"
+          example: "Baz Bar"
       example:
         name: "Baz Bar"
+        display_name: "Baz Bar"
     Lecture:
       type: "object"
       properties:
