@@ -18,18 +18,7 @@ depends_on = None
 
 def upgrade():
     # add display name column to user table without data
-    op.add_column('user', sa.Column('display_name',sa.Unicode(255),nullable=True))
-
-    # set for each user the display name to the current name
-    op.execute('UPDATE user SET display_name = name')
-
-    # alter display name column of user table to not allow null values
-    connection = op.get_bind()
-    if connection.dialect.name != "sqlite":
-        op.alter_column('user', 'display_name', nullable=False)
-    else:
-        with op.batch_alter_table('user') as batch_op:
-            batch_op.alter_column('display_name', nullable=False)
+    op.add_column('user', sa.Column('display_name', sa.Unicode(255), nullable=False, server_default=sa.Computed('name')))
 
 def downgrade():
     op.drop_column('user', 'display_name')
