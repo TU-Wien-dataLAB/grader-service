@@ -67,6 +67,7 @@ class Submission(Base, Serializable):
             manual_status=self.manual_status,
             score_scaling=self.score_scaling,
             grading_score=self.grading_score,
+            user_display_name=self.user.display_name,
             score=self.score,
             assignid=self.assignid,
             commit_hash=self.commit_hash,

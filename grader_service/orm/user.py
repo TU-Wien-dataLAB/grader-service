@@ -17,6 +17,7 @@ from grader_service.utils import new_token
 class User(Base, Serializable):
     __tablename__ = "user"
     name = Column(String(255), primary_key=True)
+    display_name = Column(String(255), nullable=False)
 
     roles = relationship("Role", back_populates="user")
     submissions = relationship("Submission", back_populates="user")
@@ -60,9 +61,9 @@ class User(Base, Serializable):
         return auth_state
 
     def serialize(self):
-        return {"name": self.name}
+        return {"name": self.name, "display_name": self.display_name}
 
 
     @property
     def model(self) -> user.User:
-        return user.User(name=self.name)
+        return user.User(name=self.name, display_name=self.display_name)

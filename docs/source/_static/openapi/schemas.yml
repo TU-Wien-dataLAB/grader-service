@@ -155,6 +155,8 @@ components:
             - "grading_failed"
         username:
           type: string
+        user_display_name:
+          type: string
         grading_score:
           type: number
           format: float

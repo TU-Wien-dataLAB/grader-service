@@ -12,7 +12,7 @@ class Submission(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, grading_score=None, score_scaling=None, score=None, assignid=None, commit_hash=None, feedback_status=None, edited=None):  # noqa: E501
+    def __init__(self, id=None, submitted_at=None, auto_status=None, manual_status=None, username=None, user_display_name=None, grading_score=None, score_scaling=None, score=None, assignid=None, commit_hash=None, feedback_status=None, edited=None):  # noqa: E501
         """Submission - a model defined in OpenAPI
 
         :param id: The id of this Submission.  # noqa: E501
@@ -25,6 +25,8 @@ class Submission(Model):
         :type manual_status: str
         :param username: The username of this Submission.  # noqa: E501
         :type username: str
+        :param user_display_name: The user_display_name of this Submission.  # noqa: E501
+        :type user_display_name: str
         :param grading_score: The grading_score of this Submission.  # noqa: E501
         :type grading_score: float
         :param score_scaling: The score_scaling of this Submission.  # noqa: E501
@@ -46,6 +48,7 @@ class Submission(Model):
             'auto_status': str,
             'manual_status': str,
             'username': str,
+            'user_display_name': str,
             'grading_score': float,
             'score_scaling': float,
             'score': float,
@@ -61,6 +64,7 @@ class Submission(Model):
             'auto_status': 'auto_status',
             'manual_status': 'manual_status',
             'username': 'username',
+            'user_display_name': 'user_display_name',
             'grading_score': 'grading_score',
             'score_scaling': 'score_scaling',
             'score': 'score',
@@ -75,6 +79,7 @@ class Submission(Model):
         self._auto_status = auto_status
         self._manual_status = manual_status
         self._username = username
+        self._user_display_name = user_display_name
         self._grading_score = grading_score
         self._score_scaling = score_scaling
         self._score = score
@@ -210,6 +215,27 @@ class Submission(Model):
         """
 
         self._username = username
+
+    @property
+    def user_display_name(self) -> str:
+        """Gets the user_display_name of this Submission.
+
+
+        :return: The user_display_name of this Submission.
+        :rtype: str
+        """
+        return self._user_display_name
+
+    @user_display_name.setter
+    def user_display_name(self, user_display_name: str):
+        """Sets the user_display_name of this Submission.
+
+
+        :param user_display_name: The user_display_name of this Submission.
+        :type user_display_name: str
+        """
+
+        self._user_display_name = user_display_name
 
     @property
     def grading_score(self) -> float:
