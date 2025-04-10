@@ -19,10 +19,11 @@ import uuid
 from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable, List, Optional, Union
 from urllib.parse import urlparse, parse_qsl
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from grader_service._version import __version__
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -818,7 +819,7 @@ class GraderBaseHandler(BaseHandler):
                             reason=msg)
         return submission
 
-    def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None):
+    def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None) -> List[Submission]:
         query = (
             self.session.query(Submission.username,
                                func.max(Submission.date).label("max_date"))
@@ -837,6 +838,7 @@ class GraderBaseHandler(BaseHandler):
         # Build the main query
         submissions = (
             self.session.query(Submission)
+            .options(joinedload(Submission.user))
             .join(subquery,
                   (Submission.username == subquery.c.username) & (
                           Submission.date == subquery.c.max_date) & (
@@ -848,8 +850,16 @@ class GraderBaseHandler(BaseHandler):
         )
 
         return submissions
-
-    def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None):
+    
+    def get_all_submissions(self, assignment_id) -> List[Submission]:
+        query = (self.session.query(Submission)
+            .options(joinedload(Submission.user))
+            .filter(Submission.assignid == assignment_id)
+            .filter(Submission.deleted == DeleteState.active)
+            )
+        return query.all()
+        
+    def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None) -> List[Submission]:
         query = (
             self.session.query(Submission.username,
                                func.max(Submission.score).label("max_score"))
@@ -868,6 +878,7 @@ class GraderBaseHandler(BaseHandler):
         # Build the main query
         submissions = (
             self.session.query(Submission)
+            .options(joinedload(Submission.user))
             .join(subquery,
                   (Submission.username == subquery.c.username) & (
                           Submission.score == subquery.c.max_score) & (

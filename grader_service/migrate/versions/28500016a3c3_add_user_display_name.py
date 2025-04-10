@@ -17,8 +17,20 @@ depends_on = None
 
 
 def upgrade():
-    # add display name column to user table without data
-    op.add_column('user', sa.Column('display_name', sa.Unicode(255), nullable=False, server_default=sa.Computed('name')))
+    # Step 1: Add column as nullable
+    op.add_column('user', sa.Column('display_name', sa.String(), nullable=True))
+
+    # Step 2: Copy data from 'name' to 'display_name'
+    user_table = sa.table('user',
+        sa.column('name', sa.String),
+        sa.column('display_name', sa.String),
+    )
+    op.execute(user_table.update().values(display_name=user_table.c.name))
+
+    # Step 3: Make the column non-nullable
+    # SQLite needs batch mode; PostgreSQL can handle direct alter
+    with op.batch_alter_table('user') as batch_op:
+        batch_op.alter_column('display_name', nullable=False)
 
 def downgrade():
     op.drop_column('user', 'display_name')

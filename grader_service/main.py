@@ -374,6 +374,7 @@ class GraderService(config.Application):
                         self.log.info(f"Adding new user with username {username}")
                         user = User()
                         user.name = username
+                        user.display_name = username
                         db.add(user)
                         db.commit()
 

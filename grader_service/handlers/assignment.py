@@ -12,6 +12,7 @@ import isodate
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.handlers.submissions import SubmissionHandler
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import Submission
 from grader_service.orm.base import DeleteState
@@ -197,7 +198,8 @@ class AssignmentObjectHandler(GraderBaseHandler):
         :raises HTTPError: throws err if assignment was not found
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
-        self.validate_parameters()
+        self.validate_parameters("recalc-scores")
+        recalc_scores = self.get_argument("recalc-scores", None) == "true"
         body = tornado.escape.json_decode(self.request.body)
         assignment_model = AssignmentModel.from_dict(body)
         assignment = self.get_assignment(lecture_id, assignment_id)
@@ -226,6 +228,20 @@ class AssignmentObjectHandler(GraderBaseHandler):
             _check_full_auto_grading(self, model)
 
         assignment.settings = assignment_model.settings
+
+        # recalculate scores of assignment submissions
+        if recalc_scores:
+            submissions = self.get_all_submissions(assignment_id)
+            role = Role()
+            role.role = Scope.instructor
+            for sub in submissions:
+                late_submission_scaling = SubmissionHandler.calculate_late_submission_scaling(assignment, sub.date, role)
+                # change score if the scaling changed
+                if sub.score_scaling != late_submission_scaling:
+                    sub.score = late_submission_scaling * sub.grading_score
+                    sub.score_scaling = late_submission_scaling
+
+                
         
         self.session.commit()
         self.write_json(assignment)

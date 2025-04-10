@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from grader_service.orm.base import Base, DeleteState, Serializable
 
@@ -54,23 +55,30 @@ class Submission(Base, Serializable):
                         back_populates="submission", uselist=False)
     properties = relationship("SubmissionProperties",
                               back_populates="submission", uselist=False)
+    
+    @hybrid_property
+    def user_display_name(self):
+        if self.user is None:
+            return self.username
+        return self.user.display_name
 
     @property
     def model(self) -> submission.Submission:
-        return submission.Submission(
+        model = submission.Submission(
             id=self.id,
             submitted_at=None
             if self.date is None
             else (self.date.isoformat("T", "milliseconds") ),
             username=self.username,
+            user_display_name = self.user_display_name,
             auto_status=self.auto_status,
             manual_status=self.manual_status,
             score_scaling=self.score_scaling,
             grading_score=self.grading_score,
-            user_display_name=self.user.display_name,
             score=self.score,
             assignid=self.assignid,
             commit_hash=self.commit_hash,
             feedback_status=self.feedback_status,
             edited=self.edited
         )
+        return model
