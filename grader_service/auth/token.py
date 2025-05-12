@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from jinja2 import Template
 from grader_service.auth.auth import Authenticator
 from grader_service.auth.login import LogoutHandler
-from grader_service.handlers.base_handler import BaseHandler
+from grader_service.handlers.base_handler import GraderBaseHandler, BaseHandler
 from tornado.escape import url_escape
 from tornado.httputil import url_concat
 from grader_service.auth.login import LoginHandler
@@ -39,32 +39,8 @@ class JupyterHubTokenAuthenticator(Authenticator):
         return [(self.login_url(base_url), TokenLoginHandler)]
     
 
-class TokenLoginHandler(LoginHandler):
+class TokenLoginHandler(BaseHandler):
 
-    def _render(self, login_error=None, username=None):
-        context = {
-            "next": url_escape(self.get_argument('next', default='')),
-            "username": username,
-            "login_error": login_error,
-            "login_url": self.settings['login_url'],
-            "authenticator_login_url": url_concat(
-                self.authenticator.login_url(self.application.base_url),
-                {
-                    'next': self.get_argument('next', ''),
-                },
-            ),
-            "authenticator": self.authenticator,
-            "xsrf": self.xsrf_token.decode('ascii'),
-        }
-        custom_html = Template(
-            self.authenticator.get_custom_html(self.application.base_url)
-        ).render(**context)
-        return self.render_template(
-            'auth/login.html.j2',
-            **context,
-            custom_html=custom_html,
-        )
-    
     async def post(self):
         data = json.loads(self.request.body)     
         user = await self.login_user(data)
