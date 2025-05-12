@@ -1,4 +1,5 @@
 import json
+import os
 from urllib.parse import urlencode
 
 from jinja2 import Template
@@ -64,7 +65,13 @@ class TokenLoginHandler(LoginHandler):
         user = await self.login_user(data)
 
         if user:
-            token = APIToken.new(user=user, client_id="token-auth-client-id", oauth_client="token")
+            # create a API token for the user, that he can use to authenticate and return it
+            token = APIToken.new(
+                user=user,
+                scopes=["identify"],  # Define the scopes for the token
+                note="User login token",
+                expires_in=os.environ.get("TOKEN_EXPIRES_IN", 1209600),  # Set expiration time
+            )
             self.write({"api_token": token})
         else:
             html = await self._render(

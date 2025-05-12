@@ -408,7 +408,7 @@ class Authenticator(LoggingConfigurable):
         """,
     )
 
-    post_auth_hook = Any(
+    post_auth_hook = Callable(
         config=True,
         help="""
         An optional hook function that you can implement to do some
