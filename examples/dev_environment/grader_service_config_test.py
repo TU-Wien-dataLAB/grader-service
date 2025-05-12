@@ -46,6 +46,8 @@ from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 
+c.JupyterHubTokenAuthenticator.user_info_url = "http://localhost:8080/hub/api/user"
+
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
     print("####### POST AUTH HOOK")
     session = handler.session

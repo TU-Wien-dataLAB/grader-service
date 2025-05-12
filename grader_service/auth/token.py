@@ -3,10 +3,8 @@ import os
 from urllib.parse import urlencode
 
 from jinja2 import Template
-import tornado.escape
 from grader_service.auth.auth import Authenticator
 from grader_service.auth.login import LogoutHandler
-import requests
 from grader_service.handlers.base_handler import BaseHandler
 from tornado.escape import url_escape
 from tornado.httputil import url_concat
@@ -14,16 +12,23 @@ from grader_service.auth.login import LoginHandler
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.escape import json_decode
 from grader_service.auth.oauth2 import OAuthenticator
-from tornado import web
+from traitlets import Unicode
 
 from grader_service.orm.api_token import APIToken
 class JupyterHubTokenAuthenticator(Authenticator):
+    user_info_url = Unicode(
+        config=True,
+        help="""The URL to where this authenticator makes a request to acquire user
+        details with an access token received via jupyterhub."""
+    )
+
+    http_client = AsyncHTTPClient()
+
     async def authenticate(self, handler, data):
         headers = {"Authorization" : f"Bearer {data["token"]}"}
-        http_client = AsyncHTTPClient()
-        request = HTTPRequest(url="http://localhost:8080/hub/api/user", headers=headers, method='GET')
+        request = HTTPRequest(url=self.user_info_url, headers=headers, method='GET')
 
-        response = await http_client.fetch(request=request)
+        response = await self.http_client.fetch(request=request)
         response = json_decode(response.body)
         username = response["name"]
         groups = response["groups"]
@@ -61,7 +66,7 @@ class TokenLoginHandler(LoginHandler):
         )
     
     async def post(self):
-        data = json.loads(self.request.body)        
+        data = json.loads(self.request.body)     
         user = await self.login_user(data)
 
         if user:
