@@ -1,9 +1,10 @@
 # Installation
 
 ```{toctree}
-:maxdepth: 3
+:maxdepth: 5
 
-package_installation
-installation_from_source
+local/local
+docker
+kubernetes
 ```
 
