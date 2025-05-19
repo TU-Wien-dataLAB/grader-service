@@ -90,7 +90,8 @@ def app(tmpdir, sql_alchemy_sessionmaker):
         oauth_provider=None,
         session_maker=sql_alchemy_sessionmaker,
         cookie_secret="test",
-        login_url="/login"
+        login_url="/login",
+        logout_url="/logout"
     )
     yield application
 

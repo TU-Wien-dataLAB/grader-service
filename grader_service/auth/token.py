@@ -36,10 +36,11 @@ class JupyterHubTokenAuthenticator(Authenticator):
         return {"name" : username, "groups": groups}
 
     def get_handlers(self, base_url):
-        return [(self.login_url(base_url), TokenLoginHandler)]
+        handlers = [(self.logout_url(base_url), LogoutHandler), (self.login_url(base_url), TokenLoginHandler)]
+        return handlers
     
 
-class TokenLoginHandler(BaseHandler):
+class TokenLoginHandler(LoginHandler):
 
     async def post(self):
         data = json.loads(self.request.body)     
@@ -56,8 +57,10 @@ class TokenLoginHandler(BaseHandler):
             self.write({"api_token": token})
         else:
             html = await self._render(
-                login_error='Invalid username or password', username=data['username']
+                login_error='Invalid username or password'
             )
+            self.set_status(404)
             await self.finish(html)
 
     
+

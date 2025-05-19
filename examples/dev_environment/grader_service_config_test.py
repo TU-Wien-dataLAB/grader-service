@@ -59,6 +59,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     if user_model is None:
         user_model = User()
         user_model.name = username
+        user_model.display_name = username
         session.add(user_model)
         session.commit()
     
