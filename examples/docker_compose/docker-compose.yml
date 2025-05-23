@@ -5,7 +5,7 @@ services:
   service:
     build:
       context: ../..
-      dockerfile: Dockerfile.Service
+      dockerfile: examples/docker_compose/Dockerfile-Service
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - ./data:/data
@@ -14,7 +14,7 @@ services:
   hub:
     build:
       context: ../..
-      dockerfile: Dockerfile.Hub
+      dockerfile: examples/docker_compose/Dockerfile-Hub
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./jupyterhub_config.py:/app/jupyterhub_config.py

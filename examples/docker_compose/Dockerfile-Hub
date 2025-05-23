@@ -9,17 +9,9 @@ RUN apt-get update && \
 WORKDIR /app
 
 
-# Copy necessary files and folders
-COPY ./grader_convert ./grader_convert
-COPY ./grader_labextension ./grader_labextension
-COPY ./jupyterhub_config.py ./jupyterhub_config.py
+COPY /examples/docker_compose/jupyterhub_config.py ./jupyterhub_config.py
 
-# Install python requirements and the packages
-RUN python3 -m pip install -r ./grader_convert/requirements.txt && \
-    python3 -m pip install -r ./grader_labextension/requirements.txt
-
-RUN python3 -m pip install --no-use-pep517 ./grader_convert/ && \
-    python3 -m pip install ./grader_labextension/
+RUN pip install grader_labextension
 
 RUN python3 -m pip install jupyterhub configurable-http-proxy dockerspawner jupyterlab
 
