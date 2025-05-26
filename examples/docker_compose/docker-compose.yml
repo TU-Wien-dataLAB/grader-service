@@ -1,5 +1,5 @@
 version: '3.1'
-
+name: 'grader'
 services:
 
   service:
@@ -10,6 +10,8 @@ services:
       - ./grader_service_config.py:/app/grader_service_config.py
       - ./data:/data
     network_mode: "host"
+    ports: 
+    - "4010:4010"
 
   hub:
     build:
@@ -18,5 +20,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./jupyterhub_config.py:/app/jupyterhub_config.py
-      - ./data:/data
+      - ./data-hub:/data
     network_mode: "host"
+    ports: 
+    - "8080:8080"

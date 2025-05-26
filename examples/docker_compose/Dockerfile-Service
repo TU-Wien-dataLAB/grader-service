@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster
+FROM python:3.13-slim
 
 # Install git
 RUN apt-get update && \
@@ -9,10 +9,10 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Copy necessary files and folders
+COPY ./pyproject.toml MANIFEST.in ./
 COPY ./grader_service ./grader_service
-COPY ./examples/docker_compose/grader_service_config.py ./grader_service_config.py
 
-RUN pip install ./grader_service/
+RUN pip install .
 
 # Set default branch to main and default user
 RUN git config --global init.defaultBranch main && \
@@ -20,8 +20,8 @@ RUN git config --global init.defaultBranch main && \
     git config --global user.email "youremail@example.com"
 
 # Create new databse
+WORKDIR /app/service_dir
 RUN grader-service-migrate
-
 EXPOSE 4010
 
-ENTRYPOINT ["grader-service", "-f", "/app/grader_service_config.py"]
+CMD ["grader-service", "-f", "/app/grader_service_config.py"]

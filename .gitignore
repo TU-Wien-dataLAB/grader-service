@@ -18,6 +18,10 @@ jupyterhub.sqlite*
 /examples/dev_environment/venv
 /service_dir
 
+/examples/docker_compose/data
+/examples/docker_compose/data-hub
+
+
 ### Linux ###
 *~
 

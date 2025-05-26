@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster
+FROM python:3.13-slim
 
 # Install git
 RUN apt-get update && \
@@ -8,12 +8,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-
-COPY /examples/docker_compose/jupyterhub_config.py ./jupyterhub_config.py
+ENV JUPYTERHUB_CRYPT_KEY=e3f92a0d5e37446c7e894a2ef6c6ec3bcb4aa3c38d2a442eb567adf780597aa0
 
 RUN pip install grader_labextension
 
-RUN python3 -m pip install jupyterhub configurable-http-proxy dockerspawner jupyterlab
+RUN python3 -m pip install jupyterhub configurable-http-proxy dockerspawner jupyterlab oauthenticator
 
 # Create a dedicated user for JupyterHub
 RUN useradd -m jupyterhubuser
@@ -25,4 +24,4 @@ RUN mkdir /data && chown -R jupyterhubuser:jupyterhubuser /data
 # Switch to the jupyterhub user
 USER jupyterhubuser
 
-ENTRYPOINT ["jupyterhub", "-f", "/app/jupyterhub_config.py"]
+CMD ["jupyterhub", "-f", "/app/jupyterhub_config.py"]

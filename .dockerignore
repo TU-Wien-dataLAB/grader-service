@@ -3,8 +3,6 @@
 
 # Include the specific folders and file you want
 !./grader_service/
-!grader_service_config.py
-!jupyterhub_config.py
 !grader_service.sh
 !pyproject.toml
 !setup.py

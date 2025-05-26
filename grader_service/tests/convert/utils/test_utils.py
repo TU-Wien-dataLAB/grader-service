@@ -8,7 +8,9 @@ import zipfile
 
 from nbformat.v4 import new_output
 from os.path import join
-from setuptools.archive_util import UnrecognizedFormat
+
+class UnrecognizedFormat(Exception):
+    pass
 
 
 from grader_service.convert import utils
