@@ -53,6 +53,7 @@ Grader Labextension
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
 Try out GraderService:
+
 .. TODO: update binder
 
 .. image:: https://mybinder.org/badge_logo.svg

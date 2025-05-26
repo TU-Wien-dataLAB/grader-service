@@ -28,6 +28,26 @@ def dummy_authenticator():
     authenticator.allow_all = True
     yield authenticator
 
+async def test_dummy_authenticator_with_global_password(
+    app: GraderServer,
+    service_base_url,
+    http_server_client: AsyncHTTPServerClient,
+    default_token,
+    dummy_authenticator: DummyAuthenticator,
+    default_roles,
+    default_user_login,
+    sql_alchemy_sessionmaker,
+    default_user,
+):
+    app.add_handlers(host_pattern='.*', host_handlers=dummy_authenticator.get_handlers('/'))
+    app.authenticator = dummy_authenticator
+
+    with patch.object(DummyAuthenticator, 'password', new='password'):
+        response = await http_server_client.fetch('/login', method="POST", 
+        body=f'username={default_user.name}&password=password',follow_redirects=False, raise_error=False)
+
+    assert response.code == 302
+    
 
 async def test_login_handler_get_method(
         app: GraderServer,
@@ -60,15 +80,13 @@ async def test_login_handler_post_method(
     sql_alchemy_sessionmaker,
     default_user,
 ):
-    user_mock = AsyncMock(return_value=None)
-
 
     app.add_handlers(host_pattern='.*', host_handlers=dummy_authenticator.get_handlers('/'))
     app.authenticator = dummy_authenticator
     
     
     response = await http_server_client.fetch(
-    '/login', method="POST", body=f'username={default_user.name}&password=password', 
+    '/login', method="POST", body=f'username={default_user.name}', 
     follow_redirects=False, raise_error=False)
 
 
@@ -92,7 +110,7 @@ async def test_login_handler_post_method_with_no_user(
     app.authenticator = dummy_authenticator
     
     response = await http_server_client.fetch(
-    '/login', method="POST", body='username',request_timeout=100000)
+    '/login', method="POST", body='username=',request_timeout=100000, raise_error=False)
 
 
     assert response.code == 404
