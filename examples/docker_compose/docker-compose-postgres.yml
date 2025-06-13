@@ -1,0 +1,30 @@
+services:
+  db-init:
+    build:
+      context: ../..
+      dockerfile: examples/docker_compose/Dockerfile-DBInit
+    environment:
+      PGPASSWORD: postgres
+      DATABASE_TYPE: postgres
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - ./data_only.sql:/app/data_only.sql
+    networks:
+      - network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      # required for using postgres image
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: grader
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      retries: 5

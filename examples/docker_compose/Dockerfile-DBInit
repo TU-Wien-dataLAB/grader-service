@@ -1,0 +1,22 @@
+FROM postgres
+
+# Install git
+RUN apt-get update && \
+    apt-get install -y python3 python3-venv && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy necessary files and folders
+COPY ./pyproject.toml MANIFEST.in ./
+COPY ./grader_service ./grader_service
+COPY ./examples/docker_compose/init-db.sh ./init-db.sh
+
+# Create a virtual environment
+RUN python3 -m venv /venv
+
+# Activate venv and install the package
+RUN /venv/bin/pip install .
+
+CMD ["sh", "-c", "/app/init-db.sh"]
