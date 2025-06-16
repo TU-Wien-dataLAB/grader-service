@@ -16,6 +16,7 @@ Grader Service offers lecturers and students a well integrated teaching environm
 
 grader_service
 installation/installation
+configuration/index
 get_started
 instructor_guide/instructor_guide
 student_guide
