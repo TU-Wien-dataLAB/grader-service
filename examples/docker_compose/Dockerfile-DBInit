@@ -11,8 +11,6 @@ WORKDIR /app
 # Copy necessary files and folders
 COPY ./pyproject.toml MANIFEST.in ./
 COPY ./grader_service ./grader_service
-COPY ./examples/docker_compose/init-db.sh ./init-db.sh
-
 # Create a virtual environment
 RUN python3 -m venv /venv
 
