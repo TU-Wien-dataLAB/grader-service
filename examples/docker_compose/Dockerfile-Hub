@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM quay.io/jupyterhub/jupyterhub
 
 # Install git
 RUN apt-get update && \
@@ -12,16 +12,6 @@ ENV JUPYTERHUB_CRYPT_KEY=e3f92a0d5e37446c7e894a2ef6c6ec3bcb4aa3c38d2a442eb567adf
 
 RUN pip install grader_labextension
 
-RUN python3 -m pip install jupyterhub configurable-http-proxy dockerspawner jupyterlab oauthenticator
-
-# Create a dedicated user for JupyterHub
-RUN useradd -m jupyterhubuser
-
-# Change ownership so that the non-root user can access it
-RUN chown -R jupyterhubuser:jupyterhubuser /app
-RUN mkdir /data && chown -R jupyterhubuser:jupyterhubuser /data
-
-# Switch to the jupyterhub user
-USER jupyterhubuser
+RUN python3 -m pip install dockerspawner oauthenticator
 
 CMD ["jupyterhub", "-f", "/app/jupyterhub_config.py"]

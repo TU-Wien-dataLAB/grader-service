@@ -1,4 +1,3 @@
-version: '3.1'
 name: 'grader'
 services:
 
@@ -8,19 +7,84 @@ services:
       dockerfile: examples/docker_compose/Dockerfile-Service
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
-      - ./data:/data
-    network_mode: "host"
-    ports: 
-    - "4010:4010"
+      - service_dir:/app/service_dir
+    environment:
+      DATABASE_TYPE: ${DATABASE_TYPE}
+      RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
+      RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
+    restart: always
+    depends_on:
+      init-volume:
+        condition: service_completed_successfully
+    networks:
+      - network
+    expose:
+      - "4010"
 
   hub:
     build:
       context: ../..
       dockerfile: examples/docker_compose/Dockerfile-Hub
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:rw
       - ./jupyterhub_config.py:/app/jupyterhub_config.py
       - ./data-hub:/data
-    network_mode: "host"
-    ports: 
-    - "8080:8080"
+    restart: always
+    depends_on:
+      - service
+    networks:
+      - network
+    ports:
+      - "8080:8080"
+
+  rabbitmq:
+    image: rabbitmq:latest
+    networks:
+      - network
+    environment:
+      RABBITMQ_DEFAULT_VHOST: grader
+      RABBITMQ_DEFAULT_USER: grader_user
+      RABBITMQ_DEFAULT_PASS: grader_password
+    expose:
+      - "5672"
+    volumes:
+      - ./data/rabittmq:/var/lib/rabittmq
+
+  celery-worker:
+    build:
+      context: ../..
+      dockerfile: examples/docker_compose/Dockerfile-Service
+    networks:
+      - network
+    command:
+      - "grader-worker"
+      - "-f"
+      - "/app/grader_service_config.py"
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - service_dir:/app/service_dir
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
+      RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
+      DATABASE_TYPE: ${DATABASE_TYPE}
+
+  init-volume:
+    build:
+      context: .
+      dockerfile: Dockerfile-VolumeInit
+    volumes:
+      - ./service_dir:/local_service_dir
+      - service_dir:/volume_service_dir
+    networks:
+      - network
+
+
+volumes:
+  jupyterhub-data:
+  service_dir:
+
+networks:
+  network:
+    driver: bridge

@@ -25,7 +25,7 @@ class JupyterHubTokenAuthenticator(Authenticator):
     http_client = AsyncHTTPClient()
 
     async def authenticate(self, handler, data):
-        headers = {"Authorization" : f"Bearer {data["token"]}"}
+        headers = {"Authorization" : f"Bearer {data['token']}"}
         request = HTTPRequest(url=self.user_info_url, headers=headers, method='GET')
 
         response = await self.http_client.fetch(request=request)

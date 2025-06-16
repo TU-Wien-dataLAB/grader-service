@@ -20,6 +20,8 @@ jupyterhub.sqlite*
 
 /examples/docker_compose/data
 /examples/docker_compose/data-hub
+/examples/docker_compose/service_dir
+
 
 
 ### Linux ###

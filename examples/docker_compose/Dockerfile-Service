@@ -13,15 +13,14 @@ COPY ./pyproject.toml MANIFEST.in ./
 COPY ./grader_service ./grader_service
 
 RUN pip install .
+RUN pip install numpy ipykernel
 
 # Set default branch to main and default user
 RUN git config --global init.defaultBranch main && \
     git config --global user.name "Your Name" && \
     git config --global user.email "youremail@example.com"
 
-# Create new databse
 WORKDIR /app/service_dir
-RUN grader-service-migrate
 EXPOSE 4010
 
 CMD ["grader-service", "-f", "/app/grader_service_config.py"]
