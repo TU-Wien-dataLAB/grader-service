@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from sqlalchemy import or_, Column, Integer, ForeignKey, Unicode, DateTime, \
     inspect
@@ -119,7 +119,7 @@ class Hashed(Expiring):
         # so we aren't comparing with all tokens
         prefix_match = db.query(cls).filter_by(prefix=prefix)
         prefix_match = prefix_match.filter(
-            or_(cls.expires_at is None, cls.expires_at >= cls.now())
+            or_(cls.expires_at is None, cls.expires_at >= cls.now)
         )
         return prefix_match
 
@@ -166,15 +166,14 @@ class APIToken(Hashed, Base):
     def owner(self):
         return self.user
 
-    # added in 2.0
     client_id = Column(
         Unicode(255),
         ForeignKey(
             'oauth_client.identifier',
             ondelete='CASCADE',
         ),
+        nullable=True,  # Allow null for non-OAuth tokens
     )
-
     # FIXME: refresh_tokens not implemented
     # should be a relation to another token table
     # refresh_token = Column(
@@ -186,10 +185,8 @@ class APIToken(Hashed, Base):
     # the browser session id associated with a given token,
     # if issued during oauth to be stored in a cookie
     session_id = Column(Unicode(255), nullable=True)
-
-    # token metadata for bookkeeping
-    now = datetime.utcnow  # for expiry
-    created = Column(DateTime, default=datetime.utcnow)
+    now = datetime.now(timezone.utc)
+    created = Column(DateTime, default=datetime.now(timezone.utc))
     expires_at = Column(DateTime, default=None, nullable=True)
     last_activity = Column(DateTime)
     note = Column(Unicode(1023))
@@ -197,7 +194,7 @@ class APIToken(Hashed, Base):
 
     def __repr__(self):
         kind = 'user'
-        name = self.user.name
+        name = self.user.name if self.user else None
         return "<{cls}('{pre}...', {kind}='{name}', client_id={client_id!r})>".format(
             cls=self.__class__.__name__,
             pre=self.prefix,
@@ -208,23 +205,13 @@ class APIToken(Hashed, Base):
 
     @classmethod
     def find(cls, db, token):
-        """Find a token object by value.
-
-        Returns None if not found.
-
-        """
+        """Find a token object by value. Returns None if not found."""
         prefix_match = cls.find_prefix(db, token)
-        prefix_match = prefix_match.filter(cls.username is not None)
+        prefix_match = prefix_match.filter(cls.username.isnot(None))
         for orm_token in prefix_match:
             if orm_token.match(token):
-                if not orm_token.client_id:
-                    app_log.warning(
-                        "Deleting stale oauth token for %s with no client",
-                        orm_token.user and orm_token.user.name,
-                    )
-                    db.delete(orm_token)
-                    db.commit()
-                    return
+                # Only purge if it's explicitly broken (has no client *and* shouldn't exist)
+                # But we now support client-less tokens.
                 return orm_token
 
     @classmethod
@@ -247,27 +234,19 @@ class APIToken(Hashed, Base):
         db = inspect(user).session
         if token is None:
             token = new_token()
-            # Don't need hash + salt rounds on generated tokens,
-            # which already have good entropy
             generated = True
         else:
             cls.check_token(db, token)
 
-        # Avoid circular import
-        from .oauthclient import OAuthClient
-
-        if oauth_client is None:
-            # lookup oauth client by identifier
-            if client_id is None:
-                # default: global 'grader' client
-                client_id = "grader"
+        if oauth_client is None and client_id is not None:
+            # Lazy-load only if a specific client_id was provided
+            from .oauthclient import OAuthClient
             oauth_client = db.query(OAuthClient).filter_by(
-                identifier=client_id).one()
-        if client_id is None:
+                identifier=client_id).one_or_none()
+
+        if oauth_client:
             client_id = oauth_client.identifier
 
-        # two stages to ensure orm_token.generated has been set
-        # before token setter is called
         orm_token = cls(
             generated=generated,
             note=note or '',
@@ -277,12 +256,10 @@ class APIToken(Hashed, Base):
         )
         db.add(orm_token)
         orm_token.token = token
-
-        assert user.name is not None
         orm_token.user = user
+
         if expires_in is not None:
-            orm_token.expires_at = cls.now() + timedelta(seconds=expires_in)
+            orm_token.expires_at = cls.now + timedelta(seconds=expires_in)
 
         db.commit()
-        return token
-
+        return orm_token if return_orm else token

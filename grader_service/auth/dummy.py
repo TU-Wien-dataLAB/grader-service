@@ -11,11 +11,6 @@ class DummyAuthenticator(Authenticator):
     If a non-empty password is set, any username will be allowed
     if it logs in with that password.
 
-    .. versionadded:: 1.0
-
-    .. versionadded:: 5.0
-        `allow_all` defaults to True,
-        preserving default behavior.
     """
     
     logout_handler = LogoutHandler

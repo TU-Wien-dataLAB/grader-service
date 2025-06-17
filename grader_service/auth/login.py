@@ -146,6 +146,7 @@ class LoginHandler(BaseHandler):
             html = await self._render(
                 login_error='Invalid username or password', username=data['username']
             )
+            self.set_status(404)
             await self.finish(html)
 
 

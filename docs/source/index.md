@@ -12,15 +12,16 @@ Grader Service offers lecturers and students a well integrated teaching environm
 ## Contents
 
 ```{toctree}
-:maxdepth: 3
+:maxdepth: 4
 
+grader_service
 installation/installation
-get_started
+configuration/index
 instructor_guide/instructor_guide
 student_guide
 admin/administrator
 contribution
-grader_service/grader_service_rest_api
+reference/index
 about
 ```
 

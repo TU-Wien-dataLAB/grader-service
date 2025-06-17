@@ -135,7 +135,12 @@ class GraderService(config.Application):
 
     authenticator_class = Type(
         default_value=DummyAuthenticator,
-        klass=Authenticator, allow_none=False, config=True
+        klass=Authenticator, allow_none=False, config=True,
+        help="""
+        The authenticator class to use for authentication.
+        Default is DummyAuthenticator, which does not require a password by default.
+        You can set this to your own authenticator class, which should inherit from Authenticator.
+        """,
     )
 
     authenticator = Instance(klass=Authenticator)
@@ -143,14 +148,22 @@ class GraderService(config.Application):
     # TODO make configurable
     oauth_token_expires_in = int(1 * 24 * 3600)
 
-    load_roles = Dict(List(),
+    load_roles = Dict(Dict(),
                       help="""
-        Dict of `{'lecture:role': ['usernames']}`  to load at startup.
+        Dict of `{'<lecture-code>': {members: list<str>, role: str}}`  to load at startup.
 
         Example::
 
-            c.GraderService.load_groups = {
-                'groupname:role': ['usernames']
+            c.GraderService.load_roles = {
+                'lecture1': {
+                    'members': ['student1', 'student2'],
+                    'role': 'student'
+                    }
+                },
+                'lecture1': {
+                    'members': ['instructor1', 'instructor2'],
+                    'role': 'instructor'
+                    }
                 },
             }
 
@@ -344,8 +357,9 @@ class GraderService(config.Application):
         """Load predefined groups into the database"""
         with self.session_maker() as db:
             users_loaded = set()
-            for k, users in self.load_roles.items():
-                lecture_code, role = k.split(":", 1)
+            for lecture_code, role_dict in self.load_roles.items():
+                role = role_dict.get("role")
+                users = role_dict.get("members", [])
                 lecture = (
                     db.query(Lecture)
                     .filter(Lecture.code == lecture_code)

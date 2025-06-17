@@ -20,8 +20,6 @@ c.GenericOAuthenticator.logout_redirect_url = "http://localhost:4010/services/gr
 
 c.GenericOAuthenticator.userdata_url = "http://localhost:4010/services/grader/api/user"
 c.GenericOAuthenticator.username_claim = "name"
-
-
 c.Authenticator.enable_auth_state = True
 
 ##############################

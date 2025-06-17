@@ -19,7 +19,8 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 import dateutil.parser
 from dateutil.tz import gettz
 from nbformat.notebooknode import NotebookNode
-from setuptools.archive_util import unpack_archive, unpack_tarfile, unpack_zipfile
+import zipfile
+import tarfile
 from tornado.log import LogFormatter
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
@@ -30,6 +31,17 @@ if sys.platform != "win32":
     import pwd
 else:
     pwd = None
+
+def safe_unpack_archive(src, dest):
+    if zipfile.is_zipfile(src):
+        with zipfile.ZipFile(src, 'r') as zip_ref:
+            zip_ref.extractall(dest)
+    elif tarfile.is_tarfile(src):
+        with tarfile.open(src, 'r:*') as tar_ref:
+            tar_ref.extractall(dest)
+    else:
+        raise ValueError(f"Unsupported archive format: {src}")
+
 
 def get_assignment_settings_from_env() -> AssignmentSettings:
     """Read env var and returns assignment settings
@@ -498,7 +510,7 @@ def unzip(src, dest, zip_ext=None, create_own_folder=False, tree=False):
         if not os.path.isdir(dest):
             os.makedirs(dest)
 
-    unpack_archive(src, dest, drivers=(unpack_zipfile, unpack_tarfile))
+    safe_unpack_archive(src, dest)
 
     # extract flat, don't extract archive files within archive files
     if not tree:

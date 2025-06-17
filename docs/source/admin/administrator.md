@@ -5,6 +5,4 @@
 
 system_architecture
 authenticators
-authenticate_labextension
-assign_user_roles
 ```

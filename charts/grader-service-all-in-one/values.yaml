@@ -1,0 +1,102 @@
+# jupyterhub configuration
+jupyterhub:
+  # configuration of the hub deployment
+  hub:
+    config:
+      # configuration of the JupyterHub authenticator
+      # this chart uses by default the dummy authenticator, which allows any user to log in
+      JupyterHub:
+        authenticator_class: dummy
+      Authenticator:
+        admin_users: 
+          - "admin"
+        load_groups:
+          - "lecture1:instructor":
+              users: 
+                - "admin"
+                - "instructor"
+          - "lecture1:tutor":
+              users:
+                - "tutor"
+          - "lecture1:student":
+              users: 
+                - "student"
+    extraConfig:
+      # to be authenticated in the grader service, we have to start the authentication flow using the pre_spawn_hook
+      01-pre_spawn_hook: |
+        async def pre_spawn_hook(spawner):
+          http_client = AsyncHTTPClient()
+          data = {"token" : spawner.api_token}
+          request = HTTPRequest(url="http://grader-service:4010/services/grader/login", method='POST', body=json_encode(data))
+          
+          response = await http_client.fetch(request=request)
+          grader_api_token = json_decode(response.body)["api_token"]
+          spawner.environment.update({"GRADER_API_TOKEN": grader_api_token})  
+
+        c.Spawner.pre_spawn_hook = pre_spawn_hook
+
+  # configuration of the spawned user pods
+  singleuser:
+    extraEnv:
+      # URL to the grader service, used by the JupyterHub singleuser pods
+      GRADER_HOST_URL: "http://grader-service:4010"
+  
+
+# grader service configuration
+grader-service:
+  extraConfig:
+    01-grader-service-config: |
+      from grader_service.auth.token import JupyterHubTokenAuthenticator
+      c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
+
+      c.JupyterHubTokenAuthenticator.user_info_url = "http://localhost:8080/hub/api/user"
+
+      def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
+        session = handler.session
+        log = handler.log
+        groups: list[str] = authentication["groups"]
+
+        username = authentication["name"]
+        user_model: User = session.query(User).get(username)
+        if user_model is None:
+          user_model = User()
+          user_model.name = username
+          user_model.display_name = username
+          session.add(user_model)
+          session.commit()
+        
+        for group in groups:
+          if (":" in group):
+            split_group = group.split(":")
+            lecture_code = split_group[0]
+            scope = split_group[1]
+            scope = Scope[scope]
+
+            lecture = session.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
+            if lecture is None:
+              lecture = Lecture()
+              lecture.code = lecture_code
+              lecture.name = lecture_code
+              lecture.state = LectureState.active
+              lecture.deleted = DeleteState.active
+              session.add(lecture)
+              session.commit()
+
+            role = session.query(Role).filter(Role.username == username, Role.lectid == lecture.id).one_or_none()
+            if role is None:
+              log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
+              role = Role(username=username, lectid=lecture.id, role=scope)
+              session.add(role)
+              session.commit()
+            else:
+              log.info(f'Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}')
+              role.role = scope
+              session.commit()
+          else:
+            log.info("Found group that doesn't match schema. Ignoring " + group)        
+
+        return authentication
+
+      c.Authenticator.post_auth_hook = post_auth_hook
+        
+

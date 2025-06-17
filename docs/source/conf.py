@@ -5,7 +5,7 @@ from pathlib import Path
 
 project = "Grader Service"
 copyright = "2024"
-author = "TU Wien DataLab"
+author = "TU Wien dataLAB"
 # language = "fr"  # For testing language translations
 
 master_doc = "index"
@@ -18,6 +18,7 @@ master_doc = "index"
 extensions = [
     "ablog",
     "myst_nb",
+    "autodoc_traits",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
