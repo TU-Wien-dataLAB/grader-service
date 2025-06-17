@@ -37,8 +37,6 @@ jobs:
       run: |
         python -m venv venv
         source venv/bin/activate
-        pip install ipykernel
-        python -m ipykernel install --user --name=python3
         pip install . 
         pip install -r ./requirements-test.txt
     - name: Run tests
