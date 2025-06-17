@@ -74,7 +74,7 @@ Requirements
 
    JupyterHub,
    JupyterLab,
-   Python >= 3.8,
+   Python >= 3.9,
    pip,
    Node.js>=12,
    npm

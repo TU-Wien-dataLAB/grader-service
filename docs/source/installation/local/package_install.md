@@ -12,7 +12,7 @@ This guide explains how to locally install and run the `grader-service` backend 
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.9+
 - pip
 - JupyterHub >= 3.x ([installation guide](https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html))
 - JupyterLab >= 3.x ([installation guide](https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html))

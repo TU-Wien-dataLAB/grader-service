@@ -217,8 +217,7 @@ class LTI13Authenticator(Authenticator):
 
         if username_key.startswith("custom_"):
             data = token.get(LTI13_CUSTOM_CLAIM, {})
-            # when dropping support for Python 3.8 we can replace the following by `username_key.removeprefix`
-            username_key = username_key[len("custom_"):]
+            username_key = username_key.removeprefix("custom_")
 
         username = data.get(username_key)
         if not username:

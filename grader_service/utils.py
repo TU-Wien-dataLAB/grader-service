@@ -29,27 +29,6 @@ from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.log import app_log
 
 
-# Deprecated aliases: no longer needed now that we require 3.7
-def asyncio_all_tasks(loop=None):
-    warnings.warn(
-        "jupyterhub.utils.asyncio_all_tasks is deprecated in JupyterHub 2.4."
-        " Use asyncio.all_tasks().",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return asyncio.all_tasks(loop=loop)
-
-
-def asyncio_current_task(loop=None):
-    warnings.warn(
-        "jupyterhub.utils.asyncio_current_task is deprecated in JupyterHub 2.4."
-        " Use asyncio.current_task().",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return asyncio.current_task(loop=loop)
-
-
 def random_port():
     """Get a single random port."""
     sock = socket.socket()

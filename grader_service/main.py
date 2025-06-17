@@ -321,8 +321,8 @@ class GraderService(config.Application):
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self._start_future = asyncio.Future()
 
-        if sys.version_info.major < 3 or sys.version_info.minor < 8:
-            msg = "Grader Service needs Python version 3.8 or above to run!"
+        if sys.version_info.major < 3 or sys.version_info.minor < 9:
+            msg = "Grader Service needs Python version 3.9 or above to run!"
             raise RuntimeError(msg)
         if shutil.which("git") is None:
             msg = "No git executable found! " \
@@ -491,18 +491,8 @@ class GraderService(config.Application):
         self.log.critical(
             "Received signal %s, initiating shutdown...", sig.name)
 
-        # For compatibility with python versions 3.6 or earlier.
-        # asyncio.Task.all_tasks() is fully moved to asyncio.all_tasks()
-        # starting with 3.9. Also applies to current_task.
-        try:
-            asyncio_all_tasks = asyncio.all_tasks
-            asyncio_current_task = asyncio.current_task
-        except AttributeError:
-            asyncio_all_tasks = asyncio.Task.all_tasks
-            asyncio_current_task = asyncio.Task.current_task
-
-        tasks = [t for t in asyncio_all_tasks() if
-                 t is not asyncio_current_task()]
+        tasks = [t for t in asyncio.all_tasks() if
+                 t is not asyncio.current_task()]
 
         if tasks:
             self.log.debug("Cancelling pending tasks")
@@ -516,7 +506,7 @@ class GraderService(config.Application):
                 msg = "Caught StopAsyncIteration Exception"
                 self.log.error(msg, exc_info=True)
 
-            tasks = [t for t in asyncio_all_tasks()]
+            tasks = [t for t in asyncio.all_tasks()]
             for t in tasks:
                 self.log.debug("Task status: %s", t)
         await self.cleanup()
