@@ -393,7 +393,8 @@ class TestValidator(object):
         validator.validate_and_print(filename)
         assert (
             stream.getvalue().split("\n")[0]
-            == "VALIDATION FAILED ON 1 CELL(S)! If you submit your assignment as it is, you WILL NOT"
+            == "VALIDATION FAILED ON 1 CELL(S)! If you submit your assignment as it is, "
+            "you WILL NOT"
         )
 
     def test_invert_locked_cell_changed(self, validator, stream):
@@ -407,9 +408,9 @@ class TestValidator(object):
         validator.stream = stream
         validator.invert = True
         validator.validate_and_print(filename)
-        assert (
-            stream.getvalue().split("\n")[0]
-            == "THE CONTENTS OF 2 TEST CELL(S) HAVE CHANGED! This might mean that even though the tests"
+        assert stream.getvalue().split("\n")[0] == (
+            "THE CONTENTS OF 2 TEST CELL(S) HAVE CHANGED! "
+            "This might mean that even though the tests"
         )
 
     def test_invert_locked_cell_changed_ignore_checksums(self, validator, stream):
@@ -481,7 +482,7 @@ class TestValidator(object):
         output = validator.validate(filename)
         assert list(output.keys()) == ["changed"]
         assert len(output["changed"]) == 1
-        assert output["changed"][0]["source"] == "#assert a == 1"
+        assert output["changed"][0]["source"] == "# assert a == 1"
 
     def test_grade_cell_changed_ignore_checksums_json(self, validator):
         """Does the validate pass if a grade cell has changed but we're ignoring checksums?"""
@@ -507,7 +508,7 @@ class TestValidator(object):
         output = validator.validate(filename)
         assert list(output.keys()) == ["changed"]
         assert len(output["changed"]) == 1
-        assert output["changed"][0]["source"] == "#assert a == 1"
+        assert output["changed"][0]["source"] == "# assert a == 1"
 
     def test_invert_grade_cell_changed_ignore_checksums_json(self, validator):
         """Does the validate fail if a grade cell has changed with --invert and ignoring checksums?"""
@@ -523,7 +524,7 @@ class TestValidator(object):
         assert list(output.keys()) == ["passed"]
         assert len(output["passed"]) == 2
         assert output["passed"][0]["source"] == 'print("Success!")'
-        assert output["passed"][1]["source"] == "#assert a == 1"
+        assert output["passed"][1]["source"] == "# assert a == 1"
 
     def test_submitted_unchanged_ignore_checksums_json(self, validator):
         """Does the validation fail on an unchanged notebook with ignoring checksums?"""
@@ -547,7 +548,7 @@ class TestValidator(object):
         output = validator.validate(filename)
         assert list(output.keys()) == ["changed"]
         assert len(output["changed"]) == 2
-        assert output["changed"][0]["source"] == '#print("Don\'t change this cell!")'
+        assert output["changed"][0]["source"] == '# print("Don\'t change this cell!")'
         assert output["changed"][1]["source"] == "This cell shouldn't \nbe changed."
 
     def test_locked_cell_changed_ignore_checksums_json(self, validator):
@@ -576,7 +577,7 @@ class TestValidator(object):
         output = validator.validate(filename)
         assert list(output.keys()) == ["changed"]
         assert len(output["changed"]) == 2
-        assert output["changed"][0]["source"] == '#print("Don\'t change this cell!")'
+        assert output["changed"][0]["source"] == '# print("Don\'t change this cell!")'
         assert output["changed"][1]["source"] == "This cell shouldn't \nbe changed."
 
     def test_invert_locked_cell_changed_ignore_checksums_json(self, validator):

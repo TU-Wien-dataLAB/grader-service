@@ -2,6 +2,7 @@ import json
 import os
 
 import jsonschema
+from jsonschema import ValidationError  # noqa: F401
 from nbformat.notebooknode import NotebookNode
 from traitlets.config import LoggingConfigurable
 
