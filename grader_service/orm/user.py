@@ -8,7 +8,13 @@ from sqlalchemy import Column, String, LargeBinary, Unicode
 from sqlalchemy.orm import relationship, Session
 
 from grader_service.api.models import user
-from grader_service.auth.crypto import encrypt, decrypt, InvalidToken, EncryptionUnavailable, CryptKeeper
+from grader_service.auth.crypto import (
+    encrypt,
+    decrypt,
+    InvalidToken,
+    EncryptionUnavailable,
+    CryptKeeper,
+)
 from grader_service.orm.base import Base, Serializable
 from grader_service.orm.group import group_assignment_table
 from grader_service.utils import new_token
@@ -21,8 +27,7 @@ class User(Base, Serializable):
 
     roles = relationship("Role", back_populates="user")
     submissions = relationship("Submission", back_populates="user")
-    groups = relationship("Group", secondary=group_assignment_table,
-                          back_populates="users")
+    groups = relationship("Group", secondary=group_assignment_table, back_populates="users")
     api_tokens = relationship("APIToken", back_populates="user")
     oauth_codes = relationship("OAuthCode", back_populates="user")
 
@@ -48,9 +53,7 @@ class User(Base, Serializable):
             auth_state = await decrypt(encrypted)
         except (ValueError, InvalidToken, EncryptionUnavailable) as e:
             self.log.warning(
-                "Failed to retrieve encrypted auth_state for %s because %s",
-                self.name,
-                e,
+                "Failed to retrieve encrypted auth_state for %s because %s", self.name, e
             )
             return
         # loading auth_state
@@ -62,7 +65,6 @@ class User(Base, Serializable):
 
     def serialize(self):
         return {"name": self.name, "display_name": self.display_name}
-
 
     @property
     def model(self) -> user.User:

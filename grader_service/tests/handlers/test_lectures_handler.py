@@ -4,10 +4,8 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
-from sqlalchemy.orm import sessionmaker, Session
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.server import GraderServer
@@ -21,16 +19,15 @@ from tornado.httpclient import HTTPClientError
 # Imports are important otherwise they will not be found
 from .tornado_test_utils import *
 from .db_util import insert_assignments
-from ...orm import User
 
 
 async def test_get_lectures(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures"
 
@@ -45,13 +42,13 @@ async def test_get_lectures(
 
 
 async def test_get_lectures_with_some_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures?some_param=WS21"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -63,13 +60,13 @@ async def test_get_lectures_with_some_parameter(
 
 
 async def test_post_lectures(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures"
 
@@ -83,9 +80,7 @@ async def test_post_lectures(
     orig_len = len(lectures)
 
     # same code as in group of user
-    pre_lecture = Lecture(
-        id=-1, name="pytest_lecture", code="20wle2", complete=False
-    )
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="20wle2", complete=False)
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -108,19 +103,17 @@ async def test_post_lectures(
 
 
 async def test_post_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures"
 
-    pre_lecture = Lecture(
-        id=-1, name="pytest_lecture", code="abc", complete=False
-    )
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="abc", complete=False)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -135,19 +128,17 @@ async def test_post_not_found(
 
 
 async def test_post_unknown_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures?some_param=asdf"
     # same code not in user groups
-    pre_lecture = Lecture(
-        id=-1, name="pytest_lecture", code="20wle2", complete=False
-    )
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="20wle2", complete=False)
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -160,20 +151,18 @@ async def test_post_unknown_parameter(
 
 
 async def test_put_lecture(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3"
 
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
     lecture = Lecture.from_dict(json.loads(get_response.body.decode()))
@@ -197,20 +186,18 @@ async def test_put_lecture(
 
 
 async def test_put_lecture_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     #  default user is a student in lecture with lecture_id 1
     url = service_base_url + "lectures/1"
 
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
     lecture = Lecture.from_dict(json.loads(get_response.body.decode()))
@@ -229,100 +216,90 @@ async def test_put_lecture_unauthorized(
 
 
 async def test_get_lecture(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/1"
 
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
     Lecture.from_dict(json.loads(get_response.body.decode()))
 
 
 async def test_get_lecture_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 403
 
 
 async def test_delete_lecture(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3"
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_delete_lecture_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/1"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 403
 
 
 async def test_delete_lecture_assignment_with_submissions(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
-        default_user
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     l_id = 3
     a_id = 2
@@ -334,22 +311,20 @@ async def test_delete_lecture_assignment_with_submissions(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_lecture_assignment_released(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}"
@@ -359,26 +334,29 @@ async def test_delete_lecture_assignment_released(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_lecture_assignment_complete(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="complete", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="complete",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -390,31 +368,27 @@ async def test_delete_lecture_assignment_complete(
     url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_lecture_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = -5
 
     url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND

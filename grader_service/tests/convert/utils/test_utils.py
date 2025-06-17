@@ -9,6 +9,7 @@ import zipfile
 from nbformat.v4 import new_output
 from os.path import join
 
+
 class UnrecognizedFormat(Exception):
     pass
 
@@ -16,10 +17,13 @@ class UnrecognizedFormat(Exception):
 from grader_service.convert import utils
 from .. import (
     create_code_cell,
-    create_grade_cell, create_solution_cell,
-    create_grade_and_solution_cell)
+    create_grade_cell,
+    create_solution_cell,
+    create_grade_and_solution_cell,
+)
 
 from .conftest import notwindows
+
 
 @pytest.fixture
 def temp_cwd(request):
@@ -30,6 +34,7 @@ def temp_cwd(request):
     def fin():
         os.chdir(orig_dir)
         shutil.rmtree(path)
+
     request.addfinalizer(fin)
 
     return path
@@ -38,65 +43,65 @@ def temp_cwd(request):
 def test_is_grade():
     cell = create_code_cell()
     assert not utils.is_grade(cell)
-    cell.metadata['nbgrader'] = {}
+    cell.metadata["nbgrader"] = {}
     assert not utils.is_grade(cell)
-    cell.metadata['nbgrader']['grade'] = False
+    cell.metadata["nbgrader"]["grade"] = False
     assert not utils.is_grade(cell)
-    cell.metadata['nbgrader']['grade'] = True
+    cell.metadata["nbgrader"]["grade"] = True
     assert utils.is_grade(cell)
 
 
 def test_is_solution():
     cell = create_code_cell()
     assert not utils.is_solution(cell)
-    cell.metadata['nbgrader'] = {}
+    cell.metadata["nbgrader"] = {}
     assert not utils.is_solution(cell)
-    cell.metadata['nbgrader']['solution'] = False
+    cell.metadata["nbgrader"]["solution"] = False
     assert not utils.is_solution(cell)
-    cell.metadata['nbgrader']['solution'] = True
+    cell.metadata["nbgrader"]["solution"] = True
     assert utils.is_solution(cell)
 
 
 def test_is_locked():
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=True, grade=False, locked=False)
+    cell.metadata["nbgrader"] = dict(solution=True, grade=False, locked=False)
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=True, grade=True, locked=False)
+    cell.metadata["nbgrader"] = dict(solution=True, grade=True, locked=False)
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=True, grade=False, locked=True)
+    cell.metadata["nbgrader"] = dict(solution=True, grade=False, locked=True)
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=True, grade=True, locked=True)
+    cell.metadata["nbgrader"] = dict(solution=True, grade=True, locked=True)
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=False, grade=True, locked=False)
+    cell.metadata["nbgrader"] = dict(solution=False, grade=True, locked=False)
     assert utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=False, grade=True, locked=True)
+    cell.metadata["nbgrader"] = dict(solution=False, grade=True, locked=True)
     assert utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=False, grade=False, locked=True)
+    cell.metadata["nbgrader"] = dict(solution=False, grade=False, locked=True)
     assert utils.is_locked(cell)
 
     assert utils.is_locked(cell)
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata['nbgrader'] = dict(solution=False, grade=False, locked=False)
+    cell.metadata["nbgrader"] = dict(solution=False, grade=False, locked=False)
     assert not utils.is_locked(cell)
 
 
@@ -105,108 +110,97 @@ def test_determine_grade_code_grade():
     cell.outputs = []
     assert utils.determine_grade(cell) == (10, 10)
 
-    cell.outputs = [new_output('error', ename="NotImplementedError", evalue="", traceback=["error"])]
+    cell.outputs = [
+        new_output("error", ename="NotImplementedError", evalue="", traceback=["error"])
+    ]
     assert utils.determine_grade(cell) == (0, 10)
 
 
 def test_determine_grade_markdown_grade():
-    cell = create_grade_cell('test', "markdown", "foo", 10)
+    cell = create_grade_cell("test", "markdown", "foo", 10)
     assert utils.determine_grade(cell) == (None, 10)
 
 
 def test_determine_grade_solution():
-    cell = create_solution_cell('test', "code", "foo")
+    cell = create_solution_cell("test", "code", "foo")
     with pytest.raises(ValueError):
         utils.determine_grade(cell)
 
-    cell = create_solution_cell('test', "markdown", "foo")
+    cell = create_solution_cell("test", "markdown", "foo")
     with pytest.raises(ValueError):
         utils.determine_grade(cell)
 
 
 def test_determine_grade_code_grade_and_solution():
-    cell = create_grade_and_solution_cell('test', "code", "foo", 10)
-    cell.metadata.nbgrader['checksum'] = utils.compute_checksum(cell)
+    cell = create_grade_and_solution_cell("test", "code", "foo", 10)
+    cell.metadata.nbgrader["checksum"] = utils.compute_checksum(cell)
     cell.outputs = []
     assert utils.determine_grade(cell) == (0, 10)
 
-    cell.outputs = [new_output('error', ename="NotImplementedError", evalue="", traceback=["error"])]
-    cell.source = 'test!'
+    cell.outputs = [
+        new_output("error", ename="NotImplementedError", evalue="", traceback=["error"])
+    ]
+    cell.source = "test!"
     assert utils.determine_grade(cell) == (None, 10)
+
 
 def test_get_partial_grade():
     # test single value in list
-    test_data = { "data": { "text/plain": [ "0.6" ] } }
-    assert utils.get_partial_grade(test_data,1.0) == 0.6
+    test_data = {"data": {"text/plain": ["0.6"]}}
+    assert utils.get_partial_grade(test_data, 1.0) == 0.6
 
     # test single value not in list
-    test_data = { "data": { "text/plain": "6.0" } }
-    assert utils.get_partial_grade(test_data,10.0) == 6.0
+    test_data = {"data": {"text/plain": "6.0"}}
+    assert utils.get_partial_grade(test_data, 10.0) == 6.0
 
     # test zero
-    test_data = { "data": { "text/plain": [ "0.0" ] } }
-    assert utils.get_partial_grade(test_data,1.0) == 0.0
+    test_data = {"data": {"text/plain": ["0.0"]}}
+    assert utils.get_partial_grade(test_data, 1.0) == 0.0
 
     # test string in list, should assume partial credit not intended
-    test_data = { "data": { "text/plain": [ "'this is a string'" ] } }
-    assert utils.get_partial_grade(test_data,2.0) == 2.0
+    test_data = {"data": {"text/plain": ["'this is a string'"]}}
+    assert utils.get_partial_grade(test_data, 2.0) == 2.0
 
     # test returning too many points
-    test_data = { "data": { "text/plain": [ "2.0" ] } }
+    test_data = {"data": {"text/plain": ["2.0"]}}
     with pytest.raises(ValueError):
         utils.get_partial_grade(test_data, 1.0)
 
-    test_data = { "fake_key": 4 }
+    test_data = {"fake_key": 4}
     with pytest.raises(KeyError):
         utils.get_partial_grade(test_data, 2.0)
 
+
 def test_determine_grade_code_partial_credit():
     # create grade cell with max_points == 5
-    cell = create_grade_cell('test', "code", "foo", 5)
+    cell = create_grade_cell("test", "code", "foo", 5)
 
     # simple case when output between 0 and max_points
-    test_data = {
-        "text/plain": "3"
-        }
-    cell.outputs = [new_output(
-        output_type="execute_result",
-        execution_count=1,
-        data=test_data)
-        ]
-    assert utils.determine_grade(cell) == (3,5)
+    test_data = {"text/plain": "3"}
+    cell.outputs = [new_output(output_type="execute_result", execution_count=1, data=test_data)]
+    assert utils.determine_grade(cell) == (3, 5)
 
     # should give error when partial_credit > max_grade
     cell.outputs = []
-    test_data = {
-        "text/plain": "5.5"
-        }
-    cell.outputs = [new_output(
-        output_type="execute_result",
-        execution_count=1,
-        data=test_data)
-        ]
+    test_data = {"text/plain": "5.5"}
+    cell.outputs = [new_output(output_type="execute_result", execution_count=1, data=test_data)]
     with pytest.raises(ValueError):
         utils.determine_grade(cell)
 
     # returns max_points if output is a list
     cell.outputs = []
-    test_data = {
-        "text/plain": [ "0.5", "abc" ]
-        }
-    cell.outputs = [new_output(
-        output_type="execute_result",
-        execution_count=1,
-        data=test_data)
-        ]
-    assert utils.determine_grade(cell) == (5,5)
+    test_data = {"text/plain": ["0.5", "abc"]}
+    cell.outputs = [new_output(output_type="execute_result", execution_count=1, data=test_data)]
+    assert utils.determine_grade(cell) == (5, 5)
+
 
 def test_determine_grade_markdown_grade_and_solution():
-    cell = create_grade_and_solution_cell('test', "markdown", "foo", 10)
-    cell.metadata.nbgrader['checksum'] = utils.compute_checksum(cell)
+    cell = create_grade_and_solution_cell("test", "markdown", "foo", 10)
+    cell.metadata.nbgrader["checksum"] = utils.compute_checksum(cell)
     assert utils.determine_grade(cell) == (0, 10)
 
-    cell = create_grade_and_solution_cell('test', "markdown", "foo", 10)
-    cell.source = 'test!'
+    cell = create_grade_and_solution_cell("test", "markdown", "foo", 10)
+    cell.source = "test!"
     assert utils.determine_grade(cell) == (None, 10)
 
 
@@ -322,7 +316,8 @@ def test_compute_checksum_solution_cell():
 
 def test_compute_checksum_utf8():
     utils.compute_checksum(create_solution_cell("\u03b8", "markdown", "foo"))
-    utils.compute_checksum(create_solution_cell(u'$$\\int^\u221e_0 x^2dx$$', "markdown", "foo"))
+    utils.compute_checksum(create_solution_cell("$$\\int^\u221e_0 x^2dx$$", "markdown", "foo"))
+
 
 def test_ignore_patterns(temp_cwd):
     dir = "foo"
@@ -332,13 +327,17 @@ def test_ignore_patterns(temp_cwd):
         with open(join(dir, file), "w") as fh:
             fh.write("bar")
             if file == "long.txt":
-                fh.write("x"*2000)
-    os.mkdir(join(dir,"foo"))
+                fh.write("x" * 2000)
+    os.mkdir(join(dir, "foo"))
     files.append("foo")
     assert utils.ignore_patterns(exclude=["foo*"])(dir, files) == ["foo.txt", "foo"]
     assert utils.ignore_patterns(include=["*.txt"])(dir, files) == ["truc.png"]
-    assert utils.ignore_patterns(exclude=["foo.*"], include=["*.txt"])(dir, files) == ['foo.txt', 'truc.png']
+    assert utils.ignore_patterns(exclude=["foo.*"], include=["*.txt"])(dir, files) == [
+        "foo.txt",
+        "truc.png",
+    ]
     assert utils.ignore_patterns(max_file_size=2)(dir, files) == ["long.txt"]
+
 
 def test_is_ignored(temp_cwd):
     os.mkdir("foo")
@@ -366,23 +365,28 @@ def test_find_all_files(temp_cwd):
     assert utils.find_all_files("foo") == [
         join("foo", "baz.txt"),
         join("foo", "bar", "baz.txt"),
-        join("foo", "bar", "quux", "baz.txt")]
+        join("foo", "bar", "quux", "baz.txt"),
+    ]
     assert utils.find_all_files("foo", ["bar"]) == [join("foo", "baz.txt")]
     assert utils.find_all_files("foo", ["quux"]) == [
         join("foo", "baz.txt"),
-        join("foo", "bar", "baz.txt")]
+        join("foo", "bar", "baz.txt"),
+    ]
     assert utils.find_all_files(join("foo", "bar")) == [
         join("foo", "bar", "baz.txt"),
-        join("foo", "bar", "quux", "baz.txt")]
+        join("foo", "bar", "quux", "baz.txt"),
+    ]
     assert utils.find_all_files(join("foo", "bar"), ["*.txt"]) == []
     assert utils.find_all_files(".") == [
         join(".", "foo", "baz.txt"),
         join(".", "foo", "bar", "baz.txt"),
-        join(".", "foo", "bar", "quux", "baz.txt")]
+        join(".", "foo", "bar", "quux", "baz.txt"),
+    ]
     assert utils.find_all_files(".", ["bar"]) == [join(".", "foo", "baz.txt")]
     assert utils.find_all_files(".", ["quux"]) == [
         join(".", "foo", "baz.txt"),
-        join(".", "foo", "bar", "baz.txt")]
+        join(".", "foo", "bar", "baz.txt"),
+    ]
 
 
 def test_unzip_invalid_ext(temp_cwd):
@@ -440,6 +444,7 @@ def test_unzip_tree(temp_cwd):
     assert os.path.isdir(os.path.join("data", "bar"))
     assert os.path.isdir(os.path.join("data", "baz", "bar"))
     assert os.path.isfile(os.path.join("data", "baz", "bar", "foo.txt"))
+
 
 @notwindows
 def test_get_username():

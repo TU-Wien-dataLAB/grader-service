@@ -1,7 +1,4 @@
 # -- Project information -----------------------------------------------------
-import os
-from urllib.request import urlopen
-from pathlib import Path
 
 project = "Grader Service"
 copyright = "2024"
@@ -47,12 +44,7 @@ suppress_warnings = ["myst.domains", "ref.ref"]
 
 numfig = True
 
-myst_enable_extensions = [
-    "dollarmath",
-    "amsmath",
-    "deflist",
-    "colon_fence"
-]
+myst_enable_extensions = ["dollarmath", "amsmath", "deflist", "colon_fence"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -75,7 +67,7 @@ html_sidebars = {
         "ablog/tagcloud.html",
         "ablog/categories.html",
         "ablog/archives.html",
-        "sbt-sidebar-nav.html"
+        "sbt-sidebar-nav.html",
     ]
 }
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -102,9 +94,7 @@ html_theme_options = {
     "use_download_button": True,
     "use_sidenotes": True,
     "show_toc_level": 3,
-    "logo": {
-        "image_dark": "_static/assets/images/logo_name.png",
-    },
+    "logo": {"image_dark": "_static/assets/images/logo_name.png"},
     "icon_links": [
         {
             "name": "GitHub Grader Service",
@@ -122,10 +112,8 @@ html_theme_options = {
             "url": "https://www.it.tuwien.ac.at/en/services/network-and-servers/datalab",
             "icon": "_static/assets/images/tu-logo.svg",
             "type": "url",
-        }
+        },
     ],
 }
 
-ogp_social_cards = {
-    "image": "_static/assets/images/logo_name.png",
-}
+ogp_social_cards = {"image": "_static/assets/images/logo_name.png"}

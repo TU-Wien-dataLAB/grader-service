@@ -1,12 +1,9 @@
-
-
 import json
 import logging
 import os
 from functools import wraps
 from typing import Any, Optional, Union
 
-from nbconvert.exporters import notebook
 
 from grader_service.convert.gradebook.models import (
     Comment,
@@ -87,10 +84,7 @@ class Gradebook:
         return self
 
     def __exit__(
-        self,
-        exc_type: Optional[Any],
-        exc_value: Optional[Any],
-        traceback: Optional[Any],
+        self, exc_type: Optional[Any], exc_value: Optional[Any], traceback: Optional[Any]
     ) -> None:
         self.in_context -= 1
         if self.dirty and exc_type is None:
@@ -105,9 +99,7 @@ class Gradebook:
         """Writes JSON string to a JSON file"""
         with open(self.json_file, "w") as f:
             json_str = json.dumps(self.model.to_dict())
-            self.log.info(
-                f"Writing {len(json_str.encode('utf-8'))} bytes to {self.json_file}"
-            )
+            self.log.info(f"Writing {len(json_str.encode('utf-8'))} bytes to {self.json_file}")
             f.write(json_str)
 
     # Notebooks
@@ -120,9 +112,7 @@ class Gradebook:
         :param kwargs: additional keyword arguments for the :class:`~Notebook` object
         :return: notebook : :class:`~Notebook`
         """
-        kwargs = {
-            k: v for k, v in kwargs.items() if k in set(Notebook.empty_dict().keys())
-        }
+        kwargs = {k: v for k, v in kwargs.items() if k in set(Notebook.empty_dict().keys())}
         kwargs["name"] = name
         self.model.notebooks[name] = Notebook.from_dict(kwargs)
 
@@ -167,9 +157,7 @@ class Gradebook:
         :param kwargs: additional keyword arguments for :class:`~GradeCell`
         :return: grade_cell
         """
-        kwargs = {
-            k: v for k, v in kwargs.items() if k in set(GradeCell.empty_dict().keys())
-        }
+        kwargs = {k: v for k, v in kwargs.items() if k in set(GradeCell.empty_dict().keys())}
         kwargs["name"] = name
         nb = self.find_notebook(notebook)
         nb.grade_cells_dict[name] = GradeCell.from_dict(kwargs)
@@ -202,9 +190,7 @@ class Gradebook:
             raise MissingEntry()
 
     @write_access
-    def update_or_create_grade_cell(
-        self, name: str, notebook: str, **kwargs: dict
-    ) -> GradeCell:
+    def update_or_create_grade_cell(self, name: str, notebook: str, **kwargs: dict) -> GradeCell:
         """
         Update an existing grade cell in a notebook, or create the grade cell if it does not exist.
         :param name: the name of the grade cell
@@ -224,9 +210,7 @@ class Gradebook:
     # Solution cells
 
     @write_access
-    def add_solution_cell(
-        self, name: str, notebook: str, **kwargs: dict
-    ) -> SolutionCell:
+    def add_solution_cell(self, name: str, notebook: str, **kwargs: dict) -> SolutionCell:
         """
         Add a new solution cell to an existing notebook.
         :param name: the name of the new solution cell
@@ -234,11 +218,7 @@ class Gradebook:
         :param kwargs: additional keyword arguments for :class:`~SolutionCell`
         :return: solution_cell : :class:`~SolutionCell`
         """
-        kwargs = {
-            k: v
-            for k, v in kwargs.items()
-            if k in set(SolutionCell.empty_dict().keys())
-        }
+        kwargs = {k: v for k, v in kwargs.items() if k in set(SolutionCell.empty_dict().keys())}
         kwargs["name"] = name
         nb = self.find_notebook(notebook)
         nb.solution_cells_dict[name] = SolutionCell.from_dict(kwargs)
@@ -288,9 +268,7 @@ class Gradebook:
         :param kwargs: additional keyword arguments for :class:`~TaskCell`
         :return: task_cell
         """
-        kwargs = {
-            k: v for k, v in kwargs.items() if k in set(TaskCell.empty_dict().keys())
-        }
+        kwargs = {k: v for k, v in kwargs.items() if k in set(TaskCell.empty_dict().keys())}
         kwargs["name"] = name
         nb = self.find_notebook(notebook)
         nb.task_cells_dict[name] = TaskCell.from_dict(kwargs)
@@ -310,9 +288,7 @@ class Gradebook:
             raise MissingEntry()
 
     @write_access
-    def update_or_create_task_cell(
-        self, name: str, notebook: str, **kwargs
-    ) -> TaskCell:
+    def update_or_create_task_cell(self, name: str, notebook: str, **kwargs) -> TaskCell:
         """
         Update an existing task cell in a notebook, or create the task cell if it does not exist.
         :param name: the name of the task cell
@@ -340,9 +316,7 @@ class Gradebook:
         :param kwargs: additional keyword arguments for :class:`~SourceCell`
         :return: source_cell : :class:`~SourceCell`
         """
-        kwargs = {
-            k: v for k, v in kwargs.items() if k in set(SourceCell.empty_dict().keys())
-        }
+        kwargs = {k: v for k, v in kwargs.items() if k in set(SourceCell.empty_dict().keys())}
         kwargs["name"] = name
         nb = self.find_notebook(notebook)
         nb.source_cells_dict[name] = SourceCell.from_dict(kwargs)
@@ -362,9 +336,7 @@ class Gradebook:
             raise MissingEntry()
 
     @write_access
-    def update_or_create_source_cell(
-        self, name: str, notebook: str, **kwargs: dict
-    ) -> SourceCell:
+    def update_or_create_source_cell(self, name: str, notebook: str, **kwargs: dict) -> SourceCell:
         """
         Update an existing source cell in a notebook of an assignment, or
         create the source cell if it does not exist.
@@ -429,9 +401,7 @@ class Gradebook:
             return Grade.from_dict(Grade.empty_dict())
 
     @write_access
-    def add_comment(
-        self, solution_cell: str, notebook: str, comment: Comment
-    ) -> Comment:
+    def add_comment(self, solution_cell: str, notebook: str, comment: Comment) -> Comment:
         """
         Add a comment to a notebook.
         :param solution_cell: the name of a solution or task cell

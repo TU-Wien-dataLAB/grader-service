@@ -10,14 +10,12 @@ from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
-@register_handler(
-    path=r"\/api\/permissions\/?",
-    version_specifier=VersionSpecifier.ALL
-)
+@register_handler(path=r"\/api\/permissions\/?", version_specifier=VersionSpecifier.ALL)
 class PermissionHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /permissions.
     """
+
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self):
         """
@@ -27,7 +25,5 @@ class PermissionHandler(GraderBaseHandler):
         response = []
         role: Role
         for role in self.user.roles:
-            response.append(
-                {"lecture_code": role.lecture.code, "scope": role.role.value}
-            )
+            response.append({"lecture_code": role.lecture.code, "scope": role.role.value})
         self.write_json(response)

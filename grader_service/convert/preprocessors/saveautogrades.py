@@ -1,5 +1,3 @@
-
-
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
@@ -37,9 +35,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
         """
         # these are the fields by which we will identify the score
         # information
-        grade = self.gradebook.find_grade(
-            cell.metadata["nbgrader"]["grade_id"], self.notebook_id
-        )
+        grade = self.gradebook.find_grade(cell.metadata["nbgrader"]["grade_id"], self.notebook_id)
 
         # determine what the grade is
         auto_score, _ = utils.determine_grade(cell, self.log)
@@ -52,9 +48,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
         else:
             grade.needs_manual_grade = False
 
-        self.gradebook.add_grade(
-            cell.metadata["nbgrader"]["grade_id"], self.notebook_id, grade
-        )
+        self.gradebook.add_grade(cell.metadata["nbgrader"]["grade_id"], self.notebook_id, grade)
 
     def _add_comment(self, cell: NotebookNode, resources: ResourcesDict) -> None:
         comment = self.gradebook.find_comment(
@@ -67,9 +61,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
         else:
             comment.auto_comment = None
 
-        self.gradebook.add_comment(
-            cell.metadata["nbgrader"]["grade_id"], self.notebook_id, comment
-        )
+        self.gradebook.add_comment(cell.metadata["nbgrader"]["grade_id"], self.notebook_id, comment)
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int

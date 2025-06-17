@@ -6,18 +6,14 @@
 import base64
 
 import pytest
-import json
 from grader_service.handlers.base_handler import GraderBaseHandler, BaseHandler
 from grader_service.orm.assignment import Assignment
 from datetime import datetime
 from grader_service.api.models.error_message import ErrorMessage
-from grader_service.orm.lecture import Lecture
-from sqlalchemy.orm import sessionmaker
 
 from .db_util import *
 from .tornado_test_utils import *
-from unittest.mock import AsyncMock, MagicMock, Mock
-import asyncio
+from unittest.mock import MagicMock
 
 
 def test_string_serialization():
@@ -65,21 +61,18 @@ def test_assignment_serialization():
         "id": 1,
         "name": "test",
         "status": "created",
-        'points': 0,
-        'settings': {'late_submission': None,
-                     'deadline':datetime.now(tz=timezone.utc).isoformat(),
-                     'max_submissions': 1,
-                     'autograde_type': 'unassisted',
-                     'assignment_type': "user",
-                     'allowed_files': None}
+        "points": 0,
+        "settings": {
+            "late_submission": None,
+            "deadline": datetime.now(tz=timezone.utc).isoformat(),
+            "max_submissions": 1,
+            "autograde_type": "unassisted",
+            "assignment_type": "user",
+            "allowed_files": None,
+        },
     }
     a = Assignment(
-        id=d["id"],
-        name=d["name"],
-        lectid=1,
-        points=0,
-        status=d["status"],
-        settings=d["settings"]
+        id=d["id"], name=d["name"], lectid=1, points=0, status=d["status"], settings=d["settings"]
     )
 
     assert GraderBaseHandler._serialize(a) == d
@@ -95,8 +88,14 @@ def test_api_model_serialization():
     err = ErrorMessage("")
 
 
-@pytest.mark.parametrize(["token_str"],
-                         [("Token test",), ("Bearer test",), (f"Basic {base64.b64encode(b'test:test').decode('utf-8')}",)])
+@pytest.mark.parametrize(
+    ["token_str"],
+    [
+        ("Token test",),
+        ("Bearer test",),
+        (f"Basic {base64.b64encode(b'test:test').decode('utf-8')}",),
+    ],
+)
 def test_get_auth_token(token_str):
     handler = MagicMock()
     handler.request.headers.get = MagicMock(return_value=token_str)

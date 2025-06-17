@@ -48,39 +48,28 @@ from tornado.escape import json_decode
 from tornado.web import HTTPError
 from sqlalchemy.orm.session import Session
 
-SESSION_COOKIE_NAME = 'grader-session-id'
+SESSION_COOKIE_NAME = "grader-session-id"
 
-auth_header_pat = re.compile(r'^(token|bearer|basic)\s+([^\s]+)$', flags=re.IGNORECASE)
+auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNORECASE)
 
-def check_authorization(self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]) -> bool:
-    if (("/permissions" in self.request.path)
-            or ("/config" in self.request.path)):
+
+def check_authorization(
+    self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]
+) -> bool:
+    if ("/permissions" in self.request.path) or ("/config" in self.request.path):
         return True
-    if (
-            lecture_id is None
-            and "/lectures" in self.request.path
-            and self.request.method == "POST"
-    ):
+    if lecture_id is None and "/lectures" in self.request.path and self.request.method == "POST":
         # lecture name and semester is in post body
         try:
             data = json_decode(self.request.body)
-            lecture_id = (
-                self.session.query(Lecture)
-                .filter(Lecture.code == data["code"])
-                .one()
-                .id
-            )
+            lecture_id = self.session.query(Lecture).filter(Lecture.code == data["code"]).one().id
         except MultipleResultsFound:
             raise HTTPError(403)
         except NoResultFound:
             raise HTTPError(404, reason="Lecture not found")
         except json.decoder.JSONDecodeError:
             raise HTTPError(403)
-    elif (
-            lecture_id is None
-            and "/lectures" in self.request.path
-            and self.request.method == "GET"
-    ):
+    elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
 
     role = self.session.get(Role, (self.user.name, lecture_id))
@@ -97,21 +86,22 @@ def authorize(scopes: list[Scope]):
     :param scopes: the user's roles
     :return: wrapper function
     """
-    if not set(scopes).issubset({Scope.student, Scope.tutor,
-                                 Scope.instructor}):
+    if not set(scopes).issubset({Scope.student, Scope.tutor, Scope.instructor}):
         return ValueError("Invalid scopes")
 
     def wrapper(handler_method):
         @functools.wraps(handler_method)
-        async def request_handler_wrapper(self: "GraderBaseHandler", *args,
-                                          **kwargs):
+        async def request_handler_wrapper(self: "GraderBaseHandler", *args, **kwargs):
             lecture_id = self.path_kwargs.get("lecture_id", None)
-            check_authorization(self, scopes, lecture_id)  # raises appropriate HTTPError if not authorized
+            check_authorization(
+                self, scopes, lecture_id
+            )  # raises appropriate HTTPError if not authorized
             return await handler_method(self, *args, **kwargs)
 
         return request_handler_wrapper
 
     return wrapper
+
 
 class BaseHandler(web.RequestHandler):
     """Base class of all handler classes
@@ -122,10 +112,7 @@ class BaseHandler(web.RequestHandler):
         pass
 
     def __init__(
-            self,
-            application: GraderServer,
-            request: httputil.HTTPServerRequest,
-            **kwargs: Any,
+        self, application: GraderServer, request: httputil.HTTPServerRequest, **kwargs: Any
     ) -> None:
         super().__init__(application, request, **kwargs)
         # add type hint for application
@@ -150,11 +137,11 @@ class BaseHandler(web.RequestHandler):
             # if user is not authenticated and is not actively trying to authenticate
             if not self.current_user and self.request.path not in [
                 self.settings["login_url"],
-                self.application.base_url.rstrip('/'),
+                self.application.base_url.rstrip("/"),
                 url_path_join(self.application.base_url, "/health"),
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
-                url_path_join(self.application.base_url, "/lti13/oauth_callback")
+                url_path_join(self.application.base_url, "/lti13/oauth_callback"),
             ]:
                 # require git to authenticate with token -> otherwise return 401 code
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
@@ -162,8 +149,8 @@ class BaseHandler(web.RequestHandler):
 
                 # send to login page if ui page request
                 if self.request.path in [
-                    url_path_join(self.application.base_url, "/api/oauth2/authorize")] or self.request.path.startswith(
-                    url_path_join(self.application.base_url, "/ui")):
+                    url_path_join(self.application.base_url, "/api/oauth2/authorize")
+                ] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
                     url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
                     self.redirect(url)
                     return
@@ -173,8 +160,6 @@ class BaseHandler(web.RequestHandler):
 
                 # do not redirect to login page if we hit api endpoints
                 raise HTTPError(401, reason="API Token is invalid or expired.")
-
-
 
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
@@ -196,8 +181,7 @@ class BaseHandler(web.RequestHandler):
     @property
     def csp_report_uri(self):
         return self.settings.get(
-            'csp_report_uri',
-            url_path_join(self.application.base_url, 'security/csp-report')
+            "csp_report_uri", url_path_join(self.application.base_url, "security/csp-report")
         )
 
     @property
@@ -206,9 +190,7 @@ class BaseHandler(web.RequestHandler):
 
         Can be overridden by defining Content-Security-Policy in settings['headers']
         """
-        return '; '.join(
-            ["frame-ancestors 'self'", "report-uri " + self.csp_report_uri]
-        )
+        return "; ".join(["frame-ancestors 'self'", "report-uri " + self.csp_report_uri])
 
     def _set_cookie(self, key, value, encrypted=True, **overrides):
         """Setting any cookie should go through here
@@ -218,16 +200,16 @@ class BaseHandler(web.RequestHandler):
         """
         # tornado <4.2 have a bug that consider secure==True as soon as
         # 'secure' kwarg is passed to set_secure_cookie
-        kwargs = {'httponly': True}
+        kwargs = {"httponly": True}
         public_url = self.settings.get("public_url")
         if public_url:
-            if public_url.scheme == 'https':
-                kwargs['secure'] = True
+            if public_url.scheme == "https":
+                kwargs["secure"] = True
         else:
-            if self.request.protocol == 'https':
-                kwargs['secure'] = True
+            if self.request.protocol == "https":
+                kwargs["secure"] = True
 
-        kwargs.update(self.settings.get('cookie_options', {}))
+        kwargs.update(self.settings.get("cookie_options", {}))
         kwargs.update(overrides)
 
         if key.startswith("__Host-"):
@@ -244,11 +226,9 @@ class BaseHandler(web.RequestHandler):
         set_cookie(key, value, **kwargs)
 
     def _set_user_cookie(self, user, server: "GraderServer"):
-        self.log.debug("Setting cookie for %s: %s", user.name,
-                       server.cookie_name)
+        self.log.debug("Setting cookie for %s: %s", user.name, server.cookie_name)
         self._set_cookie(
-            server.cookie_name, user.cookie_id, encrypted=True,
-            path=server.base_url.rstrip('/')
+            server.cookie_name, user.cookie_id, encrypted=True, path=server.base_url.rstrip("/")
         )
 
     def clear_login_cookies(self):
@@ -261,7 +241,9 @@ class BaseHandler(web.RequestHandler):
             session_cookie_kwargs.update(kwargs)
 
             self.clear_cookie(
-                SESSION_COOKIE_NAME, path=self.application.base_url.rstrip('/'), **session_cookie_kwargs
+                SESSION_COOKIE_NAME,
+                path=self.application.base_url.rstrip("/"),
+                **session_cookie_kwargs,
             )
 
             if user:
@@ -270,7 +252,7 @@ class BaseHandler(web.RequestHandler):
                 # because that could be a malicious logout request!
                 count = 0
                 for access_token in self.session.query(APIToken).filter_by(
-                        username=user.name, session_id=session_id
+                    username=user.name, session_id=session_id
                 ):
                     self.session.delete(access_token)
                     count += 1
@@ -279,7 +261,9 @@ class BaseHandler(web.RequestHandler):
                     self.session.commit()
 
         # clear hub cookie
-        self.clear_cookie(self.application.cookie_name, path=self.application.base_url.rstrip('/'), **kwargs)
+        self.clear_cookie(
+            self.application.cookie_name, path=self.application.base_url.rstrip("/"), **kwargs
+        )
 
     def get_session_cookie(self):
         """Get the session id from a cookie
@@ -295,16 +279,15 @@ class BaseHandler(web.RequestHandler):
         )
 
         def clear():
-            self.clear_cookie(cookie_name, path=self.application.base_url.rstrip('/'))
+            self.clear_cookie(cookie_name, path=self.application.base_url.rstrip("/"))
 
         if cookie_id is None:
             if self.get_cookie(cookie_name):
                 self.log.warning("Invalid or expired cookie token")
                 clear()
             return
-        cookie_id = cookie_id.decode('utf8', 'replace')
-        user = self.session.query(User).filter(
-            User.cookie_id == cookie_id).first()
+        cookie_id = cookie_id.decode("utf8", "replace")
+        user = self.session.query(User).filter(User.cookie_id == cookie_id).first()
         # user = self._user_from_orm(u)
         if user is None:
             self.log.warning("Invalid cookie token")
@@ -345,13 +328,13 @@ class BaseHandler(web.RequestHandler):
 
     def get_auth_token(self):
         """Get the authorization token from Authorization header"""
-        auth_header = self.request.headers.get('Authorization', '')
+        auth_header = self.request.headers.get("Authorization", "")
         match = auth_header_pat.match(auth_header)
         if not match:
             return None
 
         if match.group(1).lower() == "basic":
-            auth_decoded = base64.b64decode(match.group(2)).decode('ascii')
+            auth_decoded = base64.b64decode(match.group(2)).decode("ascii")
             _, token = auth_decoded.split(":", 2)
             return token
         else:
@@ -404,16 +387,12 @@ class BaseHandler(web.RequestHandler):
         if not refresh_age:
             return user
         now = time.monotonic()
-        if (
-                not force
-                and user._auth_refreshed
-                and (now - user._auth_refreshed < refresh_age)
-        ):
+        if not force and user._auth_refreshed and (now - user._auth_refreshed < refresh_age):
             # auth up-to-date
             return user
 
         # refresh a user at most once per request
-        if not hasattr(self, '_refreshed_users'):
+        if not hasattr(self, "_refreshed_users"):
             self._refreshed_users = set()
         if user.name in self._refreshed_users:
             # already refreshed during this request
@@ -437,17 +416,17 @@ class BaseHandler(web.RequestHandler):
             return user
 
         # Ensure name field is set. It cannot be updated.
-        auth_info['name'] = user.name
+        auth_info["name"] = user.name
 
-        if 'auth_state' not in auth_info:
+        if "auth_state" not in auth_info:
             # refresh didn't specify auth_state,
             # so preserve previous value to avoid clearing it
-            auth_info['auth_state'] = await user.get_auth_state()
+            auth_info["auth_state"] = await user.get_auth_state()
         return await self.auth_to_user(auth_info, user)
 
     async def get_current_user(self):
         """get current username"""
-        if not hasattr(self, '_grader_user'):
+        if not hasattr(self, "_grader_user"):
             user = None
             try:
                 if self._accept_token_auth:
@@ -473,7 +452,7 @@ class BaseHandler(web.RequestHandler):
 
         Allows .get_current_user to be async.
         """
-        if not hasattr(self, '_grader_user'):
+        if not hasattr(self, "_grader_user"):
             raise RuntimeError("Must call async get_current_user first!")
         return self._grader_user
 
@@ -491,8 +470,10 @@ class BaseHandler(web.RequestHandler):
         """
         session_id = uuid.uuid4().hex
         self._set_cookie(
-            SESSION_COOKIE_NAME, session_id, encrypted=False,
-            path=self.application.base_url.rstrip('/')
+            SESSION_COOKIE_NAME,
+            session_id,
+            encrypted=False,
+            path=self.application.base_url.rstrip("/"),
         )
         return session_id
 
@@ -521,8 +502,7 @@ class BaseHandler(web.RequestHandler):
         # )
 
     def authenticate(self, data):
-        return maybe_future(
-            self.authenticator.get_authenticated_user(self, data))
+        return maybe_future(self.authenticator.get_authenticated_user(self, data))
 
     async def auth_to_user(self, authenticated, user=None):
         """Persist data from .authenticate() or .refresh_user() to the User database
@@ -534,19 +514,18 @@ class BaseHandler(web.RequestHandler):
             user(User): the constructed User object
         """
         if isinstance(authenticated, str):
-            authenticated = {'name': authenticated}
-        username = authenticated['name']
-        auth_state = authenticated.get('auth_state')
-        admin = authenticated.get('admin')
+            authenticated = {"name": authenticated}
+        username = authenticated["name"]
+        auth_state = authenticated.get("auth_state")
+        admin = authenticated.get("admin")
         refreshing = user is not None
 
         if user and username != user.name:
-            raise ValueError(
-                f"Username doesn't match! {username} != {user.name}")
+            raise ValueError(f"Username doesn't match! {username} != {user.name}")
 
         user_model = self.session.query(User).get(username)
         if user_model is None:
-            self.log.info(f'User {username} does not exist and will be created.')
+            self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()
             user_model.name = username
             self.session.add(user_model)
@@ -596,10 +575,7 @@ class BaseHandler(web.RequestHandler):
             user._auth_refreshed = time.monotonic()
             return user
         else:
-            self.log.warning(
-                "Failed login for %s",
-                (data or {}).get('username', 'unknown user')
-            )
+            self.log.warning("Failed login for %s", (data or {}).get("username", "unknown user"))
 
     def get_template(self, name, sync=False):
         """
@@ -646,13 +622,13 @@ class BaseHandler(web.RequestHandler):
             base_url=base_url,
             prefix=base_url,
             user=user,
-            login_url=self.settings['login_url'],
+            login_url=self.settings["login_url"],
             login_service=self.authenticator.login_service,
-            logout_url=self.settings['logout_url'],
+            logout_url=self.settings["logout_url"],
             static_url=self.static_url,
-            version_hash='',
+            version_hash="",
             parsed_scopes=self.parsed_scopes,
-            xsrf=self.xsrf_token.decode('ascii'),
+            xsrf=self.xsrf_token.decode("ascii"),
         )
         if self.application.template_vars:
             for key, value in self.application.template_vars.items():
@@ -670,7 +646,7 @@ class BaseHandler(web.RequestHandler):
         resulting in same behavior as if next_url is not specified.
         """
         # protect against some browsers' buggy handling of backslash as slash
-        next_url = next_url.replace('\\', '%5C')
+        next_url = next_url.replace("\\", "%5C")
         public_url = self.settings.get("public_url")
         if public_url:
             proto = public_url.scheme
@@ -688,25 +664,20 @@ class BaseHandler(web.RequestHandler):
             next_url = "//" + next_url.lstrip("/")
         parsed_next_url = urlparse(next_url)
 
-        if (next_url + '/').startswith(
-                (
-                        f'{proto}://{host}/',
-                        f'//{host}/',
-                )
-        ):
+        if (next_url + "/").startswith((f"{proto}://{host}/", f"//{host}/")):
             # treat absolute URLs for our host as absolute paths:
             # below, redirects that aren't strictly paths are rejected
             next_url = parsed_next_url.path
             if parsed_next_url.query:
-                next_url = next_url + '?' + parsed_next_url.query
+                next_url = next_url + "?" + parsed_next_url.query
             if parsed_next_url.fragment:
-                next_url = next_url + '#' + parsed_next_url.fragment
+                next_url = next_url + "#" + parsed_next_url.fragment
             parsed_next_url = urlparse(next_url)
 
         # if it still has host info, it didn't match our above check for *this* host
-        if next_url and (parsed_next_url.netloc or not next_url.startswith('/')):
+        if next_url and (parsed_next_url.netloc or not next_url.startswith("/")):
             self.log.warning("Disallowing redirect outside JupyterHub: %r", next_url)
-            next_url = ''
+            next_url = ""
 
         return next_url
 
@@ -718,7 +689,7 @@ class BaseHandler(web.RequestHandler):
         - if redirect_to_server (default): send to user's own server
         - else: /hub/home
         """
-        next_url = self.get_argument('next', default='')
+        next_url = self.get_argument("next", default="")
         next_url = self._validate_next_url(next_url)
 
         # this is where we know if next_url is coming from ?next= param or we are using a default url
@@ -736,12 +707,14 @@ class BaseHandler(web.RequestHandler):
                 if callable(self.authenticator.login_redirect_url):
                     next_url = self.authenticator.login_redirect_url(self)
                 else:
-                    next_url = url_path_join(self.application.base_url, self.authenticator.login_redirect_url)
+                    next_url = url_path_join(
+                        self.application.base_url, self.authenticator.login_redirect_url
+                    )
 
         if not next_url_from_param:
             # when a request made with ?next=... assume all the params have already been encoded
             # otherwise, preserve params from the current request across the redirect
-            next_url = self.append_query_parameters(next_url, exclude=['next', '_xsrf'])
+            next_url = self.append_query_parameters(next_url, exclude=["next", "_xsrf"])
         return next_url
 
     def append_query_parameters(self, url, exclude=None):
@@ -765,12 +738,10 @@ class BaseHandler(web.RequestHandler):
         :rtype (str)
         """
         if exclude is None:
-            exclude = ['next']
+            exclude = ["next"]
         if self.request.query:
             query_string = [
-                param
-                for param in parse_qsl(self.request.query)
-                if param[0] not in exclude
+                param for param in parse_qsl(self.request.query) if param[0] not in exclude
             ]
             if query_string:
                 url = url_concat(url, query_string)
@@ -795,37 +766,38 @@ class GraderBaseHandler(BaseHandler):
         lecture: Lecture = self.session.get(Lecture, lecture_id)
         return lecture
 
-    def get_assignment(self, lecture_id: int,
-                       assignment_id: int) -> Assignment:
+    def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
         assignment: Assignment = self.session.get(Assignment, assignment_id)
-        if ((assignment is None) or (assignment.deleted == DeleteState.deleted)
-                or (int(assignment.lectid) != int(lecture_id))):
+        if (
+            (assignment is None)
+            or (assignment.deleted == DeleteState.deleted)
+            or (int(assignment.lectid) != int(lecture_id))
+        ):
             msg = "Assignment with id " + str(assignment_id) + " was not found"
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason=msg)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=msg)
         return assignment
 
-    def get_submission(self, lecture_id: int, assignment_id: int,
-                       submission_id: int) -> Submission:
+    def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
         submission = self.session.get(Submission, submission_id)
         if (
-                (submission is None)
-                or (submission.assignid != assignment_id)
-                or (int(submission.assignment.lectid) != int(lecture_id))
-                or (submission.deleted == DeleteState.deleted)
+            (submission is None)
+            or (submission.assignid != assignment_id)
+            or (int(submission.assignment.lectid) != int(lecture_id))
+            or (submission.deleted == DeleteState.deleted)
         ):
             msg = "Submission with id " + str(submission_id) + " was not found"
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason=msg)
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason=msg)
         return submission
 
-    def get_latest_submissions(self, assignment_id, must_have_feedback=False, username=None) -> List[Submission]:
+    def get_latest_submissions(
+        self, assignment_id, must_have_feedback=False, username=None
+    ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username,
-                               func.max(Submission.date).label("max_date"))
+            self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username))
+            .group_by(Submission.username)
+        )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != "not_generated")
@@ -839,33 +811,37 @@ class GraderBaseHandler(BaseHandler):
         submissions = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
-            .join(subquery,
-                  (Submission.username == subquery.c.username) & (
-                          Submission.date == subquery.c.max_date) & (
-                          Submission.assignid == assignment_id) & (
-                          Submission.deleted == DeleteState.active
-                  ))
+            .join(
+                subquery,
+                (Submission.username == subquery.c.username)
+                & (Submission.date == subquery.c.max_date)
+                & (Submission.assignid == assignment_id)
+                & (Submission.deleted == DeleteState.active),
+            )
             .order_by(Submission.id)
             .all()
         )
 
         return submissions
-    
+
     def get_all_submissions(self, assignment_id) -> List[Submission]:
-        query = (self.session.query(Submission)
+        query = (
+            self.session.query(Submission)
             .options(joinedload(Submission.user))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            )
+        )
         return query.all()
-        
-    def get_best_submissions(self, assignment_id, must_have_feedback=False, username=None) -> List[Submission]:
+
+    def get_best_submissions(
+        self, assignment_id, must_have_feedback=False, username=None
+    ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username,
-                               func.max(Submission.score).label("max_score"))
+            self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username))
+            .group_by(Submission.username)
+        )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != "not_generated")
@@ -879,12 +855,13 @@ class GraderBaseHandler(BaseHandler):
         submissions = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
-            .join(subquery,
-                  (Submission.username == subquery.c.username) & (
-                          Submission.score == subquery.c.max_score) & (
-                          Submission.assignid == assignment_id) & (
-                          Submission.deleted == DeleteState.active
-                  ))
+            .join(
+                subquery,
+                (Submission.username == subquery.c.username)
+                & (Submission.score == subquery.c.max_score)
+                & (Submission.assignid == assignment_id)
+                & (Submission.deleted == DeleteState.active),
+            )
             .order_by(Submission.id)
             .all()
         )
@@ -895,11 +872,14 @@ class GraderBaseHandler(BaseHandler):
         app: GraderServer = self.application
         return os.path.join(app.grader_service_dir, "git")
 
-    def construct_git_dir(self, repo_type: str, lecture: Lecture,
-                          assignment: Assignment,
-                          group_name: Optional[str] = None,
-                          submission: Optional[Submission] = None
-                          ) -> Optional[str]:
+    def construct_git_dir(
+        self,
+        repo_type: str,
+        lecture: Lecture,
+        assignment: Assignment,
+        group_name: Optional[str] = None,
+        submission: Optional[Submission] = None,
+    ) -> Optional[str]:
         """Helper method for every handler that needs to access git
         directories which returns the path of the repository based on
         the inputs or None if the repo_type is not recognized."""
@@ -908,25 +888,24 @@ class GraderBaseHandler(BaseHandler):
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
         allowed_types = set(["source", "release", "edit"])
-        if (repo_type in allowed_types):
+        if repo_type in allowed_types:
             path = os.path.join(assignment_path, repo_type)
             if repo_type == "edit":
                 path = os.path.join(path, str(submission.id))
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
-            type_path = os.path.join(assignment_path, repo_type,
-                                     assignment.settings.assignment_type)
+            type_path = os.path.join(
+                assignment_path, repo_type, assignment.settings.assignment_type
+            )
             if assignment.settings.assignment_type == "user":
                 if repo_type == "autograde":
-                    if ((submission is None)
-                            or (self.get_role(lecture.id).role < Scope.tutor)):
+                    if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
                         raise HTTPError(403)
                     path = os.path.join(type_path, submission.username)
                 else:
                     path = os.path.join(type_path, self.user.name)
             else:
-                group = self.session.query(Group).get((self.user.name,
-                                                       lecture.id))
+                group = self.session.query(Group).get((self.user.name, lecture.id))
                 if group is None:
                     raise HTTPError(404, reason="User is not in a group")
                 path = os.path.join(type_path, group.name)
@@ -949,24 +928,29 @@ class GraderBaseHandler(BaseHandler):
     @staticmethod
     def is_base_git_dir(path: str) -> bool:
         try:
-            out = subprocess.run(["git", "rev-parse", "--is-bare-repository"],
-                                 cwd=path, capture_output=True)
-            is_git = ((out.returncode == 0)
-                      and ("true" in out.stdout.decode("utf-8")))
+            out = subprocess.run(
+                ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
+            )
+            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
         except FileNotFoundError:
             is_git = False
         return is_git
 
-    def duplicate_release_repo(self, repo_path_release: str,
-                               repo_path_user: str,
-                               assignment: Assignment, message: str,
-                               checkout_main: bool = False):
+    def duplicate_release_repo(
+        self,
+        repo_path_release: str,
+        repo_path_user: str,
+        assignment: Assignment,
+        message: str,
+        checkout_main: bool = False,
+    ):
         tmp_path_base = Path(
             self.application.grader_service_dir,
             "tmp",
             assignment.lecture.code,
             str(assignment.id),
-            str(self.user.name))
+            str(self.user.name),
+        )
 
         # Deleting dir
         if os.path.exists(tmp_path_base):
@@ -980,22 +964,18 @@ class GraderBaseHandler(BaseHandler):
         self.log.info(f"Temporary path used for copying: {tmp_path_base}")
 
         try:
-            self._run_command(f"git clone -b main '{repo_path_release}'",
-                              cwd=tmp_path_base)
+            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
             if checkout_main:
-                self._run_command(f"git clone '{repo_path_user}'",
-                                  cwd=tmp_path_base)
+                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
                 self._run_command("git checkout -b main", cwd=tmp_path_user)
             else:
-                self._run_command(f"git clone -b main '{repo_path_user}'",
-                                  cwd=tmp_path_base)
+                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
 
             msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
             self.log.info(msg)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
             if (sys.version_info.major == 3) and (sys.version_info.minor >= 8):
-                shutil.copytree(tmp_path_release, tmp_path_user,
-                                ignore=ignore, dirs_exist_ok=True)
+                shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
             else:
                 for item in os.listdir(tmp_path_release):
                     s = os.path.join(tmp_path_release, item)
@@ -1004,7 +984,7 @@ class GraderBaseHandler(BaseHandler):
                         shutil.copytree(s, d, ignore=ignore)
                     else:
                         shutil.copy2(s, d)
-            cmd = 'sh -c \'git add -A'
+            cmd = "sh -c 'git add -A"
             cmd += f'&& git commit --allow-empty -m "{message}"\''
             self._run_command(cmd, tmp_path_user)
             self._run_command("git push -u origin main", tmp_path_user)
@@ -1017,10 +997,9 @@ class GraderBaseHandler(BaseHandler):
         #  with the _run_command_async
         try:
             self.log.info(f"Running: {command}")
-            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd,
-                                 capture_output=True)
+            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
             if capture_output:
-                return str(ret.stdout, 'utf-8')
+                return str(ret.stdout, "utf-8")
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
             raise HTTPError(500, reason="Subprocess Error")
@@ -1040,10 +1019,8 @@ class GraderBaseHandler(BaseHandler):
             GitError: returns appropriate git error"""
         self.log.info(f"Running: {command}")
         ret = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=cwd)
+            command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
+        )
         await ret.wait()
 
     def write_json(self, obj) -> None:
@@ -1074,7 +1051,7 @@ class GraderBaseHandler(BaseHandler):
 
 
 def authenticated(
-        method: Callable[..., Optional[Awaitable[None]]]
+    method: Callable[..., Optional[Awaitable[None]]],
 ) -> Callable[..., Optional[Awaitable[None]]]:
     """Decorate methods with this to require that the user be logged in.
 
@@ -1084,7 +1061,7 @@ def authenticated(
 
     @functools.wraps(method)
     def wrapper(  # type: ignore
-            self: GraderBaseHandler, *args, **kwargs
+        self: GraderBaseHandler, *args, **kwargs
     ) -> Optional[Awaitable[None]]:
         if not self.current_user:
             raise HTTPError(403)
@@ -1110,18 +1087,21 @@ class RequestHandlerConfig(SingletonConfigurable):
     from traitlets.config.Configurable and making all requests super
     slow. If a request handler needs configurable values, they can be
     accessed from this object."""
-    autograde_executor_class = Type(default_value=LocalAutogradeExecutor,
-                                    # TODO: why does using
-                                    # LocalAutogradeExecutor give
-                                    # subclass error?
-                                    klass=object,
-                                    allow_none=False, config=True)
+
+    autograde_executor_class = Type(
+        default_value=LocalAutogradeExecutor,
+        # TODO: why does using
+        # LocalAutogradeExecutor give
+        # subclass error?
+        klass=object,
+        allow_none=False,
+        config=True,
+    )
 
     # Git server file policy defaults
     git_max_file_size_mb = Integer(80, allow_none=False, config=True)
     git_max_file_count = Integer(512, allow_none=False, config=True)
     # empty list allows everything
-    git_allowed_file_extensions = ListTrait(TraitType(Unicode),
-                                            default_value=[],
-                                            allow_none=False,
-                                            config=True)
+    git_allowed_file_extensions = ListTrait(
+        TraitType(Unicode), default_value=[], allow_none=False, config=True
+    )

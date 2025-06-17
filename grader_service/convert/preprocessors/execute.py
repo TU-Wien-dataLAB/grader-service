@@ -1,14 +1,9 @@
-
-
 import typing as t
 from textwrap import dedent
 from typing import Any, Optional, Tuple
 
-from jupyter_client.utils import ensure_async, run_sync
-from nbclient import NotebookClient
-from nbclient.exceptions import CellTimeoutError
 from nbconvert.exporters.exporter import ResourcesDict
-from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
+from nbconvert.preprocessors import ExecutePreprocessor
 from nbformat.notebooknode import NotebookNode
 from traitlets import Bool, Integer, List
 
@@ -46,7 +41,7 @@ class Execute(NbGraderPreprocessor, ExecutePreprocessor):
     ).tag(config=True)
 
     def preprocess(
-            self, nb: NotebookNode, resources: ResourcesDict, retries: Optional[Any] = None
+        self, nb: NotebookNode, resources: ResourcesDict, retries: Optional[Any] = None
     ) -> Tuple[NotebookNode, ResourcesDict]:
         # This gets added in by the parent execute preprocessor, so if it's already in our
         # extra arguments we need to delete it or traitlets will be unhappy.
@@ -66,12 +61,15 @@ class Execute(NbGraderPreprocessor, ExecutePreprocessor):
 
         return output
 
-    async def _async_handle_timeout(self, timeout: int, cell: t.Optional[NotebookNode] = None) -> None:
+    async def _async_handle_timeout(
+        self, timeout: int, cell: t.Optional[NotebookNode] = None
+    ) -> None:
         await super()._async_handle_timeout(timeout, cell)
 
         error_output = NotebookNode(output_type="error")
         error_output.ename = "CellTimeoutError"
         error_output.evalue = "CellTimeoutError"
         error_output.traceback = [
-            f"CellTimeoutInterrupt: Cell execution timed out after maximum execution time of {self.timeout} seconds."]
+            f"CellTimeoutInterrupt: Cell execution timed out after maximum execution time of {self.timeout} seconds."
+        ]
         cell.outputs.append(error_output)

@@ -1,5 +1,3 @@
-
-
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
@@ -9,6 +7,7 @@ from traitlets import List
 from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert import utils
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
+
 
 class GetGrades(NbGraderPreprocessor):
     """Preprocessor for saving grades from the database to the notebook"""
@@ -27,9 +26,7 @@ class GetGrades(NbGraderPreprocessor):
     )
 
     def preprocess(
-        self,
-        nb: NotebookNode,
-        resources: ResourcesDict,
+        self, nb: NotebookNode, resources: ResourcesDict
     ) -> Tuple[NotebookNode, ResourcesDict]:
         # pull information from the resources
         self.notebook_id = resources["unique_key"]
@@ -65,18 +62,13 @@ class GetGrades(NbGraderPreprocessor):
         cell.metadata.nbgrader["comment"] = comment.comment
 
     def _get_score(self, cell: NotebookNode, resources: ResourcesDict) -> None:
-        grade = self.gradebook.find_grade(
-            cell.metadata["nbgrader"]["grade_id"], self.notebook_id
-        )
+        grade = self.gradebook.find_grade(cell.metadata["nbgrader"]["grade_id"], self.notebook_id)
 
         cell.metadata.nbgrader["score"] = grade.score
         cell.metadata.nbgrader["points"] = grade.max_score
 
     def preprocess_cell(
-        self,
-        cell: NotebookNode,
-        resources: ResourcesDict,
-        cell_index: int,
+        self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
         # if it's a solution cell, then add a comment
         if utils.is_solution(cell):

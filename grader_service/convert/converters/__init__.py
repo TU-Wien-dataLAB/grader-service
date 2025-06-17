@@ -1,5 +1,3 @@
-
-
 from .base import BaseConverter, GraderConvertException
 from .generate_assignment import GenerateAssignment
 from .autograde import Autograde
@@ -11,5 +9,5 @@ __all__ = [
     "GenerateAssignment",
     "Autograde",
     "GenerateFeedback",
-    "GenerateSolution"
+    "GenerateSolution",
 ]

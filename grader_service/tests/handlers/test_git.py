@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
 
-from unittest import mock
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
 from grader_service.orm.submission import Submission
@@ -19,8 +18,15 @@ from .db_util import *
 import os
 
 
-def get_query_side_effect(lid=1, code="ivs21s", a_type="user", scope=Scope.student, group="test_group",
-                          username="test_user", a_id=1):
+def get_query_side_effect(
+    lid=1,
+    code="ivs21s",
+    a_type="user",
+    scope=Scope.student,
+    group="test_group",
+    username="test_user",
+    a_id=1,
+):
     def query_side_effect(input):
         m = Mock()
         if input is Lecture:
@@ -65,9 +71,12 @@ def test_git_lookup_instructor(tmpdir):
     # orm mocks
     sf = get_query_side_effect(code="iv21s", a_type="group", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="source",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="source",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "send-pack")
@@ -92,9 +101,12 @@ def test_git_lookup_release_pull_instructor(tmpdir):
     # orm mocks
     sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="release",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="release",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -167,6 +179,7 @@ def test_git_lookup_source_push_student_error(tmpdir):
     with pytest.raises(HTTPError) as e:
         GitBaseHandler._check_git_repo_permissions(handler_mock, "send-pack", role, pathlets)
     assert e.value.status_code == 403
+
 
 def mock_git_lookup(rpc: str):
     if rpc == "bad":
@@ -280,10 +293,13 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
     role_mock = Mock()
     role_mock.role = Scope.instructor
     handler_mock.get_role = Mock(return_value=role_mock)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="autograde",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one(),
-                                                           submission=sf(Submission).get())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="autograde",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+        submission=sf(Submission).get(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -326,9 +342,12 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
     # orm mocks
     sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="feedback",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="feedback",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -350,11 +369,16 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student, username="test_user")
+    sf = get_query_side_effect(
+        code="iv21s", a_type="user", scope=Scope.student, username="test_user"
+    )
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="feedback",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="feedback",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -376,11 +400,16 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student, username="test_user")
+    sf = get_query_side_effect(
+        code="iv21s", a_type="user", scope=Scope.student, username="test_user"
+    )
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(handler_mock, repo_type="feedback",
-                                                           lecture=sf(Lecture).filter().one(),
-                                                           assignment=sf(Assignment).filter().one())
+    constructed_git_dir = GitBaseHandler.construct_git_dir(
+        handler_mock,
+        repo_type="feedback",
+        lecture=sf(Lecture).filter().one(),
+        assignment=sf(Assignment).filter().one(),
+    )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "upload-pack")
@@ -403,7 +432,9 @@ def test_git_lookup_pull_feedback_student_with_invalid_id_error():
     handler_mock.user.name = "test_user"
 
     # test that submission with id 1 comes from "other_user"
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student, username="other_user")
+    sf = get_query_side_effect(
+        code="iv21s", a_type="user", scope=Scope.student, username="other_user"
+    )
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 

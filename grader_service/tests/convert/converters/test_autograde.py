@@ -1,4 +1,3 @@
-import logging
 import shutil
 from unittest.mock import patch
 
@@ -15,7 +14,7 @@ def test_autograde(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -27,13 +26,14 @@ def test_autograde(tmp_path):
     assert (output_dir2 / "gradebook.json").exists()
 
     from nbclient.client import NotebookClient
+
     with patch.object(NotebookClient, "kernel_name", "python3"):
         Autograde(
             input_dir=str(output_dir),
             output_dir=str(output_dir2),
             file_pattern="*.ipynb",
             assignment_settings=AssignmentSettings(),
-            config=None
+            config=None,
         ).start()
 
     assert (output_dir2 / "simple.ipynb").exists()
@@ -51,7 +51,7 @@ def test_autograde_copy_with_all_files(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(allowed_files=["*"]),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -64,13 +64,14 @@ def test_autograde_copy_with_all_files(tmp_path):
     assert (output_dir2 / "gradebook.json").exists()
 
     from nbclient.client import NotebookClient
+
     with patch.object(NotebookClient, "kernel_name", "python3"):
         Autograde(
             input_dir=str(output_dir),
             output_dir=str(output_dir2),
             file_pattern="*.ipynb",
             assignment_settings=AssignmentSettings(allowed_files=["*"]),
-            config=None
+            config=None,
         ).start()
 
     assert (output_dir2 / "simple.ipynb").exists()
@@ -96,7 +97,7 @@ def test_generate_assignment_copy_with_dirs(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(allowed_files=["*"]),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -112,13 +113,14 @@ def test_generate_assignment_copy_with_dirs(tmp_path):
     assert (output_dir2 / "gradebook.json").exists()
 
     from nbclient.client import NotebookClient
+
     with patch.object(NotebookClient, "kernel_name", "python3"):
         Autograde(
             input_dir=str(output_dir),
             output_dir=str(output_dir2),
             file_pattern="*.ipynb",
             assignment_settings=AssignmentSettings(allowed_files=["*"]),
-            config=None
+            config=None,
         ).start()
 
     assert (output_dir2 / "simple.ipynb").exists()
@@ -127,4 +129,3 @@ def test_generate_assignment_copy_with_dirs(tmp_path):
     assert (output_dir2 / "dir_1/dir_2").exists()
     assert (output_dir2 / "dir_1/dir_2/dir_3").exists()
     assert (output_dir2 / "dir_1/dir_2/dir_3/test.txt").exists()
-

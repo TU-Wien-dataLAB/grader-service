@@ -1,8 +1,8 @@
 """Base Authenticator class"""
+
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 import re
-from textwrap import dedent
 from typing import Union
 
 from traitlets import Any, Bool, Dict, Integer, Set, Unicode, default, observe, Union, Callable
@@ -17,7 +17,7 @@ class Authenticator(LoggingConfigurable):
 
     login_redirect_url = Union(
         [Unicode(), Callable()],
-        default_value='/',
+        default_value="/",
         allow_none=False,
         help="""
         The default URL to redirect users when they successfully logged in.
@@ -116,9 +116,7 @@ class Authenticator(LoggingConfigurable):
     @default("any_allow_config")
     def _default_any_allowed(self):
         for trait_name, trait in self.traits(config=True).items():
-            if trait.metadata.get("allow_config", False) or trait_name.startswith(
-                    "allow"
-            ):
+            if trait.metadata.get("allow_config", False) or trait_name.startswith("allow"):
                 # this is only used for a helpful warning, so not the biggest deal if it's imperfect
                 if getattr(self, trait_name):
                     return True
@@ -234,12 +232,12 @@ class Authenticator(LoggingConfigurable):
         """,
     )
 
-    @observe('allowed_users')
+    @observe("allowed_users")
     def _check_allowed_users(self, change):
-        short_names = [name for name in change['new'] if len(name) <= 1]
+        short_names = [name for name in change["new"] if len(name) <= 1]
         if short_names:
             sorted_names = sorted(short_names)
-            single = ''.join(sorted_names)
+            single = "".join(sorted_names)
             string_set_typo = "set('%s')" % single
             self.log.warning(
                 "Allowed set contains single-character names: %s; did you mean set([%r]) instead of %s?",
@@ -257,9 +255,7 @@ class Authenticator(LoggingConfigurable):
     )
 
     def get_custom_html(self, base_url):
-        """Get custom HTML for the authenticator.
-
-        """
+        """Get custom HTML for the authenticator."""
         return self.custom_html
 
     login_service = Unicode(
@@ -284,11 +280,11 @@ class Authenticator(LoggingConfigurable):
         """
     ).tag(config=True)
 
-    @observe('username_pattern')
+    @observe("username_pattern")
     def _username_pattern_changed(self, change):
-        if not change['new']:
+        if not change["new"]:
             self.username_regex = None
-        self.username_regex = re.compile(change['new'])
+        self.username_regex = re.compile(change["new"])
 
     username_regex = Any(
         help="""
@@ -301,7 +297,7 @@ class Authenticator(LoggingConfigurable):
 
         Return True if username is valid, False otherwise.
         """
-        if '/' in username:
+        if "/" in username:
             # / is not allowed in usernames
             return False
         if not username:
@@ -389,9 +385,7 @@ class Authenticator(LoggingConfigurable):
                 The hook must always return the auth_model dict
         """
         if self.post_auth_hook is not None:
-            auth_model = await maybe_future(
-                self.post_auth_hook(self, handler, auth_model)
-            )
+            auth_model = await maybe_future(self.post_auth_hook(self, handler, auth_model))
         return auth_model
 
     def normalize_username(self, username):
@@ -481,25 +475,21 @@ class Authenticator(LoggingConfigurable):
         if authenticated is None:
             return
         if isinstance(authenticated, dict):
-            if 'name' not in authenticated:
+            if "name" not in authenticated:
                 raise ValueError("user missing a name: %r" % authenticated)
         else:
-            authenticated = {'name': authenticated}
-        authenticated.setdefault('auth_state', None)
+            authenticated = {"name": authenticated}
+        authenticated.setdefault("auth_state", None)
         # Leave the default as None, but reevaluate later post-allowed-check
-        authenticated.setdefault('admin', None)
+        authenticated.setdefault("admin", None)
 
         # normalize the username
-        authenticated['name'] = username = self.normalize_username(
-            authenticated['name']
-        )
+        authenticated["name"] = username = self.normalize_username(authenticated["name"])
         if not self.validate_username(username):
             self.log.warning("Disallowing invalid username %r.", username)
             return
 
-        blocked_pass = await maybe_future(
-            self.check_blocked_users(username, authenticated)
-        )
+        blocked_pass = await maybe_future(self.check_blocked_users(username, authenticated))
 
         if not blocked_pass:
             self.log.warning("User %r blocked. Stop authentication", username)
@@ -507,15 +497,11 @@ class Authenticator(LoggingConfigurable):
 
         allowed_pass = self.allow_all
         if not allowed_pass:
-            allowed_pass = await maybe_future(
-                self.check_allowed(username, authenticated)
-            )
+            allowed_pass = await maybe_future(self.check_allowed(username, authenticated))
 
         if allowed_pass:
-            if authenticated['admin'] is None:
-                authenticated['admin'] = await maybe_future(
-                    self.is_admin(handler, authenticated)
-                )
+            if authenticated["admin"] is None:
+                authenticated["admin"] = await maybe_future(self.is_admin(handler, authenticated))
 
             authenticated = await self.run_post_auth_hook(handler, authenticated)
 
@@ -563,7 +549,7 @@ class Authenticator(LoggingConfigurable):
                 The admin status of the user, or None if it could not be
                 determined or should not change.
         """
-        return True if authentication['name'] in self.admin_users else None
+        return True if authentication["name"] in self.admin_users else None
 
     async def authenticate(self, handler, data):
         """Authenticate a user with login form data
@@ -611,9 +597,7 @@ class Authenticator(LoggingConfigurable):
 
         """
         if not self.manage_roles:
-            raise ValueError(
-                'Managed roles can only be loaded when `manage_roles` is True'
-            )
+            raise ValueError("Managed roles can only be loaded when `manage_roles` is True")
         if self.reset_managed_roles_on_startup:
             raise NotImplementedError(
                 "When `reset_managed_roles_on_startup` is used, the `load_managed_roles()`"
@@ -770,7 +754,7 @@ class Authenticator(LoggingConfigurable):
         Returns:
             str: The login URL, e.g. '/services/grader/login'
         """
-        return url_path_join(base_url, 'login')
+        return url_path_join(base_url, "login")
 
     def logout_url(self, base_url):
         """Override when registering a custom logout handler
@@ -785,7 +769,7 @@ class Authenticator(LoggingConfigurable):
         Returns:
             str: The logout URL, e.g. '/hub/logout'
         """
-        return url_path_join(base_url, 'logout')
+        return url_path_join(base_url, "logout")
 
     def get_handlers(self, base_url: str):
         """Return any custom handlers the authenticator needs to register

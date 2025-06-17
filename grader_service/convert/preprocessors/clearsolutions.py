@@ -1,4 +1,3 @@
-
 import re
 from textwrap import dedent
 from typing import Any, Tuple
@@ -13,19 +12,18 @@ from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearSolutions(NbGraderPreprocessor):
-
     code_stub = Dict(
         default_value={
-            'python': "# YOUR CODE HERE\nraise NotImplementedError()",
-            'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",
-            'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",
-            'sas': "/* YOUR CODE HERE */\n %notImplemented;",
-            'java': "// YOUR CODE HERE",
-            'C++11': "// YOUR CODE HERE",
-            'C++14': "// YOUR CODE HERE",
-            'C++17': "// YOUR CODE HERE",
-            'r': "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
-            'R': "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer"
+            "python": "# YOUR CODE HERE\nraise NotImplementedError()",
+            "matlab": "% YOUR CODE HERE\nerror('No Answer Given!')",
+            "octave": "% YOUR CODE HERE\nerror('No Answer Given!')",
+            "sas": "/* YOUR CODE HERE */\n %notImplemented;",
+            "java": "// YOUR CODE HERE",
+            "C++11": "// YOUR CODE HERE",
+            "C++14": "// YOUR CODE HERE",
+            "C++17": "// YOUR CODE HERE",
+            "r": "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
+            "R": "# YOUR CODE HERE\nfail() # No Answer - remove if you provide an answer",
         },
         help="The code snippet that will replace code solutions",
     ).tag(config=True)
@@ -101,7 +99,6 @@ class ClearSolutions(NbGraderPreprocessor):
         for line in lines:
             # begin the solution area
             if self.begin_solution_delimeter in line:
-
                 # check to make sure this isn't a nested BEGIN
                 # SOLUTION region
                 if in_solution:
@@ -139,8 +136,7 @@ class ClearSolutions(NbGraderPreprocessor):
         language = nb.metadata.get("kernelspec", {}).get("language", "python")
         if language not in self.code_stub:
             raise ValueError(
-                "language '{}' has not been specified in "
-                "ClearSolutions.code_stub".format(language)
+                "language '{}' has not been specified in ClearSolutions.code_stub".format(language)
             )
 
         resources["language"] = language

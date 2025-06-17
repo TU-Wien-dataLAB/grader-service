@@ -1,5 +1,3 @@
-
-
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict

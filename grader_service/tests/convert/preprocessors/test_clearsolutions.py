@@ -14,19 +14,21 @@ def preprocessor():
 
 
 class TestClearSolutions(BaseTestPreprocessor):
-
     def test_replace_solution_region_code(self, preprocessor):
         """Are solution regions in code cells correctly replaced?"""
         cell = create_code_cell()
         replaced_solution = preprocessor._replace_solution_region(cell, "python")
         assert replaced_solution
-        assert cell.source == dedent(
-            """
+        assert (
+            cell.source
+            == dedent(
+                """
             print("something")
             # YOUR CODE HERE
             raise NotImplementedError()
             """
-        ).strip()
+            ).strip()
+        )
 
     def test_replace_solution_region_text(self, preprocessor):
         """Are solution regions in text cells correctly replaced?"""
@@ -82,18 +84,21 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_code_solution_cell_solution_region(self, preprocessor):
         """Is a code solution cell correctly cleared when there is a solution region?"""
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = dict(solution=True)
+        cell.metadata["nbgrader"] = dict(solution=True)
         resources = dict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
-        assert cell.source == dedent(
-            """
+        assert (
+            cell.source
+            == dedent(
+                """
             print("something")
             # YOUR CODE HERE
             raise NotImplementedError()
             """
-        ).strip()
-        assert cell.metadata.nbgrader['solution']
+            ).strip()
+        )
+        assert cell.metadata.nbgrader["solution"]
 
     def test_preprocess_code_cell_solution_region(self, preprocessor):
         """Is an error thrown when there is a solution region but it's not a solution cell?"""
@@ -106,48 +111,51 @@ class TestClearSolutions(BaseTestPreprocessor):
         """Is a code solution cell correctly cleared when there is no solution region?"""
         cell = create_code_cell()
         cell.source = """print("the answer!")"""
-        cell.metadata['nbgrader'] = dict(solution=True)
+        cell.metadata["nbgrader"] = dict(solution=True)
         resources = dict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
-        assert cell.source == dedent(
-            """
+        assert (
+            cell.source
+            == dedent(
+                """
             # YOUR CODE HERE
             raise NotImplementedError()
             """
-        ).strip()
-        assert cell.metadata.nbgrader['solution']
+            ).strip()
+        )
+        assert cell.metadata.nbgrader["solution"]
 
     def test_preprocess_code_cell_no_region(self, preprocessor):
         """Is a code cell not cleared when there is no solution region?"""
         cell = create_code_cell()
         cell.source = """print("the answer!")"""
-        cell.metadata['nbgrader'] = dict()
+        cell.metadata["nbgrader"] = dict()
         resources = dict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == """print("the answer!")"""
-        assert not cell.metadata.nbgrader.get('solution', False)
+        assert not cell.metadata.nbgrader.get("solution", False)
 
     def test_preprocess_text_solution_cell_no_region(self, preprocessor):
         """Is a text grade cell correctly cleared when there is no solution region?"""
         cell = create_text_cell()
-        cell.metadata['nbgrader'] = dict(solution=True)
+        cell.metadata["nbgrader"] = dict(solution=True)
         resources = dict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "YOUR ANSWER HERE"
-        assert cell.metadata.nbgrader['solution']
+        assert cell.metadata.nbgrader["solution"]
 
     def test_preprocess_text_cell_no_region(self, preprocessor):
         """Is a text grade cell not cleared when there is no solution region?"""
         cell = create_text_cell()
-        cell.metadata['nbgrader'] = dict()
+        cell.metadata["nbgrader"] = dict()
         resources = dict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "this is the answer!\n"
-        assert not cell.metadata.nbgrader.get('solution', False)
+        assert not cell.metadata.nbgrader.get("solution", False)
 
     def test_preprocess_text_solution_cell_region(self, preprocessor):
         """Is a text grade cell correctly cleared when there is a solution region?"""
@@ -160,12 +168,12 @@ class TestClearSolutions(BaseTestPreprocessor):
             ### END SOLUTION
             """
         ).strip()
-        cell.metadata['nbgrader'] = dict(solution=True)
+        cell.metadata["nbgrader"] = dict(solution=True)
         resources = dict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "something something\nYOUR ANSWER HERE"
-        assert cell.metadata.nbgrader['solution']
+        assert cell.metadata.nbgrader["solution"]
 
     def test_preprocess_text_solution_cell_region_indented(self, preprocessor):
         """Is a text grade cell correctly cleared and indented when there is a solution region?"""
@@ -178,12 +186,12 @@ class TestClearSolutions(BaseTestPreprocessor):
                 ### END SOLUTION
             """
         ).strip()
-        cell.metadata['nbgrader'] = dict(solution=True)
+        cell.metadata["nbgrader"] = dict(solution=True)
         resources = dict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "something something\n    YOUR ANSWER HERE"
-        assert cell.metadata.nbgrader['solution']
+        assert cell.metadata.nbgrader["solution"]
 
     def test_preprocess_text_cell_metadata(self, preprocessor):
         """Is an error thrown when a solution region exists in a non-solution text cell?"""
@@ -205,7 +213,7 @@ class TestClearSolutions(BaseTestPreprocessor):
         preprocessor.enforce_metadata = False
         cell, _ = preprocessor.preprocess_cell(cell, resources, 1)
         assert cell.source == "something something\nYOUR ANSWER HERE"
-        assert 'nbgrader' not in cell.metadata
+        assert "nbgrader" not in cell.metadata
 
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
@@ -215,9 +223,9 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_remove_celltoolbar(self, preprocessor):
         """Is the celltoolbar removed?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
-        nb.metadata['celltoolbar'] = 'Create Assignment'
+        nb.metadata["celltoolbar"] = "Create Assignment"
         nb = preprocessor.preprocess(nb, {})[0]
-        assert 'celltoolbar' not in nb.metadata
+        assert "celltoolbar" not in nb.metadata
 
     def test_old_config(self):
         """Are deprecations handled cleanly?"""
@@ -228,8 +236,8 @@ class TestClearSolutions(BaseTestPreprocessor):
 
     def test_language_missing(self, preprocessor):
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
-        nb.metadata['kernelspec'] = {}
-        nb.metadata['kernelspec']['language'] = "javascript"
+        nb.metadata["kernelspec"] = {}
+        nb.metadata["kernelspec"]["language"] = "javascript"
 
         with pytest.raises(ValueError):
             preprocessor.preprocess(nb, {})

@@ -8,22 +8,10 @@ import traceback
 import typing
 from textwrap import dedent
 
-import sqlalchemy
 from nbconvert.exporters import Exporter, NotebookExporter
 from nbconvert.exporters.exporter import ResourcesDict
 from nbconvert.writers import FilesWriter
-from traitlets import (
-    Any,
-    Bool,
-    Dict,
-    Instance,
-    Integer,
-    List,
-    TraitError,
-    Type,
-    default,
-    validate,
-)
+from traitlets import Any, Bool, Instance, Integer, List, TraitError, Type, default, validate
 from traitlets.config import Config, LoggingConfigurable
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
@@ -47,13 +35,7 @@ class BaseConverter(LoggingConfigurable):
     force = Bool(False, help="Whether to overwrite existing files").tag(config=True)
 
     ignore = List(
-        [
-            ".ipynb_checkpoints",
-            "*.pyc",
-            "__pycache__",
-            ".git",
-            "*.ipynb"
-        ],
+        [".ipynb_checkpoints", "*.pyc", "__pycache__", ".git", "*.ipynb"],
         help=dedent(
             """
             List of file names or file globs.
@@ -142,7 +124,7 @@ class BaseConverter(LoggingConfigurable):
     #         'ClearSolutions': ['code_stub'],
     #         'ClearHiddenTests': ['begin_test_delimeter', 'end_test_delimeter'],
     #     }
-    
+
     # Sanitize config to only allow certain keys to be overridden
     # def _sanitize_config(self, raw_config, allowed_keys):
     #     sanitized_config = Config()
@@ -155,7 +137,12 @@ class BaseConverter(LoggingConfigurable):
     #     return sanitized_config
 
     def __init__(
-            self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: typing.Any
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_pattern: str,
+        assignment_settings: AssignmentSettings,
+        **kwargs: typing.Any,
     ) -> None:
         super(BaseConverter, self).__init__(**kwargs)
         self._input_directory = os.path.abspath(os.path.expanduser(input_dir))
@@ -166,18 +153,17 @@ class BaseConverter(LoggingConfigurable):
             self.logfile = self.parent.logfile
         else:
             self.logfile = None
-        
+
         c = Config()
 
-        custom_config_path = f'{self._input_directory}/grader_config.py'
+        custom_config_path = f"{self._input_directory}/grader_config.py"
         if os.path.exists(custom_config_path):
-
-            local_vars = {'c': c}
+            local_vars = {"c": c}
             with open(custom_config_path) as f:
-                code = compile(f.read(), 'config.py', 'exec')
+                code = compile(f.read(), "config.py", "exec")
                 exec(code, {}, local_vars)
 
-            c = local_vars['c']
+            c = local_vars["c"]
 
         c.Exporter.default_preprocessors = []
         self.update_config(c)
@@ -224,12 +210,10 @@ class BaseConverter(LoggingConfigurable):
             self.log.warning("No notebooks were matched by '%s'", notebook_glob)
 
     def init_single_notebook_resources(
-            self, notebook_filename: str
+        self, notebook_filename: str
     ) -> typing.Dict[str, typing.Any]:
         resources = {}
-        resources["unique_key"] = os.path.splitext(os.path.basename(notebook_filename))[
-            0
-        ]
+        resources["unique_key"] = os.path.splitext(os.path.basename(notebook_filename))[0]
         resources["output_files_dir"] = "%s_files" % os.path.basename(notebook_filename)
         resources["output_json_file"] = "gradebook.json"
         resources["output_json_path"] = os.path.join(
@@ -279,7 +263,9 @@ class BaseConverter(LoggingConfigurable):
         ignore_patterns = self.ignore  # List of patterns to ignore
 
         if allowed_files is None:
-            self.log.info("No additional file patterns specified; only copying files included in release version")
+            self.log.info(
+                "No additional file patterns specified; only copying files included in release version"
+            )
             files_patterns = gb.get_extra_files()
         else:
             self.log.info(f"Found additional file patterns: {allowed_files}")
@@ -300,11 +286,15 @@ class BaseConverter(LoggingConfigurable):
             # Ensure to check both files and directories
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in ignore_patterns)
 
-        self.log.info(f"Copying files from {src} to {dst} that match allowed patterns and don't match ignored patterns.")
+        self.log.info(
+            f"Copying files from {src} to {dst} that match allowed patterns and don't match ignored patterns."
+        )
 
         for root, dirs, files in os.walk(src, topdown=True):
             # Exclude directories that match ignore patterns
-            dirs[:] = [d for d in dirs if not is_ignored(d)]  # Modify dirs in-place to ignore unwanted dirs
+            dirs[:] = [
+                d for d in dirs if not is_ignored(d)
+            ]  # Modify dirs in-place to ignore unwanted dirs
 
             for file in files:
                 abs_file_path = os.path.join(root, file)
@@ -343,9 +333,7 @@ class BaseConverter(LoggingConfigurable):
         """
         self.log.info("Converting notebook %s", notebook_filename)
         resources = self.init_single_notebook_resources(notebook_filename)
-        output, resources = self.exporter.from_filename(
-            notebook_filename, resources=resources
-        )
+        output, resources = self.exporter.from_filename(notebook_filename, resources=resources)
         self.write_single_notebook(output, resources)
 
     def convert_notebooks(self) -> None:
@@ -424,9 +412,7 @@ class BaseConverter(LoggingConfigurable):
             raise GraderConvertException(e.message)
 
         except Exception as e:
-            self.log.error(
-                "There was an error processing files: %s", self._format_source()
-            )
+            self.log.error("There was an error processing files: %s", self._format_source())
             self.log.error(traceback.format_exc())
             errors.append(e)
             _handle_failure(e)

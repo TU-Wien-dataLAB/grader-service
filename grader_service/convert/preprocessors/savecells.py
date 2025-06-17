@@ -1,5 +1,3 @@
-
-
 import json
 from typing import Tuple
 
@@ -30,9 +28,7 @@ class SaveCells(NbGraderPreprocessor):
             self.old_source_cells = set(x.name for x in notebook.source_cells)
 
             # clear data about the existing notebook
-            self.log.debug(
-                "Removing existing notebook '%s' from the database", self.notebook_id
-            )
+            self.log.debug("Removing existing notebook '%s' from the database", self.notebook_id)
             notebook_info = notebook.to_dict()
             del notebook_info["name"]
             del notebook_info["grade_cells_dict"]
@@ -61,9 +57,7 @@ class SaveCells(NbGraderPreprocessor):
 
         # save grade cells
         for name, info in self.new_grade_cells.items():
-            grade_cell = self.gradebook.update_or_create_grade_cell(
-                name, self.notebook_id, **info
-            )
+            grade_cell = self.gradebook.update_or_create_grade_cell(name, self.notebook_id, **info)
             self.log.debug("Recorded grade cell %s into the gradebook", grade_cell)
 
         # save solution cells
@@ -71,18 +65,12 @@ class SaveCells(NbGraderPreprocessor):
             solution_cell = self.gradebook.update_or_create_solution_cell(
                 name, self.notebook_id, **info
             )
-            self.log.debug(
-                "Recorded solution cell %s into the gradebook", solution_cell
-            )
+            self.log.debug("Recorded solution cell %s into the gradebook", solution_cell)
 
         # save task cells
         for name, info in self.new_task_cells.items():
-            task_cell = self.gradebook.update_or_create_task_cell(
-                name, self.notebook_id, **info
-            )
-            self.log.debug(
-                "Recorded task cell %s into the gradebook from info %s", task_cell, info
-            )
+            task_cell = self.gradebook.update_or_create_task_cell(name, self.notebook_id, **info)
+            self.log.debug("Recorded task cell %s into the gradebook from info %s", task_cell, info)
 
         # save source cells
         for name, info in self.new_source_cells.items():
@@ -122,19 +110,14 @@ class SaveCells(NbGraderPreprocessor):
         grade_id = cell.metadata.nbgrader["grade_id"]
 
         try:
-            grade_cell = self.gradebook.find_grade_cell(
-                grade_id, self.notebook_id
-            ).to_dict()
+            grade_cell = self.gradebook.find_grade_cell(grade_id, self.notebook_id).to_dict()
             del grade_cell["name"]
         except MissingEntry:
             grade_cell = GradeCell.empty_dict()
             del grade_cell["name"]
 
         grade_cell.update(
-            {
-                "max_score": float(cell.metadata.nbgrader["points"]),
-                "cell_type": cell.cell_type,
-            }
+            {"max_score": float(cell.metadata.nbgrader["points"]), "cell_type": cell.cell_type}
         )
 
         self.new_grade_cells[grade_id] = grade_cell
@@ -143,9 +126,7 @@ class SaveCells(NbGraderPreprocessor):
         grade_id = cell.metadata.nbgrader["grade_id"]
 
         try:
-            solution_cell = self.gradebook.find_solution_cell(
-                grade_id, self.notebook_id
-            ).to_dict()
+            solution_cell = self.gradebook.find_solution_cell(grade_id, self.notebook_id).to_dict()
             del solution_cell["name"]
         except MissingEntry:
             solution_cell = SolutionCell.empty_dict()
@@ -156,19 +137,14 @@ class SaveCells(NbGraderPreprocessor):
     def _create_task_cell(self, cell: NotebookNode) -> None:
         grade_id = cell.metadata.nbgrader["grade_id"]
         try:
-            task_cell = self.gradebook.find_task_cell(
-                grade_id, self.notebook_id
-            ).to_dict()
+            task_cell = self.gradebook.find_task_cell(grade_id, self.notebook_id).to_dict()
             del task_cell["name"]
         except MissingEntry:
             task_cell = TaskCell.empty_dict()
             del task_cell["name"]
 
         task_cell.update(
-            {
-                "max_score": float(cell.metadata.nbgrader["points"]),
-                "cell_type": cell.cell_type,
-            }
+            {"max_score": float(cell.metadata.nbgrader["points"]), "cell_type": cell.cell_type}
         )
 
         self.new_task_cells[grade_id] = task_cell
@@ -177,9 +153,7 @@ class SaveCells(NbGraderPreprocessor):
         grade_id = cell.metadata.nbgrader["grade_id"]
 
         try:
-            source_cell = self.gradebook.find_source_cell(
-                grade_id, self.notebook_id
-            ).to_dict()
+            source_cell = self.gradebook.find_source_cell(grade_id, self.notebook_id).to_dict()
             del source_cell["name"]
         except MissingEntry:
             source_cell = SourceCell.empty_dict()
@@ -199,7 +173,6 @@ class SaveCells(NbGraderPreprocessor):
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
-
         if utils.is_grade(cell):
             self._create_grade_cell(cell)
 

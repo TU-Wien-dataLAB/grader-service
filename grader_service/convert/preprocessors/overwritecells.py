@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 from typing import Any, Tuple
 
@@ -11,6 +9,7 @@ from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert import utils
 from grader_service.convert.nbgraderformat import MetadataValidator
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
+
 
 class OverwriteCells(NbGraderPreprocessor):
     """A preprocessor to overwrite information about grade and solution cells."""
@@ -26,13 +25,13 @@ class OverwriteCells(NbGraderPreprocessor):
     ).tag(config=True)
 
     missing_cell_notification = Unicode(
-        "This cell (id:{cell_id}) was missing from the submission. " +
-        "It was added back by the grader.\n\n",  # markdown requires two newlines
+        "This cell (id:{cell_id}) was missing from the submission. "
+        + "It was added back by the grader.\n\n",  # markdown requires two newlines
         help=dedent(
             """
             A text to add at the beginning of every missing cell re-added to the notebook during autograding.
             """
-        )
+        ),
     ).tag(config=True)
 
     def preprocess(
@@ -44,13 +43,13 @@ class OverwriteCells(NbGraderPreprocessor):
         self.gradebook = Gradebook(self.json_path)
 
         with self.gradebook:
-            nb, resources = super(OverwriteCells, self).preprocess(nb, resources)      
+            nb, resources = super(OverwriteCells, self).preprocess(nb, resources)
             if self.add_missing_cells:
-                    nb, resources = self.add_missing_grade_cells(nb, resources)
-                    nb, resources = self.add_missing_task_cells(nb, resources)
+                nb, resources = self.add_missing_grade_cells(nb, resources)
+                nb, resources = self.add_missing_task_cells(nb, resources)
 
         return nb, resources
-    
+
     def missing_cell_transform(self, source_cell, max_score, is_solution=False, is_task=False):
         """
         Converts source_cell obtained from Gradebook into a cell that can be added to the notebook.
@@ -71,10 +70,10 @@ class OverwriteCells(NbGraderPreprocessor):
                     "checksum": source_cell.checksum,
                     "cell_type": source_cell.cell_type,
                     "points": max_score,
-                    "solution": False
-                }
+                    "solution": False,
+                },
             },
-            "source": missing_cell_notification + source_cell.source
+            "source": missing_cell_notification + source_cell.source,
         }
 
         # Code cell format is slightly different
@@ -98,7 +97,9 @@ class OverwriteCells(NbGraderPreprocessor):
         cell = MetadataValidator().upgrade_cell_metadata(cell)
         return cell
 
-    def add_missing_grade_cells(self, nb: NotebookNode, resources: ResourcesDict) -> Tuple[NotebookNode, ResourcesDict]:
+    def add_missing_grade_cells(
+        self, nb: NotebookNode, resources: ResourcesDict
+    ) -> Tuple[NotebookNode, ResourcesDict]:
         """
         Add missing grade cells back to the notebook.
         If missing, find the previous solution/grade cell, and add the current cell after it.
@@ -125,11 +126,16 @@ class OverwriteCells(NbGraderPreprocessor):
         for grade_cell_id, grade_cell in grade_cells.items():
             # If missing, find the previous solution/grade cell, and add the current cell after it.
             if grade_cell_id not in submitted_cell_idxs:
-                self.log.warning(f"Missing grade cell {grade_cell_id} encountered, adding to notebook")
+                self.log.warning(
+                    f"Missing grade cell {grade_cell_id} encountered, adding to notebook"
+                )
                 source_cell_idx = source_cell_ids.index(grade_cell_id)
                 cell_to_add = source_cells[source_cell_idx]
-                cell_to_add = self.missing_cell_transform(cell_to_add, grade_cell.max_score,
-                                                          is_solution=grade_cell_id in solution_cell_ids)
+                cell_to_add = self.missing_cell_transform(
+                    cell_to_add,
+                    grade_cell.max_score,
+                    is_solution=grade_cell_id in solution_cell_ids,
+                )
                 # First cell was deleted, add it to start
                 if source_cell_idx == 0:
                     nb.cells.insert(0, cell_to_add)
@@ -148,7 +154,9 @@ class OverwriteCells(NbGraderPreprocessor):
 
         return nb, resources
 
-    def add_missing_task_cells(self, nb: NotebookNode, resources: ResourcesDict) -> Tuple[NotebookNode, ResourcesDict]:
+    def add_missing_task_cells(
+        self, nb: NotebookNode, resources: ResourcesDict
+    ) -> Tuple[NotebookNode, ResourcesDict]:
         """
         Add missing task cells back to the notebook.
         We can't figure out their original location, so they are added at the end, in their original order.
@@ -156,17 +164,24 @@ class OverwriteCells(NbGraderPreprocessor):
         source_nb = self.gradebook.find_notebook(self.notebook_id)
         source_cells = source_nb.source_cells
         source_cell_ids = [cell.name for cell in source_cells]
-        submitted_ids = [cell["metadata"]["nbgrader"]["grade_id"] for cell in nb.cells if
-                         "nbgrader" in cell["metadata"]]
+        submitted_ids = [
+            cell["metadata"]["nbgrader"]["grade_id"]
+            for cell in nb.cells
+            if "nbgrader" in cell["metadata"]
+        ]
         for task_cell in source_nb.task_cells:
             if task_cell.name not in submitted_ids:
                 cell_to_add = source_cells[source_cell_ids.index(task_cell.name)]
-                cell_to_add = self.missing_cell_transform(cell_to_add, task_cell.max_score, is_task=True)
+                cell_to_add = self.missing_cell_transform(
+                    cell_to_add, task_cell.max_score, is_task=True
+                )
                 nb.cells.append(cell_to_add)
 
         return nb, resources
-    
-    def add_missing_readonly_cells(self, nb: NotebookNode, resources: ResourcesDict) -> Tuple[NotebookNode, ResourcesDict]:
+
+    def add_missing_readonly_cells(
+        self, nb: NotebookNode, resources: ResourcesDict
+    ) -> Tuple[NotebookNode, ResourcesDict]:
         """
         Add missing task cells back to the notebook.
         We can't figure out their original location, so they are added at the end, in their original order.
@@ -174,12 +189,17 @@ class OverwriteCells(NbGraderPreprocessor):
         source_nb = self.gradebook.find_notebook(self.notebook_id)
         source_cells = source_nb.source_cells
         source_cell_ids = [cell.name for cell in source_cells]
-        submitted_ids = [cell["metadata"]["nbgrader"]["grade_id"] for cell in nb.cells if
-                         "nbgrader" in cell["metadata"]]
+        submitted_ids = [
+            cell["metadata"]["nbgrader"]["grade_id"]
+            for cell in nb.cells
+            if "nbgrader" in cell["metadata"]
+        ]
         for task_cell in source_nb.task_cells:
             if task_cell.name not in submitted_ids:
                 cell_to_add = source_cells[source_cell_ids.index(task_cell.name)]
-                cell_to_add = self.missing_cell_transform(cell_to_add, task_cell.max_score, is_task=True)
+                cell_to_add = self.missing_cell_transform(
+                    cell_to_add, task_cell.max_score, is_task=True
+                )
                 nb.cells.insert(cell_to_add, 0)
 
         return nb, resources
@@ -201,14 +221,9 @@ class OverwriteCells(NbGraderPreprocessor):
         elif cell_type == "raw":
             cell.cell_type = "raw"
 
-
     def report_change(self, name: str, attr: str, old: Any, new: Any) -> None:
         self.log.warning(
-            "Attribute '%s' for cell %s has changed! (should be: %s, got: %s)",
-            attr,
-            name,
-            old,
-            new,
+            "Attribute '%s' for cell %s has changed! (should be: %s, got: %s)", attr, name, old, new
         )
 
     def preprocess_cell(
@@ -221,24 +236,18 @@ class OverwriteCells(NbGraderPreprocessor):
         try:
             source_cell = self.gradebook.find_source_cell(grade_id, self.notebook_id)
         except MissingEntry:
-            self.log.warning(
-                "Cell '{}' does not exist in the properties".format(grade_id)
-            )
+            self.log.warning("Cell '{}' does not exist in the properties".format(grade_id))
             del cell.metadata.nbgrader["grade_id"]
             return cell, resources
 
         # check that the cell type hasn't changed
         if cell.cell_type != source_cell.cell_type:
-            self.report_change(
-                grade_id, "cell_type", source_cell.cell_type, cell.cell_type
-            )
+            self.report_change(grade_id, "cell_type", source_cell.cell_type, cell.cell_type)
             self.update_cell_type(cell, source_cell.cell_type)
 
         # check that the locked status hasn't changed
         if utils.is_locked(cell) != source_cell.locked:
-            self.report_change(
-                grade_id, "locked", source_cell.locked, utils.is_locked(cell)
-            )
+            self.report_change(grade_id, "locked", source_cell.locked, utils.is_locked(cell))
             cell.metadata.nbgrader["locked"] = source_cell.locked
 
         # if it's a grade cell, check that the max score hasn't changed
@@ -266,8 +275,11 @@ class OverwriteCells(NbGraderPreprocessor):
                 # check the checksum is correct now
                 double_checksum = utils.compute_checksum(cell)
                 if double_checksum != old_checksum:
-                    self.log.error("Checksums of the cell {} and source cell {} are not the same."
-                                   .format(double_checksum, new_checksum))
+                    self.log.error(
+                        "Checksums of the cell {} and source cell {} are not the same.".format(
+                            double_checksum, new_checksum
+                        )
+                    )
                     raise RuntimeError(
                         "Inconsistent checksums for cell {}".format(source_cell.name)
                     )

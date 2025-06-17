@@ -23,6 +23,7 @@ class LectureBaseHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures.
     """
+
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def get(self):
         """
@@ -34,11 +35,11 @@ class LectureBaseHandler(GraderBaseHandler):
         state = LectureState.complete if complete else LectureState.active
         lectures = sorted(
             [
-             role.lecture for role in self.user.roles if
-             role.lecture.state == state and
-             role.lecture.deleted == DeleteState.active
+                role.lecture
+                for role in self.user.roles
+                if role.lecture.state == state and role.lecture.deleted == DeleteState.active
             ],
-            key=lambda lecture: lecture.id
+            key=lambda lecture: lecture.id,
         )
 
         self.write_json(lectures)
@@ -55,20 +56,14 @@ class LectureBaseHandler(GraderBaseHandler):
         lecture_model = LectureModel.from_dict(body)
 
         lecture = (
-            self.session.query(Lecture)
-            .filter(Lecture.code == lecture_model.code)
-            .one_or_none()
+            self.session.query(Lecture).filter(Lecture.code == lecture_model.code).one_or_none()
         )
         if lecture is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Lecture template not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
-        lecture.state = (
-            LectureState.complete if lecture_model.complete else
-            LectureState.active
-        )
+        lecture.state = LectureState.complete if lecture_model.complete else LectureState.active
         lecture.deleted = DeleteState.active
 
         self.session.commit()
@@ -81,6 +76,7 @@ class LectureObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}.
     """
+
     @authorize([Scope.instructor])
     async def put(self, lecture_id: int):
         """
@@ -95,10 +91,7 @@ class LectureObjectHandler(GraderBaseHandler):
         lecture = self.session.get(Lecture, lecture_id)
 
         lecture.name = lecture_model.name
-        lecture.state = (
-            LectureState.complete if lecture_model.complete else
-            LectureState.active
-        )
+        lecture.state = LectureState.complete if lecture_model.complete else LectureState.active
 
         self.session.commit()
         self.write_json(lecture)
@@ -113,8 +106,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Lecture was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
 
         self.write_json(role.lecture)
 
@@ -141,29 +133,34 @@ class LectureObjectHandler(GraderBaseHandler):
             for a in lecture.assignments:
                 if (len(a.submissions)) > 0:
                     self.session.rollback()
-                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete \
-                    assignment because it has submissions")
+                    raise HTTPError(
+                        HTTPStatus.CONFLICT,
+                        "Cannot delete \
+                    assignment because it has submissions",
+                    )
                 if a.status in ["released", "complete"]:
                     self.session.rollback()
-                    raise HTTPError(HTTPStatus.CONFLICT, "Cannot delete \
-                    assignment because its status is not created")
+                    raise HTTPError(
+                        HTTPStatus.CONFLICT,
+                        "Cannot delete \
+                    assignment because its status is not created",
+                    )
 
                 a.deleted = 1
             self.session.commit()
         except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND,
-                            reason="Lecture was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
         self.write("OK")
 
 
 @register_handler(
-    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/users\/?",
-    version_specifier=VersionSpecifier.ALL,
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/users\/?", version_specifier=VersionSpecifier.ALL
 )
 class LectureStudentsHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}/users.
     """
+
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int):
         """
@@ -171,12 +168,10 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: user, tutor and instructor list in a json object
         """
-        roles = self.session.query(Role).filter(Role.lectid == lecture_id)\
-            .all()
+        roles = self.session.query(Role).filter(Role.lectid == lecture_id).all()
         students = [r.username for r in roles if r.role == Scope.student]
         tutors = [r.username for r in roles if r.role == Scope.tutor]
         instructors = [r.username for r in roles if r.role == Scope.instructor]
 
-        counts = {"instructors": instructors, "tutors": tutors,
-                  "students": students}
+        counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)

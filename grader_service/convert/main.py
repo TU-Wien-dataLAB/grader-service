@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 
 from grader_service.convert.converters.autograde import AutogradeApp
@@ -24,9 +22,8 @@ flags.update({})
 
 
 class GraderConverter(ConverterApp):
-
-    name = u"grader-converter"
-    description = u"Convert notebooks to different formats"
+    name = "grader-converter"
+    description = "Convert notebooks to different formats"
     version = ConverterApp.__version__
 
     aliases = aliases

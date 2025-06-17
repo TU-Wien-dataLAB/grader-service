@@ -7,10 +7,10 @@
 # `code_stub` replaces the content of solution cells with a language-specific code snippet.
 # Instructors can override these placeholders with the code snippets of their choice.
 # c.ClearSolutions.code_stub = {
-    # 'python': "# YOUR CODE HERE\nraise NotImplementedError()",  # Placeholder for Python solution cells
-    # 'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
-    # 'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
-    # ... (More languages)
+# 'python': "# YOUR CODE HERE\nraise NotImplementedError()",  # Placeholder for Python solution cells
+# 'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
+# 'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
+# ... (More languages)
 # }
 
 # -------------------------------------------------

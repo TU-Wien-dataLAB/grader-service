@@ -22,29 +22,32 @@ c.GraderService.grader_service_dir = service_dir
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
 
 c.CeleryApp.conf = dict(
-    broker_url='amqp://localhost',
-    result_backend='rpc://',
-    task_serializer='json',
-    result_serializer='json',
-    accept_content=['json'],
+    broker_url="amqp://localhost",
+    result_backend="rpc://",
+    task_serializer="json",
+    result_serializer="json",
+    accept_content=["json"],
     broker_connection_retry_on_startup=True,
-    task_always_eager=True
+    task_always_eager=True,
 )
 c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
 
 
 # JupyterHub client config
-c.GraderService.oauth_clients = [{
-    'client_id': 'my_id',
-    'client_secret': 'my_secret',
-    'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
-}]
+c.GraderService.oauth_clients = [
+    {
+        "client_id": "my_id",
+        "client_secret": "my_secret",
+        "redirect_uri": "http://localhost:8080/hub/oauth_callback",
+    }
+]
 
 from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 
 c.JupyterHubTokenAuthenticator.user_info_url = "http://localhost:8080/hub/api/user"
+
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
     log = handler.log
@@ -61,9 +64,9 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
         user_model.display_name = username
         session.add(user_model)
         session.commit()
-    
+
     for group in groups:
-        if (":" in group):
+        if ":" in group:
             split_group = group.split(":")
             lecture_code = split_group[0]
             scope = split_group[1]
@@ -79,25 +82,36 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 session.add(lecture)
                 session.commit()
 
-            role = session.query(Role).filter(Role.username == username, Role.lectid == lecture.id).one_or_none()
+            role = (
+                session.query(Role)
+                .filter(Role.username == username, Role.lectid == lecture.id)
+                .one_or_none()
+            )
             if role is None:
-                log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
+                log.info(f"No role for user {username} in lecture {lecture_code}... creating role")
                 role = Role(username=username, lectid=lecture.id, role=scope)
                 session.add(role)
                 session.commit()
             else:
-                log.info(f'Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}')
+                log.info(
+                    f"Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}"
+                )
                 role.role = scope
                 session.commit()
         else:
-            log.info("Found group that doesn't match schema. Ignoring " + group)        
+            log.info("Found group that doesn't match schema. Ignoring " + group)
 
     return authentication
 
+
 c.Authenticator.post_auth_hook = post_auth_hook
 
-c.Authenticator.allowed_users = {'admin', 'instructor', 'student', 'tutor'}
+c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
 
-c.Authenticator.admin_users = {'admin'}
+c.Authenticator.admin_users = {"admin"}
 
-c.GraderService.load_roles = {"lect1:instructor": ["admin", "instructor"], "lect1:student": ["student"], "lect1:tutor": ["tutor"]}
+c.GraderService.load_roles = {
+    "lect1:instructor": ["admin", "instructor"],
+    "lect1:student": ["student"],
+    "lect1:tutor": ["tutor"],
+}

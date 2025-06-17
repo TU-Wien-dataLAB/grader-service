@@ -18,8 +18,7 @@ def parse_ids(*args):
     try:
         ids = [int(id) for id in args]
     except ValueError:
-        raise HTTPError(HTTPStatus.BAD_REQUEST,
-                        reason="All IDs have to be numerical")
+        raise HTTPError(HTTPStatus.BAD_REQUEST, reason="All IDs have to be numerical")
     if len(ids) == 1:
         return ids[0]
     return tuple(ids)

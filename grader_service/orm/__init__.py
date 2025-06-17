@@ -15,5 +15,4 @@ from grader_service.orm.oauthcode import OAuthCode
 from grader_service.orm.oauthclient import OAuthClient
 from grader_service.orm.api_token import APIToken
 
-__all__ = ['Lecture', 'User', 'Role', 'Submission',
-           'Assignment', 'Base', 'Group']
+__all__ = ["Lecture", "User", "Role", "Submission", "Assignment", "Base", "Group"]

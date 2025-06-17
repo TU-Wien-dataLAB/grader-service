@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 from typing import Any
 
@@ -18,7 +16,6 @@ from grader_service.convert.converters.base import BaseConverter
 
 
 class GenerateSolution(BaseConverter):
-
     create_assignment = Bool(
         True,
         help=dedent(
@@ -36,18 +33,12 @@ class GenerateSolution(BaseConverter):
     def _load_config(self, cfg: Config, **kwargs: Any) -> None:
         super(GenerateSolution, self)._load_config(cfg, **kwargs)
 
-    preprocessors = List(
-        [IncludeHeaderFooter, LockCells, ClearOutput, ClearMarkScheme, Execute]
-    )
+    preprocessors = List([IncludeHeaderFooter, LockCells, ClearOutput, ClearMarkScheme, Execute])
     # NB: ClearHiddenTests must come after ComputeChecksums and SaveCells.
     # ComputerChecksums must come again after ClearHiddenTests.
 
-    def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: Any
-    ) -> None:
-        super(GenerateSolution, self).__init__(
-            input_dir, output_dir, file_pattern, **kwargs
-        )
+    def __init__(self, input_dir: str, output_dir: str, file_pattern: str, **kwargs: Any) -> None:
+        super(GenerateSolution, self).__init__(input_dir, output_dir, file_pattern, **kwargs)
         self.force = True  # always overwrite generated assignments
 
     def start(self) -> None:
@@ -62,5 +53,5 @@ class GenerateSolutionApp(ConverterApp):
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
-            config=self.config
+            config=self.config,
         ).start()

@@ -28,8 +28,7 @@ class Lecture(Base, Serializable):
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     assignments = relationship("Assignment", back_populates="lecture")
     roles = relationship("Role", back_populates="lecture")
@@ -38,8 +37,5 @@ class Lecture(Base, Serializable):
     @property
     def model(self) -> lecture.Lecture:
         return lecture.Lecture(
-            id=self.id,
-            name=self.name,
-            code=self.code,
-            complete=self.state == LectureState.complete,
+            id=self.id, name=self.name, code=self.code, complete=self.state == LectureState.complete
         )

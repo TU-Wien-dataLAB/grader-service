@@ -2,7 +2,6 @@ import os
 import pytest
 
 from textwrap import dedent
-from traitlets.config import Config
 
 from .base import BaseTestPreprocessor
 from .. import create_code_cell, create_text_cell, create_task_cell
@@ -15,7 +14,6 @@ def preprocessor():
 
 
 class TestClearMarkScheme(BaseTestPreprocessor):
-
     def test_remove_mark_scheme_region_code(self, preprocessor):
         """Are mark scheme regions in code cells correctly replaced?"""
         source = dedent(
@@ -26,7 +24,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             ### END MARK SCHEME
             """
         ).strip()
-        cell = create_task_cell(source, 'markdown', 'some-task-id', 2)
+        cell = create_task_cell(source, "markdown", "some-task-id", 2)
         removed_test = preprocessor._remove_mark_scheme_region(cell)
         assert removed_test
         assert cell.source == "assert True"
@@ -40,7 +38,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             this is a test!
             """
         ).strip()
-        cell = create_task_cell(source, 'markdown', 'some-task-id', 2)
+        cell = create_task_cell(source, "markdown", "some-task-id", 2)
 
         with pytest.raises(RuntimeError):
             preprocessor._remove_mark_scheme_region(cell)
@@ -55,7 +53,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             this is a test!
             """
         ).strip()
-        cell = create_task_cell(source, 'markdown', 'some-task-id', 2)
+        cell = create_task_cell(source, "markdown", "some-task-id", 2)
 
         with pytest.raises(RuntimeError):
             preprocessor._remove_mark_scheme_region(cell)
@@ -95,12 +93,12 @@ class TestClearMarkScheme(BaseTestPreprocessor):
         preprocessor.enforce_metadata = False
         cell, _ = preprocessor.preprocess_cell(cell, resources, 1)
         assert cell.source == "assert True"
-        assert 'nbgrader' not in cell.metadata
+        assert "nbgrader" not in cell.metadata
 
     def test_dont_remove_mark_scheme_region(self, preprocessor):
         """Is false returned when there is no hidden test region?"""
         source = "nothing to remove"
-        cell = create_task_cell(source, 'markdown', 'some-task-id', 2)
+        cell = create_task_cell(source, "markdown", "some-task-id", 2)
         removed_test = preprocessor._remove_mark_scheme_region(cell)
         assert not removed_test
 

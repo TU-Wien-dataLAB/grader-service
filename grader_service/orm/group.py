@@ -9,12 +9,12 @@ from sqlalchemy.orm import relationship
 
 from grader_service.orm.base import Base
 
-group_assignment_table = Table('partof', Base.metadata,
-                               Column('username', ForeignKey('user.name'),
-                                      primary_key=True),
-                               Column('group_name', ForeignKey('group.name'),
-                                      primary_key=True)
-                               )
+group_assignment_table = Table(
+    "partof",
+    Base.metadata,
+    Column("username", ForeignKey("user.name"), primary_key=True),
+    Column("group_name", ForeignKey("group.name"), primary_key=True),
+)
 
 
 class Group(Base):
@@ -23,5 +23,4 @@ class Group(Base):
     lectid = Column(Integer, ForeignKey("lecture.id"), primary_key=True)
 
     lecture = relationship("Lecture", back_populates="groups")
-    users = relationship("User", secondary=group_assignment_table,
-                         back_populates="groups")
+    users = relationship("User", secondary=group_assignment_table, back_populates="groups")

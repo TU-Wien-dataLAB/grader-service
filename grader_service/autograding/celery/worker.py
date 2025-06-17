@@ -4,8 +4,10 @@ from grader_service.autograding.celery.app import CeleryApp
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='Grader Worker', description='Starts celery worker for grader service.')
-    parser.add_argument('-f', '--config', help='config file path', required=True)
+    parser = argparse.ArgumentParser(
+        prog="Grader Worker", description="Starts celery worker for grader service."
+    )
+    parser.add_argument("-f", "--config", help="config file path", required=True)
 
     args = parser.parse_args()
 
@@ -16,5 +18,5 @@ def main():
     worker.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

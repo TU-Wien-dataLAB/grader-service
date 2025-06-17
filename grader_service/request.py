@@ -32,7 +32,7 @@ class RequestService(SingletonConfigurable):
         decode_response: bool = True,
         request_timeout: float = 20.0,
         connect_timeout: float = 20.0,
-        response_callback: Optional[Callable[[HTTPResponse], None]] = None
+        response_callback: Optional[Callable[[HTTPResponse], None]] = None,
     ) -> Union[dict, list, HTTPResponse]:
         self.log.info(self.url + endpoint)
         if self._service_cookie:
@@ -42,12 +42,13 @@ class RequestService(SingletonConfigurable):
             body = json.dumps(body)
 
         # Build HTTPRequest
-        request = HTTPRequest(url=self.url + endpoint,
-                            method=method,
-                            headers=header,
-                            request_timeout=request_timeout,
-                            connect_timeout=connect_timeout
-                            )
+        request = HTTPRequest(
+            url=self.url + endpoint,
+            method=method,
+            headers=header,
+            request_timeout=request_timeout,
+            connect_timeout=connect_timeout,
+        )
         # Add body if exists
         if body:
             request.body = body
@@ -58,7 +59,7 @@ class RequestService(SingletonConfigurable):
         for cookie in response.headers.get_list("Set-Cookie"):
             token = header.get("Authorization", None)
             if token and token.startswith("Token "):
-                token = token[len("Token "):]
+                token = token[len("Token ") :]
             else:
                 continue
             if cookie.startswith(token):

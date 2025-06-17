@@ -1,10 +1,10 @@
 """Miscellaneous utilities"""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import asyncio
 import concurrent.futures
 import errno
-import functools
 import hashlib
 import inspect
 import random
@@ -12,7 +12,6 @@ import secrets
 import socket
 import ssl
 import sys
-import threading
 import uuid
 import warnings
 from binascii import b2a_hex
@@ -23,7 +22,6 @@ from typing import Dict, List, Any
 from urllib.parse import quote
 
 from async_generator import aclosing
-from sqlalchemy.exc import SQLAlchemyError
 from tornado import gen, ioloop, web
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.log import app_log
@@ -32,15 +30,15 @@ from tornado.log import app_log
 def random_port():
     """Get a single random port."""
     sock = socket.socket()
-    sock.bind(('', 0))
+    sock.bind(("", 0))
     port = sock.getsockname()[1]
     sock.close()
     return port
 
 
 # ISO8601 for strptime with/without milliseconds
-ISO8601_ms = '%Y-%m-%dT%H:%M:%S.%fZ'
-ISO8601_s = '%Y-%m-%dT%H:%M:%SZ'
+ISO8601_ms = "%Y-%m-%dT%H:%M:%S.%fZ"
+ISO8601_s = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def isoformat(dt):
@@ -54,7 +52,7 @@ def isoformat(dt):
         return None
     if dt.tzinfo:
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return dt.isoformat() + 'Z'
+    return dt.isoformat() + "Z"
 
 
 def can_connect(ip, port):
@@ -62,8 +60,8 @@ def can_connect(ip, port):
 
     Return True if we can connect, False otherwise.
     """
-    if ip in {'', '0.0.0.0', '::'}:
-        ip = '127.0.0.1'
+    if ip in {"", "0.0.0.0", "::"}:
+        ip = "127.0.0.1"
     try:
         socket.create_connection((ip, port)).close()
     except OSError as e:
@@ -75,12 +73,12 @@ def can_connect(ip, port):
 
 
 def make_ssl_context(
-        keyfile,
-        certfile,
-        cafile=None,
-        verify=None,
-        check_hostname=None,
-        purpose=ssl.Purpose.SERVER_AUTH,
+    keyfile,
+    certfile,
+    cafile=None,
+    verify=None,
+    check_hostname=None,
+    purpose=ssl.Purpose.SERVER_AUTH,
 ):
     """Setup context for starting an https server or making requests over ssl.
 
@@ -129,15 +127,15 @@ AnyTimeoutError = (gen.TimeoutError, asyncio.TimeoutError, TimeoutError)
 
 
 async def exponential_backoff(
-        pass_func,
-        fail_message,
-        start_wait=0.2,
-        scale_factor=2,
-        max_wait=5,
-        timeout=10,
-        timeout_tolerance=0.1,
-        *args,
-        **kwargs,
+    pass_func,
+    fail_message,
+    start_wait=0.2,
+    scale_factor=2,
+    max_wait=5,
+    timeout=10,
+    timeout_tolerance=0.1,
+    *args,
+    **kwargs,
 ):
     """
     Exponentially backoff until `pass_func` is true.
@@ -219,8 +217,8 @@ async def exponential_backoff(
 
 async def wait_for_server(ip, port, timeout=10):
     """Wait for any server to show up at ip:port."""
-    if ip in {'', '0.0.0.0', '::'}:
-        ip = '127.0.0.1'
+    if ip in {"", "0.0.0.0", "::"}:
+        ip = "127.0.0.1"
     await exponential_backoff(
         lambda: can_connect(ip, port),
         "Server at {ip}:{port} didn't respond in {timeout} seconds".format(
@@ -251,26 +249,18 @@ async def wait_for_http_server(url, timeout=10, ssl_context=None):
                 if e.code != 599:
                     # we expect 599 for no connection,
                     # but 502 or other proxy error is conceivable
-                    app_log.warning(
-                        "Server at %s responded with error: %s", url, e.code
-                    )
+                    app_log.warning("Server at %s responded with error: %s", url, e.code)
             else:
                 app_log.debug("Server at %s responded with %s", url, e.code)
                 return e.response
         except OSError as e:
-            if e.errno not in {
-                errno.ECONNABORTED,
-                errno.ECONNREFUSED,
-                errno.ECONNRESET,
-            }:
+            if e.errno not in {errno.ECONNABORTED, errno.ECONNREFUSED, errno.ECONNRESET}:
                 app_log.warning("Failed to connect to %s (%s)", url, e)
         return False
 
     re = await exponential_backoff(
         is_reachable,
-        "Server at {url} didn't respond in {timeout} seconds".format(
-            url=url, timeout=timeout
-        ),
+        "Server at {url} didn't respond in {timeout} seconds".format(url=url, timeout=timeout),
         timeout=timeout,
     )
     return re
@@ -350,7 +340,7 @@ def metrics_authentication(self):
     """Decorator for restricting access to metrics"""
     if not self.authenticate_prometheus:
         return
-    scope = 'read:metrics'
+    scope = "read:metrics"
     if scope not in self.parsed_scopes:
         raise web.HTTPError(403, reason=f"Access to metrics requires scope '{scope}'")
 
@@ -366,7 +356,7 @@ def new_token(*args, **kwargs):
     return uuid.uuid4().hex
 
 
-def hash_token(token, salt=8, rounds=16384, algorithm='sha512'):
+def hash_token(token, salt=8, rounds=16384, algorithm="sha512"):
     """Hash a token, and return it as `algorithm:salt:hash`.
 
     If `salt` is an integer, a random salt of that many bytes will be used.
@@ -376,10 +366,10 @@ def hash_token(token, salt=8, rounds=16384, algorithm='sha512'):
         salt = b2a_hex(secrets.token_bytes(salt))
     if isinstance(salt, bytes):
         bsalt = salt
-        salt = salt.decode('utf8')
+        salt = salt.decode("utf8")
     else:
-        bsalt = salt.encode('utf8')
-    btoken = token.encode('utf8', 'replace')
+        bsalt = salt.encode("utf8")
+    btoken = token.encode("utf8", "replace")
     h.update(bsalt)
     for i in range(rounds):
         h.update(btoken)
@@ -393,11 +383,9 @@ def compare_token(compare, token):
 
     Uses the same algorithm and salt of the hashed token for comparison.
     """
-    algorithm, srounds, salt, _ = compare.split(':')
-    hashed = hash_token(
-        token, salt=salt, rounds=int(srounds), algorithm=algorithm
-    ).encode('utf8')
-    compare = compare.encode('utf8')
+    algorithm, srounds, salt, _ = compare.split(":")
+    hashed = hash_token(token, salt=salt, rounds=int(srounds), algorithm=algorithm).encode("utf8")
+    compare = compare.encode("utf8")
     if compare_digest(compare, hashed):
         return True
     return False
@@ -405,7 +393,7 @@ def compare_token(compare, token):
 
 def url_escape_path(value):
     """Escape a value to be used in URLs, cookies, etc."""
-    return quote(value, safe='@~')
+    return quote(value, safe="@~")
 
 
 def url_path_join(*pieces):
@@ -416,17 +404,17 @@ def url_path_join(*pieces):
 
     Copied from `notebook.utils.url_path_join`.
     """
-    initial = pieces[0].startswith('/')
-    final = pieces[-1].endswith('/')
-    stripped = [s.strip('/') for s in pieces]
-    result = '/'.join(s for s in stripped if s)
+    initial = pieces[0].startswith("/")
+    final = pieces[-1].endswith("/")
+    stripped = [s.strip("/") for s in pieces]
+    result = "/".join(s for s in stripped if s)
 
     if initial:
-        result = '/' + result
+        result = "/" + result
     if final:
-        result = result + '/'
-    if result == '//':
-        result = '/'
+        result = result + "/"
+    if result == "//":
+        result = "/"
 
     return result
 
@@ -441,8 +429,7 @@ def print_ps_info(file=sys.stderr):
     except ImportError:
         # nothing to print
         warnings.warn(
-            "psutil unavailable. Install psutil to get CPU and memory stats",
-            stacklevel=2,
+            "psutil unavailable. Install psutil to get CPU and memory stats", stacklevel=2
         )
         return
     p = psutil.Process()
@@ -456,24 +443,23 @@ def print_ps_info(file=sys.stderr):
     # format memory (only resident set)
     rss = p.memory_info().rss
     if rss >= 1e9:
-        mem_s = '%.1fG' % (rss / 1e9)
+        mem_s = "%.1fG" % (rss / 1e9)
     elif rss >= 1e7:
-        mem_s = '%.0fM' % (rss / 1e6)
+        mem_s = "%.0fM" % (rss / 1e6)
     elif rss >= 1e6:
-        mem_s = '%.1fM' % (rss / 1e6)
+        mem_s = "%.1fM" % (rss / 1e6)
     else:
-        mem_s = '%.0fk' % (rss / 1e3)
+        mem_s = "%.0fk" % (rss / 1e3)
 
     # left-justify and shrink-to-fit columns
     cpulen = max(len(cpu_s), 4)
     memlen = max(len(mem_s), 3)
     fd_s = str(p.num_fds())
     fdlen = max(len(fd_s), 3)
-    threadlen = len('threads')
+    threadlen = len("threads")
 
     print(
-        "%s %s %s %s"
-        % ('%CPU'.ljust(cpulen), 'MEM'.ljust(memlen), 'FDs'.ljust(fdlen), 'threads'),
+        "%s %s %s %s" % ("%CPU".ljust(cpulen), "MEM".ljust(memlen), "FDs".ljust(fdlen), "threads"),
         file=file,
     )
 
@@ -489,7 +475,7 @@ def print_ps_info(file=sys.stderr):
     )
 
     # trailing blank line
-    print('', file=file)
+    print("", file=file)
 
 
 def maybe_future(obj):
@@ -531,16 +517,14 @@ async def iterate_until(deadline_future, generator):
 
     Usage::
 
-        async for item in iterate_until(some_future, some_async_generator()):
-            print(item)
+               async for item in iterate_until(some_future, some_async_generator()):
+                   print(item)
 
     """
     async with aclosing(generator.__aiter__()) as aiter:
         while True:
             item_future = asyncio.ensure_future(aiter.__anext__())
-            await asyncio.wait(
-                [item_future, deadline_future], return_when=asyncio.FIRST_COMPLETED
-            )
+            await asyncio.wait([item_future, deadline_future], return_when=asyncio.FIRST_COMPLETED)
             if item_future.done():
                 try:
                     yield item_future.result()
@@ -598,27 +582,27 @@ def _parse_accept_header(accept):
         media_type = parts.pop(0).strip()
         media_params = []
         # convert vendor-specific content type to application/json
-        typ, subtyp = media_type.split('/')
+        typ, subtyp = media_type.split("/")
         # check for a + in the sub-type
-        if '+' in subtyp:
+        if "+" in subtyp:
             # if it exists, determine if the subtype is a vendor-specific type
-            vnd, sep, extra = subtyp.partition('+')
-            if vnd.startswith('vnd'):
+            vnd, sep, extra = subtyp.partition("+")
+            if vnd.startswith("vnd"):
                 # and then... if it ends in something like "-v1.1" parse the
                 # version out
-                if '-v' in vnd:
-                    vnd, sep, rest = vnd.rpartition('-v')
+                if "-v" in vnd:
+                    vnd, sep, rest = vnd.rpartition("-v")
                     if len(rest):
                         # add the version as a media param
                         try:
-                            version = media_params.append(('version', float(rest)))
+                            version = media_params.append(("version", float(rest)))
                         except ValueError:
                             version = 1.0  # could not be parsed
                 # add the vendor code as a media param
-                media_params.append(('vendor', vnd))
+                media_params.append(("vendor", vnd))
                 # and re-write media_type to something like application/json so
                 # it can be used usefully when looking up emitters
-                media_type = f'{typ}/{extra}'
+                media_type = f"{typ}/{extra}"
 
         q = 1.0
         for part in parts:
@@ -680,9 +664,7 @@ def get_browser_protocol(request):
         if "proto" in fields and fields["proto"].lower() in {"http", "https"}:
             return fields["proto"].lower()
         else:
-            app_log.warning(
-                f"Forwarded header present without protocol: {forwarded_header}"
-            )
+            app_log.warning(f"Forwarded header present without protocol: {forwarded_header}")
 
     # second choice: X-Scheme or X-Forwarded-Proto
     proto_header = headers.get("X-Scheme", headers.get("X-Forwarded-Proto", None))

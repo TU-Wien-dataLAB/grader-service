@@ -1,5 +1,3 @@
-
-
 # coding: utf-8
 
 import glob
@@ -13,17 +11,13 @@ from grader_service.convert.converters.baseapp import ConverterApp
 
 aliases = {}
 flags = {
-    "invert": (
-        {"Validator": {"invert": True}},
-        "Complain when cells pass, rather than vice versa.",
-    )
+    "invert": ({"Validator": {"invert": True}}, "Complain when cells pass, rather than vice versa.")
 }
 
 
 class ValidateApp(ConverterApp):
-
-    name = u"validate"
-    description = u"Validate a notebook by running it"
+    name = "validate"
+    description = "Validate a notebook by running it"
 
     aliases = aliases
     flags = flags

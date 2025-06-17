@@ -1,5 +1,3 @@
-
-
 import contextlib
 import fnmatch
 import glob
@@ -32,12 +30,13 @@ if sys.platform != "win32":
 else:
     pwd = None
 
+
 def safe_unpack_archive(src, dest):
     if zipfile.is_zipfile(src):
-        with zipfile.ZipFile(src, 'r') as zip_ref:
+        with zipfile.ZipFile(src, "r") as zip_ref:
             zip_ref.extractall(dest)
     elif tarfile.is_tarfile(src):
-        with tarfile.open(src, 'r:*') as tar_ref:
+        with tarfile.open(src, "r:*") as tar_ref:
             tar_ref.extractall(dest)
     else:
         raise ValueError(f"Unsupported archive format: {src}")
@@ -52,6 +51,7 @@ def get_assignment_settings_from_env() -> AssignmentSettings:
     settings_json_str = os.getenv("ASSIGNMENT_SETTINGS", "{}")
     settings_dict = json.loads(settings_json_str)
     return AssignmentSettings.from_dict(settings_dict)
+
 
 def is_task(cell: NotebookNode) -> bool:
     """Returns True if the cell is a task cell."""
@@ -107,9 +107,7 @@ def get_partial_grade(output, max_points, log=None):
                 warning_msg = """Cell output is {}, which is a list. For autograder tests, expecting output to indicate
                 partial credit and be single value between 0.0 and max_points.
                 Currently treating other output as full credit, but future
-                releases may treat as error.""".format(
-                    grade
-                )
+                releases may treat as error.""".format(grade)
                 log.warning(warning_msg)
             return max_points
         # if a single value in list, set grade to that value
@@ -125,30 +123,22 @@ def get_partial_grade(output, max_points, log=None):
             autograder tests, expecting output to indicate
             partial credit and be single value between 0.0 and max_points.
             Currently treating other output as full credit, but future releases
-            may treat as error.""".format(
-                grade
-            )
+            may treat as error.""".format(grade)
             log.warning(warning_msg)
         return max_points
     if grade >= 0.0:
         if grade > max_points:
-            raise ValueError(
-                "partial credit cannot be greater than maximum points for cell"
-            )
+            raise ValueError("partial credit cannot be greater than maximum points for cell")
         return grade
     else:
         if log:
             warning_msg = """Cell output is {}, which is less than 0.0.
-            This is strange.""".format(
-                grade
-            )
+            This is strange.""".format(grade)
             log.warning(warning_msg)
         return max_points
 
 
-def determine_grade(
-    cell: NotebookNode, log: Logger = None
-) -> Tuple[Optional[float], float]:
+def determine_grade(cell: NotebookNode, log: Logger = None) -> Tuple[Optional[float], float]:
     if not is_grade(cell):
         raise ValueError("cell is not a grade cell")
 
@@ -267,9 +257,7 @@ def check_mode(path, read=False, write=False, execute=False):
 
 def check_directory(path, read=False, write=False, execute=False):
     """Does that path exist and can the current user rwx."""
-    if os.path.isdir(path) and check_mode(
-        path, read=read, write=write, execute=execute
-    ):
+    if os.path.isdir(path) and check_mode(path, read=read, write=write, execute=execute):
         return True
     else:
         return False
@@ -283,7 +271,7 @@ def get_osusername():
 
 
 def get_username():
-    """ Get the username, use os username but override if username is jovyan ."""
+    """Get the username, use os username but override if username is jovyan ."""
     osname = get_osusername()
     if osname == "jovyan":
         return os.environ.get("JUPYTERHUB_USER", "jovyan")
@@ -363,9 +351,7 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
                 ignored.append(filename)
             else:
                 if os.path.isfile(fullname):
-                    if include and not any(
-                        fnmatch.fnmatch(filename, glob) for glob in include
-                    ):
+                    if include and not any(fnmatch.fnmatch(filename, glob) for glob in include):
                         if log:
                             log.debug(
                                 "Ignoring non included file '{}' (see config option CourseDirectory.include)".format(
@@ -373,10 +359,7 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
                                 )
                             )
                         ignored.append(filename)
-                    elif (
-                        max_file_size
-                        and os.path.getsize(fullname) > 1000 * max_file_size
-                    ):
+                    elif max_file_size and os.path.getsize(fullname) > 1000 * max_file_size:
                         if log:
                             log.warning(
                                 "Ignoring file too large '{}' (see config option CourseDirectory.max_file_size)".format(
@@ -534,9 +517,7 @@ def unzip(src, dest, zip_ext=None, create_own_folder=False, tree=False):
         # unzip (flat) new archive files found in dest
         for src_file in new_files:
             dest_path = os.path.split(src_file)[0]
-            unzip(
-                src_file, dest_path, zip_ext=zip_ext, create_own_folder=True, tree=False
-            )
+            unzip(src_file, dest_path, zip_ext=zip_ext, create_own_folder=True, tree=False)
             skip.append(src_file)
         new_files = find_archive_files(skip)
 

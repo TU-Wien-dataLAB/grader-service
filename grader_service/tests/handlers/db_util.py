@@ -68,8 +68,24 @@ def _get_assignment(name, lectid, points, status, settings):
 
 def insert_assignments(ex, lecture_id=1):
     session: Session = sessionmaker(ex)()
-    session.add(_get_assignment("assignment_1", lecture_id, 20, "released", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2))))
-    session.add(_get_assignment("assignment_2", lecture_id, 10, "created", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=1))))
+    session.add(
+        _get_assignment(
+            "assignment_1",
+            lecture_id,
+            20,
+            "released",
+            AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2)),
+        )
+    )
+    session.add(
+        _get_assignment(
+            "assignment_2",
+            lecture_id,
+            10,
+            "created",
+            AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=1)),
+        )
+    )
     session.commit()
     session.flush()
     num_inserts = 2
@@ -95,22 +111,34 @@ def _get_submission_properties(submission_id, properties=None):
     return s
 
 
-def insert_submission(ex, assignment_id=1, username="ubuntu", feedback="not_generated", with_properties=True,
-                      score=None):
+def insert_submission(
+    ex,
+    assignment_id=1,
+    username="ubuntu",
+    feedback="not_generated",
+    with_properties=True,
+    score=None,
+):
     # TODO Allows only one submission with properties per user because we do not have the submission id
     session: Session = sessionmaker(ex)()
     session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
     session.commit()
     if with_properties:
-        id = session.query(Submission).filter(Submission.assignid == assignment_id,
-                                              Submission.username == username).first().id
+        id = (
+            session.query(Submission)
+            .filter(Submission.assignid == assignment_id, Submission.username == username)
+            .first()
+            .id
+        )
         session.add(_get_submission_properties(id))
         session.commit()
     session.flush()
 
 
 def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):
-    ex.execute(f'INSERT INTO "takepart" ("username","lectid","role") VALUES ("{username}",{lecture_id},"{role}")')
+    ex.execute(
+        f'INSERT INTO "takepart" ("username","lectid","role") VALUES ("{username}",{lecture_id},"{role}")'
+    )
 
 
 def insert_grading(session):

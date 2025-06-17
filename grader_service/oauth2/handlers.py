@@ -1,18 +1,17 @@
 """Authorization handlers"""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import json
-from abc import ABC
-from datetime import datetime
 from typing import Optional, Awaitable
 from unittest import mock
-from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from oauthlib import oauth2
 from tornado import web
 
 from grader_service.orm.api_token import APIToken
-from grader_service.utils import get_browser_protocol, token_authenticated, url_path_join, utcnow
+from grader_service.utils import get_browser_protocol, url_path_join
 from grader_service.handlers.base_handler import BaseHandler
 
 
@@ -50,12 +49,7 @@ class OAuthHandler:
 
         (uri, http_method, body, headers)
         """
-        return (
-            self.request.uri,
-            self.request.method,
-            self.request.body,
-            self.request.headers,
-        )
+        return (self.request.uri, self.request.method, self.request.body, self.request.headers)
 
     def make_absolute_redirect_uri(self, uri):
         """Make absolute redirect URIs
@@ -67,22 +61,17 @@ class OAuthHandler:
         Currently unused in favor of monkeypatching
         oauthlib.is_absolute_uri to skip the check
         """
-        redirect_uri = self.get_argument('redirect_uri')
-        if not redirect_uri or not redirect_uri.startswith('/'):
+        redirect_uri = self.get_argument("redirect_uri")
+        if not redirect_uri or not redirect_uri.startswith("/"):
             return uri
         # make absolute local redirects full URLs
         # to satisfy oauthlib's absolute URI requirement
-        redirect_uri = (
-                get_browser_protocol(self.request)
-                + "://"
-                + self.request.host
-                + redirect_uri
-        )
+        redirect_uri = get_browser_protocol(self.request) + "://" + self.request.host + redirect_uri
         parsed_url = urlparse(uri)
         query_list = parse_qsl(parsed_url.query, keep_blank_values=True)
         for idx, item in enumerate(query_list):
-            if item[0] == 'redirect_uri':
-                query_list[idx] = ('redirect_uri', redirect_uri)
+            if item[0] == "redirect_uri":
+                query_list[idx] = ("redirect_uri", redirect_uri)
                 break
 
         return urlunparse(urlparse(uri)._replace(query=urlencode(query_list)))
@@ -104,7 +93,7 @@ class OAuthHandler:
         user = self.current_user
 
         # Extra credentials we need in the validator
-        credentials.update({'user': user, 'handler': self, 'session_id': session_id})
+        credentials.update({"user": user, "handler": self, "session_id": session_id})
         return credentials
 
     def send_oauth_response(self, headers, body, status):
@@ -132,10 +121,10 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
     def _complete_login(self, uri, headers, scopes, credentials):
         try:
             headers, body, status = self.application.oauth_provider.create_authorization_response(
-                uri, 'POST', '', headers, scopes, credentials
+                uri, "POST", "", headers, scopes, credentials
             )
 
-        except oauth2.FatalClientError as e:
+        except oauth2.FatalClientError:
             # TODO: human error page
             raise
         self.send_oauth_response(headers, body, status)
@@ -154,22 +143,18 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
         .. versionadded: 1.1
         """
         # get the oauth client ids for the user's own server(s)
-        own_oauth_client_ids = {
-            spawner.oauth_client_id for spawner in user.spawners.values()
-        }
+        own_oauth_client_ids = {spawner.oauth_client_id for spawner in user.spawners.values()}
         if (
-                # it's the user's own server
-                oauth_client.identifier in own_oauth_client_ids
-                # or it's in the global no-confirm list
-                or oauth_client.identifier
-                in self.settings.get('oauth_no_confirm_list', set())
+            # it's the user's own server
+            oauth_client.identifier in own_oauth_client_ids
+            # or it's in the global no-confirm list
+            or oauth_client.identifier in self.settings.get("oauth_no_confirm_list", set())
         ):
             return False
 
         # Check existing authorization
         existing_tokens = self.session.query(APIToken).filter_by(
-            username=user.name,
-            client_id=oauth_client.identifier,
+            username=user.name, client_id=oauth_client.identifier
         )
         authorized_scopes = set()
         for token in existing_tokens:
@@ -214,22 +199,19 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
                 self.current_user,
                 create=True,
             ):
-                (
-                    requested_scopes,
-                    credentials,
-                ) = self.oauth_provider.validate_authorization_request(
-                    uri, http_method, body, headers
+                (requested_scopes, credentials) = (
+                    self.oauth_provider.validate_authorization_request(
+                        uri, http_method, body, headers
+                    )
                 )
             credentials = self.add_credentials(credentials)
-            client = self.oauth_provider.fetch_by_client_id(credentials['client_id'])
+            client = self.oauth_provider.fetch_by_client_id(credentials["client_id"])
 
             # Render oauth 'Authorize application...' page
             auth_state = await self.current_user.get_auth_state()
             self.write(
                 await self.render_template(
-                    "auth/oauth.html.j2",
-                    auth_state=auth_state,
-                    oauth_client=client,
+                    "auth/oauth.html.j2", auth_state=auth_state, oauth_client=client
                 )
             )
 
@@ -246,7 +228,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
         uri, http_method, body, headers = self.extract_oauth_params()
         # The scopes the user actually authorized, i.e. checkboxes
         # that were selected.
-        scopes = self.get_arguments('scopes')
+        scopes = self.get_arguments("scopes")
         if scopes == []:
             # avoid triggering default scopes (provider selects default scopes when scopes is falsy)
             # when an explicit empty list is authorized

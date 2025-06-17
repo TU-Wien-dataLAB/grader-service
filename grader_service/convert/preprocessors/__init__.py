@@ -1,5 +1,3 @@
-
-
 from .base import NbGraderPreprocessor
 from .clearalwayshiddentests import ClearAlwaysHiddenTests
 from .headerfooter import IncludeHeaderFooter
@@ -38,5 +36,5 @@ __all__ = [
     "ClearMarkScheme",
     "OverwriteKernelspec",
     "AddRevert",
-    "ClearAlwaysHiddenTests"
+    "ClearAlwaysHiddenTests",
 ]

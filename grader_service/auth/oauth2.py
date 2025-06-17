@@ -3,6 +3,7 @@ Base classes for use by OAuth2 based JupyterHub authenticator classes.
 
 Founded based on work by Kyle Kelley (@rgbkrk)
 """
+
 import base64
 import json
 import os
@@ -23,7 +24,7 @@ from traitlets import Any, Bool, Dict, List, Unicode, default
 
 
 def guess_callback_uri(protocol, host, server_url):
-    return f'{protocol}://{host}{url_path_join(server_url, "oauth_callback")}'
+    return f"{protocol}://{host}{url_path_join(server_url, 'oauth_callback')}"
 
 
 STATE_COOKIE_NAME = "grader-oauthenticator-state"
@@ -88,13 +89,9 @@ class OAuthLoginHandler(OAuth2Mixin, BaseHandler):
                 scheme="", netloc="", path="/" + urlinfo.path.lstrip("/")
             ).geturl()
             if next_url != original_next_url:
-                self.log.warning(
-                    f"Ignoring next_url {original_next_url}, using {next_url}"
-                )
+                self.log.warning(f"Ignoring next_url {original_next_url}, using {next_url}")
         if self._state is None:
-            self._state = _serialize_state(
-                {"state_id": uuid.uuid4().hex, "next_url": next_url}
-            )
+            self._state = _serialize_state({"state_id": uuid.uuid4().hex, "next_url": next_url})
         return self._state
 
     def get(self):
@@ -124,9 +121,9 @@ class OAuthCallbackHandler(BaseHandler):
         To be compared with the value in redirect URL
         """
         if self._state_cookie is None:
-            self._state_cookie = (
-                self.get_secure_cookie(STATE_COOKIE_NAME) or b""
-            ).decode("utf8", "replace")
+            self._state_cookie = (self.get_secure_cookie(STATE_COOKIE_NAME) or b"").decode(
+                "utf8", "replace"
+            )
             self.clear_cookie(STATE_COOKIE_NAME)
         return self._state_cookie
 
@@ -582,8 +579,11 @@ class OAuthenticator(Authenticator):
     def _default_http_client(self):
         return AsyncHTTPClient()
 
-    default_next_url = Unicode(default_value="http://localhost:8080", config=True,
-                               help="""The URL to use when no next URL is specified in the OAuth request.""")
+    default_next_url = Unicode(
+        default_value="http://localhost:8080",
+        config=True,
+        help="""The URL to use when no next URL is specified in the OAuth request.""",
+    )
 
     async def fetch(self, req, label="fetching", parse_json=True, **kwargs):
         """Wrapper for http requests
@@ -633,9 +633,7 @@ class OAuthenticator(Authenticator):
             else:
                 return resp
 
-    async def httpfetch(
-        self, url, label="fetching", parse_json=True, raise_error=True, **kwargs
-    ):
+    async def httpfetch(self, url, label="fetching", parse_json=True, raise_error=True, **kwargs):
         """Wrapper for creating and fetching http requests
 
         Includes http_request_kwargs in request kwargs
@@ -656,9 +654,7 @@ class OAuthenticator(Authenticator):
         request_kwargs = self.http_request_kwargs.copy()
         request_kwargs.update(kwargs)
         req = HTTPRequest(url, **request_kwargs)
-        return await self.fetch(
-            req, label=label, parse_json=parse_json, raise_error=raise_error
-        )
+        return await self.fetch(req, label=label, parse_json=parse_json, raise_error=raise_error)
 
     def add_user(self, user):
         """
@@ -693,9 +689,7 @@ class OAuthenticator(Authenticator):
             return self.oauth_callback_url
         elif handler:
             return guess_callback_uri(
-                handler.request.protocol,
-                handler.request.host,
-                handler.application.base_url,
+                handler.request.protocol, handler.request.host, handler.application.base_url
             )
         else:
             raise ValueError(
@@ -705,9 +699,9 @@ class OAuthenticator(Authenticator):
     def get_handlers(self, base_url_path):
         self.log.info(base_url_path)
         return [
-            (os.path.join(base_url_path,"oauth_login"), self.login_handler),
-            (os.path.join(base_url_path,"oauth_callback"), self.callback_handler),
-            (os.path.join(base_url_path,"logout"), self.logout_handler),
+            (os.path.join(base_url_path, "oauth_login"), self.login_handler),
+            (os.path.join(base_url_path, "oauth_callback"), self.callback_handler),
+            (os.path.join(base_url_path, "logout"), self.logout_handler),
         ]
 
     def build_userdata_request_headers(self, access_token, token_type):
@@ -739,10 +733,8 @@ class OAuthenticator(Authenticator):
         }
 
         if self.basic_auth:
-            b64key = base64.b64encode(
-                bytes("{self.client_id}:{self.client_secret}", "utf8")
-            )
-            headers.update({"Authorization": f'Basic {b64key.decode("utf8")}'})
+            b64key = base64.b64encode(bytes("{self.client_id}:{self.client_secret}", "utf8"))
+            headers.update({"Authorization": f"Basic {b64key.decode('utf8')}"})
         return headers
 
     def user_info_to_username(self, user_info):
@@ -789,7 +781,7 @@ class OAuthenticator(Authenticator):
             return auth_state.get("refresh_token")
         except (ValueError, InvalidToken, EncryptionUnavailable) as e:
             self.log.warning(
-                f"Failed to retrieve encrypted auth_state for {username}. Error was {e}.",
+                f"Failed to retrieve encrypted auth_state for {username}. Error was {e}."
             )
             return
 
@@ -814,9 +806,7 @@ class OAuthenticator(Authenticator):
         # when basic authentication is used
         # ref: https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1
         if not self.basic_auth:
-            params.update(
-                [("client_id", self.client_id), ("client_secret", self.client_secret)]
-            )
+            params.update([("client_id", self.client_id), ("client_secret", self.client_secret)])
 
         params.update(self.token_params)
 
@@ -842,8 +832,7 @@ class OAuthenticator(Authenticator):
 
         if "error_description" in token_info:
             raise web.HTTPError(
-                403,
-                f'An access token was not returned: {token_info["error_description"]}',
+                403, f"An access token was not returned: {token_info['error_description']}"
             )
         elif "access_token" not in token_info:
             raise web.HTTPError(500, reason=f"Bad response: {token_info}")
@@ -867,9 +856,7 @@ class OAuthenticator(Authenticator):
         token_type = token_info["token_type"]
 
         if not self.userdata_url:
-            raise ValueError(
-                "authenticator.userdata_url is missing. Please configure it."
-            )
+            raise ValueError("authenticator.userdata_url is missing. Please configure it.")
 
         url = url_concat(self.userdata_url, self.userdata_params)
         if self.userdata_token_method == "url":
@@ -1047,11 +1034,10 @@ class OAuthenticator(Authenticator):
             # only warn if different
             # protects backward-compatible config from warnings
             # if they set the same value under both names
-            message = "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
-                cls=self.__class__.__name__,
-                old=old_attr,
-                new=new_attr,
-                version=version,
+            message = (
+                "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
+                    cls=self.__class__.__name__, old=old_attr, new=new_attr, version=version
+                )
             )
 
             # set the value for the new attr only if they are the same type
@@ -1066,7 +1052,5 @@ class OAuthenticator(Authenticator):
     def __init__(self, **kwargs):
         # observe deprecated config names in oauthenticator
         if self._deprecated_oauth_aliases:
-            self.observe(
-                self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases)
-            )
+            self.observe(self._deprecated_oauth_trait, names=list(self._deprecated_oauth_aliases))
         super().__init__(**kwargs)

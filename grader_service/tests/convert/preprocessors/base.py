@@ -8,7 +8,6 @@ from grader_service.convert.nbgraderformat import read as read_nb
 
 
 class BaseTestPreprocessor(object):
-
     def _read_nb(self, filename, validate=True):
         fullpath = os.path.join(os.path.dirname(__file__), filename)
         with io.open(fullpath, mode="r", encoding="utf-8") as fh:

@@ -18,19 +18,19 @@ class PAMAuthenticator(LocalAuthenticator):
     # run PAM in a thread, since it can be slow
     executor = Any()
 
-    @default('executor')
+    @default("executor")
     def _default_executor(self):
         return ThreadPoolExecutor(1)
 
     encoding = Unicode(
-        'utf8',
+        "utf8",
         help="""
         The text encoding to use when communicating with PAM
         """,
     ).tag(config=True)
 
     service = Unicode(
-        'login',
+        "login",
         help="""
         The name of the PAM service to use for authentication
         """,
@@ -106,7 +106,7 @@ class PAMAuthenticator(LocalAuthenticator):
         """PAM admin status checker. Returns Bool to indicate user admin status."""
         # Checks upper level function (admin_users)
         admin_status = super().is_admin(handler, authentication)
-        username = authentication['name']
+        username = authentication["name"]
 
         # If not yet listed as an admin, and admin_groups is on, use it authoritatively
         if not admin_status and self.admin_groups:
@@ -121,9 +121,7 @@ class PAMAuthenticator(LocalAuthenticator):
                 # (returning None instead of just the username) as this indicates some sort of system failure
 
                 admin_group_gids = {self._getgrnam(x).gr_gid for x in self.admin_groups}
-                user_group_gids = set(
-                    self._getgrouplist(username, self._getpwnam(username).pw_gid)
-                )
+                user_group_gids = set(self._getgrouplist(username, self._getpwnam(username).pw_gid))
                 admin_status = len(admin_group_gids & user_group_gids) != 0
 
             except Exception as e:
@@ -147,25 +145,17 @@ class PAMAuthenticator(LocalAuthenticator):
 
         Return None otherwise.
         """
-        username = data['username']
+        username = data["username"]
         password = data["password"]
         if "otp" in data:
             # OTP given, pass as tuple (requires pamela 1.1)
             password = (data["password"], data["otp"])
         try:
-            pamela.authenticate(
-                username,
-                password,
-                service=self.service,
-                encoding=self.encoding,
-            )
+            pamela.authenticate(username, password, service=self.service, encoding=self.encoding)
         except pamela.PAMError as e:
             if handler is not None:
                 self.log.warning(
-                    "PAM Authentication failed (%s@%s): %s",
-                    username,
-                    handler.request.remote_ip,
-                    e,
+                    "PAM Authentication failed (%s@%s): %s", username, handler.request.remote_ip, e
                 )
             else:
                 self.log.warning("PAM Authentication failed: %s", e)
@@ -173,9 +163,7 @@ class PAMAuthenticator(LocalAuthenticator):
 
         if self.check_account:
             try:
-                pamela.check_account(
-                    username, service=self.service, encoding=self.encoding
-                )
+                pamela.check_account(username, service=self.service, encoding=self.encoding)
             except pamela.PAMError as e:
                 if handler is not None:
                     self.log.warning(
@@ -208,9 +196,7 @@ class PAMAuthenticator(LocalAuthenticator):
         if not self.open_sessions:
             return
         try:
-            pamela.close_session(
-                user.name, service=self.service, encoding=self.encoding
-            )
+            pamela.close_session(user.name, service=self.service, encoding=self.encoding)
         except pamela.PAMError as e:
             self.log.warning("Failed to close PAM session for %s: %s", user.name, e)
             self.log.warning("Disabling PAM sessions from now on.")

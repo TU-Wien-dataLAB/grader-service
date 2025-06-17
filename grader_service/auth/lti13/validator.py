@@ -78,16 +78,12 @@ class LTI13LaunchValidator(LoggingConfigurable):
     def _check_arg_not_missing(self, args: Dict[str, Any], required: Iterable[str]):
         for a in required:
             if a not in args:
-                raise MissingRequiredArgumentError(
-                    f"Required LTI 1.3 arg {a} not in request"
-                )
+                raise MissingRequiredArgumentError(f"Required LTI 1.3 arg {a} not in request")
 
     def _check_arg_not_empty(self, args: Dict[str, Any], required: Iterable[str]):
         for a in required:
             if not args.get(a):
-                raise MissingRequiredArgumentError(
-                    f"Required LTI 1.3 arg {a} needs a value"
-                )
+                raise MissingRequiredArgumentError(f"Required LTI 1.3 arg {a} needs a value")
 
     def _validate_required_args(self, args: Dict[str, Any], required: Iterable[str]):
         self._check_arg_not_missing(args, required)
@@ -137,9 +133,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
 
     def _check_message_type(self, id_token: Dict[str, Any]) -> None:
         """Validate message type value"""
-        message_type = id_token.get(
-            "https://purl.imsglobal.org/spec/lti/claim/message_type"
-        )
+        message_type = id_token.get("https://purl.imsglobal.org/spec/lti/claim/message_type")
         if (
             message_type
             != LTI13_RESOURCE_LINK_REQUEST_REQUIRED_CLAIMS[
@@ -150,15 +144,11 @@ class LTI13LaunchValidator(LoggingConfigurable):
                 "https://purl.imsglobal.org/spec/lti/claim/message_type"
             ]
         ):
-            raise IncorrectValueError(
-                f"Incorrect value {message_type} for message_type claim"
-            )
+            raise IncorrectValueError(f"Incorrect value {message_type} for message_type claim")
 
     def _check_context_label(self, id_token: Dict[str, Any]) -> None:
         """Validate context label."""
-        context_claim = id_token.get(
-            "https://purl.imsglobal.org/spec/lti/claim/context"
-        )
+        context_claim = id_token.get("https://purl.imsglobal.org/spec/lti/claim/context")
         context_label = context_claim.get("label") if context_claim else None
         if context_label == "":
             raise MissingRequiredArgumentError(
@@ -169,23 +159,15 @@ class LTI13LaunchValidator(LoggingConfigurable):
         """Check version claim."""
         lti_version = id_token.get("https://purl.imsglobal.org/spec/lti/claim/version")
         if lti_version != "1.3.0":
-            raise IncorrectValueError(
-                f"Incorrect value {lti_version} for version claim"
-            )
+            raise IncorrectValueError(f"Incorrect value {lti_version} for version claim")
 
     def _check_resource_link_id(self, id_token: Dict[str, Any]) -> None:
         """Check if resource_link claim has id set."""
-        id = id_token.get(
-            "https://purl.imsglobal.org/spec/lti/claim/resource_link", {}
-        ).get("id")
+        id = id_token.get("https://purl.imsglobal.org/spec/lti/claim/resource_link", {}).get("id")
         if not id:
-            raise MissingRequiredArgumentError(
-                "resource_link claim's id can't be empty"
-            )
+            raise MissingRequiredArgumentError("resource_link claim's id can't be empty")
 
-    def validate_azp_claim(
-        self, id_token: Dict[str, Any], client_id: Iterable[str]
-    ) -> None:
+    def validate_azp_claim(self, id_token: Dict[str, Any], client_id: Iterable[str]) -> None:
         """Check if azp claim is present and matches client_id."""
         aud = id_token["aud"]
         need_azp = isinstance(id_token["aud"], list) and len(aud) > 1
@@ -226,15 +208,11 @@ class LTI13LaunchValidator(LoggingConfigurable):
         self._check_if_iat_is_too_old(id_token)
 
         # message_type influences what claims are required
-        message_type = id_token[
-            "https://purl.imsglobal.org/spec/lti/claim/message_type"
-        ]
+        message_type = id_token["https://purl.imsglobal.org/spec/lti/claim/message_type"]
         is_deep_linking = message_type == "LtiDeepLinkingRequest"
 
         if is_deep_linking:
-            self._check_arg_not_missing(
-                id_token, LTI13_DEEP_LINKING_REQUIRED_CLAIMS.keys()
-            )
+            self._check_arg_not_missing(id_token, LTI13_DEEP_LINKING_REQUIRED_CLAIMS.keys())
         else:
             self._check_arg_not_missing(
                 id_token, LTI13_RESOURCE_LINK_REQUEST_REQUIRED_CLAIMS.keys()

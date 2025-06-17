@@ -16,7 +16,7 @@ import stat
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import CalledProcessError
 from typing import Optional
 
 from traitlets.config import Config
@@ -63,18 +63,20 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     Sets up the necessary directories
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
-    relative_input_path = Unicode("convert_in",
-                                  allow_none=True).tag(config=True)
-    relative_output_path = Unicode("convert_out",
-                                   allow_none=True).tag(config=True)
+
+    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
+    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
-    timeout_func = Callable(default_timeout_func, allow_none=False,
-                            help="Function that takes a lecture as an argument and returns the cell timeout in seconds."
-                            ).tag(config=True)
+    timeout_func = Callable(
+        default_timeout_func,
+        allow_none=False,
+        help="Function that takes a lecture as an argument and returns the cell timeout in seconds.",
+    ).tag(config=True)
 
-    def __init__(self, grader_service_dir: str,
-                 submission: Submission, close_session=True, **kwargs):
+    def __init__(
+        self, grader_service_dir: str, submission: Submission, close_session=True, **kwargs
+    ):
         """
         Creates the executor in the input
         and output directories that are specified
@@ -111,8 +113,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         This is the only method that is exposed to the client.
         It re-raises all exceptions that happen while running.
         """
-        self.log.info(f"Starting autograding job for submission "
-                      f"{self.submission.id} in {self.__class__.__name__}")
+        self.log.info(
+            f"Starting autograding job for submission "
+            f"{self.submission.id} in {self.__class__.__name__}"
+        )
         try:
             self._pull_submission()
             self.autograding_start = datetime.now()
@@ -121,30 +125,33 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self._set_properties()
             self._push_results()
             self._set_db_state()
-            ts = round((self.autograding_finished - self.autograding_start)
-                       .total_seconds())
+            ts = round((self.autograding_finished - self.autograding_start).total_seconds())
             self.log.info(
                 f"Successfully completed autograding job for submission "
                 f"{self.submission.id} in {self.__class__.__name__};"
-                + f" took {ts // 60}min {ts % 60}s")
+                + f" took {ts // 60}min {ts % 60}s"
+            )
         except Exception:
             self.log.error(
                 f"Failed autograding job for submission "
                 f"{self.submission.id} in {self.__class__.__name__}",
-                exc_info=True)
+                exc_info=True,
+            )
             self._set_db_state(success=False)
         finally:
             self._cleanup()
 
     @property
     def input_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_input_path,
-                            f"submission_{self.submission.id}")
+        return os.path.join(
+            self.grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}"
+        )
 
     @property
     def output_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_output_path,
-                            f"submission_{self.submission.id}")
+        return os.path.join(
+            self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
+        )
 
     def _write_gradebook(self, gradebook_str: str):
         """
@@ -177,9 +184,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             repo_name = self.submission.username
         else:
             # TODO: fix query to work with group.name
-            group = self.session.query(Group).get(
-                (self.submission.username, lecture.id)
-            )
+            group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
                 raise ValueError()
             repo_name = group.name
@@ -191,7 +196,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 lecture.code,
                 str(assignment.id),
                 "edit",
-                str(self.submission.id)
+                str(self.submission.id),
             )
         else:
             git_repo_path = os.path.join(
@@ -223,8 +228,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         # Checkout to commit of submission except when it was manually edited
         if not self.submission.edited:
-            command = f"{self.git_executable} checkout " \
-                      f"{self.submission.commit_hash}"
+            command = f"{self.git_executable} checkout {self.submission.commit_hash}"
             self.log.info(f"Running {command}")
             self._run_subprocess(command, self.input_path)
             self.log.info(f"Now at commit {self.submission.commit_hash}")
@@ -244,16 +248,22 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         c = Config()
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
 
-        autograder = Autograde(self.input_path, self.output_path, "*.ipynb",
-                               assignment_settings=self.assignment.settings, config=c)
+        autograder = Autograde(
+            self.input_path,
+            self.output_path,
+            "*.ipynb",
+            assignment_settings=self.assignment.settings,
+            config=c,
+        )
         autograder.force = True
 
         log_stream = io.StringIO()
         log_handler = logging.StreamHandler(log_stream)
-        log_handler.setFormatter(logging.Formatter(
-            fmt='[%(asctime)s] [%(levelname)s] %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
+        log_handler.setFormatter(
+            logging.Formatter(
+                fmt="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            )
+        )
         autograder.log.addHandler(log_handler)
 
         try:
@@ -271,19 +281,21 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             return self.assignment.properties
 
         assignment_properties = json.loads(self.assignment.properties)
-        submission_properties = json.loads(
-            self.submission.properties.properties)
+        submission_properties = json.loads(self.submission.properties.properties)
         notebooks = set.intersection(
             set(assignment_properties["notebooks"].keys()),
-            set(submission_properties["notebooks"].keys()))
+            set(submission_properties["notebooks"].keys()),
+        )
         for notebook in notebooks:
             # Set grades
             #
-            assignment_properties["notebooks"][notebook]["grades_dict"] = \
-                submission_properties["notebooks"][notebook]["grades_dict"]
+            assignment_properties["notebooks"][notebook]["grades_dict"] = submission_properties[
+                "notebooks"
+            ][notebook]["grades_dict"]
             # Set comments
-            assignment_properties["notebooks"][notebook]["comments_dict"] = \
-                submission_properties["notebooks"][notebook]["comments_dict"]
+            assignment_properties["notebooks"][notebook]["comments_dict"] = submission_properties[
+                "notebooks"
+            ][notebook]["comments_dict"]
 
         properties_str = json.dumps(assignment_properties)
         self.log.info("Added grades dict to properties")
@@ -305,9 +317,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
-            group = self.session.query(Group).get(
-                (self.submission.username, lecture.id)
-            )
+            group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
                 raise ValueError()
             repo_name = group.name
@@ -325,9 +335,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
             try:
-                self._run_subprocess(
-                    f'git init --bare "{git_repo_path}"', self.output_path
-                )
+                self._run_subprocess(f'git init --bare "{git_repo_path}"', self.output_path)
             except CalledProcessError as e:
                 raise e
 
@@ -338,26 +346,22 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         except CalledProcessError as e:
             raise e
 
-        self.log.info(f"Creating new branch "
-                      f"submission_{self.submission.commit_hash}")
-        command = (
-            f"{self.git_executable} switch -c "
-            f"submission_{self.submission.commit_hash}"
-        )
+        self.log.info(f"Creating new branch submission_{self.submission.commit_hash}")
+        command = f"{self.git_executable} switch -c submission_{self.submission.commit_hash}"
         try:
             self._run_subprocess(command, self.output_path)
         except CalledProcessError as e:
             raise e
-        self.log.info(f"Now at branch "
-                      f"submission_{self.submission.commit_hash}")
+        self.log.info(f"Now at branch submission_{self.submission.commit_hash}")
         self.commit_whitelisted_files()
 
         self.log.info(
-            f"Pushing to {git_repo_path} at branch "
-            f"submission_{self.submission.commit_hash}"
+            f"Pushing to {git_repo_path} at branch submission_{self.submission.commit_hash}"
         )
-        command = f'{self.git_executable} push -uf ' \
-                  f'"{git_repo_path}" submission_{self.submission.commit_hash}'
+        command = (
+            f"{self.git_executable} push -uf "
+            f'"{git_repo_path}" submission_{self.submission.commit_hash}'
+        )
         self.log.info(command)
         try:
             self._run_subprocess(command, self.output_path)
@@ -370,40 +374,40 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         base_filter = ["*.ipynb"]
         extra_files = json.loads(self.assignment.properties).get("extra_files", [])
         allowed_file_patterns = self.assignment.settings.allowed_files
-        
+
         # combine all file patterns
         file_patterns = set(base_filter + extra_files + allowed_file_patterns)
-        
+
         # get all files in the directory
         files_to_commit = []
         for root, _, files in os.walk(self.output_path):
             rel_root = os.path.relpath(root, self.output_path)
             for file in files:
-                file_path = os.path.join(rel_root, file) if rel_root != '.' else file
+                file_path = os.path.join(rel_root, file) if rel_root != "." else file
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
                     files_to_commit.append(file_path)
-        
+
         if not files_to_commit:
             self.log.info("No files to commit.")
             return
-        
+
         try:
             # escape filenames to handle special characters and whitespaces
             escaped_files = [shlex.quote(f) for f in files_to_commit]
-            
+
             # add only the filtered files
             add_command = f"{self.git_executable} add -- " + " ".join(escaped_files)
             self._run_subprocess(add_command, self.output_path)
-            
+
             # commit files
             commit_command = f'{self.git_executable} commit -m "{self.submission.commit_hash}"'
             self._run_subprocess(commit_command, self.output_path)
-        
+
         except CalledProcessError as e:
             err_msg = f"Failed to commit changes: {e.output}"
             self.log.error(err_msg)
             raise RuntimeError(err_msg)
-    
+
     def _set_properties(self):
         """
         Loads the contents of the gradebook.json file
@@ -415,8 +419,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         with open(os.path.join(self.output_path, "gradebook.json"), "r") as f:
             gradebook_str = f.read()
 
-        properties = SubmissionProperties(properties=gradebook_str,
-                                          sub_id=self.submission.id)
+        properties = SubmissionProperties(properties=gradebook_str, sub_id=self.submission.id)
 
         self.session.merge(properties)
 
@@ -443,8 +446,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         if self.grading_logs is not None:
             self.grading_logs = self.grading_logs.replace("\x00", "")
-        logs = SubmissionLogs(logs=self.grading_logs,
-                              sub_id=self.submission.id)
+        logs = SubmissionLogs(logs=self.grading_logs, sub_id=self.submission.id)
         self.session.merge(logs)
         self.session.commit()
 
@@ -476,7 +478,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 stderr=subprocess.PIPE,
                 cwd=cwd,
                 text=True,  # Decodes output to string
-                check=True  # Raises a CalledProcessError on non-zero exit code
+                check=True,  # Raises a CalledProcessError on non-zero exit code
             )
             return result
         except subprocess.CalledProcessError as e:
@@ -513,8 +515,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    convert_executable = Unicode("grader-convert",
-                                 allow_none=False).tag(config=True)
+    convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
         """
@@ -529,11 +530,13 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         os.mkdir(self.output_path)
         self._write_gradebook(self._put_grades_in_assignment_properties())
 
-        command = f'{self.convert_executable} autograde ' \
-                  f'-i "{self.input_path}" ' \
-                  f'-o "{self.output_path}" ' \
-                  f'-p "*.ipynb" ' \
-                  f'--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}'
+        command = (
+            f"{self.convert_executable} autograde "
+            f'-i "{self.input_path}" '
+            f'-o "{self.output_path}" '
+            f'-p "*.ipynb" '
+            f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"
+        )
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)
         if process.returncode == 0:

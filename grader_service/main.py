@@ -8,7 +8,6 @@ import asyncio
 import logging
 import os
 import secrets
-import shlex
 import shutil
 import signal
 import subprocess
@@ -21,15 +20,15 @@ from sqlalchemy import create_engine
 from tornado.httpserver import HTTPServer
 from traitlets import config, Bool, Type, Instance, Dict, List
 from traitlets import log as traitlets_log
-from traitlets import Enum, Int, TraitError, Unicode, observe, validate, \
-    default, HasTraits
+from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default, HasTraits
 
 from grader_service.auth.auth import Authenticator
+
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.autograding.celery.app import CeleryApp
-from grader_service.handlers.static import CacheControlStaticFilesHandler, LogoHandler
+from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2.provider import make_provider
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
@@ -42,7 +41,6 @@ from grader_service.utils import url_path_join
 from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.plugins.lti import LTISyncGrades
 from sqlalchemy.orm import sessionmaker, scoped_session
-
 
 
 def get_session_maker(url) -> scoped_session:
@@ -65,77 +63,64 @@ class GraderService(config.Application):
       grader-service -f /etc/grader/grader_service_config.py
   """
 
-    generate_config = Bool(
-        False,
-        help="Generate config file based on defaults."
-    ).tag(config=True)
+    generate_config = Bool(False, help="Generate config file based on defaults.").tag(config=True)
 
     service_host = Unicode(
-        os.getenv("GRADER_HOST", "0.0.0.0"),
-        help="The host address of the service"
+        os.getenv("GRADER_HOST", "0.0.0.0"), help="The host address of the service"
     ).tag(config=True)
 
     service_port = Int(
-        int(os.getenv("GRADER_PORT", "4010")),
-        help="The port the service runs on"
+        int(os.getenv("GRADER_PORT", "4010")), help="The port the service runs on"
     ).tag(config=True)
 
     reuse_port = Bool(
-        False,
-        help="Whether to allow for the specified service port to be reused."
+        False, help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
-    grader_service_dir = Unicode(
-        os.getenv("GRADER_SERVICE_DIRECTORY"),
-        allow_none=False
-    ).tag(config=True)
+    grader_service_dir = Unicode(os.getenv("GRADER_SERVICE_DIRECTORY"), allow_none=False).tag(
+        config=True
+    )
 
     db_url = Unicode(allow_none=False).tag(config=True)
 
     oauth_provider = None
 
-    @default('db_url')
+    @default("db_url")
     def _default_db_url(self):
         db_path = os.path.join(self.grader_service_dir, "grader.db")
-        service_dir_url = f'sqlite:///{db_path}'
+        service_dir_url = f"sqlite:///{db_path}"
         return os.getenv("GRADER_DB_URL", service_dir_url)
 
-    grader_cookie_secret = Unicode(default_value=os.getenv("GRADER_COOKIE_SECRET", secrets.token_hex(nbytes=32)),
-                                   allow_none=False).tag(config=True)
-
-    max_body_size = Int(
-        104857600,
-        help="Sets the max buffer size in bytes, default to 100mb"
+    grader_cookie_secret = Unicode(
+        default_value=os.getenv("GRADER_COOKIE_SECRET", secrets.token_hex(nbytes=32)),
+        allow_none=False,
     ).tag(config=True)
 
-    max_buffer_size = Int(
-        104857600,
-        help="Sets the max body size in bytes, default to 100mb"
-    ).tag(config=True)
+    max_body_size = Int(104857600, help="Sets the max buffer size in bytes, default to 100mb").tag(
+        config=True
+    )
 
-    service_git_username = Unicode(
-        "grader-service",
-        allow_none=False
-    ).tag(config=True)
+    max_buffer_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
+        config=True
+    )
 
-    service_git_email = Unicode(
-        "",
-        allow_none=False
-    ).tag(config=True)
+    service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
 
-    config_file = Unicode(
-        "grader_service_config.py", help="The config file to load"
-    ).tag(config=True)
+    service_git_email = Unicode("", allow_none=False).tag(config=True)
 
-    base_url_path = Unicode(
-        "/services/grader/",
-        help="base url path",
-        allow_none=False
-    ).tag(config=True)
+    config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
+        config=True
+    )
+
+    base_url_path = Unicode("/services/grader/", help="base url path", allow_none=False).tag(
+        config=True
+    )
 
     authenticator_class = Type(
         default_value=DummyAuthenticator,
-        klass=Authenticator, allow_none=False, config=True,
+        klass=Authenticator,
+        allow_none=False,
+        config=True,
         help="""
         The authenticator class to use for authentication.
         Default is DummyAuthenticator, which does not require a password by default.
@@ -148,8 +133,9 @@ class GraderService(config.Application):
     # TODO make configurable
     oauth_token_expires_in = int(1 * 24 * 3600)
 
-    load_roles = Dict(Dict(),
-                      help="""
+    load_roles = Dict(
+        Dict(),
+        help="""
         Dict of `{'<lecture-code>': {members: list<str>, role: str}}`  to load at startup.
 
         Example::
@@ -169,9 +155,12 @@ class GraderService(config.Application):
 
         This will replace all existing roles.
         """,
-                      ).tag(config=True)
+    ).tag(config=True)
 
-    oauth_clients = List(Dict(), default_value=[], help="""
+    oauth_clients = List(
+        Dict(),
+        default_value=[],
+        help="""
         List of OAuth clients `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]` to register for the provider.
         
         Example::
@@ -181,9 +170,10 @@ class GraderService(config.Application):
                 'client_secret': 'hub',
                 'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
             }]
-    """).tag(config=True)
+    """,
+    ).tag(config=True)
 
-    @default('authenticator')
+    @default("authenticator")
     def _authenticator_default(self):
         return self.authenticator_class(parent=self)
 
@@ -191,9 +181,7 @@ class GraderService(config.Application):
     def _validate_config_file(self, proposal):
         if not os.path.isfile(proposal.value) and not self.generate_config:
             print(
-                "ERROR: Failed to find specified config file: {}".format(
-                    proposal.value
-                ),
+                "ERROR: Failed to find specified config file: {}".format(proposal.value),
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -201,31 +189,19 @@ class GraderService(config.Application):
 
     flags = {
         "debug": (
-            {
-                "Application": {
-                    "log_level": logging.DEBUG,
-                },
-            },
+            {"Application": {"log_level": logging.DEBUG}},
             "Set log-level to debug, for the most verbose logging.",
         ),
         "show-config": (
-            {
-                "Application": {
-                    "show_config": True,
-                },
-            },
+            {"Application": {"show_config": True}},
             "Show the application's configuration (human-readable format)",
         ),
         "show-config-json": (
-            {
-                "Application": {
-                    "show_config_json": True,
-                },
-            },
+            {"Application": {"show_config_json": True}},
             "Show the application's configuration (json format)",
         ),
-        'generate-config': (
-            {'GraderService': {'generate_config': True}},
+        "generate-config": (
+            {"GraderService": {"generate_config": True}},
             "generate default config file",
         ),
     }
@@ -237,8 +213,22 @@ class GraderService(config.Application):
     }
 
     log_level = Enum(
-        [0, 10, 20, 30, 40, 50, "CRITICAL", "FATAL", "ERROR", "WARNING",
-         "WARN", "INFO", "DEBUG", "NOTSET"],
+        [
+            0,
+            10,
+            20,
+            30,
+            40,
+            50,
+            "CRITICAL",
+            "FATAL",
+            "ERROR",
+            "WARNING",
+            "WARN",
+            "INFO",
+            "DEBUG",
+            "NOTSET",
+        ],
         "INFO",
     ).tag(config=True)
 
@@ -248,8 +238,7 @@ class GraderService(config.Application):
         stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
-        fmt = "%(color)s%(levelname)-8s %(asctime)s " \
-              "%(module)-13s |%(end_color)s %(message)s"
+        fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
         formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
 
         for log in ("access", "application", "general"):
@@ -268,7 +257,7 @@ class GraderService(config.Application):
         sql_handler.setFormatter(formatter)
         sql_logger.addHandler(sql_handler)
 
-        oauth_log = logging.getLogger('oauthlib')
+        oauth_log = logging.getLogger("oauthlib")
         oauth_handler = stream_handler(stream=sys.stdout)
         oauth_handler.setFormatter(formatter)
         oauth_log.setLevel(log_level)
@@ -282,29 +271,28 @@ class GraderService(config.Application):
         traitlet_logger.addHandler(traitlets_handler)
 
     def write_config_file(self):
-        self.log.info(
-            f"Writing config file {os.path.abspath(self.config_file)}"
-        )
+        self.log.info(f"Writing config file {os.path.abspath(self.config_file)}")
         config_file_dir = os.path.dirname(os.path.abspath(self.config_file))
         if not os.path.isdir(config_file_dir):
             self.exit(
-                f"The directory to write the config file has to exist. "
-                f"{config_file_dir} not found"
+                f"The directory to write the config file has to exist. {config_file_dir} not found"
             )
         if os.path.isfile(os.path.abspath(self.config_file)):
-            self.exit(f"Config file {os.path.abspath(self.config_file)} \
-                already exists!")
+            self.exit(
+                f"Config file {os.path.abspath(self.config_file)} \
+                already exists!"
+            )
 
         members = inspect.getmembers(
-            sys.modules[__name__],
-            lambda x: inspect.isclass(x) and issubclass(x, HasTraits))
+            sys.modules[__name__], lambda x: inspect.isclass(x) and issubclass(x, HasTraits)
+        )
         config_classes = [x[1] for x in members]
 
         config_text = self.generate_config_file(classes=config_classes)
         if isinstance(config_text, bytes):
-            config_text = config_text.decode('utf8')
+            config_text = config_text.decode("utf8")
         print("Generating config: %s" % self.config_file)
-        with open(self.config_file, mode='w') as f:
+        with open(self.config_file, mode="w") as f:
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
@@ -325,12 +313,11 @@ class GraderService(config.Application):
             msg = "Grader Service needs Python version 3.9 or above to run!"
             raise RuntimeError(msg)
         if shutil.which("git") is None:
-            msg = "No git executable found! " \
-                  "Git is necessary to run Grader Service!"
+            msg = "No git executable found! Git is necessary to run Grader Service!"
             raise RuntimeError(msg)
 
     def set_config(self):
-        """ Pass config to singletons. """
+        """Pass config to singletons."""
         RequestHandlerConfig.config = self.config
         LTISyncGrades.config = self.config
         CeleryApp.instance(config=self.config)
@@ -343,15 +330,14 @@ class GraderService(config.Application):
         session = sessionmaker(engine)
         self.oauth_provider = make_provider(
             session,
-            url_prefix=url_path_join(self.base_url_path, 'api/oauth2'),
-            login_url=url_path_join(self.base_url_path, 'login'),
+            url_prefix=url_path_join(self.base_url_path, "api/oauth2"),
+            login_url=url_path_join(self.base_url_path, "login"),
             token_expires_in=self.oauth_token_expires_in,
         )
         for client in self.oauth_clients:
-            self.oauth_provider.add_client(client["client_id"],
-                                           client['client_secret'],
-                                           client['redirect_uri'],
-                                           ['identify'])
+            self.oauth_provider.add_client(
+                client["client_id"], client["client_secret"], client["redirect_uri"], ["identify"]
+            )
 
     def init_roles(self):
         """Load predefined groups into the database"""
@@ -360,16 +346,11 @@ class GraderService(config.Application):
             for lecture_code, role_dict in self.load_roles.items():
                 role = role_dict.get("role")
                 users = role_dict.get("members", [])
-                lecture = (
-                    db.query(Lecture)
-                    .filter(Lecture.code == lecture_code)
-                    .one_or_none()
-                )
+                lecture = db.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
                 # create lecture if no lecture with that name exists yet
                 # (code is set in create)
                 if lecture is None:
-                    self.log.info(
-                        f"Adding new lecture with lecture_code {lecture_code}")
+                    self.log.info(f"Adding new lecture with lecture_code {lecture_code}")
                     lecture = Lecture()
                     lecture.code = lecture_code
                     lecture.name = lecture_code
@@ -379,11 +360,7 @@ class GraderService(config.Application):
                 db.commit()
 
                 for username in users:
-                    user = (
-                        db.query(User)
-                        .filter(User.name == username)
-                        .one_or_none()
-                    )
+                    user = db.query(User).filter(User.name == username).one_or_none()
                     if user is None:
                         self.log.info(f"Adding new user with username {username}")
                         user = User()
@@ -427,7 +404,8 @@ class GraderService(config.Application):
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
         self.log.info(
-            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}")
+            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}"
+        )
 
         oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
         handlers.extend(oauth_provider_handlers)
@@ -447,9 +425,9 @@ class GraderService(config.Application):
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),
-                static_url_prefix=url_path_join(self.base_url_path, '/static/'),
+                static_url_prefix=url_path_join(self.base_url_path, "/static/"),
                 static_handler_class=CacheControlStaticFilesHandler,
-                log_function=log_request
+                log_function=log_request,
             ),
             # ssl_options=ssl_context,
             max_buffer_size=self.max_buffer_size,
@@ -457,17 +435,19 @@ class GraderService(config.Application):
             xheaders=True,
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.listen(self.service_port, address=self.service_host,
-                                reuse_port=self.reuse_port)
+        self.http_server.listen(
+            self.service_port, address=self.service_host, reuse_port=self.reuse_port
+        )
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
-                s, lambda: asyncio.ensure_future(
-                    self.shutdown_cancel_tasks(s))
+                s, lambda: asyncio.ensure_future(self.shutdown_cancel_tasks(s))
             )
 
-        self.log.info(f"Grader service running at \
-            {self.service_host}:{self.service_port}")
+        self.log.info(
+            f"Grader service running at \
+            {self.service_host}:{self.service_port}"
+        )
 
         # finish start
         self._start_future.set_result(None)
@@ -476,23 +456,35 @@ class GraderService(config.Application):
         if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
             os.mkdir(os.path.join(self.grader_service_dir, "git"))
         # check if git config exits so that git commits don't fail
-        if subprocess.run(['git', 'config', 'init.defaultBranch'], check=False,
-                          capture_output=True).stdout.decode().strip() != "main":
+        if (
+            subprocess.run(
+                ["git", "config", "init.defaultBranch"], check=False, capture_output=True
+            )
+            .stdout.decode()
+            .strip()
+            != "main"
+        ):
             raise RuntimeError("Git default branch has to be set to 'main'!")
-        if subprocess.run(['git', 'config', 'user.name'], check=False,
-                          capture_output=True).stdout.decode().strip() == "":
+        if (
+            subprocess.run(["git", "config", "user.name"], check=False, capture_output=True)
+            .stdout.decode()
+            .strip()
+            == ""
+        ):
             raise RuntimeError("Git user.name has to be set!")
-        if subprocess.run(['git', 'config', 'user.email'], check=False,
-                          capture_output=True).stdout.decode().strip() == "":
+        if (
+            subprocess.run(["git", "config", "user.email"], check=False, capture_output=True)
+            .stdout.decode()
+            .strip()
+            == ""
+        ):
             raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""
-        self.log.critical(
-            "Received signal %s, initiating shutdown...", sig.name)
+        self.log.critical("Received signal %s, initiating shutdown...", sig.name)
 
-        tasks = [t for t in asyncio.all_tasks() if
-                 t is not asyncio.current_task()]
+        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
         if tasks:
             self.log.debug("Cancelling pending tasks")
