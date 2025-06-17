@@ -1,19 +1,18 @@
 import os
 
 from grader_service.auth.auth import Authenticator
-from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm import User, Lecture
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope, Role
+from traitlets import log as traitlets_log
 
-# TODO: Only use DummyAuthenticator
 
-# from grader_service.autograding.docker_grader import DockerAutogradeExecutor
+logger = traitlets_log.get_logger()
 
-print("### loading service config")
+logger.info("### loading service config")
 
 c.GraderService.service_host = "127.0.0.1"
 # existing directory to use as the base directory for the grader service
@@ -41,7 +40,6 @@ c.GraderService.oauth_clients = [{
     'redirect_uri': 'http://localhost:8080/hub/oauth_callback'
 }]
 
-from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
@@ -49,9 +47,10 @@ c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 c.JupyterHubTokenAuthenticator.user_info_url = "http://localhost:8080/hub/api/user"
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
-    print("####### POST AUTH HOOK")
-    session = handler.session
     log = handler.log
+    log.info("post_auth_hook started")
+
+    session = handler.session
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
