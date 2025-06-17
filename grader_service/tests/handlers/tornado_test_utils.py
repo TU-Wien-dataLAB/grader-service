@@ -40,9 +40,9 @@ def default_user_login(default_user, sql_alchemy_engine):
 
 @pytest.fixture(scope="function")
 def default_roles_dict():
-    return {"20wle2:instructor": ["ubuntu"],
-            "21wle1:student": ["ubuntu"],
-            "22wle1:instructor": ["ubuntu"]}
+    return {"20wle2": {"members": ["ubuntu"], "role": "instructor"},
+            "21wle1": {"members": ["ubuntu"], "role": "student"},
+            "22wle1": {"members": ["ubuntu"], "role": "instructor"}}
 
 
 @pytest.fixture(scope="function")

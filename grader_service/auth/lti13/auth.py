@@ -111,7 +111,7 @@ class LTI13Authenticator(Authenticator):
         Your LMS (Canvas / Open EdX / Moodle / others) may provide additional keys in the
         LTI 1.3 login initiation flow that you can use to set the username. In most cases these
         are located in the `https://purl.imsglobal.org/spec/lti/claim/custom` claim. In this case,
-        `username_key` must be prefixed with "custom_". For example, `username_key` value "custom_uname"
+        `username_key` must be prefixed with `custom_`. For example, `username_key` value "custom_uname"
         will set the username to the value of the parameter `uname` within the
         `https://purl.imsglobal.org/spec/lti/claim/custom` claim.
         

@@ -395,7 +395,7 @@ def test_unzip_invalid_ext(temp_cwd):
 def test_unzip_bad_zip(temp_cwd):
     with open(join("baz.zip"), "wb") as fh:
         pass
-    with pytest.raises(UnrecognizedFormat):
+    with pytest.raises(ValueError):
         utils.unzip("baz.zip", os.getcwd())
 
 

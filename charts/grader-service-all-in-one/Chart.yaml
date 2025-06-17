@@ -28,5 +28,5 @@ dependencies:
   version: 4.2.0
   repository: https://jupyterhub.github.io/helm-chart
 - name: grader-service
-  version: 0.7.3
+  version: 0.8.0
   repository: https://tu-wien-datalab.github.io/grader-service/

@@ -1,18 +1,19 @@
-## Docker
+# Docker
 
-### Prerequisites
+## Prerequisites
 - Docker engine 
     - [Install Docker Engine](https://docs.docker.com/engine/install/)
 
 ```{note}
-This deployment is only meant for development/testing purposes! 
+This setup is intended for local development and testing purposes only.
+It is not suitable for production use.
 ```
-### Docker compose
+## Docker compose
 
 Navigate to `examples/docker_compose` directory. From there you can use the predefined `docker-compose.yml` file to start 
 the containers together with their services.
 
-#### Using docker compose with `SQLite` database
+### Using docker compose with `SQLite` database
 
 Run the following command:
 ```bash
@@ -28,7 +29,7 @@ To stop and remove the containers, run:
 docker compose down -v
 ```
 This command makes sure that both named and anonymous volumes are removed.
-#### Using docker compose with `PostgreSQL` database
+### Using docker compose with `PostgreSQL` database
 
 There is an option to use an externalized and containerized `PostgreSQL` database. Necessary setup for this database is 
 defined in a separate `docker-compose-postgres.yml` file.

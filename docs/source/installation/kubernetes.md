@@ -1,6 +1,6 @@
-## Kubernetes
+# Kubernetes
 
-### Prerequisites
+## Prerequisites
 
 - Kubernetes cluster
 - kubectl installed and configured
@@ -11,7 +11,7 @@
     helm repo add grader-service ghcr.io/tu-wien-datalab/grader-service
     ```
 
-### Install Grader Service
+## Install Grader Service
 If you already have a JupyterHub installation, you can also install only the Grader Service using Helm:
 ```bash
 helm upgrade --install <your-release-name> grader-service \
@@ -20,7 +20,7 @@ helm upgrade --install <your-release-name> grader-service \
     --values <your-values.yaml>
 ```
 
-### Test Installation (All-in-One)
+## Test Installation (All-in-One)
 To test the system, we provide an all-in-one Helm chart that includes both the Grader Service and a configured JupyterHub instance. It is suitable **for development and testing purposes only**.
 ```bash
 helm upgrade --install <your-release-name> grader-service-all-in-one \

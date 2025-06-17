@@ -31,7 +31,7 @@ This guide explains how to locally install and run the `grader-service` backend 
 --->
 
 ## Create a virtual environment (Optional)
-#### Using `venv`:
+### Using `venv`:
 ```
 python -m venv grader
 ```
@@ -39,7 +39,7 @@ Activate the environment:
 ```
 source grader/bin/activate
 ```
-#### Using `conda`:
+### Using `conda`:
 ```
 conda create -n grader python=3.1x.x
 ```
@@ -98,5 +98,3 @@ To uninstall all components:
 pip uninstall grader-service jupyterlab
 pip uninstall grader-labextension
 ```
-
----

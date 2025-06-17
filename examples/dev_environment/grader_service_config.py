@@ -31,6 +31,7 @@ c.CeleryApp.conf = dict(
     broker_connection_retry_on_startup=True,
     task_always_eager=True
 )
+
 c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
 
 
@@ -45,7 +46,8 @@ from grader_service.auth.dummy import DummyAuthenticator
 
 c.GraderService.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {'admin', 'instructor', 'student', 'tutor'}
-
 c.Authenticator.admin_users = {'admin'}
-
-c.GraderService.load_roles = {"lect1:instructor": ["admin", "instructor"], "lect1:student": ["student"], "lect1:tutor": ["tutor"]}
+c.GraderService.load_roles = {"lect1": {"members": ["admin", "instructor"], "role": "instructor"},
+                              "lect1": {"members": ["tutor"], "role": "tutor"},
+                              "lect1": {"members": ["student"], "role": "student"},
+                             }

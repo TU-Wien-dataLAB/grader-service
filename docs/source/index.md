@@ -17,12 +17,11 @@ Grader Service offers lecturers and students a well integrated teaching environm
 grader_service
 installation/installation
 configuration/index
-get_started
 instructor_guide/instructor_guide
 student_guide
 admin/administrator
 contribution
-grader_service/grader_service_rest_api
+reference/index
 about
 ```
 

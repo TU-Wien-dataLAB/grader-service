@@ -42,7 +42,7 @@ async def test_get_permission(
         if v == 1: return "tutor"
         if v == 2: return "instructor"
 
-    groups = {tuple(g.split(":")) for g in default_roles_dict.keys()}
+    groups = {(g, default_roles_dict[g]["role"]) for g in default_roles_dict.keys()}
     for p in permissions:
         t = (p["lecture_code"], get_scope(p["scope"]))
         assert t in groups
