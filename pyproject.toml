@@ -108,3 +108,19 @@ search = "version: '{current_version}'"
 [[tool.tbump.file]]
 src = "./charts/grader-service/Chart.yaml"
 search = "appVersion: \"{current_version}\""
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.13",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "**/*.ipynb",
+    "grader_service/api/models",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
