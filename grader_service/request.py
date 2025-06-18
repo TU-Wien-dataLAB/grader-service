@@ -5,14 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-
-from tornado.httpclient import AsyncHTTPClient, HTTPResponse, HTTPRequest
-from traitlets.config.configurable import SingletonConfigurable
-from typing import Dict, Union, Callable, Optional
-from tornado.escape import json_decode
-from traitlets.traitlets import TraitError, Unicode, validate
-from urllib.parse import urlencode, quote_plus, urlparse, ParseResultBytes
 import os
+from typing import Callable, Dict, Optional, Union
+from urllib.parse import ParseResultBytes, quote_plus, urlencode, urlparse
+
+from tornado.escape import json_decode
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
+from traitlets.config.configurable import SingletonConfigurable
+from traitlets.traitlets import TraitError, Unicode, validate
 
 
 class RequestService(SingletonConfigurable):

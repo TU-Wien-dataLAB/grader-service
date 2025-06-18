@@ -6,16 +6,16 @@ Create Date: 2023-08-18 10:30:24.465356
 
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy import (
     Column,
-    Unicode,
-    Integer,
     DateTime,
-    Text,
-    PrimaryKeyConstraint,
     ForeignKeyConstraint,
+    Integer,
+    PrimaryKeyConstraint,
+    Text,
+    Unicode,
 )
 
 from grader_service.utils import new_token

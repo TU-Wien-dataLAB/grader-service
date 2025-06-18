@@ -1,12 +1,14 @@
-import pytest
 import os
+
+import pytest
 from nbformat.v4 import new_notebook, new_output
 
-from grader_service.convert.preprocessors import SaveCells, SaveAutoGrades, GetGrades
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import GetGrades, SaveAutoGrades, SaveCells
 from grader_service.convert.utils import compute_checksum
+
+from .. import create_grade_and_solution_cell, create_grade_cell, create_solution_cell
 from .base import BaseTestPreprocessor
-from .. import create_grade_cell, create_solution_cell, create_grade_and_solution_cell
 
 
 @pytest.fixture

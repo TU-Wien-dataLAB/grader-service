@@ -18,7 +18,7 @@ from binascii import b2a_hex
 from datetime import datetime, timezone
 from hmac import compare_digest
 from operator import itemgetter
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 from urllib.parse import quote
 
 from async_generator import aclosing
@@ -233,8 +233,7 @@ async def wait_for_http_server(url, timeout=10, ssl_context=None):
 
     Any non-5XX response code will do, even 404.
     """
-    loop = ioloop.IOLoop.current()
-    tic = loop.time()
+    ioloop.IOLoop.current()
     client = AsyncHTTPClient()
     if ssl_context:
         client.ssl_options = ssl_context
@@ -456,7 +455,6 @@ def print_ps_info(file=sys.stderr):
     memlen = max(len(mem_s), 3)
     fd_s = str(p.num_fds())
     fdlen = max(len(fd_s), 3)
-    threadlen = len("threads")
 
     print(
         "%s %s %s %s" % ("%CPU".ljust(cpulen), "MEM".ljust(memlen), "FDs".ljust(fdlen), "threads"),
@@ -592,12 +590,13 @@ def _parse_accept_header(accept):
                 # version out
                 if "-v" in vnd:
                     vnd, sep, rest = vnd.rpartition("-v")
-                    if len(rest):
+                    if rest:
                         # add the version as a media param
                         try:
-                            version = media_params.append(("version", float(rest)))
+                            version = float(rest)
                         except ValueError:
                             version = 1.0  # could not be parsed
+                        media_params.append(("version", version))
                 # add the vendor code as a media param
                 media_params.append(("vendor", vnd))
                 # and re-write media_type to something like application/json so
@@ -657,7 +656,6 @@ def get_browser_protocol(request):
     if forwarded_header:
         first_forwarded = forwarded_header.split(",", 1)[0].strip()
         fields = {}
-        forwarded_dict = {}
         for field in first_forwarded.split(";"):
             key, _, value = field.partition("=")
             fields[key.strip().lower()] = value.strip()

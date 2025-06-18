@@ -4,6 +4,7 @@ import io
 import os
 
 from nbformat import current_nbformat, read
+
 from grader_service.convert.nbgraderformat import read as read_nb
 
 

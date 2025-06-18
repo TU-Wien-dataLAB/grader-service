@@ -4,16 +4,17 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import base64
+from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
-from grader_service.handlers.base_handler import GraderBaseHandler, BaseHandler
-from grader_service.orm.assignment import Assignment
-from datetime import datetime
+
 from grader_service.api.models.error_message import ErrorMessage
+from grader_service.handlers.base_handler import BaseHandler, GraderBaseHandler
+from grader_service.orm.assignment import Assignment
 
 from .db_util import *
 from .tornado_test_utils import *
-from unittest.mock import MagicMock
 
 
 def test_string_serialization():
@@ -85,7 +86,7 @@ def test_nested_serialization():
 
 
 def test_api_model_serialization():
-    err = ErrorMessage("")
+    ErrorMessage(message="")
 
 
 @pytest.mark.parametrize(

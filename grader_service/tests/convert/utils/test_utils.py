@@ -1,28 +1,27 @@
 # coding: utf-8
 
 import os
-import pytest
-import tempfile
 import shutil
+import tempfile
 import zipfile
-
-from nbformat.v4 import new_output
 from os.path import join
+
+import pytest
+from nbformat.v4 import new_output
+
+from grader_service.convert import utils
+
+from .. import (
+    create_code_cell,
+    create_grade_and_solution_cell,
+    create_grade_cell,
+    create_solution_cell,
+)
+from .conftest import notwindows
 
 
 class UnrecognizedFormat(Exception):
     pass
-
-
-from grader_service.convert import utils
-from .. import (
-    create_code_cell,
-    create_grade_cell,
-    create_solution_cell,
-    create_grade_and_solution_cell,
-)
-
-from .conftest import notwindows
 
 
 @pytest.fixture
@@ -390,21 +389,21 @@ def test_find_all_files(temp_cwd):
 
 
 def test_unzip_invalid_ext(temp_cwd):
-    with open(join("baz.txt"), "w") as fh:
+    with open(join("baz.txt"), "w"):
         pass
     with pytest.raises(ValueError):
         utils.unzip("baz.txt", os.getcwd())
 
 
 def test_unzip_bad_zip(temp_cwd):
-    with open(join("baz.zip"), "wb") as fh:
+    with open(join("baz.zip"), "wb"):
         pass
     with pytest.raises(ValueError):
         utils.unzip("baz.zip", os.getcwd())
 
 
 def test_unzip_no_output_path(temp_cwd):
-    with open(join("baz.zip"), "wb") as fh:
+    with open(join("baz.zip"), "wb"):
         pass
     out = os.path.join(os.getcwd(), "blarg")
     with pytest.raises(OSError):

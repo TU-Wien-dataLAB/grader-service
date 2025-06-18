@@ -7,10 +7,11 @@
 # Python script that will apply the migrations up to head
 import argparse
 import logging
-import alembic.config
 import os
 import re
 from urllib.parse import urlparse, urlunparse
+
+import alembic.config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

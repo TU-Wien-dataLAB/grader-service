@@ -9,7 +9,9 @@ import os
 import shutil
 import stat
 import sys
+import tarfile
 import traceback
+import zipfile
 from datetime import datetime
 from logging import Logger
 from typing import Any, Iterator, List, Optional, Tuple, Union
@@ -17,8 +19,6 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 import dateutil.parser
 from dateutil.tz import gettz
 from nbformat.notebooknode import NotebookNode
-import zipfile
-import tarfile
 from tornado.log import LogFormatter
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
@@ -339,7 +339,6 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
     def ignore_patterns(directory, filelist):
         ignored = []
         for filename in filelist:
-            rationale = None
             fullname = os.path.join(directory, filename)
             if exclude and any(fnmatch.fnmatch(filename, glob) for glob in exclude):
                 if log:
@@ -565,7 +564,7 @@ def capture_log(app, fmt="[%(levelname)s] %(message)s"):
     try:
         app.start()
 
-    except:
+    except Exception:
         log_buff.flush()
         val = log_buff.getvalue()
         result = {"success": False}

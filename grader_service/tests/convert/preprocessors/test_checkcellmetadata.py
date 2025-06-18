@@ -1,11 +1,13 @@
-import pytest
 import os
 
-from grader_service.convert.preprocessors import CheckCellMetadata
-from .base import BaseTestPreprocessor
-from .. import create_grade_cell, create_solution_cell
+import pytest
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat import ValidationError
+from grader_service.convert.preprocessors import CheckCellMetadata
+
+from .. import create_grade_cell, create_solution_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

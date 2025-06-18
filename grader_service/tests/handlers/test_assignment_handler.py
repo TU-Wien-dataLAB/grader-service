@@ -3,17 +3,18 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import json
 from http import HTTPStatus
 
 import pytest
-from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.server import GraderServer
-import json
-from grader_service.api.models.assignment import Assignment
 from tornado.httpclient import HTTPClientError
 
+from grader_service.api.models.assignment import Assignment
+from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.server import GraderServer
+
 # Imports are important otherwise they will not be found
-from .db_util import insert_submission, insert_assignments
+from .db_util import insert_assignments, insert_submission
 from .tornado_test_utils import *
 
 
@@ -34,7 +35,7 @@ async def test_get_assignments(
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
     assert len(assignments) > 0
-    [Assignment.from_dict(l) for l in assignments]  # assert no errors
+    [Assignment.from_dict(a) for a in assignments]  # assert no errors
 
 
 async def test_get_assignments_instructor(
@@ -819,28 +820,30 @@ async def test_delete_assignment_not_created(
     assert e.code == 404
 
 
-async def test_delete_assignment_with_submissions(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_token,
-    sql_alchemy_engine,
-    default_user,
-    default_roles,
-    default_user_login,
-):
-    a_id = 1
-    url = service_base_url + f"lectures/3/assignments/{a_id}"
-
-    engine = sql_alchemy_engine
-    insert_submission(engine, assignment_id=a_id, username=default_user.name)
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == 404
+# async def test_delete_soft_deleted_assignment(
+#     app: GraderServer,
+#     service_base_url,
+#     http_server_client,
+#     default_token,
+#     sql_alchemy_engine,
+#     default_user,
+#     default_roles,
+#     default_user_login,
+# ):
+#     l_id = 3
+#     a_id = 3
+#     # TODO(Natalia): Insert a soft-deleted assignment with id=3
+#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+#
+#     engine = sql_alchemy_engine
+#     insert_submission(engine, assignment_id=a_id, username=default_user.name)
+#
+#     with pytest.raises(HTTPClientError) as exc_info:
+#         await http_server_client.fetch(
+#             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+#         )
+#     e = exc_info.value
+#     assert e.code == 404
 
 
 async def test_delete_assignment_same_name_twice(
@@ -1245,7 +1248,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
@@ -1421,7 +1424,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},

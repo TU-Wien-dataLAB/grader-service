@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, Unicode, ForeignKey, or_
-from sqlalchemy.orm import relationship, joinedload
+from sqlalchemy import Column, ForeignKey, Integer, Unicode, or_
+from sqlalchemy.orm import joinedload, relationship
 
 from grader_service.orm.base import Base
 from grader_service.orm.json_util import JSONList

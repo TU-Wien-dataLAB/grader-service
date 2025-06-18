@@ -5,11 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 from datetime import datetime
 
-from grader_service.api.models import submission
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Float, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 
+from grader_service.api.models import submission
 from grader_service.orm.base import Base, DeleteState, Serializable
 
 

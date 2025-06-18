@@ -2,15 +2,15 @@ import datetime
 import json
 import os
 import time
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 import jwt
-from traitlets import Callable, Unicode, Union, Bool
-from traitlets.config import SingletonConfigurable
-from http import HTTPStatus
-from tornado.escape import url_escape, json_decode
+from tornado.escape import json_decode, url_escape
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.web import HTTPError
+from traitlets import Bool, Callable, Unicode, Union
+from traitlets.config import SingletonConfigurable
 
 
 def default_lti_username_match(member, submission, log) -> bool:

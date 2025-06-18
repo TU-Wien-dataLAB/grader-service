@@ -3,7 +3,7 @@ import os
 import sys
 
 from traitlets.config.application import Application
-from traitlets.traitlets import Unicode, validate, TraitError
+from traitlets.traitlets import TraitError, Unicode, validate
 
 from grader_service._version import __version__
 

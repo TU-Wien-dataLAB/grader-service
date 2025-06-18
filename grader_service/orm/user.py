@@ -4,16 +4,16 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from sqlalchemy import Column, String, LargeBinary, Unicode
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import Column, LargeBinary, String, Unicode
+from sqlalchemy.orm import Session, relationship
 
 from grader_service.api.models import user
 from grader_service.auth.crypto import (
-    encrypt,
-    decrypt,
-    InvalidToken,
-    EncryptionUnavailable,
     CryptKeeper,
+    EncryptionUnavailable,
+    InvalidToken,
+    decrypt,
+    encrypt,
 )
 from grader_service.orm.base import Base, Serializable
 from grader_service.orm.group import group_assignment_table

@@ -1,28 +1,28 @@
 import datetime
 import json
+import os
 import shutil
 from http import HTTPStatus
 from pathlib import Path
 from typing import Union
 
-import tornado
-import os
-
 import isodate
-from grader_service.convert.gradebook.models import GradeBookModel
-from grader_service.api.models.assignment import Assignment as AssignmentModel
-from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.handlers.submissions import SubmissionHandler
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.submission import Submission
-from grader_service.orm.base import DeleteState
-from grader_service.orm.takepart import Role, Scope
-from grader_service.registry import VersionSpecifier, register_handler
+import tornado
 from sqlalchemy.exc import IntegrityError
 from tornado.web import HTTPError
-from .handler_utils import parse_ids
 
+from grader_service.api.models.assignment import Assignment as AssignmentModel
+from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
+from grader_service.handlers.submissions import SubmissionHandler
+from grader_service.orm.assignment import Assignment
+from grader_service.orm.base import DeleteState
+from grader_service.orm.submission import Submission
+from grader_service.orm.takepart import Role, Scope
+from grader_service.registry import VersionSpecifier, register_handler
+
+from .handler_utils import parse_ids
 
 
 def validate_assignment_settings(settings: Union[AssignmentSettings, None]):

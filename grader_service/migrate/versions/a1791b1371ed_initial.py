@@ -14,8 +14,8 @@ Create Date: 2021-05-05 11:42:24.126371
 
 from datetime import datetime
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.sql.schema import UniqueConstraint
 
 # revision identifiers, used by Alembic.

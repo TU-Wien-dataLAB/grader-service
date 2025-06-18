@@ -1,18 +1,20 @@
-import pytest
 import os
-from nbformat.v4 import new_notebook, new_markdown_cell
 
-from grader_service.convert.preprocessors import SaveCells, OverwriteCells
+import pytest
+from nbformat.v4 import new_markdown_cell, new_notebook
+
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import OverwriteCells, SaveCells
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
-    create_grade_cell,
-    create_solution_cell,
     create_grade_and_solution_cell,
+    create_grade_cell,
     create_locked_cell,
+    create_solution_cell,
     create_task_cell,
 )
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

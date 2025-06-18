@@ -1,6 +1,6 @@
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Scope
-from grader_service.registry import register_handler, VersionSpecifier
+from grader_service.registry import VersionSpecifier, register_handler
 
 
 @register_handler(path=r"\/api\/config\/?", version_specifier=VersionSpecifier.ALL)

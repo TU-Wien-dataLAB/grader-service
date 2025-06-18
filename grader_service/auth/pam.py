@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from tornado.concurrent import run_on_executor
-from traitlets import Any, default, Unicode, Bool, Set
+from traitlets import Any, Bool, Set, Unicode, default
 
 from grader_service.auth.local import LocalAuthenticator
 

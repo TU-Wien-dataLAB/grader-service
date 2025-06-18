@@ -4,44 +4,41 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 # grader_s/grader_s/handlers
+import datetime
 import json
-import shutil
-from typing import List
-
-from sqlalchemy import label
-
-from grader_service.api.models import Lecture
-from grader_service.orm.base import DeleteState
-import isodate
 import os.path
+import shutil
 import subprocess
 from http import HTTPStatus
+from typing import List
+
+import isodate
+import pandas as pd
 import tornado
 from celery import chain
-import pandas as pd
-
-from grader_service.plugins.lti import LTISyncGrades
-from grader_service.handlers.handler_utils import parse_ids
-from grader_service.api.models.submission import Submission as SubmissionModel
-from grader_service.orm.lecture import Lecture
-from grader_service.orm.assignment import Assignment
-from grader_service.orm.submission import Submission
-from grader_service.orm.submission_logs import SubmissionLogs
-from grader_service.orm.submission_properties import SubmissionProperties
-from grader_service.orm.takepart import Role, Scope
-from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.sql.expression import func
+from sqlalchemy import label
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
-from grader_service.convert.gradebook.models import GradeBookModel
+
+from grader_service.api.models.submission import Submission as SubmissionModel
 from grader_service.autograding.celery.tasks import (
     autograde_task,
     generate_feedback_task,
     lti_sync_task,
 )
-
+from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-import datetime
+from grader_service.handlers.handler_utils import parse_ids
+from grader_service.orm.assignment import Assignment
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import Lecture
+from grader_service.orm.submission import Submission
+from grader_service.orm.submission_logs import SubmissionLogs
+from grader_service.orm.submission_properties import SubmissionProperties
+from grader_service.orm.takepart import Role, Scope
+from grader_service.plugins.lti import LTISyncGrades
+from grader_service.registry import VersionSpecifier, register_handler
 
 
 def remove_points_from_submission(submissions):

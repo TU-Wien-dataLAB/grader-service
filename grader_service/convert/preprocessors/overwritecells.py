@@ -5,8 +5,8 @@ from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import Bool, Unicode
 
-from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert import utils
+from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.nbgraderformat import MetadataValidator
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 

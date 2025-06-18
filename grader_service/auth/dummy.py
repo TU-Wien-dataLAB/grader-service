@@ -1,4 +1,4 @@
-from traitlets import default, Unicode
+from traitlets import Unicode, default
 
 from grader_service.auth.auth import Authenticator
 from grader_service.auth.login import LogoutHandler

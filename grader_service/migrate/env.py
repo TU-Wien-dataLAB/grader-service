@@ -3,10 +3,12 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-from logging.config import fileConfig
 import os
-from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
+
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+
 import grader_service.orm
 
 # Alembic configuration

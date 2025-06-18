@@ -8,9 +8,9 @@ from traitlets.config import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
+from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import GetGrades
-from grader_service.convert.converters.base import BaseConverter
 
 
 class GenerateFeedback(BaseConverter):

@@ -4,7 +4,6 @@ import os
 from functools import wraps
 from typing import Any, Optional, Union
 
-
 from grader_service.convert.gradebook.models import (
     Comment,
     Grade,

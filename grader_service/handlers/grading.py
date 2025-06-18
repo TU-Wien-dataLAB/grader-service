@@ -7,17 +7,17 @@ from http import HTTPStatus
 
 import celery
 
-from .handler_utils import parse_ids
-from grader_service.orm.submission import Submission
-from grader_service.orm.takepart import Scope
-from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.autograding.celery.tasks import (
     autograde_task,
     generate_feedback_task,
     lti_sync_task,
 )
-
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
+from grader_service.orm.submission import Submission
+from grader_service.orm.takepart import Scope
+from grader_service.registry import VersionSpecifier, register_handler
+
+from .handler_utils import parse_ids
 
 
 @register_handler(

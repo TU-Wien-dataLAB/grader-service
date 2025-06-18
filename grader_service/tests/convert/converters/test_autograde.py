@@ -2,8 +2,8 @@ import shutil
 from unittest.mock import patch
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert.converters import Autograde, GenerateAssignment
 from grader_service.tests.convert.converters import _create_input_output_dirs
-from grader_service.convert.converters import GenerateAssignment, Autograde
 
 
 def test_autograde(tmp_path):

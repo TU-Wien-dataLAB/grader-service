@@ -1,8 +1,9 @@
 from typing import Union
+
+from celery import Celery
+from sqlalchemy.orm import scoped_session
 from traitlets import Dict
 from traitlets.config import SingletonConfigurable
-from sqlalchemy.orm import scoped_session
-from celery import Celery
 
 
 class CeleryApp(SingletonConfigurable):

@@ -1,8 +1,11 @@
 import os
-from .base import BaseTestPreprocessor
-from grader_service.convert.preprocessors import Execute
-from nbconvert.preprocessors import ExecutePreprocessor
+
 from nbconvert.exporters.exporter import ResourcesDict
+from nbconvert.preprocessors import ExecutePreprocessor
+
+from grader_service.convert.preprocessors import Execute
+
+from .base import BaseTestPreprocessor
 
 
 class TestExecute(BaseTestPreprocessor):

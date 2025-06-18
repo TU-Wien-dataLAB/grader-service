@@ -1,4 +1,5 @@
 import pytest
+
 from grader_service.migrate.migrate import DB_URL_PATT, get_matching_config
 
 

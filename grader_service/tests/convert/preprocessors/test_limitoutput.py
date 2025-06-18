@@ -1,7 +1,9 @@
-import pytest
 import os
 
+import pytest
+
 from grader_service.convert.preprocessors import LimitOutput
+
 from .base import BaseTestPreprocessor
 
 

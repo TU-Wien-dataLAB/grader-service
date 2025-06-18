@@ -3,15 +3,14 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_tornasync.plugin import AsyncHTTPServerClient
 
 from grader_service.auth.token import JupyterHubTokenAuthenticator, TokenLoginHandler
 from grader_service.server import GraderServer
-import json
-
-from pytest_tornasync.plugin import AsyncHTTPServerClient
 
 # Imports are important otherwise they will not be found
 from ..handlers.tornado_test_utils import *

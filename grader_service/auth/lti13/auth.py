@@ -1,18 +1,20 @@
 import logging
 from typing import Any, Dict
 
-from grader_service.auth.login import LogoutHandler
-from grader_service.utils import url_path_join  # type: ignore
-from traitlets import CaselessStrEnum
+from traitlets import CaselessStrEnum, Unicode
 from traitlets import List as TraitletsList
 from traitlets import Set as TraitletsSet
-from traitlets import Unicode
 
-from grader_service.utils import get_browser_protocol
+from grader_service.auth.login import LogoutHandler
+from grader_service.utils import (
+    get_browser_protocol,
+    url_path_join,  # type: ignore
+)
+
+from ..auth import Authenticator
 from .constants import LTI13_CUSTOM_CLAIM
 from .error import LoginError
 from .handlers import LTI13CallbackHandler, LTI13ConfigHandler, LTI13LoginInitHandler
-from ..auth import Authenticator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

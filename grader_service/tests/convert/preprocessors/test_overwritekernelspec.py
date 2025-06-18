@@ -1,11 +1,13 @@
 import json
-import pytest
 import os
+
+import pytest
 from nbformat import validate
 from nbformat.v4 import new_notebook
 
-from grader_service.convert.preprocessors import SaveCells, OverwriteKernelspec
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import OverwriteKernelspec, SaveCells
+
 from .base import BaseTestPreprocessor
 
 

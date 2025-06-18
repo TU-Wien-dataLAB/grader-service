@@ -3,16 +3,16 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import json
-from typing import Optional, Awaitable
+from typing import Awaitable, Optional
 from unittest import mock
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from oauthlib import oauth2
 from tornado import web
 
+from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm.api_token import APIToken
 from grader_service.utils import get_browser_protocol, url_path_join
-from grader_service.handlers.base_handler import BaseHandler
 
 
 class SelfAPIHandler(BaseHandler):

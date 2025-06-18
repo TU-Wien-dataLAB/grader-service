@@ -3,19 +3,21 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import os
 from http import HTTPStatus
+from unittest.mock import Mock
 
+import pytest
+from tornado.web import HTTPError
+
+from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
+from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
-import pytest
-from unittest.mock import Mock
-from grader_service.handlers.git.server import GitBaseHandler
-from grader_service.orm.lecture import Lecture
-from tornado.web import HTTPError
+
 from .db_util import *
-import os
 
 
 def get_query_side_effect(

@@ -8,9 +8,9 @@ Create Date: 2025-01-27 15:42:24.363658
 
 import datetime
 import json
-from alembic import op
-import sqlalchemy as sa
 
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "fc5d2febe781"

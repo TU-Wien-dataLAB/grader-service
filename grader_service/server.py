@@ -5,9 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 import os
 
-from jinja2 import ChoiceLoader, PrefixLoader, FileSystemLoader, Environment
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PrefixLoader
 from tornado import web
-from traitlets import config, Float, Dict, List, default, Unicode
+from traitlets import Dict, Float, List, Unicode, config, default
 
 GRADER_COOKIE_NAME = "grader_service_login"
 

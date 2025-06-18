@@ -3,8 +3,8 @@ from typing import Tuple
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 
-from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert import utils
+from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 

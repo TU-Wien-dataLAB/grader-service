@@ -1,19 +1,21 @@
 import json
-import pytest
 import os
+
+import pytest
 from nbformat import validate
 from nbformat.v4 import new_notebook
 
-from grader_service.convert.preprocessors import SaveCells
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import SaveCells
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
-    create_grade_cell,
-    create_solution_cell,
     create_grade_and_solution_cell,
+    create_grade_cell,
     create_locked_cell,
+    create_solution_cell,
 )
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

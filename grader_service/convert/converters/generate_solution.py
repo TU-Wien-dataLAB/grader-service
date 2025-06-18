@@ -4,6 +4,7 @@ from typing import Any
 from traitlets import Bool, List, default
 from traitlets.config.loader import Config
 
+from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import (
     ClearMarkScheme,
@@ -12,7 +13,6 @@ from grader_service.convert.preprocessors import (
     IncludeHeaderFooter,
     LockCells,
 )
-from grader_service.convert.converters.base import BaseConverter
 
 
 class GenerateSolution(BaseConverter):

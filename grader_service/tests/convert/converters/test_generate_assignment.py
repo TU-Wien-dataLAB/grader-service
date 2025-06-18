@@ -1,6 +1,6 @@
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.tests.convert.converters import _create_input_output_dirs
 from grader_service.convert.converters import GenerateAssignment
+from grader_service.tests.convert.converters import _create_input_output_dirs
 
 
 def test_generate_assignment(tmp_path):

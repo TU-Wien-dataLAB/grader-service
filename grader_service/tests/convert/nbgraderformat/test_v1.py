@@ -1,8 +1,10 @@
 import os
-import pytest
 import tempfile
+
+import pytest
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v1 import (
     MetadataValidatorV1,
@@ -11,7 +13,8 @@ from grader_service.convert.nbgraderformat.v1 import (
     write_v1,
     writes_v1,
 )
-from .. import create_code_cell, create_grade_cell, create_solution_cell, create_regular_cell
+
+from .. import create_code_cell, create_grade_cell, create_regular_cell, create_solution_cell
 
 
 def test_set_false():

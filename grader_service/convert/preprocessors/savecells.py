@@ -4,9 +4,9 @@ from typing import Tuple
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 
+from grader_service.convert import utils
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.gradebook.models import GradeCell, SolutionCell, SourceCell, TaskCell
-from grader_service.convert import utils
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
