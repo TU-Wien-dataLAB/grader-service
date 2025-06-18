@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm.strategy_options import joinedload
 from tornado.log import app_log
 
-from grader_service.orm import Base
+from grader_service.orm.base import Base
 from grader_service.orm.json_util import JSONList
 from grader_service.utils import utcnow, hash_token, compare_token, new_token
 

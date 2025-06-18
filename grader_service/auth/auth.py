@@ -3,7 +3,6 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 import re
-from typing import Union
 
 from traitlets import Any, Bool, Dict, Integer, Set, Unicode, default, observe, Union, Callable
 from traitlets.config import LoggingConfigurable

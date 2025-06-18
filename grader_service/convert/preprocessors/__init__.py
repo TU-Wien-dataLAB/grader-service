@@ -1,4 +1,3 @@
-from .base import NbGraderPreprocessor
 from .clearalwayshiddentests import ClearAlwaysHiddenTests
 from .headerfooter import IncludeHeaderFooter
 from .lockcells import LockCells

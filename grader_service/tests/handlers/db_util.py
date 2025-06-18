@@ -34,13 +34,13 @@ def insert_users(session):
 
 
 def _get_lecture(id, name, code):
-    l = Lecture()
-    l.id = id
-    l.name = name
-    l.code = code
-    l.state = "active"
-    l.deleted = "active"
-    return l
+    lec = Lecture()
+    lec.id = id
+    lec.name = name
+    lec.code = code
+    lec.state = "active"
+    lec.deleted = "active"
+    return lec
 
 
 def insert_lectures(session: Engine):

@@ -2,21 +2,12 @@ import os
 import glob
 import shutil
 import subprocess as sp
-import sys
-import logging
 import warnings
 import socket
 
-from io import StringIO
 from nbformat.v4 import new_code_cell, new_markdown_cell
-from jupyter_core.application import NoStart
-from nbconvert.filters import strip_ansi
 
-from grader_service.convert.utils import compute_checksum
-from grader_service.convert.converters.baseapp import ConverterApp
-from grader_service.convert.validator import Validator
 from grader_service.convert.nbgraderformat import SCHEMA_VERSION
-from typing import List, Optional
 
 
 def create_code_cell():

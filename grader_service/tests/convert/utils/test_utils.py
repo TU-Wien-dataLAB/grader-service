@@ -9,11 +9,6 @@ import zipfile
 from nbformat.v4 import new_output
 from os.path import join
 
-
-class UnrecognizedFormat(Exception):
-    pass
-
-
 from grader_service.convert import utils
 from .. import (
     create_code_cell,
@@ -23,6 +18,10 @@ from .. import (
 )
 
 from .conftest import notwindows
+
+
+class UnrecognizedFormat(Exception):
+    pass
 
 
 @pytest.fixture

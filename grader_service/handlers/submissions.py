@@ -10,7 +10,6 @@ from typing import List
 
 from sqlalchemy import label
 
-from grader_service.api.models import Lecture
 from grader_service.orm.base import DeleteState
 import isodate
 import os.path
