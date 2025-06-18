@@ -4,8 +4,8 @@ from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import List
 
-from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert import utils
+from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 

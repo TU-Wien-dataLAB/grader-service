@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Any
+from typing import Any, Optional
 
 from tornado import httputil
 from tornado.web import StaticFileHandler

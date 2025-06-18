@@ -5,14 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 import asyncio
 import base64
-import re
-import shlex
-import subprocess
 import datetime
 import functools
 import json
 import os
+import re
+import shlex
 import shutil
+import subprocess
 import sys
 import time
 import uuid
@@ -20,33 +20,32 @@ from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional, Union
-from urllib.parse import urlparse, parse_qsl
+from urllib.parse import parse_qsl, urlparse
 
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload
-from grader_service._version import __version__
-
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.session import Session
+from tornado import httputil, web
+from tornado.escape import json_decode
 from tornado.httputil import url_concat
-from traitlets import Type, Integer, TraitType, Unicode
+from tornado.web import HTTPError
+from traitlets import Integer, TraitType, Type, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
+from grader_service._version import __version__
 from grader_service.api.models.base_model import Model
-from grader_service.utils import maybe_future, url_path_join, get_browser_protocol, utcnow
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Group, Assignment, Submission, APIToken
-from grader_service.orm.base import Serializable, DeleteState
+from grader_service.orm import APIToken, Assignment, Group, Submission
+from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
 from grader_service.orm.user import User
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.server import GraderServer
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from tornado import httputil, web
-from tornado.escape import json_decode
-from tornado.web import HTTPError
-from sqlalchemy.orm.session import Session
+from grader_service.utils import get_browser_protocol, maybe_future, url_path_join, utcnow
 
 SESSION_COOKIE_NAME = "grader-session-id"
 

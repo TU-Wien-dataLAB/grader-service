@@ -1,11 +1,12 @@
 import os
-import pytest
-
 from textwrap import dedent
 
-from .base import BaseTestPreprocessor
-from .. import create_code_cell, create_text_cell, create_task_cell
+import pytest
+
 from grader_service.convert.preprocessors import ClearMarkScheme
+
+from .. import create_code_cell, create_task_cell, create_text_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

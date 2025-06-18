@@ -1,10 +1,12 @@
-import pytest
 import itertools
 import os
 
+import pytest
+
 from grader_service.convert.preprocessors import LockCells
-from .base import BaseTestPreprocessor
+
 from .. import create_code_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

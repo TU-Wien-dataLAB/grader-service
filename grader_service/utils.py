@@ -18,7 +18,7 @@ from binascii import b2a_hex
 from datetime import datetime, timezone
 from hmac import compare_digest
 from operator import itemgetter
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 from urllib.parse import quote
 
 from async_generator import aclosing

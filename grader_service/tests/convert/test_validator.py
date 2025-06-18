@@ -1,13 +1,14 @@
-import pytest
 import io
 import os
-
+from io import StringIO
 from textwrap import dedent
+
+import pytest
 from nbformat.v4 import new_output
 
 from grader_service.convert.validator import Validator
+
 from . import create_code_cell, create_text_cell
-from io import StringIO
 
 
 @pytest.fixture

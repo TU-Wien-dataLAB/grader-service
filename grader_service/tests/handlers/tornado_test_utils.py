@@ -5,18 +5,19 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker, scoped_session
+
+# import alembic
+from alembic import config
+from alembic.command import upgrade
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import handlers  # need import to register handlers
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 
-# import alembic
-from alembic import config
-from alembic.command import upgrade
 from .db_util import insert_assignments, insert_lectures
 
 __all__ = [

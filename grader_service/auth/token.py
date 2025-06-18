@@ -1,13 +1,12 @@
 import json
 import os
 
-from grader_service.auth.auth import Authenticator
-from grader_service.auth.login import LogoutHandler
-from grader_service.auth.login import LoginHandler
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.escape import json_decode
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from traitlets import Unicode
 
+from grader_service.auth.auth import Authenticator
+from grader_service.auth.login import LoginHandler, LogoutHandler
 from grader_service.orm.api_token import APIToken
 
 

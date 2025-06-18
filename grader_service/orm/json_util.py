@@ -1,5 +1,5 @@
 import json
-from base64 import encodebytes, decodebytes
+from base64 import decodebytes, encodebytes
 
 from sqlalchemy import TypeDecorator
 from sqlalchemy.types import Text

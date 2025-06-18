@@ -1,10 +1,10 @@
 import pytest
-
 from nbformat.v4 import new_notebook
 
 from grader_service.convert.preprocessors import DeduplicateIds
+
+from .. import create_grade_cell, create_locked_cell, create_solution_cell
 from .base import BaseTestPreprocessor
-from .. import create_grade_cell, create_solution_cell, create_locked_cell
 
 
 @pytest.fixture

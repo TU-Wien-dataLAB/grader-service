@@ -4,10 +4,9 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-
-from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 
 
 @register_handler(path=r"\/api\/permissions\/?", version_specifier=VersionSpecifier.ALL)

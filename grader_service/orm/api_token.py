@@ -1,13 +1,13 @@
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import or_, Column, Integer, ForeignKey, Unicode, DateTime, inspect
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Unicode, inspect, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.strategy_options import joinedload
 from tornado.log import app_log
 
 from grader_service.orm.base import Base
 from grader_service.orm.json_util import JSONList
-from grader_service.utils import utcnow, hash_token, compare_token, new_token
+from grader_service.utils import compare_token, hash_token, new_token, utcnow
 
 
 class Expiring:

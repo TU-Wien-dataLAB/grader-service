@@ -1,6 +1,6 @@
 from typing import Union
 
-from celery import Task, Celery
+from celery import Celery, Task
 from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp

@@ -1,9 +1,9 @@
-import os
 import glob
+import os
 import shutil
+import socket
 import subprocess as sp
 import warnings
-import socket
 
 from nbformat.v4 import new_code_cell, new_markdown_cell
 

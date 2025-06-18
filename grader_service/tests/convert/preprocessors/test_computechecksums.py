@@ -2,14 +2,15 @@ import pytest
 
 from grader_service.convert.preprocessors import ComputeChecksums
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
     create_code_cell,
-    create_text_cell,
     create_grade_cell,
-    create_solution_cell,
     create_locked_cell,
+    create_solution_cell,
+    create_text_cell,
 )
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

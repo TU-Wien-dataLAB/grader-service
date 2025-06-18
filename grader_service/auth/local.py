@@ -1,9 +1,9 @@
 import shlex
 import sys
 from shutil import which
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import PIPE, STDOUT, Popen
 
-from traitlets import Bool, List, default, Dict, Set
+from traitlets import Bool, Dict, List, Set, default
 
 from grader_service.auth.auth import Authenticator
 from grader_service.utils import maybe_future

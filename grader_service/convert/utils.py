@@ -9,7 +9,9 @@ import os
 import shutil
 import stat
 import sys
+import tarfile
 import traceback
+import zipfile
 from datetime import datetime
 from logging import Logger
 from typing import Any, Iterator, List, Optional, Tuple, Union
@@ -17,8 +19,6 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 import dateutil.parser
 from dateutil.tz import gettz
 from nbformat.notebooknode import NotebookNode
-import zipfile
-import tarfile
 from tornado.log import LogFormatter
 
 from grader_service.api.models.assignment_settings import AssignmentSettings

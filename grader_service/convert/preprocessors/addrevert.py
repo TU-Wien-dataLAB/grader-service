@@ -1,5 +1,7 @@
 from typing import Dict, Tuple
+
 from nbformat.notebooknode import NotebookNode
+
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 

@@ -1,6 +1,9 @@
 from textwrap import dedent
 from typing import Any
 
+from traitlets import Bool, List, default
+from traitlets.config.loader import Config
+
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
 from grader_service.convert.converters.base import BaseConverter
@@ -8,6 +11,7 @@ from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import (
     AddRevert,
     CheckCellMetadata,
+    ClearAlwaysHiddenTests,
     ClearHiddenTests,
     ClearMarkScheme,
     ClearOutput,
@@ -16,10 +20,7 @@ from grader_service.convert.preprocessors import (
     IncludeHeaderFooter,
     LockCells,
     SaveCells,
-    ClearAlwaysHiddenTests,
 )
-from traitlets import Bool, List, default
-from traitlets.config.loader import Config
 
 
 class GenerateAssignment(BaseConverter):

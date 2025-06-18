@@ -14,7 +14,6 @@ from grader_service.orm.oauthclient import OAuthClient
 from grader_service.orm.oauthcode import OAuthCode
 from grader_service.utils import compare_token, hash_token
 
-
 # patch absolute-uri check
 # because we want to allow relative uri oauth
 # for internal services

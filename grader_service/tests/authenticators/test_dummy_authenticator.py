@@ -1,12 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pytest_tornasync.plugin import AsyncHTTPServerClient
 
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.auth.login import LoginHandler
 from grader_service.server import GraderServer
-
-from pytest_tornasync.plugin import AsyncHTTPServerClient
 
 # Imports are important otherwise they will not be found
 from ..handlers.tornado_test_utils import *

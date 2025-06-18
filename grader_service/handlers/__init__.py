@@ -7,14 +7,14 @@
 # import handlers
 from grader_service.handlers import (
     assignment,
-    grading,
-    lectures,
-    submissions,
-    git,
-    permission,
-    health,
-    config,
     base_handler,
+    config,
+    git,
+    grading,
+    health,
+    lectures,
+    permission,
+    submissions,
 )
 
 __all__ = [

@@ -5,24 +5,23 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
-from asyncio import Task, run
 import inspect
 import json
 import os
+import re
 import shutil
 import time
-import re
-
-from kubernetes.client import V1Pod, CoreV1Api, V1ObjectMeta, V1EnvVar, ApiException
-from traitlets import Callable, Unicode, Integer, List, Dict
-from traitlets.config import LoggingConfigurable
-from urllib3.exceptions import MaxRetryError
-from grader_service.autograding.kube.util import get_current_namespace, make_pod
-from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from asyncio import Task, run
 
 from kubernetes import config
-from grader_service.orm import Lecture, Submission
-from grader_service.orm import Assignment
+from kubernetes.client import ApiException, CoreV1Api, V1EnvVar, V1ObjectMeta, V1Pod
+from traitlets import Callable, Dict, Integer, List, Unicode
+from traitlets.config import LoggingConfigurable
+from urllib3.exceptions import MaxRetryError
+
+from grader_service.autograding.kube.util import get_current_namespace, make_pod
+from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from grader_service.orm import Assignment, Lecture, Submission
 from grader_service.orm.assignment import json_serial
 
 

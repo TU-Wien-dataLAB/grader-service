@@ -8,10 +8,10 @@ import json
 from datetime import date, datetime, timezone
 from typing import Any
 
-from grader_service.api.models import assignment
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, DECIMAL
+from sqlalchemy import DECIMAL, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
+from grader_service.api.models import assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.base import Base, DeleteState, Serializable
 

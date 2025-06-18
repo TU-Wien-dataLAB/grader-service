@@ -6,9 +6,12 @@ from traitlets.config.loader import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
+from grader_service.convert.converters.base import BaseConverter
+from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.preprocessors import (
     CheckCellMetadata,
+    ClearAlwaysHiddenTests,
     ClearOutput,
     DeduplicateIds,
     Execute,
@@ -16,10 +19,7 @@ from grader_service.convert.preprocessors import (
     OverwriteCells,
     OverwriteKernelspec,
     SaveAutoGrades,
-    ClearAlwaysHiddenTests,
 )
-from grader_service.convert.converters.base import BaseConverter
-from grader_service.convert.converters.baseapp import ConverterApp
 
 
 class Autograde(BaseConverter):

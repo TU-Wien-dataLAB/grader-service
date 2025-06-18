@@ -1,10 +1,9 @@
 """HTTP Handlers for the hub server"""
 
-from typing import Optional, Awaitable
+from typing import Awaitable, Optional
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-
 from jinja2 import Template
 from tornado import web
 from tornado.escape import url_escape

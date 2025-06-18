@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
+import inspect
 import logging
 import os
 import secrets
@@ -12,35 +13,49 @@ import shutil
 import signal
 import subprocess
 import sys
-import inspect
+
 import tornado
 import uvloop as uvloop
 from jupyterhub.log import log_request
 from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 from tornado.httpserver import HTTPServer
-from traitlets import config, Bool, Type, Instance, Dict, List
+from traitlets import (
+    Bool,
+    Dict,
+    Enum,
+    HasTraits,
+    Instance,
+    Int,
+    List,
+    TraitError,
+    Type,
+    Unicode,
+    config,
+    default,
+    observe,
+    validate,
+)
 from traitlets import log as traitlets_log
-from traitlets import Enum, Int, TraitError, Unicode, observe, validate, default, HasTraits
 
+from grader_service._version import __version__
 from grader_service.auth.auth import Authenticator
 
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.autograding.celery.app import CeleryApp
+from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler
+from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.oauth2.provider import make_provider
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
+from grader_service.plugins.lti import LTISyncGrades
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service._version import __version__
 from grader_service.utils import url_path_join
-from grader_service.oauth2 import handlers as oauth_handlers
-from grader_service.plugins.lti import LTISyncGrades
-from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 def get_session_maker(url) -> scoped_session:

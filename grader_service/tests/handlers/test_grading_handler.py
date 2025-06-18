@@ -5,19 +5,19 @@
 # LICENSE file in the root directory of this source tree.
 
 
-import celery
-import pytest
-
-import grader_service
-from grader_service.server import GraderServer
 import json
-from grader_service.api.models.submission import Submission
-from tornado.httpclient import HTTPClientError
-from .db_util import insert_submission
 from unittest.mock import MagicMock, patch
 
+import celery
+import pytest
+from tornado.httpclient import HTTPClientError
+
+import grader_service
+from grader_service.api.models.submission import Submission
+from grader_service.server import GraderServer
+
 # Imports are important otherwise they will not be found
-from .db_util import insert_assignments
+from .db_util import insert_assignments, insert_submission
 from .tornado_test_utils import *
 
 

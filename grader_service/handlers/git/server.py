@@ -11,15 +11,16 @@ from pathlib import Path
 from string import Template
 from typing import List, Optional
 
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from tornado.ioloop import IOLoop
+from tornado.process import Subprocess
+from tornado.web import HTTPError, stream_request_body
+
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from tornado.ioloop import IOLoop
-from tornado.process import Subprocess
-from tornado.web import HTTPError, stream_request_body
 
 
 class GitBaseHandler(GraderBaseHandler):

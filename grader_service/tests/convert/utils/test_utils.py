@@ -1,22 +1,22 @@
 # coding: utf-8
 
 import os
-import pytest
-import tempfile
 import shutil
+import tempfile
 import zipfile
-
-from nbformat.v4 import new_output
 from os.path import join
 
+import pytest
+from nbformat.v4 import new_output
+
 from grader_service.convert import utils
+
 from .. import (
     create_code_cell,
+    create_grade_and_solution_cell,
     create_grade_cell,
     create_solution_cell,
-    create_grade_and_solution_cell,
 )
-
 from .conftest import notwindows
 
 

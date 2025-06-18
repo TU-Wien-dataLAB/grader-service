@@ -1,12 +1,13 @@
 import json
 import logging
 import os
+import tempfile
 import unittest
 
 import pytest
-import tempfile
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v3 import (
     MetadataValidatorV3,
@@ -15,12 +16,13 @@ from grader_service.convert.nbgraderformat.v3 import (
     write_v3,
     writes_v3,
 )
+
 from .. import (
     create_code_cell,
     create_grade_cell,
+    create_regular_cell,
     create_solution_cell,
     create_task_cell,
-    create_regular_cell,
 )
 
 

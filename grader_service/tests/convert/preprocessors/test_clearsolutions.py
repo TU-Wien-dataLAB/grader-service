@@ -1,11 +1,13 @@
-import pytest
 import os
-
 from textwrap import dedent
+
+import pytest
 from traitlets.config import Config
+
 from grader_service.convert.preprocessors import ClearSolutions
-from .base import BaseTestPreprocessor
+
 from .. import create_code_cell, create_text_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture

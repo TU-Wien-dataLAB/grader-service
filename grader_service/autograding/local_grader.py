@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import fnmatch
-import subprocess
 import io
 import json
 import logging
@@ -13,13 +12,17 @@ import os
 import shlex
 import shutil
 import stat
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from subprocess import CalledProcessError
 from typing import Optional
 
+from sqlalchemy.orm import Session
 from traitlets.config import Config
+from traitlets.config.configurable import LoggingConfigurable
+from traitlets.traitlets import Callable, TraitError, Unicode, validate
 
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
@@ -27,11 +30,6 @@ from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
-from sqlalchemy.orm import Session
-from traitlets.config.configurable import LoggingConfigurable
-
-from traitlets.traitlets import TraitError, Unicode, validate, Callable
-
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 

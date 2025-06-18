@@ -5,13 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.orm import Lecture, Assignment, Submission, Role
+from grader_service.orm import Assignment, Lecture, Role, Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope

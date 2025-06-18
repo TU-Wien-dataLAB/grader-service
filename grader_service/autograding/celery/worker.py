@@ -1,5 +1,6 @@
-import os
 import argparse
+import os
+
 from grader_service.autograding.celery.app import CeleryApp
 
 

@@ -2,10 +2,9 @@ from http import HTTPStatus
 
 from tornado.web import HTTPError
 
-from grader_service.orm.lecture import LectureState, Lecture
-from grader_service.registry import VersionSpecifier, register_handler
-
 from grader_service.handlers.base_handler import GraderBaseHandler
+from grader_service.orm.lecture import Lecture, LectureState
+from grader_service.registry import VersionSpecifier, register_handler
 
 
 @register_handler(path=r"\/api\/health\/?", version_specifier=VersionSpecifier.ALL)

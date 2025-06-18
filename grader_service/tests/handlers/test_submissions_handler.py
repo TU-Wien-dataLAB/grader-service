@@ -4,25 +4,25 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import csv
-from datetime import datetime
+import json
 import secrets
+from datetime import datetime, timezone
 
 import isodate
 import pytest
-from grader_service.server import GraderServer
-import json
-from grader_service.orm.assignment import Assignment as AssignmentORM
-from grader_service.api.models.submission import Submission
 from tornado.httpclient import HTTPClientError
-from datetime import timezone
-from .db_util import insert_submission
 
-# Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-from .db_util import insert_assignments
+from grader_service.api.models.submission import Submission
+from grader_service.orm.assignment import Assignment as AssignmentORM
+from grader_service.server import GraderServer
+
 from ...handlers.submissions import SubmissionHandler
 from ...orm import Role
 from ...orm.takepart import Scope
+from .db_util import insert_assignments, insert_submission
+
+# Imports are important otherwise they will not be found
+from .tornado_test_utils import *
 
 
 async def submission_test_setup(
