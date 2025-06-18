@@ -1245,7 +1245,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
@@ -1421,7 +1421,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},

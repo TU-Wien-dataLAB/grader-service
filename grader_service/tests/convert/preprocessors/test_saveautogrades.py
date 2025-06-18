@@ -51,7 +51,7 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         assert grade_cell.score == 1
         assert grade_cell.max_score == 1
         assert grade_cell.auto_score == 1
-        assert grade_cell.manual_score == None
+        assert grade_cell.manual_score is None
         assert not grade_cell.needs_manual_grade
 
     def test_grade_incorrect_code(self, preprocessors, gradebook, resources):
@@ -71,7 +71,7 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         assert grade_cell.score == 0
         assert grade_cell.max_score == 1
         assert grade_cell.auto_score == 0
-        assert grade_cell.manual_score == None
+        assert grade_cell.manual_score is None
         assert not grade_cell.needs_manual_grade
 
     def test_grade_unchanged_markdown(self, preprocessors, gradebook, resources):
@@ -88,7 +88,7 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         assert grade_cell.score == 0
         assert grade_cell.max_score == 1
         assert grade_cell.auto_score == 0
-        assert grade_cell.manual_score == None
+        assert grade_cell.manual_score is None
         assert not grade_cell.needs_manual_grade
 
     def test_grade_changed_markdown(self, preprocessors, gradebook, resources):
@@ -105,8 +105,8 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         grade_cell = gradebook.find_grade("foo", "test")
         assert grade_cell.score == 0
         assert grade_cell.max_score == 1
-        assert grade_cell.auto_score == None
-        assert grade_cell.manual_score == None
+        assert grade_cell.auto_score is None
+        assert grade_cell.manual_score is None
         assert grade_cell.needs_manual_grade
 
     def test_comment_unchanged_code(self, preprocessors, gradebook, resources):
@@ -176,8 +176,8 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         grade_cell = gradebook.find_grade("foo", "test")
         assert grade_cell.score == 0
         assert grade_cell.max_score == 1
-        assert grade_cell.auto_score == None
-        assert grade_cell.manual_score == None
+        assert grade_cell.auto_score is None
+        assert grade_cell.manual_score is None
         assert grade_cell.needs_manual_grade
 
         grade_cell.manual_score = 1
@@ -190,7 +190,7 @@ class TestSaveAutoGrades(BaseTestPreprocessor):
         grade_cell = gradebook.find_grade("foo", "test")
         assert grade_cell.score == 1
         assert grade_cell.max_score == 1
-        assert grade_cell.auto_score == None
+        assert grade_cell.auto_score is None
         assert grade_cell.manual_score == 1
         assert grade_cell.needs_manual_grade
 

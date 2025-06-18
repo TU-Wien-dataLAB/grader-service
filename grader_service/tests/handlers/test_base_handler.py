@@ -85,7 +85,7 @@ def test_nested_serialization():
 
 
 def test_api_model_serialization():
-    err = ErrorMessage("")
+    ErrorMessage(message="")
 
 
 @pytest.mark.parametrize(

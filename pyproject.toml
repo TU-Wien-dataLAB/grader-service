@@ -118,12 +118,17 @@ dev = [
 line-length = 100
 extend-exclude = [
     "**/*.ipynb",
-    "grader_service/api/models",
+    "grader_service/api/*",
 ]
 
 [tool.ruff.format]
 docstring-code-format = true
 skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+exclude = [
+    "examples/*",
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

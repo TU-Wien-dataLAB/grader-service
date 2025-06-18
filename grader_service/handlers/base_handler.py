@@ -410,7 +410,7 @@ class BaseHandler(web.RequestHandler):
 
         user._auth_refreshed = now
 
-        if auth_info == True:
+        if auth_info:
             # refresh_user confirmed that it's up-to-date,
             # nothing to refresh
             return user
@@ -517,8 +517,6 @@ class BaseHandler(web.RequestHandler):
             authenticated = {"name": authenticated}
         username = authenticated["name"]
         auth_state = authenticated.get("auth_state")
-        admin = authenticated.get("admin")
-        refreshing = user is not None
 
         if user and username != user.name:
             raise ValueError(f"Username doesn't match! {username} != {user.name}")

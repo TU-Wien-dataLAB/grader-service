@@ -390,21 +390,21 @@ def test_find_all_files(temp_cwd):
 
 
 def test_unzip_invalid_ext(temp_cwd):
-    with open(join("baz.txt"), "w") as fh:
+    with open(join("baz.txt"), "w"):
         pass
     with pytest.raises(ValueError):
         utils.unzip("baz.txt", os.getcwd())
 
 
 def test_unzip_bad_zip(temp_cwd):
-    with open(join("baz.zip"), "wb") as fh:
+    with open(join("baz.zip"), "wb"):
         pass
     with pytest.raises(ValueError):
         utils.unzip("baz.zip", os.getcwd())
 
 
 def test_unzip_no_output_path(temp_cwd):
-    with open(join("baz.zip"), "wb") as fh:
+    with open(join("baz.zip"), "wb"):
         pass
     out = os.path.join(os.getcwd(), "blarg")
     with pytest.raises(OSError):

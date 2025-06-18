@@ -52,7 +52,7 @@ class AutogradingStatus:
     finished_at: datetime
 
 
-def default_timeout_func(l: Lecture) -> int:
+def default_timeout_func(lecture: Lecture) -> int:
     return 360
 
 

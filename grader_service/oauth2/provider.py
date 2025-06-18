@@ -540,7 +540,7 @@ class GraderOAuthServer(WebApplicationServer):
             app_log.info(f"Creating oauth client {client_id}")
         else:
             app_log.info(f"Updating oauth client {client_id}")
-        if allowed_scopes == None:
+        if allowed_scopes is None:
             allowed_scopes = []
         orm_client.secret = hash_token(client_secret) if client_secret else ""
         orm_client.redirect_uri = redirect_uri
