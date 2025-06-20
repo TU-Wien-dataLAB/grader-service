@@ -411,7 +411,7 @@ async def test_put_assignment_wrong_lecture_id(
     default_roles,
     default_user_login,
 ):
-    # default user becomes instructor in lecture with id 1
+    # default user becomes instructor in lecture with id 3
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
@@ -519,6 +519,7 @@ async def test_put_assignment_deleted_assignment(
         )
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_put_assignment_no_point_changes(
@@ -757,6 +758,7 @@ async def test_delete_assignment(
 
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_delete_assignment_deleted_assignment(
@@ -798,6 +800,7 @@ async def test_delete_assignment_deleted_assignment(
 
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_delete_assignment_not_created(
@@ -816,32 +819,6 @@ async def test_delete_assignment_not_created(
         )
     e = exc_info.value
     assert e.code == 404
-
-
-# async def test_delete_soft_deleted_assignment(
-#     app: GraderServer,
-#     service_base_url,
-#     http_server_client,
-#     default_token,
-#     sql_alchemy_engine,
-#     default_user,
-#     default_roles,
-#     default_user_login,
-# ):
-#     l_id = 3
-#     a_id = 3
-#     # TODO(Natalia): Insert a soft-deleted assignment with id=3
-#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
-#
-#     engine = sql_alchemy_engine
-#     insert_submission(engine, assignment_id=a_id, username=default_user.name)
-#
-#     with pytest.raises(HTTPClientError) as exc_info:
-#         await http_server_client.fetch(
-#             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-#         )
-#     e = exc_info.value
-#     assert e.code == 404
 
 
 async def test_delete_assignment_same_name_twice(
