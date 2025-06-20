@@ -182,7 +182,7 @@ def get_allow_files(assignment_model: AssignmentModel):
 
 
 @register_handler(
-    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",  # noqa E501
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentObjectHandler(GraderBaseHandler):
@@ -227,9 +227,8 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment.status = assignment_model.status
-        if (
-            (assignment_model.settings.autograde_type == "full_auto")  # noqa E501
-            and (assignment.properties is not None)
+        if (assignment_model.settings.autograde_type == "full_auto") and (
+            assignment.properties is not None
         ):
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
             _check_full_auto_grading(self, model)
@@ -303,7 +302,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",  # noqa E501
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentResetHandler(GraderBaseHandler):
@@ -350,7 +349,8 @@ class AssignmentResetHandler(GraderBaseHandler):
 
 
 @register_handler(
-    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/properties\/?",  # noqa E501
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)"
+    r"\/properties\/?",
     version_specifier=VersionSpecifier.ALL,
 )
 class AssignmentPropertiesHandler(GraderBaseHandler):
@@ -425,6 +425,5 @@ def _check_full_auto_grading(self: GraderBaseHandler, model):
         grades = set(nb.grade_cells_dict.keys())
         solutions = set(nb.solution_cells_dict.keys())
         if len(grades & solutions) > 0:
-            msg = "Fully autograded notebook cannot \
-                    contain manually graded cells!"
+            msg = "Fully autograded notebook cannot contain manually graded cells!"
             raise HTTPError(HTTPStatus.CONFLICT, reason=msg)

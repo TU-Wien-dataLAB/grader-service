@@ -6,17 +6,14 @@ import uuid
 from typing import Any, Dict, Optional, cast
 from urllib.parse import quote, unquote
 
-from oauthlib.common import generate_token  # type: ignore
+from oauthlib.common import generate_token
 from tornado.httputil import url_concat
 from tornado.log import app_log
 from tornado.web import HTTPError, MissingArgumentError, RequestHandler
 
-from grader_service.utils import (
-    convert_request_to_dict,
-    url_path_join,  # type: ignore
-)
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.utils import convert_request_to_dict, url_path_join
 
-from ...handlers.base_handler import BaseHandler
 from .error import InvalidAudienceError, LoginError, ValidationError
 from .validator import LTI13LaunchValidator
 

@@ -104,9 +104,7 @@ class GitBaseHandler(GraderBaseHandler):
 
         # get lecture and assignment if they exist
         try:
-            lecture = (
-                self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()  # noqa
-            )
+            lecture = self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
         except MultipleResultsFound:
@@ -196,13 +194,13 @@ class GitBaseHandler(GraderBaseHandler):
                 f.write(hook)
 
     @staticmethod
-    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:  # noqa E501
+    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:
         pattern = ""
         if extensions is None:
             req_handler_conf = RequestHandlerConfig.instance()
             extensions = req_handler_conf.git_allowed_file_extensions
         if len(extensions) > 0:
-            allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]  # noqa E501
+            allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]
             pattern = "|".join(allow_patterns)
         return pattern
 
@@ -274,7 +272,7 @@ class InfoRefsHandler(GitBaseHandler):
         if self.get_status() != 200:
             return
         self.rpc = self.get_argument("service")[4:]
-        self.cmd = f'git {self.rpc} --stateless-rpc --advertise-refs "{self.get_gitdir(self.rpc)}"'  # noqa E501
+        self.cmd = f'git {self.rpc} --stateless-rpc --advertise-refs "{self.get_gitdir(self.rpc)}"'
         self.log.info(f"Running command: {self.cmd}")
         self.process = Subprocess(
             shlex.split(self.cmd),

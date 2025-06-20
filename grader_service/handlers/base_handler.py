@@ -1057,9 +1057,7 @@ def authenticated(
     """
 
     @functools.wraps(method)
-    def wrapper(  # type: ignore
-        self: GraderBaseHandler, *args, **kwargs
-    ) -> Optional[Awaitable[None]]:
+    def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
         if not self.current_user:
             raise HTTPError(403)
         return method(self, *args, **kwargs)

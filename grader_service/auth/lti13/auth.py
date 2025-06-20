@@ -6,10 +6,7 @@ from traitlets import List as TraitletsList
 from traitlets import Set as TraitletsSet
 
 from grader_service.auth.login import LogoutHandler
-from grader_service.utils import (
-    get_browser_protocol,
-    url_path_join,  # type: ignore
-)
+from grader_service.utils import get_browser_protocol, url_path_join
 
 from ..auth import Authenticator
 from .constants import LTI13_CUSTOM_CLAIM
