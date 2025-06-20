@@ -17,8 +17,6 @@ from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 
-from .db_util import *
-
 
 def get_query_side_effect(
     lid=1,

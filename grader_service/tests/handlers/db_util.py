@@ -119,7 +119,8 @@ def insert_submission(
     with_properties=True,
     score=None,
 ):
-    # TODO Allows only one submission with properties per user because we do not have the submission id
+    # TODO Allows only one submission with properties per user because we do not have
+    #  the submission id
     session: Session = sessionmaker(ex)()
     session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
     session.commit()
@@ -137,7 +138,8 @@ def insert_submission(
 
 def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):
     ex.execute(
-        f'INSERT INTO "takepart" ("username","lectid","role") VALUES ("{username}",{lecture_id},"{role}")'
+        f'INSERT INTO "takepart" ("username","lectid","role") '
+        f'VALUES ("{username}",{lecture_id},"{role}")'
     )
 
 
