@@ -50,7 +50,7 @@ def test_dict_serialization_empty():
 def test_datetime_serialization():
     d = datetime.now(tz=timezone.utc)
     s = GraderBaseHandler._serialize(d)
-    assert type(s) == str
+    assert isinstance(s, str)
     assert str(d) == s
 
 

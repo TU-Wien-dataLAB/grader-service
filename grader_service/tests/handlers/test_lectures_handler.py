@@ -33,8 +33,8 @@ async def test_get_lectures(
     assert response.code == 200
     lectures = json.loads(response.body.decode())
     assert isinstance(lectures, list)
-    assert len(lectures) > 0
-    [Lecture.from_dict(l) for l in lectures]  # assert no errors
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
 
 
 async def test_get_lectures_with_some_parameter(

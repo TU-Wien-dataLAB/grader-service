@@ -58,7 +58,7 @@ async def test_get_assignments_instructor(
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
     assert len(assignments) == num_inserted
-    [Assignment.from_dict(l) for l in assignments]  # assert no errors
+    [Assignment.from_dict(a) for a in assignments]  # assert no errors
 
 
 async def test_get_assignments_lecture_deleted(
