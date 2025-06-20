@@ -520,7 +520,7 @@ class BaseHandler(web.RequestHandler):
         if user and username != user.name:
             raise ValueError(f"Username doesn't match! {username} != {user.name}")
 
-        user_model = self.session.query(User).get(username)
+        user_model = self.session.get(User, username)
         if user_model is None:
             self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()

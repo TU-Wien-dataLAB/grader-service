@@ -459,10 +459,7 @@ class GraderService(config.Application):
                 s, lambda: asyncio.ensure_future(self.shutdown_cancel_tasks(s))
             )
 
-        self.log.info(
-            f"Grader service running at \
-            {self.service_host}:{self.service_port}"
-        )
+        self.log.info(f"Grader service running at {self.service_host}:{self.service_port}")
 
         # finish start
         self._start_future.set_result(None)

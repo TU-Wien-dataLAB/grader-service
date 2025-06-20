@@ -3,7 +3,7 @@
 # grader service orm
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -34,7 +34,9 @@ class Submission(Base, Serializable):
     )
     deleted = Column(Enum(DeleteState), nullable=False, unique=False, default=DeleteState.active)
     edited = Column(Boolean, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC), nullable=False
+    )
     grading_score = Column(Float, nullable=False)
     score_scaling = Column(Float, server_default="1.0", nullable=False)
 

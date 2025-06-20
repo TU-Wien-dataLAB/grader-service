@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Enum, Integer, String
 from sqlalchemy.orm import relationship
@@ -27,8 +27,10 @@ class Lecture(Base, Serializable):
     state = Column(Enum(LectureState), nullable=False, unique=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC), nullable=False
+    )
 
     assignments = relationship("Assignment", back_populates="lecture")
     roles = relationship("Role", back_populates="lecture")

@@ -12,7 +12,7 @@ Create Date: 2021-05-05 11:42:24.126371
 
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from alembic import op
@@ -39,12 +39,12 @@ def upgrade():
             server_default="active",
             nullable=False,
         ),
-        sa.Column("created_at", sa.DateTime(), default=datetime.utcnow, nullable=False),
+        sa.Column("created_at", sa.DateTime(), default=datetime.now(UTC), nullable=False),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            default=datetime.utcnow,
-            onupdate=datetime.utcnow,
+            default=datetime.now(UTC),
+            onupdate=datetime.now(UTC),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -97,12 +97,12 @@ def upgrade():
         sa.Column("max_submissions", sa.Integer(), nullable=True, default=None, unique=False),
         sa.Column("allow_files", sa.Boolean(), nullable=False, default=False),
         sa.Column("properties", sa.Text(), nullable=True, unique=False),
-        sa.Column("created_at", sa.DateTime(), default=datetime.utcnow, nullable=False),
+        sa.Column("created_at", sa.DateTime(), default=datetime.now(UTC), nullable=False),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            default=datetime.utcnow,
-            onupdate=datetime.utcnow,
+            default=datetime.now(UTC),
+            onupdate=datetime.now(UTC),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["lectid"], ["lecture.id"]),
@@ -166,8 +166,8 @@ def upgrade():
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            default=datetime.utcnow,
-            onupdate=datetime.utcnow,
+            default=datetime.now(UTC),
+            onupdate=datetime.now(UTC),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["assignid"], ["assignment.id"]),
