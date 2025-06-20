@@ -13,12 +13,11 @@ import pytest
 from tornado.httpclient import HTTPClientError
 
 import grader_service
+import grader_service.tests.conftest
 from grader_service.api.models.submission import Submission
 from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
 from .db_util import insert_assignments, insert_submission
-from .tornado_test_utils import *
 
 
 async def test_auto_grading(

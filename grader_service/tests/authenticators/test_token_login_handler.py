@@ -12,9 +12,6 @@ from pytest_tornasync.plugin import AsyncHTTPServerClient
 from grader_service.auth.token import JupyterHubTokenAuthenticator, TokenLoginHandler
 from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
-from ..handlers.tornado_test_utils import *
-
 
 @pytest.fixture
 def token_authenticator():

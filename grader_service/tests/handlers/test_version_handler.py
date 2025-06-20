@@ -7,9 +7,6 @@
 from grader_service._version import __version__
 from grader_service.server import GraderServer
 
-## Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-
 
 # @pytest.mark.asyncio
 async def test_version_handler(

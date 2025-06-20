@@ -16,9 +16,6 @@ from grader_service.server import GraderServer
 
 from .db_util import insert_assignments, insert_submission
 
-# Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-
 
 async def test_get_lectures(
     app: GraderServer,

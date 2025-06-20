@@ -8,9 +8,6 @@ import json
 
 from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-
 
 async def test_get_permission(
     app: GraderServer,

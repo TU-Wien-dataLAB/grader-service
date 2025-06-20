@@ -7,9 +7,6 @@ from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.auth.login import LoginHandler
 from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
-from ..handlers.tornado_test_utils import *
-
 
 @pytest.fixture
 def dummy_authenticator():

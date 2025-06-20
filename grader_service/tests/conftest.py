@@ -1,4 +1,4 @@
-# Copyright (c) 2022, TU Wien
+# Copyright (c) 2024, TU Wien
 # All rights reserved.
 #
 # This source code is licensed under the BSD-style license found in the
@@ -8,34 +8,17 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-# import alembic
 from alembic import config
 from alembic.command import upgrade
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from grader_service import handlers  # need import to register handlers
+from grader_service import GraderService, handlers
+from grader_service.auth.dummy import DummyAuthenticator
+from grader_service.main import get_session_maker
+from grader_service.orm import User
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-
-from .db_util import insert_assignments, insert_lectures
-
-__all__ = [
-    "db_test_config",
-    "sql_alchemy_engine",
-    "app",
-    "service_base_url",
-    "default_user",
-    "default_token",
-    "default_roles",
-    "default_user_login",
-    "default_roles_dict",
-    "sql_alchemy_sessionmaker",
-]
-
-from ...auth.dummy import DummyAuthenticator
-from ...main import GraderService, get_session_maker
-from ...orm import User
+from grader_service.tests.handlers.db_util import insert_assignments, insert_lectures
 
 
 @pytest.fixture(scope="function")
@@ -67,9 +50,9 @@ def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
 
 @pytest.fixture(scope="function")
 def db_test_config():
-    cfg = config.Config(os.path.abspath(os.path.dirname(__file__) + "../../../alembic_test.ini"))
+    cfg = config.Config(os.path.abspath(os.path.dirname(__file__) + "../../alembic_test.ini"))
     cfg.set_main_option(
-        "script_location", os.path.abspath(os.path.dirname(__file__) + "../../../migrate")
+        "script_location", os.path.abspath(os.path.dirname(__file__) + "../../migrate")
     )
     yield cfg
 

@@ -13,9 +13,7 @@ from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
 from .db_util import insert_assignments, insert_submission
-from .tornado_test_utils import *
 
 
 async def test_get_assignments(

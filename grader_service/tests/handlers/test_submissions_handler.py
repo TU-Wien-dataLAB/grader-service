@@ -21,9 +21,6 @@ from ...orm import Role
 from ...orm.takepart import Scope
 from .db_util import insert_assignments, insert_submission
 
-# Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-
 
 async def submission_test_setup(
     sql_alchemy_engine, http_server_client, default_user, default_token, url: str, a_id: int
