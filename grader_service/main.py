@@ -38,7 +38,7 @@ from traitlets import (
 )
 from traitlets import log as traitlets_log
 
-from grader_service._version import __version__
+from grader_service import __version__
 from grader_service.auth.auth import Authenticator
 
 # run __init__.py to register handlers

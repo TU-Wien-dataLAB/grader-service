@@ -35,7 +35,7 @@ from traitlets import Integer, TraitType, Type, Unicode
 from traitlets import List as ListTrait
 from traitlets.config import SingletonConfigurable
 
-from grader_service._version import __version__
+from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import APIToken, Assignment, Group, Submission

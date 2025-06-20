@@ -5,7 +5,7 @@ import sys
 from traitlets.config.application import Application
 from traitlets.traitlets import TraitError, Unicode, validate
 
-from grader_service._version import __version__
+from grader_service import __version__
 
 base_converter_aliases = {
     "log-level": "Application.log_level",
