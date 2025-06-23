@@ -94,11 +94,9 @@ tag_template = "grader-service-{new_version}"
 src = "pyproject.toml"
 search = "version = \"{current_version}\""
 
-
 [[tool.tbump.file]]
 src = "grader_service/_version.py"
-search = "__version__ = '{current_version}'"
-
+search = "__version__ = \"{current_version}\""
 
 [[tool.tbump.file]]
 src = "./docs/source/_static/openapi/grader_api.yml"
