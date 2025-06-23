@@ -1,9 +1,8 @@
-
-import json
-import os
-from sys import path
 from textwrap import dedent
 from typing import Any
+
+from traitlets import Bool, List, default
+from traitlets.config.loader import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -12,6 +11,7 @@ from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import (
     AddRevert,
     CheckCellMetadata,
+    ClearAlwaysHiddenTests,
     ClearHiddenTests,
     ClearMarkScheme,
     ClearOutput,
@@ -20,10 +20,8 @@ from grader_service.convert.preprocessors import (
     IncludeHeaderFooter,
     LockCells,
     SaveCells,
-    ClearAlwaysHiddenTests
 )
-from traitlets import Bool, List, default
-from traitlets.config.loader import Config
+
 
 class GenerateAssignment(BaseConverter):
     create_assignment = Bool(
@@ -65,7 +63,12 @@ class GenerateAssignment(BaseConverter):
         super(GenerateAssignment, self)._load_config(cfg, **kwargs)
 
     def __init__(
-            self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_pattern: str,
+        assignment_settings: AssignmentSettings,
+        **kwargs: Any,
     ) -> None:
         super(GenerateAssignment, self).__init__(
             input_dir, output_dir, file_pattern, assignment_settings, **kwargs
@@ -85,5 +88,5 @@ class GenerateAssignmentApp(ConverterApp):
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
             assignment_settings=utils.get_assignment_settings_from_env(),
-            config=self.config
+            config=self.config,
         ).start()

@@ -3,32 +3,26 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import json
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
-from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.server import GraderServer
-import json
-from grader_service.api.models.assignment import Assignment
 from tornado.httpclient import HTTPClientError
 
-# Imports are important otherwise they will not be found
-from .db_util import insert_submission, insert_assignments, add_role
-from .tornado_test_utils import *
-from ...handlers.base_handler import BaseHandler, GraderBaseHandler
-from ...orm import Role, Lecture
-from ...orm.base import DeleteState
-from ...orm.takepart import Scope
+from grader_service.api.models.assignment import Assignment
+from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.server import GraderServer
+
+from .db_util import insert_assignments, insert_submission
 
 
 async def test_get_assignments(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/1/assignments/"
 
@@ -39,17 +33,17 @@ async def test_get_assignments(
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
     assert len(assignments) > 0
-    [Assignment.from_dict(l) for l in assignments]  # assert no errors
+    [Assignment.from_dict(a) for a in assignments]  # assert no errors
 
 
 async def test_get_assignments_instructor(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     url = service_base_url + f"lectures/{l_id}/assignments/"
@@ -64,25 +58,23 @@ async def test_get_assignments_instructor(
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
     assert len(assignments) == num_inserted
-    [Assignment.from_dict(l) for l in assignments]  # assert no errors
+    [Assignment.from_dict(a) for a in assignments]  # assert no errors
 
 
 async def test_get_assignments_lecture_deleted(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
 
     # delete lecture
     url = service_base_url + f"lectures/{l_id}/"
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
@@ -97,12 +89,12 @@ async def test_get_assignments_lecture_deleted(
 
 
 async def test_post_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
@@ -114,7 +106,12 @@ async def test_post_assignment(
     assert isinstance(assignments, list)
     orig_len = len(assignments)
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -139,19 +136,26 @@ async def test_post_assignment(
 
 
 async def test_post_assignment_name_already_used(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    post_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    post_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
-        url, method="POST", headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(post_assignment.to_dict())
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment.to_dict()),
     )
     assert post_response.code == 201
 
@@ -167,44 +171,57 @@ async def test_post_assignment_name_already_used(
 
 
 async def test_delete_assignment_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/-5"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_put_assignment_name_already_used(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     post_url = service_base_url + "lectures/3/assignments/"
 
     # Add assignments first
-    post_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
-    post_assignment_2 = Assignment(id=-2, name="pytest2", status="created", points=0, settings=AssignmentSettings(autograde_type="unassisted"))
+    post_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
+    post_assignment_2 = Assignment(
+        id=-2,
+        name="pytest2",
+        status="created",
+        points=0,
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
-        post_url, method="POST", headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(post_assignment.to_dict())
+        post_url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment.to_dict()),
     )
     post_response_2 = await http_server_client.fetch(
-        post_url, method="POST", headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(post_assignment_2.to_dict())
+        post_url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(post_assignment_2.to_dict()),
     )
     assert post_response.code == HTTPStatus.CREATED
     assert post_response_2.code == HTTPStatus.CREATED
@@ -226,26 +243,29 @@ async def test_put_assignment_name_already_used(
 
 
 async def test_post_assignment_lecture_deleted(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
 
     # delete lecture
     url = service_base_url + f"lectures/{l_id}/"
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
     url = service_base_url + "lectures/3/assignments/"
-    post_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    post_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -258,12 +278,12 @@ async def test_post_assignment_lecture_deleted(
 
 
 async def test_post_assignment_decode_error(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
@@ -280,7 +300,9 @@ async def test_post_assignment_decode_error(
     assert e.code == 400
 
     # no autograde type given
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type=None))
+    pre_assignment = Assignment(
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type=None)
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -291,13 +313,14 @@ async def test_post_assignment_decode_error(
     e = exc_info.value
     assert e.code == 400
 
+
 async def test_post_assignment_missing_vars(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     url = service_base_url + f"lectures/{l_id}/assignments/"
@@ -314,12 +337,12 @@ async def test_post_assignment_missing_vars(
 
 
 async def test_post_no_status_error(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
@@ -336,17 +359,21 @@ async def test_post_no_status_error(
 
 
 async def test_put_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created",
-                                settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -377,17 +404,22 @@ async def test_put_assignment(
 
 
 async def test_put_assignment_wrong_lecture_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
-    # default user becomes instructor in lecture with id 1
+    # default user becomes instructor in lecture with id 3
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -413,16 +445,18 @@ async def test_put_assignment_wrong_lecture_id(
 
 
 async def test_put_assignment_wrong_assignment_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings())
+    pre_assignment = Assignment(
+        id=-1, name="pytest", status="created", settings=AssignmentSettings()
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -445,16 +479,21 @@ async def test_put_assignment_wrong_assignment_id(
 
 
 async def test_put_assignment_deleted_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -467,9 +506,7 @@ async def test_put_assignment_deleted_assignment(
     url = url + str(post_assignment.id)
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
@@ -482,19 +519,25 @@ async def test_put_assignment_deleted_assignment(
         )
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_put_assignment_no_point_changes(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -527,16 +570,21 @@ async def test_put_assignment_no_point_changes(
 
 
 async def test_get_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -549,9 +597,7 @@ async def test_get_assignment(
     url = url + str(post_assignment.id)
 
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
     get_assignment = Assignment.from_dict(json.loads(get_response.body.decode()))
@@ -564,12 +610,12 @@ async def test_get_assignment(
 
 
 async def test_get_assignment_created_student(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1  # default user is student
     a_id = 3  # assignment is created
@@ -577,25 +623,28 @@ async def test_get_assignment_created_student(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     assert exc_info.value.code == 404
 
 
 async def test_get_assignment_wrong_lecture_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -610,25 +659,28 @@ async def test_get_assignment_wrong_lecture_id(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     assert exc_info.value.code == 404
 
 
 async def test_get_assignment_wrong_assignment_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -641,21 +693,19 @@ async def test_get_assignment_wrong_assignment_id(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     assert exc_info.value.code == 404
 
 
 async def test_get_assignment_instructor_version(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments/4/?instructor-version=true"
@@ -664,24 +714,27 @@ async def test_get_assignment_instructor_version(
     insert_assignments(engine, 3)
 
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
 
 
 async def test_delete_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -694,34 +747,36 @@ async def test_delete_assignment(
     url = url + str(post_assignment.id)
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
 
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_delete_assignment_deleted_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -734,80 +789,54 @@ async def test_delete_assignment_deleted_assignment(
     url = url + str(post_assignment.id)
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
 
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
 async def test_delete_assignment_not_created(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/999"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
-        )
-    e = exc_info.value
-    assert e.code == 404
-
-
-async def test_delete_assignment_with_submissions(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_user,
-        default_roles,
-        default_user_login
-):
-    a_id = 1
-    url = service_base_url + f"lectures/3/assignments/{a_id}"
-
-    engine = sql_alchemy_engine
-    insert_submission(engine, assignment_id=a_id, username=default_user.name)
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_delete_assignment_same_name_twice(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -820,9 +849,7 @@ async def test_delete_assignment_same_name_twice(
     url = url + str(post_assignment.id)
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
@@ -840,25 +867,27 @@ async def test_delete_assignment_same_name_twice(
     url = url + str(post_assignment.id)
 
     delete_response = await http_server_client.fetch(
-        url,
-        method="DELETE",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == 200
 
 
 async def test_delete_released_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
-
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="released", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="released",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -872,25 +901,28 @@ async def test_delete_released_assignment(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_delete_complete_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="complete", settings=AssignmentSettings(autograde_type="unassisted"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="complete",
+        settings=AssignmentSettings(autograde_type="unassisted"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -904,22 +936,20 @@ async def test_delete_complete_assignment(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_assignment_properties_lecture_assignment_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 1
@@ -941,22 +971,20 @@ async def test_assignment_properties_lecture_assignment_missmatch(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_assignment_properties_wrong_assignment_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 99
@@ -978,22 +1006,20 @@ async def test_assignment_properties_wrong_assignment_id(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_assignment_properties_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 3
@@ -1004,26 +1030,29 @@ async def test_assignment_properties_not_found(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_assignment_properties_properties_wrong_for_autograde(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="full_auto"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="full_auto"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -1050,7 +1079,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "id": None,
                         "max_score": 1.0,
                         "name": "cell-81540a070d18c412",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "GradeCell",
@@ -1060,7 +1089,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "id": None,
                         "max_score": 2.0,
                         "name": "cell-9ea0264ada6c25bd",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "GradeCell",
@@ -1070,12 +1099,12 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "id": None,
                         "max_score": 1.0,
                         "name": "cell-da8c82e850a1922b",
-                        "notebook_id": None
-                    }
+                        "notebook_id": None,
+                    },
                 },
                 "grades_dict": {},
                 "id": "a5",
-                "kernelspec": "{\"display_name\": \"Python 3\", \"language\": \"python\", \"name\": \"python3\"}",
+                "kernelspec": '{"display_name": "Python 3", "language": "python", "name": "python3"}',
                 "name": "a5",
                 "solution_cells_dict": {
                     "cell-28df1799f8f8b769": {
@@ -1084,7 +1113,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "grade_id": None,
                         "id": None,
                         "name": "cell-28df1799f8f8b769",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SolutionCell",
@@ -1092,8 +1121,8 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "grade_id": None,
                         "id": None,
                         "name": "cell-9ea0264ada6c25bd",
-                        "notebook_id": None
-                    }
+                        "notebook_id": None,
+                    },
                 },
                 "source_cells_dict": {
                     "cell-1b9d18df2b17e57f": {
@@ -1104,7 +1133,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": None,
                         "name": "cell-1b9d18df2b17e57f",
                         "notebook_id": None,
-                        "source": "## Aufgabe 3\nDoes Java use \"fake\"-threads? Explain why or why not?"
+                        "source": '## Aufgabe 3\nDoes Java use "fake"-threads? Explain why or why not?',
                     },
                     "cell-26053a7da067ded3": {
                         "_type": "SourceCell",
@@ -1114,7 +1143,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": True,
                         "name": "cell-26053a7da067ded3",
                         "notebook_id": None,
-                        "source": "### Aufgabe 1"
+                        "source": "### Aufgabe 1",
                     },
                     "cell-28df1799f8f8b769": {
                         "_type": "SourceCell",
@@ -1124,7 +1153,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": False,
                         "name": "cell-28df1799f8f8b769",
                         "notebook_id": None,
-                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()"
+                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()",
                     },
                     "cell-58d7f9f371feee54": {
                         "_type": "SourceCell",
@@ -1134,7 +1163,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": True,
                         "name": "cell-58d7f9f371feee54",
                         "notebook_id": None,
-                        "source": "## Aufgabe 2\nWhat are \"fake\"-threads?"
+                        "source": '## Aufgabe 2\nWhat are "fake"-threads?',
                     },
                     "cell-81540a070d18c412": {
                         "_type": "SourceCell",
@@ -1144,7 +1173,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": True,
                         "name": "cell-81540a070d18c412",
                         "notebook_id": None,
-                        "source": "assert (reverse('lol') == 'lol')"
+                        "source": "assert (reverse('lol') == 'lol')",
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SourceCell",
@@ -1154,7 +1183,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": False,
                         "name": "cell-9ea0264ada6c25bd",
                         "notebook_id": None,
-                        "source": "YOUR ANSWER HERE"
+                        "source": "YOUR ANSWER HERE",
                     },
                     "cell-c06c761f0b7b0f59": {
                         "_type": "SourceCell",
@@ -1164,7 +1193,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": True,
                         "name": "cell-c06c761f0b7b0f59",
                         "notebook_id": None,
-                        "source": "reverse('Test')"
+                        "source": "reverse('Test')",
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "SourceCell",
@@ -1174,8 +1203,8 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "locked": True,
                         "name": "cell-da8c82e850a1922b",
                         "notebook_id": None,
-                        "source": "assert (reverse('Test') == 'tseT')"
-                    }
+                        "source": "assert (reverse('Test') == 'tseT')",
+                    },
                 },
                 "task_cells_dict": {
                     "cell-58d7f9f371feee54": {
@@ -1186,15 +1215,15 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                         "id": None,
                         "max_score": 2.0,
                         "name": "cell-58d7f9f371feee54",
-                        "notebook_id": None
+                        "notebook_id": None,
                     }
-                }
+                },
             }
         },
-        "schema_version": "1"
+        "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
@@ -1205,17 +1234,22 @@ async def test_assignment_properties_properties_wrong_for_autograde(
 
 
 async def test_assignment_properties_properties_manual_graded_with_auto_grading(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     url = service_base_url + "lectures/3/assignments/"
 
-    pre_assignment = Assignment(id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type="full_auto"))
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="created",
+        settings=AssignmentSettings(autograde_type="full_auto"),
+    )
     post_response = await http_server_client.fetch(
         url,
         method="POST",
@@ -1242,7 +1276,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "id": None,
                         "max_score": 1.0,
                         "name": "cell-81540a070d18c412",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "GradeCell",
@@ -1252,7 +1286,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "id": None,
                         "max_score": 2.0,
                         "name": "cell-9ea0264ada6c25bd",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "GradeCell",
@@ -1262,12 +1296,12 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "id": None,
                         "max_score": 1.0,
                         "name": "cell-da8c82e850a1922b",
-                        "notebook_id": None
-                    }
+                        "notebook_id": None,
+                    },
                 },
                 "grades_dict": {},
                 "id": "a5",
-                "kernelspec": "{\"display_name\": \"Python 3\", \"language\": \"python\", \"name\": \"python3\"}",
+                "kernelspec": '{"display_name": "Python 3", "language": "python", "name": "python3"}',
                 "name": "a5",
                 "solution_cells_dict": {
                     "cell-28df1799f8f8b769": {
@@ -1276,7 +1310,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "grade_id": None,
                         "id": None,
                         "name": "cell-28df1799f8f8b769",
-                        "notebook_id": None
+                        "notebook_id": None,
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SolutionCell",
@@ -1284,8 +1318,8 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "grade_id": None,
                         "id": None,
                         "name": "cell-9ea0264ada6c25bd",
-                        "notebook_id": None
-                    }
+                        "notebook_id": None,
+                    },
                 },
                 "source_cells_dict": {
                     "cell-1b9d18df2b17e57f": {
@@ -1296,7 +1330,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": None,
                         "name": "cell-1b9d18df2b17e57f",
                         "notebook_id": None,
-                        "source": "## Aufgabe 3\nDoes Java use \"fake\"-threads? Explain why or why not?"
+                        "source": '## Aufgabe 3\nDoes Java use "fake"-threads? Explain why or why not?',
                     },
                     "cell-26053a7da067ded3": {
                         "_type": "SourceCell",
@@ -1306,7 +1340,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": True,
                         "name": "cell-26053a7da067ded3",
                         "notebook_id": None,
-                        "source": "### Aufgabe 1"
+                        "source": "### Aufgabe 1",
                     },
                     "cell-28df1799f8f8b769": {
                         "_type": "SourceCell",
@@ -1316,7 +1350,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": False,
                         "name": "cell-28df1799f8f8b769",
                         "notebook_id": None,
-                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()"
+                        "source": "def reverse(s):\n    # YOUR CODE HERE\n    raise NotImplementedError()",
                     },
                     "cell-81540a070d18c412": {
                         "_type": "SourceCell",
@@ -1326,7 +1360,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": True,
                         "name": "cell-81540a070d18c412",
                         "notebook_id": None,
-                        "source": "assert (reverse('lol') == 'lol')"
+                        "source": "assert (reverse('lol') == 'lol')",
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SourceCell",
@@ -1336,7 +1370,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": False,
                         "name": "cell-9ea0264ada6c25bd",
                         "notebook_id": None,
-                        "source": "YOUR ANSWER HERE"
+                        "source": "YOUR ANSWER HERE",
                     },
                     "cell-c06c761f0b7b0f59": {
                         "_type": "SourceCell",
@@ -1346,7 +1380,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": True,
                         "name": "cell-c06c761f0b7b0f59",
                         "notebook_id": None,
-                        "source": "reverse('Test')"
+                        "source": "reverse('Test')",
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "SourceCell",
@@ -1356,18 +1390,16 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                         "locked": True,
                         "name": "cell-da8c82e850a1922b",
                         "notebook_id": None,
-                        "source": "assert (reverse('Test') == 'tseT')"
-                    }
+                        "source": "assert (reverse('Test') == 'tseT')",
+                    },
                 },
-                "task_cells_dict": {
-
-                }
+                "task_cells_dict": {},
             }
         },
-        "schema_version": "1"
+        "schema_version": "1",
     }
     with pytest.raises(HTTPClientError) as exc_info:
-        put_response = await http_server_client.fetch(
+        await http_server_client.fetch(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
@@ -1378,14 +1410,14 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
 
 
 async def test_delete_assignment_with_submissions(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_user,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_user,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -1398,9 +1430,7 @@ async def test_delete_assignment_with_submissions(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="DELETE",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT

@@ -1,11 +1,14 @@
-import pytest
 import os
 
-from grader_service.convert.preprocessors import CheckCellMetadata
-from .base import BaseTestPreprocessor
-from .. import create_grade_cell, create_solution_cell
+import pytest
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat import ValidationError
+from grader_service.convert.preprocessors import CheckCellMetadata
+
+from .. import create_grade_cell, create_solution_cell
+from .base import BaseTestPreprocessor
+
 
 @pytest.fixture
 def preprocessor():
@@ -13,7 +16,6 @@ def preprocessor():
 
 
 class TestCheckCellMetadata(BaseTestPreprocessor):
-
     def test_duplicate_grade_ids(self, preprocessor):
         """Check that an error is raised when there are duplicate grade ids"""
         nb = self._read_nb(os.path.join("files", "duplicate-grade-ids.ipynb"), validate=False)
@@ -39,7 +41,7 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_grade_cell("", "code", "a\"b", 1)]
+        nb.cells = [create_grade_cell("", "code", 'a"b', 1)]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
@@ -59,7 +61,7 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_solution_cell("", "code", "a\"b")]
+        nb.cells = [create_solution_cell("", "code", 'a"b')]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 

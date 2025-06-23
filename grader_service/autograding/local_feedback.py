@@ -8,34 +8,34 @@ import io
 import logging
 import os
 import shutil
-from subprocess import CalledProcessError
 import sys
+from subprocess import CalledProcessError
 
 from traitlets import Unicode
 
-from grader_service.autograding.local_grader import (LocalAutogradeExecutor,
-                                                     rm_error)
+from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
-from grader_service.convert.converters.generate_feedback import GenerateFeedback
 
 
 class GenerateFeedbackExecutor(LocalAutogradeExecutor):
-    def __init__(self, grader_service_dir: str,
-                 submission: Submission, **kwargs):
+    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
         super().__init__(grader_service_dir, submission, **kwargs)
 
     @property
     def input_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_input_path,
-                            f"feedback_{self.submission.id}")
+        return os.path.join(
+            self.grader_service_dir, self.relative_input_path, f"feedback_{self.submission.id}"
+        )
 
     @property
     def output_path(self):
-        return os.path.join(self.grader_service_dir, self.relative_output_path,
-                            f"feedback_{self.submission.id}")
+        return os.path.join(
+            self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
+        )
 
     def _pull_submission(self):
         if not os.path.exists(self.input_path):
@@ -47,9 +47,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
-            group = self.session.query(Group).get(
-                (self.submission.username, lecture.id)
-            )
+            group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
                 raise ValueError()
             repo_name = group.name
@@ -65,7 +63,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         )
 
         if os.path.exists(self.input_path):
-            #onerror is deprecated in 3.12, use onexc
+            # onerror is deprecated in 3.12, use onexc
             if sys.version_info >= (3, 12):
                 shutil.rmtree(self.input_path, onexc=rm_error)
             else:
@@ -81,8 +79,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         except CalledProcessError:
             pass
 
-        command = f'{self.git_executable} pull "{git_repo_path}" ' \
-                  f'submission_{self.submission.commit_hash}'
+        command = (
+            f'{self.git_executable} pull "{git_repo_path}" submission_{self.submission.commit_hash}'
+        )
         self.log.info(f"Running {command}")
         try:
             self._run_subprocess(command, self.input_path)
@@ -97,8 +96,12 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self.submission.properties.properties)
 
-        autograder = GenerateFeedback(self.input_path, self.output_path,
-                                      "*.ipynb", assignment_settings=self.assignment.settings)
+        autograder = GenerateFeedback(
+            self.input_path,
+            self.output_path,
+            "*.ipynb",
+            assignment_settings=self.assignment.settings,
+        )
         autograder.force = True
 
         log_stream = io.StringIO()
@@ -119,9 +122,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         if assignment.settings.assignment_type == "user":
             repo_name = self.submission.username
         else:
-            group = self.session.query(Group).get(
-                (self.submission.username, lecture.id)
-            )
+            group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
                 raise ValueError()
             repo_name = group.name
@@ -139,9 +140,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
             try:
-                self._run_subprocess(
-                    f'git init --bare "{git_repo_path}"', self.output_path
-                )
+                self._run_subprocess(f'git init --bare "{git_repo_path}"', self.output_path)
             except CalledProcessError:
                 raise
 
@@ -152,33 +151,26 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         except CalledProcessError:
             pass
 
-        self.log.info(f"Creating new branch "
-                      f"feedback_{self.submission.commit_hash}")
-        command = (
-            f"{self.git_executable} switch -c "
-            f"feedback_{self.submission.commit_hash}"
-        )
+        self.log.info(f"Creating new branch feedback_{self.submission.commit_hash}")
+        command = f"{self.git_executable} switch -c feedback_{self.submission.commit_hash}"
         try:
             self._run_subprocess(command, self.output_path)
         except CalledProcessError:
             pass
-        self.log.info(f"Now at branch "
-                      f"feedback_{self.submission.commit_hash}")
+        self.log.info(f"Now at branch feedback_{self.submission.commit_hash}")
 
         self.log.info(f"Commiting all files in {self.output_path}")
+        self._run_subprocess(f"{self.git_executable} add -A", self.output_path)
         self._run_subprocess(
-            f"{self.git_executable} add -A", self.output_path
-        )
-        self._run_subprocess(
-            f'{self.git_executable} commit -m "{self.submission.commit_hash}"',
-            self.output_path,
+            f'{self.git_executable} commit -m "{self.submission.commit_hash}"', self.output_path
         )
         self.log.info(
-            f"Pushing to {git_repo_path} at branch "
+            f"Pushing to {git_repo_path} at branch feedback_{self.submission.commit_hash}"
+        )
+        command = (
+            f'{self.git_executable} push -uf "{git_repo_path}" '
             f"feedback_{self.submission.commit_hash}"
         )
-        command = f'{self.git_executable} push -uf "{git_repo_path}" ' \
-                  f'feedback_{self.submission.commit_hash}'
         self._run_subprocess(command, self.output_path)
         self.log.info("Pushing complete")
 
@@ -187,7 +179,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         pass
 
     def _set_db_state(self, success=True):
-        """"
+        """ "
         Sets the submission feedback status based on the success of the generation.
         :param success: Whether feedback generation was succesfull or not.
         :return: None
@@ -200,8 +192,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
 
 class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
-    convert_executable = Unicode("grader-convert",
-                                 allow_none=False).tag(config=True)
+    convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
         if os.path.exists(self.output_path):
@@ -210,8 +201,10 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.properties)
 
-        command = f'{self.convert_executable} generate_feedback -i ' \
-                  f'"{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
+        command = (
+            f"{self.convert_executable} generate_feedback -i "
+            f'"{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
+        )
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)
         self.grading_logs = process.stderr.read().decode("utf-8")

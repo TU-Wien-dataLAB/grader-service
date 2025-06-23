@@ -1,19 +1,22 @@
 import logging
 import os
+import tempfile
 import unittest
 
 import pytest
-import tempfile
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v2 import (
-    MetadataValidatorV2, read_v2, reads_v2, write_v2, writes_v2)
-from .. import (
-    create_code_cell,
-    create_grade_cell,
-    create_solution_cell,
-    create_regular_cell)
+    MetadataValidatorV2,
+    read_v2,
+    reads_v2,
+    write_v2,
+    writes_v2,
+)
+
+from .. import create_code_cell, create_grade_cell, create_regular_cell, create_solution_cell
 
 
 def test_set_false():
@@ -96,19 +99,19 @@ def test_cell_type():
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     MetadataValidatorV2().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == "code"
 
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     cell.metadata.nbgrader["cell_type"] = "markdown"
     MetadataValidatorV2().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "markdown"
+    assert cell.metadata.nbgrader["cell_type"] == "markdown"
 
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     cell.metadata.nbgrader["cell_type"] = "code"
     MetadataValidatorV2().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == "code"
 
 
 def test_read():
@@ -250,7 +253,7 @@ def test_celltype_changed():
     cell = create_solution_cell("", "code", "foo", 2)
     del cell.metadata.nbgrader["task"]
     cell.metadata.nbgrader["cell_type"] = "code"
-    logger = logging.getLogger('traitlets')
+    logger = logging.getLogger("traitlets")
     with unittest.mock.patch.object(logger, "warning") as mock_waring:
         MetadataValidatorV2().validate_cell(cell)
         mock_waring.assert_not_called()

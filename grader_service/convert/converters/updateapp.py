@@ -1,5 +1,3 @@
-
-
 # coding: utf-8
 
 import os
@@ -10,6 +8,7 @@ from nbformat import read as orig_read
 from nbformat import write as orig_write
 from traitlets import Bool
 
+from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.nbgraderformat import (
     MetadataValidator,
     SchemaTooNewError,
@@ -17,25 +16,19 @@ from grader_service.convert.nbgraderformat import (
     write,
 )
 from grader_service.convert.utils import find_all_notebooks
-from grader_service.convert.converters.baseapp import ConverterApp
 
-aliases = {
-    "log-level": "Application.log_level",
-}
+aliases = {"log-level": "Application.log_level"}
 flags = {}
 
 
 class UpdateApp(ConverterApp):
-
-    name = u"update"
-    description = u"Update nbgrader notebook metadata"
+    name = "update"
+    description = "Update nbgrader notebook metadata"
 
     aliases = aliases
     flags = flags
 
-    validate = Bool(True, help="whether to validate metadata after updating it").tag(
-        config=True
-    )
+    validate = Bool(True, help="whether to validate metadata after updating it").tag(config=True)
 
     examples = """
         nbgrader stores metadata in the JSON source of the notebooks. Previously,
@@ -77,9 +70,7 @@ class UpdateApp(ConverterApp):
             if not os.path.exists(name):
                 self.fail("No such file or directory: {}".format(name))
             elif os.path.isdir(name):
-                notebooks.update(
-                    [os.path.join(name, x) for x in find_all_notebooks(name)]
-                )
+                notebooks.update([os.path.join(name, x) for x in find_all_notebooks(name)])
             elif not name.endswith(".ipynb"):
                 self.log.warning("{} is not a notebook, ignoring".format(name))
             else:
@@ -96,9 +87,7 @@ class UpdateApp(ConverterApp):
                 except ValidationError:
                     self.log.error(traceback.format_exc())
                     self.fail(
-                        "Notebook '{}' failed to validate, metadata is corrupted".format(
-                            notebook
-                        )
+                        "Notebook '{}' failed to validate, metadata is corrupted".format(notebook)
                     )
                 except SchemaTooNewError:
                     self.log.error(traceback.format_exc())

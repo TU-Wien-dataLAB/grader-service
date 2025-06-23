@@ -1,5 +1,7 @@
 import pytest
+
 from grader_service.migrate.migrate import DB_URL_PATT, get_matching_config
+
 
 @pytest.fixture
 def valid_db_urls():
@@ -20,7 +22,7 @@ def valid_db_urls():
         "c.GraderService.db_url = 'sqlite:///path/to/database.db?param1=value1&param2=value2'",
         "c.GraderService.db_url = 'sqlite:///path/to/database.db?timeout=5000&mode=ro&param1=value1'",
         "c.GraderService.db_url = 'sqlite:///path/to/unicode_路径.db'",
-        "c.GraderService.db_url = 'postgresql://user:pass@localhost:5432/mydb?param1=value1&param2=value2&param3=value3&param4=value4&param5=value5'"
+        "c.GraderService.db_url = 'postgresql://user:pass@localhost:5432/mydb?param1=value1&param2=value2&param3=value3&param4=value4&param5=value5'",
     ]
 
 
@@ -52,4 +54,3 @@ def test_db_url_regex_matches_expected(valid_db_urls):
     "Checks that the regex matches the expected URLs"
     for url in valid_db_urls:
         assert get_matching_config(url, DB_URL_PATT) is not None
-

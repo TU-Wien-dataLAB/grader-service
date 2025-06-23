@@ -1,5 +1,3 @@
-
-
 import os
 import sys
 import typing
@@ -17,21 +15,15 @@ from grader_service.convert.preprocessors import CheckCellMetadata, ClearOutput,
 
 
 class Validator(LoggingConfigurable):
-
     preprocessors = List([CheckCellMetadata, ClearOutput, Execute])
 
     indent = Unicode(
-        "    ",
-        help="A string containing whitespace that will be used to indent code and errors",
+        "    ", help="A string containing whitespace that will be used to indent code and errors"
     ).tag(config=True)
 
-    width = Integer(90, help="Maximum line width for displaying code/errors").tag(
-        config=True
-    )
+    width = Integer(90, help="Maximum line width for displaying code/errors").tag(config=True)
 
-    invert = Bool(False, help="Complain when cells pass, rather than fail.").tag(
-        config=True
-    )
+    invert = Bool(False, help="Complain when cells pass, rather than fail.").tag(config=True)
 
     ignore_checksums = Bool(
         False,
@@ -90,9 +82,9 @@ class Validator(LoggingConfigurable):
         help="Warning to display when a cell passes (when invert=True)",
     ).tag(config=True)
 
-    validate_all = Bool(
-        False, help="Validate all cells, not just the graded tests cells."
-    ).tag(config=True)
+    validate_all = Bool(False, help="Validate all cells, not just the graded tests cells.").tag(
+        config=True
+    )
 
     stream = sys.stdout
 
@@ -124,9 +116,7 @@ class Validator(LoggingConfigurable):
                 if utils.is_grade(cell):
                     score, max_score = utils.determine_grade(cell, self.log)
                     if score < max_score:
-                        errors.append(
-                            "Partial credit; passed some but not all of the tests"
-                        )
+                        errors.append("Partial credit; passed some but not all of the tests")
                 else:
                     errors.append("You did not provide a response.")
 
@@ -138,9 +128,7 @@ class Validator(LoggingConfigurable):
     def _print_type_changed(self, old_type: str, new_type: str, source: str) -> None:
         self.stream.write("\n" + "=" * self.width + "\n")
         self.stream.write(
-            "The following {} cell has changed to a {} cell:\n\n".format(
-                old_type, new_type
-            )
+            "The following {} cell has changed to a {} cell:\n\n".format(old_type, new_type)
         )
         self.stream.write(self._indent(source) + "\n\n")
 
@@ -167,10 +155,7 @@ class Validator(LoggingConfigurable):
 
         else:
             self.stream.write(
-                fill(
-                    self.type_changed_warning.format(num_changed=num_changed),
-                    width=self.width,
-                )
+                fill(self.type_changed_warning.format(num_changed=num_changed), width=self.width)
             )
 
     def _print_num_changed(self, num_changed: int) -> None:
@@ -179,10 +164,7 @@ class Validator(LoggingConfigurable):
 
         else:
             self.stream.write(
-                fill(
-                    self.changed_warning.format(num_changed=num_changed),
-                    width=self.width,
-                )
+                fill(self.changed_warning.format(num_changed=num_changed), width=self.width)
             )
 
     def _print_num_failed(self, num_failed: int) -> None:
@@ -191,9 +173,7 @@ class Validator(LoggingConfigurable):
 
         else:
             self.stream.write(
-                fill(
-                    self.failed_warning.format(num_failed=num_failed), width=self.width
-                )
+                fill(self.failed_warning.format(num_failed=num_failed), width=self.width)
             )
 
     def _print_num_passed(self, num_passed):
@@ -202,18 +182,14 @@ class Validator(LoggingConfigurable):
 
         else:
             self.stream.write(
-                fill(
-                    self.passed_warning.format(num_passed=num_passed), width=self.width
-                )
+                fill(self.passed_warning.format(num_passed=num_passed), width=self.width)
             )
 
     def _get_type_changed_cells(self, nb: NotebookNode) -> typing.List[NotebookNode]:
         changed = []
 
         for cell in nb.cells:
-            if not (
-                utils.is_grade(cell) or utils.is_solution(cell) or utils.is_locked(cell)
-            ):
+            if not (utils.is_grade(cell) or utils.is_solution(cell) or utils.is_locked(cell)):
                 continue
             if "cell_type" not in cell.metadata.nbgrader:
                 continue
@@ -302,9 +278,7 @@ class Validator(LoggingConfigurable):
                 nb, resources = pp.preprocess(nb, resources)
         return nb
 
-    def validate(
-        self, filename: str
-    ) -> typing.Dict[str, typing.List[typing.Dict[str, str]]]:
+    def validate(self, filename: str) -> typing.Dict[str, typing.List[typing.Dict[str, str]]]:
         self.log.info("Validating '{}'".format(os.path.abspath(filename)))
         basename = os.path.basename(filename)
         dirname = os.path.dirname(filename)
@@ -362,9 +336,7 @@ class Validator(LoggingConfigurable):
         if len(type_changed) > 0:
             self._print_num_type_changed(len(type_changed))
             for cell in type_changed:
-                self._print_type_changed(
-                    cell["old_type"], cell["new_type"], cell["source"]
-                )
+                self._print_type_changed(cell["old_type"], cell["new_type"], cell["source"])
 
         elif not self.ignore_checksums and len(changed) > 0:
             self._print_num_changed(len(changed))

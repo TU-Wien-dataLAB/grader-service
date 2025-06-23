@@ -1,5 +1,3 @@
-
-
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
@@ -12,13 +10,13 @@ from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 class LimitOutput(NbGraderPreprocessor):
     """Preprocessor for limiting cell output"""
 
-    max_lines = Integer(
-        1000, help="maximum number of lines of output (-1 means no limit)"
-    ).tag(config=True)
+    max_lines = Integer(1000, help="maximum number of lines of output (-1 means no limit)").tag(
+        config=True
+    )
 
-    max_traceback = Integer(
-        100, help="maximum number of traceback lines (-1 means no limit)"
-    ).tag(config=True)
+    max_traceback = Integer(100, help="maximum number of traceback lines (-1 means no limit)").tag(
+        config=True
+    )
 
     def _limit_stream_output(self, cell: NotebookNode) -> NotebookNode:
         if self.max_lines == -1 or cell.cell_type != "code":

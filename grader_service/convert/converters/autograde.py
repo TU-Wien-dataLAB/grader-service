@@ -1,18 +1,17 @@
-
-
-import json
 import os
-from textwrap import dedent
 from typing import Any
 
-from traitlets import Bool, Dict, List
+from traitlets import List
 from traitlets.config.loader import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
+from grader_service.convert.converters.base import BaseConverter
+from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.preprocessors import (
     CheckCellMetadata,
+    ClearAlwaysHiddenTests,
     ClearOutput,
     DeduplicateIds,
     Execute,
@@ -20,23 +19,14 @@ from grader_service.convert.preprocessors import (
     OverwriteCells,
     OverwriteKernelspec,
     SaveAutoGrades,
-    ClearAlwaysHiddenTests
 )
-from grader_service.convert.converters.base import BaseConverter
-from grader_service.convert.converters.baseapp import ConverterApp
 
 
 class Autograde(BaseConverter):
     _sanitizing = True
 
     sanitize_preprocessors = List(
-        [
-            ClearOutput,
-            DeduplicateIds,
-            OverwriteKernelspec,
-            OverwriteCells,
-            CheckCellMetadata,
-        ]
+        [ClearOutput, DeduplicateIds, OverwriteKernelspec, OverwriteCells, CheckCellMetadata]
     ).tag(config=True)
     autograde_preprocessors = List(
         [Execute, LimitOutput, SaveAutoGrades, CheckCellMetadata, ClearAlwaysHiddenTests]
@@ -88,15 +78,10 @@ class Autograde(BaseConverter):
             self.copy_unmatched_files(gb)
 
             glob_notebooks = {
-                self.init_single_notebook_resources(n)["unique_key"]: n
-                for n in self.notebooks
+                self.init_single_notebook_resources(n)["unique_key"]: n for n in self.notebooks
             }
-            for notebook in gb.model.notebook_id_set.difference(
-                set(glob_notebooks.keys())
-            ):
-                self.log.warning(
-                    "No submitted file: {}".format(glob_notebooks[notebook])
-                )
+            for notebook in gb.model.notebook_id_set.difference(set(glob_notebooks.keys())):
+                self.log.warning("No submitted file: {}".format(glob_notebooks[notebook]))
                 nb = gb.find_notebook(notebook)
                 for grade in nb.grades:
                     grade.auto_score = 0
@@ -109,9 +94,16 @@ class Autograde(BaseConverter):
         super(Autograde, self)._load_config(cfg, **kwargs)
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_pattern: str,
+        assignment_settings: AssignmentSettings,
+        **kwargs: Any,
     ) -> None:
-        super(Autograde, self).__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
+        super(Autograde, self).__init__(
+            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
+        )
         self.force = True  # always overwrite generated assignments
 
     def start(self) -> None:
@@ -120,12 +112,12 @@ class Autograde(BaseConverter):
 
 class AutogradeApp(ConverterApp):
     version = ConverterApp.__version__
-    
+
     def start(self):
         Autograde(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
             assignment_settings=utils.get_assignment_settings_from_env(),
-            config=self.config
+            config=self.config,
         ).start()

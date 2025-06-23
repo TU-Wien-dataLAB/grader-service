@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 from typing import Tuple
 
@@ -12,10 +10,8 @@ from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearAlwaysHiddenTests(NbGraderPreprocessor):
-
     begin_util_delimeter = Unicode(
-        "BEGIN ALWAYS HIDDEN TESTS",
-        help="The delimiter marking the beginning of hidden util code",
+        "BEGIN ALWAYS HIDDEN TESTS", help="The delimiter marking the beginning of hidden util code"
     ).tag(config=True)
 
     end_util_delimeter = Unicode(
@@ -51,13 +47,10 @@ class ClearAlwaysHiddenTests(NbGraderPreprocessor):
         for line in lines:
             # begin the test area
             if self.begin_util_delimeter in line:
-
                 # check to make sure this isn't a nested BEGIN ALWAYS HIDDEN UTILS
                 # region
                 if in_util:
-                    raise RuntimeError(
-                        "Encountered nested begin always hidden statements"
-                    )
+                    raise RuntimeError("Encountered nested begin always hidden statements")
                 in_util = True
                 removed_util = True
 

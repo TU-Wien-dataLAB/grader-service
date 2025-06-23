@@ -1,5 +1,3 @@
-
-
 import json
 from typing import Tuple
 
@@ -24,13 +22,9 @@ class OverwriteKernelspec(NbGraderPreprocessor):
             kernelspec = json.loads(gb.find_notebook(self.notebook_id).kernelspec)
             self.log.debug("Source notebook kernelspec: {}".format(kernelspec))
             self.log.debug(
-                "Submitted notebook kernelspec: {}"
-                "".format(nb.metadata.get("kernelspec", None))
+                "Submitted notebook kernelspec: {}".format(nb.metadata.get("kernelspec", None))
             )
             if kernelspec:
-                self.log.info(
-                    "Overwriting submitted notebook kernelspec: {}"
-                    "".format(kernelspec)
-                )
+                self.log.info("Overwriting submitted notebook kernelspec: {}".format(kernelspec))
                 nb.metadata["kernelspec"] = kernelspec
         return nb, resources

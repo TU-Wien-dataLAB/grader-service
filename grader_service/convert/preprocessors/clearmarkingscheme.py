@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 from typing import Tuple
 
@@ -12,10 +10,8 @@ from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearMarkScheme(NbGraderPreprocessor):
-
     begin_mark_scheme_delimeter = Unicode(
-        "BEGIN MARK SCHEME",
-        help="The delimiter marking the beginning of hidden tests cases",
+        "BEGIN MARK SCHEME", help="The delimiter marking the beginning of hidden tests cases"
     ).tag(config=True)
 
     end_mark_scheme_delimeter = Unicode(
@@ -54,13 +50,10 @@ class ClearMarkScheme(NbGraderPreprocessor):
         for line in lines:
             # begin the test area
             if self.begin_mark_scheme_delimeter in line:
-
                 # check to make sure this isn't a nested BEGIN HIDDEN TESTS
                 # region
                 if in_ms:
-                    raise RuntimeError(
-                        "Encountered nested begin mark scheme statements"
-                    )
+                    raise RuntimeError("Encountered nested begin mark scheme statements")
                 in_ms = True
                 removed_ms = True
 

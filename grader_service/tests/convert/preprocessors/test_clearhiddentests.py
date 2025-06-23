@@ -1,12 +1,12 @@
 import os
+from textwrap import dedent
+
 import pytest
 
-from textwrap import dedent
-from traitlets.config import Config
-
-from .base import BaseTestPreprocessor
-from .. import create_code_cell, create_text_cell
 from grader_service.convert.preprocessors import ClearHiddenTests
+
+from .. import create_code_cell, create_text_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture
@@ -15,7 +15,6 @@ def preprocessor():
 
 
 class TestClearHiddenTests(BaseTestPreprocessor):
-
     def test_remove_hidden_test_region_code(self, preprocessor):
         """Are hidden test regions in code cells correctly replaced?"""
         cell = create_code_cell()
@@ -101,12 +100,12 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata['nbgrader'] = dict(grade=True)
+        cell.metadata["nbgrader"] = dict(grade=True)
         resources = dict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "assert True"
-        assert cell.metadata.nbgrader['grade']
+        assert cell.metadata.nbgrader["grade"]
 
     def test_preprocess_text_grade_cell_hidden_test_region(self, preprocessor):
         """Is a text grade cell correctly cleared when there is a hidden test region?"""
@@ -119,12 +118,12 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata['nbgrader'] = dict(grade=True)
+        cell.metadata["nbgrader"] = dict(grade=True)
 
         resources = dict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
-        assert cell.metadata.nbgrader['grade']
+        assert cell.metadata.nbgrader["grade"]
 
     def test_preprocess_text_grade_cell_region_indented(self, preprocessor):
         """Is a text grade cell correctly cleared and indented when there is a hidden test region?"""
@@ -137,12 +136,12 @@ class TestClearHiddenTests(BaseTestPreprocessor):
                 ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata['nbgrader'] = dict(grade=True)
+        cell.metadata["nbgrader"] = dict(grade=True)
         resources = dict()
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
-        assert cell.metadata.nbgrader['grade']
+        assert cell.metadata.nbgrader["grade"]
 
     def test_preprocess_text_cell_metadata(self, preprocessor):
         """Is an error thrown when a hidden test region exists in a non-grade text cell?"""
@@ -164,7 +163,7 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         preprocessor.enforce_metadata = False
         cell, _ = preprocessor.preprocess_cell(cell, resources, 1)
         assert cell.source == "assert True"
-        assert 'nbgrader' not in cell.metadata
+        assert "nbgrader" not in cell.metadata
 
     def test_dont_remove_hidden_test_region(self, preprocessor):
         """Is false returned when there is no hidden test region?"""
@@ -176,23 +175,23 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         """Is a code cell not cleared when there is no hidden test region?"""
         cell = create_code_cell()
         cell.source = """assert True"""
-        cell.metadata['nbgrader'] = dict()
+        cell.metadata["nbgrader"] = dict()
 
         resources = dict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == """assert True"""
-        assert not cell.metadata.nbgrader.get('grade', False)
+        assert not cell.metadata.nbgrader.get("grade", False)
 
     def test_preprocess_text_cell_no_region(self, preprocessor):
         """Is a text grade cell not cleared when there is no hidden test region?"""
         cell = create_text_cell()
         cell.source = """assert True"""
-        cell.metadata['nbgrader'] = dict()
+        cell.metadata["nbgrader"] = dict()
 
         resources = dict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
-        assert not cell.metadata.nbgrader.get('grade', False)
+        assert not cell.metadata.nbgrader.get("grade", False)
 
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
@@ -202,6 +201,6 @@ class TestClearHiddenTests(BaseTestPreprocessor):
     def test_remove_celltoolbar(self, preprocessor):
         """Is the celltoolbar removed?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
-        nb.metadata['celltoolbar'] = 'Create Assignment'
+        nb.metadata["celltoolbar"] = "Create Assignment"
         nb = preprocessor.preprocess(nb, {})[0]
-        assert 'celltoolbar' not in nb.metadata
+        assert "celltoolbar" not in nb.metadata

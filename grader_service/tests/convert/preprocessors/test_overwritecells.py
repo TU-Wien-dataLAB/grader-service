@@ -1,14 +1,20 @@
-import pytest
 import os
-from nbformat.v4 import new_notebook, new_markdown_cell
 
-from grader_service.convert.preprocessors import SaveCells, OverwriteCells
+import pytest
+from nbformat.v4 import new_markdown_cell, new_notebook
+
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import OverwriteCells, SaveCells
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
-    create_grade_cell, create_solution_cell, create_grade_and_solution_cell,
-    create_locked_cell, create_task_cell)
+    create_grade_and_solution_cell,
+    create_grade_cell,
+    create_locked_cell,
+    create_solution_cell,
+    create_task_cell,
+)
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture
@@ -22,6 +28,7 @@ def gradebook(request, json_path):
 
     def fin():
         os.remove(json_path)
+
     request.addfinalizer(fin)
 
     return gb
@@ -29,20 +36,19 @@ def gradebook(request, json_path):
 
 @pytest.fixture
 def resources(json_path):
-        resources = {}
-        resources["unique_key"] = "test"
-        resources["output_json_file"] = "gradebook.json"
-        resources["output_json_path"] = json_path
-        resources['nbgrader'] = dict() # support nbgrader pre-processors
-        return resources
+    resources = {}
+    resources["unique_key"] = "test"
+    resources["output_json_file"] = "gradebook.json"
+    resources["output_json_path"] = json_path
+    resources["nbgrader"] = dict()  # support nbgrader pre-processors
+    return resources
 
 
 class TestOverwriteCells(BaseTestPreprocessor):
-
     def test_overwrite_points(self, preprocessors, resources):
         """Are points overwritten for grade cells?"""
         cell = create_grade_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -55,7 +61,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_grade_source(self, preprocessors, resources):
         """Is the source overwritten for grade cells?"""
         cell = create_grade_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -68,7 +74,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_locked_source_code(self, preprocessors, resources):
         """Is the source overwritten for locked code cells?"""
         cell = create_locked_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -81,7 +87,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_locked_source_markdown(self, preprocessors, resources):
         """Is the source overwritten for locked markdown cells?"""
         cell = create_locked_cell("hello", "markdown", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -94,7 +100,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_dont_overwrite_grade_and_solution_source(self, preprocessors, resources):
         """Is the source not overwritten for grade+solution cells?"""
         cell = create_grade_and_solution_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -107,7 +113,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_dont_overwrite_solution_source(self, preprocessors, resources):
         """Is the source not overwritten for solution cells?"""
         cell = create_solution_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -120,7 +126,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_grade_cell_type(self, preprocessors, resources):
         """Is the cell type overwritten for grade cells?"""
         cell = create_grade_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -133,7 +139,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_solution_cell_type(self, preprocessors, resources):
         """Is the cell type overwritten for solution cells?"""
         cell = create_solution_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -146,7 +152,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_solution_cell_type_raw(self, preprocessors, resources):
         """Is the cell type overwritten for solution cells?"""
         cell = create_solution_cell("hello", "markdown", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -159,7 +165,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_locked_cell_type_raw(self, preprocessors, resources):
         """Is the cell type overwritten for solution cells?"""
         cell = create_grade_cell("hello", "code", "foo", 2)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -172,7 +178,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_locked_cell_type(self, preprocessors, resources):
         """Is the cell type overwritten for locked cells?"""
         cell = create_locked_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -185,7 +191,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_grade_checksum(self, preprocessors, resources):
         """Is the checksum overwritten for grade cells?"""
         cell = create_grade_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -198,7 +204,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_solution_checksum(self, preprocessors, resources):
         """Is the checksum overwritten for solution cells?"""
         cell = create_solution_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -211,7 +217,7 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_overwrite_locked_checksum(self, preprocessors, resources):
         """Is the checksum overwritten for locked cells?"""
         cell = create_locked_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
         nb, resources = preprocessors[0].preprocess(nb, resources)
@@ -224,23 +230,23 @@ class TestOverwriteCells(BaseTestPreprocessor):
     def test_nonexistant_grade_id(self, preprocessors, resources):
         """Are cells not in the database ignored?"""
         cell = create_grade_cell("", "code", "", 1)
-        cell.metadata.nbgrader['grade'] = False
+        cell.metadata.nbgrader["grade"] = False
         nb = new_notebook()
         nb.cells.append(cell)
         preprocessors[0].add_missing_cells = False
         preprocessors[1].add_missing_cells = False
         nb, resources = preprocessors[0].preprocess(nb, resources)
         nb, resources = preprocessors[1].preprocess(nb, resources)
-        assert 'grade_id' not in cell.metadata.nbgrader
+        assert "grade_id" not in cell.metadata.nbgrader
 
         cell = create_grade_cell("", "code", "foo", 1)
-        cell.metadata.nbgrader['grade'] = False
+        cell.metadata.nbgrader["grade"] = False
         nb = new_notebook()
         nb.cells.append(cell)
-        
+
         nb, resources = preprocessors[0].preprocess(nb, resources)
         nb, resources = preprocessors[1].preprocess(nb, resources)
-        assert 'grade_id' not in cell.metadata.nbgrader
+        assert "grade_id" not in cell.metadata.nbgrader
 
     # Tests for adding missing cells back
     def test_add_missing_cells(self, preprocessors, resources):
@@ -249,14 +255,18 @@ class TestOverwriteCells(BaseTestPreprocessor):
         - add missing cells right after the previous grade/solution cell, as the best approximation of their location
         - add task cells at the end (because we can't detect their location in the notebook), in order of appearance
         """
-        
+
         cells = [
             create_solution_cell("Code assignment", "code", "code_solution"),
             create_grade_cell("some tests", "code", "code_test1", 1),
             create_grade_cell("more tests", "code", "code_test2", 1),
             new_markdown_cell("some description"),
-            create_grade_and_solution_cell("write answer here", "markdown", "md_manually_graded1", 1),
-            create_grade_and_solution_cell("write answer here", "markdown", "md_manually_graded2", 1),
+            create_grade_and_solution_cell(
+                "write answer here", "markdown", "md_manually_graded1", 1
+            ),
+            create_grade_and_solution_cell(
+                "write answer here", "markdown", "md_manually_graded2", 1
+            ),
             new_markdown_cell("some description"),
             create_task_cell("some task description", "markdown", "task_cell1", 1),
             new_markdown_cell("some description"),
@@ -269,7 +279,12 @@ class TestOverwriteCells(BaseTestPreprocessor):
                 cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
 
         expected_order = [0, 1, 2, 4, 5, 3, 6, 8, 7, 9]
-        expected = [cells[i].metadata.nbgrader["grade_id"] if "nbgrader" in cells[i].metadata else "markdown" for i in expected_order]
+        expected = [
+            cells[i].metadata.nbgrader["grade_id"]
+            if "nbgrader" in cells[i].metadata
+            else "markdown"
+            for i in expected_order
+        ]
 
         nb = new_notebook()
         nb.cells = cells
@@ -288,5 +303,10 @@ class TestOverwriteCells(BaseTestPreprocessor):
         # restore
         preprocessors[1].add_missing_cells = True
         nb, resources = preprocessors[1].preprocess(nb, resources)
-        result = [cell["metadata"]["nbgrader"]["grade_id"] if "nbgrader" in cell["metadata"] else "markdown" for cell in nb.cells]
+        result = [
+            cell["metadata"]["nbgrader"]["grade_id"]
+            if "nbgrader" in cell["metadata"]
+            else "markdown"
+            for cell in nb.cells
+        ]
         assert expected == result

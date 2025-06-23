@@ -4,38 +4,31 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from datetime import datetime
-from re import sub
-import secrets
+
+import json
+from unittest.mock import MagicMock, patch
 
 import celery
 import pytest
+from tornado.httpclient import HTTPClientError
 
 import grader_service
-from grader_service.server import GraderServer
-import json
+import grader_service.tests.conftest
 from grader_service.api.models.submission import Submission
-from tornado.httpclient import HTTPClientError
-from datetime import timezone
-from .db_util import insert_submission
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
+from grader_service.server import GraderServer
 
-# Imports are important otherwise they will not be found
-from .db_util import insert_assignments
-from .tornado_test_utils import *
+from .db_util import insert_assignments, insert_submission
 
 
 async def test_auto_grading(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_user,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_user,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     a_id = 3
@@ -46,8 +39,12 @@ async def test_auto_grading(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
-        with patch.object(grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None) as task_mock:
+    with patch.object(
+        grader_service.autograding.celery.app.CeleryApp, "instance", return_value=MagicMock()
+    ):
+        with patch.object(
+            grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None
+        ) as task_mock:
             response = await http_server_client.fetch(
                 url, method="GET", headers={"Authorization": f"Token {default_token}"}
             )
@@ -60,14 +57,14 @@ async def test_auto_grading(
 
 
 async def test_auto_grading_wrong_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     a_id = 3
@@ -79,8 +76,12 @@ async def test_auto_grading_wrong_assignment(
     a_id = 99
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
 
-    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
-        with patch.object(grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None):
+    with patch.object(
+        grader_service.autograding.celery.app.CeleryApp, "instance", return_value=MagicMock()
+    ):
+        with patch.object(
+            grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None
+        ):
             with pytest.raises(HTTPClientError) as exc_info:
                 await http_server_client.fetch(
                     url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -90,14 +91,14 @@ async def test_auto_grading_wrong_assignment(
 
 
 async def test_auto_grading_wrong_lecture(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     a_id = 1
 
@@ -116,14 +117,14 @@ async def test_auto_grading_wrong_lecture(
 
 
 async def test_feedback(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     a_id = 3
@@ -134,9 +135,15 @@ async def test_feedback(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    with patch.object(grader_service.autograding.celery.app.CeleryApp, 'instance', return_value=MagicMock()):
-        with patch.object(grader_service.autograding.celery.tasks.generate_feedback_task, "si", return_value=None):
-            with patch.object(grader_service.autograding.celery.tasks.lti_sync_task, "si", return_value=None):
+    with patch.object(
+        grader_service.autograding.celery.app.CeleryApp, "instance", return_value=MagicMock()
+    ):
+        with patch.object(
+            grader_service.autograding.celery.tasks.generate_feedback_task, "si", return_value=None
+        ):
+            with patch.object(
+                grader_service.autograding.celery.tasks.lti_sync_task, "si", return_value=None
+            ):
                 with patch.object(celery, "chain", return_value=MagicMock) as chain_mock:
                     response = await http_server_client.fetch(
                         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -149,14 +156,14 @@ async def test_feedback(
 
 
 async def test_feedback_wrong_assignment(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is instructor
     a_id = 3

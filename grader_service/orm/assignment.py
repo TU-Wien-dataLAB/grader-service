@@ -4,28 +4,29 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import enum
 import json
 from datetime import date, datetime, timezone
 from typing import Any
 
-from grader_service.api.models import assignment
-from sqlalchemy import (Column, DateTime, Enum, ForeignKey,
-                        Integer, String, Text, Boolean, DECIMAL)
+from sqlalchemy import DECIMAL, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
+from grader_service.api.models import assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm.base import Base, DeleteState, Serializable
 
+
 def get_utc_time():
     return datetime.now(tz=timezone.utc)
+
 
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
 
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
-    raise TypeError ("Type %s not serializable" % type(obj))
+    raise TypeError("Type %s not serializable" % type(obj))
+
 
 class Assignment(Base, Serializable):
     __tablename__ = "assignment"
@@ -34,16 +35,12 @@ class Assignment(Base, Serializable):
     """Name of the assignment"""
     lectid = Column(Integer, ForeignKey("lecture.id"))
     points = Column(DECIMAL(10, 3), nullable=True)
-    status = Column(
-        Enum("created", "pushed", "released", "complete"),
-        default="created",
-    )
+    status = Column(Enum("created", "pushed", "released", "complete"), default="created")
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
     properties = Column(Text, nullable=True, unique=False)
     created_at = Column(DateTime, default=get_utc_time, nullable=False)
-    updated_at = Column(DateTime, default=get_utc_time,
-                        onupdate=get_utc_time, nullable=False)
-    _settings = Column('settings',Text, server_default='', nullable=False)
+    updated_at = Column(DateTime, default=get_utc_time, onupdate=get_utc_time, nullable=False)
+    _settings = Column("settings", Text, server_default="", nullable=False)
 
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
@@ -53,7 +50,7 @@ class Assignment(Base, Serializable):
         if self._settings is None:
             return AssignmentSettings()
         return AssignmentSettings.from_dict(json.loads(self._settings))
-    
+
     @settings.setter
     def settings(self, settings: AssignmentSettings | dict):
         if isinstance(settings, dict):
@@ -61,7 +58,7 @@ class Assignment(Base, Serializable):
             return settings
         self._settings = json.dumps(settings.to_dict(), default=json_serial)
         return settings
-    
+
     def update_settings(self, **kwargs: Any):
         # Update specific fields of the AssignmentSettings object
         settings = self.settings  # Get the current AssignmentSettings object
@@ -79,6 +76,6 @@ class Assignment(Base, Serializable):
             name=self.name,
             status=self.status,
             points=self.points,
-            settings=self.settings
+            settings=self.settings,
         )
         return assignment_model

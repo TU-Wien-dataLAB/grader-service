@@ -1,10 +1,12 @@
-import pytest
 import itertools
 import os
 
+import pytest
+
 from grader_service.convert.preprocessors import LockCells
-from .base import BaseTestPreprocessor
+
 from .. import create_code_cell
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture
@@ -13,14 +15,13 @@ def preprocessor():
 
 
 class TestLockCells(BaseTestPreprocessor):
-
     @staticmethod
     def deletable(cell):
-        return cell.metadata.get('deletable', True)
+        return cell.metadata.get("deletable", True)
 
     @staticmethod
     def editable(cell):
-        return cell.metadata.get('editable', True)
+        return cell.metadata.get("editable", True)
 
     def test_solution_cell_undeletable(self, preprocessor):
         """Do solution cells become undeletable?"""
@@ -29,8 +30,8 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['solution'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["solution"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -44,8 +45,8 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['solution'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["solution"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -59,8 +60,8 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = True
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['locked'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["locked"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -74,8 +75,8 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['grade'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["grade"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -89,8 +90,8 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['grade'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["grade"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -104,9 +105,9 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['grade'] = True
-        cell.metadata['nbgrader']['solution'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["grade"] = True
+        cell.metadata["nbgrader"]["solution"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -120,9 +121,9 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
-        cell.metadata['nbgrader']['grade'] = True
-        cell.metadata['nbgrader']['solution'] = True
+        cell.metadata["nbgrader"] = {}
+        cell.metadata["nbgrader"]["grade"] = True
+        cell.metadata["nbgrader"]["solution"] = True
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -136,7 +137,7 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = True
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
+        cell.metadata["nbgrader"] = {}
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -150,7 +151,7 @@ class TestLockCells(BaseTestPreprocessor):
         preprocessor.lock_all_cells = False
         preprocessor.lock_readonly_cells = False
         cell = create_code_cell()
-        cell.metadata['nbgrader'] = {}
+        cell.metadata["nbgrader"] = {}
         assert self.deletable(cell)
         assert self.editable(cell)
         new_cell = preprocessor.preprocess_cell(cell, {}, 0)[0]
@@ -159,9 +160,16 @@ class TestLockCells(BaseTestPreprocessor):
 
     @pytest.mark.parametrize(
         "lock_solution_cells, lock_grade_cells, lock_all_cells, lock_readonly_cells",
-        list(itertools.product([True, False], [True, False], [True, False], [True, False]))
+        list(itertools.product([True, False], [True, False], [True, False], [True, False])),
     )
-    def test_preprocess_nb(self, preprocessor, lock_solution_cells, lock_grade_cells, lock_all_cells, lock_readonly_cells):
+    def test_preprocess_nb(
+        self,
+        preprocessor,
+        lock_solution_cells,
+        lock_grade_cells,
+        lock_all_cells,
+        lock_readonly_cells,
+    ):
         """Is the test notebook processed without error?"""
         preprocessor.lock_solution_cells = lock_solution_cells
         preprocessor.lock_grade_cells = lock_grade_cells

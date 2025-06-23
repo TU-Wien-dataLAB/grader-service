@@ -1,31 +1,24 @@
-# Copyright (c) 2022, TU Wien
+# Copyright (c) 2024, TU Wien
 # All rights reserved.
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
 import os
-from re import S
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker, scoped_session
-
-from grader_service import handlers  # need import to register handlers
-from grader_service.registry import HandlerPathRegistry
-from grader_service.server import GraderServer
-# import alembic
 from alembic import config
 from alembic.command import upgrade
-from .db_util import insert_assignments, insert_lectures
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-__all__ = ["db_test_config", "sql_alchemy_engine", "app", "service_base_url", "default_user",
-           "default_token", "default_roles", "default_user_login", "default_roles_dict", "sql_alchemy_sessionmaker"]
-
-from ...auth.dummy import DummyAuthenticator
-from ...main import GraderService, get_session_maker
-from ...orm import User, Role, Lecture
-from ...orm.takepart import Scope
+from grader_service import GraderService, handlers
+from grader_service.auth.dummy import DummyAuthenticator
+from grader_service.main import get_session_maker
+from grader_service.orm import User
+from grader_service.registry import HandlerPathRegistry
+from grader_service.server import GraderServer
+from grader_service.tests.handlers.db_util import insert_assignments, insert_lectures
 
 
 @pytest.fixture(scope="function")
@@ -40,9 +33,11 @@ def default_user_login(default_user, sql_alchemy_engine):
 
 @pytest.fixture(scope="function")
 def default_roles_dict():
-    return {"20wle2": {"members": ["ubuntu"], "role": "instructor"},
-            "21wle1": {"members": ["ubuntu"], "role": "student"},
-            "22wle1": {"members": ["ubuntu"], "role": "instructor"}}
+    return {
+        "20wle2": {"members": ["ubuntu"], "role": "instructor"},
+        "21wle1": {"members": ["ubuntu"], "role": "student"},
+        "22wle1": {"members": ["ubuntu"], "role": "instructor"},
+    }
 
 
 @pytest.fixture(scope="function")
@@ -53,13 +48,12 @@ def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
     GraderService.init_roles(self=service_mock)
 
 
-
 @pytest.fixture(scope="function")
 def db_test_config():
-    cfg = config.Config(
-        os.path.abspath(os.path.dirname(__file__) + "../../../alembic_test.ini")
+    cfg = config.Config(os.path.abspath(os.path.dirname(__file__) + "../../alembic_test.ini"))
+    cfg.set_main_option(
+        "script_location", os.path.abspath(os.path.dirname(__file__) + "../../migrate")
     )
-    cfg.set_main_option("script_location", os.path.abspath(os.path.dirname(__file__) + "../../../migrate"))
     yield cfg
 
 
@@ -91,9 +85,10 @@ def app(tmpdir, sql_alchemy_sessionmaker):
         session_maker=sql_alchemy_sessionmaker,
         cookie_secret="test",
         login_url="/login",
-        logout_url="/logout"
+        logout_url="/logout",
     )
     yield application
+
 
 @pytest.fixture(scope="function")
 def sql_alchemy_engine(sql_alchemy_sessionmaker):
@@ -101,7 +96,7 @@ def sql_alchemy_engine(sql_alchemy_sessionmaker):
     engine = session.get_bind()
     yield engine
     session.close()
-    
+
 
 @pytest.fixture(scope="module")
 def service_base_url():

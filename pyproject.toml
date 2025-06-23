@@ -1,23 +1,23 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "grader-service"
 description = "Grader service"
 version = "0.7.5"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 classifiers = [
-    "License :: OSI Approved :: BSD License",
     "Development Status :: 3 - Alpha",
     "Framework :: Jupyter",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "alembic>=1.13",
@@ -107,3 +107,35 @@ search = "version: '{current_version}'"
 [[tool.tbump.file]]
 src = "./charts/grader-service/Chart.yaml"
 search = "appVersion: \"{current_version}\""
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.0",
+    "pre-commit>=4.2.0",
+    "oauthenticator>=17.3.0",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "**/*.ipynb",
+    "grader_service/api/*",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+exclude = [
+    "examples/*",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "grader_service/tests",
+]

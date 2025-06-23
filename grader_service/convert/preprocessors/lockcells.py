@@ -1,5 +1,3 @@
-
-
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
@@ -17,17 +15,16 @@ class LockCells(NbGraderPreprocessor):
         True, help="Whether solution cells are locked (non-deletable and non-editable)"
     ).tag(config=True)
 
-    lock_grade_cells = Bool(
-        True, help="Whether grade cells are locked (non-deletable)"
-    ).tag(config=True)
+    lock_grade_cells = Bool(True, help="Whether grade cells are locked (non-deletable)").tag(
+        config=True
+    )
 
     lock_readonly_cells = Bool(
         True, help="Whether readonly cells are locked (non-deletable and non-editable)"
     ).tag(config=True)
 
     lock_all_cells = Bool(
-        False,
-        help="Whether all assignment cells are locked (non-deletable and non-editable)",
+        False, help="Whether all assignment cells are locked (non-deletable and non-editable)"
     ).tag(config=True)
 
     def preprocess_cell(

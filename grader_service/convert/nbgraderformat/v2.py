@@ -1,5 +1,3 @@
-
-
 import typing
 
 from nbformat import read as _read
@@ -13,7 +11,6 @@ from .v1 import MetadataValidatorV1
 
 
 class MetadataValidatorV2(BaseMetadataValidator):
-
     schema_version = 2
 
     def __init__(self) -> None:
@@ -25,9 +22,7 @@ class MetadataValidatorV2(BaseMetadataValidator):
 
         # only add cell type if the checksum has also already been set
         if "checksum" in meta and "cell_type" not in meta:
-            self.log.warning(
-                "Cell does not have a stored cell type! Adding default cell type."
-            )
+            self.log.warning("Cell does not have a stored cell type! Adding default cell type.")
             meta["cell_type"] = cell.cell_type
 
         meta["schema_version"] = self.schema_version
@@ -92,15 +87,11 @@ class MetadataValidatorV2(BaseMetadataValidator):
         # check that markdown cells are grade AND solution (not either/or)
         if cell.cell_type == "markdown" and grade and not solution:
             raise ValidationError(
-                "Markdown grade cell '{}' is not marked as a solution cell".format(
-                    meta["grade_id"]
-                )
+                "Markdown grade cell '{}' is not marked as a solution cell".format(meta["grade_id"])
             )
         if cell.cell_type == "markdown" and not grade and solution:
             raise ValidationError(
-                "Markdown solution cell is not marked as a grade cell: {}".format(
-                    cell.source
-                )
+                "Markdown solution cell is not marked as a grade cell: {}".format(cell.source)
             )
 
     def validate_nb(self, nb: NotebookNode) -> None:
@@ -108,7 +99,6 @@ class MetadataValidatorV2(BaseMetadataValidator):
 
         ids = set([])
         for cell in nb.cells:
-
             if "nbgrader" not in cell.metadata:
                 continue
 
@@ -125,9 +115,7 @@ class MetadataValidatorV2(BaseMetadataValidator):
             ids.add(grade_id)
 
 
-def read_v2(
-    source: typing.TextIO, as_version: int, **kwargs: typing.Any
-) -> NotebookNode:
+def read_v2(source: typing.TextIO, as_version: int, **kwargs: typing.Any) -> NotebookNode:
     nb = _read(source, as_version, **kwargs)
     MetadataValidatorV2().validate_nb(nb)
     return nb

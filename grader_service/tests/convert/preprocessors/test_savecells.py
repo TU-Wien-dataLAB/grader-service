@@ -1,16 +1,21 @@
 import json
-import pytest
 import os
+
+import pytest
 from nbformat import validate
 from nbformat.v4 import new_notebook
 
-from grader_service.convert.preprocessors import SaveCells
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.preprocessors import SaveCells
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
-    create_grade_cell, create_solution_cell, create_grade_and_solution_cell,
-    create_locked_cell)
+    create_grade_and_solution_cell,
+    create_grade_cell,
+    create_locked_cell,
+    create_solution_cell,
+)
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture
@@ -24,6 +29,7 @@ def gradebook(request, json_path):
 
     def fin():
         os.remove(json_path)
+
     request.addfinalizer(fin)
 
     return gb
@@ -31,19 +37,18 @@ def gradebook(request, json_path):
 
 @pytest.fixture
 def resources(json_path):
-        resources = {}
-        resources["unique_key"] = "test"
-        resources["output_json_file"] = "gradebook.json"
-        resources["output_json_path"] = json_path
-        resources['nbgrader'] = dict() # support nbgrader pre-processors
-        return resources
+    resources = {}
+    resources["unique_key"] = "test"
+    resources["output_json_file"] = "gradebook.json"
+    resources["output_json_path"] = json_path
+    resources["nbgrader"] = dict()  # support nbgrader pre-processors
+    return resources
 
 
 class TestSaveCells(BaseTestPreprocessor):
-
     def test_save_code_grade_cell(self, preprocessor, gradebook, resources):
         cell = create_grade_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -63,7 +68,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_code_solution_cell(self, preprocessor, gradebook, resources):
         cell = create_solution_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -80,7 +85,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_markdown_solution_cell(self, preprocessor, gradebook, resources):
         cell = create_solution_cell("hello", "markdown", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -97,7 +102,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_code_grade_and_solution_cell(self, preprocessor, gradebook, resources):
         cell = create_grade_and_solution_cell("hello", "code", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -118,7 +123,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_markdown_grade_and_solution_cell(self, preprocessor, gradebook, resources):
         cell = create_grade_and_solution_cell("hello", "markdown", "foo", 1)
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -139,7 +144,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_locked_code_cell(self, preprocessor, gradebook, resources):
         cell = create_locked_cell("hello", "code", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -154,7 +159,7 @@ class TestSaveCells(BaseTestPreprocessor):
 
     def test_save_locked_markdown_cell(self, preprocessor, gradebook, resources):
         cell = create_locked_cell("hello", "markdown", "foo")
-        cell.metadata.nbgrader['checksum'] = compute_checksum(cell)
+        cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
 
@@ -238,14 +243,10 @@ class TestSaveCells(BaseTestPreprocessor):
         assert source_cell.source == "goodbye"
 
     def test_save_kernelspec(self, preprocessor, gradebook, resources):
-        kernelspec = dict(
-            display_name='blarg',
-            name='python3',
-            language='python',
-        )
+        kernelspec = dict(display_name="blarg", name="python3", language="python")
 
         nb = new_notebook()
-        nb.metadata['kernelspec'] = kernelspec
+        nb.metadata["kernelspec"] = kernelspec
         nb, resources = preprocessor.preprocess(nb, resources)
 
         validate(nb)

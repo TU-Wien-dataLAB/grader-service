@@ -1,6 +1,6 @@
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.tests.convert.converters import _create_input_output_dirs
 from grader_service.convert.converters import GenerateAssignment
+from grader_service.tests.convert.converters import _create_input_output_dirs
 
 
 def test_generate_assignment(tmp_path):
@@ -11,7 +11,7 @@ def test_generate_assignment(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -29,7 +29,7 @@ def test_generate_assignment_no_copy_with_files(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -48,7 +48,7 @@ def test_generate_assignment_copy_with_files(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(allowed_files=["*"]),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()
@@ -74,7 +74,7 @@ def test_generate_assignment_copy_with_dirs(tmp_path):
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
         assignment_settings=AssignmentSettings(allowed_files=["*"]),
-        config=None
+        config=None,
     ).start()
 
     assert (output_dir / "simple.ipynb").exists()

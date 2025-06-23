@@ -2,10 +2,15 @@ import pytest
 
 from grader_service.convert.preprocessors import ComputeChecksums
 from grader_service.convert.utils import compute_checksum
-from .base import BaseTestPreprocessor
+
 from .. import (
-    create_code_cell, create_text_cell,
-    create_grade_cell, create_solution_cell, create_locked_cell)
+    create_code_cell,
+    create_grade_cell,
+    create_locked_cell,
+    create_solution_cell,
+    create_text_cell,
+)
+from .base import BaseTestPreprocessor
 
 
 @pytest.fixture
@@ -16,17 +21,14 @@ def preprocessor():
 
 
 class TestComputeChecksums(BaseTestPreprocessor):
-
     def test_code_cell_no_checksum(self, preprocessor):
         """Test that no checksum is computed for a regular code cell"""
-        cell, _ = preprocessor.preprocess_cell(
-            create_code_cell(), {}, 0)
+        cell, _ = preprocessor.preprocess_cell(create_code_cell(), {}, 0)
         assert "nbgrader" not in cell.metadata or "checksum" not in cell.metadata.nbgrader
 
     def test_text_cell_no_checksum(self, preprocessor):
         """Test that no checksum is computed for a regular text cell"""
-        cell, _ = preprocessor.preprocess_cell(
-            create_text_cell(), {}, 0)
+        cell, _ = preprocessor.preprocess_cell(create_text_cell(), {}, 0)
         assert "nbgrader" not in cell.metadata or "checksum" not in cell.metadata.nbgrader
 
     def test_checksum_grade_cell_type(self, preprocessor):

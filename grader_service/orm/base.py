@@ -6,8 +6,9 @@
 
 import enum
 
-from grader_service.api.models.base_model import Model
 from sqlalchemy.orm import declarative_base
+
+from grader_service.api.models.base_model import Model
 
 Base = declarative_base()
 

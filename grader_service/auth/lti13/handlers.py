@@ -3,19 +3,19 @@ import hashlib
 import json
 import re
 import uuid
-from typing import Any, Dict, Optional, cast, Awaitable
-from urllib.parse import quote, unquote, urlparse
+from typing import Any, Dict, Optional, cast
+from urllib.parse import quote, unquote
 
-from grader_service.utils import url_path_join  # type: ignore
-from oauthlib.common import generate_token  # type: ignore
-from tornado.httputil import url_concat, HTTPHeaders
+from oauthlib.common import generate_token
+from tornado.httputil import url_concat
 from tornado.log import app_log
 from tornado.web import HTTPError, MissingArgumentError, RequestHandler
 
-from grader_service.utils import convert_request_to_dict
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.utils import convert_request_to_dict, url_path_join
+
 from .error import InvalidAudienceError, LoginError, ValidationError
 from .validator import LTI13LaunchValidator
-from ...handlers.base_handler import BaseHandler
 
 STATE_COOKIE_NAME = "grader-lti13authenticator-state"
 NONCE_STATE_COOKIE_NAME = "grader-lti13authenticator-nonce-state"
@@ -133,10 +133,7 @@ class LTI13ConfigHandler(BaseHandler):
                 }
             ],
             "description": self.authenticator.tool_description,
-            "custom_fields": {
-                "email": "$Person.email.primary",
-                "lms_user_id": "$User.id",
-            },
+            "custom_fields": {"email": "$Person.email.primary", "lms_user_id": "$User.id"},
             "target_link_uri": target_link_url,
             "oidc_initiation_url": self.authenticator.login_url(
                 url_path_join(target_link_url, self.hub.server.base_url)
@@ -161,13 +158,13 @@ class LTI13LoginInitHandler(BaseHandler):
         return
 
     def authorize_redirect(
-            self,
-            redirect_uri: str,
-            login_hint: str,
-            nonce: str,
-            client_id: str,
-            state: str,
-            lti_message_hint: Optional[str] = None,
+        self,
+        redirect_uri: str,
+        login_hint: str,
+        nonce: str,
+        client_id: str,
+        state: str,
+        lti_message_hint: Optional[str] = None,
     ) -> None:
         """
         Overrides the OAuth2Mixin.authorize_redirect method to to initiate the LTI 1.3 / OIDC
@@ -220,9 +217,7 @@ class LTI13LoginInitHandler(BaseHandler):
             # try with the target_link_uri arg
             target_link = self.get_argument("target_link_uri", "")
             if "next" in target_link:
-                self.log.debug(
-                    f"Trying to get the next-url from target_link_uri: {target_link}"
-                )
+                self.log.debug(f"Trying to get the next-url from target_link_uri: {target_link}")
                 next_search = re.search("next=(.*)", target_link, re.IGNORECASE)
                 if next_search:
                     next_url = next_search.group(1)
@@ -235,13 +230,9 @@ class LTI13LoginInitHandler(BaseHandler):
             # avoid browsers treating \ as /
             next_url = next_url.replace("\\", quote("\\"))
             if next_url != original_next_url:
-                self.log.warning(
-                    "Ignoring next_url %r, using %r", original_next_url, next_url
-                )
+                self.log.warning("Ignoring next_url %r, using %r", original_next_url, next_url)
         if self._state is None:
-            self._state = _serialize_state(
-                {"state_id": uuid.uuid4().hex, "next_url": next_url}
-            )
+            self._state = _serialize_state({"state_id": uuid.uuid4().hex, "next_url": next_url})
         return self._state
 
     async def post(self):
@@ -258,10 +249,9 @@ class LTI13LoginInitHandler(BaseHandler):
             validator.validate_login_request(args)
         except ValidationError as e:
             self.log.error(str(e))
-            html = await self.render_template('auth/lti_no_auth.html.j2')
+            html = await self.render_template("auth/lti_no_auth.html.j2")
             await self.finish(html)
             return
-            
 
         login_hint = args["login_hint"]
         self.log.debug(f"login_hint is {login_hint}")
@@ -341,13 +331,7 @@ class LTI13LoginInitHandler(BaseHandler):
         self._set_oauth_cookie(STATE_COOKIE_NAME, state)
 
     def _set_oauth_cookie(self, key: str, value):
-        self._set_cookie(
-            key,
-            value,
-            expires_days=1,
-            httponly=True,
-            encrypted=True,
-        )
+        self._set_cookie(key, value, expires_days=1, httponly=True, encrypted=True)
 
 
 class LTI13CallbackHandler(BaseHandler):

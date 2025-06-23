@@ -1,9 +1,9 @@
-import pytest
-from tornado.web import HTTPError
 from http import HTTPStatus
 
-from grader_service.handlers.handler_utils import parse_ids
+import pytest
+from tornado.web import HTTPError
 
+from grader_service.handlers.handler_utils import parse_ids
 
 
 async def test_parse_not_numerical_ids():
