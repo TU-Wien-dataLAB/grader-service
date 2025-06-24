@@ -781,7 +781,7 @@ async def test_post_submission_git_repo_not_found(
             body=json.dumps(pre_submission.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == 422
 
 
 async def test_post_submission_commit_hash_not_found(

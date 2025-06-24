@@ -327,14 +327,16 @@ class SubmissionHandler(GraderBaseHandler):
             lecture=assignment.lecture,
             assignment=assignment,
         )
-        if git_repo_path is None or not os.path.exists(git_repo_path):
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Git repository not found")
 
         try:
             # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user.
             # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
-            # When submission is set to editted, autograder uses edit repository, so we don't need the commit_hash of the submission.
+            # When submission is set to edited, autograder uses edit repository, so we don't need the commit_hash of the submission.
             if commit_hash != "0" * 40:
+                if not os.path.exists(git_repo_path):
+                    raise HTTPError(
+                        HTTPStatus.UNPROCESSABLE_ENTITY, reason="User git repository not found"
+                    )
                 subprocess.run(
                     ["git", "branch", "main", "--contains", commit_hash],
                     cwd=git_repo_path,

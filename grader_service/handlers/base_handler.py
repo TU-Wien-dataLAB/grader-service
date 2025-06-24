@@ -753,6 +753,10 @@ class GraderBaseHandler(BaseHandler):
         if len(unknown_args) != 0:
             raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
+    def write_error(self, status_code, **kwargs):
+        self.log.error("Error %s: %s", status_code, self._reason)
+        return super().write_error(status_code, **kwargs)
+
     def get_role(self, lecture_id: int) -> Role:
         role = self.session.get(Role, (self.user.name, lecture_id))
         if role is None:
@@ -911,14 +915,14 @@ class GraderBaseHandler(BaseHandler):
             path = os.path.join(user_path, self.user.name)
         elif repo_type == "group":
             if group_name is None:
-                return None
+                raise HTTPError(400, reason="Group name is required for group repo type")
             group = self.session.query(Group).get((group_name, lecture.id))
             if group is None:
                 raise HTTPError(404, reason="User is not in a group")
             group_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(group_path, group.name)
         else:
-            return None
+            raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 
         return path
 
