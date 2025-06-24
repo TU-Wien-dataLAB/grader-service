@@ -81,7 +81,7 @@ class Autograde(BaseConverter):
                 self.init_single_notebook_resources(n)["unique_key"]: n for n in self.notebooks
             }
             for notebook in gb.model.notebook_id_set.difference(set(glob_notebooks.keys())):
-                self.log.warning("No submitted file: {}".format(glob_notebooks[notebook]))
+                self.log.warning("No submitted file: {}".format(notebook))
                 nb = gb.find_notebook(notebook)
                 for grade in nb.grades:
                     grade.auto_score = 0
