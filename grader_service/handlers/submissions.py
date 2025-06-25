@@ -516,8 +516,8 @@ class SubmissionObjectHandler(GraderBaseHandler):
             # if assignment has deadline
             if submission.assignment.settings.deadline:
                 # if assignment's deadline has passed
-                if submission.assignment.settings.deadline < datetime.datetime.now().replace(
-                    tzinfo=None
+                if submission.assignment.settings.deadline < datetime.datetime.now(
+                    datetime.timezone.utc
                 ):
                     raise HTTPError(
                         HTTPStatus.FORBIDDEN,
