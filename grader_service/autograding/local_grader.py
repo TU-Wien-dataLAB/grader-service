@@ -317,7 +317,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
-                raise ValueError()
+                raise ValueError(
+                    f"Group with username {self.submission.username} and lecture id {lecture.id} not found"
+                )
             repo_name = group.name
 
         git_repo_path = os.path.join(
