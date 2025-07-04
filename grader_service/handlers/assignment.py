@@ -171,16 +171,6 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.write_json(assignment)
 
 
-def get_allow_files(assignment_model: AssignmentModel):
-    """Extract the allow files from field in assignment table.
-
-    Return false if field is None, else a list."""
-    allow_files = False
-    if assignment_model.allow_files is not None:
-        allow_files = assignment_model.allow_files
-    return allow_files
-
-
 @register_handler(
     path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/?",
     version_specifier=VersionSpecifier.ALL,
