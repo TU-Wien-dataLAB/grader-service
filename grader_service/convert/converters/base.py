@@ -35,7 +35,7 @@ class BaseConverter(LoggingConfigurable):
     force = Bool(False, help="Whether to overwrite existing files").tag(config=True)
 
     ignore = List(
-        [".ipynb_checkpoints", "*.pyc", "__pycache__", ".git", "*.ipynb"],
+        [".ipynb_checkpoints", "*.pyc", "__pycache__", ".git"],
         help=dedent(
             """
             List of file names or file globs.
