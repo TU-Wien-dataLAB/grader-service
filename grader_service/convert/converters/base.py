@@ -264,7 +264,8 @@ class BaseConverter(LoggingConfigurable):
 
         if allowed_files is None:
             self.log.info(
-                "No additional file patterns specified; only copying files included in release version"
+                "No additional file patterns specified; only copying files included "
+                "in release version"
             )
             files_patterns = gb.get_extra_files()
         else:
@@ -287,7 +288,8 @@ class BaseConverter(LoggingConfigurable):
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in ignore_patterns)
 
         self.log.info(
-            f"Copying files from {src} to {dst} that match allowed patterns and don't match ignored patterns."
+            f"Copying files from {src} to {dst} that match allowed patterns "
+            f"and don't match ignored patterns."
         )
 
         for root, dirs, files in os.walk(src, topdown=True):
