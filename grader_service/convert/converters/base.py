@@ -419,11 +419,11 @@ class BaseConverter(LoggingConfigurable):
             errors.append(e)
             _handle_failure(e)
 
-        if len(errors) > 0:
+        if errors:
             if self.logfile:
                 msg = (
-                    "Please see the error log ({}) for details on the specific "
-                    "errors on the above failures.".format(self.logfile)
+                    f"Please see the error log ({self.logfile}) for details on the specific "
+                    "errors on the above failures."
                 )
             else:
                 msg = errors[0]

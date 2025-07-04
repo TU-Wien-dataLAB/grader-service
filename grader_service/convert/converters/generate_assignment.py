@@ -23,6 +23,8 @@ from grader_service.convert.preprocessors import (
 
 
 class GenerateAssignment(BaseConverter):
+    """Convert between the 'source code' and the 'student version' of assignment files."""
+
     create_assignment = Bool(
         True,
         help=dedent(
@@ -68,9 +70,6 @@ class GenerateAssignment(BaseConverter):
     ) -> None:
         super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
-
-    def start(self) -> None:
-        super(GenerateAssignment, self).start()
 
 
 class GenerateAssignmentApp(ConverterApp):

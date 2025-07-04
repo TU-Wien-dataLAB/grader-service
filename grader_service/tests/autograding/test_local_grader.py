@@ -2,9 +2,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Submission
-from grader_service.api.models.assignment_settings import AssignmentSettings
 
 
 @pytest.fixture
