@@ -77,13 +77,21 @@ Grader Cell Types:
     Part or all of the tests can be hidden with `BEGIN HIDDEN TESTS` and `END HIDDEN TESTS` directives.
     :::
 
-    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, but want to let them know how meny points a submission granted  them, this a perfect option for you.
+    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. 
+    This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, 
+    where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, 
+    but want to let them know how meny points a submission granted  them, this a perfect option for you.
 
-    ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
+  ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
 
-    The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
+   The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
     
-    ![Feedback when Always Hidden Tests are set](../_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
+   ![Feedback when Always Hidden Tests are set](../_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
+
+  :::{warning}
+    The students can still see the error traceback which allows them to view the test cases that failed. If you want 
+    to avoid that, you can add `%xmode minimal` at the beginning of the text section.
+  :::
    
 - Manual graded answer
   : This cell type supports free-form answers from students.
