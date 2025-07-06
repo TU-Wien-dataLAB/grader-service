@@ -355,16 +355,13 @@ class GradeBookModel(BaseModel):
         return max_score
 
     @property
-    def notebook_id_set(self) -> Set[Notebook]:
+    def notebook_id_set(self) -> Set[str]:
         return {x for x in self.notebooks.keys()}
 
     @classmethod
     def from_dict(cls: Type["GradeBookModel"], d: dict) -> "GradeBookModel":
         ns = {id: Notebook.from_dict(v) for id, v in d["notebooks"].items()}
-        try:
-            extra_files = d["extra_files"]
-        except KeyError:
-            extra_files = []
+        extra_files = d.get("extra_files", [])
         return GradeBookModel(notebooks=ns, extra_files=extra_files)
 
     def to_dict(self) -> dict:

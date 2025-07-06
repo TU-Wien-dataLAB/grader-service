@@ -2,7 +2,6 @@ from textwrap import dedent
 from typing import Any
 
 from traitlets import Bool, List, default
-from traitlets.config.loader import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -24,6 +23,8 @@ from grader_service.convert.preprocessors import (
 
 
 class GenerateAssignment(BaseConverter):
+    """Convert between the 'source code' and the 'student version' of assignment files."""
+
     create_assignment = Bool(
         True,
         help=dedent(
@@ -59,9 +60,6 @@ class GenerateAssignment(BaseConverter):
     # NB: ClearHiddenTests must come after ComputeChecksums and SaveCells.
     # ComputerChecksums must come again after ClearHiddenTests.
 
-    def _load_config(self, cfg: Config, **kwargs: Any) -> None:
-        super(GenerateAssignment, self)._load_config(cfg, **kwargs)
-
     def __init__(
         self,
         input_dir: str,
@@ -70,13 +68,8 @@ class GenerateAssignment(BaseConverter):
         assignment_settings: AssignmentSettings,
         **kwargs: Any,
     ) -> None:
-        super(GenerateAssignment, self).__init__(
-            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
-        )
+        super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
-
-    def start(self) -> None:
-        super(GenerateAssignment, self).start()
 
 
 class GenerateAssignmentApp(ConverterApp):
