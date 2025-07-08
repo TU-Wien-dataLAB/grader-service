@@ -104,6 +104,7 @@ class GitBaseHandler(GraderBaseHandler):
 
         # TODO(Nat): Could it still happen somewhere?
         if repo_type == "assignment":
+            self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
             repo_type = "user"
 
         if repo_type not in GitRepoType:

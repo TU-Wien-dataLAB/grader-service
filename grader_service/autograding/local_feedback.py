@@ -14,6 +14,7 @@ from traitlets import Unicode
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
@@ -35,23 +36,26 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
         )
 
-    def _pull_submission(self):
-        if not os.path.exists(self.input_path):
-            os.mkdir(self.input_path)
-
+    def _get_git_repo_path(self, repo_type: GitRepoType) -> str:
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
         repo_name = self.submission.username
 
-        git_repo_path = os.path.join(
+        return os.path.join(
             self.grader_service_dir,
             "git",
             lecture.code,
             str(assignment.id),
-            "autograde",
+            repo_type,
             "user",
             repo_name,
         )
+
+    def _pull_submission(self):
+        if not os.path.exists(self.input_path):
+            os.mkdir(self.input_path)
+
+        git_repo_path = self._get_git_repo_path(repo_type=GitRepoType.AUTOGRADE)
 
         if os.path.exists(self.input_path):
             rmtree(self.input_path)
@@ -103,19 +107,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
     def _push_results(self):
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
 
-        assignment: Assignment = self.submission.assignment
-        lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
-
-        git_repo_path = os.path.join(
-            self.grader_service_dir,
-            "git",
-            lecture.code,
-            str(assignment.id),
-            "feedback",
-            "user",
-            repo_name,
-        )
+        git_repo_path = self._get_git_repo_path(repo_type=GitRepoType.FEEDBACK)
 
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
