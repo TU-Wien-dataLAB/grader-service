@@ -11,7 +11,6 @@ import logging
 import os
 import shlex
 import shutil
-import stat
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,6 +23,7 @@ from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Callable, TraitError, Unicode, validate
 
+from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
@@ -31,15 +31,6 @@ from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
-
-
-def rm_error(func, path, exc_info):
-    if not os.access(path, os.W_OK):
-        # Is the error an access error ?
-        os.chmod(path, stat.S_IWUSR)
-        func(path)
-    else:
-        raise
 
 
 @dataclass
@@ -193,10 +184,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             )
         # clean start to autograde process
         if os.path.exists(self.input_path):
-            shutil.rmtree(self.input_path, onerror=rm_error)
+            rmtree(self.input_path)
         os.makedirs(self.input_path, exist_ok=True)
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
         os.makedirs(self.output_path, exist_ok=True)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
@@ -224,7 +215,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
         os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_assignment_properties())
@@ -522,7 +513,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
         os.mkdir(self.output_path)
         self._write_gradebook(self._put_grades_in_assignment_properties())

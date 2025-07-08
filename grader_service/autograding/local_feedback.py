@@ -7,13 +7,12 @@
 import io
 import logging
 import os
-import shutil
-import sys
 from subprocess import CalledProcessError
 
 from traitlets import Unicode
 
-from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
@@ -55,11 +54,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         )
 
         if os.path.exists(self.input_path):
-            # onerror is deprecated in 3.12, use onexc
-            if sys.version_info >= (3, 12):
-                shutil.rmtree(self.input_path, onexc=rm_error)
-            else:
-                shutil.rmtree(self.input_path, onerror=rm_error)
+            rmtree(self.input_path)
         os.mkdir(self.input_path)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
@@ -83,9 +78,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
     def _run(self):
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
-        os.makedirs(self.output_path, exist_ok=True)
+        os.makedirs(self.output_path)
         self._write_gradebook(self.submission.properties.properties)
 
         autograder = GenerateFeedback(
@@ -181,7 +176,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
 
     def _run(self):
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.properties)
