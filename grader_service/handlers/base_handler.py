@@ -38,7 +38,7 @@ from traitlets.config import SingletonConfigurable
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import APIToken, Assignment, Group, Submission
+from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
@@ -895,32 +895,16 @@ class GraderBaseHandler(BaseHandler):
                 path = os.path.join(path, str(submission.id))
                 self.log.info(path)
         elif repo_type in ["autograde", "feedback"]:
-            type_path = os.path.join(
-                assignment_path, repo_type, assignment.settings.assignment_type
-            )
-            if assignment.settings.assignment_type == "user":
-                if repo_type == "autograde":
-                    if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
-                        raise HTTPError(403)
-                    path = os.path.join(type_path, submission.username)
-                else:
-                    path = os.path.join(type_path, self.user.name)
+            type_path = os.path.join(assignment_path, repo_type, "user")
+            if repo_type == "autograde":
+                if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
+                    raise HTTPError(403)
+                path = os.path.join(type_path, submission.username)
             else:
-                group = self.session.query(Group).get((self.user.name, lecture.id))
-                if group is None:
-                    raise HTTPError(404, reason="User is not in a group")
-                path = os.path.join(type_path, group.name)
+                path = os.path.join(type_path, self.user.name)
         elif repo_type == "user":
             user_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(user_path, self.user.name)
-        elif repo_type == "group":
-            if group_name is None:
-                raise HTTPError(400, reason="Group name is required for group repo type")
-            group = self.session.query(Group).get((group_name, lecture.id))
-            if group is None:
-                raise HTTPError(404, reason="User is not in a group")
-            group_path = os.path.join(assignment_path, repo_type)
-            path = os.path.join(group_path, group.name)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 

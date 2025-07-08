@@ -311,9 +311,7 @@ class SubmissionHandler(GraderBaseHandler):
                 and role.role < Scope.tutor
             ):
                 raise HTTPError(
-                    HTTPStatus.CONFLICT,
-                    reason="Maximum number \
-                of submissions reached!",
+                    HTTPStatus.CONFLICT, reason="Maximum number of submissions reached!"
                 )
 
         submission = Submission()
@@ -323,15 +321,15 @@ class SubmissionHandler(GraderBaseHandler):
         submission.score_scaling = score_scaling
 
         git_repo_path = self.construct_git_dir(
-            repo_type=assignment.settings.assignment_type,
-            lecture=assignment.lecture,
-            assignment=assignment,
+            repo_type="user", lecture=assignment.lecture, assignment=assignment
         )
 
         try:
-            # Commit hash "0"*40 is used to differentiate between submissions created by instructors for students and normal submissions by any user.
-            # In this case submissions for the student might not exist, so we cannot reference a non-existing commit_hash.
-            # When submission is set to edited, autograder uses edit repository, so we don't need the commit_hash of the submission.
+            # Commit hash "0"*40 is used to differentiate between submissions created by
+            # instructors for students and normal submissions by any user.
+            # In this case submissions for the student might not exist, so we cannot reference
+            # a non-existing commit_hash. When submission is set to edited, autograder uses edit
+            # repository, so we don't need the commit_hash of the submission.
             if commit_hash != "0" * 40:
                 if not os.path.exists(git_repo_path):
                     raise HTTPError(
@@ -693,11 +691,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Path to repository of student which contains the submitted files
         submission_repo_path = os.path.join(
-            self.gitbase,
-            lecture.code,
-            str(assignment.id),
-            assignment.settings.assignment_type,
-            submission.username,
+            self.gitbase, lecture.code, str(assignment.id), "user", submission.username
         )
 
         if os.path.exists(git_repo_path):

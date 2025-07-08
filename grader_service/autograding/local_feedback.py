@@ -16,7 +16,6 @@ from traitlets import Unicode
 from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 
@@ -43,14 +42,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-
-        if assignment.settings.assignment_type == "user":
-            repo_name = self.submission.username
-        else:
-            group = self.session.query(Group).get((self.submission.username, lecture.id))
-            if group is None:
-                raise ValueError()
-            repo_name = group.name
+        repo_name = self.submission.username
 
         git_repo_path = os.path.join(
             self.grader_service_dir,
@@ -58,7 +50,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             lecture.code,
             str(assignment.id),
             "autograde",
-            assignment.settings.assignment_type,
+            "user",
             repo_name,
         )
 
@@ -118,14 +110,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-
-        if assignment.settings.assignment_type == "user":
-            repo_name = self.submission.username
-        else:
-            group = self.session.query(Group).get((self.submission.username, lecture.id))
-            if group is None:
-                raise ValueError()
-            repo_name = group.name
+        repo_name = self.submission.username
 
         git_repo_path = os.path.join(
             self.grader_service_dir,
@@ -133,7 +118,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             lecture.code,
             str(assignment.id),
             "feedback",
-            assignment.settings.assignment_type,
+            "user",
             repo_name,
         )
 

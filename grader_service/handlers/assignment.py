@@ -324,9 +324,7 @@ class AssignmentResetHandler(GraderBaseHandler):
         self.log.info(f"GIT USER {git_path_user}")
 
         repo_path_release = self.construct_git_dir("release", assignment.lecture, assignment)
-        repo_path_user = self.construct_git_dir(
-            assignment.settings.assignment_type, assignment.lecture, assignment
-        )
+        repo_path_user = self.construct_git_dir("user", assignment.lecture, assignment)
 
         self.duplicate_release_repo(
             repo_path_release=repo_path_release,

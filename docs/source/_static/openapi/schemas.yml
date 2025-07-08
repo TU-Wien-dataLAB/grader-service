@@ -67,12 +67,6 @@ components:
         deadline:
           type: "string"
           format: "date-time"
-        assignment_type:
-          type: "string"
-          enum:
-            - "user"
-            - "group"
-          default: "user"
         max_submissions:
           type: "integer"
         allowed_files:

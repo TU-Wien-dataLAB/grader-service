@@ -14,13 +14,11 @@ class AssignmentSettings(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, deadline=None, assignment_type='user', max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto'):  # noqa: E501
+    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto'):  # noqa: E501
         """AssignmentSettings - a model defined in OpenAPI
 
         :param deadline: The deadline of this AssignmentSettings.  # noqa: E501
         :type deadline: datetime
-        :param assignment_type: The assignment_type of this AssignmentSettings.  # noqa: E501
-        :type assignment_type: str
         :param max_submissions: The max_submissions of this AssignmentSettings.  # noqa: E501
         :type max_submissions: int
         :param allowed_files: The allowed_files of this AssignmentSettings.  # noqa: E501
@@ -32,7 +30,6 @@ class AssignmentSettings(Model):
         """
         self.openapi_types = {
             'deadline': datetime,
-            'assignment_type': str,
             'max_submissions': int,
             'allowed_files': List[str],
             'late_submission': List[SubmissionPeriod],
@@ -41,7 +38,6 @@ class AssignmentSettings(Model):
 
         self.attribute_map = {
             'deadline': 'deadline',
-            'assignment_type': 'assignment_type',
             'max_submissions': 'max_submissions',
             'allowed_files': 'allowed_files',
             'late_submission': 'late_submission',
@@ -49,7 +45,6 @@ class AssignmentSettings(Model):
         }
 
         self._deadline = deadline
-        self._assignment_type = assignment_type
         self._max_submissions = max_submissions
         self._allowed_files = allowed_files
         self._late_submission = late_submission
@@ -86,33 +81,6 @@ class AssignmentSettings(Model):
         """
 
         self._deadline = deadline
-
-    @property
-    def assignment_type(self) -> str:
-        """Gets the assignment_type of this AssignmentSettings.
-
-
-        :return: The assignment_type of this AssignmentSettings.
-        :rtype: str
-        """
-        return self._assignment_type
-
-    @assignment_type.setter
-    def assignment_type(self, assignment_type: str):
-        """Sets the assignment_type of this AssignmentSettings.
-
-
-        :param assignment_type: The assignment_type of this AssignmentSettings.
-        :type assignment_type: str
-        """
-        allowed_values = ["user", "group"]  # noqa: E501
-        if assignment_type not in allowed_values:
-            raise ValueError(
-                "Invalid value for `assignment_type` ({0}), must be one of {1}"
-                .format(assignment_type, allowed_values)
-            )
-
-        self._assignment_type = assignment_type
 
     @property
     def max_submissions(self) -> int:

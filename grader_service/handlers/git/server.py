@@ -119,7 +119,7 @@ class GitBaseHandler(GraderBaseHandler):
             raise HTTPError(404, reason="Assignment not found")
 
         if repo_type == "assignment":
-            repo_type: str = assignment.settings.assignment_type
+            repo_type: str = "user"
 
         # create directories once we know they exist in the database
         if not os.path.exists(lecture_path):
@@ -154,12 +154,12 @@ class GitBaseHandler(GraderBaseHandler):
             except subprocess.CalledProcessError:
                 return None
 
-            if repo_type in ["user", "group"]:
+            if repo_type == "user":
                 repo_path_release = self.construct_git_dir(
                     "release", assignment.lecture, assignment
                 )
                 safe_repo_path_release = repo_path_release
-                err_msg = "Error: expceted path or str, got None"
+                err_msg = "Error: expected path or str, got None"
                 assert safe_repo_path_release is not None, err_msg
                 if not os.path.exists(safe_repo_path_release):
                     return None
