@@ -6,7 +6,7 @@
 
 import json
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import Any, Union
 
 from sqlalchemy import DECIMAL, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
@@ -52,7 +52,7 @@ class Assignment(Base, Serializable):
         return AssignmentSettings.from_dict(json.loads(self._settings))
 
     @settings.setter
-    def settings(self, settings: AssignmentSettings | dict):
+    def settings(self, settings: Union[AssignmentSettings, dict]):
         if isinstance(settings, dict):
             self._settings = json.dumps(settings, default=json_serial)
             return settings
