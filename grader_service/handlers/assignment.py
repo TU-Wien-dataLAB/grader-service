@@ -22,7 +22,7 @@ from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
-from .handler_utils import parse_ids
+from .handler_utils import GitRepoType, parse_ids
 
 
 def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
@@ -323,8 +323,10 @@ class AssignmentResetHandler(GraderBaseHandler):
         self.log.info(f"GIT RELEASE {git_path_release}")
         self.log.info(f"GIT USER {git_path_user}")
 
-        repo_path_release = self.construct_git_dir("release", assignment.lecture, assignment)
-        repo_path_user = self.construct_git_dir("user", assignment.lecture, assignment)
+        repo_path_release = self.construct_git_dir(
+            GitRepoType.RELEASE, assignment.lecture, assignment
+        )
+        repo_path_user = self.construct_git_dir(GitRepoType.USER, assignment.lecture, assignment)
 
         self.duplicate_release_repo(
             repo_path_release=repo_path_release,

@@ -29,7 +29,7 @@ from grader_service.autograding.celery.tasks import (
 )
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.handlers.handler_utils import parse_ids
+from grader_service.handlers.handler_utils import GitRepoType, parse_ids
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture
@@ -321,7 +321,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission.score_scaling = score_scaling
 
         git_repo_path = self.construct_git_dir(
-            repo_type="user", lecture=assignment.lecture, assignment=assignment
+            repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
         )
 
         try:

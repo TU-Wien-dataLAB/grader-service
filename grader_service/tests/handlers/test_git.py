@@ -11,6 +11,7 @@ import pytest
 from tornado.web import HTTPError
 
 from grader_service.handlers.git.server import GitBaseHandler
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
@@ -71,7 +72,7 @@ def test_git_lookup_instructor(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="source",
+        repo_type=GitRepoType.SOURCE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -101,7 +102,7 @@ def test_git_lookup_release_pull_instructor(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="release",
+        repo_type=GitRepoType.RELEASE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -272,7 +273,7 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
     handler_mock.get_role = Mock(return_value=role_mock)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="autograde",
+        repo_type=GitRepoType.AUTOGRADE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
         submission=sf(Submission).get(),
@@ -321,7 +322,7 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -350,7 +351,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -379,7 +380,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )

@@ -38,6 +38,7 @@ from traitlets.config import SingletonConfigurable
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -875,10 +876,9 @@ class GraderBaseHandler(BaseHandler):
 
     def construct_git_dir(
         self,
-        repo_type: str,
+        repo_type: GitRepoType,
         lecture: Lecture,
         assignment: Assignment,
-        group_name: Optional[str] = None,
         submission: Optional[Submission] = None,
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
@@ -888,21 +888,21 @@ class GraderBaseHandler(BaseHandler):
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
-        allowed_types = set(["source", "release", "edit"])
+        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
         if repo_type in allowed_types:
             path = os.path.join(assignment_path, repo_type)
-            if repo_type == "edit":
+            if repo_type == GitRepoType.EDIT:
                 path = os.path.join(path, str(submission.id))
                 self.log.info(path)
-        elif repo_type in ["autograde", "feedback"]:
+        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = os.path.join(assignment_path, repo_type, "user")
-            if repo_type == "autograde":
+            if repo_type == GitRepoType.AUTOGRADE:
                 if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
                     raise HTTPError(403)
                 path = os.path.join(type_path, submission.username)
             else:
                 path = os.path.join(type_path, self.user.name)
-        elif repo_type == "user":
+        elif repo_type == GitRepoType.USER:
             user_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(user_path, self.user.name)
         else:
