@@ -13,7 +13,6 @@ import re
 import shlex
 import shutil
 import subprocess
-import sys
 import time
 import uuid
 from _decimal import Decimal
@@ -959,16 +958,7 @@ class GraderBaseHandler(BaseHandler):
             msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
             self.log.info(msg)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
-            if (sys.version_info.major == 3) and (sys.version_info.minor >= 8):
-                shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            else:
-                for item in os.listdir(tmp_path_release):
-                    s = os.path.join(tmp_path_release, item)
-                    d = os.path.join(tmp_path_user, item)
-                    if os.path.isdir(s):
-                        shutil.copytree(s, d, ignore=ignore)
-                    else:
-                        shutil.copy2(s, d)
+            shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
             cmd = "sh -c 'git add -A"
             cmd += f'&& git commit --allow-empty -m "{message}"\''
             self._run_command(cmd, tmp_path_user)
