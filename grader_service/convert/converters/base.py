@@ -35,7 +35,7 @@ class BaseConverter(LoggingConfigurable):
     force = Bool(False, help="Whether to overwrite existing files").tag(config=True)
 
     ignore = List(
-        [".ipynb_checkpoints", "*.pyc", "__pycache__", ".git", "*.ipynb"],
+        [".ipynb_checkpoints", "*.pyc", "__pycache__", ".git"],
         help=dedent(
             """
             List of file names or file globs.
@@ -264,7 +264,8 @@ class BaseConverter(LoggingConfigurable):
 
         if allowed_files is None:
             self.log.info(
-                "No additional file patterns specified; only copying files included in release version"
+                "No additional file patterns specified; only copying files included "
+                "in release version"
             )
             files_patterns = gb.get_extra_files()
         else:
@@ -287,7 +288,8 @@ class BaseConverter(LoggingConfigurable):
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in ignore_patterns)
 
         self.log.info(
-            f"Copying files from {src} to {dst} that match allowed patterns and don't match ignored patterns."
+            f"Copying files from {src} to {dst} that match allowed patterns "
+            f"and don't match ignored patterns."
         )
 
         for root, dirs, files in os.walk(src, topdown=True):
@@ -417,11 +419,11 @@ class BaseConverter(LoggingConfigurable):
             errors.append(e)
             _handle_failure(e)
 
-        if len(errors) > 0:
+        if errors:
             if self.logfile:
                 msg = (
-                    "Please see the error log ({}) for details on the specific "
-                    "errors on the above failures.".format(self.logfile)
+                    f"Please see the error log ({self.logfile}) for details on the specific "
+                    "errors on the above failures."
                 )
             else:
                 msg = errors[0]

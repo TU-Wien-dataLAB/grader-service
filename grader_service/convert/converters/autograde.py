@@ -2,7 +2,6 @@ import os
 from typing import Any
 
 from traitlets import List
-from traitlets.config.loader import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -57,7 +56,7 @@ class Autograde(BaseConverter):
         self.log.info("Sanitizing %s", notebook_filename)
         self._sanitizing = True
         self._init_preprocessors()
-        super(Autograde, self).convert_single_notebook(notebook_filename)
+        super().convert_single_notebook(notebook_filename)
 
         notebook_filename = os.path.join(
             self.writer.build_directory, os.path.basename(notebook_filename)
@@ -67,7 +66,7 @@ class Autograde(BaseConverter):
         self._init_preprocessors()
         try:
             with utils.setenv(NBGRADER_EXECUTION="autograde"):
-                super(Autograde, self).convert_single_notebook(notebook_filename)
+                super().convert_single_notebook(notebook_filename)
         finally:
             self._sanitizing = True
 
@@ -81,7 +80,7 @@ class Autograde(BaseConverter):
                 self.init_single_notebook_resources(n)["unique_key"]: n for n in self.notebooks
             }
             for notebook in gb.model.notebook_id_set.difference(set(glob_notebooks.keys())):
-                self.log.warning("No submitted file: {}".format(notebook))
+                self.log.warning("No submitted file: %s", notebook)
                 nb = gb.find_notebook(notebook)
                 for grade in nb.grades:
                     grade.auto_score = 0
@@ -89,9 +88,6 @@ class Autograde(BaseConverter):
                     gb.add_grade(grade.id, notebook, grade)
 
         super().convert_notebooks()
-
-    def _load_config(self, cfg: Config, **kwargs: Any) -> None:
-        super(Autograde, self)._load_config(cfg, **kwargs)
 
     def __init__(
         self,
@@ -101,13 +97,8 @@ class Autograde(BaseConverter):
         assignment_settings: AssignmentSettings,
         **kwargs: Any,
     ) -> None:
-        super(Autograde, self).__init__(
-            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
-        )
+        super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
-
-    def start(self) -> None:
-        super(Autograde, self).start()
 
 
 class AutogradeApp(ConverterApp):

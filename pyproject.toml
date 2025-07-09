@@ -30,19 +30,20 @@ dependencies = [
     "jupyter-client>=8.6",
     "jupyter_core>=5.7",
     "jupyterhub>=5",
+    "jupyterlab>=4.4.4",
     "kubernetes>=31",
     "nbconvert>=7.16",
     "nbformat>=5.4.0",
+    "pandas>=2.2.3",
     "psycopg2-binary>= 2.9",
     "PyJWT>=2.9",
-    "python-dateutil>=2.9", 
+    "python-dateutil>=2.9",
     "SQLAlchemy>=2.0.35",
     "tornado>=6.4",
     "traitlets>=5.14",
     "typing-extensions>=4.12",
     "urllib3>=2.2",
-    "pandas>=2.2.3",
-    "uvloop>=0.21.0"
+    "uvloop>=0.21.0",
 ]
 
 [tool.setuptools]

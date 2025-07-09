@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import Optional
+from typing import List, Optional, Set
 
 from sqlalchemy.orm import Session
 from traitlets.config import Config
@@ -317,7 +317,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             group = self.session.query(Group).get((self.submission.username, lecture.id))
             if group is None:
-                raise ValueError()
+                raise ValueError(
+                    f"Group with username {self.submission.username} and lecture id {lecture.id} not found"
+                )
             repo_name = group.name
 
         git_repo_path = os.path.join(
@@ -367,34 +369,54 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             raise RuntimeError(f"Failed to push to {git_repo_path}")
         self.log.info("Pushing complete")
 
-    def commit_whitelisted_files(self):
-        self.log.info(f"Committing filtered files in {self.output_path}")
+    def _get_whitelist_patterns(self) -> Set[str]:
+        """
+        Combines all whitelist patterns into a single set.
+        """
         base_filter = ["*.ipynb"]
         extra_files = json.loads(self.assignment.properties).get("extra_files", [])
         allowed_file_patterns = self.assignment.settings.allowed_files
 
-        # combine all file patterns
-        file_patterns = set(base_filter + extra_files + allowed_file_patterns)
+        return set(base_filter + extra_files + allowed_file_patterns)
+
+    def _get_files_to_commit(self, file_patterns: Set[str]) -> List[str]:
+        """
+        Prepares a list of shell-escaped filenames matching the given patterns.
+
+        :param file_patterns: set of patterns to match the filenames against
+        :return: list of shell-escaped filenames
+        """
+        files_to_commit = []
 
         # get all files in the directory
-        files_to_commit = []
-        for root, _, files in os.walk(self.output_path):
+        for root, dirs, files in os.walk(self.output_path):
+            # Exclude .git directory - it contains subdirectories which we don't need to check
+            if ".git" in root:
+                continue
             rel_root = os.path.relpath(root, self.output_path)
             for file in files:
                 file_path = os.path.join(rel_root, file) if rel_root != "." else file
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
                     files_to_commit.append(file_path)
 
+        # escape filenames to handle special characters and whitespaces
+        escaped_files = [shlex.quote(f) for f in files_to_commit]
+
+        return escaped_files
+
+    def commit_whitelisted_files(self):
+        self.log.info(f"Committing filtered files in {self.output_path}")
+
+        file_patterns = self._get_whitelist_patterns()
+        files_to_commit = self._get_files_to_commit(file_patterns)
+
         if not files_to_commit:
             self.log.info("No files to commit.")
             return
 
         try:
-            # escape filenames to handle special characters and whitespaces
-            escaped_files = [shlex.quote(f) for f in files_to_commit]
-
             # add only the filtered files
-            add_command = f"{self.git_executable} add -- " + " ".join(escaped_files)
+            add_command = f"{self.git_executable} add -- " + " ".join(files_to_commit)
             self._run_subprocess(add_command, self.output_path)
 
             # commit files
