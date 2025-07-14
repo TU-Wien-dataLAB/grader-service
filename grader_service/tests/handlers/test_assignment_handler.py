@@ -122,7 +122,6 @@ async def test_post_assignment(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.id != pre_assignment.id
     assert post_assignment.name == pre_assignment.name
-    assert post_assignment.settings.assignment_type == pre_assignment.settings.assignment_type
     assert post_assignment.status == pre_assignment.status
     assert post_assignment.settings.deadline is None
     assert post_assignment.points == 0.0
@@ -384,7 +383,6 @@ async def test_put_assignment(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     post_assignment.name = "new name"
-    post_assignment.settings.assignment_type = "group"
     post_assignment.status = "released"
 
     url = url + str(post_assignment.id)
@@ -399,7 +397,6 @@ async def test_put_assignment(
     put_assignment = Assignment.from_dict(json.loads(put_response.body.decode()))
     assert put_assignment.id == post_assignment.id
     assert put_assignment.name == "new name"
-    assert put_assignment.settings.assignment_type == "group"
     assert put_assignment.status == "released"
 
 
@@ -548,7 +545,6 @@ async def test_put_assignment_no_point_changes(
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     post_assignment.name = "new name"
-    post_assignment.settings.assignment_type = "group"
     post_assignment.status = "released"
     post_assignment.points = 10.0  # this has no effect
 
@@ -564,7 +560,6 @@ async def test_put_assignment_no_point_changes(
     put_assignment = Assignment.from_dict(json.loads(put_response.body.decode()))
     assert put_assignment.id == post_assignment.id
     assert put_assignment.name == "new name"
-    assert put_assignment.settings.assignment_type == "group"
     assert put_assignment.status == "released"
     assert put_assignment.points != 10.0
 
@@ -603,7 +598,6 @@ async def test_get_assignment(
     get_assignment = Assignment.from_dict(json.loads(get_response.body.decode()))
     assert get_assignment.id == post_assignment.id
     assert get_assignment.name == post_assignment.name
-    assert get_assignment.settings.assignment_type == post_assignment.settings.assignment_type
     assert get_assignment.status == post_assignment.status
     assert get_assignment.points == post_assignment.points
     assert get_assignment.settings.deadline == post_assignment.settings.deadline

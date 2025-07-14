@@ -7,16 +7,15 @@
 import io
 import logging
 import os
-import shutil
-import sys
 from subprocess import CalledProcessError
 
 from traitlets import Unicode
 
-from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 
@@ -37,37 +36,29 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
         )
 
-    def _pull_submission(self):
-        if not os.path.exists(self.input_path):
-            os.mkdir(self.input_path)
-
+    def _get_git_repo_path(self, repo_type: GitRepoType) -> str:
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
+        repo_name = self.submission.username
 
-        if assignment.settings.assignment_type == "user":
-            repo_name = self.submission.username
-        else:
-            group = self.session.query(Group).get((self.submission.username, lecture.id))
-            if group is None:
-                raise ValueError()
-            repo_name = group.name
-
-        git_repo_path = os.path.join(
+        return os.path.join(
             self.grader_service_dir,
             "git",
             lecture.code,
             str(assignment.id),
-            "autograde",
-            assignment.settings.assignment_type,
+            repo_type,
+            "user",
             repo_name,
         )
 
+    def _pull_submission(self):
+        if not os.path.exists(self.input_path):
+            os.mkdir(self.input_path)
+
+        git_repo_path = self._get_git_repo_path(repo_type=GitRepoType.AUTOGRADE)
+
         if os.path.exists(self.input_path):
-            # onerror is deprecated in 3.12, use onexc
-            if sys.version_info >= (3, 12):
-                shutil.rmtree(self.input_path, onexc=rm_error)
-            else:
-                shutil.rmtree(self.input_path, onerror=rm_error)
+            rmtree(self.input_path)
         os.mkdir(self.input_path)
 
         self.log.info(f"Pulling repo {git_repo_path} into input directory")
@@ -91,9 +82,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
 
     def _run(self):
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
-        os.makedirs(self.output_path, exist_ok=True)
+        os.makedirs(self.output_path)
         self._write_gradebook(self.submission.properties.properties)
 
         autograder = GenerateFeedback(
@@ -116,26 +107,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
     def _push_results(self):
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
 
-        assignment: Assignment = self.submission.assignment
-        lecture: Lecture = assignment.lecture
-
-        if assignment.settings.assignment_type == "user":
-            repo_name = self.submission.username
-        else:
-            group = self.session.query(Group).get((self.submission.username, lecture.id))
-            if group is None:
-                raise ValueError()
-            repo_name = group.name
-
-        git_repo_path = os.path.join(
-            self.grader_service_dir,
-            "git",
-            lecture.code,
-            str(assignment.id),
-            "feedback",
-            assignment.settings.assignment_type,
-            repo_name,
-        )
+        git_repo_path = self._get_git_repo_path(repo_type=GitRepoType.FEEDBACK)
 
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
@@ -196,7 +168,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
 
     def _run(self):
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
 
         os.mkdir(self.output_path)
         self._write_gradebook(self.submission.properties)

@@ -16,7 +16,6 @@ from grader_service.auth.crypto import (
     encrypt,
 )
 from grader_service.orm.base import Base, Serializable
-from grader_service.orm.group import group_assignment_table
 from grader_service.utils import new_token
 
 
@@ -27,7 +26,6 @@ class User(Base, Serializable):
 
     roles = relationship("Role", back_populates="user")
     submissions = relationship("Submission", back_populates="user")
-    groups = relationship("Group", secondary=group_assignment_table, back_populates="users")
     api_tokens = relationship("APIToken", back_populates="user")
     oauth_codes = relationship("OAuthCode", back_populates="user")
 

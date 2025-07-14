@@ -13,7 +13,6 @@ import re
 import shlex
 import shutil
 import subprocess
-import sys
 import time
 import uuid
 from _decimal import Decimal
@@ -38,7 +37,8 @@ from traitlets.config import SingletonConfigurable
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import APIToken, Assignment, Group, Submission
+from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.takepart import Role, Scope
@@ -875,10 +875,9 @@ class GraderBaseHandler(BaseHandler):
 
     def construct_git_dir(
         self,
-        repo_type: str,
+        repo_type: GitRepoType,
         lecture: Lecture,
         assignment: Assignment,
-        group_name: Optional[str] = None,
         submission: Optional[Submission] = None,
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
@@ -888,39 +887,23 @@ class GraderBaseHandler(BaseHandler):
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
-        allowed_types = set(["source", "release", "edit"])
+        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
         if repo_type in allowed_types:
             path = os.path.join(assignment_path, repo_type)
-            if repo_type == "edit":
+            if repo_type == GitRepoType.EDIT:
                 path = os.path.join(path, str(submission.id))
                 self.log.info(path)
-        elif repo_type in ["autograde", "feedback"]:
-            type_path = os.path.join(
-                assignment_path, repo_type, assignment.settings.assignment_type
-            )
-            if assignment.settings.assignment_type == "user":
-                if repo_type == "autograde":
-                    if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
-                        raise HTTPError(403)
-                    path = os.path.join(type_path, submission.username)
-                else:
-                    path = os.path.join(type_path, self.user.name)
+        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
+            type_path = os.path.join(assignment_path, repo_type, "user")
+            if repo_type == GitRepoType.AUTOGRADE:
+                if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
+                    raise HTTPError(403)
+                path = os.path.join(type_path, submission.username)
             else:
-                group = self.session.query(Group).get((self.user.name, lecture.id))
-                if group is None:
-                    raise HTTPError(404, reason="User is not in a group")
-                path = os.path.join(type_path, group.name)
-        elif repo_type == "user":
+                path = os.path.join(type_path, self.user.name)
+        elif repo_type == GitRepoType.USER:
             user_path = os.path.join(assignment_path, repo_type)
             path = os.path.join(user_path, self.user.name)
-        elif repo_type == "group":
-            if group_name is None:
-                raise HTTPError(400, reason="Group name is required for group repo type")
-            group = self.session.query(Group).get((group_name, lecture.id))
-            if group is None:
-                raise HTTPError(404, reason="User is not in a group")
-            group_path = os.path.join(assignment_path, repo_type)
-            path = os.path.join(group_path, group.name)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 
@@ -975,16 +958,7 @@ class GraderBaseHandler(BaseHandler):
             msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
             self.log.info(msg)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
-            if (sys.version_info.major == 3) and (sys.version_info.minor >= 8):
-                shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            else:
-                for item in os.listdir(tmp_path_release):
-                    s = os.path.join(tmp_path_release, item)
-                    d = os.path.join(tmp_path_user, item)
-                    if os.path.isdir(s):
-                        shutil.copytree(s, d, ignore=ignore)
-                    else:
-                        shutil.copy2(s, d)
+            shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
             cmd = "sh -c 'git add -A"
             cmd += f'&& git commit --allow-empty -m "{message}"\''
             self._run_command(cmd, tmp_path_user)
