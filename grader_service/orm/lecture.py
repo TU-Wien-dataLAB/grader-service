@@ -34,7 +34,6 @@ class Lecture(Base, Serializable):
 
     assignments = relationship("Assignment", back_populates="lecture")
     roles = relationship("Role", back_populates="lecture")
-    groups = relationship("Group", back_populates="lecture")
 
     @property
     def model(self) -> lecture.Lecture:

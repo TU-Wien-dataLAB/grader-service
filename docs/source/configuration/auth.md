@@ -13,7 +13,10 @@ These roles determine access permissions within the app and are stored in the in
 
 ## Mode 1: JupyterHub Provides API Token
 
-In this simpler mode, **JupyterHub handles the user management**, and provides the user's API token to the Grader Service at server startup. The Grader Service then queries the JupyterHub API to obtain information about the current user (e.g., `username`, `groups`) and stores this in its own database.
+In this simpler mode, **JupyterHub handles the user management**, and provides the user's API token to 
+the Grader Service at server startup. 
+The Grader Service then queries the JupyterHub API to obtain information about the current user (e.g., `username`, `groups`)
+and stores this in its own database.
 
 **Architecture Overview:**
 ![grader token auth architecture](../_static/assets/images/token-auth.svg "Token Authentication Architecture")

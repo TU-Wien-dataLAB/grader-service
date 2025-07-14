@@ -13,19 +13,13 @@ from tornado.web import HTTPError
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 
 
 def get_query_side_effect(
-    lid=1,
-    code="ivs21s",
-    scope: Scope = Scope.student,
-    group="test_group",
-    username="test_user",
-    a_id=1,
+    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", a_id=1
 ):
     def query_side_effect(input):
         m = Mock()
@@ -42,10 +36,6 @@ def get_query_side_effect(
             role = Role()
             role.role = scope
             m.get.return_value = role
-        elif input is Group:
-            g = Group()
-            g.name = group
-            m.get.return_value = g
         elif input is Submission:
             sub = Submission()
             sub.username = username
