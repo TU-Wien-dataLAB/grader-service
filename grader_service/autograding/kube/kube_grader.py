@@ -9,7 +9,6 @@ import inspect
 import json
 import os
 import re
-import shutil
 import time
 from asyncio import Task, run
 
@@ -20,7 +19,8 @@ from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
 from grader_service.autograding.kube.util import get_current_namespace, make_pod
-from grader_service.autograding.local_grader import LocalAutogradeExecutor, rm_error
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.autograding.utils import rmtree
 from grader_service.orm import Assignment, Lecture, Submission
 from grader_service.orm.assignment import json_serial
 
@@ -407,7 +407,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         :return: Coroutine
         """
         if os.path.exists(self.output_path):
-            shutil.rmtree(self.output_path, onerror=rm_error)
+            rmtree(self.output_path)
         os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_assignment_properties())
         grader_pod = None

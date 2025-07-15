@@ -16,6 +16,7 @@ from grader_service.handlers import (
     permission,
     submissions,
 )
+from grader_service.handlers.handler_utils import GitRepoType
 
 __all__ = [
     "assignment",
@@ -27,4 +28,5 @@ __all__ = [
     "health",
     "config",
     "base_handler",
+    "GitRepoType",
 ]

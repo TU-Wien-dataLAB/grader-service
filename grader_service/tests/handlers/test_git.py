@@ -11,21 +11,15 @@ import pytest
 from tornado.web import HTTPError
 
 from grader_service.handlers.git.server import GitBaseHandler
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.group import Group
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
 
 
 def get_query_side_effect(
-    lid=1,
-    code="ivs21s",
-    a_type="user",
-    scope=Scope.student,
-    group="test_group",
-    username="test_user",
-    a_id=1,
+    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", a_id=1
 ):
     def query_side_effect(input):
         m = Mock()
@@ -37,16 +31,11 @@ def get_query_side_effect(
         elif input is Assignment:
             assignment = Assignment()
             assignment.id = a_id
-            assignment.settings.assignment_type = a_type
             m.filter.return_value.one.return_value = assignment
         elif input is Role:
             role = Role()
             role.role = scope
             m.get.return_value = role
-        elif input is Group:
-            g = Group()
-            g.name = group
-            m.get.return_value = g
         elif input is Submission:
             sub = Submission()
             sub.username = username
@@ -69,11 +58,11 @@ def test_git_lookup_instructor(tmpdir):
     # handler_mock.session = session
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="group", scope=Scope.instructor)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="source",
+        repo_type=GitRepoType.SOURCE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -99,11 +88,11 @@ def test_git_lookup_release_pull_instructor(tmpdir):
     # handler_mock.session = session
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="release",
+        repo_type=GitRepoType.RELEASE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -130,7 +119,7 @@ def test_git_lookup_release_push_student_error(tmpdir):
     # handler_mock.session = session
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student)
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 
@@ -151,7 +140,7 @@ def test_git_lookup_source_push_student_error(tmpdir):
     # handler_mock.session = session
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.student)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student)
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 
@@ -267,14 +256,14 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
     role_mock = Mock()
     role_mock.role = Scope.instructor
     handler_mock.get_role = Mock(return_value=role_mock)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="autograde",
+        repo_type=GitRepoType.AUTOGRADE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
         submission=sf(Submission).get(),
@@ -319,11 +308,11 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", a_type="user", scope=Scope.instructor)
+    sf = get_query_side_effect(code="iv21s", scope=Scope.instructor)
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -348,13 +337,11 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(
-        code="iv21s", a_type="user", scope=Scope.student, username="test_user"
-    )
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user")
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -379,13 +366,11 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(
-        code="iv21s", a_type="user", scope=Scope.student, username="test_user"
-    )
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user")
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
-        repo_type="feedback",
+        repo_type=GitRepoType.FEEDBACK,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
     )
@@ -411,9 +396,7 @@ def test_git_lookup_pull_feedback_student_with_invalid_id_error():
     handler_mock.user.name = "test_user"
 
     # test that submission with id 1 comes from "other_user"
-    sf = get_query_side_effect(
-        code="iv21s", a_type="user", scope=Scope.student, username="other_user"
-    )
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="other_user")
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 

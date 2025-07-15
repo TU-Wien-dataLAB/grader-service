@@ -3,7 +3,6 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
 import os
 import shlex
 import subprocess
@@ -17,6 +16,7 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
@@ -54,19 +54,19 @@ class GitBaseHandler(GraderBaseHandler):
             print(f"Error from git response {e}")
 
     def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
-        repo_type = pathlets[2]
+        repo_type: str = pathlets[2]
 
         if role.role == Scope.student:
             # 1. no source or release interaction with source repo for students
             # 2. no pull allowed for autograde for students
-            if (repo_type in ["source", "release", "edit"]) or (
-                repo_type == "autograde" and rpc == "upload-pack"
+            if (repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}) or (
+                repo_type == GitRepoType.AUTOGRADE and rpc == "upload-pack"
             ):
                 raise HTTPError(403)
 
             # 3. students should not be able to pull other submissions
             #    -> add query param for sub_id
-            if (repo_type == "feedback") and (rpc == "upload-pack"):
+            if (repo_type == GitRepoType.FEEDBACK) and (rpc == "upload-pack"):
                 try:
                     sub_id = int(pathlets[3])
                 except (ValueError, IndexError):
@@ -77,7 +77,9 @@ class GitBaseHandler(GraderBaseHandler):
 
         # 4. no push allowed for autograde and feedback
         #    -> the autograder executor can push locally (will bypass this)
-        if (repo_type in ["autograde", "feedback"]) and (rpc in ["send-pack", "receive-pack"]):
+        if (repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}) and (
+            rpc in ["send-pack", "receive-pack"]
+        ):
             raise HTTPError(403)
 
     def gitlookup(self, rpc: str):
@@ -98,8 +100,14 @@ class GitBaseHandler(GraderBaseHandler):
         lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
         assignment_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0], pathlets[1]))
 
-        repo_type = pathlets[2]
-        if repo_type not in {"source", "release", "assignment", "autograde", "feedback", "edit"}:
+        repo_type: str = pathlets[2]
+
+        # TODO(Nat): Could it still happen somewhere?
+        if repo_type == "assignment":
+            self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
+            repo_type = "user"
+
+        if repo_type not in GitRepoType:
             return None
 
         # get lecture and assignment if they exist
@@ -118,9 +126,6 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             raise HTTPError(404, reason="Assignment not found")
 
-        if repo_type == "assignment":
-            repo_type: str = assignment.settings.assignment_type
-
         # create directories once we know they exist in the database
         if not os.path.exists(lecture_path):
             os.mkdir(lecture_path)
@@ -128,7 +133,7 @@ class GitBaseHandler(GraderBaseHandler):
             os.mkdir(assignment_path)
 
         submission = None
-        if repo_type in ["autograde", "feedback", "edit"]:
+        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
             try:
                 sub_id = int(pathlets[3])
             except (ValueError, IndexError):
@@ -154,12 +159,12 @@ class GitBaseHandler(GraderBaseHandler):
             except subprocess.CalledProcessError:
                 return None
 
-            if repo_type in ["user", "group"]:
+            if repo_type == GitRepoType.USER:
                 repo_path_release = self.construct_git_dir(
-                    "release", assignment.lecture, assignment
+                    GitRepoType.RELEASE, assignment.lecture, assignment
                 )
                 safe_repo_path_release = repo_path_release
-                err_msg = "Error: expceted path or str, got None"
+                err_msg = "Error: expected path or str, got None"
                 assert safe_repo_path_release is not None, err_msg
                 if not os.path.exists(safe_repo_path_release):
                     return None
