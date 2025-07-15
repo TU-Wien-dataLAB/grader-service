@@ -143,8 +143,12 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/lti13/oauth_callback"),
             ]:
                 # require git to authenticate with token -> otherwise return 401 code
+                # by default, git sends the request unauthenticated, first
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
-                    raise HTTPError(401, reason="Git: authenticate request")
+                    self.set_status(401)
+                    self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
+                    self.finish("Unauthenticated Git request, Authentication required")
+                    return
 
                 # send to login page if ui page request
                 if self.request.path in [
