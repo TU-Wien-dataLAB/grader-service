@@ -1,7 +1,9 @@
+import os
 from textwrap import dedent
 from typing import Any
 
 from traitlets import Bool, List, default
+from traitlets.config import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -70,6 +72,18 @@ class GenerateAssignment(BaseConverter):
     ) -> None:
         super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
+
+        # load custom configuration if it exists
+        c = Config()
+        custom_config_path = f"{self._input_directory}/grader_config.py"
+        if os.path.exists(custom_config_path):
+            local_vars = {"c": c}
+            with open(custom_config_path) as f:
+                code = compile(f.read(), "config.py", "exec")
+                exec(code, {}, local_vars)
+            c = local_vars["c"]
+        c.Exporter.default_preprocessors = []
+        self.update_config(c)
 
 
 class GenerateAssignmentApp(ConverterApp):

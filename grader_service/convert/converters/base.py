@@ -12,7 +12,7 @@ from nbconvert.exporters import Exporter, NotebookExporter
 from nbconvert.exporters.exporter import ResourcesDict
 from nbconvert.writers import FilesWriter
 from traitlets import Any, Bool, Instance, Integer, List, TraitError, Type, default, validate
-from traitlets.config import Config, LoggingConfigurable
+from traitlets.config import LoggingConfigurable
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.gradebook.gradebook import Gradebook
@@ -153,20 +153,6 @@ class BaseConverter(LoggingConfigurable):
             self.logfile = self.parent.logfile
         else:
             self.logfile = None
-
-        c = Config()
-
-        custom_config_path = f"{self._input_directory}/grader_config.py"
-        if os.path.exists(custom_config_path):
-            local_vars = {"c": c}
-            with open(custom_config_path) as f:
-                code = compile(f.read(), "config.py", "exec")
-                exec(code, {}, local_vars)
-
-            c = local_vars["c"]
-
-        c.Exporter.default_preprocessors = []
-        self.update_config(c)
 
     # register pre-processors to self.exporter
     # self.convert_notebooks() converts all notebooks in the CourseDir
