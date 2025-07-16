@@ -6,4 +6,5 @@ Grader Service uses **[traitlets](https://traitlets.readthedocs.io/)** for confi
 :maxdepth: 5
 auth
 celery
+lti_plugin
 ```
