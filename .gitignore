@@ -498,6 +498,9 @@ grader_labextension/grader_labextension/labextension/*
 grader_labextension/grader_labextension/labextension
 *.sqlite
 
+# Chart files
+Chart.lock
+
 #Sqlite database
 *.db
 grader_labextension/grader/grader_labextension/labextension/build_log.json

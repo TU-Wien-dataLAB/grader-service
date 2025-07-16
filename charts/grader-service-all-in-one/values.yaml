@@ -24,6 +24,9 @@ jupyterhub:
     extraConfig:
       # to be authenticated in the grader service, we have to start the authentication flow using the pre_spawn_hook
       01-pre_spawn_hook: |
+        from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+        from tornado.escape import json_decode, json_encode
+
         async def pre_spawn_hook(spawner):
           http_client = AsyncHTTPClient()
           data = {"token" : spawner.api_token}
@@ -37,66 +40,90 @@ jupyterhub:
 
   # configuration of the spawned user pods
   singleuser:
+    # configuration of the singleuser pod
+    image:
+      # the image to use for the singleuser pods
+      name: "ghcr.io/tu-wien-datalab/grader-labextension"
+      tag: "main"
     extraEnv:
       # URL to the grader service, used by the JupyterHub singleuser pods
       GRADER_HOST_URL: "http://grader-service:4010"
+
+  prePuller:
+    hook:
+      # configuration of the pre image puller
+      enabled: true
+    continuous:
+      # configuration of the continuous image puller
+      enabled: false
+  # configuration of the proxy
+  proxy:
+    service:
+      # set to ClusterIP to disable public access to the proxy
+      type: ClusterIP
+
   
 
 # grader service configuration
 grader-service:
-  extraConfig:
-    01-grader-service-config: |
-      from grader_service.auth.token import JupyterHubTokenAuthenticator
-      c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
+  extraConfig: |
+    from grader_service.auth.token import JupyterHubTokenAuthenticator
+    from grader_service.orm import User, Lecture
+    from grader_service.orm.base import DeleteState
+    from grader_service.orm.lecture import LectureState
+    from grader_service.orm.takepart import Scope, Role
+    from grader_service.handlers.base_handler import BaseHandler
 
-      c.JupyterHubTokenAuthenticator.user_info_url = "http://localhost:8080/hub/api/user"
+    c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
+    c.Authenticator.allow_all = True
+    c.JupyterHubTokenAuthenticator.user_info_url = "http://hub:8081/hub/api/user"
 
-      def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
-        session = handler.session
-        log = handler.log
-        groups: list[str] = authentication["groups"]
+    def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
+      session = handler.session
+      log = handler.log
+      groups: list[str] = authentication["groups"]
 
-        username = authentication["name"]
-        user_model: User = session.query(User).get(username)
-        if user_model is None:
-          user_model = User()
-          user_model.name = username
-          user_model.display_name = username
-          session.add(user_model)
-          session.commit()
-        
-        for group in groups:
-          if (":" in group):
-            split_group = group.split(":")
-            lecture_code = split_group[0]
-            scope = split_group[1]
-            scope = Scope[scope]
+      username = authentication["name"]
+      user_model: User = session.query(User).get(username)
+      if user_model is None:
+        user_model = User()
+        user_model.name = username
+        user_model.display_name = username
+        session.add(user_model)
+        session.commit()
+      
+      for group in groups:
+        if (":" in group):
+          split_group = group.split(":")
+          lecture_code = split_group[0]
+          scope = split_group[1]
+          scope = Scope[scope]
 
-            lecture = session.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
-            if lecture is None:
-              lecture = Lecture()
-              lecture.code = lecture_code
-              lecture.name = lecture_code
-              lecture.state = LectureState.active
-              lecture.deleted = DeleteState.active
-              session.add(lecture)
-              session.commit()
+          lecture = session.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
+          if lecture is None:
+            lecture = Lecture()
+            lecture.code = lecture_code
+            lecture.name = lecture_code
+            lecture.state = LectureState.active
+            lecture.deleted = DeleteState.active
+            session.add(lecture)
+            session.commit()
 
-            role = session.query(Role).filter(Role.username == username, Role.lectid == lecture.id).one_or_none()
-            if role is None:
-              log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
-              role = Role(username=username, lectid=lecture.id, role=scope)
-              session.add(role)
-              session.commit()
-            else:
-              log.info(f'Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}')
-              role.role = scope
-              session.commit()
+          role = session.query(Role).filter(Role.username == username, Role.lectid == lecture.id).one_or_none()
+          if role is None:
+            log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
+            role = Role(username=username, lectid=lecture.id, role=scope)
+            session.add(role)
+            session.commit()
           else:
-            log.info("Found group that doesn't match schema. Ignoring " + group)        
+            log.info(f'Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}')
+            role.role = scope
+            session.commit()
+        else:
+          log.info("Found group that doesn't match schema. Ignoring " + group)        
 
-        return authentication
+      return authentication
 
-      c.Authenticator.post_auth_hook = post_auth_hook
+    c.Authenticator.post_auth_hook = post_auth_hook
         
 
