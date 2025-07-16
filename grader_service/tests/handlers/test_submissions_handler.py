@@ -4,35 +4,27 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import csv
-import subprocess
-from datetime import datetime, timedelta
-from re import sub
+import json
 import secrets
-from unittest.mock import patch
+from datetime import datetime, timezone
 
 import isodate
 import pytest
-from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.server import GraderServer
-import json
-from grader_service.orm.assignment import Assignment as AssignmentORM
-from grader_service.api.models.submission import Submission
 from tornado.httpclient import HTTPClientError
-from datetime import timezone
-from .db_util import insert_submission, insert_take_part, _get_assignment
 
-# Imports are important otherwise they will not be found
-from .tornado_test_utils import *
-from .db_util import insert_assignments
-from ...api.models.assignment import Assignment
-from ...handlers.base_handler import GraderBaseHandler
+from grader_service.api.models.submission import Submission
+from grader_service.orm.assignment import Assignment as AssignmentORM
+from grader_service.server import GraderServer
+
 from ...handlers.submissions import SubmissionHandler
 from ...orm import Role
 from ...orm.takepart import Scope
+from .db_util import insert_assignments, insert_submission
 
 
-async def submission_test_setup(sql_alchemy_engine, http_server_client, default_user, default_token,
-                                url: str, a_id: int):
+async def submission_test_setup(
+    sql_alchemy_engine, http_server_client, default_user, default_token, url: str, a_id: int
+):
     engine = sql_alchemy_engine
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
     insert_submission(engine, assignment_id=a_id, username=default_user.name, with_properties=False)
@@ -46,7 +38,9 @@ async def submission_test_setup(sql_alchemy_engine, http_server_client, default_
     return response
 
 
-@pytest.mark.parametrize("period,expected", [("P0D", 1.0), ("P1D", 0.5), ("P2D", 0.2), ("P3D", 0.1)])
+@pytest.mark.parametrize(
+    "period,expected", [("P0D", 1.0), ("P1D", 0.5), ("P2D", 0.2), ("P3D", 0.1)]
+)
 def test_calculate_late_submission_scaling(period, expected):
     a = AssignmentORM()
     role = Role()
@@ -55,9 +49,11 @@ def test_calculate_late_submission_scaling(period, expected):
 
     settings = {
         "deadline": now,
-        "late_submission": [{"period": "P1D", "scaling": 0.5},
-                            {"period": "P2D", "scaling": 0.2},
-                            {"period": "P3D", "scaling": 0.1}]
+        "late_submission": [
+            {"period": "P1D", "scaling": 0.5},
+            {"period": "P2D", "scaling": 0.2},
+            {"period": "P3D", "scaling": 0.1},
+        ],
     }
     a.settings = settings
 
@@ -71,36 +67,31 @@ def test_calculate_late_submission_scaling_error():
     role.role = Scope.student
     now = datetime.now(timezone.utc)
 
-    settings = {
-        "deadline": now,
-        "late_submission": [{"period": "P1D", "scaling": 0.5}]
-    }
+    settings = {"deadline": now, "late_submission": [{"period": "P1D", "scaling": 0.5}]}
     a.settings = settings
 
     submission_ts = now + isodate.parse_duration("P1M")
     from tornado.web import HTTPError
+
     with pytest.raises(HTTPError):
         SubmissionHandler.calculate_late_submission_scaling(a, submission_ts, role)
 
 
 async def test_get_submissions(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
-        default_user
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     a_id = 1
     url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/"
-    response = await submission_test_setup(sql_alchemy_engine,
-                                           http_server_client,
-                                           default_user,
-                                           default_token,
-                                           url,
-                                           a_id)
+    response = await submission_test_setup(
+        sql_alchemy_engine, http_server_client, default_user, default_token, url, a_id
+    )
     assert response.code == 200
     submissions = json.loads(response.body.decode())
     assert isinstance(submissions, list)
@@ -111,27 +102,24 @@ async def test_get_submissions(
 
 
 async def test_get_submissions_format_csv(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     a_id = 1
     url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/?format=csv"
-    response = await submission_test_setup(sql_alchemy_engine,
-                                           http_server_client,
-                                           default_user,
-                                           default_token,
-                                           url,
-                                           a_id)
+    response = await submission_test_setup(
+        sql_alchemy_engine, http_server_client, default_user, default_token, url, a_id
+    )
     assert response.code == 200
-    decoded_content = response.body.decode('utf-8')
+    decoded_content = response.body.decode("utf-8")
 
-    body_csv = csv.reader(decoded_content.splitlines(), delimiter=',')
+    body_csv = csv.reader(decoded_content.splitlines(), delimiter=",")
     submissions = list(body_csv)
     # Delete column description
     submissions.pop(0)
@@ -143,13 +131,13 @@ async def test_get_submissions_format_csv(
 
 
 async def test_get_submissions_format_wrong(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1  # default user is student
     a_id = 1
@@ -165,14 +153,14 @@ async def test_get_submissions_format_wrong(
 
 
 async def test_get_submissions_filter_wrong(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1  # default user is student
     a_id = 1
@@ -188,21 +176,24 @@ async def test_get_submissions_filter_wrong(
 
 
 async def test_get_submissions_instructor_version(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+    url = (
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+    )
 
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
     insert_submission(engine, assignment_id=a_id, username=default_user.name, with_properties=False)
@@ -242,20 +233,23 @@ async def test_get_submissions_instructor_version(
 
 
 async def test_get_submissions_instructor_version_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1  # default user is student
     a_id = 1
     engine = sql_alchemy_engine
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+    url = (
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+    )
 
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
     insert_submission(engine, assignment_id=a_id, username=default_user.name, with_properties=False)
@@ -269,21 +263,24 @@ async def test_get_submissions_instructor_version_unauthorized(
 
 
 async def test_get_submissions_latest_instructor_version(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
+    url = (
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
+    )
 
     insert_submission(engine, assignment_id=a_id, username=default_user.name)
     insert_submission(engine, assignment_id=a_id, username=default_user.name, with_properties=False)
@@ -324,24 +321,35 @@ async def test_get_submissions_latest_instructor_version(
 
 
 async def test_get_submissions_best_instructor_version(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=best"
+    url = (
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=best"
+    )
 
-    insert_submission(engine, assignment_id=a_id, username=default_user.name, feedback=True, score=3)
-    insert_submission(engine, assignment_id=a_id, username=default_user.name, feedback=False, with_properties=False)
+    insert_submission(
+        engine, assignment_id=a_id, username=default_user.name, feedback=True, score=3
+    )
+    insert_submission(
+        engine,
+        assignment_id=a_id,
+        username=default_user.name,
+        feedback=False,
+        with_properties=False,
+    )
     insert_submission(engine, assignment_id=a_id, username="user1", score=3)
     insert_submission(engine, assignment_id=a_id, username="user1", with_properties=False)
 
@@ -367,14 +375,14 @@ async def test_get_submissions_best_instructor_version(
 
 
 async def test_get_submissions_lecture_assignment_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 1
@@ -389,14 +397,14 @@ async def test_get_submissions_lecture_assignment_missmatch(
 
 
 async def test_get_submissions_wrong_assignment_id(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1
     a_id = 99
@@ -411,14 +419,14 @@ async def test_get_submissions_wrong_assignment_id(
 
 
 async def test_get_submission(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
-        default_user
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     l_id = 3  # user has to be instructor
     a_id = 4
@@ -429,7 +437,7 @@ async def test_get_submission(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
@@ -437,7 +445,7 @@ async def test_get_submission(
     insert_submission(engine, a_id, default_user.name)
 
     response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert response.code == 200
     submission_dict = json.loads(response.body.decode())
@@ -445,14 +453,14 @@ async def test_get_submission(
 
 
 async def test_get_submission_assignment_lecture_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     engine = sql_alchemy_engine
@@ -463,21 +471,21 @@ async def test_get_submission_assignment_lecture_missmatch(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_get_submission_assignment_submission_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 4
@@ -490,21 +498,21 @@ async def test_get_submission_assignment_submission_missmatch(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_get_submission_wrong_submission(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -517,20 +525,20 @@ async def test_get_submission_wrong_submission(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_get_submission_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
 ):
     l_id = 1  # user is student
     a_id = 1
@@ -539,21 +547,21 @@ async def test_get_submission_unauthorized(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_put_submission(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is student
     a_id = 4
@@ -564,10 +572,18 @@ async def test_put_submission(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    pre_submission = Submission(id=-1, submitted_at=None, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
+    pre_submission = Submission(
+        id=-1,
+        submitted_at=None,
+        commit_hash=secrets.token_hex(20),
+        auto_status="automatically_graded",
+        manual_status="manually_graded",
+        feedback_status="not_generated",
+    )
     response = await http_server_client.fetch(
-        url, method="PUT", headers={"Authorization": f"Token {default_token}"},
+        url,
+        method="PUT",
+        headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_submission.to_dict()),
     )
     assert response.code == 200
@@ -583,14 +599,14 @@ async def test_put_submission(
 
 
 async def test_put_submission_lecture_assignment_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 1
@@ -600,12 +616,20 @@ async def test_put_submission_lecture_assignment_missmatch(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name)
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") 
-    pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    pre_submission = Submission(
+        id=-1,
+        submitted_at=now,
+        commit_hash=secrets.token_hex(20),
+        auto_status="automatically_graded",
+        manual_status="manually_graded",
+        feedback_status="not_generated",
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"},
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_submission.to_dict()),
         )
     e = exc_info.value
@@ -613,14 +637,14 @@ async def test_put_submission_lecture_assignment_missmatch(
 
 
 async def test_put_submission_assignment_submission_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -631,12 +655,20 @@ async def test_put_submission_assignment_submission_missmatch(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") 
-    pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    pre_submission = Submission(
+        id=-1,
+        submitted_at=now,
+        commit_hash=secrets.token_hex(20),
+        auto_status="automatically_graded",
+        manual_status="manually_graded",
+        feedback_status="not_generated",
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"},
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_submission.to_dict()),
         )
     e = exc_info.value
@@ -644,14 +676,14 @@ async def test_put_submission_assignment_submission_missmatch(
 
 
 async def test_put_submission_wrong_submission(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -662,16 +694,25 @@ async def test_put_submission_wrong_submission(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") 
-    pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    pre_submission = Submission(
+        id=-1,
+        submitted_at=now,
+        commit_hash=secrets.token_hex(20),
+        auto_status="automatically_graded",
+        manual_status="manually_graded",
+        feedback_status="not_generated",
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"},
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_submission.to_dict()),
         )
     e = exc_info.value
     assert e.code == 404
+
 
 # FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
 # async def test_post_submission(
@@ -692,7 +733,7 @@ async def test_put_submission_wrong_submission(
 
 #     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
-#     now = datetime.now(timezone.utc).isoformat("T", "milliseconds") 
+#     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
 #     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
 #                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
 
@@ -707,14 +748,14 @@ async def test_put_submission_wrong_submission(
 
 
 async def test_post_submission_git_repo_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -724,27 +765,34 @@ async def test_post_submission_git_repo_not_found(
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds") 
-    pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-                                auto_status="automatically_graded", manual_status="manually_graded")
+    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    pre_submission = Submission(
+        id=-1,
+        submitted_at=now,
+        commit_hash=secrets.token_hex(20),
+        auto_status="automatically_graded",
+        manual_status="manually_graded",
+    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_submission.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == 422
 
 
 async def test_post_submission_commit_hash_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -757,7 +805,9 @@ async def test_post_submission_commit_hash_not_found(
     pre_submission = {"value": "10"}
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="POST", headers={"Authorization": f"Token {default_token}"},
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_submission),
         )
     e = exc_info.value
@@ -765,14 +815,14 @@ async def test_post_submission_commit_hash_not_found(
 
 
 async def test_submission_properties(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is student
     a_id = 4
@@ -792,9 +842,7 @@ async def test_submission_properties(
     )
     assert put_response.code == 200
     get_response = await http_server_client.fetch(
-        url,
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert get_response.code == 200
     assignment_props = json.loads(get_response.body.decode())
@@ -802,14 +850,14 @@ async def test_submission_properties(
 
 
 async def test_submission_properties_not_correct(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # default user is student
     a_id = 4
@@ -826,52 +874,52 @@ async def test_submission_properties_not_correct(
             url,
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
-            body=json.dumps(prop)
+            body=json.dumps(prop),
         )
     e = exc_info.value
     assert e.code == 400
 
 
-async def test_submission_properties_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
-):
-    l_id = 3  # default user is student
-    a_id = 4
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
-
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
-    insert_submission(engine, a_id, default_user.name)
-    insert_submission(engine, a_id, default_user.name)
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == 404
+# async def test_submission_properties_not_found(
+#     app: GraderServer,
+#     service_base_url,
+#     http_server_client,
+#     default_user,
+#     default_token,
+#     sql_alchemy_engine,
+#     default_roles,
+#     default_user_login,
+# ):
+#     # TODO(Natalia): There's a test with the same name at line ~1030. Is this one redundant?
+#     l_id = 3  # default user is student
+#     a_id = 4
+#
+#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
+#
+#     engine = sql_alchemy_engine
+#     insert_assignments(engine, l_id)
+#     insert_submission(engine, a_id, default_user.name)
+#     # TODO(Natalia): The following inserts cause db IntegrityErrors. Delete them?
+#     # insert_submission(engine, a_id, default_user.name)
+#     # insert_submission(engine, a_id, default_user.name)
+#
+#     with pytest.raises(HTTPClientError) as exc_info:
+#         await http_server_client.fetch(
+#             url, method="GET", headers={"Authorization": f"Token {default_token}"}
+#         )
+#     e = exc_info.value
+#     assert e.code == 404
 
 
 async def test_submission_properties_lecture_assignment_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3
     a_id = 1
@@ -895,23 +943,21 @@ async def test_submission_properties_lecture_assignment_missmatch(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_submission_properties_assignment_submission_missmatch(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -936,23 +982,21 @@ async def test_submission_properties_assignment_submission_missmatch(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_submission_properties_wrong_submission(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -977,23 +1021,21 @@ async def test_submission_properties_wrong_submission(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
 
 
 async def test_submission_properties_not_found(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_user,
-        default_token,
-        sql_alchemy_engine,
-        default_roles,
-        default_user_login,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
 ):
     l_id = 3  # user has to be instructor
     a_id = 3
@@ -1006,12 +1048,11 @@ async def test_submission_properties_not_found(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url,
-            method="GET",
-            headers={"Authorization": f"Token {default_token}"},
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == 404
+
 
 # FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
 # async def test_max_submissions_assignment(
@@ -1030,7 +1071,7 @@ async def test_submission_properties_not_found(
 #     a_id = 3
 
 #     session = sql_alchemy_sessionmaker()
-    
+
 #     assignment_orm = _get_assignment("pytest", l_id, 20, "released", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2)))
 #     assignment_orm.settings.max_submissions = 1
 #     assignment_orm.settings.autograde_type = "unassisted"

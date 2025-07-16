@@ -7,7 +7,7 @@ from grader_service.orm.oauthcode import OAuthCode
 
 
 class OAuthClient(Base):
-    __tablename__ = 'oauth_client'
+    __tablename__ = "oauth_client"
     id = Column(Integer, primary_key=True, autoincrement=True)
     identifier = Column(Unicode(255), unique=True)
     description = Column(Unicode(1023))
@@ -19,11 +19,9 @@ class OAuthClient(Base):
         return self.identifier
 
     access_tokens = relationship(
-        APIToken, back_populates='oauth_client', cascade='all, delete-orphan'
+        APIToken, back_populates="oauth_client", cascade="all, delete-orphan"
     )
-    codes = relationship(
-        OAuthCode, back_populates='client', cascade='all, delete-orphan'
-    )
+    codes = relationship(OAuthCode, back_populates="client", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(identifier={self.identifier!r})>"

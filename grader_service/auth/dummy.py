@@ -1,4 +1,4 @@
-from traitlets import default, Unicode
+from traitlets import Unicode, default
 
 from grader_service.auth.auth import Authenticator
 from grader_service.auth.login import LogoutHandler
@@ -11,13 +11,8 @@ class DummyAuthenticator(Authenticator):
     If a non-empty password is set, any username will be allowed
     if it logs in with that password.
 
-    .. versionadded:: 1.0
-
-    .. versionadded:: 5.0
-        `allow_all` defaults to True,
-        preserving default behavior.
     """
-    
+
     logout_handler = LogoutHandler
 
     @default("allow_all")
@@ -46,11 +41,11 @@ class DummyAuthenticator(Authenticator):
     async def authenticate(self, handler, data):
         """Checks against a global password if it's been set. If not, allow any user/pass combo"""
         if self.password:
-            if data['password'] == self.password:
-                return data['username']
+            if data["password"] == self.password:
+                return data["username"]
             return None
-        return data['username']
-    
+        return data["username"]
+
     def get_handlers(self, base_url_path: str):
         base_handlers = super().get_handlers(base_url_path)
         dummy_handlers = [(self.logout_url(base_url_path), self.logout_handler)]

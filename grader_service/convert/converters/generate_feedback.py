@@ -1,19 +1,16 @@
-
-
-import json
 import os
 from typing import Any
 
 from nbconvert.exporters import HTMLExporter
 from nbconvert.preprocessors import CSSHTMLHeaderPreprocessor
-from traitlets import List, default, Bool
+from traitlets import List, default
 from traitlets.config import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
+from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import GetGrades
-from grader_service.convert.converters.base import BaseConverter
 
 
 class GenerateFeedback(BaseConverter):
@@ -34,7 +31,12 @@ class GenerateFeedback(BaseConverter):
         return 664
 
     def __init__(
-        self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_pattern: str,
+        assignment_settings: AssignmentSettings,
+        **kwargs: Any,
     ):
         super(GenerateFeedback, self).__init__(
             input_dir, output_dir, file_pattern, assignment_settings, **kwargs
@@ -44,11 +46,7 @@ class GenerateFeedback(BaseConverter):
         #  and can be given by name (classic is default)
         if "template" not in self.config.HTMLExporter:
             template_path = os.path.abspath(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    "..",
-                    "templates",
-                )
+                os.path.join(os.path.dirname(__file__), "..", "templates")
             )
             # '/Users/matthiasmatt/opt/miniconda3/envs/grader/share/jupyter/nbconvert/templates/classic/index.html.j2'
             c.TemplateExporter.extra_template_basedirs = template_path
@@ -66,5 +64,5 @@ class GenerateFeedbackApp(ConverterApp):
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
             assignment_settings=utils.get_assignment_settings_from_env(),
-            config=self.config
+            config=self.config,
         ).start()

@@ -1,7 +1,9 @@
-import pytest
 import os
 
+import pytest
+
 from grader_service.convert.preprocessors import IncludeHeaderFooter
+
 from .base import BaseTestPreprocessor
 
 
@@ -11,7 +13,6 @@ def preprocessor():
 
 
 class TestIncludeHeaderFooter(BaseTestPreprocessor):
-
     def test_concatenate_nothing(self, preprocessor):
         """Are the cells the same if there is no header or footer?"""
         orig_nb = self._read_nb(os.path.join("files", "test.ipynb"))

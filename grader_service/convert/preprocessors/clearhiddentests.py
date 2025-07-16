@@ -1,5 +1,3 @@
-
-
 from textwrap import dedent
 from typing import Tuple
 
@@ -12,10 +10,8 @@ from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearHiddenTests(NbGraderPreprocessor):
-
     begin_test_delimeter = Unicode(
-        "BEGIN HIDDEN TESTS",
-        help="The delimiter marking the beginning of hidden tests cases",
+        "BEGIN HIDDEN TESTS", help="The delimiter marking the beginning of hidden tests cases"
     ).tag(config=True)
 
     end_test_delimeter = Unicode(
@@ -54,13 +50,10 @@ class ClearHiddenTests(NbGraderPreprocessor):
         for line in lines:
             # begin the test area
             if self.begin_test_delimeter in line:
-
                 # check to make sure this isn't a nested BEGIN HIDDEN TESTS
                 # region
                 if in_test:
-                    raise RuntimeError(
-                        "Encountered nested begin hidden tests statements"
-                    )
+                    raise RuntimeError("Encountered nested begin hidden tests statements")
                 in_test = True
                 removed_test = True
 

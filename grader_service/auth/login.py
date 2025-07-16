@@ -1,9 +1,9 @@
 """HTTP Handlers for the hub server"""
-from typing import Optional, Awaitable
+
+from typing import Awaitable, Optional
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-
 from jinja2 import Template
 from tornado import web
 from tornado.escape import url_escape
@@ -15,10 +15,8 @@ from grader_service.handlers.base_handler import BaseHandler
 class LogoutHandler(BaseHandler):
     """Log a user out by clearing their login cookie."""
 
-
     def _backend_logout_cleanup(self, name):
-        """Default backend logout actions
-        """
+        """Default backend logout actions"""
         self.log.info("User logged out: %s", name)
         self.clear_login_cookies()
 
@@ -47,10 +45,10 @@ class LogoutHandler(BaseHandler):
         Override this function to set a custom logout page.
         """
         if self.authenticator.auto_login:
-            html = await self.render_template('auth/logout.html.j2')
+            html = await self.render_template("auth/logout.html.j2")
             self.finish(html)
         else:
-            self.redirect(self.settings['login_url'], permanent=False)
+            self.redirect(self.settings["login_url"], permanent=False)
 
     async def get(self):
         """Log the user out, call the custom action, forward the user
@@ -69,27 +67,21 @@ class LoginHandler(BaseHandler):
 
     def _render(self, login_error=None, username=None):
         context = {
-            "next": url_escape(self.get_argument('next', default='')),
+            "next": url_escape(self.get_argument("next", default="")),
             "username": username,
             "login_error": login_error,
-            "login_url": self.settings['login_url'],
+            "login_url": self.settings["login_url"],
             "authenticator_login_url": url_concat(
                 self.authenticator.login_url(self.application.base_url),
-                {
-                    'next': self.get_argument('next', ''),
-                },
+                {"next": self.get_argument("next", "")},
             ),
             "authenticator": self.authenticator,
-            "xsrf": self.xsrf_token.decode('ascii'),
+            "xsrf": self.xsrf_token.decode("ascii"),
         }
         custom_html = Template(
             self.authenticator.get_custom_html(self.application.base_url)
         ).render(**context)
-        return self.render_template(
-            'auth/login.html.j2',
-            **context,
-            custom_html=custom_html,
-        )
+        return self.render_template("auth/login.html.j2", **context, custom_html=custom_html)
 
     async def prepare(self) -> Optional[Awaitable[None]]:
         await super().prepare()
@@ -105,7 +97,7 @@ class LoginHandler(BaseHandler):
         else:
             if self.authenticator.auto_login:
                 auto_login_url = self.authenticator.login_url(self.application.base_url)
-                if auto_login_url == self.settings['login_url']:
+                if auto_login_url == self.settings["login_url"]:
                     # auto_login without a custom login handler
                     # means that auth info is already in the request
                     # (e.g. REMOTE_USER header)
@@ -116,13 +108,11 @@ class LoginHandler(BaseHandler):
                     else:
                         self.redirect(self.get_next_url(user))
                 else:
-                    if self.get_argument('next', default=False):
-                        auto_login_url = url_concat(
-                            auto_login_url, {'next': self.get_next_url()}
-                        )
+                    if self.get_argument("next", default=False):
+                        auto_login_url = url_concat(auto_login_url, {"next": self.get_next_url()})
                     self.redirect(auto_login_url)
                 return
-            username = self.get_argument('username', default='')
+            username = self.get_argument("username", default="")
             self.finish(await self._render(username=username))
 
     async def post(self):
@@ -144,8 +134,7 @@ class LoginHandler(BaseHandler):
             self.redirect(self.get_next_url(user))
         else:
             html = await self._render(
-                login_error='Invalid username or password', username=data['username']
+                login_error="Invalid username or password", username=data["username"]
             )
+            self.set_status(404)
             await self.finish(html)
-
-

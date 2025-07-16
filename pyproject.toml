@@ -1,23 +1,23 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "grader-service"
 description = "Grader service"
-version = "0.7.5"
-requires-python = ">=3.8"
+version = "0.8.0"
+requires-python = ">=3.9"
 authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 classifiers = [
-    "License :: OSI Approved :: BSD License",
     "Development Status :: 3 - Alpha",
     "Framework :: Jupyter",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "alembic>=1.13",
@@ -30,19 +30,20 @@ dependencies = [
     "jupyter-client>=8.6",
     "jupyter_core>=5.7",
     "jupyterhub>=5",
+    "jupyterlab>=4.4.4",
     "kubernetes>=31",
     "nbconvert>=7.16",
     "nbformat>=5.4.0",
+    "pandas>=2.2.3",
     "psycopg2-binary>= 2.9",
     "PyJWT>=2.9",
-    "python-dateutil>=2.9", 
+    "python-dateutil>=2.9",
     "SQLAlchemy>=2.0.35",
     "tornado>=6.4",
     "traitlets>=5.14",
     "typing-extensions>=4.12",
     "urllib3>=2.2",
-    "pandas>=2.2.3",
-    "uvloop>=0.21.0"
+    "uvloop>=0.21.0",
 ]
 
 [tool.setuptools]
@@ -67,7 +68,7 @@ Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
 github_url = "https://github.com/TU-Wien-dataLAB/grader-service"
 
 [tool.tbump.version]
-current = "0.7.5"
+current = "0.8.0"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
@@ -94,11 +95,9 @@ tag_template = "grader-service-{new_version}"
 src = "pyproject.toml"
 search = "version = \"{current_version}\""
 
-
 [[tool.tbump.file]]
 src = "grader_service/_version.py"
-search = "__version__ = '{current_version}'"
-
+search = "__version__ = \"{current_version}\""
 
 [[tool.tbump.file]]
 src = "./docs/source/_static/openapi/grader_api.yml"
@@ -107,3 +106,44 @@ search = "version: '{current_version}'"
 [[tool.tbump.file]]
 src = "./charts/grader-service/Chart.yaml"
 search = "appVersion: \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "./charts/grader-service-all-in-one/Chart.yaml"
+search = "appVersion: \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "./charts/grader-service-all-in-one/Chart.yaml"
+search = "version: {current_version}"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.0",
+    "pre-commit>=4.2.0",
+    "oauthenticator>=17.3.0",
+    "tbump>=6.11.0",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "**/*.ipynb",
+    "grader_service/api/*",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+exclude = [
+    "examples/*",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "grader_service/tests",
+]

@@ -1,4 +1,5 @@
 """Base API handlers"""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import json
@@ -10,9 +11,8 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from sqlalchemy.exc import SQLAlchemyError
 from tornado import web
 
-from .. import orm
 from ..handlers.base_handler import BaseHandler
-from ..utils import isoformat, url_escape_path, url_path_join
+from ..utils import isoformat
 
 PAGINATION_MEDIA_TYPE = "application/jupyterhub-pagination+json"
 
@@ -32,11 +32,10 @@ class APIHandler(BaseHandler):
 
     @property
     def content_security_policy(self):
-        return '; '.join(
-            [super().content_security_policy, "default-src 'none'"])
+        return "; ".join([super().content_security_policy, "default-src 'none'"])
 
     def get_content_type(self):
-        return 'application/json'
+        return "application/json"
 
     @property
     @lru_cache()
@@ -70,8 +69,7 @@ class APIHandler(BaseHandler):
         # parse content type for application/json
         fields = content_type.lower().split(";")
         if not any(f.lstrip().startswith("application/json") for f in fields):
-            self.log.warning(
-                f"Not allowing POST with content-type: {content_type}")
+            self.log.warning(f"Not allowing POST with content-type: {content_type}")
             return False
 
         return True
@@ -81,14 +79,11 @@ class APIHandler(BaseHandler):
         # tornado only checks xsrf on non-GET
         # we also check xsrf on GETs to API endpoints
         # make sure this runs after auth, which happens in super().prepare()
-        if self.request.method not in {"HEAD",
-                                       "OPTIONS"} and self.settings.get(
-                "xsrf_cookies"
-        ):
+        if self.request.method not in {"HEAD", "OPTIONS"} and self.settings.get("xsrf_cookies"):
             self.check_xsrf_cookie()
 
     def check_xsrf_cookie(self):
-        if getattr(self, '_token_authenticated', False):
+        if getattr(self, "_token_authenticated", False):
             # if token-authenticated, ignore XSRF
             return
         return super().check_xsrf_cookie()
@@ -101,10 +96,7 @@ class APIHandler(BaseHandler):
         # avoiding misleading "Blocking Cross Origin" messages
         # when there's no cookie set anyway.
         if cookie_user:
-            if (
-                    self.request.method.upper() == 'POST'
-                    and not self.check_post_content_type()
-            ):
+            if self.request.method.upper() == "POST" and not self.check_post_content_type():
                 return None
         return cookie_user
 
@@ -112,21 +104,21 @@ class APIHandler(BaseHandler):
         """Return the body of the request as JSON data."""
         if not self.request.body:
             return None
-        body = self.request.body.strip().decode('utf-8')
+        body = self.request.body.strip().decode("utf-8")
         try:
             model = json.loads(body)
         except Exception:
             self.log.debug("Bad JSON: %r", body)
             self.log.error("Couldn't parse JSON", exc_info=True)
-            raise web.HTTPError(400, reason='Invalid JSON in body of request')
+            raise web.HTTPError(400, reason="Invalid JSON in body of request")
         return model
 
     def write_error(self, status_code, **kwargs):
         """Write JSON errors instead of HTML"""
-        exc_info = kwargs.get('exc_info')
-        message = ''
+        exc_info = kwargs.get("exc_info")
+        message = ""
         exception = None
-        status_message = responses.get(status_code, 'Unknown Error')
+        status_message = responses.get(status_code, "Unknown Error")
         if exc_info:
             exception = exc_info[1]
             # get the custom message, if defined
@@ -136,60 +128,50 @@ class APIHandler(BaseHandler):
                 pass
 
             # construct the custom reason, if defined
-            reason = getattr(exception, 'reason', '')
+            reason = getattr(exception, "reason", "")
             if reason:
                 status_message = reason
 
         if exception and isinstance(exception, SQLAlchemyError):
             try:
                 exception_str = str(exception)
-                self.log.warning(
-                    "Rolling back session due to database error %s",
-                    exception_str
-                )
+                self.log.warning("Rolling back session due to database error %s", exception_str)
             except Exception:
-                self.log.warning(
-                    "Rolling back session due to database error %s",
-                    type(exception)
-                )
+                self.log.warning("Rolling back session due to database error %s", type(exception))
             self.db.rollback()
 
-        self.set_header('Content-Type', 'application/json')
+        self.set_header("Content-Type", "application/json")
         if isinstance(exception, web.HTTPError):
             # allow setting headers from exceptions
             # since exception handler clears headers
-            headers = getattr(exception, 'headers', None)
+            headers = getattr(exception, "headers", None)
             if headers:
                 for key, value in headers.items():
                     self.set_header(key, value)
             # Content-Length must be recalculated.
-            self.clear_header('Content-Length')
+            self.clear_header("Content-Length")
 
-        self.write(
-            json.dumps(
-                {'status': status_code, 'message': message or status_message})
-        )
+        self.write(json.dumps({"status": status_code, "message": message or status_message}))
 
     def token_model(self, token):
         """Get the JSON model for an APIToken"""
 
-        owner_key = 'user'
+        owner_key = "user"
         owner = token.user.name
 
         model = {
             owner_key: owner,
-            'id': token.api_id,
-            'kind': 'api_token',
+            "id": token.api_id,
+            "kind": "api_token",
             # deprecated field, but leave it present.
-            'roles': [],
-            'scopes': [],
-            'created': isoformat(token.created),
-            'last_activity': isoformat(token.last_activity),
-            'expires_at': isoformat(token.expires_at),
-            'note': token.note,
-            'session_id': token.session_id,
-            'oauth_client': token.oauth_client.description
-                            or token.oauth_client.identifier,
+            "roles": [],
+            "scopes": [],
+            "created": isoformat(token.created),
+            "last_activity": isoformat(token.last_activity),
+            "expires_at": isoformat(token.expires_at),
+            "note": token.note,
+            "session_id": token.session_id,
+            "oauth_client": token.oauth_client.description or token.oauth_client.identifier,
         }
         return model
 
@@ -209,30 +191,30 @@ class APIHandler(BaseHandler):
         return model
 
     _user_model_types = {
-        'name': str,
-        'admin': bool,
-        'groups': list,
-        'roles': list,
-        'auth_state': dict,
+        "name": str,
+        "admin": bool,
+        "groups": list,
+        "roles": list,
+        "auth_state": dict,
     }
 
-    _group_model_types = {'name': str, 'users': list, 'roles': list}
+    _group_model_types = {"name": str, "users": list, "roles": list}
 
     _service_model_types = {
-        'name': str,
-        'admin': bool,
-        'url': str,
-        'oauth_client_allowed_scopes': list,
-        'api_token': str,
-        'info': dict,
-        'display': bool,
-        'oauth_no_confirm': bool,
-        'command': list,
-        'cwd': str,
-        'environment': dict,
-        'user': str,
-        'oauth_client_id': str,
-        'oauth_redirect_uri': str,
+        "name": str,
+        "admin": bool,
+        "url": str,
+        "oauth_client_allowed_scopes": list,
+        "api_token": str,
+        "info": dict,
+        "display": bool,
+        "oauth_no_confirm": bool,
+        "command": list,
+        "cwd": str,
+        "environment": dict,
+        "user": str,
+        "oauth_client_id": str,
+        "oauth_redirect_uri": str,
     }
 
     def _check_model(self, model, model_types, name):
@@ -250,37 +232,29 @@ class APIHandler(BaseHandler):
         for key, value in model.items():
             if not isinstance(value, model_types[key]):
                 raise web.HTTPError(
-                    400,
-                    "%s.%s must be %s, not: %r"
-                    % (name, key, model_types[key], type(value)),
+                    400, "%s.%s must be %s, not: %r" % (name, key, model_types[key], type(value))
                 )
 
     def _check_user_model(self, model):
         """Check a request-provided user model from a REST API"""
-        self._check_model(model, self._user_model_types, 'user')
-        for username in model.get('users', []):
+        self._check_model(model, self._user_model_types, "user")
+        for username in model.get("users", []):
             if not isinstance(username, str):
-                raise web.HTTPError(
-                    400, ("usernames must be str, not %r", type(username))
-                )
+                raise web.HTTPError(400, ("usernames must be str, not %r", type(username)))
 
     def _check_group_model(self, model):
         """Check a request-provided group model from a REST API"""
-        self._check_model(model, self._group_model_types, 'group')
-        for groupname in model.get('groups', []):
+        self._check_model(model, self._group_model_types, "group")
+        for groupname in model.get("groups", []):
             if not isinstance(groupname, str):
-                raise web.HTTPError(
-                    400, ("group names must be str, not %r", type(groupname))
-                )
+                raise web.HTTPError(400, ("group names must be str, not %r", type(groupname)))
 
     def _check_service_model(self, model):
         """Check a request-provided service model from a REST API"""
-        self._check_model(model, self._service_model_types, 'service')
-        service_name = model.get('name')
+        self._check_model(model, self._service_model_types, "service")
+        service_name = model.get("name")
         if not isinstance(service_name, str):
-            raise web.HTTPError(
-                400, ("Service name must be str, not %r", type(service_name))
-            )
+            raise web.HTTPError(400, ("Service name must be str, not %r", type(service_name)))
 
     def get_api_pagination(self):
         default_limit = self.settings["api_page_default_limit"]
@@ -299,10 +273,8 @@ class APIHandler(BaseHandler):
                 limit = max_limit
             if limit < 1:
                 limit = 1
-        except Exception as e:
-            raise web.HTTPError(
-                400, "Invalid argument type, offset and limit must be integers"
-            )
+        except Exception:
+            raise web.HTTPError(400, "Invalid argument type, offset and limit must be integers")
         return offset, limit
 
     def paginated_model(self, items, offset, limit, total_count):
@@ -319,28 +291,17 @@ class APIHandler(BaseHandler):
         next_offset = offset + limit
         data = {
             "items": items,
-            "_pagination": {
-                "offset": offset,
-                "limit": limit,
-                "total": total_count,
-                "next": None,
-            },
+            "_pagination": {"offset": offset, "limit": limit, "total": total_count, "next": None},
         }
         if next_offset < total_count:
             # if there's a next page
             next_url_parsed = urlparse(self.request.full_url())
             query = parse_qs(next_url_parsed.query)
-            query['offset'] = [next_offset]
-            query['limit'] = [limit]
-            next_url_parsed = next_url_parsed._replace(
-                query=urlencode(query, doseq=True)
-            )
+            query["offset"] = [next_offset]
+            query["limit"] = [limit]
+            next_url_parsed = next_url_parsed._replace(query=urlencode(query, doseq=True))
             next_url = urlunparse(next_url_parsed)
-            data["_pagination"]["next"] = {
-                "offset": next_offset,
-                "limit": limit,
-                "url": next_url,
-            }
+            data["_pagination"]["next"] = {"offset": next_offset, "limit": limit, "url": next_url}
         return data
 
     def options(self, *args, **kwargs):

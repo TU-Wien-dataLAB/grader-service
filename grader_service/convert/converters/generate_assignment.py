@@ -1,9 +1,9 @@
-
-import json
 import os
-from sys import path
 from textwrap import dedent
 from typing import Any
+
+from traitlets import Bool, List, default
+from traitlets.config import Config
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -12,6 +12,7 @@ from grader_service.convert.converters.baseapp import ConverterApp
 from grader_service.convert.preprocessors import (
     AddRevert,
     CheckCellMetadata,
+    ClearAlwaysHiddenTests,
     ClearHiddenTests,
     ClearMarkScheme,
     ClearOutput,
@@ -20,12 +21,12 @@ from grader_service.convert.preprocessors import (
     IncludeHeaderFooter,
     LockCells,
     SaveCells,
-    ClearAlwaysHiddenTests
 )
-from traitlets import Bool, List, default
-from traitlets.config.loader import Config
+
 
 class GenerateAssignment(BaseConverter):
+    """Convert between the 'source code' and the 'student version' of assignment files."""
+
     create_assignment = Bool(
         True,
         help=dedent(
@@ -61,19 +62,28 @@ class GenerateAssignment(BaseConverter):
     # NB: ClearHiddenTests must come after ComputeChecksums and SaveCells.
     # ComputerChecksums must come again after ClearHiddenTests.
 
-    def _load_config(self, cfg: Config, **kwargs: Any) -> None:
-        super(GenerateAssignment, self)._load_config(cfg, **kwargs)
-
     def __init__(
-            self, input_dir: str, output_dir: str, file_pattern: str, assignment_settings: AssignmentSettings, **kwargs: Any
+        self,
+        input_dir: str,
+        output_dir: str,
+        file_pattern: str,
+        assignment_settings: AssignmentSettings,
+        **kwargs: Any,
     ) -> None:
-        super(GenerateAssignment, self).__init__(
-            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
-        )
+        super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         self.force = True  # always overwrite generated assignments
 
-    def start(self) -> None:
-        super(GenerateAssignment, self).start()
+        # load custom configuration if it exists
+        c = Config()
+        custom_config_path = f"{self._input_directory}/grader_config.py"
+        if os.path.exists(custom_config_path):
+            local_vars = {"c": c}
+            with open(custom_config_path) as f:
+                code = compile(f.read(), "config.py", "exec")
+                exec(code, {}, local_vars)
+            c = local_vars["c"]
+        c.Exporter.default_preprocessors = []
+        self.update_config(c)
 
 
 class GenerateAssignmentApp(ConverterApp):
@@ -85,5 +95,5 @@ class GenerateAssignmentApp(ConverterApp):
             output_dir=self.output_directory,
             file_pattern=self.file_pattern,
             assignment_settings=utils.get_assignment_settings_from_env(),
-            config=self.config
+            config=self.config,
         ).start()

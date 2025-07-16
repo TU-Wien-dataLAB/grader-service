@@ -1,14 +1,11 @@
-import asyncio
 from typing import Union
 
-from celery import Task, Celery
-from sqlalchemy import func
+from celery import Celery, Task
 from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
-from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import Submission
 from grader_service.plugins.lti import LTISyncGrades
 
@@ -47,17 +44,19 @@ def add(self: GraderTask, x, y):
 @app.task(bind=True, base=GraderTask)
 def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
+
     grader_service_dir = GraderService.instance().grader_service_dir
 
     submission = self.session.get(Submission, sub_id)
     if submission is None:
         raise ValueError("Submission not found")
     if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
+        raise ValueError(
+            f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match"
+        )
 
     executor = RequestHandlerConfig.instance().autograde_executor_class(
-        grader_service_dir, submission,
-        config=self.celery.config
+        grader_service_dir, submission, config=self.celery.config
     )
     self.log.info(f"Running autograding task for submission {submission.id}")
     executor.start()
@@ -67,25 +66,30 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
 @app.task(bind=True, base=GraderTask)
 def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
+
     grader_service_dir = GraderService(config=self.celery.config).grader_service_dir
 
     submission = self.session.get(Submission, sub_id)
     if submission is None:
         raise ValueError("Submission not found")
     if submission.assignment.id != assignment_id or submission.assignment.lecture.id != lecture_id:
-        raise ValueError(f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match")
+        raise ValueError(
+            f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match"
+        )
 
-    executor = GenerateFeedbackExecutor(
-        grader_service_dir, submission,
-        config=self.celery.config
-    )
+    executor = GenerateFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
     executor.start()
     self.log.info(f"Successfully generated feedback for submission {submission.id}!")
 
 
 @app.task(bind=True, base=GraderTask)
-async def lti_sync_task(self: GraderTask, lecture: dict, assignment: dict, submissions: list[dict],
-                  feedback_sync: bool = False) -> Union[dict, None]:
+async def lti_sync_task(
+    self: GraderTask,
+    lecture: dict,
+    assignment: dict,
+    submissions: list[dict],
+    feedback_sync: bool = False,
+) -> Union[dict, None]:
     """Gathers submissions based on params and starts LTI sync process
     :param lecture: lecture object
     :param assignment: assignment object
@@ -94,7 +98,9 @@ async def lti_sync_task(self: GraderTask, lecture: dict, assignment: dict, submi
     """
     lti_plugin = LTISyncGrades.instance()
     # check if the lti plugin is enabled
-    if lti_plugin.check_if_lti_enabled(lecture, assignment, submissions, feedback_sync=feedback_sync):
+    if lti_plugin.check_if_lti_enabled(
+        lecture, assignment, submissions, feedback_sync=feedback_sync
+    ):
         try:
             results = await lti_plugin.start(lecture, assignment, submissions)
             return results

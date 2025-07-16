@@ -1,30 +1,23 @@
-"""Base Authenticator class and the default PAM Authenticator"""
+"""Base Authenticator class"""
+
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
-import inspect
 import re
-import shlex
-import sys
-import warnings
-from functools import partial
-from shutil import which
-from subprocess import PIPE, STDOUT, Popen
-from textwrap import dedent
-from typing import Union
 
-from traitlets import Any, Bool, Dict, Integer, Set, Unicode, default, observe, Union, Callable
+from traitlets import Any, Bool, Callable, Dict, Integer, Set, Unicode, Union, default, observe
 from traitlets.config import LoggingConfigurable
 
-from .login import LoginHandler
 from grader_service.utils import maybe_future, url_path_join
+
+from .login import LoginHandler
 
 
 class Authenticator(LoggingConfigurable):
-    """Base class for implementing an authentication provider for JupyterHub"""
+    """Base class for implementing an authentication provider for Grader Service."""
 
     login_redirect_url = Union(
         [Unicode(), Callable()],
-        default_value='/',
+        default_value="/",
         allow_none=False,
         help="""
         The default URL to redirect users when they successfully logged in.
@@ -62,7 +55,6 @@ class Authenticator(LoggingConfigurable):
 
         If encryption is unavailable, auth_state cannot be persisted.
 
-        New in JupyterHub 0.8
         """,
     )
 
@@ -97,19 +89,11 @@ class Authenticator(LoggingConfigurable):
 
     admin_users = Set(
         help="""
-        Set of users that will have admin rights on this JupyterHub.
+        .. warning::
+            Admin users do currently not have any special privileges
+            in the Grader Service, but this may change in the future.
 
-        Note: As of JupyterHub 2.0,
-        full admin rights should not be required,
-        and more precise permissions can be managed via roles.
-
-        Admin users have extra privileges:
-         - Use the admin panel to see list of users logged in
-         - Add / remove users in some authenticators
-         - Restart / halt the hub
-         - Start / stop users' single-user servers
-         - Can access each individual users' single-user server (if configured)
-
+        Set of users that will have admin rights on the Grader Service instance.
         Admin access should be treated the same way root access is.
 
         Defaults to an empty set, in which case no user has admin access.
@@ -120,26 +104,19 @@ class Authenticator(LoggingConfigurable):
         False,
         help="""Is there any allow config?
 
-        Used to show a warning if it looks like nobody can access the Hub,
-        which can happen when upgrading to JupyterHub 5,
-        now that `allow_all` defaults to False.
-
         Deployments can set this explicitly to True to suppress
         the "No allow config found" warning.
 
         Will be True if any config tagged with `.tag(allow_config=True)`
         or starts with `allow` is truthy.
 
-        .. versionadded:: 5.0
         """,
     ).tag(config=True)
 
     @default("any_allow_config")
     def _default_any_allowed(self):
         for trait_name, trait in self.traits(config=True).items():
-            if trait.metadata.get("allow_config", False) or trait_name.startswith(
-                    "allow"
-            ):
+            if trait.metadata.get("allow_config", False) or trait_name.startswith("allow"):
                 # this is only used for a helpful warning, so not the biggest deal if it's imperfect
                 if getattr(self, trait_name):
                     return True
@@ -165,11 +142,6 @@ class Authenticator(LoggingConfigurable):
                 "You may suppress this warning by setting c.Authenticator.any_allow_config = True."
             )
 
-    whitelist = Set(
-        help="Deprecated, use `Authenticator.allowed_users`",
-        config=True,
-    )
-
     allowed_users = Set(
         help="""
         Set of usernames that are allowed to log in.
@@ -183,8 +155,6 @@ class Authenticator(LoggingConfigurable):
         Authenticators may extend :meth:`.Authenticator.check_allowed` to combine `allowed_users` with other configuration
         to either expand or restrict access.
 
-        .. versionchanged:: 1.2
-            `Authenticator.whitelist` renamed to `allowed_users`
         """
     ).tag(config=True)
 
@@ -206,16 +176,6 @@ class Authenticator(LoggingConfigurable):
                     return False
                 else:
                     return True
-
-        .. versionadded:: 5.0
-
-        .. versionchanged:: 5.0
-            Prior to 5.0, `allow_all` wasn't defined on its own,
-            and was instead implicitly True when no allow config was provided,
-            i.e. `allowed_users` unspecified or empty on the base Authenticator class.
-
-            To preserve pre-5.0 behavior,
-            set `allow_all = True` if you have no other allow configuration.
         """,
     ).tag(allow_config=True)
 
@@ -228,29 +188,9 @@ class Authenticator(LoggingConfigurable):
         Defaults to True if `allowed_users` is set for historical reasons, and
         False otherwise.
 
-        With this enabled, all users present in the JupyterHub database are allowed to login.
+        With this enabled, all users present in the Grader Service database are allowed to login.
         This has the effect of any user who has _previously_ been allowed to login
-        via any means will continue to be allowed until the user is deleted via the /hub/admin page
-        or REST API.
-
-        .. warning::
-
-           Before enabling this you should review the existing users in the
-           JupyterHub admin panel at `/hub/admin`. You may find users existing
-           there because they have previously been declared in config such as
-           `allowed_users` or allowed to sign in.
-
-        .. warning::
-
-           When this is enabled and you wish to remove access for one or more
-           users previously allowed, you must make sure that they
-           are removed from the jupyterhub database. This can be tricky to do
-           if you stop allowing an externally managed group of users for example.
-
-        With this enabled, JupyterHub admin users can visit `/hub/admin` or use
-        JupyterHub's REST API to add and remove users to manage who can login.
-
-        .. versionadded:: 5.0
+        via any means will continue to be allowed until the user is deleted.
         """,
     ).tag(allow_config=True)
 
@@ -274,11 +214,6 @@ class Authenticator(LoggingConfigurable):
         authenticator has in place.
 
         If empty, does not perform any additional restriction.
-
-        .. versionadded: 0.9
-
-        .. versionchanged:: 1.2
-            `Authenticator.blacklist` renamed to `blocked_users`
         """
     ).tag(config=True)
 
@@ -286,8 +221,6 @@ class Authenticator(LoggingConfigurable):
         "OTP:",
         help="""
         The prompt string for the extra OTP (One Time Password) field.
-
-        .. versionadded:: 5.0
         """,
     ).tag(config=True)
 
@@ -296,17 +229,15 @@ class Authenticator(LoggingConfigurable):
         config=True,
         help="""
         Prompt for OTP (One Time Password) in the login form.
-
-        .. versionadded:: 5.0
         """,
     )
 
-    @observe('allowed_users')
+    @observe("allowed_users")
     def _check_allowed_users(self, change):
-        short_names = [name for name in change['new'] if len(name) <= 1]
+        short_names = [name for name in change["new"] if len(name) <= 1]
         if short_names:
             sorted_names = sorted(short_names)
-            single = ''.join(sorted_names)
+            single = "".join(sorted_names)
             string_set_typo = "set('%s')" % single
             self.log.warning(
                 "Allowed set contains single-character names: %s; did you mean set([%r]) instead of %s?",
@@ -324,10 +255,7 @@ class Authenticator(LoggingConfigurable):
     )
 
     def get_custom_html(self, base_url):
-        """Get custom HTML for the authenticator.
-
-        .. versionadded: 1.4
-        """
+        """Get custom HTML for the authenticator."""
         return self.custom_html
 
     login_service = Unicode(
@@ -352,11 +280,11 @@ class Authenticator(LoggingConfigurable):
         """
     ).tag(config=True)
 
-    @observe('username_pattern')
+    @observe("username_pattern")
     def _username_pattern_changed(self, change):
-        if not change['new']:
+        if not change["new"]:
             self.username_regex = None
-        self.username_regex = re.compile(change['new'])
+        self.username_regex = re.compile(change["new"])
 
     username_regex = Any(
         help="""
@@ -369,7 +297,7 @@ class Authenticator(LoggingConfigurable):
 
         Return True if username is valid, False otherwise.
         """
-        if '/' in username:
+        if "/" in username:
             # / is not allowed in usernames
             return False
         if not username:
@@ -411,7 +339,7 @@ class Authenticator(LoggingConfigurable):
     post_auth_hook = Any(
         config=True,
         help="""
-        An optional hook function that you can implement to do some
+        A hook function that you can implement to do some
         bootstrapping work during authentication. For example, loading user account
         details from an external system.
 
@@ -421,8 +349,6 @@ class Authenticator(LoggingConfigurable):
         The hook is called with 3 positional arguments: `(authenticator, handler, auth_model)`.
 
         This may be a coroutine.
-
-        .. versionadded: 1.0
 
         Example::
 
@@ -450,8 +376,6 @@ class Authenticator(LoggingConfigurable):
         """
         Run the post_auth_hook if defined
 
-        .. versionadded: 1.0
-
         Args:
             handler (tornado.web.RequestHandler): the current request handler
             auth_model (dict): User authentication data dictionary. Contains the
@@ -461,9 +385,7 @@ class Authenticator(LoggingConfigurable):
                 The hook must always return the auth_model dict
         """
         if self.post_auth_hook is not None:
-            auth_model = await maybe_future(
-                self.post_auth_hook(self, handler, auth_model)
-            )
+            auth_model = await maybe_future(self.post_auth_hook(self, handler, auth_model))
         return auth_model
 
     def normalize_username(self, username):
@@ -486,12 +408,6 @@ class Authenticator(LoggingConfigurable):
         No allowed_users set means any username is allowed.
 
         Names are normalized *before* being checked against the allowed set.
-
-        .. versionchanged:: 1.0
-            Signature updated to accept authentication data and any future changes
-
-        .. versionchanged:: 1.2
-            Renamed check_whitelist to check_allowed
 
         Args:
             username (str):
@@ -516,14 +432,6 @@ class Authenticator(LoggingConfigurable):
         No block list means any username is allowed.
 
         Names are normalized *before* being checked against the block list.
-
-        .. versionadded: 0.9
-
-        .. versionchanged:: 1.0
-            Signature updated to accept authentication data as second argument
-
-        .. versionchanged:: 1.2
-            Renamed check_blacklist to check_blocked_users
 
         Args:
             username (str):
@@ -562,32 +470,26 @@ class Authenticator(LoggingConfigurable):
          - `check_allowed` checks against the allowed usernames
          - `is_admin` check if a user is an admin
 
-        .. versionchanged:: 0.8
-            return dict instead of username
         """
         authenticated = await maybe_future(self.authenticate(handler, data))
         if authenticated is None:
             return
         if isinstance(authenticated, dict):
-            if 'name' not in authenticated:
+            if "name" not in authenticated:
                 raise ValueError("user missing a name: %r" % authenticated)
         else:
-            authenticated = {'name': authenticated}
-        authenticated.setdefault('auth_state', None)
+            authenticated = {"name": authenticated}
+        authenticated.setdefault("auth_state", None)
         # Leave the default as None, but reevaluate later post-allowed-check
-        authenticated.setdefault('admin', None)
+        authenticated.setdefault("admin", None)
 
         # normalize the username
-        authenticated['name'] = username = self.normalize_username(
-            authenticated['name']
-        )
+        authenticated["name"] = username = self.normalize_username(authenticated["name"])
         if not self.validate_username(username):
             self.log.warning("Disallowing invalid username %r.", username)
             return
 
-        blocked_pass = await maybe_future(
-            self.check_blocked_users(username, authenticated)
-        )
+        blocked_pass = await maybe_future(self.check_blocked_users(username, authenticated))
 
         if not blocked_pass:
             self.log.warning("User %r blocked. Stop authentication", username)
@@ -595,15 +497,11 @@ class Authenticator(LoggingConfigurable):
 
         allowed_pass = self.allow_all
         if not allowed_pass:
-            allowed_pass = await maybe_future(
-                self.check_allowed(username, authenticated)
-            )
+            allowed_pass = await maybe_future(self.check_allowed(username, authenticated))
 
         if allowed_pass:
-            if authenticated['admin'] is None:
-                authenticated['admin'] = await maybe_future(
-                    self.is_admin(handler, authenticated)
-                )
+            if authenticated["admin"] is None:
+                authenticated["admin"] = await maybe_future(self.is_admin(handler, authenticated))
 
             authenticated = await self.run_post_auth_hook(handler, authenticated)
 
@@ -619,8 +517,6 @@ class Authenticator(LoggingConfigurable):
 
         Only override if your authenticator needs
         to refresh its data about users once in a while.
-
-        .. versionadded: 1.0
 
         Args:
             user (User): the user to refresh
@@ -645,8 +541,6 @@ class Authenticator(LoggingConfigurable):
     def is_admin(self, handler, authentication):
         """Authentication helper to determine a user's admin status.
 
-        .. versionadded: 1.0
-
         Args:
             handler (tornado.web.RequestHandler): the current request handler
             authentication: The authentication dict generated by `authenticate`.
@@ -655,7 +549,7 @@ class Authenticator(LoggingConfigurable):
                 The admin status of the user, or None if it could not be
                 determined or should not change.
         """
-        return True if authentication['name'] in self.admin_users else None
+        return True if authentication["name"] in self.admin_users else None
 
     async def authenticate(self, handler, data):
         """Authenticate a user with login form data
@@ -672,9 +566,6 @@ class Authenticator(LoggingConfigurable):
         (`authenticate`, `check_allowed`, `check_blocked_users`).
 
         Checking allowed_users/blocked_users is handled separately by the caller.
-
-        .. versionchanged:: 0.8
-            Allow `authenticate` to return a dict containing auth_state.
 
         Args:
             handler (tornado.web.RequestHandler): the current request handler
@@ -704,12 +595,9 @@ class Authenticator(LoggingConfigurable):
         Returns a list of predefined role dictionaries to load at startup,
         following the same format as `JupyterHub.load_roles`.
 
-        .. versionadded:: 5.0
         """
         if not self.manage_roles:
-            raise ValueError(
-                'Managed roles can only be loaded when `manage_roles` is True'
-            )
+            raise ValueError("Managed roles can only be loaded when `manage_roles` is True")
         if self.reset_managed_roles_on_startup:
             raise NotImplementedError(
                 "When `reset_managed_roles_on_startup` is used, the `load_managed_roles()`"
@@ -748,10 +636,6 @@ class Authenticator(LoggingConfigurable):
 
         Note that this should be idempotent, since it is called whenever the hub restarts
         for all users.
-
-        .. versionchanged:: 5.0
-           Now adds users to the allowed_users set if allow_all is False and allow_existing_users is True,
-           instead of if allowed_users is not empty.
 
         Args:
             user (User): The User wrapper object
@@ -795,10 +679,8 @@ class Authenticator(LoggingConfigurable):
         which will be added to the database.
 
         When enabled, all role management will be handled by the
-        authenticator; in particular, assignment of roles via
-        `JupyterHub.load_roles` traitlet will not be possible.
+        authenticator.
 
-        .. versionadded:: 5.0
         """,
     )
     reset_managed_roles_on_startup = Bool(
@@ -823,7 +705,6 @@ class Authenticator(LoggingConfigurable):
           * if not included in the `services` and `groups` list,
           * if the `services` and `groups` keys are not provided.
 
-        .. versionadded:: 5.0
         """,
     )
     auto_login = Bool(
@@ -831,13 +712,12 @@ class Authenticator(LoggingConfigurable):
         config=True,
         help="""Automatically begin the login process
 
-        rather than starting with a "Login with..." link at `/hub/login`
+        rather than starting with a "Login with...".
 
-        To work, `.login_url()` must give a URL other than the default `/hub/login`,
+        To work, `.login_url()` must give a URL other than the default,
         such as an oauth handler or another automatic login handler,
         registered with `.get_handlers()`.
 
-        .. versionadded:: 0.8
         """,
     )
 
@@ -847,16 +727,14 @@ class Authenticator(LoggingConfigurable):
         help="""
         Automatically begin login process for OAuth2 authorization requests
 
-        When another application is using JupyterHub as OAuth2 provider, it
-        sends users to `/hub/api/oauth2/authorize`. If the user isn't logged
+        When another application is using Grader Service as OAuth2 provider, it
+        sends users to `services/grader/api/oauth2/authorize`. If the user isn't logged
         in already, and auto_login is not set, the user will be dumped on the
         hub's home page, without any context on what to do next.
 
         Setting this to true will automatically redirect users to login if
-        they aren't logged in *only* on the `/hub/api/oauth2/authorize`
+        they aren't logged in *only* on the `services/grader/api/oauth2/authorize`
         endpoint.
-
-        .. versionadded:: 1.5
 
         """,
     )
@@ -876,7 +754,7 @@ class Authenticator(LoggingConfigurable):
         Returns:
             str: The login URL, e.g. '/services/grader/login'
         """
-        return url_path_join(base_url, 'login')
+        return url_path_join(base_url, "login")
 
     def logout_url(self, base_url):
         """Override when registering a custom logout handler
@@ -891,7 +769,7 @@ class Authenticator(LoggingConfigurable):
         Returns:
             str: The logout URL, e.g. '/hub/logout'
         """
-        return url_path_join(base_url, 'logout')
+        return url_path_join(base_url, "logout")
 
     def get_handlers(self, base_url: str):
         """Return any custom handlers the authenticator needs to register

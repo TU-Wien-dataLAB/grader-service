@@ -5,14 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-
-from tornado.httpclient import AsyncHTTPClient, HTTPResponse, HTTPRequest
-from traitlets.config.configurable import SingletonConfigurable
-from typing import Dict, Union, Callable, Optional
-from tornado.escape import json_decode
-from traitlets.traitlets import TraitError, Unicode, validate
-from urllib.parse import urlencode, quote_plus, urlparse, ParseResultBytes
 import os
+from typing import Callable, Dict, Optional, Union
+from urllib.parse import ParseResultBytes, quote_plus, urlencode, urlparse
+
+from tornado.escape import json_decode
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
+from traitlets.config.configurable import SingletonConfigurable
+from traitlets.traitlets import TraitError, Unicode, validate
 
 
 class RequestService(SingletonConfigurable):
@@ -32,7 +32,7 @@ class RequestService(SingletonConfigurable):
         decode_response: bool = True,
         request_timeout: float = 20.0,
         connect_timeout: float = 20.0,
-        response_callback: Optional[Callable[[HTTPResponse], None]] = None
+        response_callback: Optional[Callable[[HTTPResponse], None]] = None,
     ) -> Union[dict, list, HTTPResponse]:
         self.log.info(self.url + endpoint)
         if self._service_cookie:
@@ -42,12 +42,13 @@ class RequestService(SingletonConfigurable):
             body = json.dumps(body)
 
         # Build HTTPRequest
-        request = HTTPRequest(url=self.url + endpoint,
-                            method=method,
-                            headers=header,
-                            request_timeout=request_timeout,
-                            connect_timeout=connect_timeout
-                            )
+        request = HTTPRequest(
+            url=self.url + endpoint,
+            method=method,
+            headers=header,
+            request_timeout=request_timeout,
+            connect_timeout=connect_timeout,
+        )
         # Add body if exists
         if body:
             request.body = body
@@ -58,7 +59,7 @@ class RequestService(SingletonConfigurable):
         for cookie in response.headers.get_list("Set-Cookie"):
             token = header.get("Authorization", None)
             if token and token.startswith("Token "):
-                token = token[len("Token "):]
+                token = token[len("Token ") :]
             else:
                 continue
             if cookie.startswith(token):

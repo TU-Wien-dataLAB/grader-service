@@ -1,0 +1,17 @@
+FROM quay.io/jupyterhub/jupyterhub
+
+# Install git
+RUN apt-get update && \
+    apt-get install -y git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV JUPYTERHUB_CRYPT_KEY=e3f92a0d5e37446c7e894a2ef6c6ec3bcb4aa3c38d2a442eb567adf780597aa0
+
+RUN pip install grader_labextension
+
+RUN python3 -m pip install dockerspawner oauthenticator
+
+CMD ["jupyterhub", "-f", "/app/jupyterhub_config.py"]

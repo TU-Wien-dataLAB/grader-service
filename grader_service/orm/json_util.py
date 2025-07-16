@@ -1,5 +1,5 @@
 import json
-from base64 import encodebytes, decodebytes
+from base64 import decodebytes, encodebytes
 
 from sqlalchemy import TypeDecorator
 from sqlalchemy.types import Text
@@ -11,7 +11,7 @@ class JSONDict(TypeDecorator):
 
     Usage::
 
-        JSONDict(255)
+               JSONDict(255)
 
     """
 
@@ -24,17 +24,15 @@ class JSONDict(TypeDecorator):
 
         """
         if not isinstance(obj, bytes):
-            app_log.warning(
-                "Non-jsonable data in user_options: %r; will persist None.", type(obj)
-            )
+            app_log.warning("Non-jsonable data in user_options: %r; will persist None.", type(obj))
             return None
 
-        return {"__jupyterhub_bytes__": True, "data": encodebytes(obj).decode('ascii')}
+        return {"__jupyterhub_bytes__": True, "data": encodebytes(obj).decode("ascii")}
 
     def _object_hook(self, dct):
         """decode non-json objects packed by _json_default"""
         if dct.get("__jupyterhub_bytes__", False):
-            return decodebytes(dct['data'].encode('ascii'))
+            return decodebytes(dct["data"].encode("ascii"))
         return dct
 
     def process_bind_param(self, value, dialect):
@@ -53,7 +51,7 @@ class JSONList(JSONDict):
 
     Usage::
 
-        JSONList(JSONDict)
+               JSONList(JSONDict)
 
     """
 

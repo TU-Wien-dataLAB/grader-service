@@ -1,9 +1,8 @@
-from jupyterhub import orm
 import os
 
 ## generic
 c.JupyterHub.admin_access = True
-c.Spawner.default_url = '/lab'
+c.Spawner.default_url = "/lab"
 c.Spawner.cmd = ["jupyter-labhub"]
 
 ## authenticator
@@ -20,12 +19,11 @@ c.GenericOAuthenticator.logout_redirect_url = "http://localhost:4010/services/gr
 
 c.GenericOAuthenticator.userdata_url = "http://localhost:4010/services/grader/api/user"
 c.GenericOAuthenticator.username_claim = "name"
-
-
 c.Authenticator.enable_auth_state = True
 
 ##############################
 # PASS GRADER TOKEN TO SPAWNER
+
 
 def auth_state_hook(spawner, auth_state):
     token = auth_state["access_token"]
@@ -41,22 +39,22 @@ c.Spawner.auth_state_hook = auth_state_hook
 
 ##############################
 
-c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
+c.Authenticator.allowed_users = {"admin", "instructor", "tutor", "student"}
 c.Authenticator.admin_users = {"admin"}
 
 ## spawner
-c.JupyterHub.spawner_class = 'jupyterhub.spawner.SimpleLocalProcessSpawner'
+c.JupyterHub.spawner_class = "jupyterhub.spawner.SimpleLocalProcessSpawner"
 c.SimpleLocalProcessSpawner.home_dir_template = os.path.join(os.getcwd(), "home_dir", "{username}")
 
 ## simple setup
-c.JupyterHub.ip = '127.0.0.1'
+c.JupyterHub.ip = "127.0.0.1"
 c.JupyterHub.port = 8080
 
 c.JupyterHub.services.append(
     {
-        'name': 'grader',
-        'url': 'http://127.0.0.1:4010',
-        'api_token': '7572f93a2e7640999427d9289c8318c0'
+        "name": "grader",
+        "url": "http://127.0.0.1:4010",
+        "api_token": "7572f93a2e7640999427d9289c8318c0",
     }
 )
 

@@ -1,20 +1,17 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from grader_service.auth.login import LogoutHandler
-from grader_service.auth.oauth2 import OAuthLogoutHandler
-from grader_service.server import GRADER_COOKIE_NAME
-from grader_service.utils import url_path_join  # type: ignore
-from traitlets import CaselessStrEnum
+from traitlets import CaselessStrEnum, Unicode
 from traitlets import List as TraitletsList
 from traitlets import Set as TraitletsSet
-from traitlets import Unicode
 
-from grader_service.utils import get_browser_protocol
+from grader_service.auth.login import LogoutHandler
+from grader_service.utils import get_browser_protocol, url_path_join
+
+from ..auth import Authenticator
 from .constants import LTI13_CUSTOM_CLAIM
 from .error import LoginError
 from .handlers import LTI13CallbackHandler, LTI13ConfigHandler, LTI13LoginInitHandler
-from ..auth import Authenticator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -26,7 +23,7 @@ class LTI13LogoutHandler(LogoutHandler):
 
         Override this function to set a custom logout page.
         """
-        html = await self.render_template('auth/logout.html.j2')
+        html = await self.render_template("auth/logout.html.j2")
         self.finish(html)
 
 
@@ -52,8 +49,7 @@ class LTI13Authenticator(Authenticator):
     logout_handler = LTI13LogoutHandler
 
     authorize_url = Unicode(
-        config=True,
-        help="""Authorization end-point of the platforms identity provider.""",
+        config=True, help="""Authorization end-point of the platforms identity provider."""
     )
 
     client_id = TraitletsSet(
@@ -111,7 +107,7 @@ class LTI13Authenticator(Authenticator):
         Your LMS (Canvas / Open EdX / Moodle / others) may provide additional keys in the
         LTI 1.3 login initiation flow that you can use to set the username. In most cases these
         are located in the `https://purl.imsglobal.org/spec/lti/claim/custom` claim. In this case,
-        `username_key` must be prefixed with "custom_". For example, `username_key` value "custom_uname"
+        `username_key` must be prefixed with `custom_`. For example, `username_key` value "custom_uname"
         will set the username to the value of the parameter `uname` within the
         `https://purl.imsglobal.org/spec/lti/claim/custom` claim.
         
@@ -180,7 +176,7 @@ class LTI13Authenticator(Authenticator):
         ]
 
     async def authenticate(
-            self, handler: LTI13LoginInitHandler, data: Dict[str, str] = None
+        self, handler: LTI13LoginInitHandler, data: Dict[str, str] = None
     ) -> Dict[str, Any]:
         """
         Handles LTI 1.3 launch requests based on a passed JWT.
@@ -197,10 +193,7 @@ class LTI13Authenticator(Authenticator):
 
         username = self.get_username(data)
 
-        return {
-            "name": username,
-            "auth_state": data,
-        }
+        return {"name": username, "auth_state": data}
 
     def get_username(self, token: Dict[str, Any]) -> str:
         """
@@ -217,8 +210,7 @@ class LTI13Authenticator(Authenticator):
 
         if username_key.startswith("custom_"):
             data = token.get(LTI13_CUSTOM_CLAIM, {})
-            # when dropping support for Python 3.8 we can replace the following by `username_key.removeprefix`
-            username_key = username_key[len("custom_"):]
+            username_key = username_key.removeprefix("custom_")
 
         username = data.get(username_key)
         if not username:
@@ -227,9 +219,7 @@ class LTI13Authenticator(Authenticator):
             )
             username = token.get("sub")
         if not username:
-            raise LoginError(
-                f"Unable to set the username with username_key {username_key}"
-            )
+            raise LoginError(f"Unable to set the username with username_key {username_key}")
         return username
 
     def get_uri_scheme(self, request) -> str:

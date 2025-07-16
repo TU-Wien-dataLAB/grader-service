@@ -4,24 +4,28 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from sqlalchemy import Column, String, LargeBinary, Unicode
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import Column, LargeBinary, String, Unicode
+from sqlalchemy.orm import Session, relationship
 
 from grader_service.api.models import user
-from grader_service.auth.crypto import encrypt, decrypt, InvalidToken, EncryptionUnavailable, CryptKeeper
+from grader_service.auth.crypto import (
+    CryptKeeper,
+    EncryptionUnavailable,
+    InvalidToken,
+    decrypt,
+    encrypt,
+)
 from grader_service.orm.base import Base, Serializable
-from grader_service.orm.group import group_assignment_table
 from grader_service.utils import new_token
 
 
 class User(Base, Serializable):
     __tablename__ = "user"
     name = Column(String(255), primary_key=True)
+    display_name = Column(String(255), nullable=False)
 
     roles = relationship("Role", back_populates="user")
     submissions = relationship("Submission", back_populates="user")
-    groups = relationship("Group", secondary=group_assignment_table,
-                          back_populates="users")
     api_tokens = relationship("APIToken", back_populates="user")
     oauth_codes = relationship("OAuthCode", back_populates="user")
 
@@ -47,9 +51,7 @@ class User(Base, Serializable):
             auth_state = await decrypt(encrypted)
         except (ValueError, InvalidToken, EncryptionUnavailable) as e:
             self.log.warning(
-                "Failed to retrieve encrypted auth_state for %s because %s",
-                self.name,
-                e,
+                "Failed to retrieve encrypted auth_state for %s because %s", self.name, e
             )
             return
         # loading auth_state
@@ -60,9 +62,8 @@ class User(Base, Serializable):
         return auth_state
 
     def serialize(self):
-        return {"name": self.name}
-
+        return {"name": self.name, "display_name": self.display_name}
 
     @property
     def model(self) -> user.User:
-        return user.User(name=self.name)
+        return user.User(name=self.name, display_name=self.display_name)

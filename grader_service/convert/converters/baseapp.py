@@ -1,14 +1,11 @@
-
-
 import logging
 import os
 import sys
 
-from jupyter_core.application import JupyterApp
 from traitlets.config.application import Application
-from traitlets.traitlets import Unicode, validate, TraitError, Bool
+from traitlets.traitlets import TraitError, Unicode, validate
 
-from grader_service._version import __version__
+from grader_service import __version__
 
 base_converter_aliases = {
     "log-level": "Application.log_level",
@@ -52,16 +49,22 @@ class ConverterApp(Application):
         if os.path.isdir(proposal["value"]):
             return proposal["value"]
         else:
-            self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
-            raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a directory')
-        
+            self.log.error(f"The path {proposal.value} of {proposal.trait.name} is not a directory")
+            raise TraitError(
+                f"The path {proposal.value} of {proposal.trait.name} is not a directory"
+            )
+
     @validate("config_path")
     def _config_path_exists(self, proposal) -> str:
         if os.path.isfile(proposal["value"]):
             return proposal["value"]
         else:
-            self.log.error(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
-            raise TraitError(f'The path {proposal.value} of {proposal.trait.name} is not a valid config file')
+            self.log.error(
+                f"The path {proposal.value} of {proposal.trait.name} is not a valid config file"
+            )
+            raise TraitError(
+                f"The path {proposal.value} of {proposal.trait.name} is not a valid config file"
+            )
 
     def fail(self, msg, *args):
         """Log the error msg using self.log.error and exit using sys.exit(1)."""

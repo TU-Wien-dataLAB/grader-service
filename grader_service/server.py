@@ -5,9 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 import os
 
-from jinja2 import ChoiceLoader, PrefixLoader, FileSystemLoader, Environment
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PrefixLoader
 from tornado import web
-from traitlets import config, Float, Dict, List, default, Unicode
+from traitlets import Dict, Float, List, Unicode, config, default
 
 GRADER_COOKIE_NAME = "grader_service_login"
 
@@ -27,28 +27,25 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     ).tag(config=True)
 
     static_file_path = Unicode(
-        os.path.join(os.path.dirname(__file__), 'static'),
-        help="""Absolute to the static file directory."""
+        os.path.join(os.path.dirname(__file__), "static"),
+        help="""Absolute to the static file directory.""",
     ).tag(config=True)
 
     logo_file = Unicode(
-        '',
-        help="Specify path to a logo image to override the Grader logo in the banner.",
+        "", help="Specify path to a logo image to override the Grader logo in the banner."
     ).tag(config=True)
 
-    @default('logo_file')
+    @default("logo_file")
     def _logo_file_default(self):
-        return os.path.join(
-            os.path.dirname(__file__), 'static', 'images', 'grader_logo.png'
-        )
+        return os.path.join(os.path.dirname(__file__), "static", "images", "grader_logo.png")
 
     template_paths = List(
         help="Paths to search for jinja templates, before using the default templates."
     ).tag(config=True)
 
-    @default('template_paths')
+    @default("template_paths")
     def _template_paths_default(self):
-        return [os.path.join(os.path.dirname(__file__), 'templates')]
+        return [os.path.join(os.path.dirname(__file__), "templates")]
 
     jinja_environment_options = Dict(
         help="Supply extra arguments that will be passed to Jinja environment."
@@ -73,14 +70,19 @@ class GraderServer(config.LoggingConfigurable, web.Application):
                 "key1": "value1",
                 "key2": callable_value,
             }
-        """,
+        """
     ).tag(config=True)
 
-    def __init__(self, grader_service_dir: str, base_url: str,
-                 authenticator, oauth_provider, session_maker, **kwargs):
-        kwargs.update(dict(
-            static_path=self.static_file_path,
-        ))
+    def __init__(
+        self,
+        grader_service_dir: str,
+        base_url: str,
+        authenticator,
+        oauth_provider,
+        session_maker,
+        **kwargs,
+    ):
+        kwargs.update(dict(static_path=self.static_file_path))
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.base_url = base_url
@@ -96,7 +98,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
             self.template_paths.append(base_path)
         loader = ChoiceLoader(
             [
-                PrefixLoader({'templates': FileSystemLoader([base_path])}, '/'),
+                PrefixLoader({"templates": FileSystemLoader([base_path])}, "/"),
                 FileSystemLoader(self.template_paths),
             ]
         )
@@ -107,5 +109,5 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         # schedule it on the loop - without starting another thread with its
         # own loop, which seems not worth the trouble. Instead, we create another
         # environment, exactly like this one, but sync
-        del jinja_options['enable_async']
+        del jinja_options["enable_async"]
         self.jinja_env_sync = Environment(loader=loader, **jinja_options)

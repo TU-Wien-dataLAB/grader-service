@@ -1,21 +1,29 @@
 import json
 import logging
 import os
+import tempfile
 import unittest
 
 import pytest
-import tempfile
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
+
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v3 import (
-    MetadataValidatorV3, read_v3, reads_v3, write_v3, writes_v3)
+    MetadataValidatorV3,
+    read_v3,
+    reads_v3,
+    write_v3,
+    writes_v3,
+)
+
 from .. import (
     create_code_cell,
     create_grade_cell,
+    create_regular_cell,
     create_solution_cell,
     create_task_cell,
-    create_regular_cell)
+)
 
 
 def test_set_false():
@@ -103,33 +111,33 @@ def test_cell_type():
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == "code"
 
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     cell.metadata.nbgrader["cell_type"] = "markdown"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "markdown"
+    assert cell.metadata.nbgrader["cell_type"] == "markdown"
 
     cell = create_grade_cell("", "code", "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     cell.metadata.nbgrader["cell_type"] = "code"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader['cell_type'] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == "code"
 
 
 def test_task_value():
     cell = create_task_cell("this is a task cell", "markdown", "foo", 0)
-    assert cell.metadata.nbgrader['task']
+    assert cell.metadata.nbgrader["task"]
 
     cell = create_grade_cell("", "code", "foo", "")
-    assert not cell.metadata.nbgrader['task']
+    assert not cell.metadata.nbgrader["task"]
 
     cell = create_grade_cell("", "code", "foo", "")
-    assert not cell.metadata.nbgrader['task']
+    assert not cell.metadata.nbgrader["task"]
 
     cell = create_solution_cell("", "code", "foo")
-    assert not cell.metadata.nbgrader['task']
+    assert not cell.metadata.nbgrader["task"]
 
 
 def test_read():
@@ -275,7 +283,7 @@ def test_duplicate_cells():
 def test_celltype_changed():
     cell = create_solution_cell("", "code", "foo", 3)
     cell.metadata.nbgrader["cell_type"] = "code"
-    logger = logging.getLogger('traitlets')
+    logger = logging.getLogger("traitlets")
     with unittest.mock.patch.object(logger, "warning") as mock_waring:
         MetadataValidatorV3().validate_cell(cell)
         mock_waring.assert_not_called()

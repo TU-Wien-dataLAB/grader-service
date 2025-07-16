@@ -1,9 +1,9 @@
 import shlex
 import sys
 from shutil import which
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import PIPE, STDOUT, Popen
 
-from traitlets import Bool, List, default, Dict, Set
+from traitlets import Bool, Dict, List, Set, default
 
 from grader_service.auth.auth import Authenticator
 from grader_service.utils import maybe_future
@@ -47,17 +47,17 @@ class LocalAuthenticator(Authenticator):
         """
     ).tag(config=True)
 
-    @default('add_user_cmd')
+    @default("add_user_cmd")
     def _add_user_cmd_default(self):
         """Guess the most likely-to-work adduser command for each platform"""
-        if sys.platform == 'darwin':
+        if sys.platform == "darwin":
             raise ValueError("I don't know how to create users on macOS")
-        elif which('pw'):
+        elif which("pw"):
             # Probably BSD
-            return ['pw', 'useradd', '-m', '-n']
+            return ["pw", "useradd", "-m", "-n"]
         else:
             # This appears to be the Linux non-interactive adduser command:
-            return ['adduser', '-q', '--gecos', '""', '--disabled-password']
+            return ["adduser", "-q", "--gecos", '""', "--disabled-password"]
 
     uids = Dict(
         help="""
@@ -89,7 +89,7 @@ class LocalAuthenticator(Authenticator):
             try:
                 group = self._getgrnam(grnam)
             except KeyError:
-                self.log.error('No such group: [%s]' % grnam)
+                self.log.error("No such group: [%s]" % grnam)
                 continue
             if username in group.gr_mem:
                 return True
@@ -155,16 +155,16 @@ class LocalAuthenticator(Authenticator):
         Tested to work on FreeBSD and Linux, at least.
         """
         name = user.name
-        cmd = [arg.replace('USERNAME', name) for arg in self.add_user_cmd]
+        cmd = [arg.replace("USERNAME", name) for arg in self.add_user_cmd]
         try:
             uid = self.uids[name]
-            cmd += ['--uid', '%d' % uid]
+            cmd += ["--uid", "%d" % uid]
         except KeyError:
             self.log.debug("No UID for user %s" % name)
         cmd += [name]
-        self.log.info("Creating user: %s", ' '.join(map(shlex.quote, cmd)))
+        self.log.info("Creating user: %s", " ".join(map(shlex.quote, cmd)))
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         p.wait()
         if p.returncode:
-            err = p.stdout.read().decode('utf8', 'replace')
+            err = p.stdout.read().decode("utf8", "replace")
             raise RuntimeError(f"Failed to create system user {name}: {err}")

@@ -8,13 +8,21 @@ import copy
 import hashlib
 import os
 from typing import Optional
-from kubernetes import config
 
-from kubernetes.client.models import (V1Container, V1ObjectMeta, V1Pod,
-                                      V1PodSpec, V1ResourceRequirements,
-                                      V1Toleration, V1SecurityContext,
-                                      V1Volume, V1VolumeMount,
-                                      V1PodSecurityContext, V1EnvVar)
+from kubernetes import config
+from kubernetes.client.models import (
+    V1Container,
+    V1EnvVar,
+    V1ObjectMeta,
+    V1Pod,
+    V1PodSecurityContext,
+    V1PodSpec,
+    V1ResourceRequirements,
+    V1SecurityContext,
+    V1Toleration,
+    V1Volume,
+    V1VolumeMount,
+)
 
 
 def get_current_namespace():
@@ -46,16 +54,14 @@ def generate_hashed_slug(slug, limit=63, hash_length=6):
     if len(slug) < (limit - hash_length):
         return slug
 
-    slug_hash = hashlib.sha256(slug.encode('utf-8')).hexdigest()
+    slug_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
 
-    return '{prefix}-{hash}'.format(
-        prefix=slug[: limit - hash_length - 1],
-        hash=slug_hash[:hash_length],
+    return "{prefix}-{hash}".format(
+        prefix=slug[: limit - hash_length - 1], hash=slug_hash[:hash_length]
     ).lower()
 
 
-def update_k8s_model(target, changes, logger=None,
-                     target_name=None, changes_name=None):
+def update_k8s_model(target, changes, logger=None, target_name=None, changes_name=None):
     """
     Takes a model instance such as V1PodSpec() and updates it with another
     model, which is allowed to be a dict or another model instance of the same
@@ -66,27 +72,22 @@ def update_k8s_model(target, changes, logger=None,
     something is about to become overridden.
     """
     model_type = type(target)
-    if not hasattr(target, 'attribute_map'):
+    if not hasattr(target, "attribute_map"):
         raise AttributeError(
             "Attribute 'target' ({}) must be an object (such as 'V1PodSpec') "
-            "with an attribute 'attribute_map'.".format(
-                model_type.__name__
-            )
+            "with an attribute 'attribute_map'.".format(model_type.__name__)
         )
     if not isinstance(changes, model_type) and not isinstance(changes, dict):
         raise AttributeError(
             "Attribute 'changes' ({}) must be an object of the same type "
-            "as 'target' ({}) or a 'dict'.".format(
-                type(changes).__name__, model_type.__name__
-            )
+            "as 'target' ({}) or a 'dict'.".format(type(changes).__name__, model_type.__name__)
         )
 
     changes_dict = _get_k8s_model_dict(model_type, changes)
     for key, value in changes_dict.items():
         if key not in target.attribute_map:
             raise ValueError(
-                "The attribute 'changes' ({}) contained '{}' "
-                "not modeled by '{}'.".format(
+                "The attribute 'changes' ({}) contained '{}' not modeled by '{}'.".format(
                     type(changes).__name__, key, model_type.__name__
                 )
             )
@@ -100,12 +101,13 @@ def update_k8s_model(target, changes, logger=None,
         if isinstance(changes, dict) or value:
             if getattr(target, key):
                 if logger and changes_name:
-                    warning = "'{}.{}' current value: '{}' " \
-                              "is overridden with '{}', " \
-                              "which is the value of '{}.{}'.".format(
-                                target_name, key, getattr(target, key),
-                                value, changes_name, key
-                                )
+                    warning = (
+                        "'{}.{}' current value: '{}' "
+                        "is overridden with '{}', "
+                        "which is the value of '{}.{}'.".format(
+                            target_name, key, getattr(target, key), value, changes_name, key
+                        )
+                    )
                     logger.warning(warning)
             setattr(target, key, value)
 
@@ -215,27 +217,25 @@ def _get_k8s_model_attribute(model_type, field_name):
             return key
     else:
         raise ValueError(
-            "'{}' did not have an attribute matching '{}'".format(
-                model_type.__name__, field_name
-            )
+            "'{}' did not have an attribute matching '{}'".format(model_type.__name__, field_name)
         )
 
 
 def make_pod(
-        name: str,
-        cmd: list[str],
-        env: list[V1EnvVar],
-        image: str,
-        image_pull_policy: str,
-        image_pull_secrets: Optional[list] = None,
-        working_dir: Optional[str] = None,
-        volumes: Optional[list] = None,
-        volume_mounts: Optional[list] = None,
-        labels: Optional[dict] = None,
-        annotations: Optional[dict] = None,
-        node_selector: Optional[dict] = None,
-        tolerations: Optional[list] = None,
-        run_as_user: Optional[int] = None,
+    name: str,
+    cmd: list[str],
+    env: list[V1EnvVar],
+    image: str,
+    image_pull_policy: str,
+    image_pull_secrets: Optional[list] = None,
+    working_dir: Optional[str] = None,
+    volumes: Optional[list] = None,
+    volume_mounts: Optional[list] = None,
+    labels: Optional[dict] = None,
+    annotations: Optional[dict] = None,
+    node_selector: Optional[dict] = None,
+    tolerations: Optional[list] = None,
+    run_as_user: Optional[int] = None,
 ) -> V1Pod:
     """
     Creates a Kubernetes Pod specification (V1Pod) with the given parameters.
@@ -263,39 +263,32 @@ def make_pod(
     pod.api_version = "v1"
 
     pod.metadata = V1ObjectMeta(
-        name=name,
-        labels=(labels or {}).copy(),
-        annotations=(annotations or {}).copy(),
+        name=name, labels=(labels or {}).copy(), annotations=(annotations or {}).copy()
     )
 
     pod.spec = V1PodSpec(
         containers=[],
         security_context=V1PodSecurityContext(),
         image_pull_secrets=image_pull_secrets,
-        restart_policy='Never',
-        node_selector=node_selector
+        restart_policy="Never",
+        node_selector=node_selector,
     )
     # TODO maybe get userid of jupyterhub user
     autograde_container = V1Container(
-        name='autograde',
+        name="autograde",
         image=image,
         working_dir=working_dir,
         args=cmd,
         env=env,
         image_pull_policy=image_pull_policy,
         resources=V1ResourceRequirements(),
-        security_context=V1SecurityContext(
-            run_as_user=run_as_user
-        ),
-        volume_mounts=[
-            get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])
-        ],
+        security_context=V1SecurityContext(run_as_user=run_as_user),
+        volume_mounts=[get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])],
     )
 
     pod.spec.containers.append(autograde_container)
     if tolerations:
-        pod.spec.tolerations = [get_k8s_model(V1Toleration, obj)
-                                for obj in tolerations]
+        pod.spec.tolerations = [get_k8s_model(V1Toleration, obj) for obj in tolerations]
     if volumes:
         pod.spec.volumes = [get_k8s_model(V1Volume, obj) for obj in volumes]
 

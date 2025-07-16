@@ -5,11 +5,7 @@ from typing import Any, Dict
 
 LTI13_CUSTOM_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/custom"
 
-LTI13_INIT_LOGIN_REQUEST_ARGS = [
-    "iss",
-    "login_hint",
-    "target_link_uri",
-]
+LTI13_INIT_LOGIN_REQUEST_ARGS = ["iss", "login_hint", "target_link_uri"]
 
 # Authentication request arguments
 # https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
@@ -26,10 +22,7 @@ LTI13_AUTH_REQUEST_ARGS = [
     "state",
 ]
 
-LTI13_AUTH_RESPONSE_ARGS = [
-    "id_token",
-    "state",
-]
+LTI13_AUTH_RESPONSE_ARGS = ["id_token", "state"]
 
 # Required message claims
 # http://www.imsglobal.org/spec/lti/v1p3/#required-message-claims
@@ -49,9 +42,7 @@ LTI13_GENERAL_REQUIRED_CLAIMS: Dict[str, Any] = {
 # Required claims with LtiResourceLinkRequest login flows
 LTI13_RESOURCE_LINK_REQUEST_REQUIRED_CLAIMS: Dict[str, Any] = {
     "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiResourceLinkRequest",
-    "https://purl.imsglobal.org/spec/lti/claim/resource_link": {
-        "id": "",
-    },
+    "https://purl.imsglobal.org/spec/lti/claim/resource_link": {"id": ""},
     **LTI13_GENERAL_REQUIRED_CLAIMS,
 }
 
@@ -101,10 +92,7 @@ LTI13_GENERAL_OPTIONAL_CLAIMS: Dict[str, Any] = {
 # Optional resource link request claims
 LTI13_RESOURCE_LINK_OPTIONAL_CLAIMS = {
     **LTI13_GENERAL_OPTIONAL_CLAIMS,
-    "https://purl.imsglobal.org/spec/lti/claim/resource_link": {
-        "description": "",
-        "title": "",
-    },
+    "https://purl.imsglobal.org/spec/lti/claim/resource_link": {"description": "", "title": ""},
 }
 
 # Required claims for deep linking request claims
@@ -121,7 +109,7 @@ LTI13_LIS_CLAIMS = {
         "outcome_service_url": "",
         "person_sourcedid": "",
         "result_sourcedid": "",
-    },
+    }
 }
 
 # Required and optional resource link claims
@@ -294,7 +282,4 @@ LTI13_ROLES = {
 # the list of roles that recognize a user as a Student
 DEFAULT_ROLE_NAMES_FOR_STUDENT = ["student", "learner"]
 # the list of roles that recognize a user as an Instructor
-DEFAULT_ROLE_NAMES_FOR_INSTRUCTOR = [
-    "instructor",
-    "urn:lti:role:ims/lis/teachingassistant",
-]
+DEFAULT_ROLE_NAMES_FOR_INSTRUCTOR = ["instructor", "urn:lti:role:ims/lis/teachingassistant"]

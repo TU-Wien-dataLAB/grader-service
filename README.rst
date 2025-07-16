@@ -53,6 +53,7 @@ Grader Labextension
 Grader Service offers lecturers and students a well integrated teaching environment for data science, machine learning and programming classes.
 
 Try out GraderService:
+
 .. TODO: update binder
 
 .. image:: https://mybinder.org/badge_logo.svg
@@ -73,7 +74,7 @@ Requirements
 
    JupyterHub,
    JupyterLab,
-   Python >= 3.8,
+   Python >= 3.9,
    pip,
    Node.js>=12,
    npm
@@ -103,18 +104,12 @@ This repository contains all the necessary packages for a full installation of t
     pip install grader-labextension
 
 
-Development Environment
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Alternatively you can run the installation scripts in ``examples/dev_environment``.
-Follow the documentation there. The directory also contains the config files for a local installation.
-
 .. installation-from-soruce-end
 
 .. installation-from-soruce-start
 
 Installation from Source
---------------------------
+^^^^^^^^^^^^^^^^^^^^
 
 To install this package from source, clone into the repository or download the `zip file <https://github.com/TU-Wien-dataLAB/Grader-Service/archive/refs/heads/main.zip/>`_.
 
@@ -144,9 +139,9 @@ Follow the documentation there. The directory also contains the config files for
 
 Configuration
 ===============
-Check out the ``examples/dev_environment`` directory which contains configuration details or the (Administrator Guide)[https://grader-service.readthedocs.io/en/latest/admin/administrator.html].
+Check out the ``examples/dev_environment`` directory which contains configuration details or the `Administrator Guide <https://grader-service.readthedocs.io/en/latest/admin/administrator.html>`_.
 
-In order to use the grader service with an LMS like Moodle, the groups first have to be added to the JupyterHub so the grader service gets the necessary information from the hub.
+In order to use the grader service with an LMS like Moodle, the groups first have to be added to the JupyterHub so the Grader Service gets the necessary information from the hub.
 
 For this purpose, the `LTI 1.3 Authenticator <https://github.com/TU-Wien-dataLAB/lti13oauthenticator>`_ can be used so that users from the LMS can be added to the JupyterHub.
 
@@ -208,7 +203,7 @@ Optional Configuration of JupyterLab >=3.4
 The grader labextension also uses the embedded cell toolbar of JupyterLab for further cell manipulation.
 These optional features include:
 
-* ``Run Cell``: This command simply run the current cell without advancing.
+* ``Run Cell``: This command simply runs the current cell without advancing.
 
 * ``Revert Cell``: In the conversion process new metadata is set to allow students to revert every answer cell to their original state.
 

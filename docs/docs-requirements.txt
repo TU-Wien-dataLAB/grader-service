@@ -10,3 +10,4 @@ sphinx_tabs
 sphinx_thebe
 sphinx_togglebutton
 sphinxcontrib.bibtex
+autodoc-traits

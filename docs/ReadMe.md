@@ -1,6 +1,6 @@
 # Sphinx documentation
 ## Requirements
-``pip install -r docs-requirements.txt``
+``pip install -r requirements-docs.txt``
 ## Usage
 Generate documentation:
 ``make html``

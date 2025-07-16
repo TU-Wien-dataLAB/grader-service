@@ -1,5 +1,3 @@
-
-
 import typing
 
 from nbformat import read as _read
@@ -14,7 +12,6 @@ from .v2 import MetadataValidatorV2
 
 
 class MetadataValidatorV3(BaseMetadataValidator):
-
     schema_version = 3
 
     def __init__(self) -> None:
@@ -97,22 +94,17 @@ class MetadataValidatorV3(BaseMetadataValidator):
                 )
             if cell.cell_type == "markdown" and not grade and solution:
                 raise ValidationError(
-                    "Markdown solution cell is not marked as a grade cell: {}".format(
-                        cell.source
-                    )
+                    "Markdown solution cell is not marked as a grade cell: {}".format(cell.source)
                 )
         else:
             if cell.cell_type != "markdown":
-                raise ValidationError(
-                    "Task cells have to be markdown: {}".format(cell.source)
-                )
+                raise ValidationError("Task cells have to be markdown: {}".format(cell.source))
 
     def validate_nb(self, nb: NotebookNode) -> None:
         super(MetadataValidatorV3, self).validate_nb(nb)
 
         ids = set([])
         for cell in nb.cells:
-
             if "nbgrader" not in cell.metadata:
                 continue
 
@@ -129,9 +121,7 @@ class MetadataValidatorV3(BaseMetadataValidator):
             ids.add(grade_id)
 
 
-def read_v3(
-    source: typing.TextIO, as_version: int, **kwargs: typing.Any
-) -> NotebookNode:
+def read_v3(source: typing.TextIO, as_version: int, **kwargs: typing.Any) -> NotebookNode:
     nb = _read(source, as_version, **kwargs)
     MetadataValidatorV3().validate_nb(nb)
     return nb

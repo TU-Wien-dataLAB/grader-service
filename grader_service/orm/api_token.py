@@ -1,14 +1,13 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import or_, Column, Integer, ForeignKey, Unicode, DateTime, \
-    inspect
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Unicode, inspect, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.strategy_options import joinedload
 from tornado.log import app_log
 
-from grader_service.orm import Base, Role
+from grader_service.orm.base import Base
 from grader_service.orm.json_util import JSONList
-from grader_service.utils import utcnow, hash_token, compare_token, new_token
+from grader_service.utils import compare_token, hash_token, new_token, utcnow
 
 
 class Expiring:
@@ -40,10 +39,7 @@ class Expiring:
         """Purge expired API Tokens from the database"""
         now = cls.now()
         deleted = False
-        for obj in (
-                db.query(cls).filter(
-                    cls.expires_at is not None).filter(cls.expires_at < now)
-        ):
+        for obj in db.query(cls).filter(cls.expires_at is not None).filter(cls.expires_at < now):
             app_log.debug("Purging expired %s", obj)
             deleted = True
             db.delete(obj)
@@ -83,9 +79,7 @@ class Hashed(Expiring):
         else:
             rounds = self.rounds
             salt_bytes = self.salt_bytes
-        self.hashed = hash_token(
-            token, rounds=rounds, salt=salt_bytes, algorithm=self.algorithm
-        )
+        self.hashed = hash_token(token, rounds=rounds, salt=salt_bytes, algorithm=self.algorithm)
 
     def match(self, token):
         """Is this my token?"""
@@ -96,13 +90,11 @@ class Hashed(Expiring):
         """Check if a token is acceptable"""
         if len(token) < cls.min_length:
             raise ValueError(
-                "Tokens must be at least %i characters, got %r"
-                % (cls.min_length, token)
+                "Tokens must be at least %i characters, got %r" % (cls.min_length, token)
             )
         found = cls.find(db, token)
         if found:
-            raise ValueError(
-                "Collision on token: %s..." % token[: cls.prefix_length])
+            raise ValueError("Collision on token: %s..." % token[: cls.prefix_length])
 
     @classmethod
     def find_prefix(cls, db, token):
@@ -118,9 +110,7 @@ class Hashed(Expiring):
         # since we can't filter on hashed values, filter on prefix
         # so we aren't comparing with all tokens
         prefix_match = db.query(cls).filter_by(prefix=prefix)
-        prefix_match = prefix_match.filter(
-            or_(cls.expires_at is None, cls.expires_at >= cls.now())
-        )
+        prefix_match = prefix_match.filter(or_(cls.expires_at is None, cls.expires_at >= cls.now))
         return prefix_match
 
     @classmethod
@@ -131,9 +121,7 @@ class Hashed(Expiring):
 
         `kind='user'` only returns API tokens for users
         """
-        prefix_match = cls.find_prefix(db, token).options(
-            joinedload(cls.user)
-        )
+        prefix_match = cls.find_prefix(db, token).options(joinedload(cls.user))
 
         for orm_token in prefix_match:
             if orm_token.match(token):
@@ -143,13 +131,9 @@ class Hashed(Expiring):
 class APIToken(Hashed, Base):
     """An API token"""
 
-    __tablename__ = 'api_token'
+    __tablename__ = "api_token"
 
-    username = Column(
-        Unicode,
-        ForeignKey('user.name', ondelete="CASCADE"),
-        nullable=True,
-    )
+    username = Column(Unicode, ForeignKey("user.name", ondelete="CASCADE"), nullable=True)
 
     user = relationship("User", back_populates="api_tokens")
     oauth_client = relationship("OAuthClient", back_populates="access_tokens")
@@ -160,21 +144,17 @@ class APIToken(Hashed, Base):
 
     @property
     def api_id(self):
-        return 'a%i' % self.id
+        return "a%i" % self.id
 
     @property
     def owner(self):
         return self.user
 
-    # added in 2.0
     client_id = Column(
         Unicode(255),
-        ForeignKey(
-            'oauth_client.identifier',
-            ondelete='CASCADE',
-        ),
+        ForeignKey("oauth_client.identifier", ondelete="CASCADE"),
+        nullable=True,  # Allow null for non-OAuth tokens
     )
-
     # FIXME: refresh_tokens not implemented
     # should be a relation to another token table
     # refresh_token = Column(
@@ -186,18 +166,16 @@ class APIToken(Hashed, Base):
     # the browser session id associated with a given token,
     # if issued during oauth to be stored in a cookie
     session_id = Column(Unicode(255), nullable=True)
-
-    # token metadata for bookkeeping
-    now = datetime.utcnow  # for expiry
-    created = Column(DateTime, default=datetime.utcnow)
+    now = datetime.now(timezone.utc)
+    created = Column(DateTime, default=datetime.now(timezone.utc))
     expires_at = Column(DateTime, default=None, nullable=True)
     last_activity = Column(DateTime)
     note = Column(Unicode(1023))
     scopes = Column(JSONList, default=[])
 
     def __repr__(self):
-        kind = 'user'
-        name = self.user.name
+        kind = "user"
+        name = self.user.name if self.user else None
         return "<{cls}('{pre}...', {kind}='{name}', client_id={client_id!r})>".format(
             cls=self.__class__.__name__,
             pre=self.prefix,
@@ -208,81 +186,61 @@ class APIToken(Hashed, Base):
 
     @classmethod
     def find(cls, db, token):
-        """Find a token object by value.
-
-        Returns None if not found.
-
-        """
+        """Find a token object by value. Returns None if not found."""
         prefix_match = cls.find_prefix(db, token)
-        prefix_match = prefix_match.filter(cls.username is not None)
+        prefix_match = prefix_match.filter(cls.username.isnot(None))
         for orm_token in prefix_match:
             if orm_token.match(token):
-                if not orm_token.client_id:
-                    app_log.warning(
-                        "Deleting stale oauth token for %s with no client",
-                        orm_token.user and orm_token.user.name,
-                    )
-                    db.delete(orm_token)
-                    db.commit()
-                    return
+                # Only purge if it's explicitly broken (has no client *and* shouldn't exist)
+                # But we now support client-less tokens.
                 return orm_token
 
     @classmethod
     def new(
-            cls,
-            token=None,
-            *,
-            user=None,
-            scopes=None,
-            note='',
-            generated=True,
-            session_id=None,
-            expires_in=None,
-            client_id=None,
-            oauth_client=None,
-            return_orm=False,
+        cls,
+        token=None,
+        *,
+        user=None,
+        scopes=None,
+        note="",
+        generated=True,
+        session_id=None,
+        expires_in=None,
+        client_id=None,
+        oauth_client=None,
+        return_orm=False,
     ):
         """Generate a new API token for a user"""
         assert user
         db = inspect(user).session
         if token is None:
             token = new_token()
-            # Don't need hash + salt rounds on generated tokens,
-            # which already have good entropy
             generated = True
         else:
             cls.check_token(db, token)
 
-        # Avoid circular import
-        from .oauthclient import OAuthClient
+        if oauth_client is None and client_id is not None:
+            # Lazy-load only if a specific client_id was provided
+            from .oauthclient import OAuthClient
 
-        if oauth_client is None:
-            # lookup oauth client by identifier
-            if client_id is None:
-                # default: global 'grader' client
-                client_id = "grader"
-            oauth_client = db.query(OAuthClient).filter_by(
-                identifier=client_id).one()
-        if client_id is None:
+            oauth_client = db.query(OAuthClient).filter_by(identifier=client_id).one_or_none()
+
+        if oauth_client:
             client_id = oauth_client.identifier
 
-        # two stages to ensure orm_token.generated has been set
-        # before token setter is called
         orm_token = cls(
             generated=generated,
-            note=note or '',
+            note=note or "",
             client_id=client_id,
             session_id=session_id,
             scopes=scopes if scopes else [],
         )
         db.add(orm_token)
         orm_token.token = token
-
-        assert user.name is not None
         orm_token.user = user
+
         if expires_in is not None:
-            orm_token.expires_at = cls.now() + timedelta(seconds=expires_in)
+            orm_token.expires_at = cls.now + timedelta(seconds=expires_in)
 
         db.commit()
-        return token
-
+        return orm_token if return_orm else token

@@ -1,4 +1,3 @@
-
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Set, Type, Union
@@ -89,7 +88,6 @@ class Grade(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
             else:
                 return self.manual_score + self.extra_credit
 
-
     @property
     def max_score(self):
         if self.max_score_taskcell:
@@ -125,6 +123,7 @@ class Comment(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
 
 class CellType(Enum):
     "code"
+
     "markdown"
 
 
@@ -237,9 +236,7 @@ class Notebook(BaseModel, IDMixin, NameMixin):
 
     @property
     def solution_cells(self) -> List[SolutionCell]:
-        return [
-            x for x in self.solution_cells_dict.values() if isinstance(x, SolutionCell)
-        ]
+        return [x for x in self.solution_cells_dict.values() if isinstance(x, SolutionCell)]
 
     @property
     def task_cells(self) -> List[TaskCell]:
@@ -287,9 +284,7 @@ class Notebook(BaseModel, IDMixin, NameMixin):
 
     @property
     def max_written_score(self) -> float:
-        return sum(
-            [g.max_score for g in self.graded_cells if g.cell_type == "markdown"]
-        )
+        return sum([g.max_score for g in self.graded_cells if g.cell_type == "markdown"])
 
     @property
     def failed_tests(self) -> bool:
@@ -330,18 +325,10 @@ class Notebook(BaseModel, IDMixin, NameMixin):
             "name": self.name,
             "flagged": self.flagged,
             "kernelspec": self.kernelspec,
-            "grade_cells_dict": {
-                k: v.to_dict() for k, v in self.grade_cells_dict.items()
-            },
-            "solution_cells_dict": {
-                k: v.to_dict() for k, v in self.solution_cells_dict.items()
-            },
-            "task_cells_dict": {
-                k: v.to_dict() for k, v in self.task_cells_dict.items()
-            },
-            "source_cells_dict": {
-                k: v.to_dict() for k, v in self.source_cells_dict.items()
-            },
+            "grade_cells_dict": {k: v.to_dict() for k, v in self.grade_cells_dict.items()},
+            "solution_cells_dict": {k: v.to_dict() for k, v in self.solution_cells_dict.items()},
+            "task_cells_dict": {k: v.to_dict() for k, v in self.task_cells_dict.items()},
+            "source_cells_dict": {k: v.to_dict() for k, v in self.source_cells_dict.items()},
             "grades_dict": {k: v.to_dict() for k, v in self.grades_dict.items()},
             "comments_dict": {k: v.to_dict() for k, v in self.comments_dict.items()},
             "_type": self._type,
@@ -368,16 +355,13 @@ class GradeBookModel(BaseModel):
         return max_score
 
     @property
-    def notebook_id_set(self) -> Set[Notebook]:
+    def notebook_id_set(self) -> Set[str]:
         return {x for x in self.notebooks.keys()}
 
     @classmethod
     def from_dict(cls: Type["GradeBookModel"], d: dict) -> "GradeBookModel":
         ns = {id: Notebook.from_dict(v) for id, v in d["notebooks"].items()}
-        try:
-            extra_files = d["extra_files"]
-        except KeyError:
-            extra_files = []
+        extra_files = d.get("extra_files", [])
         return GradeBookModel(notebooks=ns, extra_files=extra_files)
 
     def to_dict(self) -> dict:

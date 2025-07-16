@@ -16,6 +16,14 @@ jupyterhub.sqlite*
 /examples/dev_environment/service_dir
 /examples/dev_environment/service_dir/**/*
 /examples/dev_environment/venv
+/service_dir
+/home_dir
+
+/examples/docker_compose/data
+/examples/docker_compose/data-hub
+/examples/docker_compose/service_dir
+
+
 
 ### Linux ###
 *~
@@ -405,6 +413,9 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# uv lock file
+uv.lock
+
 # Environments
 # .env
 .env/
@@ -486,6 +497,9 @@ grader_labextension/grader/grader_labextension/labextension/package.json
 grader_labextension/grader_labextension/labextension/*
 grader_labextension/grader_labextension/labextension
 *.sqlite
+
+# Chart files
+Chart.lock
 
 #Sqlite database
 *.db

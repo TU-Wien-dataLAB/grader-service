@@ -1,9 +1,3 @@
-import shutil
-from unittest.mock import patch
-
-from grader_service.tests.convert.converters import _create_input_output_dirs
-from grader_service.convert.converters import GenerateAssignment, Autograde, GenerateFeedback
-
 #
 # def test_generate_feedback(tmp_path):
 #     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
