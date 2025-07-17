@@ -22,7 +22,6 @@ student_guide
 admin/administrator
 contribution
 reference/index
-about
 ```
 
 ## Structure
