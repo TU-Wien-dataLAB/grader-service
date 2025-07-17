@@ -986,21 +986,32 @@ class GraderBaseHandler(BaseHandler):
             self.log.error(e)
             raise HTTPError(404, reason="File not found")
 
-    async def _run_command_async(self, command, cwd=None):
-        """Starts a sub process and runs a cmd command
+    async def _run_command_async(self, command_args: List[str], cwd=None):
+        """Starts a subprocess and runs a cmd command
 
         Args:
-            command str: command that is getting run.
+            command_args List[str]: List of command arguments to execute.
             cwd (str, optional): states where the command is getting run.
                                  Defaults to None.
 
         Raises:
             GitError: returns appropriate git error"""
-        self.log.info(f"Running: {command}")
-        ret = await asyncio.create_subprocess_shell(
-            command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
-        )
-        await ret.wait()
+        self.log.info(f"Running: {' '.join(command_args)}")
+        try:
+            ret = await asyncio.create_subprocess_exec(
+                *command_args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=cwd,
+            )
+            stdout, stderr = await ret.communicate()
+            if ret.returncode != 0:
+                self.log.error(stderr.decode())
+                raise HTTPError(500, reason="Subprocess Error")
+            return stdout.decode()
+        except FileNotFoundError as e:
+            self.log.error(e)
+            raise HTTPError(404, reason="File not found")
 
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
