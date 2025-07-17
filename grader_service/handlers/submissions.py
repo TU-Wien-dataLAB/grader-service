@@ -679,7 +679,9 @@ class SubmissionEditHandler(GraderBaseHandler):
         :param submission_id: submission id
         :return:
         """
-        lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+        lecture_id, assignment_id, submission_id = parse_ids(
+            lecture_id, assignment_id, submission_id
+        )
         self.validate_parameters()
 
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
