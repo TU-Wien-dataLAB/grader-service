@@ -6,7 +6,7 @@
 
 ```{note}
 This setup is intended for local development and testing purposes only.
-It is not suitable for production use.
+It is not suitable for production use. Use the [Kubernetes installation](./kubernetes) for production deployments.
 ```
 ## Docker compose
 
