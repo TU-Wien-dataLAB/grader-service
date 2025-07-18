@@ -21,6 +21,9 @@ jupyterhub:
           - "lecture1:student":
               users: 
                 - "student"
+    loadRoles:
+      server:
+        scopes: ['inherit']
     extraConfig:
       # to be authenticated in the grader service, we have to start the authentication flow using the pre_spawn_hook
       01-pre_spawn_hook: |
@@ -40,14 +43,24 @@ jupyterhub:
 
   # configuration of the spawned user pods
   singleuser:
-    # configuration of the singleuser pod
+    defaultUrl: /lab
     image:
       # the image to use for the singleuser pods
       name: "ghcr.io/tu-wien-datalab/grader-labextension"
       tag: "main"
+      pullPolicy: IfNotPresent
     extraEnv:
       # URL to the grader service, used by the JupyterHub singleuser pods
       GRADER_HOST_URL: "http://grader-service:4010"
+    networkPolicy:
+      egress:
+        - to:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: grader-service
+          ports:
+            - protocol: TCP
+              port: 4010
 
   prePuller:
     hook:
