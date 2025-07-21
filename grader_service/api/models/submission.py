@@ -22,7 +22,7 @@ class Submission(Model):
         submitted_at=None,
         auto_status=None,
         manual_status=None,
-        username=None,
+        user_id=None,
         user_display_name=None,
         grading_score=None,
         score_scaling=None,
@@ -42,8 +42,8 @@ class Submission(Model):
         :type auto_status: AutoStatus
         :param manual_status: The manual_status of this Submission.  # noqa: E501
         :type manual_status: ManualStatus
-        :param username: The username of this Submission.  # noqa: E501
-        :type username: str
+        :param user_id: The user_id of this Submission.  # noqa: E501
+        :type user_id: int
         :param user_display_name: The user_display_name of this Submission.  # noqa: E501
         :type user_display_name: str
         :param grading_score: The grading_score of this Submission.  # noqa: E501
@@ -66,7 +66,7 @@ class Submission(Model):
             "submitted_at": datetime,
             "auto_status": AutoStatus,
             "manual_status": ManualStatus,
-            "username": str,
+            "user_id": int,
             "user_display_name": str,
             "grading_score": float,
             "score_scaling": float,
@@ -78,26 +78,26 @@ class Submission(Model):
         }
 
         self.attribute_map = {
-            "id": "id",
-            "submitted_at": "submitted_at",
-            "auto_status": "auto_status",
-            "manual_status": "manual_status",
-            "username": "username",
-            "user_display_name": "user_display_name",
-            "grading_score": "grading_score",
-            "score_scaling": "score_scaling",
-            "score": "score",
-            "assignid": "assignid",
-            "commit_hash": "commit_hash",
-            "feedback_status": "feedback_status",
-            "edited": "edited",
+            'id': 'id',
+            'submitted_at': 'submitted_at',
+            'auto_status': 'auto_status',
+            'manual_status': 'manual_status',
+            'user_id': 'user_id',
+            'user_display_name': 'user_display_name',
+            'grading_score': 'grading_score',
+            'score_scaling': 'score_scaling',
+            'score': 'score',
+            'assignid': 'assignid',
+            'commit_hash': 'commit_hash',
+            'feedback_status': 'feedback_status',
+            'edited': 'edited'
         }
 
         self._id = id
         self._submitted_at = submitted_at
         self._auto_status = auto_status
         self._manual_status = manual_status
-        self._username = username
+        self._user_id = user_id
         self._user_display_name = user_display_name
         self._grading_score = grading_score
         self._score_scaling = score_scaling
@@ -203,25 +203,25 @@ class Submission(Model):
         self._manual_status = manual_status
 
     @property
-    def username(self) -> str:
-        """Gets the username of this Submission.
+    def user_id(self) -> int:
+        """Gets the user_id of this Submission.
 
 
-        :return: The username of this Submission.
-        :rtype: str
+        :return: The user_id of this Submission.
+        :rtype: int
         """
-        return self._username
+        return self._user_id
 
-    @username.setter
-    def username(self, username: str):
-        """Sets the username of this Submission.
+    @user_id.setter
+    def user_id(self, user_id: int):
+        """Sets the user_id of this Submission.
 
 
-        :param username: The username of this Submission.
-        :type username: str
+        :param user_id: The user_id of this Submission.
+        :type user_id: int
         """
 
-        self._username = username
+        self._user_id = user_id
 
     @property
     def user_display_name(self) -> str:
