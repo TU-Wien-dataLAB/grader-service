@@ -256,7 +256,7 @@ class BaseHandler(web.RequestHandler):
                 # because that could be a malicious logout request!
                 count = 0
                 for access_token in self.session.query(APIToken).filter_by(
-                    username=user.name, session_id=session_id
+                    user_id=user.id, session_id=session_id
                 ):
                     self.session.delete(access_token)
                     count += 1

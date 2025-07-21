@@ -154,7 +154,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
 
         # Check existing authorization
         existing_tokens = self.session.query(APIToken).filter_by(
-            username=user.name, client_id=oauth_client.identifier
+            user_id=user.id, client_id=oauth_client.identifier
         )
         authorized_scopes = set()
         for token in existing_tokens:
@@ -163,7 +163,8 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
         if authorized_scopes:
             if set(requested_scopes).issubset(authorized_scopes):
                 self.log.debug(
-                    f"User {user.name} has already authorized {oauth_client.identifier} for scopes {requested_scopes}"
+                    f"User {user.name} has already authorized {oauth_client.identifier} for scopes "
+                    f"{requested_scopes}"
                 )
                 return False
             else:
