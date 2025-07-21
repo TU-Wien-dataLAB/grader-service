@@ -12,6 +12,7 @@ from tornado.web import HTTPError
 
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
@@ -39,6 +40,7 @@ def get_query_side_effect(
         elif input is Submission:
             sub = Submission()
             sub.user_id = user_id
+            sub.user = User(id=user_id, name=username)
             m.get.return_value = sub
         else:
             m.filter.return_value.one.return_value = None
