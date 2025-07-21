@@ -6,7 +6,7 @@
 
 import enum
 
-from sqlalchemy import Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import Column, Enum, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from grader_service.orm.base import Base, Serializable
@@ -21,7 +21,7 @@ class Scope(enum.IntEnum):
 
 class Role(Base, Serializable):
     __tablename__ = "takepart"
-    username = Column(String(255), ForeignKey("user.name"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
     lectid = Column(Integer, ForeignKey("lecture.id"), primary_key=True)
     role = Column(Enum(Scope), nullable=False)
 
