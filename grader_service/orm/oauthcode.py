@@ -16,8 +16,7 @@ class OAuthCode(Base):
     expires_at = Column(Integer)
     redirect_uri = Column(Unicode(1023))
     session_id = Column(Unicode(255))
-    # state = Column(Unicode(1023))
-    username = Column(Integer, ForeignKey("user.name", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     user = relationship("User", back_populates="oauth_codes")
 
     scopes = Column(JSONList, default=[])

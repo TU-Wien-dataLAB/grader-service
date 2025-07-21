@@ -219,7 +219,7 @@ class JupyterHubRequestValidator(RequestValidator):
             scopes=list(request.scopes),
             redirect_uri=orm_client.redirect_uri,
             session_id=request.session_id,
-            username=request.user.name,
+            user_id=request.user.id,
         )
         self.db.add(orm_code)
         orm_code.client = orm_client
@@ -311,7 +311,7 @@ class JupyterHubRequestValidator(RequestValidator):
         APIToken.new(
             oauth_client=client,
             # expires_in=token['expires_in']
-            expires_in=1209600,
+            expires_in=1209600,  # 14 days
             scopes=request.scopes,
             token=token["access_token"],
             session_id=request.session_id,
