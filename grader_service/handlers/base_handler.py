@@ -772,7 +772,7 @@ class GraderBaseHandler(BaseHandler):
         return lecture
 
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
-        assignment: Assignment = self.session.get(Assignment, assignment_id)
+        assignment: Optional[Assignment] = self.session.get(Assignment, assignment_id)
         if (
             (assignment is None)
             or (assignment.deleted == DeleteState.deleted)
@@ -795,20 +795,20 @@ class GraderBaseHandler(BaseHandler):
         return submission
 
     def get_latest_submissions(
-        self, assignment_id, must_have_feedback=False, username=None
+        self, assignment_id, must_have_feedback=False, user_id=None
     ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+            self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
+            .group_by(Submission.user_id)
         )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != "not_generated")
 
-        if username:
-            query = query.filter(Submission.username == username)
+        if user_id:
+            query = query.filter(Submission.user_id == user_id)
 
         subquery = query.subquery()
 
@@ -818,7 +818,7 @@ class GraderBaseHandler(BaseHandler):
             .options(joinedload(Submission.user))
             .join(
                 subquery,
-                (Submission.username == subquery.c.username)
+                (Submission.user_id == subquery.c.user_id)
                 & (Submission.date == subquery.c.max_date)
                 & (Submission.assignid == assignment_id)
                 & (Submission.deleted == DeleteState.active),
@@ -839,20 +839,20 @@ class GraderBaseHandler(BaseHandler):
         return query.all()
 
     def get_best_submissions(
-        self, assignment_id, must_have_feedback=False, username=None
+        self, assignment_id, must_have_feedback=False, user_id=None
     ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+            self.session.query(Submission.user_id, func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
+            .group_by(Submission.user_id)
         )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != "not_generated")
 
-        if username:
-            query = query.filter(Submission.username == username)
+        if user_id:
+            query = query.filter(Submission.user_id == user_id)
 
         subquery = query.subquery()
 
@@ -862,7 +862,7 @@ class GraderBaseHandler(BaseHandler):
             .options(joinedload(Submission.user))
             .join(
                 subquery,
-                (Submission.username == subquery.c.username)
+                (Submission.user_id == subquery.c.user_id)
                 & (Submission.score == subquery.c.max_score)
                 & (Submission.assignid == assignment_id)
                 & (Submission.deleted == DeleteState.active),
@@ -902,7 +902,7 @@ class GraderBaseHandler(BaseHandler):
             if repo_type == GitRepoType.AUTOGRADE:
                 if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
                     raise HTTPError(403)
-                path = os.path.join(type_path, submission.username)
+                path = os.path.join(type_path, submission.user.name)
             else:
                 path = os.path.join(type_path, self.user.name)
         elif repo_type == GitRepoType.USER:
