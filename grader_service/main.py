@@ -388,11 +388,11 @@ class GraderService(config.Application):
 
                         # delete all roles of users the first time a new role is added for the user
                         if user.name not in users_loaded:
-                            db.query(Role).filter(Role.username == user.name).delete()
+                            db.query(Role).filter(Role.user_id == user.id).delete()
                             users_loaded.add(user.name)
 
                         try:
-                            db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
+                            db.add(Role(user_id=user.id, lectid=lecture.id, role=Scope[role]))
                         except KeyError:
                             self.log.error(f"Invalid role name: {role}")
                             raise ValueError(f"Invalid role name: {role}")
