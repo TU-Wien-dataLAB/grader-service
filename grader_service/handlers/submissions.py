@@ -37,6 +37,7 @@ from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStat
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Role, Scope
+from grader_service.orm.user import User
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.registry import VersionSpecifier, register_handler
 
@@ -80,15 +81,12 @@ class SubmissionLectureHandler(GraderBaseHandler):
         if submission_filter not in ["latest", "best"]:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
-                reason="Filter parameter \
-            has to be either 'latest' or 'best'",
+                reason="Filter parameter has to be either 'latest' or 'best'",
             )
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
             raise HTTPError(
-                HTTPStatus.BAD_REQUEST,
-                reason="Response format \
-            can either be 'json' or 'csv'",
+                HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
             )
 
         role: Role = self.get_role(lecture_id)
@@ -97,32 +95,33 @@ class SubmissionLectureHandler(GraderBaseHandler):
 
         if submission_filter == "latest":
             subquery = (
-                self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+                self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
                 .join(Assignment, Submission.assignid == Assignment.id)
                 .filter(Assignment.lectid == lecture_id)
                 .filter(Submission.deleted == DeleteState.active)
-                .group_by(Submission.username, Assignment.id)
+                .group_by(Submission.user_id, Assignment.id)
                 .subquery()
             )
         else:
             subquery = (
                 self.session.query(
-                    Submission.username, func.max(Submission.score).label("max_score")
+                    Submission.user_id, func.max(Submission.score).label("max_score")
                 )
                 .join(Assignment, Submission.assignid == Assignment.id)
                 .filter(Assignment.lectid == lecture_id)
                 .filter(Submission.deleted == DeleteState.active)
-                .group_by(Submission.username, Assignment.id)
+                .group_by(Submission.user_id, Assignment.id)
                 .subquery()
             )
 
         submissions_query = (
             self.session.query(
-                label("username", Submission.username),
+                label("username", User.name),
                 label("score", Submission.score),
                 label("assignment", Assignment.name),
             )
             .join(Assignment, Submission.assignid == Assignment.id)
+            .join(User, Submission.user_id == User.id)
             .filter(Assignment.lectid == lecture_id)
             .filter(Submission.deleted == DeleteState.active)
         )
@@ -131,7 +130,7 @@ class SubmissionLectureHandler(GraderBaseHandler):
             submissions = (
                 submissions_query.join(
                     subquery,
-                    (Submission.username == subquery.c.username)
+                    (Submission.user_id == subquery.c.user_id)
                     & (Submission.date == subquery.c.max_date),
                 )
                 .order_by(Assignment.id)
@@ -141,7 +140,7 @@ class SubmissionLectureHandler(GraderBaseHandler):
             submissions = (
                 submissions_query.join(
                     subquery,
-                    (Submission.username == subquery.c.username)
+                    (Submission.user_id == subquery.c.user_id)
                     & (Submission.score == subquery.c.max_score),
                 )
                 .order_by(Submission.id)
@@ -241,17 +240,17 @@ class SubmissionHandler(GraderBaseHandler):
         self.validate_assignment(lecture_id, assignment_id)
 
         # get list of submissions based on arguments
-        username = None if instr_version else role.username
+        user_id = None if instr_version else role.user_id
         if submission_filter == "latest":
-            submissions = self.get_latest_submissions(assignment_id, username=username)
+            submissions = self.get_latest_submissions(assignment_id, user_id=user_id)
         elif submission_filter == "best":
-            submissions = self.get_best_submissions(assignment_id, username=username)
+            submissions = self.get_best_submissions(assignment_id, user_id=user_id)
         else:
             query = self.session.query(Submission).filter(
                 Submission.assignid == assignment_id, Submission.deleted == DeleteState.active
             )
-            if username:
-                query = query.filter(Submission.username == username)
+            if user_id:
+                query = query.filter(Submission.user_id == user_id)
             submissions = query.order_by(Submission.id).all()
 
         if response_format == "csv":
@@ -305,9 +304,9 @@ class SubmissionHandler(GraderBaseHandler):
 
         if assignment.settings.max_submissions:
             submissions = assignment.submissions
-            usersubmissions = [s for s in submissions if s.username == role.username]
+            user_submissions = [s for s in submissions if s.user_id == role.user_id]
             if (
-                len(usersubmissions) >= assignment.settings.max_submissions
+                len(user_submissions) >= assignment.settings.max_submissions
                 and role.role < Scope.tutor
             ):
                 raise HTTPError(
@@ -317,7 +316,7 @@ class SubmissionHandler(GraderBaseHandler):
         submission = Submission()
         submission.assignid = assignment.id
         submission.date = submission_ts
-        submission.username = self.user.name
+        submission.user_id = self.user.id
         submission.score_scaling = score_scaling
 
         git_repo_path = self.construct_git_dir(
@@ -449,10 +448,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
             lecture_id, assignment_id, submission_id
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if (
-            self.get_role(lecture_id).role == Scope.student
-            and submission.username != self.user.name
-        ):
+        if self.get_role(lecture_id).role == Scope.student and submission.user_id != self.user.id:
             raise HTTPError(HTTPStatus.NOT_FOUND)
         self.write_json(submission)
 
@@ -478,7 +474,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
         role = self.get_role(lecture_id)
         if role.role >= Scope.instructor:
-            sub.username = sub_model.username
+            sub.user_id = sub_model.user_id
         sub.auto_status = sub_model.auto_status
         sub.manual_status = sub_model.manual_status
         sub.edited = sub_model.edited
@@ -864,9 +860,9 @@ class LtiSyncHandler(GraderBaseHandler):
                 raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=err_msg)
             except Exception as e:
                 self.log.error("Could not sync grades: " + str(e))
-                raise HTTPError(500, reason="An unexpected error occured.")
+                raise HTTPError(500, reason="An unexpected error occurred.")
         else:
-            raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
+            raise HTTPError(403, reason="LTI plugin is not enabled by administrator.")
 
 
 @register_handler(
@@ -893,7 +889,7 @@ class SubmissionCountHandler(GraderBaseHandler):
 
         usersubmissions_count = (
             self.session.query(Submission)
-            .filter(Submission.assignid == assignment_id, Submission.username == role.username)
+            .filter(Submission.assignid == assignment_id, Submission.user_id == role.user_id)
             .count()
         )
 

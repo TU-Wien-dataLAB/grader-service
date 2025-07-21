@@ -76,7 +76,7 @@ class GitBaseHandler(GraderBaseHandler):
                 except (ValueError, IndexError):
                     raise HTTPError(403)
                 submission = self.session.query(Submission).get(sub_id)
-                if submission is None or submission.username != self.user.name:
+                if submission is None or submission.user_id != self.user.id:
                     raise HTTPError(403)
 
         # 4. no push allowed for autograde and feedback

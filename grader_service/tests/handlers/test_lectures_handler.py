@@ -303,7 +303,7 @@ async def test_delete_lecture_assignment_with_submissions(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, lecture_id=3)
-    insert_submission(engine, assignment_id=a_id, username=default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(

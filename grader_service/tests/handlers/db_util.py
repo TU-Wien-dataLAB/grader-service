@@ -6,6 +6,7 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -18,20 +19,13 @@ from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope
 
 
-def add_role(engine: Engine, username: str, l_id: int, scope: Scope) -> Role:
+def add_role(engine: Engine, user_id: int, l_id: int, scope: Scope) -> Role:
     session: Session = sessionmaker(engine)()
-    role = Role(username=username, lectid=l_id, role=scope)
+    role = Role(user_id=user_id, lectid=l_id, role=scope)
     session.add(role)
     session.commit()
     session.flush()
     return role
-
-
-def insert_users(session):
-    session.execute('INSERT INTO "user" ("name") VALUES ("user1")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user2")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user3")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user4")')
 
 
 def _get_lecture(id, name, code):
@@ -93,13 +87,19 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username, feedback=FeedbackStatus.NOT_GENERATED, score=None):
+def _get_submission(
+    assignment_id: int,
+    username: str,
+    user_id: int,
+    feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
+    score: Optional[float] = None,
+):
     s = Submission()
     s.date = datetime.now(tz=timezone.utc)
     s.auto_status = AutoStatus.NOT_GRADED
     s.manual_status = ManualStatus.NOT_GRADED
     s.assignid = assignment_id
-    s.username = username
+    s.user_id = user_id
     s.display_name = username
     s.score = score
     s.commit_hash = secrets.token_hex(20)
@@ -107,42 +107,28 @@ def _get_submission(assignment_id, username, feedback=FeedbackStatus.NOT_GENERAT
     return s
 
 
-def _get_submission_properties(submission_id, properties=None):
-    s = SubmissionProperties(sub_id=submission_id, properties=properties)
-    return s
-
-
 def insert_submission(
-    ex,
-    assignment_id=1,
-    username="ubuntu",
-    feedback=FeedbackStatus.NOT_GENERATED,
-    with_properties=True,
-    score=None,
+    ex: Engine,
+    assignment_id: int = 1,
+    username: Optional[str] = "ubuntu",
+    user_id: Optional[int] = 42,
+    feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
+    with_properties: bool = True,
+    score: float = None,
 ):
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id
     session: Session = sessionmaker(ex)()
-    session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
+    session.add(_get_submission(assignment_id, username, user_id, feedback=feedback, score=score))
     session.commit()
+
     if with_properties:
         id = (
             session.query(Submission)
-            .filter(Submission.assignid == assignment_id, Submission.username == username)
+            .filter(Submission.assignid == assignment_id, Submission.user_id == user_id)
             .first()
             .id
         )
-        session.add(_get_submission_properties(id))
+        session.add(SubmissionProperties(sub_id=id, properties=None))
         session.commit()
     session.flush()
-
-
-def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):
-    ex.execute(
-        f'INSERT INTO "takepart" ("username","lectid","role") '
-        f'VALUES ("{username}",{lecture_id},"{role}")'
-    )
-
-
-def insert_grading(session):
-    pass
