@@ -176,7 +176,9 @@ class GraderService(config.Application):
         Dict(),
         default_value=[],
         help="""
-        List of OAuth clients `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]` to register for the provider.
+        List of OAuth clients 
+        `[{'client_id': '<client_id>', 'client_secret': '<client_secret>', 'redirect_uri': '<redirect_uri>'}]`
+        to register for the provider.
         
         Example::
             
@@ -293,10 +295,7 @@ class GraderService(config.Application):
                 f"The directory to write the config file has to exist. {config_file_dir} not found"
             )
         if os.path.isfile(os.path.abspath(self.config_file)):
-            self.exit(
-                f"Config file {os.path.abspath(self.config_file)} \
-                already exists!"
-            )
+            self.exit(f"Config file {os.path.abspath(self.config_file)} already exists!")
 
         members = inspect.getmembers(
             sys.modules[__name__], lambda x: inspect.isclass(x) and issubclass(x, HasTraits)
@@ -421,7 +420,8 @@ class GraderService(config.Application):
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
         self.log.info(
-            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: {[n for n, _ in auth_handlers]}"
+            f"Registered authentication handlers for {self.authenticator.__class__.__name__}: "
+            f"{[n for n, _ in auth_handlers]}"
         )
 
         oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)

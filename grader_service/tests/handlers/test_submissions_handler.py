@@ -101,8 +101,8 @@ async def test_get_submissions(
     submissions = json.loads(response.body.decode())
     assert isinstance(submissions, list)
     assert len(submissions) == 2
-    assert submissions[0]["username"] == "ubuntu"
-    assert submissions[1]["username"] == "ubuntu"
+    assert submissions[0]["user_id"] == default_user.id
+    assert submissions[1]["user_id"] == default_user.id
     Submission.from_dict(submissions[0])
 
 
