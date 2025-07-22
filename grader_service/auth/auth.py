@@ -152,7 +152,8 @@ class Authenticator(LoggingConfigurable):
         If empty, does not perform any restriction,
         in which case any authenticated user is allowed.
 
-        Authenticators may extend :meth:`.Authenticator.check_allowed` to combine `allowed_users` with other configuration
+        Authenticators may extend :meth:`.Authenticator.check_allowed`
+        to combine `allowed_users` with other configuration
         to either expand or restrict access.
 
         """
@@ -698,7 +699,8 @@ class Authenticator(LoggingConfigurable):
 
         - user role assignments status will depend on whether the `users` key is defined or not:
 
-          * if a list is defined under the `users` key and the user is not listed, then the user role assignment will be considered 'stale',
+          * if a list is defined under the `users` key and the user is not listed, then the user
+          role assignment will be considered 'stale',
           * if the `users` key is not provided, the user role assignment will be preserved;
         - service and group role assignments will be considered 'stale':
 

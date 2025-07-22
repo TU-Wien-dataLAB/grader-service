@@ -72,11 +72,14 @@ def check_authorization(
     elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
 
-    role = self.session.get(Role, (self.user.name, lecture_id))
+    role = self.session.get(Role, (self.user.id, lecture_id))
+
     if (role is None) or (role.role not in scopes):
-        msg = f"User {self.user.name} tried to access "
-        msg += f"{self.request.path} with insufficient privileges"
-        self.log.warning(msg)
+        self.log.warning(
+            "User %s tried to access %s with insufficient privileges",
+            self.user.name,
+            self.request.path,
+        )
         raise HTTPError(403)
     return True
 
@@ -524,8 +527,7 @@ class BaseHandler(web.RequestHandler):
 
         if user and username != user.name:
             raise ValueError(f"Username doesn't match! {username} != {user.name}")
-
-        user_model = self.session.get(User, username)
+        user_model = self.session.query(User).filter(User.name == username).one_or_none()
         if user_model is None:
             self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()

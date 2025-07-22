@@ -164,7 +164,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         if self.submission.edited:
             git_repo_path = os.path.join(
@@ -285,7 +285,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         git_repo_path = os.path.join(
             self.grader_service_dir,
