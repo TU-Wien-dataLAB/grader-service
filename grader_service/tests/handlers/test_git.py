@@ -326,7 +326,7 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/{handler_mock.user.name}"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
@@ -355,7 +355,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/{handler_mock.user.name}"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
@@ -384,7 +384,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/{handler_mock.user.name}"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_invalid_id_error():

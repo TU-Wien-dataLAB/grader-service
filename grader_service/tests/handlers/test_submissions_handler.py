@@ -27,20 +27,12 @@ from grader_service.server import GraderServer
 from .db_util import insert_assignments, insert_submission
 
 
-async def submission_test_setup(
-    sql_alchemy_engine, http_server_client, default_user, default_token, url: str, a_id: int
-):
-    engine = sql_alchemy_engine
+async def submission_test_setup(engine, default_user, a_id: int):
     insert_submission(engine, a_id, default_user.name, default_user.id)
     insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
     # should make no difference
     insert_submission(engine, a_id, "user1", 2137)
     insert_submission(engine, a_id, "user1", 2137, with_properties=False)
-
-    response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"}
-    )
-    return response
 
 
 @pytest.mark.parametrize(
@@ -94,8 +86,9 @@ async def test_get_submissions(
 ):
     a_id = 1
     url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/"
-    response = await submission_test_setup(
-        sql_alchemy_engine, http_server_client, default_user, default_token, url, a_id
+    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert response.code == 200
     submissions = json.loads(response.body.decode())
@@ -118,8 +111,10 @@ async def test_get_submissions_format_csv(
 ):
     a_id = 1
     url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/?format=csv"
-    response = await submission_test_setup(
-        sql_alchemy_engine, http_server_client, default_user, default_token, url, a_id
+    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
     assert response.code == 200
     decoded_content = response.body.decode("utf-8")
