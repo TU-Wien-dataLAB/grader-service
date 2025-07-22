@@ -122,7 +122,7 @@ class GitBaseHandler(GraderBaseHandler):
         except MultipleResultsFound:
             raise HTTPError(500, reason="Found more than one lecture")
 
-        role = self.session.get(Role, (self.user.name, lecture.id))
+        role = self.session.get(Role, (self.user.id, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:

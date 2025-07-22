@@ -766,7 +766,7 @@ class GraderBaseHandler(BaseHandler):
         return super().write_error(status_code, **kwargs)
 
     def get_role(self, lecture_id: int) -> Role:
-        role = self.session.get(Role, (self.user.name, lecture_id))
+        role = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
             raise HTTPError(403)
         return role
