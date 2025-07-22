@@ -111,7 +111,7 @@ def insert_submission(
     ex: Engine,
     assignment_id: int = 1,
     username: Optional[str] = "ubuntu",
-    user_id: Optional[int] = 42,
+    user_id: Optional[int] = 1,
     feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
     with_properties: bool = True,
     score: float = None,
