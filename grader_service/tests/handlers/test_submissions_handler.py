@@ -975,6 +975,7 @@ async def test_post_submission_commit_hash_not_found(
         )
     e = exc_info.value
     assert e.code == 400
+    assert e.message == "Commit hash not found in body"
 
 
 async def test_submission_properties(
@@ -1041,37 +1042,7 @@ async def test_submission_properties_not_correct(
         )
     e = exc_info.value
     assert e.code == 400
-
-
-# async def test_submission_properties_not_found(
-#     app: GraderServer,
-#     service_base_url,
-#     http_server_client,
-#     default_user,
-#     default_token,
-#     sql_alchemy_engine,
-#     default_roles,
-#     default_user_login,
-# ):
-#     # TODO(Natalia): There's a test with the same name at line ~1030. Is this one redundant?
-#     l_id = 3  # default user is student
-#     a_id = 4
-#
-#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
-#
-#     engine = sql_alchemy_engine
-#     insert_assignments(engine, l_id)
-#     insert_submission(engine, a_id, default_user.name)
-#     # TODO(Natalia): The following inserts cause db IntegrityErrors. Delete them?
-#     # insert_submission(engine, a_id, default_user.name)
-#     # insert_submission(engine, a_id, default_user.name)
-#
-#     with pytest.raises(HTTPClientError) as exc_info:
-#         await http_server_client.fetch(
-#             url, method="GET", headers={"Authorization": f"Token {default_token}"}
-#         )
-#     e = exc_info.value
-#     assert e.code == 404
+    assert e.message == "Cannot parse properties file!"
 
 
 async def test_submission_properties_lecture_assignment_missmatch(
@@ -1168,7 +1139,8 @@ async def test_submission_properties_wrong_submission(
     insert_submission(engine, a_id, default_user.name, default_user.id)
 
     a_id = 1  # this assignment has no submissions
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/properties"
+    sub_id = 1  # this submission belongs to another assignment
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{sub_id}/properties"
 
     prop = {"test": "property", "value": 2, "bool": True, "null": None}
 
@@ -1181,6 +1153,7 @@ async def test_submission_properties_wrong_submission(
         )
     e = exc_info.value
     assert e.code == 404
+    assert e.message == f"Submission with id {sub_id} was not found"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1188,6 +1161,7 @@ async def test_submission_properties_wrong_submission(
         )
     e = exc_info.value
     assert e.code == 404
+    assert e.message == "Properties of submission were not found"
 
 
 async def test_submission_properties_not_found(
@@ -1206,7 +1180,6 @@ async def test_submission_properties_not_found(
     insert_assignments(engine, l_id)
     insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
 
-    a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1215,6 +1188,7 @@ async def test_submission_properties_not_found(
         )
     e = exc_info.value
     assert e.code == 404
+    assert e.message == "Properties of submission were not found"
 
 
 # FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
