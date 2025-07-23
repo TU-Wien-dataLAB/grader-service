@@ -106,7 +106,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 role.role = scope
                 session.commit()
         else:
-            log.info("Found group that doesn't match schema. Ignoring " + group)
+            log.info("Found group that doesn't match schema. Ignoring %s", group)
 
     return authentication
 
