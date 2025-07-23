@@ -692,7 +692,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         # Path to repository of student which contains the submitted files
         submission_repo_path = os.path.normpath(
             os.path.join(
-                self.gitbase, lecture.code, str(assignment.id), "user", submission.username
+                self.gitbase, lecture.code, str(assignment.id), "user", submission.user.name
             )
         )
         if not submission_repo_path.startswith(self.gitbase):
