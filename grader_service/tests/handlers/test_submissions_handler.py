@@ -20,7 +20,7 @@ from ...handlers.submissions import SubmissionHandler
 from ...orm import Role
 from ...orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from ...orm.takepart import Scope
-from .db_util import insert_assignments, insert_submission
+from .db_util import insert_assignments, insert_student, insert_submission
 
 
 async def submission_test_setup(engine, default_user, a_id: int):
@@ -121,9 +121,10 @@ async def test_get_submissions_format_csv(
     submissions.pop(0)
 
     assert len(submissions) == 2
-    assert submissions[0][4] == "ubuntu"
-    assert submissions[1][4] == "ubuntu"
-    Submission.from_dict(submissions[0])
+    assert submissions[0][4] == str(default_user.id)
+    assert submissions[1][4] == str(default_user.id)
+    assert submissions[0][5] == default_user.name
+    assert submissions[1][5] == default_user.name
 
 
 async def test_get_submissions_format_wrong(
@@ -185,6 +186,7 @@ async def test_get_submissions_instructor_version(
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
+    other_user = insert_student(engine, "student1", l_id)
 
     url = (
         service_base_url
@@ -195,8 +197,8 @@ async def test_get_submissions_instructor_version(
     insert_submission(
         engine, a_id, default_user.name, user_id=default_user.id, with_properties=False
     )
-    insert_submission(engine, a_id, "user1", user_id=2137)
-    insert_submission(engine, a_id, "user1", user_id=2137, with_properties=False)
+    insert_submission(engine, a_id, other_user.name, user_id=other_user.id)
+    insert_submission(engine, a_id, other_user.name, user_id=other_user.id, with_properties=False)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -207,10 +209,10 @@ async def test_get_submissions_instructor_version(
     assert len(submissions) == 4
     user_submission = submissions[0:2]
 
-    possible_users = {default_user.name, "user1"}
-    user_name = submissions[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
+    possible_users = {default_user.id, other_user.id}
+    user_id = submissions[0]["user_id"]
+    assert user_id in possible_users
+    possible_users.remove(user_id)
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 2
@@ -219,9 +221,9 @@ async def test_get_submissions_instructor_version(
 
     user_submission = submissions[2:4]
 
-    user_name = user_submission[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
+    user_id = user_submission[0]["user_id"]
+    assert user_id in possible_users
+    possible_users.remove(user_id)
     assert len(possible_users) == 0
 
     assert isinstance(user_submission, list)
@@ -276,26 +278,19 @@ async def test_get_submissions_latest_instructor_version(
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
+    other_user = insert_student(engine, "student1", l_id)
 
     url = (
         service_base_url
         + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
     )
 
+    insert_submission(engine, a_id, default_user.name, user_id=default_user.id)
     insert_submission(
-        engine, assignment_id=a_id, username=default_user.name, user_id=default_user.id
+        engine, a_id, default_user.name, user_id=default_user.id, with_properties=False
     )
-    insert_submission(
-        engine,
-        assignment_id=a_id,
-        username=default_user.name,
-        user_id=default_user.id,
-        with_properties=False,
-    )
-    insert_submission(engine, assignment_id=a_id, username="user1", user_id=2137)
-    insert_submission(
-        engine, assignment_id=a_id, username="user1", user_id=2137, with_properties=False
-    )
+    insert_submission(engine, a_id, other_user.name, user_id=other_user.id)
+    insert_submission(engine, a_id, other_user.name, user_id=other_user.id, with_properties=False)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -307,10 +302,10 @@ async def test_get_submissions_latest_instructor_version(
     # Submissions of first user
     user_submission = submissions[0:1]
 
-    possible_users = {default_user.name, "user1"}
-    user_name = user_submission[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
+    possible_users = {default_user.id, other_user.id}
+    user_id = user_submission[0]["user_id"]
+    assert user_id in possible_users
+    possible_users.remove(user_id)
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1
@@ -319,9 +314,9 @@ async def test_get_submissions_latest_instructor_version(
 
     user_submission = submissions[1:2]
 
-    user_name = user_submission[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
+    user_id = user_submission[0]["user_id"]
+    assert user_id in possible_users
+    possible_users.remove(user_id)
     assert len(possible_users) == 0
 
     assert isinstance(user_submission, list)
@@ -344,6 +339,7 @@ async def test_get_submissions_best_instructor_version(
     a_id = 4
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
+    other_user = insert_student(engine, "student1", l_id)
 
     url = (
         service_base_url
@@ -351,25 +347,18 @@ async def test_get_submissions_best_instructor_version(
     )
 
     insert_submission(
-        engine,
-        assignment_id=a_id,
-        username=default_user.name,
-        user_id=default_user.id,
-        feedback="generated",
-        score=3,
+        engine, a_id, default_user.name, user_id=default_user.id, feedback="generated", score=3
     )
     insert_submission(
         engine,
-        assignment_id=a_id,
-        username=default_user.name,
+        a_id,
+        default_user.name,
         user_id=default_user.id,
         feedback="not_generated",
         with_properties=False,
     )
-    insert_submission(engine, assignment_id=a_id, username="user1", user_id=2137, score=3)
-    insert_submission(
-        engine, assignment_id=a_id, username="user1", user_id=2137, with_properties=False
-    )
+    insert_submission(engine, a_id, "user1", user_id=other_user.id, score=3)
+    insert_submission(engine, a_id, "user1", user_id=other_user.id, with_properties=False)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -381,10 +370,10 @@ async def test_get_submissions_best_instructor_version(
     # Submissions of first user
     user_submission = submissions[0:1]
 
-    possible_users = {default_user.name, "user1"}
-    user_name = user_submission[0]["username"]
-    assert user_name in possible_users
-    possible_users.remove(user_name)
+    possible_users = {default_user.id, other_user.id}
+    user_id = user_submission[0]["user_id"]
+    assert user_id in possible_users
+    possible_users.remove(user_id)
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1
@@ -592,6 +581,7 @@ async def test_put_submission(
 
     pre_submission = Submission(
         id=-1,
+        user_id=default_user.id,
         submitted_at=None,
         commit_hash=secrets.token_hex(20),
         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
@@ -637,6 +627,7 @@ async def test_put_submission_lecture_assignment_missmatch(
     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
+        user_id=default_user.id,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
@@ -676,6 +667,7 @@ async def test_put_submission_assignment_submission_missmatch(
     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
+        user_id=default_user.id,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
@@ -715,6 +707,7 @@ async def test_put_submission_wrong_submission(
     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
+        user_id=default_user.id,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
@@ -789,6 +782,7 @@ async def test_post_submission_git_repo_not_found(
     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
+        user_id=default_user.id,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
