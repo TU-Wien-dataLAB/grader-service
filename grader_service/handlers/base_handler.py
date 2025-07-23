@@ -272,14 +272,14 @@ class BaseHandler(web.RequestHandler):
             self.application.cookie_name, path=self.application.base_url.rstrip("/"), **kwargs
         )
 
-    def get_session_cookie(self):
+    def get_session_cookie(self) -> Optional[str]:
         """Get the session id from a cookie
 
         Returns None if no session id is stored
         """
         return self.get_cookie(SESSION_COOKIE_NAME, None)
 
-    def _user_for_cookie(self, cookie_name, cookie_value=None):
+    def _user_for_cookie(self, cookie_name, cookie_value=None) -> Optional[User]:
         """Get the User for a given cookie, if there is one"""
         cookie_id = self.get_secure_cookie(
             cookie_name, cookie_value, max_age_days=self.application.cookie_max_age_days
@@ -306,7 +306,7 @@ class BaseHandler(web.RequestHandler):
         #     self.session.commit()
         return user
 
-    def _record_activity(self, obj, timestamp=None):
+    def _record_activity(self, obj, timestamp=None) -> bool:
         """record activity on an ORM object
 
         If last_activity was more recent than self.activity_resolution seconds ago,
@@ -333,7 +333,7 @@ class BaseHandler(web.RequestHandler):
             return True
         return False
 
-    def get_auth_token(self):
+    def get_auth_token(self) -> Optional[str]:
         """Get the authorization token from Authorization header"""
         auth_header = self.request.headers.get("Authorization", "")
         match = auth_header_pat.match(auth_header)
@@ -348,7 +348,7 @@ class BaseHandler(web.RequestHandler):
             return match.group(2)
 
     @functools.lru_cache
-    def get_token(self):
+    def get_token(self) -> Optional[APIToken]:
         """get token from authorization header"""
         token = self.get_auth_token()
         if token is None:
@@ -356,7 +356,7 @@ class BaseHandler(web.RequestHandler):
         orm_token = APIToken.find(self.session, token)
         return orm_token
 
-    def get_current_user_token(self):
+    def get_current_user_token(self) -> Optional[User]:
         """get_current_user from Authorization header token"""
         # record token activity
         orm_token = self.get_token()
@@ -372,7 +372,7 @@ class BaseHandler(web.RequestHandler):
         self._token_authenticated = True
         return orm_token.user
 
-    def get_current_user_cookie(self):
+    def get_current_user_cookie(self) -> Optional[User]:
         """get_current_user from a cookie token"""
         return self._user_for_cookie(self.application.cookie_name)
 
@@ -431,8 +431,8 @@ class BaseHandler(web.RequestHandler):
             auth_info["auth_state"] = await user.get_auth_state()
         return await self.auth_to_user(auth_info, user)
 
-    async def get_current_user(self):
-        """get current username"""
+    async def get_current_user(self) -> Optional[User]:
+        """get current user"""
         if not hasattr(self, "_grader_user"):
             user = None
             try:
@@ -454,7 +454,7 @@ class BaseHandler(web.RequestHandler):
         self.session.close()
 
     @property
-    def current_user(self) -> User:
+    def current_user(self) -> Optional[User]:
         """Override .current_user accessor from tornado
 
         Allows .get_current_user to be async.
@@ -464,7 +464,7 @@ class BaseHandler(web.RequestHandler):
         return self._grader_user
 
     @property
-    def user(self) -> User:
+    def user(self) -> Optional[User]:
         return self.current_user
 
     def set_session_cookie(self):
@@ -544,8 +544,8 @@ class BaseHandler(web.RequestHandler):
                 # which should fail here rather than silently not implement the requested behavior
                 auth_cls = self.authenticator.__class__.__name__
                 raise ValueError(
-                    f"Authenticator.manage_groups is enabled, but auth_model for {username} specifies no groups."
-                    f" Does {auth_cls} support manage_groups=True?"
+                    f"Authenticator.manage_groups is enabled, but auth_model for {username} "
+                    f"specifies no groups. Does {auth_cls} support manage_groups=True?"
                 )
             group_names = authenticated["groups"]
             if group_names is not None:
