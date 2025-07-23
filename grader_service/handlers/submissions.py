@@ -251,18 +251,21 @@ class SubmissionHandler(GraderBaseHandler):
             submissions = query.order_by(Submission.id).all()
 
         if response_format == "csv":
-            self.set_header("Content-Type", "text/csv")
-            for i, s in enumerate(submissions):
-                d = s.model.to_dict()
-                if i == 0:
-                    self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
-                self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
+            self._write_csv(submissions)
         else:
             if not instr_version:
                 submissions = remove_points_from_submission(submissions)
 
             self.write_json(submissions)
         self.session.close()
+
+    def _write_csv(self, submissions):
+        self.set_header("Content-Type", "text/csv")
+        for i, s in enumerate(submissions):
+            d = s.model.to_dict()
+            if i == 0:
+                self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+            self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
     async def post(self, lecture_id: int, assignment_id: int):
