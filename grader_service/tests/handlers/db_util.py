@@ -12,7 +12,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.orm import Assignment, Lecture, Role, Submission
+from grader_service.orm import Assignment, Lecture, Role, Submission, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -132,3 +132,14 @@ def insert_submission(
         session.add(SubmissionProperties(sub_id=id, properties=None))
         session.commit()
     session.flush()
+
+
+def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
+    """Creates a user with a student role in the specified lecture."""
+    session: Session = sessionmaker(ex)(expire_on_commit=False)
+    session.add(User(name=username, display_name=username))
+    session.commit()
+    user = session.query(User).filter(User.name == username).one()
+    session.add(Role(user_id=user.id, lectid=lecture_id, role=Scope.student))
+    session.commit()
+    return user
