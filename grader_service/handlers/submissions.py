@@ -220,16 +220,13 @@ class SubmissionHandler(GraderBaseHandler):
         if submission_filter not in ["none", "latest", "best"]:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
-                reason="Filter parameter \
-            has to be either 'none', 'latest' or 'best'",
+                reason="Filter parameter has to be either 'none', 'latest' or 'best'",
             )
         instr_version = self.get_argument("instructor-version", None) == "true"
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
             raise HTTPError(
-                HTTPStatus.BAD_REQUEST,
-                reason="Response format \
-            can either be 'json' or 'csv'",
+                HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
             )
 
         # check required scopes for instructor version
@@ -562,7 +559,7 @@ class SubmissionLogsHandler(GraderBaseHandler):
         if logs is not None:
             self.write_json(logs.logs)
         else:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Properties of submission were not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Logs of submission were not found")
 
 
 @register_handler(
@@ -626,14 +623,13 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         try:
             gradebook = GradeBookModel.from_dict(json.loads(properties_string))
-
-            score = gradebook.score
-            submission.grading_score = score
-            submission.score = submission.score_scaling * score
-
         except Exception as e:
             self.log.info(e)
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
+
+        score = gradebook.score
+        submission.grading_score = score
+        submission.score = submission.score_scaling * score
 
         properties = SubmissionProperties(properties=properties_string, sub_id=submission.id)
 
