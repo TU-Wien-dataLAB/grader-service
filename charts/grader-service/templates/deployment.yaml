@@ -94,7 +94,7 @@ spec:
         - name: volume-permissions
           image: busybox
           command: ["/bin/sh","-c"]
-          args: ["chown 1000:1000 /var/lib/grader-service;"]
+          args: ["chown -R 1000:1000 /var/lib/grader-service;"]
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
