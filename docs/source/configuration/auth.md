@@ -90,7 +90,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: User = session.query(User).get(username)
+    user_model: User = session.query(User).filter(User.name == username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username
@@ -115,18 +115,18 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 session.add(lecture)
                 session.commit()
 
-            role = session.query(Role).filter(Role.username == username, Role.lectid == lecture.id).one_or_none()
+            role = session.query(Role).filter(Role.user_id == user.id, Role.lectid == lecture.id).one_or_none()
             if role is None:
                 log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
-                role = Role(username=username, lectid=lecture.id, role=scope)
+                role = Role(user_id=user.id, lectid=lecture.id, role=scope)
                 session.add(role)
                 session.commit()
             else:
-                log.info(f'Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}')
+                log.info(f'Found role {role.role.name} for user {username} in lecture {lecture_code}... updating role to {scope.name}')
                 role.role = scope
                 session.commit()
         else:
-            log.info("Found group that doesn't match schema. Ignoring " + group)        
+            log.info("Found group that doesn't match schema. Ignoring %s", group)        
 
     return authentication
 

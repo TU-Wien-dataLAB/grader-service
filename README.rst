@@ -169,6 +169,7 @@ To automatically add the groups for the grader service from the LTI authenticato
         if user_model is None:
             user_model = orm.User()
             user_model.name = user_name
+            user_model.display_name = user_name
             db.add(user_model)
             db.commit()
 
