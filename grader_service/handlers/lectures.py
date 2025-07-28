@@ -134,16 +134,13 @@ class LectureObjectHandler(GraderBaseHandler):
                 if (len(a.submissions)) > 0:
                     self.session.rollback()
                     raise HTTPError(
-                        HTTPStatus.CONFLICT,
-                        "Cannot delete \
-                    assignment because it has submissions",
+                        HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions"
                     )
                 if a.status in ["released", "complete"]:
                     self.session.rollback()
                     raise HTTPError(
                         HTTPStatus.CONFLICT,
-                        "Cannot delete \
-                    assignment because its status is not created",
+                        "Cannot delete assignment because its status is not created",
                     )
 
                 a.deleted = 1
