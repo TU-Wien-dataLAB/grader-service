@@ -35,6 +35,29 @@ async def submission_test_setup(engine, default_user, a_id: int):
     insert_submission(engine, a_id, "user1", 2137, with_properties=False)
 
 
+async def test_get_submission_unauthorized(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # user is student
+    a_id = 1
+    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+
+    url = service_base_url + f"lectures/{l_id}/submissions/"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == 403
+
+
 @pytest.mark.parametrize(
     "period,expected", [("P0D", 1.0), ("P1D", 0.5), ("P2D", 0.2), ("P3D", 0.1)]
 )
@@ -538,28 +561,6 @@ async def test_get_submission_wrong_submission(
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/"
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == 404
-
-
-async def test_get_submission_unauthorized(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_user,
-    default_token,
-    default_roles,
-    default_user_login,
-):
-    l_id = 1  # user is student
-    a_id = 1
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
