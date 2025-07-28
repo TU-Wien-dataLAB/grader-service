@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
+from urllib.parse import unquote
 
 import tornado
 from sqlalchemy.orm import joinedload
@@ -12,6 +13,7 @@ from tornado.web import HTTPError
 
 from grader_service.api.models.lecture import Lecture as LectureModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
+from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture, LectureState
@@ -179,3 +181,35 @@ class LectureStudentsHandler(GraderBaseHandler):
 
         counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)
+
+
+@register_handler(
+    path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/users\/(?P<username>.*)\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class LectureStudentsUsernameToIdHandler(GraderBaseHandler):
+    """
+    Tornado Handler class for http requests to /lectures/{lecture_id}/users/{username}.
+    """
+
+    @authorize([Scope.tutor, Scope.instructor])
+    async def get(self, lecture_id: int, username: str):
+        """
+        Returns the ID of a student with the given username.
+
+        The student has to take part in the lecture with the given ID.
+        """
+        username = unquote(username)
+        role = (
+            self.session.query(Role)
+            .join(User)
+            .filter(Role.lectid == lecture_id, Role.role == Scope.student)
+            .filter(User.name == username)
+            .one_or_none()
+        )
+        if role is None:
+            raise HTTPError(
+                HTTPStatus.NOT_FOUND,
+                reason=f"Student {username} does not take part in the lecture {lecture_id}",
+            )
+        self.write_json(role.user.id)
