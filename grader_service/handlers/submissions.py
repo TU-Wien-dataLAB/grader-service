@@ -89,10 +89,6 @@ class SubmissionLectureHandler(GraderBaseHandler):
                 HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
             )
 
-        role: Role = self.get_role(lecture_id)
-        if role.role < Scope.tutor:
-            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
-
         if submission_filter == "latest":
             subquery = (
                 self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
