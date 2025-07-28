@@ -120,11 +120,12 @@ class Gradebook:
         Find a particular notebook.
         :param name: the name of the notebook
         :return:  notebook : :class:`~Notebook`
+        :raises: MissingEntry if `name` is not a key in the self.model.notebooks
         """
         try:
             return self.model.notebooks[name]
         except KeyError:
-            raise MissingEntry()
+            raise MissingEntry(name)
 
     @write_access
     def update_or_create_notebook(self, name: str, **kwargs):

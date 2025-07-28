@@ -79,7 +79,10 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
     executor = GenerateFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
     executor.start()
-    self.log.info(f"Successfully generated feedback for submission {submission.id}!")
+    if submission.feedback_status == "generated":
+        self.log.info("Successfully generated feedback for submission %s!", submission.id)
+    else:
+        self.log.error("Failed to generate feedback for submission %s!", submission.id)
 
 
 @app.task(bind=True, base=GraderTask)
