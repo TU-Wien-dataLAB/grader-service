@@ -314,7 +314,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
     def get_autograde_pod_name(self) -> str:
         # sanitize username by converting to lowercase and replacing non-alphanumeric chars
-        sanitized_username = re.sub(r"[^a-zA-Z0-9]+", "-", self.submission.username.lower())
+        sanitized_username = re.sub(r"[^a-zA-Z0-9]+", "-", self.submission.user.name.lower())
 
         # truncate if too long to meet k8s pod name limits
         max_username_length = 50

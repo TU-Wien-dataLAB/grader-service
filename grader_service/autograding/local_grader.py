@@ -278,7 +278,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Pushes the results to the autograde repository
         as a separate branch named after the commit hash of the submission.
         Removes the gradebook.json file before doing so.
-        :return: Coroutine
         """
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
         self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
