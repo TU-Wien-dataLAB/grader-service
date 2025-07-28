@@ -39,7 +39,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
     def _get_git_repo_path(self, repo_type: GitRepoType) -> str:
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         return os.path.join(
             self.grader_service_dir,
