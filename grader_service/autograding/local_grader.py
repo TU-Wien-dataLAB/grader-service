@@ -12,7 +12,6 @@ import os
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from subprocess import CalledProcessError
@@ -31,13 +30,6 @@ from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
-
-
-@dataclass
-class AutogradingStatus:
-    status: str
-    started_at: datetime
-    finished_at: datetime
 
 
 def default_timeout_func(lecture: Lecture) -> int:
