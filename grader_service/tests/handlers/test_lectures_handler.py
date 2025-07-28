@@ -14,7 +14,7 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
 from grader_service.server import GraderServer
 
-from .db_util import insert_assignments, insert_submission
+from .db_util import insert_assignments, insert_student, insert_submission
 
 
 async def test_get_lectures(
@@ -388,3 +388,27 @@ async def test_delete_lecture_not_found(
         )
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
+
+
+async def test_get_lecture_users(
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3
+    insert_student(sql_alchemy_engine, "student1", l_id)
+    insert_student(sql_alchemy_engine, "student2", l_id)
+
+    url = service_base_url + f"lectures/{l_id}/users"
+    resp = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+
+    assert resp.code == HTTPStatus.OK
+    data = json.loads(resp.body.decode())
+    assert data["instructors"] == ["ubuntu"]
+    assert data["tutors"] == []
+    assert data["students"] == ["student1", "student2"]
