@@ -4,11 +4,17 @@ metadata:
   name: rabbitmq-grader-service
   labels:
     {{- include "grader-service.labels" . | nindent 4 }}
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: 1
   resources:
     {{- toYaml .Values.rabbitmq.resources | nindent 4 }}
+  override:
+    {{- toYaml .Values.rabbitmq.override | nindent 4 }}
   rabbitmq:
     additionalConfig: |
       consumer_timeout = 31622400000

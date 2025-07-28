@@ -81,6 +81,7 @@ After the user is authenticated, the Grader Service can be configured to create 
 from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
+c.Authenticator.allow_all = True
 c.JupyterHubTokenAuthenticator.user_info_url = "<jupyterhub-url>/hub/api/user"
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):

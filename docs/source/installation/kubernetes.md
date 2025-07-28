@@ -10,6 +10,7 @@
     ```bash
     helm repo add grader-service ghcr.io/tu-wien-datalab/grader-service
     ```
+- [RabbitMQ operator](https://www.rabbitmq.com/kubernetes/operator/install-operator#installation) installed
 
 ## Install Grader Service
 If you already have a JupyterHub installation, you can also install only the Grader Service using Helm:
