@@ -14,7 +14,7 @@
 ## Install Grader Service
 If you already have a JupyterHub installation, you can also install only the Grader Service using Helm:
 ```bash
-helm upgrade --install <your-release-name> grader-service \
+helm upgrade --install <your-release-name> grader-service/grader-service \
     --namespace <your-namespace> \
     --create-namespace \
     --values <your-values.yaml>
