@@ -8,9 +8,6 @@ from grader_service.convert.converters.baseapp import (
 )
 from grader_service.convert.converters.generate_assignment import GenerateAssignmentApp
 from grader_service.convert.converters.generate_feedback import GenerateFeedbackApp
-from grader_service.convert.converters.generate_solution import GenerateSolutionApp
-from grader_service.convert.converters.updateapp import UpdateApp
-from grader_service.convert.converters.validateapp import ValidateApp
 
 aliases = {}
 aliases.update(base_converter_aliases)
@@ -39,14 +36,6 @@ class GraderConverter(ConverterApp):
                 """
             ).strip(),
         ),
-        generate_solution=(
-            GenerateSolutionApp,
-            dedent(
-                """
-                Generates the solution for the given assignment.
-                """
-            ).strip(),
-        ),
         autograde=(
             AutogradeApp,
             dedent(
@@ -62,22 +51,6 @@ class GraderConverter(ConverterApp):
                 """
                 Generate feedback (after autograding and manual grading).
                 Intended for use by instructors only.
-                """
-            ).strip(),
-        ),
-        validate=(
-            ValidateApp,
-            dedent(
-                """
-                Validate a notebook. Intended for use by instructors and students.
-                """
-            ).strip(),
-        ),
-        update=(
-            UpdateApp,
-            dedent(
-                """
-                Update nbgrader cell metadata to the most recent version.
                 """
             ).strip(),
         ),
