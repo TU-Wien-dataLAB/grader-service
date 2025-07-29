@@ -115,6 +115,10 @@ search = "appVersion: \"{current_version}\""
 src = "./charts/grader-service-all-in-one/Chart.yaml"
 search = "version: {current_version}"
 
+[[tool.tbump.file]]
+src = "./requirements-docs.txt"
+search = "grader-service>={current_version}"
+
 [tool.uv]
 default-groups = ["dev"]
 
