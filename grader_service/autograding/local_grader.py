@@ -117,7 +117,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         else:
             ts = round((self.autograding_finished - self.autograding_start).total_seconds())
             self.log.info(
-                "Successfully completed autograding job for submission %s in %; took %s min %s s",
+                "Successfully completed autograding job for submission %s in %s; took %s min %s s",
                 self.submission.id,
                 self.__class__.__name__,
                 ts // 60,
