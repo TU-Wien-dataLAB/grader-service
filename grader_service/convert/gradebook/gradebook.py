@@ -126,7 +126,7 @@ class Gradebook:
         try:
             return self.model.notebooks[name]
         except KeyError:
-            raise MissingEntry(name)
+            raise MissingEntry(name) from None
 
     @write_access
     def update_or_create_notebook(self, name: str, **kwargs) -> Notebook:
