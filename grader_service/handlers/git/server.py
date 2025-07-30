@@ -12,6 +12,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from tornado.ioloop import IOLoop
+from tornado.iostream import StreamClosedError
 from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
@@ -50,8 +51,11 @@ class GitBaseHandler(GraderBaseHandler):
             while data := await self.process.stdout.read_bytes(8192, partial=True):
                 self.write(data)
                 await self.flush()
+        except StreamClosedError:
+            pass
         except Exception as e:
-            print(f"Error from git response {e}")
+            self.log.error(f"Error from git response {e}")
+            raise HTTPError(500, str(e))
 
     def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
         repo_type: str = pathlets[2]

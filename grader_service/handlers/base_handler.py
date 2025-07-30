@@ -963,31 +963,32 @@ class GraderBaseHandler(BaseHandler):
             self.log.info(msg)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
             shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            cmd = "sh -c 'git add -A"
-            cmd += f'&& git commit --allow-empty -m "{message}"\''
-            self._run_command(cmd, tmp_path_user)
+            self._run_command("git add -A", tmp_path_user)
+            self._run_command(f'git commit --allow-empty -m "{message}"', tmp_path_user)
             self._run_command("git push -u origin main", tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 
-    def _run_command(self, command, cwd=None, capture_output=False):
-        # TODO currently there a two run_command functions,
+    def _run_command(
+        self, command: str, cwd: Optional[Path] = None, capture_output: bool = False
+    ) -> Optional[str]:
+        # TODO currently there are two run_command functions,
         #  because duplicate_release_repo does not work
         #  with the _run_command_async
+        self.log.info("Running: %r", command)
         try:
-            self.log.info(f"Running: {command}")
             ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
-            if capture_output:
-                return str(ret.stdout, "utf-8")
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
             raise HTTPError(500, reason="Subprocess Error")
         except FileNotFoundError as e:
             self.log.error(e)
             raise HTTPError(404, reason="File not found")
+        if capture_output:
+            return str(ret.stdout, "utf-8")
 
-    async def _run_command_async(self, command_args: List[str], cwd=None):
-        """Starts a subprocess and runs a cmd command
+    async def _run_command_async(self, command_args: List[str], cwd: Optional[str] = None):
+        """Runs a command asynchronously in a subprocess.
 
         Args:
             command_args List[str]: List of command arguments to execute.
@@ -995,8 +996,9 @@ class GraderBaseHandler(BaseHandler):
                                  Defaults to None.
 
         Raises:
-            GitError: returns appropriate git error"""
-        self.log.info(f"Running: {' '.join(command_args)}")
+            GitError: returns appropriate git error
+        """
+        self.log.info("Running: %s", " ".join(command_args))
         try:
             ret = await asyncio.create_subprocess_exec(
                 *command_args,
@@ -1004,14 +1006,15 @@ class GraderBaseHandler(BaseHandler):
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,
             )
-            stdout, stderr = await ret.communicate()
-            if ret.returncode != 0:
-                self.log.error(stderr.decode())
-                raise HTTPError(500, reason="Subprocess Error")
-            return stdout.decode()
         except FileNotFoundError as e:
             self.log.error(e)
             raise HTTPError(404, reason="File not found")
+
+        stdout, stderr = await ret.communicate()
+        if ret.returncode != 0:
+            self.log.error(stderr.decode())
+            raise HTTPError(500, reason="Subprocess Error")
+        return stdout.decode()
 
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")

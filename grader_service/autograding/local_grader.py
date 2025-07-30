@@ -12,7 +12,6 @@ import os
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from subprocess import CalledProcessError
@@ -31,13 +30,6 @@ from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
-
-
-@dataclass
-class AutogradingStatus:
-    status: str
-    started_at: datetime
-    finished_at: datetime
 
 
 def default_timeout_func(lecture: Lecture) -> int:
@@ -102,8 +94,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         It re-raises all exceptions that happen while running.
         """
         self.log.info(
-            f"Starting autograding job for submission "
-            f"{self.submission.id} in {self.__class__.__name__}"
+            "Starting autograding job for submission %s in %s",
+            self.submission.id,
+            self.__class__.__name__,
         )
         try:
             self._pull_submission()
@@ -113,19 +106,23 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self._set_properties()
             self._push_results()
             self._set_db_state()
-            ts = round((self.autograding_finished - self.autograding_start).total_seconds())
-            self.log.info(
-                f"Successfully completed autograding job for submission "
-                f"{self.submission.id} in {self.__class__.__name__};"
-                + f" took {ts // 60}min {ts % 60}s"
-            )
         except Exception:
             self.log.error(
-                f"Failed autograding job for submission "
-                f"{self.submission.id} in {self.__class__.__name__}",
+                "Failed autograding job for submission %s in %s",
+                self.submission.id,
+                self.__class__.__name__,
                 exc_info=True,
             )
             self._set_db_state(success=False)
+        else:
+            ts = round((self.autograding_finished - self.autograding_start).total_seconds())
+            self.log.info(
+                "Successfully completed autograding job for submission %s in %s; took %s min %s s",
+                self.submission.id,
+                self.__class__.__name__,
+                ts // 60,
+                ts % 60,
+            )
         finally:
             self._cleanup()
 

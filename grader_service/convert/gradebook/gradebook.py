@@ -114,25 +114,27 @@ class Gradebook:
         kwargs = {k: v for k, v in kwargs.items() if k in set(Notebook.empty_dict().keys())}
         kwargs["name"] = name
         self.model.notebooks[name] = Notebook.from_dict(kwargs)
+        return self.model.notebooks[name]
 
     def find_notebook(self, name: str) -> Notebook:
         """
         Find a particular notebook.
         :param name: the name of the notebook
-        :return:  notebook : :class:`~Notebook`
+        :return: notebook : :class:`~Notebook`
+        :raises: MissingEntry if `name` is not a key in the self.model.notebooks
         """
         try:
             return self.model.notebooks[name]
         except KeyError:
-            raise MissingEntry()
+            raise MissingEntry(name) from None
 
     @write_access
-    def update_or_create_notebook(self, name: str, **kwargs):
+    def update_or_create_notebook(self, name: str, **kwargs) -> Notebook:
         """
         Update an existing notebook, or create it if it doesn't exist.
         :param name: the name of the notebook
         :param kwargs: additional keyword arguments for the :class:`~Notebook` object
-        :return: notebook : :class:`~nNotebook`
+        :return: notebook : :class:`~Notebook`
         """
         raise NotImplementedError()
 
