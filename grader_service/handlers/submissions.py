@@ -298,13 +298,10 @@ class SubmissionHandler(GraderBaseHandler):
         if assignment.settings.deadline is not None:
             score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
 
-        if assignment.settings.max_submissions:
+        if assignment.settings.max_submissions and role.role < Scope.tutor:
             submissions = assignment.submissions
             user_submissions = [s for s in submissions if s.user_id == role.user_id]
-            if (
-                len(user_submissions) >= assignment.settings.max_submissions
-                and role.role < Scope.tutor
-            ):
+            if len(user_submissions) >= assignment.settings.max_submissions:
                 raise HTTPError(
                     HTTPStatus.CONFLICT, reason="Maximum number of submissions reached!"
                 )
@@ -319,24 +316,24 @@ class SubmissionHandler(GraderBaseHandler):
             repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
         )
 
-        try:
-            # Commit hash "0"*40 is used to differentiate between submissions created by
-            # instructors for students and normal submissions by any user.
-            # In this case submissions for the student might not exist, so we cannot reference
-            # a non-existing commit_hash. When submission is set to edited, autograder uses edit
-            # repository, so we don't need the commit_hash of the submission.
-            if commit_hash != "0" * 40:
-                if not os.path.exists(git_repo_path):
-                    raise HTTPError(
-                        HTTPStatus.UNPROCESSABLE_ENTITY, reason="User git repository not found"
-                    )
+        # Commit hash "0"*40 is used to differentiate between submissions created by
+        # instructors for students and normal submissions by any user.
+        # In this case submissions for the student might not exist, so we cannot reference
+        # a non-existing commit_hash. When submission is set to edited, autograder uses edit
+        # repository, so we don't need the commit_hash of the submission.
+        if commit_hash != "0" * 40:
+            if not os.path.exists(git_repo_path):
+                raise HTTPError(
+                    HTTPStatus.UNPROCESSABLE_ENTITY, reason="User git repository not found"
+                )
+            try:
                 subprocess.run(
                     ["git", "branch", "main", "--contains", commit_hash],
                     cwd=git_repo_path,
                     capture_output=True,
                 )
-        except subprocess.CalledProcessError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
+            except subprocess.CalledProcessError:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
         submission.commit_hash = commit_hash
         submission.auto_status = AutoStatus.NOT_GRADED
