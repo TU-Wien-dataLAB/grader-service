@@ -25,7 +25,7 @@ from grader_service.tests.handlers.db_util import insert_assignments, insert_lec
 def default_user_login(default_user, sql_alchemy_engine):
     engine = sql_alchemy_engine
     session: Session = sessionmaker(engine)()
-    user = session.get(User, default_user.name)
+    user = session.get(User, default_user.id)
 
     with patch.object(handlers.base_handler.BaseHandler, "_grader_user", new=user, create=True):
         yield
@@ -106,7 +106,7 @@ def service_base_url():
 
 @pytest.fixture(scope="function")
 def default_user():
-    user = User(name="ubuntu")
+    user = User(id=1, name="ubuntu")
     yield user
 
 

@@ -12,6 +12,7 @@ from tornado.web import HTTPError
 
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
@@ -19,7 +20,7 @@ from grader_service.orm.takepart import Role, Scope
 
 
 def get_query_side_effect(
-    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", a_id=1
+    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", user_id=137, a_id=1
 ):
     def query_side_effect(input):
         m = Mock()
@@ -38,7 +39,8 @@ def get_query_side_effect(
             m.get.return_value = role
         elif input is Submission:
             sub = Submission()
-            sub.username = username
+            sub.user_id = user_id
+            sub.user = User(id=user_id, name=username)
             m.get.return_value = sub
         else:
             m.filter.return_value.one.return_value = None
@@ -276,7 +278,7 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/autograde/user/test_user"
+    assert created_paths == f"iv21s/1/autograde/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_autograde_student_error():
@@ -324,7 +326,7 @@ def test_git_lookup_pull_feedback_instructor(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/test_user"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
@@ -337,7 +339,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user")
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user", user_id=137)
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
@@ -353,7 +355,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/test_user"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
@@ -366,7 +368,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     handler_mock.user.name = "test_user"
 
     # orm mocks
-    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user")
+    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="test_user", user_id=137)
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
@@ -382,7 +384,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id_extra(tmpdir):
     assert os.path.exists(os.path.join(lookup_dir, "HEAD"))  # is git dir
     common_path = os.path.commonpath([git_dir, lookup_dir])
     created_paths = os.path.relpath(lookup_dir, common_path)
-    assert created_paths == "iv21s/1/feedback/user/test_user"
+    assert created_paths == f"iv21s/1/feedback/user/{handler_mock.user.name}"
 
 
 def test_git_lookup_pull_feedback_student_with_invalid_id_error():
@@ -396,7 +398,9 @@ def test_git_lookup_pull_feedback_student_with_invalid_id_error():
     handler_mock.user.name = "test_user"
 
     # test that submission with id 1 comes from "other_user"
-    sf = get_query_side_effect(code="iv21s", scope=Scope.student, username="other_user")
+    sf = get_query_side_effect(
+        code="iv21s", scope=Scope.student, username="other_user", user_id=999
+    )
     handler_mock.session.query = Mock(side_effect=sf)
     role = sf(Role).get()
 

@@ -25,7 +25,7 @@ class Submission(Base, Serializable):
     manual_status = Column(Enum("not_graded", "manually_graded", "being_edited"))
     score = Column(Float, nullable=True)
     assignid = Column(Integer, ForeignKey("assignment.id"))
-    username = Column(String(255), ForeignKey("user.name"))
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     commit_hash = Column(String(length=40), nullable=False)
     feedback_status = Column(
         Enum("not_generated", "generating", "generated", "generation_failed", "feedback_outdated"),
@@ -46,9 +46,7 @@ class Submission(Base, Serializable):
     properties = relationship("SubmissionProperties", back_populates="submission", uselist=False)
 
     @hybrid_property
-    def user_display_name(self):
-        if self.user is None:
-            return self.username
+    def user_display_name(self) -> str:
         return self.user.display_name
 
     @property
@@ -56,7 +54,7 @@ class Submission(Base, Serializable):
         model = submission.Submission(
             id=self.id,
             submitted_at=None if self.date is None else (self.date.isoformat("T", "milliseconds")),
-            username=self.username,
+            user_id=self.user_id,
             user_display_name=self.user_display_name,
             auto_status=self.auto_status,
             manual_status=self.manual_status,
