@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from datetime import UTC, datetime
-from enum import Enum as pyEnum
+from enum import StrEnum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -14,7 +14,7 @@ from grader_service.api.models import submission
 from grader_service.orm.base import Base, DeleteState, Serializable
 
 
-class AutoStatus(pyEnum):
+class AutoStatus(StrEnum):
     """Allowed `auto_status` values of a submission"""
 
     NOT_GRADED = "not_graded"
@@ -23,7 +23,7 @@ class AutoStatus(pyEnum):
     GRADING_FAILED = "grading_failed"
 
 
-class ManualStatus(pyEnum):
+class ManualStatus(StrEnum):
     """Allowed `manual_status` values of a submission"""
 
     NOT_GRADED = "not_graded"
@@ -31,7 +31,7 @@ class ManualStatus(pyEnum):
     BEING_EDITED = "being_edited"
 
 
-class FeedbackStatus(pyEnum):
+class FeedbackStatus(StrEnum):
     """Allowed `feedback_status` values of a submission"""
 
     NOT_GENERATED = "not_generated"
