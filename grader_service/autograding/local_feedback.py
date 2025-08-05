@@ -87,22 +87,22 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         os.makedirs(self.output_path)
         self._write_gradebook(self.submission.properties.properties)
 
-        autograder = GenerateFeedback(
+        feedback_generator = GenerateFeedback(
             self.input_path,
             self.output_path,
             "*.ipynb",
             assignment_settings=self.assignment.settings,
         )
-        autograder.force = True
+        feedback_generator.force = True
 
         log_stream = io.StringIO()
         log_handler = logging.StreamHandler(log_stream)
-        autograder.log.addHandler(log_handler)
+        feedback_generator.log.addHandler(log_handler)
 
-        autograder.start()
+        feedback_generator.start()
 
         self.grading_logs = log_stream.getvalue()
-        autograder.log.removeHandler(log_handler)
+        feedback_generator.log.removeHandler(log_handler)
 
     def _push_results(self):
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
@@ -151,7 +151,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         pass
 
     def _set_db_state(self, success=True):
-        """ "
+        """
         Sets the submission feedback status based on the success of the generation.
         :param success: Whether feedback generation was succesfull or not.
         :return: None

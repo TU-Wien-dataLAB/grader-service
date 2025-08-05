@@ -5,7 +5,7 @@ from nbformat.notebooknode import NotebookNode
 from traitlets import List
 
 from grader_service.convert import utils
-from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
@@ -38,7 +38,14 @@ class GetGrades(NbGraderPreprocessor):
         with self.gradebook:
             # process the cells
             nb, resources = super(GetGrades, self).preprocess(nb, resources)
-            notebook = self.gradebook.find_notebook(self.notebook_id)
+
+            try:
+                notebook = self.gradebook.find_notebook(self.notebook_id)
+            except MissingEntry:
+                self.log.info(
+                    "Did not find a gradebook entry for the notebook %s", self.notebook_id
+                )
+                raise
 
             resources["nbgrader"]["score"] = notebook.score
             resources["nbgrader"]["max_score"] = notebook.max_score
