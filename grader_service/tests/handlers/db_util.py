@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.orm import Assignment, Lecture, Role, Submission
 from grader_service.orm.base import DeleteState
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope
 
@@ -92,11 +93,11 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username, feedback="not_generated", score=None):
+def _get_submission(assignment_id, username, feedback=FeedbackStatus.NOT_GENERATED, score=None):
     s = Submission()
     s.date = datetime.now(tz=timezone.utc)
-    s.auto_status = "not_graded"
-    s.manual_status = "not_graded"
+    s.auto_status = AutoStatus.NOT_GRADED
+    s.manual_status = ManualStatus.NOT_GRADED
     s.assignid = assignment_id
     s.username = username
     s.display_name = username
@@ -115,7 +116,7 @@ def insert_submission(
     ex,
     assignment_id=1,
     username="ubuntu",
-    feedback="not_generated",
+    feedback=FeedbackStatus.NOT_GENERATED,
     with_properties=True,
     score=None,
 ):

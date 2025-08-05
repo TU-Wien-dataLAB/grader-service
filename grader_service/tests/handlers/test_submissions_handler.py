@@ -18,6 +18,7 @@ from grader_service.server import GraderServer
 
 from ...handlers.submissions import SubmissionHandler
 from ...orm import Role
+from ...orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from ...orm.takepart import Scope
 from .db_util import insert_assignments, insert_submission
 
@@ -576,9 +577,9 @@ async def test_put_submission(
         id=-1,
         submitted_at=None,
         commit_hash=secrets.token_hex(20),
-        auto_status="automatically_graded",
-        manual_status="manually_graded",
-        feedback_status="not_generated",
+        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+        manual_status=ManualStatus.MANUALLY_GRADED,
+        feedback_status=FeedbackStatus.NOT_GENERATED,
     )
     response = await http_server_client.fetch(
         url,
@@ -593,7 +594,7 @@ async def test_put_submission(
     assert submission.auto_status == pre_submission.auto_status
     assert submission.manual_status == pre_submission.manual_status
     assert submission.commit_hash != pre_submission.commit_hash  # commit hash cannot be changed
-    assert submission.feedback_status == "not_generated"
+    assert submission.feedback_status == FeedbackStatus.NOT_GENERATED
     # assert submission.submitted_at.strftime("%Y-%m-%dT%H:%M:%S.%f")[0:-3]  == pre_submission.submitted_at
     assert submission.score is None
 
@@ -621,9 +622,9 @@ async def test_put_submission_lecture_assignment_missmatch(
         id=-1,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
-        auto_status="automatically_graded",
-        manual_status="manually_graded",
-        feedback_status="not_generated",
+        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+        manual_status=ManualStatus.MANUALLY_GRADED,
+        feedback_status=FeedbackStatus.NOT_GENERATED,
     )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -660,9 +661,9 @@ async def test_put_submission_assignment_submission_missmatch(
         id=-1,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
-        auto_status="automatically_graded",
-        manual_status="manually_graded",
-        feedback_status="not_generated",
+        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+        manual_status=ManualStatus.MANUALLY_GRADED,
+        feedback_status=FeedbackStatus.NOT_GENERATED,
     )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -699,9 +700,9 @@ async def test_put_submission_wrong_submission(
         id=-1,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
-        auto_status="automatically_graded",
-        manual_status="manually_graded",
-        feedback_status="not_generated",
+        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+        manual_status=ManualStatus.MANUALLY_GRADED,
+        feedback_status=FeedbackStatus.NOT_GENERATED,
     )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -735,7 +736,10 @@ async def test_put_submission_wrong_submission(
 
 #     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
 #     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-#                                 auto_status="automatically_graded", manual_status="manually_graded", feedback_status="not_generated")
+#         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+#         manual_status=ManualStatus.MANUALLY_GRADED,
+#         feedback_status=FeedbackStatus.NOT_GENERATED,
+#     )
 
 #     with patch.object(subprocess, "run", return_value=None):
 #         with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):
@@ -770,8 +774,8 @@ async def test_post_submission_git_repo_not_found(
         id=-1,
         submitted_at=now,
         commit_hash=secrets.token_hex(20),
-        auto_status="automatically_graded",
-        manual_status="manually_graded",
+        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+        manual_status=ManualStatus.MANUALLY_GRADED,
     )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1084,7 +1088,9 @@ async def test_submission_properties_not_found(
 
 #     now = str(datetime.now(timezone.utc))
 #     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-#                                 auto_status="automatically_graded", manual_status="manually_graded")
+#         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
+#         manual_status=ManualStatus.MANUALLY_GRADED
+#     )
 
 #     with patch.object(subprocess, "run", return_value=None):
 #         with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):

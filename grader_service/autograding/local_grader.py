@@ -27,7 +27,7 @@ from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 
@@ -249,7 +249,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Checks if assignment was already graded and returns updated properties.
         :return: str
         """
-        if self.submission.manual_status == "not_graded":
+        if self.submission.manual_status == ManualStatus.NOT_GRADED:
             return self.assignment.properties
 
         assignment_properties = json.loads(self.assignment.properties)
@@ -425,9 +425,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :return: None
         """
         if success:
-            self.submission.auto_status = "automatically_graded"
+            self.submission.auto_status = AutoStatus.AUTOMATICALLY_GRADED
         else:
-            self.submission.auto_status = "grading_failed"
+            self.submission.auto_status = AutoStatus.GRADING_FAILED
 
         if self.grading_logs is not None:
             self.grading_logs = self.grading_logs.replace("\x00", "")

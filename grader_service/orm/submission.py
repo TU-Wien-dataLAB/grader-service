@@ -4,6 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from datetime import UTC, datetime
+from enum import Enum as pyEnum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -13,24 +14,45 @@ from grader_service.api.models import submission
 from grader_service.orm.base import Base, DeleteState, Serializable
 
 
+class AutoStatus(pyEnum):
+    """Allowed `auto_status` values of a submission"""
+
+    NOT_GRADED = "not_graded"
+    PENDING = "pending"
+    AUTOMATICALLY_GRADED = "automatically_graded"
+    GRADING_FAILED = "grading_failed"
+
+
+class ManualStatus(pyEnum):
+    """Allowed `manual_status` values of a submission"""
+
+    NOT_GRADED = "not_graded"
+    MANUALLY_GRADED = "manually_graded"
+    BEING_EDITED = "being_edited"
+
+
+class FeedbackStatus(pyEnum):
+    """Allowed `feedback_status` values of a submission"""
+
+    NOT_GENERATED = "not_generated"
+    GENERATING = "generating"
+    GENERATED = "generated"
+    GENERATION_FAILED = "generation_failed"
+    FEEDBACK_OUTDATED = "feedback_outdated"
+
+
 class Submission(Base, Serializable):
     __tablename__ = "submission"
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
-    auto_status = Column(
-        Enum("pending", "not_graded", "automatically_graded", "grading_failed"),
-        default="not_graded",
-        nullable=False,
-    )
-    manual_status = Column(Enum("not_graded", "manually_graded", "being_edited"))
+    auto_status = Column(Enum(AutoStatus), default=AutoStatus.NOT_GRADED, nullable=False)
+    manual_status = Column(Enum(ManualStatus), default=ManualStatus.NOT_GRADED, nullable=False)
     score = Column(Float, nullable=True)
     assignid = Column(Integer, ForeignKey("assignment.id"))
     username = Column(String(255), ForeignKey("user.name"))
     commit_hash = Column(String(length=40), nullable=False)
     feedback_status = Column(
-        Enum("not_generated", "generating", "generated", "generation_failed", "feedback_outdated"),
-        default="not_generated",
-        nullable=False,
+        Enum(FeedbackStatus), default=FeedbackStatus.NOT_GENERATED, nullable=False
     )
     deleted = Column(Enum(DeleteState), nullable=False, unique=False, default=DeleteState.active)
     edited = Column(Boolean, nullable=False)
