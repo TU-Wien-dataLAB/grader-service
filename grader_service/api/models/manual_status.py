@@ -18,7 +18,6 @@ class ManualStatus(Model):
     NOT_GRADED = 'not_graded'
     MANUALLY_GRADED = 'manually_graded'
     BEING_EDITED = 'being_edited'
-    GRADING_FAILED = 'grading_failed'
     def __init__(self):  # noqa: E501
         """ManualStatus - a model defined in OpenAPI
 
