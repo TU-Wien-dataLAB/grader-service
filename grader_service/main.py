@@ -149,7 +149,7 @@ class GraderService(config.Application):
     oauth_token_expires_in = int(1 * 24 * 3600)
 
     load_roles = Dict(
-        Dict(),
+        List(),
         help="""
         Dict of `{'<lecture-code>': list<{members: list<str>, role: str}>}`  to load at startup.
 
@@ -358,7 +358,8 @@ class GraderService(config.Application):
         """Load predefined groups into the database"""
         with self.session_maker() as db:
             users_loaded = set()
-            for lecture_code, role_list in self.load_roles.items():
+            for lecture_code in self.load_roles.keys():
+                role_list = self.load_roles[lecture_code]
                 for role_dict in role_list:
                     role = role_dict.get("role")
                     users = role_dict.get("members", [])
