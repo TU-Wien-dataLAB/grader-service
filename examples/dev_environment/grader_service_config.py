@@ -50,7 +50,9 @@ c.GraderService.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
 c.Authenticator.admin_users = {"admin"}
 c.GraderService.load_roles = {
-    "lect1": {"members": ["admin", "instructor"], "role": "instructor"},
-    "lect1": {"members": ["tutor"], "role": "tutor"},
-    "lect1": {"members": ["student"], "role": "student"},
+    "lecture1": [
+        {"members": ["student"], "role": "student"},
+        {"members": ["tutor"], "role": "tutor"},
+        {"members": ["instructor", "admin"], "role": "instructor"},
+    ]
 }

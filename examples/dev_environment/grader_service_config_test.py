@@ -111,7 +111,9 @@ c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
 c.Authenticator.admin_users = {"admin"}
 
 c.GraderService.load_roles = {
-    "lect1:instructor": ["admin", "instructor"],
-    "lect1:student": ["student"],
-    "lect1:tutor": ["tutor"],
+    "lecture1": [
+        {"members": ["student"], "role": "student"},
+        {"members": ["tutor"], "role": "tutor"},
+        {"members": ["instructor", "admin"], "role": "instructor"},
+    ]
 }
