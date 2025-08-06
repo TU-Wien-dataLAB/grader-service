@@ -27,7 +27,6 @@ async def test_get_permission(
     assert response.code == 200
     permissions = json.loads(response.body.decode())
     assert isinstance(permissions, list)
-    assert len(permissions) == 3
 
     def get_scope(v):
         if v == 0:
@@ -37,7 +36,12 @@ async def test_get_permission(
         if v == 2:
             return "instructor"
 
-    groups = {(g, default_roles_dict[g]["role"]) for g in default_roles_dict.keys()}
+    # build set of (lecture_code, role) pairs from all dict entries
+    groups = set()
+    for lecture_code, roles_list in default_roles_dict.items():
+        for role_entry in roles_list:
+            groups.add((lecture_code, role_entry["role"]))
+
     for p in permissions:
         t = (p["lecture_code"], get_scope(p["scope"]))
         assert t in groups

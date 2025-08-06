@@ -151,24 +151,24 @@ class GraderService(config.Application):
     load_roles = Dict(
         Dict(),
         help="""
-        Dict of `{'<lecture-code>': {members: list<str>, role: str}}`  to load at startup.
+        Dict of `{'<lecture-code>': list<{members: list<str>, role: str}>}`  to load at startup.
 
         Example::
 
             c.GraderService.load_roles = {
-                'lecture1': {
+                'lecture1': [
+                    {
                     'members': ['student1', 'student2'],
                     'role': 'student'
-                    }
-                },
-                'lecture1': {
+                    },
+                    {
                     'members': ['instructor1', 'instructor2'],
                     'role': 'instructor'
                     }
-                },
+                ],
             }
 
-        This will replace all existing roles.
+
         """,
     ).tag(config=True)
 
@@ -358,43 +358,44 @@ class GraderService(config.Application):
         """Load predefined groups into the database"""
         with self.session_maker() as db:
             users_loaded = set()
-            for lecture_code, role_dict in self.load_roles.items():
-                role = role_dict.get("role")
-                users = role_dict.get("members", [])
-                lecture = db.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
-                # create lecture if no lecture with that name exists yet
-                # (code is set in create)
-                if lecture is None:
-                    self.log.info(f"Adding new lecture with lecture_code {lecture_code}")
-                    lecture = Lecture()
-                    lecture.code = lecture_code
-                    lecture.name = lecture_code
-                    lecture.state = LectureState.active
-                    lecture.deleted = DeleteState.active
-                    db.add(lecture)
-                db.commit()
+            for lecture_code, role_list in self.load_roles.items():
+                for role_dict in role_list:
+                    role = role_dict.get("role")
+                    users = role_dict.get("members", [])
+                    lecture = db.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
+                    # create lecture if no lecture with that name exists yet
+                    # (code is set in create)
+                    if lecture is None:
+                        self.log.info(f"Adding new lecture with lecture_code {lecture_code}")
+                        lecture = Lecture()
+                        lecture.code = lecture_code
+                        lecture.name = lecture_code
+                        lecture.state = LectureState.active
+                        lecture.deleted = DeleteState.active
+                        db.add(lecture)
+                    db.commit()
 
-                for username in users:
-                    user = db.query(User).filter(User.name == username).one_or_none()
-                    if user is None:
-                        self.log.info(f"Adding new user with username {username}")
-                        user = User()
-                        user.name = username
-                        user.display_name = username
-                        db.add(user)
-                        db.commit()
+                    for username in users:
+                        user = db.query(User).filter(User.name == username).one_or_none()
+                        if user is None:
+                            self.log.info(f"Adding new user with username {username}")
+                            user = User()
+                            user.name = username
+                            user.display_name = username
+                            db.add(user)
+                            db.commit()
 
-                    # delete all roles of users the first time a new role is added for the user
-                    if user.name not in users_loaded:
-                        db.query(Role).filter(Role.username == user.name).delete()
-                        users_loaded.add(user.name)
+                        # delete all roles of users the first time a new role is added for the user
+                        if user.name not in users_loaded:
+                            db.query(Role).filter(Role.username == user.name).delete()
+                            users_loaded.add(user.name)
 
-                    try:
-                        db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
-                    except KeyError:
-                        self.log.error(f"Invalid role name: {role}")
-                        raise ValueError(f"Invalid role name: {role}")
-                db.commit()
+                        try:
+                            db.add(Role(username=user.name, lectid=lecture.id, role=Scope[role]))
+                        except KeyError:
+                            self.log.error(f"Invalid role name: {role}")
+                            raise ValueError(f"Invalid role name: {role}")
+                    db.commit()
 
     async def start(self):
         self.log.info(f"Config File: {os.path.abspath(self.config_file)}")
