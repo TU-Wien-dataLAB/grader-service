@@ -151,7 +151,7 @@ class GraderService(config.Application):
     load_roles = Dict(
         List(),
         help="""
-        Dict of `{'<lecture-code>': list<{members: list<str>, role: str}>}`  to load at startup.
+        Dict of `'<lecture-code>': List[{'members': List[str], 'role': str}]` entries to load at startup.
 
         Example::
 
