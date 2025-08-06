@@ -529,6 +529,7 @@ class BaseHandler(web.RequestHandler):
             self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()
             user_model.name = username
+            user_model.display_name = username
             self.session.add(user_model)
             self.session.commit()
 
