@@ -111,7 +111,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
                 lecture.serialize(),
                 assignment.serialize(),
                 [submission.serialize()],
-                sync_on_feedback=True,
+                feedback_sync=True,
             ),
         )
         generate_feedback_chain()

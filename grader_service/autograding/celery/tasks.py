@@ -97,7 +97,7 @@ async def lti_sync_task(
     :param lecture: lecture object
     :param assignment: assignment object
     :param submissions: submissions to be synced
-    :param feedback_sync(optional): if True, the given submission is part of a fully automated grading assignment
+    :param feedback_sync(optional): if True, the sync task was started by a feedback generation
     """
     lti_plugin = LTISyncGrades.instance()
     # check if the lti plugin is enabled
