@@ -7,18 +7,22 @@ import csv
 import json
 import secrets
 from datetime import datetime, timezone
+from http import HTTPStatus
 
 import isodate
 import pytest
+from sqlalchemy.orm import sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.submission import Submission
-from grader_service.orm.assignment import Assignment as AssignmentORM
+from grader_service.handlers.submissions import SubmissionHandler
+from grader_service.orm import Assignment as AssignmentORM
+from grader_service.orm import Role
+from grader_service.orm import Submission as SubmissionORM
+from grader_service.orm.base import DeleteState
+from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
-from ...handlers.submissions import SubmissionHandler
-from ...orm import Role
-from ...orm.takepart import Scope
 from .db_util import insert_assignments, insert_submission
 
 
@@ -563,7 +567,7 @@ async def test_put_submission(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # default user is student
+    l_id = 3  # default user is instructor
     a_id = 4
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
@@ -712,6 +716,143 @@ async def test_put_submission_wrong_submission(
         )
     e = exc_info.value
     assert e.code == 404
+
+
+async def test_delete_own_submission_by_student(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
+    insert_submission(sql_alchemy_engine, a_id, default_user.name)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+    response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    session = sessionmaker(sql_alchemy_engine)()
+    submission = session.query(SubmissionORM).get(1)
+    assert submission.deleted == DeleteState.deleted
+
+
+async def test_delete_submission_from_another_student_fails(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
+    # The submission does NOT belong to the default user:
+    insert_submission(sql_alchemy_engine, a_id, "other_student")
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+
+async def test_delete_submission_with_feedback_fails(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
+    insert_submission(sql_alchemy_engine, a_id, default_user.name, feedback="generated")
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+
+    with pytest.raises(
+        HTTPClientError, match="Only submissions without feedback can be deleted."
+    ) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_delete_submission_after_deadline_fails(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
+
+    session = sessionmaker(sql_alchemy_engine)()
+    assign = session.query(AssignmentORM).get(1)
+    assign.settings = {"deadline": datetime(1999, 6, 6, tzinfo=timezone.utc)}
+    session.commit()
+    session.flush()
+
+    insert_submission(sql_alchemy_engine, a_id, default_user.name)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+    with pytest.raises(
+        HTTPClientError, match="Submission can't be deleted, due date of assigment has passed."
+    ) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_delete_submission_twice_fails(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
+    insert_submission(sql_alchemy_engine, a_id, default_user.name)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+    response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 # FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
