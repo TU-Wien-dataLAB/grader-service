@@ -48,7 +48,7 @@ submissions:
             schema:
               $ref: "./schemas.yml#/components/schemas/UserSubmissions"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:

@@ -13,7 +13,7 @@ from grader_service.autograding.celery.tasks import (
     lti_sync_task,
 )
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, Submission
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
@@ -53,9 +53,9 @@ class GradingAutoHandler(GraderBaseHandler):
         lecture_id, assignment_id, sub_id = parse_ids(lecture_id, assignment_id, sub_id)
         self.validate_parameters()
         submission = self.get_submission(lecture_id, assignment_id, sub_id)
-        submission.auto_status = "pending"
-        if submission.feedback_status == "generated":
-            submission.feedback_status = "feedback_outdated"
+        submission.auto_status = AutoStatus.PENDING
+        if submission.feedback_status == FeedbackStatus.GENERATED:
+            submission.feedback_status = FeedbackStatus.FEEDBACK_OUTDATED
         self.session.commit()
 
         submission = self.session.get(Submission, sub_id)
@@ -102,7 +102,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
         lecture = self.get_lecture(lecture_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
         submission: Submission = self.get_submission(lecture_id, assignment_id, sub_id)
-        submission.feedback_status = "generating"
+        submission.feedback_status = FeedbackStatus.GENERATING
         self.session.commit()
         # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
         generate_feedback_chain = celery.chain(

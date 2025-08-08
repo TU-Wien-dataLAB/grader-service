@@ -76,7 +76,7 @@ class GitBaseHandler(GraderBaseHandler):
                 except (ValueError, IndexError):
                     raise HTTPError(403)
                 submission = self.session.query(Submission).get(sub_id)
-                if submission is None or submission.username != self.user.name:
+                if submission is None or submission.user_id != self.user.id:
                     raise HTTPError(403)
 
         # 4. no push allowed for autograde and feedback
@@ -122,7 +122,7 @@ class GitBaseHandler(GraderBaseHandler):
         except MultipleResultsFound:
             raise HTTPError(500, reason="Found more than one lecture")
 
-        role = self.session.get(Role, (self.user.name, lecture.id))
+        role = self.session.get(Role, (self.user.id, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:

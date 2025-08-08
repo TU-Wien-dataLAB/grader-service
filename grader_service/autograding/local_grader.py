@@ -27,7 +27,7 @@ from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 
@@ -164,7 +164,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         if self.submission.edited:
             git_repo_path = os.path.join(
@@ -249,7 +249,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Checks if assignment was already graded and returns updated properties.
         :return: str
         """
-        if self.submission.manual_status == "not_graded":
+        if self.submission.manual_status == ManualStatus.NOT_GRADED:
             return self.assignment.properties
 
         assignment_properties = json.loads(self.assignment.properties)
@@ -278,14 +278,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Pushes the results to the autograde repository
         as a separate branch named after the commit hash of the submission.
         Removes the gradebook.json file before doing so.
-        :return: Coroutine
         """
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
         self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         git_repo_path = os.path.join(
             self.grader_service_dir,
@@ -425,9 +424,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :return: None
         """
         if success:
-            self.submission.auto_status = "automatically_graded"
+            self.submission.auto_status = AutoStatus.AUTOMATICALLY_GRADED
         else:
-            self.submission.auto_status = "grading_failed"
+            self.submission.auto_status = AutoStatus.GRADING_FAILED
 
         if self.grading_logs is not None:
             self.grading_logs = self.grading_logs.replace("\x00", "")

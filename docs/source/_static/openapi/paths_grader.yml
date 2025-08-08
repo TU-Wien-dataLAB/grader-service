@@ -40,7 +40,7 @@ submissionsForLecture:
             schema:
               $ref: "./schemas.yml#/components/schemas/UserSubmissions"
       403:
-        description: Unautorized
+        description: Unauthorized
       404:
         description: Lecture id or assignment id not found
         content:
@@ -112,7 +112,7 @@ submissions:
             schema:
               $ref: "./schemas.yml#/components/schemas/UserSubmissions"
       403:
-        description: Unautorized
+        description: Unauthorized
       404:
         description: Lecture id or assignment id not found
         content:
@@ -131,7 +131,7 @@ submissions:
           - instructor
           - tutor
           - student
-    summary: Set properties of an assignment
+    summary: Create a submission for an assignment
     tags:
       - "Submissions"
     parameters:
@@ -152,12 +152,17 @@ submissions:
           type: integer
           format: int64
     requestBody:
-      description: The properties of the submission that should be created.
+      description: The commit hash based on which the submission should be created.
       required: true
       content:
         application/json:
           schema:
-            $ref: "./schemas.yml#/components/schemas/Submission"
+            type: object
+            properties:
+              commit_hash:
+                type: string
+            example:
+              commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
     responses:
       201:
         description: OK
@@ -166,7 +171,7 @@ submissions:
             schema:
               $ref: "./schemas.yml#/components/schemas/Submission"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -227,7 +232,7 @@ propertiesAssignment:
       200:
         description: OK
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -284,7 +289,7 @@ propertiesAssignment:
             schema:
               type: string
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -337,7 +342,7 @@ propertiesSubmission:
           format: int64
       - name: s_id
         in: path
-        description: ID of the assignment in the submission
+        description: ID of the submission in the assignment
         required: true
         example: 3
         schema:
@@ -354,7 +359,7 @@ propertiesSubmission:
       200:
         description: OK
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -366,7 +371,7 @@ propertiesSubmission:
             schema:
               $ref: "./schemas.yml#/components/schemas/ErrorMessage"
       404:
-        description: Lecture id or assignment id not found.
+        description: Lecture id or assignment id or submission id not found.
         content:
           application/json:
             schema:
@@ -405,7 +410,7 @@ propertiesSubmission:
           format: int64
       - name: s_id
         in: path
-        description: ID of the assignment in the submission
+        description: ID of the submission in the assignment
         required: true
         example: 3
         schema:
@@ -419,7 +424,7 @@ propertiesSubmission:
             schema:
               type: string
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -431,7 +436,7 @@ propertiesSubmission:
             schema:
               $ref: "./schemas.yml#/components/schemas/ErrorMessage"
       404:
-        description: Lecture id or assignment id not found
+        description: Lecture id or assignment id or submission id not found
         content:
           application/json:
             schema:

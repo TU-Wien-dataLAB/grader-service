@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import json
 from http import HTTPStatus
+from urllib.parse import quote
 
 import pytest
 from tornado.httpclient import HTTPClientError
@@ -14,7 +15,7 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
 from grader_service.server import GraderServer
 
-from .db_util import insert_assignments, insert_submission
+from .db_util import insert_assignments, insert_student, insert_submission
 
 
 async def test_get_lectures(
@@ -303,7 +304,7 @@ async def test_delete_lecture_assignment_with_submissions(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, lecture_id=3)
-    insert_submission(engine, assignment_id=a_id, username=default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -388,3 +389,98 @@ async def test_delete_lecture_not_found(
         )
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
+
+
+async def test_get_lecture_users(
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3
+    insert_student(sql_alchemy_engine, "student1", l_id)
+    insert_student(sql_alchemy_engine, "student2", l_id)
+
+    url = service_base_url + f"lectures/{l_id}/users"
+    resp = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+
+    assert resp.code == HTTPStatus.OK
+    data = json.loads(resp.body.decode())
+    assert data["instructors"] == ["ubuntu"]
+    assert data["tutors"] == []
+    assert data["students"] == ["student1", "student2"]
+
+
+@pytest.mark.parametrize(
+    "student_name",
+    ["e123456", "e.schroe", "schroedinger@uni.at", "Erwin Schrödinger", "erwin/shroe?foo=1"],
+)
+async def test_get_lecture_student_id_from_username(
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    student_name,
+):
+    l_id = 3  # default user is an instructor
+    student = insert_student(sql_alchemy_engine, student_name, l_id)
+
+    url = service_base_url + f"lectures/{l_id}/users/{quote(student.name)}"
+    resp = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+
+    assert resp.code == HTTPStatus.OK
+    data = json.loads(resp.body.decode())
+    assert data == student.id
+
+
+async def test_get_lecture_student_id_from_username_unauthorised(
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is a student
+    student = insert_student(sql_alchemy_engine, "emmy.noether", l_id)
+
+    url = service_base_url + f"lectures/{l_id}/users/{quote(student.name)}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_get_lecture_student_id_from_username_wrong_lecture(
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3  # default user is an instructor
+    other_l_id = 2
+    student_name = "Emmy Noether"
+    student = insert_student(sql_alchemy_engine, student_name, other_l_id)
+
+    url = service_base_url + f"lectures/{l_id}/users/{quote(student.name)}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+    assert e.message == f"Student {student_name} does not take part in the lecture {l_id}"

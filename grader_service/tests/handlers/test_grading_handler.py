@@ -37,7 +37,7 @@ async def test_auto_grading(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     with patch.object(
         grader_service.autograding.celery.app.CeleryApp, "instance", return_value=MagicMock()
@@ -71,7 +71,7 @@ async def test_auto_grading_wrong_assignment(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     a_id = 99
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
@@ -103,7 +103,7 @@ async def test_auto_grading_wrong_lecture(
     a_id = 1
 
     engine = sql_alchemy_engine
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     l_id = 99
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/auto"
@@ -133,7 +133,7 @@ async def test_feedback(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     with patch.object(
         grader_service.autograding.celery.app.CeleryApp, "instance", return_value=MagicMock()
@@ -170,7 +170,7 @@ async def test_feedback_wrong_assignment(
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     a_id = 99
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/grading/1/feedback"
