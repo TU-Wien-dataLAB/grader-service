@@ -492,7 +492,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.write_json(sub)
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
-    def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
+    async def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
         """Soft-deletes a specific submission.
 
         :param lecture_id: id of the lecture
