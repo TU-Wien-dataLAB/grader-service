@@ -501,8 +501,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
         :type assignment_id: int
         :param submission_id: id of the submission
         :type submission_id: int
-        :raises HTTPError: if submission can't be deleted due to it having feedback
-            or the deadline having passed.
+        :raises HTTPError: if submission has feedback, or the deadline has passed,
+            or it has already been (soft-)deleted, or it belongs to another student,
+            or it was not found in the given lecture and assignment.
         """
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
