@@ -345,13 +345,13 @@ async def test_get_submissions_best_instructor_version(
     )
 
     insert_submission(
-        engine, assignment_id=a_id, username=default_user.name, feedback=True, score=3
+        engine, assignment_id=a_id, username=default_user.name, feedback="generated", score=3
     )
     insert_submission(
         engine,
         assignment_id=a_id,
         username=default_user.name,
-        feedback=False,
+        feedback="not_generated",
         with_properties=False,
     )
     insert_submission(engine, assignment_id=a_id, username="user1", score=3)
