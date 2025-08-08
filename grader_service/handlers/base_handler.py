@@ -41,6 +41,7 @@ from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
+from grader_service.orm.submission import FeedbackStatus
 from grader_service.orm.takepart import Role, Scope
 from grader_service.orm.user import User
 from grader_service.registry import VersionSpecifier, register_handler
@@ -806,7 +807,7 @@ class GraderBaseHandler(BaseHandler):
         )
 
         if must_have_feedback:
-            query = query.filter(Submission.feedback_status != "not_generated")
+            query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
 
         if username:
             query = query.filter(Submission.username == username)
@@ -850,7 +851,7 @@ class GraderBaseHandler(BaseHandler):
         )
 
         if must_have_feedback:
-            query = query.filter(Submission.feedback_status != "not_generated")
+            query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
 
         if username:
             query = query.filter(Submission.username == username)

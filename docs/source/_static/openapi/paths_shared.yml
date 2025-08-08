@@ -72,7 +72,7 @@ lectures:
               items:
                 $ref: "./schemas.yml#/components/schemas/Lecture"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -122,7 +122,7 @@ lecturesById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Lecture"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -171,7 +171,7 @@ lecturesById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Lecture"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -224,7 +224,7 @@ lecturesById:
             schema:
               $ref: "./schemas.yml#/components/schemas/ErrorMessage"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -287,7 +287,7 @@ lectureUsers:
                   items:
                     $ref: './schemas.yml#/components/schemas/User'
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -343,7 +343,7 @@ assignments:
             schema:
               $ref: "./schemas.yml#/components/schemas/ErrorMessage"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -394,7 +394,7 @@ assignments:
               items:
                 $ref: "./schemas.yml#/components/schemas/Assignment"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -460,7 +460,7 @@ assignmentsById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Assignment"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -525,7 +525,7 @@ assignmentsById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Assignment"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -577,7 +577,7 @@ assignmentsById:
       200:
         description: OK
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -644,7 +644,7 @@ submissionsById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Submission"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -672,9 +672,37 @@ submissionsById:
       - hub_auth:
           - instructor
           - tutor
-    summary: Update the submission with specified id (only auto and manual grading status and feedback available flag)
+    summary: Update the submission with specified id
     tags:
       - "Submissions"
+    requestBody:
+      description: Update the submission with specified id. Only 'auto_status', 'manual_status', 'feedback_status', 'edited', 'score_scaling', and 'username' can be set.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              auto_status:
+                $ref: "./schemas.yml#/components/schemas/AutoStatus"
+              manual_status:
+                $ref: "./schemas.yml#/components/schemas/ManualStatus"
+              feedback_status:
+                $ref: "./schemas.yml#/components/schemas/FeedbackStatus"
+              edited:
+                type: boolean
+              score_scaling:
+                type: number
+                format: float
+                minimum: 0.0
+                maximum: 1.0
+            example:
+              auto_status: "automatically_graded"
+              manual_status: "being_edited"
+              score_scaling: 0.5
+              feedback_status: "not_generated"
+              edited: false
+              username: "adalovelace"
     parameters:
       - name: lect_id
         in: path
@@ -708,7 +736,7 @@ submissionsById:
             schema:
               $ref: "./schemas.yml#/components/schemas/Submission"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -776,7 +804,7 @@ auto:
               items:
                 $ref: "./schemas.yml#/components/schemas/Submission"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:
@@ -844,7 +872,7 @@ feedback:
               items:
                 $ref: "./schemas.yml#/components/schemas/Submission"
       401:
-        description: Unautorized
+        description: Unauthorized
         content:
           application/json:
             schema:

@@ -134,19 +134,9 @@ components:
           format: "date-time"
           example: "2023-07-21T11:53:07Z"
         auto_status:
-          type: string
-          enum:
-            - "not_graded"
-            - "pending"
-            - "automatically_graded"
-            - "grading_failed"
+          $ref: "#/components/schemas/AutoStatus"
         manual_status:
-          type: string
-          enum:
-            - "not_graded"
-            - "manually_graded"
-            - "being_edited"
-            - "grading_failed"
+          $ref: "#/components/schemas/ManualStatus"
         username:
           type: string
         user_display_name:
@@ -168,21 +158,23 @@ components:
         commit_hash:
           type: string
         feedback_status:
-          type: string
-          enum:
-            - "not_generated"
-            - "generating"
-            - "generated"
-            - "generation_failed"
-            - "feedback_outdated"
+          $ref: "#/components/schemas/FeedbackStatus"
         edited:
           type: boolean
       example:
         id: 2
         submitted_at: "2023-07-21T11:53:07Z"
-        status: "not_graded"
+        auto_status: "automatically_graded"
+        manual_status: "manually_graded"
+        user_id: 1
+        user_display_name: "emmy-noether"
+        grading_score: 10.0
+        score_scaling: 1
         score: 10.0
+        assignid: 2
         commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
+        feedback_status: "generated"
+        edited: false
     AssignmentDetail:
       type: "object"
       properties:
@@ -240,3 +232,24 @@ components:
         status:
           type: string
           enum: ["UP_TO_DATE", "DIVERGENT", "PULL_NEEDED", "PUSH_NEEDED", "NO_REMOTE_REPO"]
+    AutoStatus:
+      type: string
+      enum:
+        - "not_graded"
+        - "pending"
+        - "automatically_graded"
+        - "grading_failed"
+    ManualStatus:
+      type: string
+      enum:
+        - "not_graded"
+        - "manually_graded"
+        - "being_edited"
+    FeedbackStatus:
+      type: string
+      enum:
+        - "not_generated"
+        - "generating"
+        - "generated"
+        - "generation_failed"
+        - "feedback_outdated"

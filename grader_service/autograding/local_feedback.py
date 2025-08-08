@@ -17,7 +17,7 @@ from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import FeedbackStatus, Submission
 
 
 class GenerateFeedbackExecutor(LocalAutogradeExecutor):
@@ -157,9 +157,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         :return: None
         """
         if success:
-            self.submission.feedback_status = "generated"
+            self.submission.feedback_status = FeedbackStatus.GENERATED
         else:
-            self.submission.feedback_status = "generation_failed"
+            self.submission.feedback_status = FeedbackStatus.GENERATION_FAILED
         self.session.commit()
 
 

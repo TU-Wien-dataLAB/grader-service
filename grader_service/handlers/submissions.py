@@ -33,7 +33,7 @@ from grader_service.handlers.handler_utils import GitRepoType, parse_ids
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Role, Scope
@@ -43,7 +43,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 def remove_points_from_submission(submissions):
     for s in submissions:
-        if s.feedback_status not in ("generated", "feedback_outdated"):
+        if s.feedback_status not in (FeedbackStatus.GENERATED, FeedbackStatus.FEEDBACK_OUTDATED):
             s.score = None
     return submissions
 
@@ -344,9 +344,9 @@ class SubmissionHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
 
         submission.commit_hash = commit_hash
-        submission.auto_status = "not_graded"
-        submission.manual_status = "not_graded"
-        submission.feedback_status = "not_generated"
+        submission.auto_status = AutoStatus.NOT_GRADED
+        submission.manual_status = ManualStatus.NOT_GRADED
+        submission.feedback_status = FeedbackStatus.NOT_GENERATED
 
         automatic_grading = assignment.settings.autograde_type
 
@@ -358,12 +358,12 @@ class SubmissionHandler(GraderBaseHandler):
         # If the assignment has automatic grading or fully
         # automatic grading perform necessary operations
         if automatic_grading in ["auto", "full_auto"]:
-            submission.auto_status = "pending"
+            submission.auto_status = AutoStatus.PENDING
             self.session.commit()
             self.set_status(HTTPStatus.ACCEPTED)
 
             if automatic_grading == "full_auto":
-                submission.feedback_status = "generating"
+                submission.feedback_status = FeedbackStatus.GENERATING
                 self.session.commit()
 
                 # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
@@ -509,7 +509,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
 
         if submission is not None:
-            if submission.feedback_status != "not_generated":
+            if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
                 raise HTTPError(
                     HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
                 )
@@ -645,11 +645,11 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         self.session.merge(properties)
 
-        if submission.feedback_status == "generated":
-            submission.feedback_status = "feedback_outdated"
+        if submission.feedback_status == FeedbackStatus.GENERATED:
+            submission.feedback_status = FeedbackStatus.FEEDBACK_OUTDATED
 
-        if submission.manual_status == "manually_graded":
-            submission.manually_graded = "being_edited"
+        if submission.manual_status == ManualStatus.MANUALLY_GRADED:
+            submission.manually_graded = ManualStatus.BEING_EDITED
 
         self.session.commit()
         self.write_json(submission)
@@ -833,7 +833,7 @@ class LtiSyncHandler(GraderBaseHandler):
                     self.session.query(Submission)
                     .filter(
                         Submission.id.in_(submission_ids),
-                        Submission.auto_status == "automatically_graded",
+                        Submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED,
                         Submission.assignid == assignment_id,
                     )
                     .all()
