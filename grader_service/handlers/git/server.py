@@ -106,12 +106,15 @@ class GitBaseHandler(GraderBaseHandler):
 
         repo_type: str = pathlets[2]
 
-        # TODO(Nat): Could it still happen somewhere?
+        # Repo type "assignment" has been replaced by "user", so this should not happen,
+        # but we are leaving this check for the time being, just to be on the safe side:
         if repo_type == "assignment":
             self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
-            repo_type = "user"
+            repo_type = GitRepoType.USER
 
-        if repo_type not in GitRepoType:
+        try:
+            repo_type = GitRepoType(repo_type)
+        except ValueError:
             return None
 
         # get lecture and assignment if they exist
