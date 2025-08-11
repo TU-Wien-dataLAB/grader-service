@@ -288,7 +288,7 @@ class SubmissionHandler(GraderBaseHandler):
         if assignment.status == "complete":
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot submit completed assignment!")
         if role.role == Scope.student and assignment.status != "released":
-            raise HTTPError(HTTPStatus.NOT_FOUND)
+            raise HTTPError(HTTPStatus.NOT_FOUND, "Assignment not found")
         # set utc time
         submission_ts = datetime.datetime.now(datetime.timezone.utc)
         # use implicit utc time to compare with database objects
@@ -309,8 +309,23 @@ class SubmissionHandler(GraderBaseHandler):
         submission = Submission()
         submission.assignid = assignment.id
         submission.date = submission_ts
-        submission.user_id = self.user.id
         submission.score_scaling = score_scaling
+
+        username = body.get("username")
+        if username is not None and role.role >= Scope.tutor:
+            # Instructor/tutor creates a submission for a student:
+            s_user = self.session.query(User).filter(User.name == username).one_or_none()
+            if s_user is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"User {username} not found")
+            s_user_role = self.session.get(Role, (s_user.id, lecture_id))
+            if s_user_role is None:
+                raise HTTPError(
+                    HTTPStatus.NOT_FOUND,
+                    reason=f"User {username} does not take part in this lecture",
+                )
+            submission.user_id = s_user.id
+        else:
+            submission.user_id = self.user.id
 
         git_repo_path = self.construct_git_dir(
             repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment

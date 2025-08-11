@@ -141,7 +141,7 @@ class GitBaseHandler(GraderBaseHandler):
             try:
                 sub_id = int(pathlets[3])
             except (ValueError, IndexError):
-                raise HTTPError(403)
+                raise HTTPError(403, "Invalid or missing submission id")
             submission = self.session.get(Submission, sub_id)
 
         path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
@@ -167,13 +167,10 @@ class GitBaseHandler(GraderBaseHandler):
                 repo_path_release = self.construct_git_dir(
                     GitRepoType.RELEASE, assignment.lecture, assignment
                 )
-                safe_repo_path_release = repo_path_release
-                err_msg = "Error: expected path or str, got None"
-                assert safe_repo_path_release is not None, err_msg
-                if not os.path.exists(safe_repo_path_release):
+                if not os.path.exists(repo_path_release):
                     return None
                 self.duplicate_release_repo(
-                    repo_path_release=safe_repo_path_release,
+                    repo_path_release=repo_path_release,
                     repo_path_user=path,
                     assignment=assignment,
                     message="Initialize with Release",
