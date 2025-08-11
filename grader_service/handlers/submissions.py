@@ -690,20 +690,17 @@ class SubmissionEditHandler(GraderBaseHandler):
         lecture = assignment.lecture
 
         # Path to repository which will store edited submission files
-        git_repo_path = os.path.normpath(
-            os.path.join(self.gitbase, lecture.code, str(assignment.id), "edit", str(submission_id))
+        git_repo_path = self.construct_git_dir(
+            repo_type=GitRepoType.EDIT,
+            lecture=lecture,
+            assignment=assignment,
+            submission=submission,
         )
-        if not git_repo_path.startswith(self.gitbase):
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
 
         # Path to repository of student which contains the submitted files
-        submission_repo_path = os.path.normpath(
-            os.path.join(
-                self.gitbase, lecture.code, str(assignment.id), "user", submission.user.name
-            )
+        submission_repo_path = self.construct_git_dir(
+            repo_type=GitRepoType.USER, lecture=lecture, assignment=assignment
         )
-        if not submission_repo_path.startswith(self.gitbase):
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid submission repository path.")
 
         if os.path.exists(git_repo_path):
             shutil.rmtree(git_repo_path)

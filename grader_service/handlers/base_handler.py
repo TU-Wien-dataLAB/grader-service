@@ -890,7 +890,12 @@ class GraderBaseHandler(BaseHandler):
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
         directories which returns the path of the repository based on
-        the inputs or None if the repo_type is not recognized."""
+        the inputs or None if the repo_type is not recognized.
+
+        Raises HTTPError 400 if the normalised path does not start with
+        `self.gitbase`, to make it robust against fabricated lecture codes
+        or usernames containing substrings like "../..".
+        """
         # TODO: refactor
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
@@ -914,6 +919,10 @@ class GraderBaseHandler(BaseHandler):
             path = os.path.join(user_path, self.user.name)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
+
+        path = os.path.normpath(path)
+        if not path.startswith(self.gitbase):
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
 
         return path
 
