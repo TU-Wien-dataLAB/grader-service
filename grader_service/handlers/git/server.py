@@ -86,7 +86,7 @@ class GitBaseHandler(GraderBaseHandler):
         ):
             raise HTTPError(403)
 
-    def gitlookup(self, rpc: str):
+    def gitlookup(self, rpc: str) -> Optional[str]:
         pathlets = self.request.path.strip("/").split("/")
         # check if request is sent using jupyterhub as a proxy
         # if yes, remove services/grader path prefix
@@ -99,12 +99,10 @@ class GitBaseHandler(GraderBaseHandler):
         #             'lecture_code', 'assignment_id', 'repo_type', ...]
         if len(pathlets) < 4:
             return None
+
         # cut git prefix
         pathlets = pathlets[1:]
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
-        assignment_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0], pathlets[1]))
-
-        repo_type: str = pathlets[2]
+        lect_code, assign_id, repo_type, *pathlets_tail = pathlets
 
         # Repo type "assignment" has been replaced by "user", so this should not happen,
         # but we are leaving this check for the time being, just to be on the safe side:
@@ -119,7 +117,7 @@ class GitBaseHandler(GraderBaseHandler):
 
         # get lecture and assignment if they exist
         try:
-            lecture = self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()
+            lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
         except MultipleResultsFound:
@@ -129,11 +127,13 @@ class GitBaseHandler(GraderBaseHandler):
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:
-            assignment = self.get_assignment(lecture.id, int(pathlets[1]))
+            assignment = self.get_assignment(lecture.id, int(assign_id))
         except ValueError:
             raise HTTPError(404, reason="Assignment not found")
 
         # create directories once we know they exist in the database
+        lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
+        assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
         if not os.path.exists(lecture_path):
             os.mkdir(lecture_path)
         if not os.path.exists(assignment_path):
@@ -142,7 +142,7 @@ class GitBaseHandler(GraderBaseHandler):
         submission = None
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
             try:
-                sub_id = int(pathlets[3])
+                sub_id = int(pathlets_tail[0])
             except (ValueError, IndexError):
                 raise HTTPError(403, "Invalid or missing submission id")
             submission = self.session.get(Submission, sub_id)
