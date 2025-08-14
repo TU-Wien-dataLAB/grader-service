@@ -102,7 +102,7 @@ def _get_submission(assignment_id, username, feedback="not_generated", score=Non
     s.display_name = username
     s.score = score
     s.commit_hash = secrets.token_hex(20)
-    s.feedback_available = feedback
+    s.feedback_status = feedback
     return s
 
 
