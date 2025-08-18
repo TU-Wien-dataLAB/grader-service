@@ -145,7 +145,7 @@ class GitBaseHandler(GraderBaseHandler):
                 sub_id = int(pathlets_tail[0])
             except (ValueError, IndexError):
                 raise HTTPError(403, "Invalid or missing submission id")
-            submission = self.session.get(Submission, sub_id)
+            submission = self.get_submission(lecture.id, assignment.id, sub_id)
 
         path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
         if path is None:
