@@ -6,21 +6,21 @@
 import csv
 import json
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from unittest.mock import patch
 
 import isodate
 import pytest
 from sqlalchemy.orm import sessionmaker
 from tornado.httpclient import HTTPClientError
 
-from grader_service.api.models.submission import Submission
-from grader_service.handlers.submissions import SubmissionHandler
+from grader_service.api.models import AssignmentSettings, Submission
+from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_COMMIT_CASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role
-from grader_service.orm import Submission as SubmissionORM
 from grader_service.orm.base import DeleteState
-from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission as SubmissionORM
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
@@ -375,8 +375,8 @@ async def test_get_submissions_best_instructor_version(
 
     insert_submission(
         engine,
-        assignment_id=a_id,
-        username=default_user.name,
+        a_id,
+        default_user.name,
         user_id=default_user.id,
         feedback=FeedbackStatus.GENERATED,
         score=3,
@@ -735,7 +735,6 @@ async def test_put_submission_wrong_submission(
     e = exc_info.value
     assert e.code == 404
 
-
 async def test_delete_own_submission_by_student(
     service_base_url,
     http_server_client,
@@ -875,44 +874,87 @@ async def test_delete_submission_twice_fails(
     assert e.code == HTTPStatus.NOT_FOUND
 
 
-# FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
-# async def test_post_submission(
-#         app: GraderServer,
-#         service_base_url,
-#         http_server_client,
-#         default_user,
-#         default_token,
-#         sql_alchemy_engine,
-#         tmp_path,
-#         default_roles,
-#         default_user_login,
-# ):
-#     l_id = 3  # user has to be instructor
-#     a_id = 3
-#     engine = sql_alchemy_engine
-#     insert_assignments(engine, l_id)
+async def test_post_submission_by_student(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 1
 
-#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
-#     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
-#     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-#         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
-#         manual_status=ManualStatus.MANUALLY_GRADED,
-#         feedback_status=FeedbackStatus.NOT_GENERATED,
-#     )
+    with (
+        patch("os.path.exists"),
+        patch("subprocess.run"),
+        patch("grader_service.autograding.celery.tasks.CeleryApp", autospec=True),
+        patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
+    ):
+        resp = await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps({"commit_hash": secrets.token_hex(20)}),
+        )
 
-#     with patch.object(subprocess, "run", return_value=None):
-#         with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):
-#             response = await http_server_client.fetch(
-#                 url, method="POST", headers={"Authorization": f"Token {default_token}"},
-#                 body=json.dumps(pre_submission.to_dict()),
-#             )
+    assert resp.code == HTTPStatus.ACCEPTED
+    mock_chain.assert_called_once()
 
-#     assert response.code == 201
+
+async def test_post_submission_by_instructor(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    tmp_path,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3  # default user is instructor
+    a_id = 3
+    engine = sql_alchemy_engine
+    insert_assignments(engine, l_id)
+    student_username = "e.noether"
+    insert_student(engine, student_username, l_id)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+
+    with (
+        patch("subprocess.run"),
+        patch.object(SubmissionHandler, "construct_git_dir", str(tmp_path)),
+        patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
+    ):
+        response = await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+            ),
+        )
+
+    assert response.code == HTTPStatus.CREATED
+    # When an instructor creates a submission, it should not be automatically graded
+    mock_chain.assert_not_called()
+
+    s_url = url + "1"
+    s_resp = await http_server_client.fetch(
+        s_url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert s_resp.code == HTTPStatus.OK
+    submission_dict = json.loads(s_resp.body.decode())
+    submission = Submission.from_dict(submission_dict)
+
+    assert submission.user_display_name == student_username
+    assert submission.auto_status == AutoStatus.NOT_GRADED
 
 
 async def test_post_submission_git_repo_not_found(
-    app: GraderServer,
     service_base_url,
     http_server_client,
     default_user,
@@ -967,6 +1009,58 @@ async def test_post_submission_commit_hash_not_found(
     e = exc_info.value
     assert e.code == 400
     assert e.message == "Commit hash not found in body"
+
+
+async def test_post_submission_max_submissions_assignment(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_sessionmaker,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1  # default user is student
+    a_id = 3
+    session = sql_alchemy_sessionmaker()
+
+    # Set-up: Create an assignment with max_submissions = 1
+    assignment_orm = AssignmentORM(
+        name="pytest", lectid=l_id, points=20, status="released", deleted=DeleteState.active
+    )
+    assignment_orm.settings = AssignmentSettings(
+        deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2),
+        max_submissions=1,
+        autograde_type="unassisted",
+    )
+    session.add(assignment_orm)
+    session.commit()
+    assert assignment_orm.id == 3
+
+    # Post one submission to exhaust the submissions limit
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+    post_body = {"commit_hash": secrets.token_hex(20)}
+
+    with patch("subprocess.run"), patch("os.path.exists"):
+        response = await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(post_body),
+        )
+    assert response.code == HTTPStatus.CREATED
+
+    # Posting another submission should fail
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(post_body),
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
 
 
 async def test_submission_properties(
@@ -1180,55 +1274,3 @@ async def test_submission_properties_not_found(
     e = exc_info.value
     assert e.code == 404
     assert e.message == "Properties of submission were not found"
-
-
-# FIXME: does not work because CeleryApp is never initialised during test and is missing config_file
-# async def test_max_submissions_assignment(
-#         app: GraderServer,
-#         service_base_url,
-#         http_server_client,
-#         default_user,
-#         default_token,
-#         sql_alchemy_engine,
-#         sql_alchemy_sessionmaker,
-#         tmp_path,
-#         default_roles,
-#         default_user_login,
-# ):
-#     l_id = 1
-#     a_id = 3
-
-#     session = sql_alchemy_sessionmaker()
-
-#     assignment_orm = _get_assignment("pytest", l_id, 20, "released", AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2)))
-#     assignment_orm.settings.max_submissions = 1
-#     assignment_orm.settings.autograde_type = "unassisted"
-#     session.add(assignment_orm)
-#     session.commit()
-
-#     assert assignment_orm.id == 3
-
-#     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
-
-#     now = str(datetime.now(timezone.utc))
-#     pre_submission = Submission(id=-1, submitted_at=now, commit_hash=secrets.token_hex(20),
-#         auto_status=AutoStatus.AUTOMATICALLY_GRADED,
-#         manual_status=ManualStatus.MANUALLY_GRADED
-#     )
-
-#     with patch.object(subprocess, "run", return_value=None):
-#         with patch.object(GraderBaseHandler, "construct_git_dir", return_value=str(tmp_path)):
-#             response = await http_server_client.fetch(
-#                 url, method="POST", headers={"Authorization": f"Token {default_token}"},
-#                 body=json.dumps(pre_submission.to_dict()),
-#             )
-#     assert response.code == 201
-
-#     with pytest.raises(HTTPClientError) as exc_info:
-#         await http_server_client.fetch(
-#             url, method="POST", headers={"Authorization": f"Token {default_token}"},
-#             body=json.dumps(pre_submission.to_dict()),
-#         )
-
-#     e = exc_info.value
-#     assert e.code == 409
