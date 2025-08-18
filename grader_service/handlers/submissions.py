@@ -41,6 +41,10 @@ from grader_service.orm.user import User
 from grader_service.plugins.lti import LTISyncGrades
 from grader_service.registry import VersionSpecifier, register_handler
 
+# Commit hash is used to differentiate between submissions created by instructors for students and
+# normal submissions by any user.
+INSTRUCTOR_SUBMISSION_COMMIT_CASH = "0" * 40
+
 
 def remove_points_from_submission(submissions):
     for s in submissions:
@@ -325,18 +329,15 @@ class SubmissionHandler(GraderBaseHandler):
                 )
             submission.user_id = s_user.id
         else:
+            # A user creates a submission for themselves.
             submission.user_id = self.user.id
 
-        git_repo_path = self.construct_git_dir(
-            repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
-        )
+            git_repo_path = self.construct_git_dir(
+                repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
+            )
 
-        # Commit hash "0"*40 is used to differentiate between submissions created by
-        # instructors for students and normal submissions by any user.
-        # In this case submissions for the student might not exist, so we cannot reference
-        # a non-existing commit_hash. When submission is set to edited, autograder uses edit
-        # repository, so we don't need the commit_hash of the submission.
-        if commit_hash != "0" * 40:
+            # If no submissions for the student exists, we cannot reference a non-existing
+            # commit_hash.
             if not os.path.exists(git_repo_path):
                 raise HTTPError(
                     HTTPStatus.UNPROCESSABLE_ENTITY, reason="User git repository not found"
@@ -362,9 +363,14 @@ class SubmissionHandler(GraderBaseHandler):
         self.set_status(HTTPStatus.CREATED)
         self.write_json(submission)
 
-        # If the assignment has automatic grading or fully
-        # automatic grading perform necessary operations
-        if automatic_grading in ["auto", "full_auto"]:
+        # If the assignment has automatic or fully automatic grading, run the necessary tasks.
+        # The autograding is not performed when an instructor creates a new submission for a student.
+        # Note: A specific commit hash is used to differentiate between submissions created by
+        # instructors for students and normal submissions by any user.
+        if (
+            automatic_grading in ["auto", "full_auto"]
+            and commit_hash != INSTRUCTOR_SUBMISSION_COMMIT_CASH
+        ):
             submission.auto_status = AutoStatus.PENDING
             self.session.commit()
             self.set_status(HTTPStatus.ACCEPTED)
@@ -373,7 +379,8 @@ class SubmissionHandler(GraderBaseHandler):
                 submission.feedback_status = FeedbackStatus.GENERATING
                 self.session.commit()
 
-                # use immutable signature: https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
+                # use immutable signature:
+                # https://docs.celeryq.dev/en/stable/reference/celery.app.task.html#celery.app.task.Task.si
                 grading_chain = chain(
                     autograde_task.si(lecture_id, assignment_id, submission.id),
                     generate_feedback_task.si(lecture_id, assignment_id, submission.id),
