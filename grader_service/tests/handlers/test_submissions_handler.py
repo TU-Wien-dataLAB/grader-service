@@ -580,10 +580,11 @@ async def test_put_submission(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # default user is instructor
+    l_id = 3  # user has to be instructor
     a_id = 4
+    s_id = 1
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/"
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
@@ -607,7 +608,7 @@ async def test_put_submission(
     assert response.code == 200
     submission_dict = json.loads(response.body.decode())
     submission = Submission.from_dict(submission_dict)
-    assert submission.id == 1
+    assert submission.id == s_id
     assert submission.auto_status == pre_submission.auto_status
     assert submission.manual_status == pre_submission.manual_status
     assert submission.commit_hash != pre_submission.commit_hash  # commit hash cannot be changed
@@ -920,32 +921,21 @@ async def test_post_submission_git_repo_not_found(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # user has to be instructor
-    a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    l_id = 1  # default user is student
+    a_id = 1
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
-    pre_submission = Submission(
-        id=-1,
-        user_id=default_user.id,
-        submitted_at=now,
-        commit_hash=secrets.token_hex(20),
-        auto_status=AutoStatus.AUTOMATICALLY_GRADED,
-        manual_status=ManualStatus.MANUALLY_GRADED,
-    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
             method="POST",
             headers={"Authorization": f"Token {default_token}"},
-            body=json.dumps(pre_submission.to_dict()),
+            body=json.dumps({"commit_hash": secrets.token_hex(20)}),
         )
     e = exc_info.value
     assert e.code == 422
+    assert e.message == "User git repository not found"
 
 
 async def test_post_submission_commit_hash_not_found(
@@ -958,7 +948,7 @@ async def test_post_submission_commit_hash_not_found(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # user has to be instructor
+    l_id = 3  # default user is instructor
     a_id = 3
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
@@ -989,7 +979,7 @@ async def test_submission_properties(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # default user is student
+    l_id = 3  # default user is instructor
     a_id = 4
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
@@ -1024,7 +1014,7 @@ async def test_submission_properties_not_correct(
     default_roles,
     default_user_login,
 ):
-    l_id = 3  # default user is student
+    l_id = 3  # default user is instructor
     a_id = 4
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
