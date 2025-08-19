@@ -693,7 +693,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_CASH:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
-                reason="This repo cannot be edited, because it was manually created by instructor",
+                reason="This repo cannot be edited or reset, because it was created by instructor",
             )
 
         assignment = submission.assignment

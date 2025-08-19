@@ -4,8 +4,11 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import secrets
+import subprocess
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
 from sqlalchemy.engine import Engine
@@ -93,6 +96,7 @@ def _get_submission(
     user_id: int,
     feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
     score: Optional[float] = None,
+    commit_hash: Optional[str] = None,
 ):
     s = Submission()
     s.date = datetime.now(tz=timezone.utc)
@@ -102,7 +106,7 @@ def _get_submission(
     s.user_id = user_id
     s.display_name = username
     s.score = score
-    s.commit_hash = secrets.token_hex(20)
+    s.commit_hash = commit_hash or secrets.token_hex(20)
     s.feedback_status = feedback
     return s
 
@@ -115,23 +119,23 @@ def insert_submission(
     feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
     with_properties: bool = True,
     score: float = None,
-):
+    commit_hash: Optional[str] = None,
+) -> Submission:
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id
     session: Session = sessionmaker(ex)()
-    session.add(_get_submission(assignment_id, username, user_id, feedback=feedback, score=score))
+    submission = _get_submission(
+        assignment_id, username, user_id, feedback=feedback, score=score, commit_hash=commit_hash
+    )
+    session.add(submission)
     session.commit()
 
     if with_properties:
-        id = (
-            session.query(Submission)
-            .filter(Submission.assignid == assignment_id, Submission.user_id == user_id)
-            .first()
-            .id
-        )
-        session.add(SubmissionProperties(sub_id=id, properties=None))
+        session.add(SubmissionProperties(sub_id=submission.id, properties=None))
         session.commit()
+    session.refresh(submission)
     session.flush()
+    return submission
 
 
 def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
@@ -143,3 +147,39 @@ def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
     session.add(Role(user_id=user.id, lectid=lecture_id, role=Scope.student))
     session.commit()
     return user
+
+
+def create_user_submission_with_repo(
+    engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
+) -> Submission:
+    """Creates a submission for `student` and a user repo for storing it.
+
+    Note: `gitbase_dir` should be based on the pytest `tmp_path` fixture, so that the test does not
+    interfere with the file system.
+    """
+    # 1. Create a repo and a commit with a submission file in it
+    # TODO: This way of creating repo paths is brittle. We should have a function that does it.
+    submission_repo_path = gitbase_dir / lecture_code / str(assignment_id) / "user" / student.name
+    os.makedirs(submission_repo_path)
+    subprocess.run(["git", "init"], cwd=submission_repo_path, check=True)
+    submission_file = submission_repo_path / "submission.ipynb"
+    submission_file.write_text("content")
+    subprocess.run(["git", "add", "--all"], cwd=submission_repo_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Student submission"], cwd=submission_repo_path, check=True
+    )
+    commit_hash = (
+        subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=submission_repo_path,
+            check=True,
+            capture_output=True,
+        )
+        .stdout.strip()
+        .decode()
+    )
+    # 2. Create a submission object in the database
+    submission = insert_submission(
+        engine, assignment_id, student.name, user_id=student.id, commit_hash=commit_hash
+    )
+    return submission
