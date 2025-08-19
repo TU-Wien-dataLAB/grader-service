@@ -693,6 +693,12 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.validate_parameters()
 
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_CASH:
+            raise HTTPError(
+                HTTPStatus.BAD_REQUEST,
+                reason="This repo cannot be edited, because it was manually created by instructor",
+            )
+
         assignment = submission.assignment
         lecture = assignment.lecture
 
@@ -705,9 +711,13 @@ class SubmissionEditHandler(GraderBaseHandler):
         )
 
         # Path to repository of student which contains the submitted files
-        submission_repo_path = self.construct_git_dir(
-            repo_type=GitRepoType.USER, lecture=lecture, assignment=assignment
+        submission_repo_path = os.path.join(
+            self.gitbase, lecture.code, str(assignment.id), "user", submission.user.name
         )
+        if not os.path.exists(submission_repo_path):
+            raise HTTPError(
+                HTTPStatus.BAD_REQUEST, reason="The user submission repository does not exist"
+            )
 
         if os.path.exists(git_repo_path):
             shutil.rmtree(git_repo_path)
@@ -718,8 +728,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         await self._run_command_async(["git", "init", "--bare"], git_repo_path)
 
-        # Create temporary paths to copy the submission
-        # files in the edit repository
+        # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
             self.application.grader_service_dir,
             "tmp",
