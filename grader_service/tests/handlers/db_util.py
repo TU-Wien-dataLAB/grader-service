@@ -4,7 +4,6 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import secrets
 import subprocess
 from datetime import datetime, timedelta, timezone
@@ -157,28 +156,38 @@ def create_user_submission_with_repo(
     Note: `gitbase_dir` should be based on the pytest `tmp_path` fixture, so that the test does not
     interfere with the file system.
     """
-    # 1. Create a repo and a commit with a submission file in it
+    # 1. Create and configure a student repo (a bare one, as a remote)
     # TODO: This way of creating repo paths is brittle. We should have a function that does it.
     submission_repo_path = gitbase_dir / lecture_code / str(assignment_id) / "user" / student.name
-    os.makedirs(submission_repo_path)
-    subprocess.run(["git", "init"], cwd=submission_repo_path, check=True)
-    submission_file = submission_repo_path / "submission.ipynb"
-    submission_file.write_text("content")
-    subprocess.run(["git", "add", "--all"], cwd=submission_repo_path, check=True)
+    submission_repo_path.mkdir(parents=True)
     subprocess.run(
-        ["git", "commit", "-m", "Student submission"], cwd=submission_repo_path, check=True
+        ["git", "init", "--bare", "--initial-branch=main"], cwd=submission_repo_path, check=True
     )
+
+    # 2. Create a "local" repo, create and commit a submission file, push to the remote
+    tmp_repo_path = gitbase_dir / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
+    tmp_repo_path.mkdir(parents=True)
+    subprocess.run(["git", "init", "--initial-branch=main"], cwd=tmp_repo_path, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", str(submission_repo_path)], cwd=tmp_repo_path, check=True
+    )
+    submission_file = tmp_repo_path / "submission.ipynb"
+    submission_file.write_text("content")
+    subprocess.run(["git", "add", "--all"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "commit", "-m", "Student submission"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "push", "-u", "origin", "main"], cwd=tmp_repo_path, check=True)
+
+    # 3. Create a submission object in the database
     commit_hash = (
         subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            cwd=submission_repo_path,
+            cwd=tmp_repo_path,
             check=True,
             capture_output=True,
         )
         .stdout.strip()
         .decode()
     )
-    # 2. Create a submission object in the database
     submission = insert_submission(
         engine, assignment_id, student.name, user_id=student.id, commit_hash=commit_hash
     )
