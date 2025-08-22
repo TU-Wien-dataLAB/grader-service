@@ -10,6 +10,7 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
 from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
+from grader_service.convert.gradebook.gradebook import MissingEntry
 from grader_service.convert.preprocessors import GetGrades
 
 
@@ -53,6 +54,18 @@ class GenerateFeedback(BaseConverter):
             c.HTMLExporter.template_name = "feedback"
         self.update_config(c)
         self.force = True  # always overwrite generated assignments
+
+    def convert_single_notebook(self, notebook_filename: str) -> None:
+        """Generate feedback for a single notebook.
+
+        We ignore any notebooks for which there are no gradebook entries
+        (e.g. additional notebooks created by the student), because feedback
+        generation would fail for them anyway.
+        """
+        try:
+            super().convert_single_notebook(notebook_filename)
+        except MissingEntry:
+            self.log.info("Skipping notebook %s", notebook_filename)
 
 
 class GenerateFeedbackApp(ConverterApp):

@@ -165,10 +165,9 @@ c.GraderService.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {'admin', 'instructor', 'student', 'tutor'}
 c.Authenticator.admin_users = {'admin'}
 # default roles
-c.GraderService.load_roles = {"lect1": {"members": ["admin", "instructor"], "role": "instructor"},
-                              "lect1": {"members": ["tutor"], "role": "tutor"},
-                              "lect1": {"members": ["student"], "role": "student"},
-                             }
+c.GraderService.load_roles = {"lect1": [{"members": ["admin", "instructor"], "role": "instructor"},
+                                        {"members": ["tutor"], "role": "tutor"},
+                                        {"members": ["student"], "role": "student"}]}
 
 # JupyterHub client config
 c.GraderService.oauth_clients = [{

@@ -8,7 +8,7 @@
     - [Install Helm](https://helm.sh/docs/intro/install/)
     - [Add the Helm repository](https://helm.sh/docs/intro/quickstart/#add-a-helm-repository)
     ```bash
-    helm repo add grader-service ghcr.io/tu-wien-datalab/grader-service
+    helm repo add grader-service https://tu-wien-datalab.github.io/grader-service/
     ```
 - [RabbitMQ operator](https://www.rabbitmq.com/kubernetes/operator/install-operator#installation) installed
 
