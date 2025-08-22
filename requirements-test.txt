@@ -1,6 +1,6 @@
 pytest>=6.2.3
 pytest-asyncio>=0.15.1
-pytest-cov>=2.12.1
+pytest-cov>=6.2.1
 pytest-jupyter>=0.10.1
 pytest-mock>=3.6.0
 pytest-httpserver>=1.0.2
