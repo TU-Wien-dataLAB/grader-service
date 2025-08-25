@@ -491,8 +491,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(sub)
 
-    def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Soft-Deletes a specific submission.
+    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    async def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
+        """Soft-deletes a specific submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -500,7 +501,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
         :type assignment_id: int
         :param submission_id: id of the submission
         :type submission_id: int
-        :raises HTTPError: if submission can't be deleted due to it having feedback
+        :raises HTTPError: if submission has feedback, or the deadline has passed,
+            or it has already been (soft-)deleted, or it belongs to another student,
+            or it was not found in the given lecture and assignment.
         """
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
@@ -508,39 +511,34 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
 
-        if submission is not None:
-            if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
-                raise HTTPError(
-                    HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
-                )
-            # if assignment has deadline
-            if submission.assignment.settings.deadline:
-                # if assignment's deadline has passed
-                if submission.assignment.settings.deadline < datetime.datetime.now(
-                    datetime.timezone.utc
-                ):
-                    raise HTTPError(
-                        HTTPStatus.FORBIDDEN,
-                        reason="Submission can't be deleted, due date of assigment has passed.",
-                    )
-            else:
-                previously_deleted = (
-                    self.session.query(Submission)
-                    .filter(
-                        Submission.id == submission_id,
-                        Submission.assignid == assignment_id,
-                        Submission.deleted == DeleteState.deleted,
-                    )
-                    .one_or_none()
-                )
-                if previously_deleted is not None:
-                    self.session.delete(previously_deleted)
-                    self.session.commit()
-
-                submission.deleted = DeleteState.deleted
-                self.session.commit()
-        else:
+        if submission is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+
+        # Do not allow students to delete other users' submissions
+        if (
+            self.get_role(lecture_id).role < Scope.instructor
+            and submission.username != self.user.name
+        ):
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+
+        if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
+            raise HTTPError(
+                HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
+            )
+
+        # if assignment has deadline and it has already passed
+        if (
+            submission.assignment.settings.deadline
+            and submission.assignment.settings.deadline
+            < datetime.datetime.now(datetime.timezone.utc)
+        ):
+            raise HTTPError(
+                HTTPStatus.FORBIDDEN,
+                reason="Submission can't be deleted, due date of assigment has passed.",
+            )
+
+        submission.deleted = DeleteState.deleted
+        self.session.commit()
 
 
 @register_handler(

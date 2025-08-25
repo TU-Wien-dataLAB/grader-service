@@ -789,10 +789,10 @@ class GraderBaseHandler(BaseHandler):
         if (
             (submission is None)
             or (submission.assignid != assignment_id)
-            or (int(submission.assignment.lectid) != int(lecture_id))
+            or (int(submission.assignment.lectid) != lecture_id)
             or (submission.deleted == DeleteState.deleted)
         ):
-            msg = "Submission with id " + str(submission_id) + " was not found"
+            msg = f"Submission with id {submission_id} was not found"
             raise HTTPError(HTTPStatus.NOT_FOUND, reason=msg)
         return submission
 
