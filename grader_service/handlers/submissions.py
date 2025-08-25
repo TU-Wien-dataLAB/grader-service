@@ -526,10 +526,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
 
         # Do not allow students to delete other users' submissions
-        if (
-            self.get_role(lecture_id).role < Scope.instructor
-            and submission.username != self.user.name
-        ):
+        if self.get_role(lecture_id).role < Scope.instructor and submission.user_id != self.user.id:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
 
         if submission.feedback_status != FeedbackStatus.NOT_GENERATED:

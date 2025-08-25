@@ -20,7 +20,8 @@ from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_COMMIT_CAS
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role
 from grader_service.orm.base import DeleteState
-from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission as SubmissionORM
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
+from grader_service.orm.submission import Submission as SubmissionORM
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
@@ -735,6 +736,7 @@ async def test_put_submission_wrong_submission(
     e = exc_info.value
     assert e.code == 404
 
+
 async def test_delete_own_submission_by_student(
     service_base_url,
     http_server_client,
@@ -778,7 +780,7 @@ async def test_delete_submission_from_another_student_fails(
     l_id = 1  # default user is student
     a_id = 1
     # The submission does NOT belong to the default user:
-    insert_submission(sql_alchemy_engine, a_id, "other_student")
+    insert_submission(sql_alchemy_engine, a_id, "other_student", 2137)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
     with pytest.raises(HTTPClientError) as exc_info:
