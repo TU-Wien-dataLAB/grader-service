@@ -1418,7 +1418,7 @@ async def test_delete_assignment_with_submissions(
     engine = sql_alchemy_engine
 
     insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 

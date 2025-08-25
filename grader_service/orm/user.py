@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from sqlalchemy import Column, LargeBinary, String, Unicode
+from sqlalchemy import Column, Integer, LargeBinary, String, Unicode
 from sqlalchemy.orm import Session, relationship
 
 from grader_service.api.models import user
@@ -21,7 +21,8 @@ from grader_service.utils import new_token
 
 class User(Base, Serializable):
     __tablename__ = "user"
-    name = Column(String(255), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False, unique=True)
     display_name = Column(String(255), nullable=False)
 
     roles = relationship("Role", back_populates="user")
@@ -51,9 +52,12 @@ class User(Base, Serializable):
             auth_state = await decrypt(encrypted)
         except (ValueError, InvalidToken, EncryptionUnavailable) as e:
             self.log.warning(
-                "Failed to retrieve encrypted auth_state for %s because %s", self.name, e
+                "Failed to retrieve encrypted auth_state for %s (id: %s) because %s",
+                self.name,
+                self.id,
+                e,
             )
-            return
+            return None
         # loading auth_state
         if auth_state:
             # Crypt has multiple keys, store again with new key for rotation.
@@ -62,8 +66,8 @@ class User(Base, Serializable):
         return auth_state
 
     def serialize(self):
-        return {"name": self.name, "display_name": self.display_name}
+        return {"id": self.id, "name": self.name, "display_name": self.display_name}
 
     @property
     def model(self) -> user.User:
-        return user.User(name=self.name, display_name=self.display_name)
+        return user.User(id=self.id, name=self.name, display_name=self.display_name)

@@ -32,7 +32,7 @@ target_metadata = grader_service.orm.Base.metadata
 
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode."""
+    """Run migrations *without* a SQL connection."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -47,7 +47,7 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
-    """Run migrations in 'online' mode."""
+    """Run migrations *with* a SQL connection."""
     # Retrieve the existing connection if it has already been initialized
     connectable = config.attributes.get("connection", None)
 

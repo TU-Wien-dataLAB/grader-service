@@ -72,11 +72,14 @@ def check_authorization(
     elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
 
-    role = self.session.get(Role, (self.user.name, lecture_id))
+    role = self.session.get(Role, (self.user.id, lecture_id))
+
     if (role is None) or (role.role not in scopes):
-        msg = f"User {self.user.name} tried to access "
-        msg += f"{self.request.path} with insufficient privileges"
-        self.log.warning(msg)
+        self.log.warning(
+            "User %s tried to access %s with insufficient privileges",
+            self.user.name,
+            self.request.path,
+        )
         raise HTTPError(403)
     return True
 
@@ -256,7 +259,7 @@ class BaseHandler(web.RequestHandler):
                 # because that could be a malicious logout request!
                 count = 0
                 for access_token in self.session.query(APIToken).filter_by(
-                    username=user.name, session_id=session_id
+                    user_id=user.id, session_id=session_id
                 ):
                     self.session.delete(access_token)
                     count += 1
@@ -269,14 +272,14 @@ class BaseHandler(web.RequestHandler):
             self.application.cookie_name, path=self.application.base_url.rstrip("/"), **kwargs
         )
 
-    def get_session_cookie(self):
+    def get_session_cookie(self) -> Optional[str]:
         """Get the session id from a cookie
 
         Returns None if no session id is stored
         """
         return self.get_cookie(SESSION_COOKIE_NAME, None)
 
-    def _user_for_cookie(self, cookie_name, cookie_value=None):
+    def _user_for_cookie(self, cookie_name, cookie_value=None) -> Optional[User]:
         """Get the User for a given cookie, if there is one"""
         cookie_id = self.get_secure_cookie(
             cookie_name, cookie_value, max_age_days=self.application.cookie_max_age_days
@@ -303,7 +306,7 @@ class BaseHandler(web.RequestHandler):
         #     self.session.commit()
         return user
 
-    def _record_activity(self, obj, timestamp=None):
+    def _record_activity(self, obj, timestamp=None) -> bool:
         """record activity on an ORM object
 
         If last_activity was more recent than self.activity_resolution seconds ago,
@@ -330,7 +333,7 @@ class BaseHandler(web.RequestHandler):
             return True
         return False
 
-    def get_auth_token(self):
+    def get_auth_token(self) -> Optional[str]:
         """Get the authorization token from Authorization header"""
         auth_header = self.request.headers.get("Authorization", "")
         match = auth_header_pat.match(auth_header)
@@ -345,7 +348,7 @@ class BaseHandler(web.RequestHandler):
             return match.group(2)
 
     @functools.lru_cache
-    def get_token(self):
+    def get_token(self) -> Optional[APIToken]:
         """get token from authorization header"""
         token = self.get_auth_token()
         if token is None:
@@ -353,7 +356,7 @@ class BaseHandler(web.RequestHandler):
         orm_token = APIToken.find(self.session, token)
         return orm_token
 
-    def get_current_user_token(self):
+    def get_current_user_token(self) -> Optional[User]:
         """get_current_user from Authorization header token"""
         # record token activity
         orm_token = self.get_token()
@@ -369,7 +372,7 @@ class BaseHandler(web.RequestHandler):
         self._token_authenticated = True
         return orm_token.user
 
-    def get_current_user_cookie(self):
+    def get_current_user_cookie(self) -> Optional[User]:
         """get_current_user from a cookie token"""
         return self._user_for_cookie(self.application.cookie_name)
 
@@ -428,8 +431,8 @@ class BaseHandler(web.RequestHandler):
             auth_info["auth_state"] = await user.get_auth_state()
         return await self.auth_to_user(auth_info, user)
 
-    async def get_current_user(self):
-        """get current username"""
+    async def get_current_user(self) -> Optional[User]:
+        """get current user"""
         if not hasattr(self, "_grader_user"):
             user = None
             try:
@@ -451,7 +454,7 @@ class BaseHandler(web.RequestHandler):
         self.session.close()
 
     @property
-    def current_user(self) -> User:
+    def current_user(self) -> Optional[User]:
         """Override .current_user accessor from tornado
 
         Allows .get_current_user to be async.
@@ -461,7 +464,7 @@ class BaseHandler(web.RequestHandler):
         return self._grader_user
 
     @property
-    def user(self) -> User:
+    def user(self) -> Optional[User]:
         return self.current_user
 
     def set_session_cookie(self):
@@ -524,8 +527,7 @@ class BaseHandler(web.RequestHandler):
 
         if user and username != user.name:
             raise ValueError(f"Username doesn't match! {username} != {user.name}")
-
-        user_model = self.session.get(User, username)
+        user_model = self.session.query(User).filter(User.name == username).one_or_none()
         if user_model is None:
             self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()
@@ -542,8 +544,8 @@ class BaseHandler(web.RequestHandler):
                 # which should fail here rather than silently not implement the requested behavior
                 auth_cls = self.authenticator.__class__.__name__
                 raise ValueError(
-                    f"Authenticator.manage_groups is enabled, but auth_model for {username} specifies no groups."
-                    f" Does {auth_cls} support manage_groups=True?"
+                    f"Authenticator.manage_groups is enabled, but auth_model for {username} "
+                    f"specifies no groups. Does {auth_cls} support manage_groups=True?"
                 )
             group_names = authenticated["groups"]
             if group_names is not None:
@@ -764,7 +766,7 @@ class GraderBaseHandler(BaseHandler):
         return super().write_error(status_code, **kwargs)
 
     def get_role(self, lecture_id: int) -> Role:
-        role = self.session.get(Role, (self.user.name, lecture_id))
+        role = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
             raise HTTPError(403)
         return role
@@ -774,7 +776,7 @@ class GraderBaseHandler(BaseHandler):
         return lecture
 
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
-        assignment: Assignment = self.session.get(Assignment, assignment_id)
+        assignment: Optional[Assignment] = self.session.get(Assignment, assignment_id)
         if (
             (assignment is None)
             or (assignment.deleted == DeleteState.deleted)
@@ -797,20 +799,20 @@ class GraderBaseHandler(BaseHandler):
         return submission
 
     def get_latest_submissions(
-        self, assignment_id, must_have_feedback=False, username=None
+        self, assignment_id, must_have_feedback=False, user_id=None
     ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username, func.max(Submission.date).label("max_date"))
+            self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
+            .group_by(Submission.user_id)
         )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
 
-        if username:
-            query = query.filter(Submission.username == username)
+        if user_id:
+            query = query.filter(Submission.user_id == user_id)
 
         subquery = query.subquery()
 
@@ -820,7 +822,7 @@ class GraderBaseHandler(BaseHandler):
             .options(joinedload(Submission.user))
             .join(
                 subquery,
-                (Submission.username == subquery.c.username)
+                (Submission.user_id == subquery.c.user_id)
                 & (Submission.date == subquery.c.max_date)
                 & (Submission.assignid == assignment_id)
                 & (Submission.deleted == DeleteState.active),
@@ -841,20 +843,20 @@ class GraderBaseHandler(BaseHandler):
         return query.all()
 
     def get_best_submissions(
-        self, assignment_id, must_have_feedback=False, username=None
+        self, assignment_id, must_have_feedback=False, user_id=None
     ) -> List[Submission]:
         query = (
-            self.session.query(Submission.username, func.max(Submission.score).label("max_score"))
+            self.session.query(Submission.user_id, func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
             .filter(Submission.deleted == DeleteState.active)
-            .group_by(Submission.username)
+            .group_by(Submission.user_id)
         )
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
 
-        if username:
-            query = query.filter(Submission.username == username)
+        if user_id:
+            query = query.filter(Submission.user_id == user_id)
 
         subquery = query.subquery()
 
@@ -864,7 +866,7 @@ class GraderBaseHandler(BaseHandler):
             .options(joinedload(Submission.user))
             .join(
                 subquery,
-                (Submission.username == subquery.c.username)
+                (Submission.user_id == subquery.c.user_id)
                 & (Submission.score == subquery.c.max_score)
                 & (Submission.assignid == assignment_id)
                 & (Submission.deleted == DeleteState.active),
@@ -888,7 +890,12 @@ class GraderBaseHandler(BaseHandler):
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
         directories which returns the path of the repository based on
-        the inputs or None if the repo_type is not recognized."""
+        the inputs or None if the repo_type is not recognized.
+
+        Raises HTTPError 400 if the normalised path does not start with
+        `self.gitbase`, to make it robust against fabricated lecture codes
+        or usernames containing substrings like "../..".
+        """
         # TODO: refactor
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
@@ -904,7 +911,7 @@ class GraderBaseHandler(BaseHandler):
             if repo_type == GitRepoType.AUTOGRADE:
                 if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
                     raise HTTPError(403)
-                path = os.path.join(type_path, submission.username)
+                path = os.path.join(type_path, submission.user.name)
             else:
                 path = os.path.join(type_path, self.user.name)
         elif repo_type == GitRepoType.USER:
@@ -912,6 +919,10 @@ class GraderBaseHandler(BaseHandler):
             path = os.path.join(user_path, self.user.name)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
+
+        path = os.path.normpath(path)
+        if not path.startswith(self.gitbase):
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
 
         return path
 

@@ -76,7 +76,7 @@ class GitBaseHandler(GraderBaseHandler):
                 except (ValueError, IndexError):
                     raise HTTPError(403)
                 submission = self.session.query(Submission).get(sub_id)
-                if submission is None or submission.username != self.user.name:
+                if submission is None or submission.user_id != self.user.id:
                     raise HTTPError(403)
 
         # 4. no push allowed for autograde and feedback
@@ -86,7 +86,7 @@ class GitBaseHandler(GraderBaseHandler):
         ):
             raise HTTPError(403)
 
-    def gitlookup(self, rpc: str):
+    def gitlookup(self, rpc: str) -> Optional[str]:
         pathlets = self.request.path.strip("/").split("/")
         # check if request is sent using jupyterhub as a proxy
         # if yes, remove services/grader path prefix
@@ -99,38 +99,41 @@ class GitBaseHandler(GraderBaseHandler):
         #             'lecture_code', 'assignment_id', 'repo_type', ...]
         if len(pathlets) < 4:
             return None
+
         # cut git prefix
         pathlets = pathlets[1:]
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0]))
-        assignment_path = os.path.abspath(os.path.join(self.gitbase, pathlets[0], pathlets[1]))
+        lect_code, assign_id, repo_type, *pathlets_tail = pathlets
 
-        repo_type: str = pathlets[2]
-
-        # TODO(Nat): Could it still happen somewhere?
+        # Repo type "assignment" has been replaced by "user", so this should not happen,
+        # but we are leaving this check for the time being, just to be on the safe side:
         if repo_type == "assignment":
             self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
-            repo_type = "user"
+            repo_type = GitRepoType.USER
 
-        if repo_type not in GitRepoType:
+        try:
+            repo_type = GitRepoType(repo_type)
+        except ValueError:
             return None
 
         # get lecture and assignment if they exist
         try:
-            lecture = self.session.query(Lecture).filter(Lecture.code == pathlets[0]).one()
+            lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
         except MultipleResultsFound:
             raise HTTPError(500, reason="Found more than one lecture")
 
-        role = self.session.get(Role, (self.user.name, lecture.id))
+        role = self.session.get(Role, (self.user.id, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)
 
         try:
-            assignment = self.get_assignment(lecture.id, int(pathlets[1]))
+            assignment = self.get_assignment(lecture.id, int(assign_id))
         except ValueError:
             raise HTTPError(404, reason="Assignment not found")
 
         # create directories once we know they exist in the database
+        lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
+        assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
         if not os.path.exists(lecture_path):
             os.mkdir(lecture_path)
         if not os.path.exists(assignment_path):
@@ -139,10 +142,10 @@ class GitBaseHandler(GraderBaseHandler):
         submission = None
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
             try:
-                sub_id = int(pathlets[3])
+                sub_id = int(pathlets_tail[0])
             except (ValueError, IndexError):
-                raise HTTPError(403)
-            submission = self.session.get(Submission, sub_id)
+                raise HTTPError(403, "Invalid or missing submission id")
+            submission = self.get_submission(lecture.id, assignment.id, sub_id)
 
         path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
         if path is None:
@@ -167,13 +170,10 @@ class GitBaseHandler(GraderBaseHandler):
                 repo_path_release = self.construct_git_dir(
                     GitRepoType.RELEASE, assignment.lecture, assignment
                 )
-                safe_repo_path_release = repo_path_release
-                err_msg = "Error: expected path or str, got None"
-                assert safe_repo_path_release is not None, err_msg
-                if not os.path.exists(safe_repo_path_release):
+                if not os.path.exists(repo_path_release):
                     return None
                 self.duplicate_release_repo(
-                    repo_path_release=safe_repo_path_release,
+                    repo_path_release=repo_path_release,
                     repo_path_user=path,
                     assignment=assignment,
                     message="Initialize with Release",

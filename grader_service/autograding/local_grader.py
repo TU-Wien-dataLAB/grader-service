@@ -164,7 +164,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         if self.submission.edited:
             git_repo_path = os.path.join(
@@ -278,14 +278,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Pushes the results to the autograde repository
         as a separate branch named after the commit hash of the submission.
         Removes the gradebook.json file before doing so.
-        :return: Coroutine
         """
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
         self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
 
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
-        repo_name = self.submission.username
+        repo_name = self.submission.user.name
 
         git_repo_path = os.path.join(
             self.grader_service_dir,
