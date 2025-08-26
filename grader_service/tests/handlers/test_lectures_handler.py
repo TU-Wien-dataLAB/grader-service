@@ -409,6 +409,6 @@ async def test_get_lecture_users(
 
     assert resp.code == HTTPStatus.OK
     data = json.loads(resp.body.decode())
-    assert data["instructors"] == ["ubuntu"]
+    assert data["instructors"] == [1]
     assert data["tutors"] == []
-    assert data["students"] == ["student1", "student2"]
+    assert data["students"] == [2, 3]
