@@ -677,7 +677,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 class SubmissionEditHandler(GraderBaseHandler):
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Create or overwrites the repository which stores changes of
+        """Creates or overwrites (resets) the repository which stores changes of
         submissions files
         :param lecture_id: lecture id
         :param assignment_id: assignment id
@@ -693,13 +693,13 @@ class SubmissionEditHandler(GraderBaseHandler):
         if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_CASH:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
-                reason="This repo cannot be edited, because it was manually created by instructor",
+                reason="This repo cannot be edited or reset, because it was created by instructor",
             )
 
         assignment = submission.assignment
         lecture = assignment.lecture
 
-        # Path to repository which will store edited submission files
+        # Path to the (bare!) repository which will store edited submission files
         git_repo_path = self.construct_git_dir(
             repo_type=GitRepoType.EDIT,
             lecture=lecture,
@@ -723,7 +723,9 @@ class SubmissionEditHandler(GraderBaseHandler):
         if not os.path.exists(git_repo_path):
             os.makedirs(git_repo_path, exist_ok=True)
 
-        await self._run_command_async(["git", "init", "--bare"], git_repo_path)
+        await self._run_command_async(
+            ["git", "init", "--bare", "--initial-branch=main"], git_repo_path
+        )
 
         # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
@@ -745,7 +747,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         os.makedirs(tmp_input_path, exist_ok=True)
 
         # Init local repository
-        await self._run_command_async(["git", "init"], tmp_input_path)
+        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_input_path)
 
         # Pull user repository
         await self._run_command_async(
@@ -761,7 +763,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
 
         # Init local repository
-        await self._run_command_async(["git", "init"], tmp_output_path)
+        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_output_path)
 
         # Add edit remote
         await self._run_command_async(

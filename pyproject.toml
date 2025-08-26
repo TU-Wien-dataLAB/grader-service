@@ -151,3 +151,9 @@ minversion = "6.0"
 testpaths = [
     "grader_service/tests",
 ]
+addopts = "--cov=grader_service --cov-report html --cov-report term"
+
+[tool.coverage.run]
+omit = [
+    "grader_service/migrate/*",
+]

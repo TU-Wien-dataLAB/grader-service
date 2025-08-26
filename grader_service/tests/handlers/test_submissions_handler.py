@@ -5,10 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 import csv
 import json
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import isodate
 import pytest
@@ -16,7 +17,11 @@ from sqlalchemy.orm import sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
-from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_COMMIT_CASH, SubmissionHandler
+from grader_service.handlers.submissions import (
+    INSTRUCTOR_SUBMISSION_COMMIT_CASH,
+    SubmissionEditHandler,
+    SubmissionHandler,
+)
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role
 from grader_service.orm.base import DeleteState
@@ -25,7 +30,12 @@ from grader_service.orm.submission import Submission as SubmissionORM
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
-from .db_util import insert_assignments, insert_student, insert_submission
+from .db_util import (
+    create_user_submission_with_repo,
+    insert_assignments,
+    insert_student,
+    insert_submission,
+)
 
 
 async def submission_test_setup(engine, default_user, a_id: int):
@@ -1276,3 +1286,107 @@ async def test_submission_properties_not_found(
     e = exc_info.value
     assert e.code == 404
     assert e.message == "Properties of submission were not found"
+
+
+async def test_submission_create_edit_repo(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    tmp_path,
+):
+    """Create or reset an edit repository (there is no difference) - SubmissionEditHandler.put()"""
+    l_id = 3  # default user has to be instructor
+    l_code = "22wle1"  # the code of the lecture with id=3
+    a_id = 3
+
+    gitbase_dir = tmp_path / "git"
+
+    engine = sql_alchemy_engine
+    insert_assignments(engine, l_id)
+    student_username = "e.noether"
+    student = insert_student(engine, student_username, l_id)
+    # Create a student submission and a user repo
+    submission = create_user_submission_with_repo(engine, gitbase_dir, student, a_id, l_code)
+    commit_hash = submission.commit_hash
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{submission.id}/edit"
+
+    with (
+        patch(
+            "grader_service.handlers.submissions.SubmissionEditHandler", new=SubmissionEditHandler
+        ) as handler_mock,
+        patch.object(SubmissionEditHandler, "gitbase", str(gitbase_dir)),
+    ):
+        handler_mock.application = MagicMock(spec=GraderServer)
+        handler_mock.application.grader_service_dir = str(tmp_path)
+
+        resp = await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps({}),
+        )
+
+    assert resp.code == HTTPStatus.OK
+    submission_dict = json.loads(resp.body.decode())
+    assert submission_dict["edited"] is True
+    assert submission_dict["commit_hash"] == commit_hash
+    assert submission_dict["user_display_name"] == student_username
+    assert os.path.exists(gitbase_dir / l_code / str(a_id) / "edit" / str(submission_dict["id"]))
+
+
+async def test_submission_cannot_edit_submission_created_by_instructor(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    tmp_path,
+):
+    l_id = 3  # default user has to be instructor
+    a_id = 3
+
+    # Set-up: As the instructor, create a new submission for a student
+    engine = sql_alchemy_engine
+    insert_assignments(engine, l_id)
+    student_username = "e.noether"
+    insert_student(engine, student_username, l_id)
+
+    post_url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+
+    with (
+        patch("subprocess.run"),
+        patch.object(SubmissionHandler, "construct_git_dir", str(tmp_path)),
+        patch("grader_service.handlers.submissions.chain", autospec=True),
+    ):
+        response = await http_server_client.fetch(
+            post_url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+            ),
+        )
+    assert response.code == HTTPStatus.CREATED
+
+    # Try to edit the submission created by the instructor - this should fail
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/edit"
+
+    with pytest.raises(
+        HTTPClientError,
+        match="This repo cannot be edited or reset, because it was created by instructor",
+    ) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps({}),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
