@@ -180,10 +180,7 @@ def create_user_submission_with_repo(
     # 3. Create a submission object in the database
     commit_hash = (
         subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=tmp_repo_path,
-            check=True,
-            capture_output=True,
+            ["git", "rev-parse", "HEAD"], cwd=tmp_repo_path, check=True, capture_output=True
         )
         .stdout.strip()
         .decode()
