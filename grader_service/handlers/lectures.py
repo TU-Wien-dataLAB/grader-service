@@ -173,9 +173,9 @@ class LectureStudentsHandler(GraderBaseHandler):
             .filter(Role.lectid == lecture_id)
         )
 
-        students = [r.user.name for r in roles if r.role == Scope.student]
-        tutors = [r.user.name for r in roles if r.role == Scope.tutor]
-        instructors = [r.user.name for r in roles if r.role == Scope.instructor]
+        students = [r.user.id for r in roles if r.role == Scope.student]
+        tutors = [r.user.id for r in roles if r.role == Scope.tutor]
+        instructors = [r.user.id for r in roles if r.role == Scope.instructor]
 
         counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)
