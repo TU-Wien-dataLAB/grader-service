@@ -96,7 +96,7 @@ async def lti_sync_task(
     """Gathers submissions based on params and starts LTI sync process
     :param lecture: lecture object
     :param assignment: assignment object
-    :param submissions: submissions to be synced
+    :param submissions: submissions to be synced (including user information)
     :param feedback_sync(optional): if True, the sync task was started by a feedback generation
     """
     lti_plugin = LTISyncGrades.instance()

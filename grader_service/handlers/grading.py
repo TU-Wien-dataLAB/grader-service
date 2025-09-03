@@ -110,7 +110,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             lti_sync_task.si(
                 lecture.serialize(),
                 assignment.serialize(),
-                [submission.serialize()],
+                [submission.serialize_with_user()],
                 feedback_sync=True,
             ),
         )

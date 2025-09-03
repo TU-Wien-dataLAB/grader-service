@@ -20,6 +20,8 @@ c.GraderService.service_host = "127.0.0.1"
 service_dir = os.path.join(os.getcwd(), "service_dir")
 c.GraderService.grader_service_dir = service_dir
 
+c.GraderService.log_level = "DEBUG"
+
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
 
 c.CeleryApp.conf = dict(

@@ -89,3 +89,13 @@ class Submission(Base, Serializable):
             edited=self.edited,
         )
         return model
+
+    def serialize_with_user(self) -> dict:
+        """Serialize the submission with user information.
+
+        Returns:
+            dict: The serialized submission data including user information.
+        """
+        model = self.model.to_dict()
+        model["user"] = self.user.serialize()
+        return model

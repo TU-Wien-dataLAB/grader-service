@@ -387,7 +387,7 @@ class SubmissionHandler(GraderBaseHandler):
                     lti_sync_task.si(
                         lecture.serialize(),
                         assignment.serialize(),
-                        [submission.serialize()],
+                        [submission.serialize_with_user()],
                         feedback_sync=True,
                     ),
                 )
@@ -865,7 +865,8 @@ class LtiSyncHandler(GraderBaseHandler):
         lti_plugin = LTISyncGrades.instance()
         lecture_model = lecture.serialize()
         assignment_model = assignment.serialize()
-        submissions_model = [sub.serialize() for sub in submissions if isinstance(sub, Submission)]
+        submissions_model = [sub.serialize_with_user() for sub in submissions]
+
         # check if the lti plugin is enabled
         if lti_plugin.check_if_lti_enabled(
             lecture_model, assignment_model, submissions_model, feedback_sync=False
