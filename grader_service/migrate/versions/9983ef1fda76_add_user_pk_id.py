@@ -39,13 +39,13 @@ def upgrade():
 
     with op.batch_alter_table("user") as batch_op:
         batch_op.add_column(sa.Column("id", sa.Integer(), nullable=True))
-    
+
     with op.batch_alter_table("user") as batch_op:
         if op.get_bind().dialect.name == "postgresql":
-            op.execute('CREATE SEQUENCE user_id_seq')
-            op.execute('UPDATE "user" SET id = nextval(\'user_id_seq\')')
+            op.execute("CREATE SEQUENCE user_id_seq")
+            op.execute("UPDATE \"user\" SET id = nextval('user_id_seq')")
         batch_op.alter_column("id", nullable=False)
-        
+
         batch_op.create_primary_key("pk_user_id", ["id"])
         batch_op.create_unique_constraint("unique_user_name", ["name"])
 
@@ -67,7 +67,7 @@ def upgrade():
         batch_op.drop_column("username")
         batch_op.create_foreign_key("fk_takepart_user_id", "user", ["user_id"], ["id"])
         batch_op.create_primary_key("pk_takepart", ["user_id", "lectid"])
-        
+
     # 3. submission
     _add_user_id_col("submission")
     with op.batch_alter_table("submission") as batch_op:
@@ -87,7 +87,6 @@ def upgrade():
         batch_op.drop_column("username")
 
 
-
 def downgrade():
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
 
@@ -97,9 +96,7 @@ def downgrade():
 
         table = sa.table(table_name, sa.column("username"), sa.column("user_id"))
         user_subq = (
-            sa.select(user_table.c.name)
-            .where(user_table.c.id == table.c.user_id)
-            .scalar_subquery()
+            sa.select(user_table.c.name).where(user_table.c.id == table.c.user_id).scalar_subquery()
         )
         op.execute(table.update().values(username=user_subq))
 

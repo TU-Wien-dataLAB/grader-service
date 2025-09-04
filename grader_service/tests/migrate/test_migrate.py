@@ -82,7 +82,7 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
                 tbl = metadata.tables[table]
                 row = generate_fake_row(table, inspector, generated_keys)
                 with engine.begin() as conn:
-                    result = conn.execute(tbl.insert().values(**row))
+                    conn.execute(tbl.insert().values(**row))
 
                     # Save ANY columns that other tables FK to
                     for col in referenced_cols.get(table, []):

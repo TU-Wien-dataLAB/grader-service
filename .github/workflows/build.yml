@@ -17,12 +17,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: false
+      TESTCONTAINER_DOCKER_NETWORK: postgresql-testcontainers
+      DOCKER_BUILDKIT: 1
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     # BUILD
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: '3.12'
     - name: Install dependencies
@@ -55,6 +59,10 @@ jobs:
         source venv/bin/activate
         pip install . 
         pip install -r ./requirements-test.txt
+
+    - name: Create Docker network for running Testcontainers
+      run: docker network create ${{ env.TESTCONTAINER_DOCKER_NETWORK }}
+
     - name: Run tests
       run: |
         source venv/bin/activate

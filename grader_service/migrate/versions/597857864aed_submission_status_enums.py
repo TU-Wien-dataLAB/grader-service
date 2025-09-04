@@ -6,11 +6,8 @@ Create Date: 2025-08-05 17:39:45.007718
 
 """
 
-import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
-
-from grader_service.orm.submission import AutoStatus, ManualStatus
 
 # revision identifiers, used by Alembic.
 revision = "597857864aed"
@@ -26,7 +23,13 @@ AUTO_STATUS_NEW = [v.upper() for v in AUTO_STATUS_OLD]
 MANUAL_STATUS_OLD = ["not_graded", "manually_graded", "being_edited"]
 MANUAL_STATUS_NEW = [v.upper() for v in MANUAL_STATUS_OLD]
 
-FEEDBACK_STATUS_OLD = ["not_generated", "generating", "generated", "generation_failed", "feedback_outdated"]
+FEEDBACK_STATUS_OLD = [
+    "not_generated",
+    "generating",
+    "generated",
+    "generation_failed",
+    "feedback_outdated",
+]
 FEEDBACK_STATUS_NEW = [v.upper() for v in FEEDBACK_STATUS_OLD]
 
 
@@ -63,7 +66,7 @@ def _upgrade_postgresql(bind):
         "submission",
         "auto_status",
         type_=auto_status_new,
-        postgresql_using="UPPER(auto_status::text)::auto_status_new"
+        postgresql_using="UPPER(auto_status::text)::auto_status_new",
     )
     op.execute("DROP TYPE auto_status")
     op.execute("ALTER TYPE auto_status_new RENAME TO auto_status")
@@ -75,7 +78,7 @@ def _upgrade_postgresql(bind):
         "submission",
         "manual_status",
         type_=manual_status_new,
-        postgresql_using="UPPER(manual_status::text)::manual_status_new"
+        postgresql_using="UPPER(manual_status::text)::manual_status_new",
     )
     op.execute("DROP TYPE manual_status")
     op.execute("ALTER TYPE manual_status_new RENAME TO manual_status")
@@ -87,7 +90,7 @@ def _upgrade_postgresql(bind):
         "submission",
         "feedback_status",
         type_=feedback_status_new,
-        postgresql_using="UPPER(feedback_status::text)::feedback_status_new"
+        postgresql_using="UPPER(feedback_status::text)::feedback_status_new",
     )
     op.execute("DROP TYPE feedback_status")
     op.execute("ALTER TYPE feedback_status_new RENAME TO feedback_status")
@@ -100,7 +103,7 @@ def _downgrade_postgresql(bind):
         "submission",
         "auto_status",
         type_=auto_status_old,
-        postgresql_using="LOWER(auto_status::text)::auto_status_old"
+        postgresql_using="LOWER(auto_status::text)::auto_status_old",
     )
     op.execute("DROP TYPE auto_status")
     op.execute("ALTER TYPE auto_status_old RENAME TO auto_status")
@@ -111,7 +114,7 @@ def _downgrade_postgresql(bind):
         "submission",
         "manual_status",
         type_=manual_status_old,
-        postgresql_using="LOWER(manual_status::text)::manual_status_old"
+        postgresql_using="LOWER(manual_status::text)::manual_status_old",
     )
     op.execute("DROP TYPE manual_status")
     op.execute("ALTER TYPE manual_status_old RENAME TO manual_status")
@@ -122,7 +125,7 @@ def _downgrade_postgresql(bind):
         "submission",
         "feedback_status",
         type_=feedback_status_old,
-        postgresql_using="LOWER(feedback_status::text)::feedback_status_old"
+        postgresql_using="LOWER(feedback_status::text)::feedback_status_old",
     )
     op.execute("DROP TYPE feedback_status")
     op.execute("ALTER TYPE feedback_status_old RENAME TO feedback_status")
