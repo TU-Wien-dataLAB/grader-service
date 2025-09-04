@@ -111,24 +111,27 @@ def downgrade():
 
     for assignment in assignments:
         assignment = dict(zip(assignments.keys(), assignment))
-        settings = json.loads(assignment["settings"]) if assignment["settings"] else {}
+        try:
+            settings = json.loads(assignment["settings"]) if assignment["settings"] else {}
+        except json.JSONDecodeError:
+            settings = {}
         conn.execute(
             sa.text(
                 """
                 UPDATE assignment
-                SET duedate = :duedate, type = :type, automatic_grading = :automatic_grading,
-                    max_submissions = :max_submissions, allow_files = :allow_files
-                WHERE id = :id
-                """
+            SET duedate = :duedate, type = :type, automatic_grading = :automatic_grading,
+                max_submissions = :max_submissions, allow_files = :allow_files
+            WHERE id = :id
+            """
             ),
             {
                 "duedate": datetime.datetime.fromisoformat(settings["deadline"])
                 if settings.get("deadline")
                 else None,
-                "type": settings.get("assignment_type"),
-                "automatic_grading": settings.get("autograde_type"),
-                "max_submissions": settings.get("max_submissions"),
-                "allow_files": len(settings.get("allowed_files")) > 0,
+                "type": settings.get("assignment_type", "user"),
+                "automatic_grading": settings.get("autograde_type", "auto"),
+                "max_submissions": settings.get("max_submissions", None),
+                "allow_files": len(settings.get("allowed_files", [])) > 0,
                 "id": assignment["id"],
             },
         )
