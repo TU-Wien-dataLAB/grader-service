@@ -1,56 +1,113 @@
+import logging
 import os
 
-from grader_service.auth.auth import Authenticator
-from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
+from celery.app.log import Logging
+from jupyterhub.auth import Authenticator
+from traitlets import log as traitlets_log
+
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.auth.token import JupyterHubTokenAuthenticator
+
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm import User, Lecture
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope, Role
 
-# TODO: Only use DummyAuthenticator
 
-# from grader_service.autograding.docker_grader import DockerAutogradeExecutor
+logger = traitlets_log.get_logger()
 
-print("### loading service config")
-
-c.GraderService.service_host = "127.0.0.1"
+c.GraderService.service_host = "0.0.0.0"
+c.GraderService.service_port = 4010
 c.GraderService.grader_service_dir = "/app/service_dir"
-c.GraderService.db_url = "sqlite:////app/service_dir/grader.db"
+
+# choose the right db_url based on the environment variable
+database_type = os.getenv("DATABASE_TYPE")
+db_url = ""
+if database_type == "sqlite":
+    db_url = "sqlite:///grader.db"
+elif database_type == "postgres":
+    db_url = "postgresql://postgres:postgres@postgres:5432/grader"
+else:
+    logger.error("Unknown database type")
+
+c.GraderService.db_url = db_url
 
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
 
+# get rabbitmq username and password
+rabbit_mq_username = os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")
+rabbit_mq_password = os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")
+
 c.CeleryApp.conf = dict(
-    broker_url="amqp://localhost",
+    broker_url=f"amqp://{rabbit_mq_username}:{rabbit_mq_password}@rabbitmq:5672/grader",
     result_backend="rpc://",
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
     broker_connection_retry_on_startup=True,
-    task_always_eager=True,
 )
-c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
 
 
-# JupyterHub client config
-c.GraderService.oauth_clients = [
-    {
-        "client_id": "my_id",
-        "client_secret": "my_secret",
-        "redirect_uri": "http://localhost:8080/hub/oauth_callback",
-    }
-]
+c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 
-from grader_service.auth.dummy import DummyAuthenticator
 
-c.GraderService.authenticator_class = DummyAuthenticator
-c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
+def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
+    session = handler.session
+    log = handler.log
+    log.info("post auth hook called")
+    groups = authentication["groups"]
 
+    username = authentication["name"]
+    user_model: User = session.query(User).get(username)
+    if user_model is None:
+        user_model = User()
+        user_model.name = username
+        user_model.display_name = username
+        session.add(user_model)
+        session.commit()
+
+    for group in groups:
+        if ":" in group:
+            split_group = group.split(":")
+            lecture_code = split_group[0]
+            scope = split_group[1]
+            scope = Scope[scope]
+
+            lecture = session.query(Lecture).filter(Lecture.code == lecture_code).one_or_none()
+            if lecture is None:
+                lecture = Lecture()
+                lecture.code = lecture_code
+                lecture.name = lecture_code
+                lecture.state = LectureState.active
+                lecture.deleted = DeleteState.active
+                session.add(lecture)
+                session.commit()
+
+            role = (
+                session.query(Role)
+                .filter(Role.username == username, Role.lectid == lecture.id)
+                .one_or_none()
+            )
+            if role is None:
+                log.info(f"No role for user {username} in lecture {lecture_code}... creating role")
+                role = Role(username=username, lectid=lecture.id, role=scope)
+                session.add(role)
+                session.commit()
+            else:
+                log.info(
+                    f"Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}"
+                )
+                role.role = scope
+                session.commit()
+        else:
+            log.info("Found group that doesn't match schema. Ignoring " + group)
+
+    return authentication
+
+
+c.Authenticator.post_auth_hook = post_auth_hook
+
+c.JupyterHubTokenAuthenticator.user_info_url = "http://hub:8080/hub/api/user"
 c.Authenticator.admin_users = {"admin"}
-
-c.GraderService.load_roles = {
-    "lect1:instructor": ["admin", "instructor"],
-    "lect1:student": ["student"],
-    "lect1:tutor": ["tutor"],
-}
+c.Authenticator.allow_all = True
