@@ -119,10 +119,10 @@ def downgrade():
             sa.text(
                 """
                 UPDATE assignment
-            SET duedate = :duedate, type = :type, automatic_grading = :automatic_grading,
+                SET duedate = :duedate, type = :type, automatic_grading = :automatic_grading,
                 max_submissions = :max_submissions, allow_files = :allow_files
-            WHERE id = :id
-            """
+                WHERE id = :id
+                """
             ),
             {
                 "duedate": datetime.datetime.fromisoformat(settings["deadline"])

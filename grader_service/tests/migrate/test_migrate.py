@@ -63,20 +63,29 @@ def get_referenced_columns_by_table(inspector):
 # --- Tests ---
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
+    """Upgrades to the n-th migration, adds a column to each table
+    and then downgrades back to the previous revision.
+    """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
     conn = engine.connect()
     trans = conn.begin()
     try:
+        # Upgrade the database schema
         command.upgrade(cfg, migration.revision)
         inspector = sa.inspect(engine)
         tables = [t for t in inspector.get_table_names() if t != "alembic_version"]
         assert tables, "No tables created after upgrade"
+
+        # Track generated keys for foreign key relationships
         generated_keys = defaultdict(lambda: defaultdict(list))
         referenced_cols = get_referenced_columns_by_table(inspector)
+        # Identify the order in which tables should be populated based on foreign key relationships
         ordered_tables = get_insert_order(inspector)
+
         for table in ordered_tables:
             try:
+                # Insert one row into the table
                 metadata = sa.MetaData()
                 metadata.reflect(bind=engine, only=[table])
                 tbl = metadata.tables[table]
@@ -90,8 +99,12 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
                             generated_keys[table][col].append(row[col])
             except Exception:
                 raise Exception(f"Failed to insert into table {table}")
-        trans.rollback()
+
+        # Commit the transaction
+        trans.commit()
         conn.close()
+
+        # Downgrade to the previous revision
         prev_rev = migration.down_revision or "base"
         command.downgrade(cfg, prev_rev)
         engine2 = create_engine(db_url)
@@ -100,22 +113,26 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
         user_tables = [t for t in tables_after if t != "alembic_version"]
         if prev_rev == "base":
             assert not user_tables, "User tables not dropped after downgrade to base"
-        engine2.dispose()
     finally:
         engine.dispose()
+        engine2.dispose()
 
 
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade_without_data(alembic_cfg, migration):
+    """Upgrades to the n-th migration and then downgrades back to the previous revision."""
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
     conn = engine.connect()
     trans = conn.begin()
     try:
+        # Upgrade the database schema
         command.upgrade(cfg, migration.revision)
         inspector = sa.inspect(engine)
         tables = inspector.get_table_names()
         assert tables, "No tables created after upgrade"
+
+        # Downgrade to the previous revision
         prev_rev = migration.down_revision or "base"
         command.downgrade(cfg, prev_rev)
         inspector = sa.inspect(engine)
@@ -130,6 +147,7 @@ def test_migration_upgrade_downgrade_without_data(alembic_cfg, migration):
 
 
 def test_migration_full_upgrade_and_downgrade_chain_without_data(alembic_cfg):
+    """Test the full upgrade and downgrade chain without data."""
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
     conn = engine.connect()
