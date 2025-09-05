@@ -86,6 +86,10 @@ def _upgrade_postgresql(bind):
     # FEEDBACK_STATUS
     feedback_status_new = postgresql.ENUM(*FEEDBACK_STATUS_NEW, name="feedback_status_new")
     feedback_status_new.create(bind, checkfirst=False)
+
+    # Drop default first
+    op.execute("ALTER TABLE submission ALTER COLUMN feedback_status DROP DEFAULT")
+
     op.alter_column(
         "submission",
         "feedback_status",
@@ -129,6 +133,8 @@ def _downgrade_postgresql(bind):
     )
     op.execute("DROP TYPE feedback_status")
     op.execute("ALTER TYPE feedback_status_old RENAME TO feedback_status")
+    # restore default
+    op.execute("ALTER TABLE submission ALTER COLUMN feedback_status SET DEFAULT 'not_generated'")
 
 
 # ----------------------

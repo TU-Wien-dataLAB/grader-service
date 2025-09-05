@@ -77,6 +77,19 @@ def get_referenced_columns_by_table(inspector):
     return refd
 
 
+def get_table_data(engine, tables):
+    """Return a dict of table_name -> list of rows as dicts"""
+    metadata = sa.MetaData()
+    metadata.reflect(bind=engine, only=tables)
+    data = {}
+    for table in tables:
+        tbl = metadata.tables[table]
+        with engine.connect() as conn:
+            result = conn.execute(sa.select(tbl))
+            data[table] = [dict(r) for r in result.mappings()]
+    return data
+
+
 # --- Tests ---
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
@@ -184,3 +197,92 @@ def test_migration_full_upgrade_and_downgrade_chain_without_data(alembic_cfg):
         trans.rollback()
         conn.close()
         engine.dispose()
+
+
+@pytest.mark.parametrize("migration", get_migration_scripts())
+def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, migration):
+    """Checks for data integrity during migration upgrade and downgrade.
+    Steps:
+    1. Upgrade the database to the (n-1)-th migration.
+    2. Add a new row to each table.
+    3. Upgrade the database to the n-th migration.
+    4. Perform data integrity checks after the upgrade.
+    5. Downgrade the database back to the (n-1)-th migration.
+    6. Perform data integrity checks after the downgrade.
+    """
+    cfg, db_url = alembic_cfg
+    engine = create_engine(db_url)
+    conn = engine.connect()
+    trans = conn.begin()
+
+    # Check if the migration has a down_revision
+    # if not, skip the test
+    if migration.down_revision is None:
+        return
+    try:
+        # Upgrade the database schema to (n-1) migration
+        command.upgrade(cfg, migration.down_revision)
+        inspector = sa.inspect(engine)
+        tables = [t for t in inspector.get_table_names() if t != "alembic_version"]
+        assert tables, "No tables created after upgrade"
+
+        # Track generated keys for foreign key relationships
+        generated_keys = defaultdict(lambda: defaultdict(list))
+        referenced_cols = get_referenced_columns_by_table(inspector)
+        # Identify the order in which tables should be populated based on foreign key relationships
+        ordered_tables = get_insert_order(inspector)
+
+        for table in ordered_tables:
+            try:
+                # Insert one row into the table
+                metadata = sa.MetaData()
+                metadata.reflect(bind=engine, only=[table])
+                tbl = metadata.tables[table]
+                row = generate_fake_row(table, inspector, generated_keys)
+                with engine.begin() as conn:
+                    conn.execute(tbl.insert().values(**row))
+
+                    # Save ANY columns that other tables FK to
+                    for col in referenced_cols.get(table, []):
+                        if col in row and row[col] is not None:
+                            generated_keys[table][col].append(row[col])
+            except Exception:
+                raise Exception(f"Failed to insert into table {table}")
+
+        data_before_upgrade = get_table_data(engine, tables)
+
+        # Upgrade the database schema to n-th migration
+        command.upgrade(cfg, migration.revision)
+
+        # Check if the migration this something
+        engine2 = create_engine(db_url)
+        inspector = sa.inspect(engine2)
+        tables_after_upgrade = [t for t in inspector.get_table_names() if t != "alembic_version"]
+        data_after_upgrade = get_table_data(engine2, tables_after_upgrade)
+        assert data_before_upgrade != data_after_upgrade, "Data did not changed after upgrade!"
+
+        # Commit the transaction
+        trans.commit()
+        conn.close()
+
+        # Downgrade to the previous revision
+        prev_rev = migration.down_revision or "base"
+        command.downgrade(cfg, prev_rev)
+        engine3 = create_engine(db_url)
+        inspector = sa.inspect(engine3)
+        tables_after_downgrade = [t for t in inspector.get_table_names() if t != "alembic_version"]
+        if prev_rev == "base":
+            assert not tables_after_downgrade, "User tables not dropped after downgrade to base"
+        else:
+            # Check if the data is still the same
+            data_after_downgrade = get_table_data(engine2, tables_after_downgrade)
+            try:
+                assert data_before_upgrade == data_after_downgrade, "Data changed after downgrade!"
+            except AssertionError as e:
+                # If the tested migration is part of the not lossless migration do not throw the error
+                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                    raise e
+    finally:
+        engine.dispose()
+        engine2.dispose()
+        engine3.dispose()

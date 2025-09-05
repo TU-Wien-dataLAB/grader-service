@@ -135,3 +135,14 @@ def downgrade():
         batch_op.drop_constraint("unique_user_name", type_="unique")
         batch_op.drop_column("id")
         batch_op.create_primary_key("user_pkey", ["name"])  # restore name as PK
+
+    # 0. Create FKs referencing user.name
+    if op.get_bind().dialect.name == "postgresql":
+        for table, fk in [
+            ("takepart", "takepart_username_fkey"),
+            ("submission", "submission_username_fkey"),
+            ("api_token", "api_token_username_fkey"),
+            ("oauth_code", "oauth_code_username_fkey"),
+        ]:
+            with op.batch_alter_table(table) as batch_op:
+                batch_op.create_foreign_key(fk, "user", ["username"], ["name"])

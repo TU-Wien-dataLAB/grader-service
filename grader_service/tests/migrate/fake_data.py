@@ -94,7 +94,11 @@ def generate_fake_row(
         # Strings
         elif isinstance(col_type, (sa.String, sa.Text)):
             length = getattr(col_type, "length", 20) or 20
-            row[col_name] = faker.text(max_nb_chars=min(length, 50))
+            # special case for assignment settings
+            if col_name == "settings":
+                row[col_name] = "{}"
+            else:
+                row[col_name] = faker.text(max_nb_chars=min(length, 50)).lower()
 
         # Booleans
         elif isinstance(col_type, sa.Boolean):
@@ -116,7 +120,11 @@ def generate_fake_row(
 
         # Fallback
         else:
-            row[col_name] = faker.word()
+            if col.get("default") is not None:
+                # Fix default value for feedback_status
+                row[col_name] = "not_generated"
+            else:
+                row[col_name] = faker.word().lower()
 
         # Handle NOT NULL
         if not nullable and row[col_name] is None:
