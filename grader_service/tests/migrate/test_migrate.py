@@ -38,6 +38,23 @@ def database_backend(request, tmp_path, postgres_server):
     return request.param, db_url
 
 
+# autouse param ensures that this fixture is run for each test
+@pytest.fixture(autouse=True)
+def clean_database(database_backend):
+    """Ensure each test starts with a clean database schema."""
+    backend, db_url = database_backend
+    if backend == "postgresql":
+        engine = sa.create_engine(db_url)
+        with engine.begin() as conn:
+            conn.execute(sa.text("DROP SCHEMA public CASCADE;"))
+            conn.execute(sa.text("CREATE SCHEMA public;"))
+        engine.dispose()
+    elif backend == "sqlite":
+        # SQLite uses a new file per test, so it does not need cleaning
+        pass
+    yield
+
+
 @pytest.fixture
 def alembic_cfg(database_backend):
     backend, db_url = database_backend
