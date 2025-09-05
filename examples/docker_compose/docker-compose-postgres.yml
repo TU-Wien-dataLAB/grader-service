@@ -9,7 +9,7 @@ services:
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - ./data_only.sql:/app/data_only.sql
-      - ./db-init.sh:/app/db-init.sh
+      - ./init-db.sh:/app/init-db.sh
     networks:
       - network
     depends_on:
