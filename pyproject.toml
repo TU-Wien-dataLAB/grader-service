@@ -128,6 +128,9 @@ dev = [
     "pre-commit>=4.2.0",
     "oauthenticator>=17.3.0",
     "tbump>=6.11.0",
+    "faker",
+    "pytest",
+    "testcontainers"
 ]
 
 [tool.ruff]

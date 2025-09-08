@@ -3,7 +3,6 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,node,vscode,pycharm,macos,windows,linux
 
 jupyter_hub_config*.py
-grader_service*_config.py
 grader_labextension/grader/grader_labextension/labextension/*
 grader_labextension/grader/grader_labextension/labextension
 grader_labextension/grader/grader_labextension/labextension/build_log.json
@@ -504,8 +503,6 @@ Chart.lock
 #Sqlite database
 *.db
 grader_labextension/grader/grader_labextension/labextension/build_log.json
-grader_service_config.py
-
 
 #OpenAPI
 grader_labextension/.openapi-generator
