@@ -244,7 +244,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
 
                     # Save ANY columns that other tables FK to
                     for col in referenced_cols.get(table, []):
-                        if col in row and row[col] is not None:
+                        if row.get(col) is not None:
                             generated_keys[table][col].append(row[col])
             except Exception:
                 raise Exception(f"Failed to insert into table {table}")
