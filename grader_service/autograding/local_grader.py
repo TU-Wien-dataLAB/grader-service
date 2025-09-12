@@ -25,6 +25,7 @@ from traitlets.traitlets import Callable, TraitError, Unicode, validate
 from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
+from grader_service.handlers import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
@@ -74,7 +75,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         which should be graded by the executor.
         :type submission: Submission
         """
-        super(LocalAutogradeExecutor, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.submission = submission
         self.assignment: Assignment = submission.assignment
@@ -99,6 +100,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.__class__.__name__,
         )
         try:
+            self._clean_up_input_and_output_dirs()
             self._pull_submission()
             self.autograding_start = datetime.now()
             self._run()
@@ -138,7 +140,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
         )
 
-    def _write_gradebook(self, gradebook_str: str):
+    def _write_gradebook(self, gradebook_str: str) -> None:
         """
         Writes the gradebook to the output directory where it will be used by
         :mod:`grader_service.convert` to load the data.
@@ -146,86 +148,72 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :param gradebook_str: The content of the gradebook.
         :return: None
         """
-        if not os.path.exists(self.output_path):
-            os.mkdir(self.output_path)
+        if os.path.exists(self.output_path):
+            rmtree(self.output_path)
+        os.makedirs(self.output_path)
+
         path = os.path.join(self.output_path, "gradebook.json")
         self.log.info(f"Writing gradebook to {path}")
         with open(path, "w") as f:
             f.write(gradebook_str)
 
-    def _pull_submission(self):
-        """
-        Pulls the submission repository into the input path
-        based on the assignment type.
-        :return: Coroutine
-        """
-        if not os.path.exists(self.input_path):
-            Path(self.input_path).mkdir(parents=True, exist_ok=True)
+    def _pull_submission(self) -> None:
+        """Pulls the submission repository into the input path based on the assignment type."""
 
+        repo_type = GitRepoType.EDIT if self.submission.edited else GitRepoType.USER
+        repo_path = self._get_repo_path(repo_type)
+
+        self.log.info(f"Pulling repo {repo_path} into input directory")
+
+        commands = [f"{self.git_executable} init", f'{self.git_executable} pull "{repo_path}" main']
+        # Checkout to commit of submission, except when it was manually edited
+        if not self.submission.edited:
+            commands.append(f"{self.git_executable} checkout {self.submission.commit_hash}")
+
+        for cmd in commands:
+            self.log.info(f"Running {cmd}")
+            self._run_subprocess(cmd, self.input_path)
+
+        self.log.info(f"Successfully cloned repo. Now at commit {self.submission.commit_hash}")
+
+    def _get_repo_path(self, repo_type: GitRepoType) -> str:
+        """Determines the Git repository path for the submission."""
         assignment: Assignment = self.submission.assignment
         lecture: Lecture = assignment.lecture
         repo_name = self.submission.user.name
-
-        if self.submission.edited:
-            git_repo_path = os.path.join(
-                self.grader_service_dir,
-                "git",
-                lecture.code,
-                str(assignment.id),
-                "edit",
-                str(self.submission.id),
-            )
+        base_repo_path = os.path.join(
+            self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
+        )
+        if repo_type == GitRepoType.AUTOGRADE:
+            return os.path.join(base_repo_path, "user", repo_name)
+        elif repo_type == GitRepoType.EDIT:
+            return os.path.join(base_repo_path, str(self.submission.id))
         else:
-            git_repo_path = os.path.join(
-                self.grader_service_dir, "git", lecture.code, str(assignment.id), "user", repo_name
-            )
-        # clean start to autograde process
+            return os.path.join(base_repo_path, repo_name)
+
+    def _clean_up_input_and_output_dirs(self):
+        """Prepare clean input and output dirs before the autograde process"""
         if os.path.exists(self.input_path):
             rmtree(self.input_path)
-        os.makedirs(self.input_path, exist_ok=True)
+        os.makedirs(self.input_path)
         if os.path.exists(self.output_path):
             rmtree(self.output_path)
-        os.makedirs(self.output_path, exist_ok=True)
-
-        self.log.info(f"Pulling repo {git_repo_path} into input directory")
-
-        command = f"{self.git_executable} init"
-        self.log.info(f"Running {command}")
-        self._run_subprocess(command, self.input_path)
-
-        command = f'{self.git_executable} pull "{git_repo_path}" main'
-        self.log.info(f"Running {command}")
-        self._run_subprocess(command, self.input_path)
-        self.log.info("Successfully cloned repo")
-
-        # Checkout to commit of submission except when it was manually edited
-        if not self.submission.edited:
-            command = f"{self.git_executable} checkout {self.submission.commit_hash}"
-            self.log.info(f"Running {command}")
-            self._run_subprocess(command, self.input_path)
-            self.log.info(f"Now at commit {self.submission.commit_hash}")
+        os.makedirs(self.output_path)
 
     def _run(self):
         """
         Runs the autograding in the current interpreter
         and captures the output.
-        :return: Coroutine
         """
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-
-        os.makedirs(self.output_path, exist_ok=True)
-        self._write_gradebook(self._put_grades_in_assignment_properties())
-
-        c = Config()
-        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+        properties_str = self._put_grades_in_assignment_properties()
+        self._write_gradebook(properties_str)
 
         autograder = Autograde(
             self.input_path,
             self.output_path,
             "*.ipynb",
             assignment_settings=self.assignment.settings,
-            config=c,
+            config=self._get_autograde_config(),
         )
         autograder.force = True
 
@@ -260,7 +248,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         for notebook in notebooks:
             # Set grades
-            #
             assignment_properties["notebooks"][notebook]["grades_dict"] = submission_properties[
                 "notebooks"
             ][notebook]["grades_dict"]
@@ -273,6 +260,12 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.log.info("Added grades dict to properties")
         return properties_str
 
+    def _get_autograde_config(self) -> Config:
+        """Returns the autograde config, with the timeout function for ExecutePreprocessor."""
+        c = Config()
+        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+        return c
+
     def _push_results(self):
         """
         Pushes the results to the autograde repository
@@ -282,42 +275,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
         self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
 
-        assignment: Assignment = self.submission.assignment
-        lecture: Lecture = assignment.lecture
-        repo_name = self.submission.user.name
-
-        git_repo_path = os.path.join(
-            self.grader_service_dir,
-            "git",
-            lecture.code,
-            str(assignment.id),
-            "autograde",
-            "user",
-            repo_name,
-        )
-
-        if not os.path.exists(git_repo_path):
-            os.makedirs(git_repo_path, exist_ok=True)
-            try:
-                self._run_subprocess(f'git init --bare "{git_repo_path}"', self.output_path)
-            except CalledProcessError as e:
-                raise e
-
-        command = f"{self.git_executable} init"
-        self.log.info(f"Running {command} at {self.output_path}")
-        try:
-            self._run_subprocess(command, self.output_path)
-        except CalledProcessError as e:
-            raise e
+        git_repo_path = self._get_repo_path(repo_type=GitRepoType.AUTOGRADE)
+        self._init_autograde_repo(git_repo_path)
 
         self.log.info(f"Creating new branch submission_{self.submission.commit_hash}")
         command = f"{self.git_executable} switch -c submission_{self.submission.commit_hash}"
-        try:
-            self._run_subprocess(command, self.output_path)
-        except CalledProcessError as e:
-            raise e
+        self._run_subprocess(command, self.output_path)
         self.log.info(f"Now at branch submission_{self.submission.commit_hash}")
-        self.commit_whitelisted_files()
+
+        self._commit_whitelisted_files()
 
         self.log.info(
             f"Pushing to {git_repo_path} at branch submission_{self.submission.commit_hash}"
@@ -326,12 +292,22 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             f"{self.git_executable} push -uf "
             f'"{git_repo_path}" submission_{self.submission.commit_hash}'
         )
-        self.log.info(command)
+        self.log.info(f"Running {command}")
         try:
             self._run_subprocess(command, self.output_path)
         except Exception:
             raise RuntimeError(f"Failed to push to {git_repo_path}")
         self.log.info("Pushing complete")
+
+    def _init_autograde_repo(self, repo_path: str):
+        if not os.path.exists(repo_path):
+            os.makedirs(repo_path, exist_ok=True)
+            self._run_subprocess(
+                f'{self.git_executable} init --bare "{repo_path}"', self.output_path
+            )
+        command = f"{self.git_executable} init"
+        self.log.info(f"Running {command} at {self.output_path}")
+        self._run_subprocess(command, self.output_path)
 
     def _get_whitelist_patterns(self) -> Set[str]:
         """
@@ -368,7 +344,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return escaped_files
 
-    def commit_whitelisted_files(self):
+    def _commit_whitelisted_files(self):
         self.log.info(f"Committing filtered files in {self.output_path}")
 
         file_patterns = self._get_whitelist_patterns()
@@ -420,6 +396,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         Sets the submission autograding status based on the success parameter
         and sets the logs from autograding.
+
         :param success: Whether the grading process was a success or failure.
         :return: None
         """
