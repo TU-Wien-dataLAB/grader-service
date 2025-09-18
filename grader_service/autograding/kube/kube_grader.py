@@ -282,7 +282,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.log.info(f"Setting Namespace for submission {self.submission.id}")
             self.namespace = get_current_namespace()
 
-    def get_image(self) -> str:
+    def _get_image(self) -> str:
         """
         Returns the image name based on the lecture and assignment.
         If an image config file exists and has
@@ -312,7 +312,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             else:
                 return self.resolve_image_name(self.lecture, self.assignment)
 
-    def get_autograde_pod_name(self) -> str:
+    def _get_autograde_pod_name(self) -> str:
         # sanitize username by converting to lowercase and replacing non-alphanumeric chars
         sanitized_username = re.sub(r"[^a-zA-Z0-9]+", "-", self.submission.user.name.lower())
 
@@ -325,7 +325,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
         return f"autograde-job-{sanitized_username}-{self.submission.id}"
 
-    def create_env(self) -> list[V1EnvVar]:
+    def _create_env(self) -> list[V1EnvVar]:
         env = [
             V1EnvVar(
                 name="ASSIGNMENT_SETTINGS",
@@ -334,7 +334,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         ]
         return env
 
-    def start_pod(self) -> GraderPod:
+    def _start_pod(self) -> GraderPod:
         """
         Starts a pod in the namespace
         with the commit hash as the name of the pod.
@@ -369,14 +369,14 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         ]
         volume_mounts = volume_mounts + self.extra_volume_mounts
 
-        env = self.create_env()
+        env = self._create_env()
 
         # create pod spec
         pod = make_pod(
-            name=self.get_autograde_pod_name(),
+            name=self._get_autograde_pod_name(),
             cmd=command,
             env=env,
-            image=self.get_image(),
+            image=self._get_image(),
             image_pull_policy=self.image_pull_policy,
             image_pull_secrets=self.image_pull_secrets,
             working_dir="/",
@@ -412,7 +412,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         self._write_gradebook(self._put_grades_in_assignment_properties())
         grader_pod = None
         try:
-            grader_pod = self.start_pod()
+            grader_pod = self._start_pod()
             self.log.info(f"Started pod {grader_pod.name} in namespace {grader_pod.namespace}")
             status = grader_pod.poll()
             self.grading_logs = self._get_pod_logs(grader_pod)
@@ -429,8 +429,9 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             error_message = json.loads(e.body)
             if error_message["reason"] != "AlreadyExists" and grader_pod is not None:
                 try:
-                    namespace = grader_pod.namespace
-                    self.client.delete_namespaced_pod(name=grader_pod.name, namespace=namespace)
+                    self.client.delete_namespaced_pod(
+                        name=grader_pod.name, namespace=grader_pod.namespace
+                    )
                 except ApiException:
                     pass
             self.log.error(f"{error_message['reason']}: {error_message['message']}")
