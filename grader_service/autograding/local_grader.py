@@ -25,7 +25,7 @@ from traitlets.traitlets import Callable, TraitError, Unicode, validate
 from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
-from grader_service.handlers import GitRepoType
+from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
