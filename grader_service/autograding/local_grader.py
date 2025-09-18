@@ -148,10 +148,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :param gradebook_str: The content of the gradebook.
         :return: None
         """
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-        os.makedirs(self.output_path)
-
         path = os.path.join(self.output_path, "gradebook.json")
         self.log.info(f"Writing gradebook to {path}")
         with open(path, "w") as f:
@@ -229,7 +225,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         try:
             autograder.start()
         finally:
-            self.grading_logs = log_stream.getvalue()
+            self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
             autograder.log.removeHandler(log_handler)
 
     def _put_grades_in_assignment_properties(self) -> str:
@@ -482,13 +478,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         """
         Runs the autograding in a separate python interpreter
         as a sub-process and captures the output.
-
-        :return: Coroutine
         """
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-
-        os.mkdir(self.output_path)
         self._write_gradebook(self._put_grades_in_assignment_properties())
 
         command = (

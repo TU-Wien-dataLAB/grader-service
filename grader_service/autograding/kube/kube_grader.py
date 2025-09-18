@@ -7,7 +7,6 @@
 import asyncio
 import inspect
 import json
-import os
 import re
 import time
 from asyncio import Task, run
@@ -20,7 +19,6 @@ from urllib3.exceptions import MaxRetryError
 
 from grader_service.autograding.kube.util import get_current_namespace, make_pod
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.autograding.utils import rmtree
 from grader_service.orm import Assignment, Lecture, Submission
 from grader_service.orm.assignment import json_serial
 
@@ -406,9 +404,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         input and output directory through a persistent volume claim.
         :return: Coroutine
         """
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-        os.makedirs(self.output_path, exist_ok=True)
         self._write_gradebook(self._put_grades_in_assignment_properties())
         grader_pod = None
         try:

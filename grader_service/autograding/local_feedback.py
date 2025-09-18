@@ -128,7 +128,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         """
         Sets the submission feedback status based on the success of the generation.
 
-        :param success: Whether feedback generation was succesful or not.
+        :param success: Whether feedback generation was successful or not.
         :return: None
         """
         if success:
@@ -142,10 +142,6 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-
-        os.mkdir(self.output_path)
         self._write_gradebook(self.submission.properties)
 
         command = (
