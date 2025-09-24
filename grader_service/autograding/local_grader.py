@@ -254,7 +254,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.git_manager.pull_submission(self.input_path)
 
             autograding_start = datetime.now()
-
             self._run()
             autograding_finished = datetime.now()
 
@@ -419,7 +418,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         and sets them as the submission properties.
         Also calculates the score of the submission
         after autograding based on the updated properties.
-        Removes the gradebook.json file after doing so.
 
         :return: None
         """
@@ -438,8 +436,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.submission.grading_score = score
         self.submission.score = self.submission.score_scaling * score
         self.session.commit()
-
-        os.unlink(os.path.join(self.output_path, "gradebook.json"))
 
     def _set_db_state(self, success=True) -> None:
         """
@@ -467,6 +463,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         Removes all files from the input and output directories
         and closes the session if specified by self.close_session.
+
+        Note: This also removes the gradebook.json file, which is in the `self.output_path` dir.
         :return: None
         """
         try:

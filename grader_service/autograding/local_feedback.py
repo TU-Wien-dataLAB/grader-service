@@ -77,8 +77,8 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         return ["."]
 
     def _set_properties(self) -> None:
-        # No need to set properties. Only remove the gradebook file.
-        os.unlink(os.path.join(self.output_path, "gradebook.json"))
+        # No need to set properties.
+        pass
 
     def _set_db_state(self, success=True) -> None:
         """
