@@ -1,16 +1,16 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Submission
+from grader_service.orm import Assignment, Submission
 
 
 @pytest.fixture
 def local_autograde_executor():
     submission = Submission()
-    submission.assignment = MagicMock()
+    submission.assignment = Assignment()
     submission.id = 42
 
     yield LocalAutogradeExecutor(grader_service_dir="foo", submission=submission)
@@ -22,7 +22,7 @@ def test_get_whitelist_patterns(local_autograde_executor):
         allowed_files=["*.py", "*.ipynb"]
     )
 
-    assert local_autograde_executor._get_whitelist_patterns() == {
+    assert local_autograde_executor.assignment.get_whitelist_patterns() == {
         "*.py",
         "*.ipynb",
         "Introduction to numpy.md",
@@ -30,7 +30,16 @@ def test_get_whitelist_patterns(local_autograde_executor):
 
 
 @patch("grader_service.autograding.local_grader.os.walk", autospec=True)
-def test_get_files_to_commit(mock_walk, local_autograde_executor):
+def test_get_whitelisted_files(mock_walk, local_autograde_executor):
+    local_autograde_executor.assignment.properties = '{"extra_files": ["*/config"]}'
+    local_autograde_executor.assignment.settings = AssignmentSettings(allowed_files=["*.py"])
+
+    assert local_autograde_executor.assignment.get_whitelist_patterns() == {
+        "*.ipynb",
+        "*/config",
+        "*.py",
+    }
+
     mock_walk.return_value = [
         (
             "foo/convert_out/submission_42",
@@ -42,7 +51,7 @@ def test_get_files_to_commit(mock_walk, local_autograde_executor):
         ("foo/convert_out/submission_42/bar", [], ["Ex2.ipynb", "data.gz", "config"]),
     ]
 
-    assert local_autograde_executor._get_files_to_commit({"*.ipynb", "*/config", "*.py"}) == [
+    assert local_autograde_executor._get_whitelisted_files() == [
         "Ex1.ipynb",
         "'weird name.py'",
         "bar/Ex2.ipynb",

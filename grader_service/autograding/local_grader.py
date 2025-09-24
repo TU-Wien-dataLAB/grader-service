@@ -14,13 +14,12 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from subprocess import CalledProcessError
-from typing import List, Optional, Set
+from typing import Any, List, Optional
 
 from sqlalchemy.orm import Session
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Callable, TraitError, Unicode, validate
+from traitlets.traitlets import Callable, TraitError, Type, Unicode, validate
 
 from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.autograde import Autograde
@@ -37,6 +36,158 @@ def default_timeout_func(lecture: Lecture) -> int:
     return 360
 
 
+def executable_validator(proposal: dict) -> str:
+    exec: str = proposal["value"]
+    if shutil.which(exec) is None:
+        raise TraitError(f"The executable is not valid: {exec}")
+    return exec
+
+
+class GitSubmissionManager(LoggingConfigurable):
+    """
+    Handles git-related operations performed by autograder executors.
+    """
+
+    git_executable = Unicode("git", allow_none=False).tag(config=True)
+    input_repo_type = Unicode(GitRepoType.USER, allow_none=False).tag(config=True)
+    output_repo_type = Unicode(GitRepoType.AUTOGRADE, allow_none=False).tag(config=True)
+
+    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.grader_service_dir = grader_service_dir
+        self.submission = submission
+
+        if self.input_repo_type == GitRepoType.USER and self.submission.edited:
+            # User's submission was edited by the instructor - repo type has to be adjusted
+            self.input_repo_type = GitRepoType.EDIT
+
+        self.input_branch = "main"
+        self.output_branch = f"submission_{self.submission.commit_hash}"
+
+        # FIXME! Collect the logs somehow, they should be turned into SubmissionLogs (_set_db_state)
+        self.grading_logs: Optional[str] = None
+
+    def _get_repo_path(self, repo_type: GitRepoType) -> str:
+        """Determines the Git repository path for the submission."""
+        assignment: Assignment = self.submission.assignment
+        lecture: Lecture = assignment.lecture
+        repo_name = self.submission.user.name
+
+        base_repo_path = os.path.join(
+            self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
+        )
+        if repo_type == GitRepoType.AUTOGRADE:
+            return os.path.join(base_repo_path, "user", repo_name)
+        elif repo_type == GitRepoType.EDIT:
+            return os.path.join(base_repo_path, str(self.submission.id))
+        elif repo_type == GitRepoType.USER:
+            return os.path.join(base_repo_path, repo_name)
+        else:
+            raise ValueError(f"Cannot determine repo path for repo type {repo_type}")
+
+    def pull_submission(self, input_path: str) -> None:
+        """Inits and pulls the submission repository into the input path.
+
+        :param input_path: The directory where the input repo will be created.
+        """
+        input_repo_path = self._get_repo_path(self.input_repo_type)
+
+        self.log.info(f"Pulling repo {input_repo_path} into input directory")
+        commands = [
+            f"{self.git_executable} init",
+            f'{self.git_executable} pull "{input_repo_path}" {self.input_branch}',
+        ]
+
+        # When autograding a user's submission, check out to the commit of submission
+        if self.input_repo_type == GitRepoType.USER:
+            commands.append(f"{self.git_executable} checkout {self.submission.commit_hash}")
+
+        for cmd in commands:
+            self.log.info(f"Running {cmd}")
+            self._run_subprocess(cmd, input_path)
+
+        self.log.info("Successfully cloned repo.")
+
+    def _set_up_output_repo(self, output_path: str) -> None:
+        """Initializes the output repo and switches to a separate branch named
+        after the commit hash of the submission."""
+        output_repo_path = self._get_repo_path(self.output_repo_type)
+
+        if not os.path.exists(output_repo_path):
+            os.makedirs(output_repo_path)
+            self._run_subprocess(
+                f'{self.git_executable} init --bare "{output_repo_path}"', output_path
+            )
+
+        command = f"{self.git_executable} init"
+        self.log.info(f"Running {command} at {output_path}")
+        self._run_subprocess(command, output_path)
+        self.log.info(f"Creating the new branch {self.output_branch} and switching to it")
+        command = f"{self.git_executable} switch -c {self.output_branch}"
+        self._run_subprocess(command, output_path)
+        self.log.info(f"Now at branch {self.output_branch}")
+
+    def _commit_files(self, filenames: List[str], output_path: str) -> None:
+        """
+        Commits the provided files in the repo at `output_path`.
+        """
+        self.log.info(f"Committing files in {output_path}")
+
+        if not filenames:
+            self.log.info("No files to commit.")
+            return
+
+        self._run_subprocess(f"{self.git_executable} add -- " + " ".join(filenames), output_path)
+        self._run_subprocess(
+            f'{self.git_executable} commit -m "{self.submission.commit_hash}"', output_path
+        )
+
+    def push_results(self, filenames: List[str], output_path: str) -> None:
+        """Creates the output repository, commits and pushes the changes."""
+        self._set_up_output_repo(output_path)
+        self._commit_files(filenames, output_path)
+
+        output_repo_path = self._get_repo_path(self.output_repo_type)
+
+        self.log.info(f"Pushing to {output_repo_path} at branch {self.output_branch}")
+        command = f'{self.git_executable} push -uf "{output_repo_path}" {self.output_branch}'
+        self.log.info(f"Running {command}")
+        self._run_subprocess(command, output_path)
+        self.log.info("Pushing complete")
+
+    def _run_subprocess(self, command: str, cwd: str) -> subprocess.CompletedProcess:
+        # TODO: Refactor this!
+        """
+        Execute the command as a subprocess.
+        :param command: The command to execute as a string.
+        :param cwd: The working directory the subprocess should run in.
+        :return: CompletedProcess object which contains information about the execution.
+        """
+        try:
+            result = subprocess.run(
+                shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=cwd,
+                text=True,  # Decodes output to string
+                check=True,  # Raises a CalledProcessError on non-zero exit code
+            )
+            return result
+        except subprocess.CalledProcessError as e:
+            self.grading_logs = e.stderr
+            self.log.error(self.grading_logs)
+            raise
+        except Exception as e:
+            self.grading_logs = (self.grading_logs or "") + str(e)
+            self.log.error(e)
+            raise
+
+    # TODO: Can I decorate executable_validator with both "git_executable" and "convert_executable"?
+    @validate("git_executable")
+    def _validate_executable(self, proposal):
+        return executable_validator(proposal)
+
+
 class LocalAutogradeExecutor(LoggingConfigurable):
     """
     Runs an autograde job on the local machine
@@ -47,7 +198,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
     relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
-    git_executable = Unicode("git", allow_none=False).tag(config=True)
+    # TODO: verify that this is the appropriate traitlet
+    git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
     timeout_func = Callable(
         default_timeout_func,
@@ -83,16 +235,14 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         # close session after grading (might need session later)
         self.close_session = close_session
 
-        self.autograding_start: Optional[datetime] = None
-        self.autograding_finished: Optional[datetime] = None
-        self.autograding_status: Optional[str] = None
         self.grading_logs: Optional[str] = None
+
+        self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
 
     def start(self):
         """
         Starts the autograding job.
         This is the only method that is exposed to the client.
-        It re-raises all exceptions that happen while running.
         """
         self.log.info(
             "Starting autograding job for submission %s in %s",
@@ -101,13 +251,18 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         try:
             self._clean_up_input_and_output_dirs()
-            self._pull_submission()
-            self.autograding_start = datetime.now()
+            self.git_manager.pull_submission(self.input_path)
+
+            autograding_start = datetime.now()
+
             self._run()
-            self.autograding_finished = datetime.now()
+            autograding_finished = datetime.now()
+
             self._set_properties()
-            self._push_results()
+            files_to_commit = self._get_whitelisted_files()
+            self.git_manager.push_results(files_to_commit, self.output_path)
             self._set_db_state()
+            self._update_submission_logs()
         except Exception:
             self.log.error(
                 "Failed autograding job for submission %s in %s",
@@ -117,7 +272,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             )
             self._set_db_state(success=False)
         else:
-            ts = round((self.autograding_finished - self.autograding_start).total_seconds())
+            ts = round((autograding_finished - autograding_start).total_seconds())
             self.log.info(
                 "Successfully completed autograding job for submission %s in %s; took %s min %s s",
                 self.submission.id,
@@ -140,6 +295,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
         )
 
+    def _clean_up_input_and_output_dirs(self):
+        """Prepare clean input and output dirs before the autograde process"""
+        if os.path.exists(self.input_path):
+            rmtree(self.input_path)
+        os.makedirs(self.input_path)
+        if os.path.exists(self.output_path):
+            rmtree(self.output_path)
+        os.makedirs(self.output_path)
+
     def _write_gradebook(self, gradebook_str: str) -> None:
         """
         Writes the gradebook to the output directory where it will be used by
@@ -152,49 +316,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.log.info(f"Writing gradebook to {path}")
         with open(path, "w") as f:
             f.write(gradebook_str)
-
-    def _pull_submission(self) -> None:
-        """Pulls the submission repository into the input path based on the assignment type."""
-
-        repo_type = GitRepoType.EDIT if self.submission.edited else GitRepoType.USER
-        repo_path = self._get_repo_path(repo_type)
-
-        self.log.info(f"Pulling repo {repo_path} into input directory")
-
-        commands = [f"{self.git_executable} init", f'{self.git_executable} pull "{repo_path}" main']
-        # Checkout to commit of submission, except when it was manually edited
-        if not self.submission.edited:
-            commands.append(f"{self.git_executable} checkout {self.submission.commit_hash}")
-
-        for cmd in commands:
-            self.log.info(f"Running {cmd}")
-            self._run_subprocess(cmd, self.input_path)
-
-        self.log.info(f"Successfully cloned repo. Now at commit {self.submission.commit_hash}")
-
-    def _get_repo_path(self, repo_type: GitRepoType) -> str:
-        """Determines the Git repository path for the submission."""
-        assignment: Assignment = self.submission.assignment
-        lecture: Lecture = assignment.lecture
-        repo_name = self.submission.user.name
-        base_repo_path = os.path.join(
-            self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
-        )
-        if repo_type == GitRepoType.AUTOGRADE:
-            return os.path.join(base_repo_path, "user", repo_name)
-        elif repo_type == GitRepoType.EDIT:
-            return os.path.join(base_repo_path, str(self.submission.id))
-        else:
-            return os.path.join(base_repo_path, repo_name)
-
-    def _clean_up_input_and_output_dirs(self):
-        """Prepare clean input and output dirs before the autograde process"""
-        if os.path.exists(self.input_path):
-            rmtree(self.input_path)
-        os.makedirs(self.input_path)
-        if os.path.exists(self.output_path):
-            rmtree(self.output_path)
-        os.makedirs(self.output_path)
 
     def _run(self):
         """
@@ -211,7 +332,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             assignment_settings=self.assignment.settings,
             config=self._get_autograde_config(),
         )
-        autograder.force = True
 
         log_stream = io.StringIO()
         log_handler = logging.StreamHandler(log_stream)
@@ -252,8 +372,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 "notebooks"
             ][notebook]["comments_dict"]
 
-        properties_str = json.dumps(assignment_properties)
         self.log.info("Added grades dict to properties")
+        properties_str = json.dumps(assignment_properties)
         return properties_str
 
     def _get_autograde_config(self) -> Config:
@@ -262,66 +382,19 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
         return c
 
-    def _push_results(self):
+    def _get_whitelisted_files(self) -> List[str]:
         """
-        Pushes the results to the autograde repository
-        as a separate branch named after the commit hash of the submission.
-        Removes the gradebook.json file before doing so.
+        Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
+
+        The list can be directly passed to the `git commit` command.
+
+        :return: list of shell-escaped filenames matching the whitelist patterns of the assignment
         """
-        os.unlink(os.path.join(self.output_path, "gradebook.json"))
-        self.log.info(f"Pushing files: {os.listdir(self.output_path)}")
+        file_patterns = self.assignment.get_whitelist_patterns()
+        if not file_patterns:
+            # No filtering needed
+            return ["."]
 
-        git_repo_path = self._get_repo_path(repo_type=GitRepoType.AUTOGRADE)
-        self._init_autograde_repo(git_repo_path)
-
-        self.log.info(f"Creating new branch submission_{self.submission.commit_hash}")
-        command = f"{self.git_executable} switch -c submission_{self.submission.commit_hash}"
-        self._run_subprocess(command, self.output_path)
-        self.log.info(f"Now at branch submission_{self.submission.commit_hash}")
-
-        self._commit_whitelisted_files()
-
-        self.log.info(
-            f"Pushing to {git_repo_path} at branch submission_{self.submission.commit_hash}"
-        )
-        command = (
-            f"{self.git_executable} push -uf "
-            f'"{git_repo_path}" submission_{self.submission.commit_hash}'
-        )
-        self.log.info(f"Running {command}")
-        try:
-            self._run_subprocess(command, self.output_path)
-        except Exception:
-            raise RuntimeError(f"Failed to push to {git_repo_path}")
-        self.log.info("Pushing complete")
-
-    def _init_autograde_repo(self, repo_path: str):
-        if not os.path.exists(repo_path):
-            os.makedirs(repo_path, exist_ok=True)
-            self._run_subprocess(
-                f'{self.git_executable} init --bare "{repo_path}"', self.output_path
-            )
-        command = f"{self.git_executable} init"
-        self.log.info(f"Running {command} at {self.output_path}")
-        self._run_subprocess(command, self.output_path)
-
-    def _get_whitelist_patterns(self) -> Set[str]:
-        """
-        Combines all whitelist patterns into a single set.
-        """
-        base_filter = ["*.ipynb"]
-        extra_files = json.loads(self.assignment.properties).get("extra_files", [])
-        allowed_file_patterns = self.assignment.settings.allowed_files
-
-        return set(base_filter + extra_files + allowed_file_patterns)
-
-    def _get_files_to_commit(self, file_patterns: Set[str]) -> List[str]:
-        """
-        Prepares a list of shell-escaped filenames matching the given patterns.
-
-        :param file_patterns: set of patterns to match the filenames against
-        :return: list of shell-escaped filenames
-        """
         files_to_commit = []
 
         # get all files in the directory
@@ -340,36 +413,14 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return escaped_files
 
-    def _commit_whitelisted_files(self):
-        self.log.info(f"Committing filtered files in {self.output_path}")
-
-        file_patterns = self._get_whitelist_patterns()
-        files_to_commit = self._get_files_to_commit(file_patterns)
-
-        if not files_to_commit:
-            self.log.info("No files to commit.")
-            return
-
-        try:
-            # add only the filtered files
-            add_command = f"{self.git_executable} add -- " + " ".join(files_to_commit)
-            self._run_subprocess(add_command, self.output_path)
-
-            # commit files
-            commit_command = f'{self.git_executable} commit -m "{self.submission.commit_hash}"'
-            self._run_subprocess(commit_command, self.output_path)
-
-        except CalledProcessError as e:
-            err_msg = f"Failed to commit changes: {e.output}"
-            self.log.error(err_msg)
-            raise RuntimeError(err_msg)
-
-    def _set_properties(self):
+    def _set_properties(self) -> None:
         """
         Loads the contents of the gradebook.json file
         and sets them as the submission properties.
         Also calculates the score of the submission
         after autograding based on the updated properties.
+        Removes the gradebook.json file after doing so.
+
         :return: None
         """
         with open(os.path.join(self.output_path, "gradebook.json"), "r") as f:
@@ -388,7 +439,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.submission.score = self.submission.score_scaling * score
         self.session.commit()
 
-    def _set_db_state(self, success=True):
+        os.unlink(os.path.join(self.output_path, "gradebook.json"))
+
+    def _set_db_state(self, success=True) -> None:
         """
         Sets the submission autograding status based on the success parameter
         and sets the logs from autograding.
@@ -400,14 +453,17 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.submission.auto_status = AutoStatus.AUTOMATICALLY_GRADED
         else:
             self.submission.auto_status = AutoStatus.GRADING_FAILED
+        self.session.commit()
 
+    def _update_submission_logs(self):
         if self.grading_logs is not None:
+            # Remove null characters to avoid database storage/string processing/display/etc. issues
             self.grading_logs = self.grading_logs.replace("\x00", "")
         logs = SubmissionLogs(logs=self.grading_logs, sub_id=self.submission.id)
         self.session.merge(logs)
         self.session.commit()
 
-    def _cleanup(self):
+    def _cleanup(self) -> None:
         """
         Removes all files from the input and output directories
         and closes the session if specified by self.close_session.
@@ -428,6 +484,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :param cwd: The working directory the subprocess should run in.
         :return: CompletedProcess object which contains information about the execution.
         """
+        # TODO: Refactor this. Do we need it still? It's only used in the LocalProcessAutogradeExecutor
         try:
             result = subprocess.run(
                 shlex.split(command),
@@ -457,12 +514,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             raise TraitError("The path has to be an existing directory")
         return path
 
-    @validate("convert_executable", "git_executable")
+    @validate("convert_executable")
     def _validate_executable(self, proposal):
-        exec: str = proposal["value"]
-        if shutil.which(exec) is None:
-            raise TraitError(f"The executable is not valid: {exec}")
-        return exec
+        return executable_validator(proposal)
 
 
 class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):

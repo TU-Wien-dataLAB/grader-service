@@ -7,20 +7,32 @@
 import io
 import logging
 import os
-from subprocess import CalledProcessError
+from typing import Any, List
 
 from traitlets import Unicode
 
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.autograding.utils import rmtree
+from grader_service.autograding.local_grader import GitSubmissionManager, LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.submission import FeedbackStatus, Submission
 
 
-class GenerateFeedbackExecutor(LocalAutogradeExecutor):
-    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
+class FeedbackGitSubmissionManager(GitSubmissionManager):
+    """Git manager for generating submission feedback."""
+
+    input_repo_type = GitRepoType.AUTOGRADE
+    output_repo_type = GitRepoType.FEEDBACK
+
+    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
         super().__init__(grader_service_dir, submission, **kwargs)
+        self.input_branch = f"submission_{self.submission.commit_hash}"
+        self.output_branch = f"feedback_{self.submission.commit_hash}"
+
+
+class GenerateFeedbackExecutor(LocalAutogradeExecutor):
+    git_manager_class = FeedbackGitSubmissionManager
+    input_repo_type = GitRepoType.AUTOGRADE
+    output_repo_type = GitRepoType.FEEDBACK
 
     @property
     def input_path(self):
@@ -34,31 +46,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
         )
 
-    def _pull_submission(self):
-        repo_path = self._get_repo_path(repo_type=GitRepoType.AUTOGRADE)
-
-        if os.path.exists(self.input_path):
-            rmtree(self.input_path)
-        os.mkdir(self.input_path)
-
-        self.log.info(f"Pulling repo {repo_path} into input directory")
-
-        commands = [
-            f"{self.git_executable} init",
-            f'{self.git_executable} pull "{repo_path}" submission_{self.submission.commit_hash}',
-        ]
-
-        for cmd in commands:
-            self.log.info(f"Running {cmd}")
-            try:
-                self._run_subprocess(cmd, self.input_path)
-            except CalledProcessError:
-                pass
-
-        self.log.info("Successfully cloned repo")
-
     def _run(self):
-        self._write_gradebook(self.submission.properties.properties)
+        properties_str = self.submission.properties.properties
+        self._write_gradebook(properties_str)
 
         feedback_generator = GenerateFeedback(
             self.input_path,
@@ -66,65 +56,31 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             "*.ipynb",
             assignment_settings=self.assignment.settings,
         )
-        feedback_generator.force = True
 
         log_stream = io.StringIO()
         log_handler = logging.StreamHandler(log_stream)
+        log_handler.setFormatter(
+            logging.Formatter(
+                fmt="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            )
+        )
         feedback_generator.log.addHandler(log_handler)
 
         try:
             feedback_generator.start()
         finally:
-            self.grading_logs = log_stream.getvalue()
+            self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
             feedback_generator.log.removeHandler(log_handler)
 
-    def _push_results(self):
+    def _get_whitelisted_files(self) -> List[str]:
+        # No need to filter files against a whitelist when generating feedback.
+        return ["."]
+
+    def _set_properties(self) -> None:
+        # No need to set properties. Only remove the gradebook file.
         os.unlink(os.path.join(self.output_path, "gradebook.json"))
 
-        git_repo_path = self._get_repo_path(repo_type=GitRepoType.FEEDBACK)
-        self._init_feedback_repo(git_repo_path)
-
-        self.log.info(f"Creating new branch feedback_{self.submission.commit_hash}")
-        command = f"{self.git_executable} switch -c feedback_{self.submission.commit_hash}"
-        try:
-            self._run_subprocess(command, self.output_path)
-        except CalledProcessError:
-            pass
-        self.log.info(f"Now at branch feedback_{self.submission.commit_hash}")
-
-        self.log.info(f"Commiting all files in {self.output_path}")
-        self._run_subprocess(f"{self.git_executable} add -A", self.output_path)
-        self._run_subprocess(
-            f'{self.git_executable} commit -m "{self.submission.commit_hash}"', self.output_path
-        )
-        self.log.info(
-            f"Pushing to {git_repo_path} at branch feedback_{self.submission.commit_hash}"
-        )
-        command = (
-            f'{self.git_executable} push -uf "{git_repo_path}" '
-            f"feedback_{self.submission.commit_hash}"
-        )
-        self._run_subprocess(command, self.output_path)
-        self.log.info("Pushing complete")
-
-    def _init_feedback_repo(self, repo_path: str):
-        if not os.path.exists(repo_path):
-            os.makedirs(repo_path, exist_ok=True)
-            self._run_subprocess(
-                f'{self.git_executable} init --bare "{repo_path}"', self.output_path
-            )
-        command = f"{self.git_executable} init"
-        self.log.info(f"Running {command} at {self.output_path}")
-        try:
-            self._run_subprocess(command, self.output_path)
-        except CalledProcessError:
-            pass
-
-    def _set_properties(self):
-        # No need to set properties
-        pass
-
-    def _set_db_state(self, success=True):
+    def _set_db_state(self, success=True) -> None:
         """
         Sets the submission feedback status based on the success of the generation.
 
