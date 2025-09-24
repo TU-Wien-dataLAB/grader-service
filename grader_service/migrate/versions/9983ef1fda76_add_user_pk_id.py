@@ -38,7 +38,7 @@ def upgrade():
         pass  # sqlite does not name PK constraints
 
     with op.batch_alter_table("user") as batch_op:
-        batch_op.add_column(sa.Column("id", sa.Integer(), nullable=True))
+        batch_op.add_column(sa.Column("id", sa.Integer(), nullable=True, autoincrement=True))
 
     with op.batch_alter_table("user") as batch_op:
         if op.get_bind().dialect.name == "postgresql":
