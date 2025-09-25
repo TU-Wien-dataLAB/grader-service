@@ -10,25 +10,7 @@ from grader_service.autograding.local_feedback import (
     GenerateFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Assignment, Lecture
 from grader_service.orm.submission import FeedbackStatus
-from grader_service.orm.submission_properties import SubmissionProperties
-
-
-@pytest.fixture
-def submission_123():
-    submission = Mock()
-    submission.id = 123
-    submission.assignment = Assignment(id=1, properties='{"notebooks": {}}')
-    submission.assignment.lecture = Lecture(code="LEC_01")
-    submission.assignment.settings = {}
-    submission.user.name = "test_user"
-    submission.properties = SubmissionProperties(sub_id=123, properties='{"notebooks": {}}')
-    submission.score_scaling = 1
-    submission.commit_hash = "abc123"
-    submission.feedback_status = FeedbackStatus.NOT_GENERATED
-
-    yield submission
 
 
 @pytest.fixture
@@ -45,6 +27,25 @@ def feedback_executor(tmp_path, submission_123):
     ):
         mock_session_class.object_session.return_value = Mock()
         yield GenerateFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+
+
+@pytest.fixture
+def process_executor(tmp_path, submission_123):
+    with (
+        patch(
+            "grader_service.autograding.local_grader.Session", autospec=True
+        ) as mock_session_class,
+        patch(
+            "grader_service.autograding.local_feedback.GenerateFeedbackProcessExecutor."
+            "git_manager_class",
+            autospec=True,
+        ),
+    ):
+        mock_session_class.object_session.return_value = Mock()
+        executor = GenerateFeedbackProcessExecutor(
+            grader_service_dir=str(tmp_path), submission=submission_123
+        )
+        yield executor
 
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
@@ -153,24 +154,6 @@ def test_gradebook_writing(feedback_executor):
     with open(gradebook_path, "r") as f:
         content = f.read()
     assert content == gradebook_content
-
-
-@pytest.fixture
-def process_executor(tmp_path, submission_123):
-    with (
-        patch(
-            "grader_service.autograding.local_grader.Session", autospec=True
-        ) as mock_session_class,
-        patch(
-            "grader_service.autograding.local_feedback.GenerateFeedbackProcessExecutor.git_manager_class",
-            autospec=True,
-        ),
-    ):
-        mock_session_class.object_session.return_value = Mock()
-        executor = GenerateFeedbackProcessExecutor(
-            grader_service_dir=str(tmp_path), submission=submission_123
-        )
-        yield executor
 
 
 def test_process_executor_run_success(process_executor):

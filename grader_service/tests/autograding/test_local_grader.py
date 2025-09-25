@@ -5,23 +5,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.autograding.local_grader import (
+    LocalAutogradeExecutor,
+    LocalProcessAutogradeExecutor,
+)
 from grader_service.orm import Assignment, Lecture
 from grader_service.orm.submission import AutoStatus
-
-
-@pytest.fixture
-def submission_123():
-    submission = Mock()
-    submission.assignment = Assignment(id=1, properties='{"notebooks": {}}')
-    submission.assignment.lecture = Lecture(code="LEC_01")
-    submission.assignment.settings.allowed_files = []
-    submission.user.name = "test_user"
-    submission.properties.properties = '{"notebooks": {}}'
-    submission.score_scaling = 1
-    submission.id = 123
-
-    yield submission
 
 
 @pytest.fixture
@@ -38,6 +27,24 @@ def local_autograde_executor(tmp_path, submission_123):
     ):
         mock_session_class.object_session.return_value = Mock()
         yield LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+
+
+@pytest.fixture
+def process_executor(tmp_path, submission_123):
+    with (
+        patch(
+            "grader_service.autograding.local_grader.Session", autospec=True
+        ) as mock_session_class,
+        patch(
+            "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
+            autospec=True,
+        ),
+    ):
+        mock_session_class.object_session.return_value = Mock()
+        executor = LocalProcessAutogradeExecutor(
+            grader_service_dir=str(tmp_path), submission=submission_123
+        )
+        yield executor
 
 
 def test_whitelist_pattern_combination():
@@ -222,3 +229,6 @@ def test_subprocess_error_handling(local_autograde_executor):
             )
 
         assert "Command failed" in local_autograde_executor.grading_logs
+
+
+# TODO: Add tests for the process executor
