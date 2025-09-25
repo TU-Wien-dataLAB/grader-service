@@ -31,8 +31,6 @@ class FeedbackGitSubmissionManager(GitSubmissionManager):
 
 class GenerateFeedbackExecutor(LocalAutogradeExecutor):
     git_manager_class = FeedbackGitSubmissionManager
-    input_repo_type = GitRepoType.AUTOGRADE
-    output_repo_type = GitRepoType.FEEDBACK
 
     @property
     def input_path(self):
