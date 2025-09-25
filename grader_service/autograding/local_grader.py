@@ -543,7 +543,7 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)
         if process.returncode == 0:
-            self.grading_logs = process.stderr.read().decode("utf-8")
+            self.grading_logs = process.stderr
             self.log.info(self.grading_logs)
             self.log.info("Process has successfully completed execution!")
         else:

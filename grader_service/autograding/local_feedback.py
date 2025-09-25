@@ -104,7 +104,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
         )
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)
-        self.grading_logs = process.stderr.read().decode("utf-8")
+        self.grading_logs = process.stderr
         self.log.info(self.grading_logs)
         if process.returncode == 0:
             self.log.info("Process has successfully completed execution!")
