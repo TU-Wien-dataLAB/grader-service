@@ -113,10 +113,8 @@ def test_directory_cleanup_on_init(local_autograde_executor, tmp_path):
     output_dir = os.path.join(tmp_path, "convert_out", "submission_123")
     os.makedirs(input_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(input_dir, "test.txt"), "w") as f:
-        f.write("test")
-    with open(os.path.join(output_dir, "test.txt"), "w") as f:
-        f.write("test")
+    (Path(input_dir) / "test.txt").touch()
+    (Path(output_dir) / "test.txt").touch()
 
     # This should clean the input and output dirs.
     local_autograde_executor.start()
