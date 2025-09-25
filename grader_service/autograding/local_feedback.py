@@ -98,7 +98,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
-        self._write_gradebook(self.submission.properties)
+        self._write_gradebook(self.submission.properties.properties)
 
         command = (
             f"{self.convert_executable} generate_feedback -i "
