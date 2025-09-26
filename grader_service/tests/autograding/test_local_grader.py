@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from pathlib import Path
@@ -31,6 +32,8 @@ def local_autograde_executor(tmp_path, submission_123):
 
 @pytest.fixture
 def process_executor(tmp_path, submission_123):
+    # Note: No need to patch `grader_service.autograding.local_grader.Autograde`,
+    # as it is *not* directly called in the process executor's `_run` method.
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
@@ -45,6 +48,41 @@ def process_executor(tmp_path, submission_123):
             grader_service_dir=str(tmp_path), submission=submission_123
         )
         yield executor
+
+
+@patch("grader_service.convert.gradebook.models.GradeBookModel.from_dict")
+@patch("grader_service.convert.gradebook.models.Notebook", autospec=True)
+def test_local_autograde_start_outcome_on_success(
+    mock_notebook, mock_gradebook, local_autograde_executor
+):
+    """Test the results of successfully calling `start`"""
+    # Mock grades in the gradebook
+    mock_notebook.score = 1
+    mock_notebook_2 = copy.deepcopy(mock_notebook)
+    mock_notebook_2.score = 2
+    mock_gradebook.return_value.notebooks = {
+        "notebook1": mock_notebook,  # score = 1
+        "notebook2": mock_notebook_2,  # score = 2
+    }
+
+    local_autograde_executor.start()
+
+    assert local_autograde_executor.submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED
+    assert local_autograde_executor.submission.grading_score == 1 + 2
+    assert local_autograde_executor.submission.score == 1 + 2
+    assert local_autograde_executor.session.commit.called
+
+
+def test_local_autograde_start_outcome_on_failure(local_autograde_executor):
+    """Test the results of calling `start` when autograding fails"""
+    local_autograde_executor._run = Mock()
+    local_autograde_executor._run.side_effect = PermissionError()
+
+    local_autograde_executor.start()
+
+    assert local_autograde_executor.submission.auto_status == AutoStatus.GRADING_FAILED
+    assert local_autograde_executor.submission.score is None
+    assert local_autograde_executor.session.commit.called
 
 
 def test_whitelist_pattern_combination():
@@ -120,33 +158,18 @@ def test_directory_cleanup_on_init(local_autograde_executor, tmp_path):
     output_dir = os.path.join(tmp_path, "convert_out", "submission_123")
     os.makedirs(input_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
-    (Path(input_dir) / "test.txt").touch()
-    (Path(output_dir) / "test.txt").touch()
+    input_leftover_file = Path(input_dir) / "test.txt"
+    output_leftover_file = Path(output_dir) / "test.txt"
+    input_leftover_file.touch()
+    output_leftover_file.touch()
 
-    # This should clean the input and output dirs.
-    local_autograde_executor.start()
+    # This should recreate empty input and output dirs.
+    local_autograde_executor._clean_up_input_and_output_dirs()
 
-    assert not os.path.exists(input_dir)
-    assert not os.path.exists(output_dir)
-
-
-def test_status_setting_on_success(local_autograde_executor):
-    """Test that submission status is set correctly on success"""
-
-    local_autograde_executor.start()
-
-    assert local_autograde_executor.submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED
-    assert local_autograde_executor.session.commit.called
-
-
-def test_status_setting_on_failure(local_autograde_executor):
-    local_autograde_executor._run = Mock()
-    local_autograde_executor._run.side_effect = PermissionError()
-
-    local_autograde_executor.start()
-
-    assert local_autograde_executor.submission.auto_status == AutoStatus.GRADING_FAILED
-    assert local_autograde_executor.session.commit.called
+    assert not os.path.exists(input_leftover_file)
+    assert not os.path.exists(output_leftover_file)
+    assert os.path.exists(input_dir)
+    assert os.path.exists(output_dir)
 
 
 def test_submission_logs_update(local_autograde_executor):
@@ -162,7 +185,8 @@ def test_submission_logs_update(local_autograde_executor):
 
     assert local_autograde_executor.session.commit.called
     assert local_autograde_executor.session.merge.called
-    # Note: the actual submission object is not updated, because we mock `session.merge`.
+    # Note: the actual submission object in the db is not updated, because we mock the `session`.
+    # TODO: Maybe save the submission to the db? Then we don't have to mock the session.
     sub_logs = local_autograde_executor.session.merge.call_args[0][0]
     assert sub_logs.logs == "Test logs"
     assert sub_logs.sub_id == 123
@@ -200,18 +224,15 @@ def test_timeout_function_custom(mock_git, mock_session_class, tmp_path, submiss
 def test_gradebook_writing(local_autograde_executor):
     """Test that gradebook is written correctly"""
 
-    # Create output directory
     os.makedirs(local_autograde_executor.output_path, exist_ok=True)
 
-    # Write gradebook
     gradebook_content = '{"test": "data"}'
     local_autograde_executor._write_gradebook(gradebook_content)
 
-    # Verify file was created
+    # Verify file creation and content
     gradebook_path = os.path.join(local_autograde_executor.output_path, "gradebook.json")
     assert os.path.exists(gradebook_path)
 
-    # Verify content
     with open(gradebook_path, "r") as f:
         content = f.read()
     assert content == gradebook_content
@@ -227,8 +248,52 @@ def test_subprocess_error_handling(local_autograde_executor):
             local_autograde_executor._run_subprocess(
                 "invalid_command", local_autograde_executor.output_path
             )
-
+        # TODO: Improve this test after rewriting _run_subprocess
         assert "Command failed" in local_autograde_executor.grading_logs
 
 
-# TODO: Add tests for the process executor
+def test_process_executor_start_success(process_executor):
+    """Test successful execution of autograding process"""
+
+    process_executor.start()
+
+    # Verify the score and auto_status were set, and logs were captured
+    assert "[AutogradeApp]" in process_executor.grading_logs
+    assert process_executor.submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED
+    assert process_executor.submission.score == 0
+
+
+def test_process_executor_run_failure(process_executor):
+    """Test handling of process execution failure in _run method"""
+    mock_process = Mock()
+    mock_process.returncode = 1
+    mock_process.stderr = "Error: autograding failed"
+    process_executor._run_subprocess = Mock(return_value=mock_process)
+    os.makedirs(process_executor.output_path, exist_ok=True)
+
+    with pytest.raises(RuntimeError, match="Process has failed execution!"):
+        process_executor._run()
+
+    # Verify subprocess was called with correct command and logs were captured
+    expected_command = (
+        f'grader-convert autograde -i "{process_executor.input_path}" '
+        f'-o "{process_executor.output_path}" -p "*.ipynb" '
+        f"--ExecutePreprocessor.timeout=360"
+    )
+    process_executor._run_subprocess.assert_called_once_with(expected_command, None)
+    assert process_executor.grading_logs == "Error: autograding failed"
+
+
+def test_process_executor_run_subprocess_error(process_executor):
+    """Test handling of subprocess execution error in _run method"""
+    process_executor._run_subprocess = Mock(side_effect=OSError("Command not found"))
+    os.makedirs(process_executor.output_path, exist_ok=True)
+
+    with pytest.raises(OSError, match="Command not found"):
+        process_executor._run()
+
+
+def test_process_executor_inheritance():
+    """Test that LocalProcessAutogradeExecutor properly inherits from LocalAutogradeExecutor"""
+    assert issubclass(LocalProcessAutogradeExecutor, LocalAutogradeExecutor)
+    assert hasattr(LocalProcessAutogradeExecutor, "convert_executable")
