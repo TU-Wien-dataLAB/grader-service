@@ -270,6 +270,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 exc_info=True,
             )
             self._set_db_state(success=False)
+            self._update_submission_logs()
         else:
             ts = round((autograding_finished - autograding_start).total_seconds())
             self.log.info(
@@ -542,9 +543,9 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         )
         self.log.info(f"Running {command}")
         process = self._run_subprocess(command, None)
+        self.grading_logs = process.stderr
+        self.log.info(self.grading_logs)
         if process.returncode == 0:
-            self.grading_logs = process.stderr
-            self.log.info(self.grading_logs)
             self.log.info("Process has successfully completed execution!")
         else:
             raise RuntimeError("Process has failed execution!")
