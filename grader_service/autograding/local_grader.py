@@ -43,7 +43,8 @@ def executable_validator(proposal: dict) -> str:
 
 class GitSubmissionManager(LoggingConfigurable):
     """
-    Handles git-related operations performed by autograder executors.
+    Handles git-related operations performed by autograder executors:
+    pulling from an input repo, and committing and pushing to the output repo.
     """
 
     git_executable = Unicode("git", allow_none=False).tag(config=True)
@@ -197,7 +198,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     ).tag(config=True)
 
     def __init__(
-        self, grader_service_dir: str, submission: Submission, close_session=True, **kwargs
+        self, grader_service_dir: str, submission: Submission, close_session: bool = True, **kwargs
     ):
         """
         Creates the executor in the input
@@ -215,6 +216,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :param submission: The submission object
         which should be graded by the executor.
         :type submission: Submission
+        :param close_session: Whether to close the db session after grading.
+        :type close_session: bool
         """
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
@@ -225,7 +228,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.close_session = close_session
 
         self.grading_logs: Optional[str] = None
-
+        # Git manager performs the git operations when creating a new repo for the grading results
         self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
 
     def start(self):
@@ -316,8 +319,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Runs the autograding in the current interpreter
         and captures the output.
         """
-        properties_str = self._put_grades_in_assignment_properties()
-        self._write_gradebook(properties_str)
+        self._write_gradebook(self._put_grades_in_assignment_properties())
 
         autograder = Autograde(
             self.input_path,
@@ -327,11 +329,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             config=self._get_autograde_config(),
         )
 
-        # Add a handler to the autograder's logger so that we can capture its logs and add them
+        # Add a handler to the autograder's logger so that we can capture its logs and write them
         # to self.grading_logs:
         with collect_logs(autograder.log) as log_stream:
             autograder.start()
-            self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
+            self.grading_logs = log_stream.getvalue()
 
     def _put_grades_in_assignment_properties(self) -> str:
         """
@@ -362,7 +364,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         return properties_str
 
     def _get_autograde_config(self) -> Config:
-        """Returns the autograde config, with the timeout function for ExecutePreprocessor."""
+        """Returns the autograde config, with the timeout set for ExecutePreprocessor."""
         c = Config()
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
         return c

@@ -45,8 +45,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         )
 
     def _run(self):
-        properties_str = self.submission.properties.properties
-        self._write_gradebook(properties_str)
+        self._write_gradebook(self._put_grades_in_assignment_properties())
 
         feedback_generator = GenerateFeedback(
             self.input_path,
@@ -60,6 +59,10 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         with collect_logs(feedback_generator.log) as log_stream:
             feedback_generator.start()
             self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
+
+    def _put_grades_in_assignment_properties(self) -> str:
+        # No need to calculate the properties when generating feedback.
+        return self.submission.properties.properties
 
     def _get_whitelisted_files(self) -> List[str]:
         # No need to filter files against a whitelist when generating feedback.
@@ -87,7 +90,7 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
-        self._write_gradebook(self.submission.properties.properties)
+        self._write_gradebook(self._put_grades_in_assignment_properties())
 
         command = [
             self.convert_executable,
