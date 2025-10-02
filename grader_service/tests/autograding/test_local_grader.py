@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -50,6 +51,9 @@ def process_executor(tmp_path, submission_123):
         yield executor
 
 
+# =============== LocalAutogradeExecutor tests ===============
+
+
 @patch("grader_service.convert.gradebook.models.GradeBookModel.from_dict")
 @patch("grader_service.convert.gradebook.models.Notebook", autospec=True)
 def test_local_autograde_start_outcome_on_success(
@@ -73,16 +77,42 @@ def test_local_autograde_start_outcome_on_success(
     assert local_autograde_executor.session.commit.called
 
 
-def test_local_autograde_start_outcome_on_failure(local_autograde_executor):
+@patch("grader_service.autograding.local_grader.Autograde")
+def test_local_autograde_start_outcome_on_autograde_failure(
+    mock_autograde, local_autograde_executor
+):
     """Test the results of calling `start` when autograding fails"""
-    local_autograde_executor._run = Mock()
-    local_autograde_executor._run.side_effect = PermissionError()
+    mock_autograde_instance = Mock()
+    mock_autograde_instance.log = Mock()
+    mock_autograde_instance.start.side_effect = PermissionError("Couldn't create file.")
+    mock_autograde.return_value = mock_autograde_instance
 
     local_autograde_executor.start()
 
+    # Verify _set_db_state() was called and the feedback status is set properly
     assert local_autograde_executor.submission.auto_status == AutoStatus.GRADING_FAILED
     assert local_autograde_executor.submission.score is None
     assert local_autograde_executor.session.commit.called
+    # Verify logs were still captured despite the exception
+    # Note: The submission in the db is not updated with the logs, because we mock the db session.
+    assert local_autograde_executor.grading_logs == "Couldn't create file."
+    mock_autograde_instance.log.removeHandler.assert_called_once()
+
+
+@patch("grader_service.autograding.local_grader.Session", autospec=True)
+def test_local_autograde_start_outcome_on_git_cmd_failure(
+    mock_session_class, tmp_path, submission_123
+):
+    mock_session_class.object_session.return_value = Mock()
+    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+
+    with patch.object(executor.git_manager, "pull_submission") as git_pull:
+        git_pull.side_effect = Exception("Git error")
+
+        executor.start()
+
+    assert executor.submission.auto_status == AutoStatus.GRADING_FAILED
+    assert executor.grading_logs == "Git error"
 
 
 def test_whitelist_pattern_combination():
@@ -98,12 +128,11 @@ def test_whitelist_pattern_combination():
     assert patterns == expected_patterns
 
 
-@patch("grader_service.autograding.local_grader.Session", autospec=True)
 @patch(
     "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
     autospec=True,
 )
-def test_file_matching_with_patterns(mock_git, mock_session_class, tmp_path, submission_123):
+def test_file_matching_with_patterns(mock_git, tmp_path, submission_123):
     """Test that files are correctly matched against assignment whitelist patterns"""
     assignment = Assignment(id=1)
     assignment.properties = json.dumps({"extra_files": ["*/config"]})
@@ -134,12 +163,11 @@ def test_file_matching_with_patterns(mock_git, mock_session_class, tmp_path, sub
     assert set(files_to_commit) == expected_files
 
 
-@patch("grader_service.autograding.local_grader.Session", autospec=True)
 @patch(
     "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
     autospec=True,
 )
-def test_input_output_path_properties(mock_git, mock_session_class, tmp_path, submission_123):
+def test_input_output_path_properties(mock_git, tmp_path, submission_123):
     """Test that input and output paths are correctly constructed"""
     expected_input = os.path.join(tmp_path, "convert_in", "submission_123")
     expected_output = os.path.join(tmp_path, "convert_out", "submission_123")
@@ -238,18 +266,7 @@ def test_gradebook_writing(local_autograde_executor):
     assert content == gradebook_content
 
 
-def test_subprocess_error_handling(local_autograde_executor):
-    """Test that subprocess errors are handled correctly"""
-
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = Exception("Command failed")
-
-        with pytest.raises(Exception):
-            local_autograde_executor._run_subprocess(
-                "invalid_command", local_autograde_executor.output_path
-            )
-        # TODO: Improve this test after rewriting _run_subprocess
-        assert "Command failed" in local_autograde_executor.grading_logs
+# =============== LocalProcessAutogradeExecutor tests ===============
 
 
 def test_process_executor_start_success(process_executor):
@@ -263,34 +280,47 @@ def test_process_executor_start_success(process_executor):
     assert process_executor.submission.score == 0
 
 
-def test_process_executor_run_failure(process_executor):
+@patch("grader_service.autograding.local_grader.subprocess.run", autospec=True)
+def test_process_executor_run_failure(mock_run, process_executor):
     """Test handling of process execution failure in _run method"""
     mock_process = Mock()
     mock_process.returncode = 1
     mock_process.stderr = "Error: autograding failed"
-    process_executor._run_subprocess = Mock(return_value=mock_process)
+    mock_run.return_value = mock_process
     os.makedirs(process_executor.output_path, exist_ok=True)
 
     with pytest.raises(RuntimeError, match="Process has failed execution!"):
         process_executor._run()
 
     # Verify subprocess was called with correct command and logs were captured
-    expected_command = (
-        f'grader-convert autograde -i "{process_executor.input_path}" '
-        f'-o "{process_executor.output_path}" -p "*.ipynb" '
-        f"--ExecutePreprocessor.timeout=360"
+    expected_command = [
+        "grader-convert",
+        "autograde",
+        "-i",
+        process_executor.input_path,
+        "-o",
+        process_executor.output_path,
+        "-p",
+        "*.ipynb",
+        "--ExecutePreprocessor.timeout=360",
+    ]
+
+    mock_run.assert_called_once_with(
+        expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
     )
-    process_executor._run_subprocess.assert_called_once_with(expected_command, None)
     assert process_executor.grading_logs == "Error: autograding failed"
 
 
-def test_process_executor_run_subprocess_error(process_executor):
+@patch("grader_service.autograding.local_grader.subprocess.run", autospec=True)
+def test_process_executor_run_subprocess_error(mock_run, process_executor):
     """Test handling of subprocess execution error in _run method"""
-    process_executor._run_subprocess = Mock(side_effect=OSError("Command not found"))
+    mock_run.side_effect = OSError("Command not found")
     os.makedirs(process_executor.output_path, exist_ok=True)
 
-    with pytest.raises(OSError, match="Command not found"):
-        process_executor._run()
+    process_executor.start()
+
+    # `start()` catches the exception, but should still log it
+    assert "Command not found" in process_executor.grading_logs
 
 
 def test_process_executor_inheritance():

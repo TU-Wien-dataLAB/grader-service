@@ -99,7 +99,7 @@ class GitSubmissionManager(LoggingConfigurable):
 
         for cmd in commands:
             self.log.info(f"Running {cmd}")
-            self._run_subprocess(cmd, input_path)
+            self._run_git(cmd, input_path)
 
         self.log.info("Successfully cloned repo.")
 
@@ -110,16 +110,14 @@ class GitSubmissionManager(LoggingConfigurable):
 
         if not os.path.exists(output_repo_path):
             os.makedirs(output_repo_path)
-            self._run_subprocess(
-                f'{self.git_executable} init --bare "{output_repo_path}"', output_path
-            )
+            self._run_git(f'{self.git_executable} init --bare "{output_repo_path}"', output_path)
 
         command = f"{self.git_executable} init"
         self.log.info(f"Running {command} at {output_path}")
-        self._run_subprocess(command, output_path)
+        self._run_git(command, output_path)
         self.log.info(f"Creating the new branch {self.output_branch} and switching to it")
         command = f"{self.git_executable} switch -c {self.output_branch}"
-        self._run_subprocess(command, output_path)
+        self._run_git(command, output_path)
         self.log.info(f"Now at branch {self.output_branch}")
 
     def _commit_files(self, filenames: List[str], output_path: str) -> None:
@@ -132,8 +130,8 @@ class GitSubmissionManager(LoggingConfigurable):
             self.log.info("No files to commit.")
             return
 
-        self._run_subprocess(f"{self.git_executable} add -- " + " ".join(filenames), output_path)
-        self._run_subprocess(
+        self._run_git(f"{self.git_executable} add -- " + " ".join(filenames), output_path)
+        self._run_git(
             f'{self.git_executable} commit -m "{self.submission.commit_hash}"', output_path
         )
 
@@ -147,33 +145,29 @@ class GitSubmissionManager(LoggingConfigurable):
         self.log.info(f"Pushing to {output_repo_path} at branch {self.output_branch}")
         command = f'{self.git_executable} push -uf "{output_repo_path}" {self.output_branch}'
         self.log.info(f"Running {command}")
-        self._run_subprocess(command, output_path)
+        self._run_git(command, output_path)
         self.log.info("Pushing complete")
 
-    def _run_subprocess(self, command: str, cwd: str) -> subprocess.CompletedProcess:
-        # TODO: Refactor this!
+    def _run_git(self, command: str, cwd: Optional[str]) -> None:
         """
-        Execute the command as a subprocess.
+        Execute a git command as a subprocess.
+
         :param command: The command to execute as a string.
         :param cwd: The working directory the subprocess should run in.
-        :return: CompletedProcess object which contains information about the execution.
         """
         try:
-            result = subprocess.run(
-                shlex.split(command),
+            subprocess.run(
+                [self.git_executable, *shlex.split(command)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 cwd=cwd,
                 text=True,  # Decodes output to string
                 check=True,  # Raises a CalledProcessError on non-zero exit code
             )
-            return result
         except subprocess.CalledProcessError as e:
-            self.grading_logs = e.stderr
-            self.log.error(self.grading_logs)
+            self.log.error(e.stderr)
             raise
         except Exception as e:
-            self.grading_logs = (self.grading_logs or "") + str(e)
             self.log.error(e)
             raise
 
@@ -267,6 +261,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 err_msg = e.stderr
             else:
                 err_msg = str(e)
+            self.log.error(err_msg)
             self.grading_logs = (self.grading_logs or "") + err_msg
             self._set_db_state(success=False)
         else:
@@ -466,33 +461,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if self.close_session:
             self.session.close()
 
-    def _run_subprocess(self, command: str, cwd: str) -> subprocess.CompletedProcess:
-        """
-        Execute the command as a subprocess.
-        :param command: The command to execute as a string.
-        :param cwd: The working directory the subprocess should run in.
-        :return: CompletedProcess object which contains information about the execution.
-        """
-        # TODO: Refactor this. Do we need it still? It's only used in the LocalProcessAutogradeExecutor
-        try:
-            result = subprocess.run(
-                shlex.split(command),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=cwd,
-                text=True,  # Decodes output to string
-                check=True,  # Raises a CalledProcessError on non-zero exit code
-            )
-            return result
-        except subprocess.CalledProcessError as e:
-            self.grading_logs = e.stderr
-            self.log.error(self.grading_logs)
-            raise
-        except Exception as e:
-            self.grading_logs = (self.grading_logs or "") + str(e)
-            self.log.error(e)
-            raise
-
     @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
@@ -524,15 +492,21 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         """
         self._write_gradebook(self._put_grades_in_assignment_properties())
 
-        command = (
-            f"{self.convert_executable} autograde "
-            f'-i "{self.input_path}" '
-            f'-o "{self.output_path}" '
-            f'-p "*.ipynb" '
-            f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}"
-        )
+        command = [
+            self.convert_executable,
+            "autograde",
+            "-i",
+            self.input_path,
+            "-o",
+            self.output_path,
+            "-p",
+            "*.ipynb",
+            f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}",
+        ]
         self.log.info(f"Running {command}")
-        process = self._run_subprocess(command, None)
+        process = subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
+        )
         self.grading_logs = process.stderr
         self.log.info(self.grading_logs)
         if process.returncode == 0:

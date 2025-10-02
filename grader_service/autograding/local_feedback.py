@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 from typing import Any, List
 
-from traitlets import Unicode
+from traitlets.traitlets import Unicode
 
 from grader_service.autograding.local_grader import GitSubmissionManager, LocalAutogradeExecutor
 from grader_service.autograding.utils import collect_logs
@@ -88,12 +89,20 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     def _run(self):
         self._write_gradebook(self.submission.properties.properties)
 
-        command = (
-            f"{self.convert_executable} generate_feedback -i "
-            f'"{self.input_path}" -o "{self.output_path}" -p "*.ipynb"'
-        )
+        command = [
+            self.convert_executable,
+            "generate_feedback",
+            "-i",
+            self.input_path,
+            "-o",
+            self.output_path,
+            "-p",
+            "*.ipynb",
+        ]
         self.log.info(f"Running {command}")
-        process = self._run_subprocess(command, None)
+        process = subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
+        )
         self.grading_logs = process.stderr
         self.log.info(self.grading_logs)
         if process.returncode == 0:

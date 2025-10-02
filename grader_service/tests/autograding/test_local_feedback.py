@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -50,6 +51,9 @@ def process_executor(tmp_path, submission_123):
         yield executor
 
 
+# =============== GenerateFeedbackExecutor tests ===============
+
+
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
 @patch(
     "grader_service.autograding.local_feedback.GenerateFeedbackExecutor.git_manager_class",
@@ -74,7 +78,6 @@ def test_get_whitelisted_files(feedback_executor):
 
 def test_set_properties(feedback_executor):
     """Test that _set_properties does nothing (no-op for feedback generation)"""
-    # This method should not raise any exceptions and should do nothing
     feedback_executor._set_properties()
 
 
@@ -100,7 +103,7 @@ def test_directory_cleanup_on_init(feedback_executor, tmp_path):
 @patch("grader_service.autograding.local_feedback.GenerateFeedback")
 def test_run_successful_feedback_generation(mock_gen_feedback, feedback_executor):
     """Test successful feedback generation process"""
-    # Setup mock feedback generator
+    # Setup mock GenerateFeedback instance
     mock_feedback_instance = Mock()
     mock_gen_feedback.return_value = mock_feedback_instance
     mock_feedback_instance.log = Mock()
@@ -116,8 +119,8 @@ def test_run_successful_feedback_generation(mock_gen_feedback, feedback_executor
     mock_feedback_instance.start.assert_called_once()
     mock_feedback_instance.log.addHandler.assert_called_once()
     mock_feedback_instance.log.removeHandler.assert_called_once()
-
     assert feedback_executor.grading_logs is not None
+
     # Verify _set_db_state() was called and the feedback status is set properly
     feedback_executor.session.commit.assert_called()
     assert feedback_executor.submission.feedback_status == FeedbackStatus.GENERATED
@@ -136,7 +139,7 @@ def test_run_feedback_generation_with_exception(mock_generate_feedback, feedback
     feedback_executor.start()
 
     # Verify logs were still captured despite the exception
-    assert feedback_executor.grading_logs is not None
+    assert feedback_executor.grading_logs == "Generation failed"
     mock_feedback_instance.log.removeHandler.assert_called_once()
     # Verify _set_db_state() was called and the feedback status is set properly
     feedback_executor.session.commit.assert_called()
@@ -158,6 +161,9 @@ def test_gradebook_writing(feedback_executor):
     assert content == gradebook_content
 
 
+# =============== GenerateFeedbackProcessExecutor tests ===============
+
+
 def test_process_executor_start_success(process_executor):
     """Test successful execution of feedback generation process"""
     process_executor.start()
@@ -175,34 +181,44 @@ def test_process_executor_start_failure(process_executor):
     process_executor.start()
 
     # Verify logs were captured and submission feedback status was set
-    # TODO: Fix adding the error messages to the grading_logs; currently it is None
-    # assert "Cannot write gradebook" in process_executor.grading_logs
+    assert "Cannot write gradebook" in process_executor.grading_logs
     assert process_executor.submission.feedback_status == FeedbackStatus.GENERATION_FAILED
 
 
-def test_process_executor_run_failure(process_executor):
+@patch("grader_service.autograding.local_feedback.subprocess.run", autospec=True)
+def test_process_executor_run_failure(mock_run, process_executor):
     """Test handling of process execution failure in _run method"""
     mock_process = Mock()
     mock_process.returncode = 1
     mock_process.stderr = "Error: something went wrong"
-    process_executor._run_subprocess = Mock(return_value=mock_process)
+    mock_run.return_value = mock_process
     os.makedirs(process_executor.output_path, exist_ok=True)
 
     with pytest.raises(RuntimeError, match="Process has failed execution!"):
         process_executor._run()
 
     # Verify subprocess was called with correct command and logs were captured
-    expected_command = (
-        f'grader-convert generate_feedback -i "{process_executor.input_path}" '
-        f'-o "{process_executor.output_path}" -p "*.ipynb"'
+    expected_command = [
+        "grader-convert",
+        "generate_feedback",
+        "-i",
+        process_executor.input_path,
+        "-o",
+        process_executor.output_path,
+        "-p",
+        "*.ipynb",
+    ]
+
+    mock_run.assert_called_once_with(
+        expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
     )
-    process_executor._run_subprocess.assert_called_once_with(expected_command, None)
     assert process_executor.grading_logs == "Error: something went wrong"
 
 
-def test_process_executor_run_subprocess_error(process_executor):
+@patch("grader_service.autograding.local_feedback.subprocess.run", autospec=True)
+def test_process_executor_run_subprocess_error(mock_run, process_executor):
     """Test handling of subprocess execution error in _run method"""
-    process_executor._run_subprocess = Mock(side_effect=OSError("Command not found"))
+    mock_run.side_effect = OSError("Command not found")
     os.makedirs(process_executor.output_path, exist_ok=True)
 
     with pytest.raises(OSError, match="Command not found"):
