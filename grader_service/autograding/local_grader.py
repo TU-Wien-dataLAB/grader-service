@@ -89,16 +89,15 @@ class GitSubmissionManager(LoggingConfigurable):
 
         self.log.info(f"Pulling repo {input_repo_path} into input directory")
         commands = [
-            f"{self.git_executable} init",
-            f'{self.git_executable} pull "{input_repo_path}" {self.input_branch}',
+            [self.git_executable, "init"],
+            [self.git_executable, "pull", input_repo_path, self.input_branch],
         ]
 
         # When autograding a user's submission, check out to the commit of submission
         if self.input_repo_type == GitRepoType.USER:
-            commands.append(f"{self.git_executable} checkout {self.submission.commit_hash}")
+            commands.append([self.git_executable, "checkout", self.submission.commit_hash])
 
         for cmd in commands:
-            self.log.info(f"Running {cmd}")
             self._run_git(cmd, input_path)
 
         self.log.info("Successfully cloned repo.")
@@ -110,13 +109,12 @@ class GitSubmissionManager(LoggingConfigurable):
 
         if not os.path.exists(output_repo_path):
             os.makedirs(output_repo_path)
-            self._run_git(f'{self.git_executable} init --bare "{output_repo_path}"', output_path)
+            self._run_git([self.git_executable, "init", "--bare", output_repo_path], output_path)
 
-        command = f"{self.git_executable} init"
-        self.log.info(f"Running {command} at {output_path}")
-        self._run_git(command, output_path)
+        self.log.info(f"Initialising repo at {output_path}")
+        self._run_git([self.git_executable, "init"], output_path)
         self.log.info(f"Creating the new branch {self.output_branch} and switching to it")
-        command = f"{self.git_executable} switch -c {self.output_branch}"
+        command = [self.git_executable, "switch", "-c", self.output_branch]
         self._run_git(command, output_path)
         self.log.info(f"Now at branch {self.output_branch}")
 
@@ -130,9 +128,9 @@ class GitSubmissionManager(LoggingConfigurable):
             self.log.info("No files to commit.")
             return
 
-        self._run_git(f"{self.git_executable} add -- " + " ".join(filenames), output_path)
+        self._run_git([self.git_executable, "add", "--", *filenames], output_path)
         self._run_git(
-            f'{self.git_executable} commit -m "{self.submission.commit_hash}"', output_path
+            [self.git_executable, "commit", "-m", self.submission.commit_hash], output_path
         )
 
     def push_results(self, filenames: List[str], output_path: str) -> None:
@@ -143,21 +141,23 @@ class GitSubmissionManager(LoggingConfigurable):
         output_repo_path = self._get_repo_path(self.output_repo_type)
 
         self.log.info(f"Pushing to {output_repo_path} at branch {self.output_branch}")
-        command = f'{self.git_executable} push -uf "{output_repo_path}" {self.output_branch}'
-        self.log.info(f"Running {command}")
-        self._run_git(command, output_path)
+        self._run_git(
+            [self.git_executable, "push", "-uf", output_repo_path, self.output_branch], output_path
+        )
         self.log.info("Pushing complete")
 
-    def _run_git(self, command: str, cwd: Optional[str]) -> None:
+    def _run_git(self, command: list[str], cwd: Optional[str]) -> None:
         """
         Execute a git command as a subprocess.
 
-        :param command: The command to execute as a string.
+        :param command: The git command to execute, as a list of strings.
         :param cwd: The working directory the subprocess should run in.
         """
+        assert command[0] == self.git_executable, f"Not a git command: {command}"
+        self.log.debug("Running %s", " ".join(command))
         try:
             subprocess.run(
-                [self.git_executable, *shlex.split(command)],
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 cwd=cwd,
