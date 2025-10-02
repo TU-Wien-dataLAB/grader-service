@@ -4,14 +4,13 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import io
-import logging
 import os
 from typing import Any, List
 
 from traitlets import Unicode
 
 from grader_service.autograding.local_grader import GitSubmissionManager, LocalAutogradeExecutor
+from grader_service.autograding.utils import collect_logs
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.submission import FeedbackStatus, Submission
@@ -55,20 +54,11 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             assignment_settings=self.assignment.settings,
         )
 
-        log_stream = io.StringIO()
-        log_handler = logging.StreamHandler(log_stream)
-        log_handler.setFormatter(
-            logging.Formatter(
-                fmt="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-            )
-        )
-        feedback_generator.log.addHandler(log_handler)
-
-        try:
+        # Add a handler to the feedback_generator's logger so that we can capture its logs
+        # and add them to self.grading_logs:
+        with collect_logs(feedback_generator.log) as log_stream:
             feedback_generator.start()
-        finally:
             self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
-            feedback_generator.log.removeHandler(log_handler)
 
     def _get_whitelisted_files(self) -> List[str]:
         # No need to filter files against a whitelist when generating feedback.

@@ -5,9 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import fnmatch
-import io
 import json
-import logging
 import os
 import shlex
 import shutil
@@ -21,7 +19,7 @@ from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Callable, TraitError, Type, Unicode, validate
 
-from grader_service.autograding.utils import rmtree
+from grader_service.autograding.utils import collect_logs, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.handlers.handler_utils import GitRepoType
@@ -63,9 +61,6 @@ class GitSubmissionManager(LoggingConfigurable):
 
         self.input_branch = "main"
         self.output_branch = f"submission_{self.submission.commit_hash}"
-
-        # FIXME! Collect the logs somehow, they should be turned into SubmissionLogs (_set_db_state)
-        self.grading_logs: Optional[str] = None
 
     def _get_repo_path(self, repo_type: GitRepoType) -> str:
         """Determines the Git repository path for the submission."""
@@ -257,20 +252,23 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self._run()
             autograding_finished = datetime.now()
 
-            self._set_properties()
             files_to_commit = self._get_whitelisted_files()
             self.git_manager.push_results(files_to_commit, self.output_path)
+            self._set_properties()
             self._set_db_state()
-            self._update_submission_logs()
-        except Exception:
+        except Exception as e:
             self.log.error(
                 "Failed autograding job for submission %s in %s",
                 self.submission.id,
                 self.__class__.__name__,
                 exc_info=True,
             )
+            if isinstance(e, subprocess.CalledProcessError):
+                err_msg = e.stderr
+            else:
+                err_msg = str(e)
+            self.grading_logs = (self.grading_logs or "") + err_msg
             self._set_db_state(success=False)
-            self._update_submission_logs()
         else:
             ts = round((autograding_finished - autograding_start).total_seconds())
             self.log.info(
@@ -281,6 +279,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 ts % 60,
             )
         finally:
+            self._update_submission_logs()
             self._cleanup()
 
     @property
@@ -333,20 +332,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             config=self._get_autograde_config(),
         )
 
-        log_stream = io.StringIO()
-        log_handler = logging.StreamHandler(log_stream)
-        log_handler.setFormatter(
-            logging.Formatter(
-                fmt="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-            )
-        )
-        autograder.log.addHandler(log_handler)
-
-        try:
+        # Add a handler to the autograder's logger so that we can capture its logs and add them
+        # to self.grading_logs:
+        with collect_logs(autograder.log) as log_stream:
             autograder.start()
-        finally:
             self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
-            autograder.log.removeHandler(log_handler)
 
     def _put_grades_in_assignment_properties(self) -> str:
         """
