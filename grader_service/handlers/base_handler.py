@@ -519,6 +519,10 @@ class BaseHandler(web.RequestHandler):
         if isinstance(authenticated, str):
             authenticated = {"name": authenticated}
         username = authenticated["name"]
+        if "display_name" in authenticated and authenticated["display_name"] is not None:
+            display_name = authenticated["display_name"]
+        else:
+            display_name = username
         auth_state = authenticated.get("auth_state")
 
         if user and username != user.name:
@@ -529,9 +533,14 @@ class BaseHandler(web.RequestHandler):
             self.log.info(f"User {username} does not exist and will be created.")
             user_model = User()
             user_model.name = username
-            user_model.display_name = username
+            user_model.display_name = display_name
             self.session.add(user_model)
             self.session.commit()
+        else:
+            if user_model.display_name != display_name:
+                user_model.display_name = display_name
+                self.session.add(user_model)
+                self.session.commit()
 
         # apply authenticator-managed groups
         if self.authenticator.manage_groups:
