@@ -1,7 +1,6 @@
-import logging
 import os
+from typing import Optional
 
-from celery.app.log import Logging
 from jupyterhub.auth import Authenticator
 from traitlets import log as traitlets_log
 
@@ -53,13 +52,14 @@ c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
-    session = handler.session
     log = handler.log
-    log.info("post auth hook called")
-    groups = authentication["groups"]
+    log.info("post_auth_hook started")
+
+    session = handler.session
+    groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: User = session.query(User).get(username)
+    user_model: Optional[User] = session.query(User).filter(name=username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username
@@ -86,17 +86,23 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
 
             role = (
                 session.query(Role)
-                .filter(Role.username == username, Role.lectid == lecture.id)
+                .filter(Role.user_id == user_model.id, Role.lectid == lecture.id)
                 .one_or_none()
             )
             if role is None:
-                log.info(f"No role for user {username} in lecture {lecture_code}... creating role")
-                role = Role(username=username, lectid=lecture.id, role=scope)
+                log.info(
+                    "No role for user %s in lecture %s... creating role", username, lecture_code
+                )
+                role = Role(user_id=user_model.id, lectid=lecture.id, role=scope)
                 session.add(role)
                 session.commit()
             else:
                 log.info(
-                    f"Found role {role.role.name} for user {username}  in lecture {lecture_code}... updating role to {scope.name}"
+                    "Found role %s for user %s in lecture %s... updating role to %s",
+                    role.role.name,
+                    username,
+                    lecture_code,
+                    scope.name,
                 )
                 role.role = scope
                 session.commit()
