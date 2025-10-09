@@ -26,7 +26,7 @@ class JupyterHubTokenAuthenticator(Authenticator):
         response = await self.http_client.fetch(request=request)
         response = json_decode(response.body)
         username = response["name"]
-        display_name = response["display_name"] if "display_name" in response else None
+        display_name = response.get("display_name")
         groups = response["groups"]
 
         return {"name": username, "display_name": display_name, "groups": groups}

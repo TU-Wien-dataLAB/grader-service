@@ -519,10 +519,7 @@ class BaseHandler(web.RequestHandler):
         if isinstance(authenticated, str):
             authenticated = {"name": authenticated}
         username = authenticated["name"]
-        if "display_name" in authenticated and authenticated["display_name"] is not None:
-            display_name = authenticated["display_name"]
-        else:
-            display_name = username
+        display_name = authenticated.get("display_name") or username
         auth_state = authenticated.get("auth_state")
 
         if user and username != user.name:
