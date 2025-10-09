@@ -85,6 +85,10 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             self.submission.feedback_status = FeedbackStatus.GENERATION_FAILED
         self.session.commit()
 
+    def _update_submission_logs(self):
+        # No need to collect feedback logs.
+        pass
+
 
 class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)

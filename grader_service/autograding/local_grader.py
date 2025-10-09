@@ -72,7 +72,7 @@ class GitSubmissionManager(LoggingConfigurable):
         base_repo_path = os.path.join(
             self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
         )
-        if repo_type == GitRepoType.AUTOGRADE:
+        if repo_type in [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK]:
             return os.path.join(base_repo_path, "user", repo_name)
         elif repo_type == GitRepoType.EDIT:
             return os.path.join(base_repo_path, str(self.submission.id))
@@ -155,7 +155,7 @@ class GitSubmissionManager(LoggingConfigurable):
         :param cwd: The working directory the subprocess should run in.
         """
         assert command[0] == self.git_executable, f"Not a git command: {command}"
-        self.log.debug("Running %s", " ".join(command))
+        self.log.debug('Running "%s"', " ".join(command))
         try:
             subprocess.run(
                 command,
