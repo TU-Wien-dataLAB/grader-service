@@ -376,13 +376,21 @@ class GraderService(config.Application):
                         db.add(lecture)
                     db.commit()
 
-                    for username in users:
+                    for user_entry in users:
+                        if isinstance(user_entry, dict):
+                            username = user_entry.get("username")
+                            display_name = user_entry.get("display_name") or username
+                        else:
+                            # fallback for old format (just a username string)
+                            username = user_entry
+                            display_name = username
+
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
-                            self.log.info(f"Adding new user with username {username}")
+                            self.log.info(f"Adding new user with username {username} and display name {display_name}")
                             user = User()
                             user.name = username
-                            user.display_name = username
+                            user.display_name = display_name
                             db.add(user)
                             db.commit()
 
