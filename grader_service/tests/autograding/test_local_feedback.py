@@ -11,6 +11,7 @@ from grader_service.autograding.local_feedback import (
     GenerateFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.handlers import GitRepoType
 from grader_service.orm.submission import FeedbackStatus
 
 
@@ -79,6 +80,8 @@ def test_get_whitelisted_files(feedback_executor):
 def test_set_properties(feedback_executor):
     """Test that _set_properties does nothing (no-op for feedback generation)"""
     feedback_executor._set_properties()
+
+    feedback_executor.session.merge.assert_not_called()
 
 
 def test_directory_cleanup_on_init(feedback_executor, tmp_path):
@@ -233,8 +236,8 @@ def test_feedback_executor_inheritance(tmp_path, submission_123):
     gfe = GenerateFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
     assert isinstance(gfe.git_manager, FeedbackGitSubmissionManager)
-    assert gfe.git_manager.input_repo_type.name == "AUTOGRADE"
-    assert gfe.git_manager.output_repo_type.name == "FEEDBACK"
+    assert gfe.git_manager.input_repo_type == GitRepoType.AUTOGRADE
+    assert gfe.git_manager.output_repo_type == GitRepoType.FEEDBACK
 
 
 def test_process_executor_inheritance():

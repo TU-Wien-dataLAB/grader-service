@@ -10,7 +10,6 @@ def test_collect_logs_with_real_logger():
     logger = logging.getLogger("test_logger")
     logger.setLevel(logging.INFO)
 
-    # Clear any existing handlers to avoid interference
     original_handlers_count = len(logger.handlers)
 
     with collect_logs(logger) as log_stream:

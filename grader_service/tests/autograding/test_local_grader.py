@@ -117,6 +117,7 @@ def test_local_autograde_start_outcome_on_git_cmd_failure(
 
 def test_whitelist_pattern_combination():
     """Test that whitelist patterns of an assignment are combined correctly"""
+    # Note: This is actually an Assignment test, but we use the method in local grader.
     assignment = Assignment(id=1)
     assignment.properties = json.dumps(
         {"extra_files": ["*.txt", "*.csv", "Introduction to numpy.md"]}
