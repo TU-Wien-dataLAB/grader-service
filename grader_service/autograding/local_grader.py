@@ -369,6 +369,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
         return c
 
+    def _get_whitelist_patterns(self) -> set[str]:
+        """Return the glob patterns which are used for whitelisting the generated autograded files."""
+        return self.assignment.get_whitelist_patterns()
+
     def _get_whitelisted_files(self) -> List[str]:
         """
         Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
@@ -377,7 +381,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         :return: list of shell-escaped filenames matching the whitelist patterns of the assignment
         """
-        file_patterns = self.assignment.get_whitelist_patterns()
+        file_patterns = self._get_whitelist_patterns()
         if not file_patterns:
             # No filtering needed
             return ["."]

@@ -71,10 +71,10 @@ def test_input_output_path_properties(mock_git, mock_session_class, tmp_path, su
     assert executor.output_path == expected_output
 
 
-def test_get_whitelisted_files(feedback_executor):
-    """Test that _get_whitelisted_files returns all files (no filtering for feedback)"""
-    files = feedback_executor._get_whitelisted_files()
-    assert files == ["."]
+def test_get_whitelisted_patterns(feedback_executor):
+    """Test that _get_whitelist_patterns returns only html files (ignoring other whitelist patterns)"""
+    files = feedback_executor._get_whitelist_patterns()
+    assert files == {"*.html"}
 
 
 def test_set_properties(feedback_executor):

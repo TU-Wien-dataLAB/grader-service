@@ -115,17 +115,16 @@ def test_local_autograde_start_outcome_on_git_cmd_failure(
     assert executor.grading_logs == "Git error"
 
 
-def test_whitelist_pattern_combination():
+def test_whitelist_pattern_combination(local_autograde_executor, submission_123):
     """Test that whitelist patterns of an assignment are combined correctly"""
-    # Note: This is actually an Assignment test, but we use the method in local grader.
-    assignment = Assignment(id=1)
-    assignment.properties = json.dumps(
+    submission_123.assignment.properties = json.dumps(
         {"extra_files": ["*.txt", "*.csv", "Introduction to numpy.md"]}
     )
-    assignment.settings = {"allowed_files": ["*.py"]}
+    submission_123.assignment.settings = {"allowed_files": ["*.py"]}
+
+    patterns = local_autograde_executor._get_whitelist_patterns()
 
     expected_patterns = {"*.ipynb", "*.txt", "*.csv", "*.py", "Introduction to numpy.md"}
-    patterns = assignment.get_whitelist_patterns()
     assert patterns == expected_patterns
 
 

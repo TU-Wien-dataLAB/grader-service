@@ -3,10 +3,9 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
 import os
 import subprocess
-from typing import Any, List
+from typing import Any, Set
 
 from traitlets.traitlets import Unicode
 
@@ -64,9 +63,9 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         # No need to calculate the properties when generating feedback.
         return self.submission.properties.properties
 
-    def _get_whitelisted_files(self) -> List[str]:
-        # No need to filter files against a whitelist when generating feedback.
-        return ["."]
+    def _get_whitelist_patterns(self) -> Set[str]:
+        # We only want to commit html files when generating feedback.
+        return {"*.html"}
 
     def _set_properties(self) -> None:
         # No need to set properties.
