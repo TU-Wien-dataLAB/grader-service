@@ -73,13 +73,24 @@ class GitSubmissionManager(LoggingConfigurable):
             self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
         )
         if repo_type in [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK]:
-            return os.path.join(base_repo_path, "user", repo_name)
+            path = os.path.join(base_repo_path, "user", repo_name)
         elif repo_type == GitRepoType.EDIT:
-            return os.path.join(base_repo_path, str(self.submission.id))
+            path = os.path.join(base_repo_path, str(self.submission.id))
         elif repo_type == GitRepoType.USER:
-            return os.path.join(base_repo_path, repo_name)
+            path = os.path.join(base_repo_path, repo_name)
         else:
             raise ValueError(f"Cannot determine repo path for repo type {repo_type}")
+
+        path = os.path.normpath(path)
+
+        if not path.startswith(self.grader_service_dir):
+            self.log.error(
+                f"Invalid repo path: {path}. Possibly suspicious values: "
+                f"lecture code: '{lecture.code}' or user name: '{repo_name}'"
+            )
+            raise PermissionError("Invalid repository path.")
+
+        return path
 
     def pull_submission(self, input_path: str) -> None:
         """Inits and pulls the submission repository into the input path.
