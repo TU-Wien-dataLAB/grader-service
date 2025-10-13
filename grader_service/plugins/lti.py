@@ -289,7 +289,7 @@ class LTISyncGrades(SingletonConfigurable):
         payload = {
             "iss": "grader-service",
             "sub": self.client_id,
-            "aud": ["http://127.0.0.1/mod/lti/token.php"],
+            "aud": [self.token_url],
             "iat": str(int(time.time())),
             "exp": str(int(time.time()) + 60),
             "jti": str(int(time.time())) + "123",
