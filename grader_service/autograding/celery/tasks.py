@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 from celery import Celery, Task
@@ -86,7 +87,7 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
 
 
 @app.task(bind=True, base=GraderTask)
-async def lti_sync_task(
+def lti_sync_task(
     self: GraderTask,
     lecture: dict,
     assignment: dict,
@@ -105,7 +106,7 @@ async def lti_sync_task(
         lecture, assignment, submissions, feedback_sync=feedback_sync
     ):
         try:
-            results = await lti_plugin.start(lecture, assignment, submissions)
+            results = asyncio.run(lti_plugin.start(lecture, assignment, submissions))
             return results
         except HTTPError as e:
             err_msg = f"Could not sync grades: {e.reason}"
