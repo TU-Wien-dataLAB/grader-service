@@ -151,18 +151,30 @@ class GraderService(config.Application):
     load_roles = Dict(
         List(),
         help="""
-        Dict of `'<lecture-code>': List[{'members': List[str], 'role': str}]` entries to load at startup.
+        Dict of `'<lecture-code>': List[{'members': List[Union[str, Dict[str, Optional[str]]]], 'role': str}]` entries to load at startup.
+
+        Each lecture code maps to a list of role definitions. Each role definition must include:
+          - 'role': the role name (e.g. 'student', 'tutor', 'instructor')
+          - 'members': either
+              * a list of username strings (legacy format), e.g. ['alice', 'bob']
+              OR
+              * a list of user objects, each with:
+                  - 'username' (required): the unique username
+                  - 'display_name' (optional): the user's display name; if omitted, defaults to the username
 
         Example::
 
             c.GraderService.load_roles = {
                 'lecture1': [
                     {
-                    'members': ['student1', 'student2'],
+                    'members': ['student1', 'student2'],  # legacy simple list
                     'role': 'student'
                     },
                     {
-                    'members': ['instructor1', 'instructor2'],
+                    'members': [
+                        {'username': 'instructor1', 'display_name': 'Instructor 1'},
+                        {'username': 'instructor2'}
+                    ],
                     'role': 'instructor'
                     }
                 ],
@@ -375,13 +387,21 @@ class GraderService(config.Application):
                         db.add(lecture)
                     db.commit()
 
-                    for username in users:
+                    for user_entry in users:
+                        if isinstance(user_entry, dict):
+                            username = user_entry.get("username")
+                            display_name = user_entry.get("display_name") or username
+                        else:
+                            # fallback for old format (just a username string)
+                            username = user_entry
+                            display_name = username
+
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
-                            self.log.info(f"Adding new user with username {username}")
+                            self.log.info(f"Adding new user with username {username} and display name {display_name}")
                             user = User()
                             user.name = username
-                            user.display_name = username
+                            user.display_name = display_name
                             db.add(user)
                             db.commit()
 
