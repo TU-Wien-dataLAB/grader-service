@@ -15,18 +15,18 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.9.1
+version: 0.9.2
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "0.9.1"
+appVersion: "0.9.2"
 
 dependencies:
 - name: jupyterhub
   version: 4.2.0
   repository: https://jupyterhub.github.io/helm-chart
 - name: grader-service
-  version: 0.9.1
+  version: 0.9.2
   repository: https://tu-wien-datalab.github.io/grader-service/
