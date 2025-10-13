@@ -90,6 +90,76 @@ def get_table_data(engine, tables):
     return data
 
 
+def normalize_type(col_type):
+    """Normalize SQLAlchemy type string."""
+    t = str(col_type).upper()
+    # Collapse common aliases
+    if t.startswith("VARCHAR("):
+        return "VARCHAR"  # ignore length differences
+    if t in ("INT", "INTEGER", "BIGINT"):
+        return "INTEGER"
+    if t.startswith("DATETIME"):
+        return "DATETIME"
+    if t.startswith("TIMESTAMP"):
+        return "TIMESTAMP"
+    return t
+
+
+def get_schema_snapshot(inspector, exclude_tables=("alembic_version",)):
+    """Capture a normalized schema snapshot for stable comparisons."""
+    snapshot = {}
+    for table in sorted(inspector.get_table_names()):
+        if table in exclude_tables:
+            continue
+        cols = inspector.get_columns(table)
+        pks = inspector.get_pk_constraint(table)
+        fks = inspector.get_foreign_keys(table)
+        indexes = inspector.get_indexes(table)
+        # Normalize columns
+        norm_cols = sorted(
+            [
+                (
+                    c["name"],
+                    normalize_type(c["type"]),
+                    bool(c.get("nullable", True)),
+                    str(c.get("default")) if c.get("default") is not None else None,
+                )
+                for c in cols
+            ],
+            key=lambda x: x[0],
+        )
+        # Normalize PKs
+        norm_pks = sorted(pks.get("constrained_columns", []))
+        # Normalize FKs
+        norm_fks = sorted(
+            [
+                (
+                    tuple(fk["constrained_columns"]),
+                    fk["referred_table"],
+                    tuple(fk["referred_columns"]),
+                )
+                for fk in fks
+            ],
+            key=lambda x: (x[1], x[0]),
+        )
+        # Normalize Indexes
+        norm_indexes = sorted(
+            [
+                (ix["name"], tuple(sorted(ix["column_names"])), bool(ix.get("unique", False)))
+                for ix in indexes
+            ],
+            key=lambda x: x[0],
+        )
+        snapshot[table] = {
+            "columns": norm_cols,
+            "primary_keys": norm_pks,
+            "foreign_keys": norm_fks,
+            "indexes": norm_indexes,
+        }
+
+    return snapshot
+
+
 # --- Tests ---
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
@@ -223,6 +293,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         # Upgrade the database schema to (n-1) migration
         command.upgrade(cfg, migration.down_revision)
         inspector = sa.inspect(engine)
+        schema_before_upgrade = get_schema_snapshot(inspector)
         tables = [t for t in inspector.get_table_names() if t != "alembic_version"]
         assert tables, "No tables created after upgrade"
 
@@ -253,7 +324,6 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
 
         # Upgrade the database schema to n-th migration
         command.upgrade(cfg, migration.revision)
-
         # Check if the migration this something
         engine2 = create_engine(db_url)
         inspector = sa.inspect(engine2)
@@ -269,11 +339,21 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         prev_rev = migration.down_revision or "base"
         command.downgrade(cfg, prev_rev)
         engine3 = create_engine(db_url)
-        inspector = sa.inspect(engine3)
-        tables_after_downgrade = [t for t in inspector.get_table_names() if t != "alembic_version"]
+        inspector3 = sa.inspect(engine3)
+        schema_after_downgrade = get_schema_snapshot(inspector3)
+        tables_after_downgrade = [t for t in inspector3.get_table_names() if t != "alembic_version"]
         if prev_rev == "base":
             assert not tables_after_downgrade, "User tables not dropped after downgrade to base"
         else:
+            # Check schema consistency
+            try:
+                assert schema_before_upgrade == schema_after_downgrade, (
+                    "Schema changed after downgrade!"
+                )
+            except AssertionError as e:
+                # Allow exceptions for known non-lossless migrations
+                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                    raise e
             # Check if the data is still the same
             data_after_downgrade = get_table_data(engine2, tables_after_downgrade)
             try:
