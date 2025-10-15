@@ -9,7 +9,8 @@ from typing import Any, Set
 
 from traitlets.traitlets import Unicode
 
-from grader_service.autograding.local_grader import GitSubmissionManager, LocalAutogradeExecutor
+from grader_service.autograding.git_manager import GitSubmissionManager
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.autograding.utils import collect_logs
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType

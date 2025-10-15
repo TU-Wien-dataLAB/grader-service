@@ -1,6 +1,6 @@
 import pytest
 
-from grader_service.autograding.local_grader import GitSubmissionManager
+from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.handlers import GitRepoType
 
 
