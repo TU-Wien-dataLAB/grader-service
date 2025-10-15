@@ -11,7 +11,6 @@ from traitlets.traitlets import Unicode
 
 from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.autograding.utils import collect_logs
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.submission import FeedbackStatus, Submission
@@ -51,13 +50,7 @@ class LocalFeedbackExecutor(LocalAutogradeExecutor):
             "*.ipynb",
             assignment_settings=self.assignment.settings,
         )
-
-        # TODO: Do we need to collect the feedback logs at all? We don't use them, apparently.
-        # Add a handler to the feedback_generator's logger so that we can capture its logs
-        # and add them to self.grading_logs:
-        with collect_logs(feedback_generator.log) as log_stream:
-            feedback_generator.start()
-            self.grading_logs = log_stream.getvalue()
+        feedback_generator.start()
 
     def _put_grades_in_assignment_properties(self) -> str:
         # No need to calculate the properties again when generating feedback.
@@ -107,10 +100,9 @@ class LocalFeedbackProcessExecutor(LocalFeedbackExecutor):
         process = subprocess.run(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
         )
-        self.grading_logs = process.stderr
         if process.returncode == 0:
-            self.log.info(self.grading_logs)
+            self.log.info(process.stderr)
             self.log.info("Process has successfully completed execution!")
         else:
-            self.log.error(self.grading_logs)
+            self.log.error(process.stderr)
             raise RuntimeError("Process has failed execution!")

@@ -16,7 +16,7 @@ from grader_service.orm.submission import FeedbackStatus
 
 
 @pytest.fixture
-def feedback_executor(tmp_path, submission_123):
+def local_feedback_executor(tmp_path, submission_123):
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
@@ -40,8 +40,7 @@ def process_executor(tmp_path, submission_123):
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
         patch(
-            "grader_service.autograding.local_feedback.LocalFeedbackProcessExecutor."
-            "git_manager_class",
+            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.git_manager_class",
             autospec=True,
         ),
     ):
@@ -71,25 +70,27 @@ def test_input_output_path_properties(mock_git, mock_session_class, tmp_path, su
     assert executor.output_path == expected_output
 
 
-def test_get_whitelisted_patterns(feedback_executor):
+def test_get_whitelisted_patterns(local_feedback_executor):
     """Test that _get_whitelist_patterns returns only html files (ignoring other whitelist patterns)"""
-    files = feedback_executor._get_whitelist_patterns()
+    files = local_feedback_executor._get_whitelist_patterns()
     assert files == {"*.html"}
 
 
-def test_set_properties(feedback_executor):
+def test_set_properties(local_feedback_executor):
     """Test that _set_properties does nothing (no-op for feedback generation)"""
-    feedback_executor._set_properties()
+    local_feedback_executor._set_properties()
 
-    feedback_executor.session.merge.assert_not_called()
+    local_feedback_executor.session.merge.assert_not_called()
 
 
-def test_directory_cleanup_on_init(feedback_executor, tmp_path):
+def test_directory_cleanup_on_init(local_feedback_executor, tmp_path):
     """Test that directories are cleaned up during initialization"""
     # Create pre-existing directories and some files in them
-    input_dir = os.path.join(tmp_path, "convert_in", f"feedback_{feedback_executor.submission.id}")
+    input_dir = os.path.join(
+        tmp_path, "convert_in", f"feedback_{local_feedback_executor.submission.id}"
+    )
     output_dir = os.path.join(
-        tmp_path, "convert_out", f"feedback_{feedback_executor.submission.id}"
+        tmp_path, "convert_out", f"feedback_{local_feedback_executor.submission.id}"
     )
     os.makedirs(input_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
@@ -97,66 +98,60 @@ def test_directory_cleanup_on_init(feedback_executor, tmp_path):
     (Path(output_dir) / "test.txt").touch()
 
     # This should clean the input and output dirs
-    feedback_executor.start()
+    local_feedback_executor.start()
 
     assert not os.path.exists(input_dir)
     assert not os.path.exists(output_dir)
 
 
 @patch("grader_service.autograding.local_feedback.GenerateFeedback")
-def test_run_successful_feedback_generation(mock_gen_feedback, feedback_executor):
+def test_run_successful_feedback_generation(mock_gen_feedback, local_feedback_executor):
     """Test successful feedback generation process"""
     # Setup mock GenerateFeedback instance
     mock_feedback_instance = Mock()
     mock_gen_feedback.return_value = mock_feedback_instance
-    mock_feedback_instance.log = Mock()
 
-    feedback_executor.start()
+    local_feedback_executor.start()
 
     mock_gen_feedback.assert_called_once_with(
-        feedback_executor.input_path,
-        feedback_executor.output_path,
+        local_feedback_executor.input_path,
+        local_feedback_executor.output_path,
         "*.ipynb",
-        assignment_settings=feedback_executor.assignment.settings,
+        assignment_settings=local_feedback_executor.assignment.settings,
     )
     mock_feedback_instance.start.assert_called_once()
-    mock_feedback_instance.log.addHandler.assert_called_once()
-    mock_feedback_instance.log.removeHandler.assert_called_once()
-    assert feedback_executor.grading_logs is not None
 
     # Verify _set_db_state() was called and the feedback status is set properly
-    feedback_executor.session.commit.assert_called()
-    assert feedback_executor.submission.feedback_status == FeedbackStatus.GENERATED
+    local_feedback_executor.session.commit.assert_called()
+    assert local_feedback_executor.submission.feedback_status == FeedbackStatus.GENERATED
 
 
 @patch("grader_service.autograding.local_feedback.GenerateFeedback")
-def test_run_feedback_generation_with_exception(mock_generate_feedback, feedback_executor):
+def test_run_feedback_generation_with_exception(mock_generate_feedback, local_feedback_executor):
     """Test feedback generation failing"""
     # Setup mock feedback generator that raises an exception
     mock_feedback_instance = Mock()
-    mock_generate_feedback.return_value = mock_feedback_instance
-    mock_feedback_instance.log = Mock()
     mock_feedback_instance.start.side_effect = RuntimeError("Generation failed")
+    mock_generate_feedback.return_value = mock_feedback_instance
 
     # Run the feedback generation; the exception should be caught
-    feedback_executor.start()
+    local_feedback_executor.start()
 
     # Verify logs were still captured despite the exception
-    assert feedback_executor.grading_logs == "Generation failed"
-    mock_feedback_instance.log.removeHandler.assert_called_once()
+    assert local_feedback_executor.grading_logs == "Generation failed"
     # Verify _set_db_state() was called and the feedback status is set properly
-    feedback_executor.session.commit.assert_called()
-    assert feedback_executor.submission.feedback_status == FeedbackStatus.GENERATION_FAILED
+    local_feedback_executor.session.commit.assert_called()
+    assert local_feedback_executor.submission.feedback_status == FeedbackStatus.GENERATION_FAILED
 
 
-def test_gradebook_writing(feedback_executor):
+def test_gradebook_writing(local_feedback_executor):
     """Test that gradebook is written correctly"""
-    os.makedirs(feedback_executor.output_path, exist_ok=True)
+    os.makedirs(local_feedback_executor.output_path, exist_ok=True)
 
     gradebook_content = '{"test": "data", "notebooks": {}}'
-    feedback_executor._write_gradebook(gradebook_content)
+    local_feedback_executor._write_gradebook(gradebook_content)
 
-    gradebook_path = os.path.join(feedback_executor.output_path, "gradebook.json")
+    gradebook_path = os.path.join(local_feedback_executor.output_path, "gradebook.json")
     assert os.path.exists(gradebook_path)
 
     with open(gradebook_path, "r") as f:
@@ -171,8 +166,7 @@ def test_process_executor_start_success(process_executor):
     """Test successful execution of feedback generation process"""
     process_executor.start()
 
-    # Verify logs were captured and submission feedback status was set
-    assert "[GenerateFeedbackApp]" in process_executor.grading_logs
+    # Verify submission feedback status was set
     assert process_executor.submission.feedback_status == FeedbackStatus.GENERATED
 
 
@@ -183,7 +177,7 @@ def test_process_executor_start_failure(process_executor):
 
     process_executor.start()
 
-    # Verify logs were captured and submission feedback status was set
+    # Verify submission feedback status was set
     assert "Cannot write gradebook" in process_executor.grading_logs
     assert process_executor.submission.feedback_status == FeedbackStatus.GENERATION_FAILED
 
@@ -200,7 +194,7 @@ def test_process_executor_run_failure(mock_run, process_executor):
     with pytest.raises(RuntimeError, match="Process has failed execution!"):
         process_executor._run()
 
-    # Verify subprocess was called with correct command and logs were captured
+    # Verify subprocess was called with correct command
     expected_command = [
         "grader-convert",
         "generate_feedback",
@@ -215,7 +209,6 @@ def test_process_executor_run_failure(mock_run, process_executor):
     mock_run.assert_called_once_with(
         expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
     )
-    assert process_executor.grading_logs == "Error: something went wrong"
 
 
 @patch("grader_service.autograding.local_feedback.subprocess.run", autospec=True)
