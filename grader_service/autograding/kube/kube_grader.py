@@ -404,7 +404,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         input and output directory through a persistent volume claim.
         :return: Coroutine
         """
-        self._write_gradebook(self._put_grades_in_assignment_properties())
         grader_pod = None
         try:
             grader_pod = self._start_pod()

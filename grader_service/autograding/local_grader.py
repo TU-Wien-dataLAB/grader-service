@@ -44,7 +44,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
     relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
-    # TODO: verify that this is the appropriate traitlet
     git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
     timeout_func = Callable(
@@ -102,6 +101,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.git_manager.pull_submission(self.input_path)
 
             autograding_start = datetime.now()
+            self._write_gradebook(self._put_grades_in_assignment_properties())
             self._run()
             autograding_finished = datetime.now()
 
@@ -120,7 +120,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 err_msg = e.stderr
             else:
                 err_msg = str(e)
-            self.log.error(err_msg)
             self.grading_logs = (self.grading_logs or "") + err_msg
             self._set_db_state(success=False)
         else:
@@ -175,8 +174,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         Runs the autograding in the current interpreter
         and captures the output.
         """
-        self._write_gradebook(self._put_grades_in_assignment_properties())
-
         autograder = Autograde(
             self.input_path,
             self.output_path,
@@ -352,8 +349,6 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
         Runs the autograding in a separate python interpreter
         as a sub-process and captures the output.
         """
-        self._write_gradebook(self._put_grades_in_assignment_properties())
-
         command = [
             self.convert_executable,
             "autograde",
@@ -370,8 +365,9 @@ class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
         )
         self.grading_logs = process.stderr
-        self.log.info(self.grading_logs)
         if process.returncode == 0:
+            self.log.info(self.grading_logs)
             self.log.info("Process has successfully completed execution!")
         else:
+            self.log.error(self.grading_logs)
             raise RuntimeError("Process has failed execution!")

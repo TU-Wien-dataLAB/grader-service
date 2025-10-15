@@ -17,8 +17,8 @@ class GitSubmissionManager(LoggingConfigurable):
     """
 
     git_executable = Unicode("git", allow_none=False).tag(config=True)
-    input_repo_type = Unicode(GitRepoType.USER, allow_none=False).tag(config=True)
-    output_repo_type = Unicode(GitRepoType.AUTOGRADE, allow_none=False).tag(config=True)
+    input_repo_type = GitRepoType.USER
+    output_repo_type = GitRepoType.AUTOGRADE
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
         super().__init__(**kwargs)

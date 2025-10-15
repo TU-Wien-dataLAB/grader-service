@@ -45,8 +45,6 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         )
 
     def _run(self):
-        self._write_gradebook(self._put_grades_in_assignment_properties())
-
         feedback_generator = GenerateFeedback(
             self.input_path,
             self.output_path,
@@ -54,14 +52,15 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
             assignment_settings=self.assignment.settings,
         )
 
+        # TODO: Do we need to collect the feedback logs at all? We don't use them, apparently.
         # Add a handler to the feedback_generator's logger so that we can capture its logs
         # and add them to self.grading_logs:
         with collect_logs(feedback_generator.log) as log_stream:
             feedback_generator.start()
-            self.grading_logs = (self.grading_logs or "") + log_stream.getvalue()
+            self.grading_logs = log_stream.getvalue()
 
     def _put_grades_in_assignment_properties(self) -> str:
-        # No need to calculate the properties when generating feedback.
+        # No need to calculate the properties again when generating feedback.
         return self.submission.properties.properties
 
     def _get_whitelist_patterns(self) -> Set[str]:
@@ -94,8 +93,6 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):
-        self._write_gradebook(self._put_grades_in_assignment_properties())
-
         command = [
             self.convert_executable,
             "generate_feedback",
@@ -111,8 +108,9 @@ class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
         )
         self.grading_logs = process.stderr
-        self.log.info(self.grading_logs)
         if process.returncode == 0:
+            self.log.info(self.grading_logs)
             self.log.info("Process has successfully completed execution!")
         else:
+            self.log.error(self.grading_logs)
             raise RuntimeError("Process has failed execution!")
