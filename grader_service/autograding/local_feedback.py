@@ -29,7 +29,7 @@ class FeedbackGitSubmissionManager(GitSubmissionManager):
         self.output_branch = f"feedback_{self.submission.commit_hash}"
 
 
-class GenerateFeedbackExecutor(LocalAutogradeExecutor):
+class LocalFeedbackExecutor(LocalAutogradeExecutor):
     git_manager_class = FeedbackGitSubmissionManager
 
     @property
@@ -89,7 +89,7 @@ class GenerateFeedbackExecutor(LocalAutogradeExecutor):
         pass
 
 
-class GenerateFeedbackProcessExecutor(GenerateFeedbackExecutor):
+class LocalFeedbackProcessExecutor(LocalFeedbackExecutor):
     convert_executable = Unicode("grader-convert", allow_none=False).tag(config=True)
 
     def _run(self):

@@ -9,7 +9,7 @@ import pytest
 
 from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
-    LocalProcessAutogradeExecutor,
+    LocalAutogradeProcessExecutor,
 )
 from grader_service.orm import Assignment, Lecture
 from grader_service.orm.submission import AutoStatus
@@ -45,7 +45,7 @@ def process_executor(tmp_path, submission_123):
         ),
     ):
         mock_session_class.object_session.return_value = Mock()
-        executor = LocalProcessAutogradeExecutor(
+        executor = LocalAutogradeProcessExecutor(
             grader_service_dir=str(tmp_path), submission=submission_123
         )
         yield executor
@@ -266,7 +266,7 @@ def test_gradebook_writing(local_autograde_executor):
     assert content == gradebook_content
 
 
-# =============== LocalProcessAutogradeExecutor tests ===============
+# =============== LocalAutogradeProcessExecutor tests ===============
 
 
 def test_process_executor_start_success(process_executor):
@@ -324,6 +324,6 @@ def test_process_executor_run_subprocess_error(mock_run, process_executor):
 
 
 def test_process_executor_inheritance():
-    """Test that LocalProcessAutogradeExecutor properly inherits from LocalAutogradeExecutor"""
-    assert issubclass(LocalProcessAutogradeExecutor, LocalAutogradeExecutor)
-    assert hasattr(LocalProcessAutogradeExecutor, "convert_executable")
+    """Test that LocalAutogradeProcessExecutor properly inherits from LocalAutogradeExecutor"""
+    assert issubclass(LocalAutogradeProcessExecutor, LocalAutogradeExecutor)
+    assert hasattr(LocalAutogradeProcessExecutor, "convert_executable")

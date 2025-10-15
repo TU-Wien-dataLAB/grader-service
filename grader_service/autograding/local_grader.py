@@ -335,7 +335,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         return executable_validator(proposal)
 
 
-class LocalProcessAutogradeExecutor(LocalAutogradeExecutor):
+class LocalAutogradeProcessExecutor(LocalAutogradeExecutor):
     """Runs an autograde job on the local machine
     with the default Python environment in a separate process.
     Sets up the necessary directories

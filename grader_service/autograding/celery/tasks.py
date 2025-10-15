@@ -4,7 +4,7 @@ from celery import Celery, Task
 from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
+from grader_service.autograding.local_feedback import LocalFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.orm.submission import FeedbackStatus, Submission
 from grader_service.plugins.lti import LTISyncGrades
@@ -77,7 +77,7 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
             f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match"
         )
 
-    executor = GenerateFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
+    executor = LocalFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
     executor.start()
     if submission.feedback_status == FeedbackStatus.GENERATED:
         self.log.info("Successfully generated feedback for submission %s!", submission.id)
