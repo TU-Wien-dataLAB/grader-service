@@ -35,7 +35,7 @@ defined in a separate `docker-compose-postgres.yml` file.
 
 Run the following command:
 ```bash
-docker compose -f docker-compose.yml -f docker-compose-postgres.yml up -d
+DATABASE_TYPE=postgres docker compose -f docker-compose.yml -f docker-compose-postgres.yml up -d
 ```
 
 To stop and remove the containers, run:
