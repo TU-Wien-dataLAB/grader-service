@@ -1,7 +1,7 @@
 services:
 
   service:
-    command: []  # Use the default CMD from Dockerfile-Service, i.e. just apply migrations
+    command: []  # Use the default CMD from Dockerfile-Service, i.e. just run grader-service
 
   db-init:
     build:
