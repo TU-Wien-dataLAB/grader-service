@@ -59,7 +59,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: Optional[User] = session.query(User).filter(name=username).one_or_none()
+    user_model: Optional[User] = session.query(User).filter(User.name == username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username
