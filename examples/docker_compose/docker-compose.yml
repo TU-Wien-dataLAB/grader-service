@@ -5,9 +5,15 @@ services:
     build:
       context: ../..
       dockerfile: examples/docker_compose/Dockerfile-Service
+    command: bash -c "
+        /app/init-db.sh
+        && grader-service -f /app/grader_service_config.py
+      "
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - service_dir:/app/service_dir
+      - ./init-db.sh:/app/init-db.sh
+      - ./data_only.sql:/app/data_only.sql
     environment:
       DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       RABBITMQ_GRADER_SERVICE_USERNAME: grader_user

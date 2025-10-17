@@ -1,4 +1,8 @@
 services:
+
+  service:
+    command: []  # Use the default CMD from Dockerfile-Service, i.e. just apply migrations
+
   db-init:
     build:
       context: ../..
@@ -9,7 +13,7 @@ services:
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - ./data_only.sql:/app/data_only.sql
-      - ./init-db.sh:/app/init-db.sh
+      - ./init-db-postgres.sh:/app/init-db-postgres.sh
     depends_on:
       postgres:
         condition: service_healthy

@@ -17,4 +17,4 @@ RUN python3 -m venv /venv
 # Activate venv and install the package
 RUN /venv/bin/pip install .
 
-CMD ["sh", "-c", "/app/init-db.sh"]
+CMD ["sh", "-c", "/app/init-db-postgres.sh"]
