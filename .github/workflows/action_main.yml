@@ -35,7 +35,7 @@ jobs:
             **/*
             *
       - id: outputStep
-        run: echo "::set-output name=changeDirs::${{ steps.changeDirsStep.outputs.all_changed_files }}"
+        run: echo "changeDirs=${{ steps.changeDirsStep.outputs.all_changed_files }}" >> "$GITHUB_OUTPUT"
 
   # ON CHANGED FILES
   build_grader-service:
