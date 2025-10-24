@@ -14,10 +14,8 @@ WORKDIR /app
 
 # Install python dependencies, only copying necessary files
 COPY ./pyproject.toml MANIFEST.in ./
-RUN uv pip compile pyproject.toml -o requirements.txt
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install -r requirements.txt && \
-    uv pip install numpy ipykernel
+    uv sync
 
 # Copy the project files and install the package itself
 COPY ./grader_service ./grader_service
