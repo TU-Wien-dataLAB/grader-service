@@ -89,6 +89,9 @@ components:
             - "full_auto"
             - "unassisted"
           default: "auto"
+        group:
+          type: "string"
+          example: "Chapter 1: Data Types"
       example:  
         late_submission:
           - period: "P1W1D"
