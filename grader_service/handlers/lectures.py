@@ -122,7 +122,7 @@ class LectureObjectHandler(GraderBaseHandler):
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
         self.write_json(lecture)
 
-    @authorize([Scope.admin])
+    @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int):
         """
         Soft or Hard-Deletes a specific lecture.
