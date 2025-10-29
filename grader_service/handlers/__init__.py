@@ -15,6 +15,8 @@ from grader_service.handlers import (
     lectures,
     permission,
     submissions,
+    roles,
+    users
 )
 from grader_service.handlers.handler_utils import GitRepoType
 
@@ -29,4 +31,6 @@ __all__ = [
     "config",
     "base_handler",
     "GitRepoType",
+    "roles",
+    "users",
 ]

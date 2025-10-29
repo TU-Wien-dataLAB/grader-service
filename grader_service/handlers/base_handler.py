@@ -24,7 +24,7 @@ from urllib.parse import parse_qsl, urlparse
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.session import Session
 from tornado import httputil, web
 from tornado.escape import json_decode
@@ -59,22 +59,23 @@ def check_authorization(
     if ("/permissions" in self.request.path) or ("/config" in self.request.path):
         return True
     if lecture_id is None and "/lectures" in self.request.path and self.request.method == "POST":
-        # lecture name and semester is in post body
+        # lecture code is in post body
         try:
             data = json_decode(self.request.body)
-            lecture_id = self.session.query(Lecture).filter(Lecture.code == data["code"]).one().id
+            lecture = self.session.query(Lecture).filter(Lecture.code == data["code"]).one_or_none()
+            lecture_id = lecture.id if lecture else None
         except MultipleResultsFound:
             raise HTTPError(403)
-        except NoResultFound:
-            raise HTTPError(404, reason="Lecture not found")
         except json.decoder.JSONDecodeError:
             raise HTTPError(403)
     elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
 
+    is_admin = self.authenticator.is_admin(handler=self, authentication={'name': self.user.name})
+
     role = self.session.get(Role, (self.user.id, lecture_id))
 
-    if (role is None) or (role.role not in scopes):
+    if not ((is_admin and Scope.admin in scopes) or (role is not None and role.role in scopes)):
         self.log.warning(
             "User %s tried to access %s with insufficient privileges",
             self.user.name,
@@ -89,7 +90,7 @@ def authorize(scopes: list[Scope]):
     :param scopes: the user's roles
     :return: wrapper function
     """
-    if not set(scopes).issubset({Scope.student, Scope.tutor, Scope.instructor}):
+    if not set(scopes).issubset({Scope.student, Scope.tutor, Scope.instructor, Scope.admin}):
         return ValueError("Invalid scopes")
 
     def wrapper(handler_method):
@@ -772,20 +773,20 @@ class GraderBaseHandler(BaseHandler):
         return super().write_error(status_code, **kwargs)
 
     def get_role(self, lecture_id: int) -> Role:
-        role = self.session.get(Role, (self.user.id, lecture_id))
+        role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
             raise HTTPError(403)
         return role
 
     def get_lecture(self, lecture_id: int) -> Lecture:
-        lecture: Lecture = self.session.get(Lecture, lecture_id)
+        lecture: Optional[Lecture] = self.session.get(Lecture, lecture_id)
         return lecture
 
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
         assignment: Optional[Assignment] = self.session.get(Assignment, assignment_id)
         if (
             (assignment is None)
-            or (assignment.deleted == DeleteState.deleted)
+            or ((assignment.deleted == DeleteState.deleted) and (not self.user.is_admin))
             or (int(assignment.lectid) != int(lecture_id))
         ):
             msg = "Assignment with id " + str(assignment_id) + " was not found"
@@ -793,12 +794,12 @@ class GraderBaseHandler(BaseHandler):
         return assignment
 
     def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
-        submission = self.session.get(Submission, submission_id)
+        submission: Optional[Submission] = self.session.get(Submission, submission_id)
         if (
             (submission is None)
             or (submission.assignid != assignment_id)
             or (int(submission.assignment.lectid) != lecture_id)
-            or (submission.deleted == DeleteState.deleted)
+            or ((submission.deleted == DeleteState.deleted) and (not self.user.is_admin))
         ):
             msg = f"Submission with id {submission_id} was not found"
             raise HTTPError(HTTPStatus.NOT_FOUND, reason=msg)
@@ -810,9 +811,11 @@ class GraderBaseHandler(BaseHandler):
         query = (
             self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
-            .filter(Submission.deleted == DeleteState.active)
             .group_by(Submission.user_id)
         )
+
+        if not self.user.is_admin:
+            query = query.filter(Submission.deleted == DeleteState.active)
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
@@ -823,7 +826,7 @@ class GraderBaseHandler(BaseHandler):
         subquery = query.subquery()
 
         # Build the main query
-        submissions = (
+        submissions_query = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
             .join(
@@ -831,21 +834,25 @@ class GraderBaseHandler(BaseHandler):
                 (Submission.user_id == subquery.c.user_id)
                 & (Submission.date == subquery.c.max_date)
                 & (Submission.assignid == assignment_id)
-                & (Submission.deleted == DeleteState.active),
             )
             .order_by(Submission.id)
-            .all()
         )
 
-        return submissions
+        if not self.user.is_admin:
+            submissions_query = submissions_query.filter(Submission.deleted == DeleteState.active)
+
+        return submissions_query.all()
 
     def get_all_submissions(self, assignment_id) -> List[Submission]:
         query = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
             .filter(Submission.assignid == assignment_id)
-            .filter(Submission.deleted == DeleteState.active)
         )
+
+        if not self.user.is_admin:
+            query = query.filter(Submission.deleted == DeleteState.active)
+
         return query.all()
 
     def get_best_submissions(
@@ -854,9 +861,11 @@ class GraderBaseHandler(BaseHandler):
         query = (
             self.session.query(Submission.user_id, func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
-            .filter(Submission.deleted == DeleteState.active)
             .group_by(Submission.user_id)
         )
+
+        if not self.user.is_admin:
+            query = query.filter(Submission.deleted == DeleteState.active)
 
         if must_have_feedback:
             query = query.filter(Submission.feedback_status != FeedbackStatus.NOT_GENERATED)
@@ -867,7 +876,7 @@ class GraderBaseHandler(BaseHandler):
         subquery = query.subquery()
 
         # Build the main query
-        submissions = (
+        submissions_query = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
             .join(
@@ -875,17 +884,24 @@ class GraderBaseHandler(BaseHandler):
                 (Submission.user_id == subquery.c.user_id)
                 & (Submission.score == subquery.c.max_score)
                 & (Submission.assignid == assignment_id)
-                & (Submission.deleted == DeleteState.active),
             )
             .order_by(Submission.id)
-            .all()
         )
-        return submissions
+
+        if not self.user.is_admin:
+            submissions_query = submissions_query.filter(Submission.deleted == DeleteState.active)
+
+        return submissions_query.all()
 
     @property
     def gitbase(self):
         app: GraderServer = self.application
         return os.path.join(app.grader_service_dir, "git")
+
+    @property
+    def tmpbase(self):
+        app: GraderServer = self.application
+        return os.path.join(app.grader_service_dir, "tmp")
 
     def construct_git_dir(
         self,
@@ -911,11 +927,10 @@ class GraderBaseHandler(BaseHandler):
             path = os.path.join(assignment_path, repo_type)
             if repo_type == GitRepoType.EDIT:
                 path = os.path.join(path, str(submission.id))
-                self.log.info(path)
         elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = os.path.join(assignment_path, repo_type, "user")
             if repo_type == GitRepoType.AUTOGRADE:
-                if (submission is None) or (self.get_role(lecture.id).role < Scope.tutor):
+                if (submission is None) or (not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor):
                     raise HTTPError(403)
                 path = os.path.join(type_path, submission.user.name)
             else:

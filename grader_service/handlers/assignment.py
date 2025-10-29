@@ -63,7 +63,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
 
     route: /lectures/{lecture_id}/assignments."""
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
         """Returns all assignments of a lecture.
 
@@ -73,35 +73,44 @@ class AssignmentBaseHandler(GraderBaseHandler):
         """
         lecture_id = parse_ids(lecture_id)
         self.validate_parameters("include-submissions")
-        role = self.get_role(lecture_id)
-        if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
 
-        if role.role == Scope.student:  # students do not get assignments that are created
-            assignments = (
-                self.session.query(Assignment)
-                .filter(
-                    Assignment.lectid == role.lecture.id,
-                    Assignment.deleted == DeleteState.active,
-                    Assignment.status != "created",
-                    Assignment.status != "pushed",
+        if not self.user.is_admin:
+            role = self.get_role(lecture_id)
+            if role.lecture.deleted == DeleteState.deleted:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
+
+            if role.role == Scope.student:  # students do not get assignments that are created
+                assignments = (
+                    self.session.query(Assignment)
+                    .filter(
+                        Assignment.lectid == role.lecture.id,
+                        Assignment.deleted == DeleteState.active,
+                        Assignment.status != "created",
+                        Assignment.status != "pushed",
+                    )
+                    .all()
                 )
-                .all()
-            )
-
+            else:
+                assignments = [a for a in role.lecture.assignments if (a.deleted == DeleteState.active)]
         else:
-            assignments = [a for a in role.lecture.assignments if (a.deleted == DeleteState.active)]
+            lecture = self.get_lecture(lecture_id=lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
+            assignments = lecture.assignments
 
         # Handle the case that the user wants to include submissions
         include_submissions = self.get_argument("include-submissions", "true") == "true"
         if include_submissions:
             assignids = [a.id for a in assignments]
-            user_id = self.user.id
-            results = (
-                self.session.query(Submission)
-                .filter(Submission.assignid.in_(assignids), Submission.user_id == user_id)
-                .all()
-            )
+            if not self.user.is_admin:
+                user_id = self.user.id
+                results = (
+                    self.session.query(Submission)
+                    .filter(Submission.assignid.in_(assignids), Submission.user_id == user_id)
+                    .all()
+                )
+            else:
+                results = self.session.query(Submission).filter(Submission.assignid.in_(assignids)).all()
             # Create a combined list of assignments and submissions
             assignments = [a.serialize() for a in assignments]
             submissions = [s.serialize() for s in results]
@@ -242,7 +251,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(assignment)
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int, assignment_id: int):
         """Returns a specific assignment of a lecture.
 
@@ -256,9 +265,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
         assignment = self.get_assignment(lecture_id=lecture_id, assignment_id=assignment_id)
         self.write_json(assignment)
 
-    @authorize([Scope.instructor])
+    @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int, assignment_id: int):
-        """Soft-Deletes a specific assignment.
+        """Soft or Hard-Deletes a specific assignment.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -270,26 +279,46 @@ class AssignmentObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        if assignment.status in ["released", "complete"]:
-            msg = "Cannot delete released or completed assignments!"
-            raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+        if not self.user.is_admin:
+            if assignment.status in ["released", "complete"]:
+                msg = "Cannot delete released or completed assignments!"
+                raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
 
-        previously_deleted = (
-            self.session.query(Assignment)
-            .filter(
-                Assignment.lectid == lecture_id,
-                Assignment.name == assignment.name,
-                Assignment.deleted == DeleteState.deleted,
+            previously_deleted = (
+                self.session.query(Assignment)
+                .filter(
+                    Assignment.lectid == lecture_id,
+                    Assignment.name == assignment.name,
+                    Assignment.deleted == DeleteState.deleted,
+                )
+                .one_or_none()
             )
-            .one_or_none()
-        )
-        if previously_deleted is not None:
-            self.session.delete(previously_deleted)
+            if previously_deleted is not None:
+                if len(previously_deleted.submissions) > 0:
+                    msg = "Assignment cannot be deleted: submissions still exist. Delete submissions first!"
+                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+
+                self.delete_assignment_files(previously_deleted)
+                self.session.delete(previously_deleted)
+                self.session.commit()
+
+            assignment.deleted = DeleteState.deleted
+            self.session.commit()
+        else:
+            if len(assignment.submissions) > 0:
+                msg = "Assignment cannot be deleted: submissions still exist. Delete submissions first!"
+                raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+
+            self.delete_assignment_files(assignment)
+            self.session.delete(assignment)
             self.session.commit()
 
-        assignment.deleted = DeleteState.deleted
-        self.session.commit()
-
+    def delete_assignment_files(self, assignment):
+        # delete all associated directories of the assignment
+        assignment_path = os.path.abspath(os.path.join(self.gitbase, assignment.lecture.code, str(assignment.id)))
+        tmp_assignment_path = os.path.abspath(os.path.join(self.tmpbase, assignment.lecture.code, str(assignment.id)))
+        shutil.rmtree(assignment_path, ignore_errors=True)
+        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
 
 @register_handler(
     path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",
