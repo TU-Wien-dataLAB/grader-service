@@ -71,7 +71,7 @@ class GenerateFeedback(BaseConverter):
 class GenerateFeedbackApp(ConverterApp):
     version = ConverterApp.__version__
 
-    def start(self, assignment_settings: AssignmentSettings):
+    def start(self):
         GenerateFeedback(
             input_dir=self.input_directory,
             output_dir=self.output_directory,
