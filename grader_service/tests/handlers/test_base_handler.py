@@ -63,6 +63,7 @@ def test_assignment_serialization():
         "settings": {
             "late_submission": None,
             "deadline": datetime.now(tz=timezone.utc).isoformat(),
+            "group": None,
             "max_submissions": 1,
             "autograde_type": "unassisted",
             "allowed_files": None,
