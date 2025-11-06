@@ -53,6 +53,10 @@ services:
     build:
       context: ../..
       dockerfile: examples/docker_compose/Dockerfile-Service
+    command:
+      - "grader-worker"
+      - "-f"
+      - "/app/grader_service_config.py"
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - service_dir:/app/service_dir
