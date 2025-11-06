@@ -12,8 +12,10 @@ services:
       DATABASE_TYPE: postgres
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
+      - service_dir:/app/service_dir
       - ./data_only.sql:/app/data_only.sql
       - ./init-db-postgres.sh:/app/init-db-postgres.sh
+      - ./init_repos:/app/init_repos
     depends_on:
       postgres:
         condition: service_healthy

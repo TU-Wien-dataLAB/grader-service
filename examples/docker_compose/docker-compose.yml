@@ -14,6 +14,7 @@ services:
       - service_dir:/app/service_dir
       - ./init-db.sh:/app/init-db.sh
       - ./data_only.sql:/app/data_only.sql
+      - ./init_repos:/app/init_repos
     environment:
       DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       RABBITMQ_GRADER_SERVICE_USERNAME: grader_user

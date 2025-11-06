@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Initialize an sqlite database: run migrations and load initial data."
+echo "Initialize an sqlite database: run migrations, load initial data, and create initial repos."
 
 grader-service-migrate -f /app/grader_service_config.py
 # Insert some initial data into the database. The import will fail if the data already
@@ -10,3 +10,5 @@ grader-service-migrate -f /app/grader_service_config.py
 if ! sqlite3 /app/service_dir/grader.db < /app/data_only.sql 2>/dev/null; then
   echo "Initial data import failed; probably the database already exists and contains the data."
 fi
+
+cp -r /app/init_repos/* /app/service_dir/git
