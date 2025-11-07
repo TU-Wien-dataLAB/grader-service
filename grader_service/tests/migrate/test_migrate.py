@@ -348,19 +348,32 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
             # Check schema consistency
             try:
                 assert schema_before_upgrade == schema_after_downgrade, (
-                    "Schema changed after downgrade!"
+                    f"Schema changed after downgrade from {migration.revision} ({migration.doc}) "
+                    f"to {prev_rev}!"
                 )
             except AssertionError as e:
-                # Allow exceptions for known non-lossless migrations
-                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                if migration.revision != "fc5d2febe781":
+                    # Migration "fc5d2febe781"
+                    # ("merged assignment configuration options into assignment settings column"):
+                    # The `allow_files` default differs; before upgrade the default was `None` (!),
+                    # although the column is not nullable. In the downgrade function, the server_default
+                    # is set to "f".
                     raise e
             # Check if the data is still the same
             data_after_downgrade = get_table_data(engine2, tables_after_downgrade)
+
+            data_loss_migrations = (
+                "f1ae66d52ad9",  # remove group table
+                "fc5d2febe781",  # merged assignment configuration options into assignment settings
+            )
             try:
-                assert data_before_upgrade == data_after_downgrade, "Data changed after downgrade!"
+                assert data_before_upgrade == data_after_downgrade, (
+                    f"Data changed after downgrade from {migration.revision} ({migration.doc}) "
+                    f"to {prev_rev}!"
+                )
             except AssertionError as e:
                 # If the tested migration is part of the not lossless migration do not throw the error
-                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                if migration.revision not in data_loss_migrations:
                     raise e
     finally:
         engine.dispose()
