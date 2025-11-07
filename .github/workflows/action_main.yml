@@ -30,18 +30,33 @@ jobs:
         id: changeDirsStep
         uses: tj-actions/changed-files@v46
         with:
-          dir_names: true
+          dir_names: true  # this only outputs directory names
           files: |
             **/*
             *
+
+      - name: Check if Dockerfile changed
+        id: changeDockerfileStep
+        uses: tj-actions/changed-files@v46
+        with:
+          files: Dockerfile
+
+
       - id: outputStep
-        run: echo "changeDirs=${{ steps.changeDirsStep.outputs.all_changed_files }}" >> "$GITHUB_OUTPUT"
+        run: |
+          {
+            echo "changeDirs=${{ steps.changeDirsStep.outputs.all_changed_files }}";
+            echo "changeDockerfile=${{ steps.changeDockerfileStep.outputs.any_changed }}"
+          } >> "$GITHUB_OUTPUT"
 
   # ON CHANGED FILES
   build_grader-service:
     uses: ./.github/workflows/build.yml
     needs: init
-    if: contains(needs.init.outputs.changeDirs, 'grader_service') || contains(needs.init.outputs.changeDirs, '.github/workflows') || contains(needs.init.outputs.changeDirs, 'Dockerfile')
+    if: |
+      contains(needs.init.outputs.changeDirs, 'grader_service') ||
+      contains(needs.init.outputs.changeDirs, '.github/workflows') ||
+      needs.init.outputs.changeDockerfile == 'true'
 
   dockerize_grader-service:
     needs: build_grader-service
