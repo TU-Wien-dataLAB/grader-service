@@ -14,11 +14,11 @@ WORKDIR /app
 # Install python dependencies, only copying necessary files
 COPY ./pyproject.toml MANIFEST.in ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev
+    uv sync --no-install-project --link-mode=copy
 
 # Copy the project files and install the package itself
 COPY ./grader_service ./grader_service
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install .
+    uv pip install --link-mode=copy .
 
 CMD ["sh", "-c", "/app/init-db-postgres.sh"]

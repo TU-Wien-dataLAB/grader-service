@@ -15,12 +15,12 @@ WORKDIR /app
 # Install python dependencies, only copying necessary files
 COPY ./pyproject.toml MANIFEST.in ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync
+    uv sync --no-install-project
 
-# Copy the project files and install the package itself
+# Copy the project files and install only the package itself
 COPY ./grader_service ./grader_service
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install .
+    uv pip install --link-mode=copy -e .
 
 # Set default branch to main and default user
 RUN git config --global init.defaultBranch main && \
