@@ -16,7 +16,7 @@ the containers together with their services.
 
 Run the following command:
 ```bash
-DATABASE_TYPE=sqlite docker compose up --build -d
+docker compose up --build -d
 ```
 
 This command builds the images and starts the containers in detached mode. It sets SQLite as its database that is integrated in `Grader Service`.
@@ -42,5 +42,3 @@ To stop and remove the containers, run:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose-postgres.yml down -v
 ```
-
-
