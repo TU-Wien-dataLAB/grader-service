@@ -72,8 +72,6 @@ def generate_fake_row(
         if col.get("autoincrement") or (
             col.get("primary_key") and isinstance(col_type, sa.Integer) and col_name not in fk_map
         ):
-            if table_name == "user":
-                breakpoint()
             continue
 
         # Handle foreign keys first
@@ -84,22 +82,6 @@ def generate_fake_row(
             # have one of these), takepart (unique combination of user and lecture), etc.
             row[col_name] = max(generated_keys[ref_table][ref_col])
             continue
-            # if ref_table in generated_keys and generated_keys[ref_table]:
-            #     # pick an existing PK - the last one added to the table
-            #     breakpoint()
-            #     row[col_name] = max(generated_keys[ref_table][ref_col])
-            #     continue
-            # elif isinstance(col_type, sa.Integer):
-            #     # if table_name == "takepart":
-            #     breakpoint()
-            #     # No PKs yet for this table → generate an integer placeholder
-            #     row[col_name] = None if nullable else 1
-            #     continue
-            # elif isinstance(col_type, sa.String):
-            #     breakpoint()
-            #     # No PKs yet for this table → generate a string placeholder
-            #     row[col_name] = "fake_pk"
-            #     continue
 
         # Integers
         if isinstance(col_type, sa.Integer):

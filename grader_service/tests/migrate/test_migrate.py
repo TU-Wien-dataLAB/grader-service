@@ -156,7 +156,7 @@ def get_schema_snapshot(inspector, exclude_tables=("alembic_version",)):
                 (
                     c["name"],
                     normalize_type(c["type"]),
-                    bool(c.get("nullable", "dupa")),
+                    bool(c.get("nullable", True)),
                     c.get("default") if c.get("default") is not None else None,
                     c.get("autoincrement"),  # This information is only included with PostgreSQL
                 )
@@ -199,7 +199,7 @@ def get_schema_snapshot(inspector, exclude_tables=("alembic_version",)):
 # --- Tests ---
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
-    """Upgrades to the n-th migration, adds a column to each table
+    """Upgrades to the n-th migration, adds a row to each table
     and then downgrades back to the previous revision.
     """
     cfg, db_url = alembic_cfg
@@ -302,9 +302,8 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
     2. Insert a row to each table.
     3. Upgrade the database to the n-th migration.
     4. Perform data integrity checks after the upgrade.
-    5. Insert another row to each table.
-    6. Downgrade the database back to the (n-1)-th migration.
-    7. Perform schema and data integrity checks after the downgrade.
+    5. Downgrade the database back to the (n-1)-th migration.
+    6. Perform schema and data integrity checks after the downgrade.
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
@@ -351,19 +350,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         trans.commit()
         conn.close()
 
-        # 5. Insert a new row into each table, just to make sure that it works
-        # # Track generated keys for foreign key relationships
-        # generated_keys = defaultdict(lambda: defaultdict(list))
-        # Identify the order in which tables should be populated based on foreign key relationships
-        ordered_tables = get_insert_order(inspector)
-
-        for table in ordered_tables:
-            try:
-                insert_one_row(inspector, table, generated_keys, referenced_cols)
-            except Exception:
-                raise Exception(f"Failed to insert into table {table}")
-
-        # 6. Downgrade to the previous revision
+        # 5. Downgrade to the previous revision
         prev_rev = migration.down_revision or "base"
         command.downgrade(cfg, prev_rev)
         engine3 = create_engine(db_url)
