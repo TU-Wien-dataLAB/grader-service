@@ -112,7 +112,7 @@ def insert_one_row(
                 generated_keys[table][col].update(r[0] for r in col_values)
 
 
-def get_table_data(engine, tables):
+def get_table_data(engine: sa.Engine, tables: list[str]) -> dict[str, list[dict]]:
     """Return a dict of table_name -> list of rows as dicts"""
     metadata = sa.MetaData()
     metadata.reflect(bind=engine, only=tables)
@@ -360,7 +360,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         if prev_rev == "base":
             assert not tables_after_downgrade, "User tables not dropped after downgrade to base"
         else:
-            # Check schema consistency
+            # 6. Check schema and data integrity after downgrade
             try:
                 assert schema_before_upgrade == schema_after_downgrade, (
                     f"Schema changed after downgrade from {migration.revision} ({migration.doc}) "
@@ -375,7 +375,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     # is set to "f".
                     raise e
             # 7.b Check if the data is still the same
-            data_after_downgrade = get_table_data(engine2, tables_after_downgrade)
+            data_after_downgrade = get_table_data(engine3, tables_after_downgrade)
 
             data_loss_migrations = (
                 "f1ae66d52ad9",  # remove group table
@@ -394,3 +394,67 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         engine.dispose()
         engine2.dispose()
         engine3.dispose()
+
+
+@pytest.mark.parametrize("migration", get_migration_scripts())
+def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg, migration):
+    """Checks that data insertion works between migration upgrades and downgrades.
+    Steps:
+    1. Upgrade the database to the (n-1)-th migration.
+    2. Insert a row to each table.
+    3. Upgrade the database to the n-th migration.
+    4. Insert another row to each table.
+    5. Downgrade the database back to the (n-1)-th migration.
+    6. Perform schema and data integrity checks after the downgrade.
+    """
+    cfg, db_url = alembic_cfg
+    engine = create_engine(db_url)
+    conn = engine.connect()
+    trans = conn.begin()
+
+    # Check if the migration has a down_revision; if not, skip the test
+    if migration.down_revision is None:
+        return
+    try:
+        # 1. Upgrade the database schema to (n-1)-th migration
+        command.upgrade(cfg, migration.down_revision)
+        inspector = sa.inspect(engine)
+
+        # 2. Insert a row into each table
+        # Track generated keys for foreign key relationships
+        generated_keys = defaultdict(lambda: defaultdict(set))
+        referenced_cols = get_referenced_columns_by_table(inspector)
+        # Identify the order in which tables should be populated based on foreign key relationships
+        ordered_tables = get_insert_order(inspector)
+
+        for table in ordered_tables:
+            try:
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
+            except Exception:
+                raise Exception(f"Failed to insert into table {table}")
+
+        # 3. Upgrade the database schema to the n-th migration
+        command.upgrade(cfg, migration.revision)
+
+        # Commit the transaction
+        trans.commit()
+        conn.close()
+
+        # 4. Insert a new row into each table, just to make sure that it works
+        engine2 = create_engine(db_url)
+        inspector = sa.inspect(engine2)
+        # Identify the order in which tables should be populated based on foreign key relationships
+        ordered_tables = get_insert_order(inspector)
+
+        for table in ordered_tables:
+            try:
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
+            except Exception:
+                raise Exception(f"Failed to insert into table {table}")
+
+        # 5. Downgrade to the previous revision
+        prev_rev = migration.down_revision or "base"
+        command.downgrade(cfg, prev_rev)
+    finally:
+        engine.dispose()
+        engine2.dispose()
