@@ -264,6 +264,8 @@ class BaseConverter(LoggingConfigurable):
             """
             Check if a file matches any of the allowed glob patterns.
             """
+            if file_path.endswith(".ipynb"):
+                return False
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in files_patterns)
 
         def is_ignored(file_path):
