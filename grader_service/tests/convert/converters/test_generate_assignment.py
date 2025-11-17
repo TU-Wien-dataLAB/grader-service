@@ -43,7 +43,7 @@ def test_generate_assignment_no_copy_with_files(tmp_path):
 
 def test_generate_assignment_copy_with_files(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
-    test_file = input_dir / "test.txt"
+    test_file = input_dir / "test.py"
     test_file.touch()
     assert test_file.exists()
 
@@ -51,7 +51,7 @@ def test_generate_assignment_copy_with_files(tmp_path):
         input_dir=str(input_dir),
         output_dir=str(output_dir),
         file_pattern="*.ipynb",
-        assignment_settings=AssignmentSettings(allowed_files=["*[!.ipynb]"]),
+        assignment_settings=AssignmentSettings(allowed_files=["*"]),
         config=None,
     ).start()
 
@@ -59,7 +59,7 @@ def test_generate_assignment_copy_with_files(tmp_path):
     # Ensure the notebook was converted
     assert "BEGIN SOLUTION" not in (output_dir / "simple.ipynb").read_text()
     assert (output_dir / "gradebook.json").exists()
-    assert (output_dir / "test.txt").exists()
+    assert (output_dir / "test.py").exists()
 
 
 def test_generate_assignment_copy_with_dirs(tmp_path):
