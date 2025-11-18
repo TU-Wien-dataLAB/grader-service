@@ -92,6 +92,9 @@ components:
         group:
           type: "string"
           example: "Chapter 1: Data Types"
+        cell_timeout:
+          type: "integer"
+          example: "300"
       example:  
         late_submission:
           - period: "P1W1D"
