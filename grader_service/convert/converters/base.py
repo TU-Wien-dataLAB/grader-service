@@ -264,6 +264,10 @@ class BaseConverter(LoggingConfigurable):
             """
             Check if a file matches any of the allowed glob patterns.
             """
+            # Note: ignoring notebooks is needed to not overwrite converted notebooks
+            # with the original ones as currently the copying process is done after the conversion
+            if file_path.endswith(".ipynb"):
+                return False
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in files_patterns)
 
         def is_ignored(file_path):
