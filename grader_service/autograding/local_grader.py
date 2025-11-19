@@ -20,7 +20,7 @@ from typing import List, Optional, Set
 from sqlalchemy.orm import Session
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Callable, TraitError, Unicode, validate
+from traitlets.traitlets import Callable, Int, TraitError, Unicode, validate
 
 from grader_service.autograding.utils import rmtree
 from grader_service.convert.converters.autograde import Autograde
@@ -30,10 +30,6 @@ from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
-
-
-def default_timeout_func(lecture: Lecture) -> int:
-    return 360
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
@@ -49,10 +45,19 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
     timeout_func = Callable(
-        default_timeout_func,
         allow_none=False,
         help="Function that takes a lecture as an argument and returns the cell timeout in seconds.",
     ).tag(config=True)
+
+    default_cell_timeout = Int(300, help="Default cell timeout in seconds, defaults to 300").tag(
+        config=True
+    )
+
+    min_cell_timeout = Int(10, help="Min cell timeout in seconds, defaults to 10.").tag(config=True)
+
+    max_cell_timeout = Int(84600, help="Max cell timeout in seconds, defaults to 86400").tag(
+        config=True
+    )
 
     def __init__(
         self, grader_service_dir: str, submission: Submission, close_session=True, **kwargs
@@ -86,6 +91,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.autograding_finished: Optional[datetime] = None
         self.autograding_status: Optional[str] = None
         self.grading_logs: Optional[str] = None
+
+        self.timeout_func = self._determine_cell_timeout
 
     def start(self):
         """
@@ -218,7 +225,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self._write_gradebook(self._put_grades_in_assignment_properties())
 
         c = Config()
-        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+        c.ExecutePreprocessor.timeout = self.timeout_func()
 
         autograder = Autograde(
             self.input_path,
@@ -473,6 +480,28 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.grading_logs = (self.grading_logs or "") + str(e)
             self.log.error(e)
             raise
+
+    def _determine_cell_timeout(self):
+        cell_timeout = self.default_cell_timeout
+        if self.assignment.settings.cell_timeout is not None:
+            custom_cell_timeout = self.assignment.settings.cell_timeout
+            self.log.info(
+                f"Found custom cell timeout in assignment settings: {custom_cell_timeout} seconds."
+            )
+            if custom_cell_timeout < self.min_cell_timeout:
+                custom_cell_timeout = self.min_cell_timeout
+                self.log.info(
+                    f"Custom cell timeout is smaller than the minimum, setting it to the minimum value: {custom_cell_timeout}."
+                )
+            elif custom_cell_timeout > self.max_cell_timeout:
+                custom_cell_timeout = self.max_cell_timeout
+                self.log.info(
+                    f"Custom cell timeout is bigger than the maximum, setting it to the maximum value: {custom_cell_timeout}."
+                )
+
+            cell_timeout = custom_cell_timeout
+
+        return cell_timeout
 
     @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
