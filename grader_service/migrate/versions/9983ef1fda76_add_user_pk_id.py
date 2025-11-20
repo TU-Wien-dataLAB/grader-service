@@ -41,16 +41,12 @@ def upgrade():
     with op.batch_alter_table("user") as batch_op:
         if dialect == "postgresql":
             batch_op.add_column(sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True))
-        # op.add_column("user", sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True))
-        # op.create_primary_key("pk_user_id", "user", ["id"])
-        # op.create_unique_constraint("unique_user_name", "user", ["name"])
         elif dialect == "sqlite":
             # For sqlite, cannot add the PK constraint on column creation, because it causes
             # an IntegrityError (NOT NULL) in the temporary table.
             batch_op.add_column(sa.Column("id", sa.Integer(), nullable=False))
 
         batch_op.create_primary_key("pk_user_id", ["id"])
-        batch_op.alter_column("id", autoincrement=True)
         batch_op.create_unique_constraint("unique_user_name", ["name"])
 
     def _add_user_id_col(table_name: str) -> None:
