@@ -264,10 +264,6 @@ class BaseConverter(LoggingConfigurable):
             """
             Check if a file matches any of the allowed glob patterns.
             """
-            # Note: ignoring notebooks is needed to not overwrite converted notebooks
-            # with the original ones as currently the copying process is done after the conversion
-            if file_path.endswith(".ipynb"):
-                return False
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in files_patterns)
 
         def is_ignored(file_path):
@@ -289,6 +285,9 @@ class BaseConverter(LoggingConfigurable):
             ]  # Modify dirs in-place to ignore unwanted dirs
 
             for file in files:
+                if file == "gradebook.json":
+                    continue
+
                 abs_file_path = os.path.join(root, file)
                 rel_file_path = os.path.relpath(abs_file_path, src)
 
@@ -345,6 +344,10 @@ class BaseConverter(LoggingConfigurable):
             if not should_process:
                 return
 
+            json_path = os.path.join(self._output_directory, "gradebook.json")
+            with Gradebook(json_path) as gb:
+                self.copy_unmatched_files(gb)
+
             self.run_pre_convert_hook()
 
             # convert all the notebooks
@@ -354,10 +357,6 @@ class BaseConverter(LoggingConfigurable):
             # set assignment permissions
             self.set_permissions()
             self.run_post_convert_hook()
-
-            json_path = os.path.join(self._output_directory, "gradebook.json")
-            with Gradebook(json_path) as gb:
-                self.copy_unmatched_files(gb)
 
         except UnresponsiveKernelError as e:
             self.log.error(
