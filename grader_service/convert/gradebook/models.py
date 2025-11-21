@@ -340,6 +340,9 @@ class GradeBookModel(BaseModel):
     notebooks: Dict[str, Notebook]
     extra_files: List[str]
 
+    def __str__(self):
+        return f"GradeBookModel: notebooks={list(self.notebooks.keys())}, extra_files={self.extra_files}"
+
     @property
     def score(self) -> float:
         score = 0
