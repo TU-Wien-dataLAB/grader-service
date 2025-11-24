@@ -7,14 +7,14 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.converters import Autograde
 from grader_service.tests.convert.converters import (
     _create_input_output_dirs,
-    _generate_test_assignment,
+    _generate_test_submission,
 )
 
 
 def test_autograde(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(input_dir, output_dir)
+    _generate_test_submission(input_dir, output_dir)
 
     assert (output_dir / "simple.ipynb").exists()
     assert (output_dir / "gradebook.json").exists()
@@ -43,7 +43,7 @@ def test_autograde(tmp_path):
 def test_autograde_copy_with_all_files(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(
+    _generate_test_submission(
         input_dir, output_dir, assignment_settings_kwargs={"allowed_files": ["*"]}
     )
 
@@ -79,7 +79,7 @@ def test_autograde_copy_with_dirs(tmp_path):
     test_file = dir_3 / "test.txt"
     test_file.touch()
 
-    _generate_test_assignment(
+    _generate_test_submission(
         input_dir, output_dir, assignment_settings_kwargs={"allowed_files": ["*"]}
     )
 
@@ -113,7 +113,7 @@ def test_autograde_with_student_notebooks_copied_over(tmp_path):
     by the student should also be copied over."""
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(input_dir, output_dir)
+    _generate_test_submission(input_dir, output_dir)
 
     student_nb = output_dir / "student.ipynb"
     student_nb.touch()
