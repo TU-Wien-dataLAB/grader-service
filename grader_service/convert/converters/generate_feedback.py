@@ -56,12 +56,20 @@ class GenerateFeedback(BaseConverter):
         self.force = True  # always overwrite generated assignments
 
     def init_notebooks(self) -> None:
-        # We only generate feedback for the notebooks for which there is a gradebook entry,
-        # and ignore e.g. additional notebooks created by the student, because feedback
-        # generation would fail for them anyway.
+        super().init_notebooks()
         json_path = os.path.join(self._output_directory, "gradebook.json")
         with Gradebook(json_path) as gb:
-            self.notebooks = [f"{nb_id}.ipynb" for nb_id in gb.model.notebook_id_set]
+            # `self.notebooks` contains the notebooks actually submitted by the student.
+            # `notebook_id_set` contains the original notebooks from the assignment.
+            # We generate feedback for the notebooks belonging to these both sets.
+            student_nbs = {
+                self.init_single_notebook_resources(nb)["unique_key"]: nb for nb in self.notebooks
+            }
+            assign_nb_ids = gb.model.notebook_id_set
+            self.notebooks = [path for id, path in student_nbs.items() if id in assign_nb_ids]
+
+        if len(self.notebooks) == 0:
+            self.log.warning("No notebooks to generate feedback")
 
     def get_include_patterns(self, gb: Gradebook) -> list[str]:
         """Get glob patterns specifying for which submission files to generate feedback.
