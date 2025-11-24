@@ -489,17 +489,17 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 f"Found custom cell timeout in assignment settings: {custom_cell_timeout} seconds."
             )
             if custom_cell_timeout < self.min_cell_timeout:
-                custom_cell_timeout = self.min_cell_timeout
+                cell_timeout = self.min_cell_timeout
                 self.log.info(
                     f"Custom cell timeout is smaller than the minimum, setting it to the minimum value: {custom_cell_timeout}."
                 )
             elif custom_cell_timeout > self.max_cell_timeout:
-                custom_cell_timeout = self.max_cell_timeout
+                cell_timeout = self.max_cell_timeout
                 self.log.info(
                     f"Custom cell timeout is bigger than the maximum, setting it to the maximum value: {custom_cell_timeout}."
                 )
-
-            cell_timeout = custom_cell_timeout
+            else:
+                cell_timeout = custom_cell_timeout
 
         return cell_timeout
 
