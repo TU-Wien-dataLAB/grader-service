@@ -10,7 +10,7 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
 from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
-from grader_service.convert.gradebook.gradebook import MissingEntry
+from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.preprocessors import GetGrades
 
 
@@ -55,17 +55,21 @@ class GenerateFeedback(BaseConverter):
         self.update_config(c)
         self.force = True  # always overwrite generated assignments
 
-    def convert_single_notebook(self, notebook_filename: str) -> None:
-        """Generate feedback for a single notebook.
+    def init_notebooks(self) -> None:
+        # We only generate feedback for the notebooks for which there is a gradebook entry,
+        # and ignore e.g. additional notebooks created by the student, because feedback
+        # generation would fail for them anyway.
+        json_path = os.path.join(self._output_directory, "gradebook.json")
+        with Gradebook(json_path) as gb:
+            self.notebooks = [f"{nb_id}.ipynb" for nb_id in gb.model.notebook_id_set]
 
-        We ignore any notebooks for which there are no gradebook entries
-        (e.g. additional notebooks created by the student), because feedback
-        generation would fail for them anyway.
+    def get_include_patterns(self, gb: Gradebook) -> list[str]:
+        """Get glob patterns specifying for which submission files to generate feedback.
+
+        In case of feedback generation, it can only be done for the notebooks
+        which were included in the original assignment.
         """
-        try:
-            super().convert_single_notebook(notebook_filename)
-        except MissingEntry:
-            self.log.info("Skipping notebook %s", notebook_filename)
+        return self.notebooks
 
 
 class GenerateFeedbackApp(ConverterApp):

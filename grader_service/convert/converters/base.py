@@ -236,18 +236,9 @@ class BaseConverter(LoggingConfigurable):
                 return False
         return True
 
-    def copy_unmatched_files(self, gb: Gradebook):
-        """
-        Copy the files from source to the output directory that match the allowed file patterns,
-        excluding files and directories that match any of the ignore patterns.
-        :return: None
-        """
-        dst = self._output_directory
-        src = self._input_directory
-
+    def get_include_patterns(self, gb: Gradebook) -> List[str]:
+        """Get glob patterns specifying which submission files to copy."""
         allowed_files = self._assignment_settings.allowed_files
-        ignore_patterns = self.ignore  # List of patterns to ignore
-
         if allowed_files is None:
             self.log.info(
                 "No additional file patterns specified; only copying files included "
@@ -257,6 +248,19 @@ class BaseConverter(LoggingConfigurable):
         else:
             self.log.info(f"Found additional file patterns: {allowed_files}")
             files_patterns = allowed_files + gb.get_extra_files()
+        return files_patterns
+
+    def copy_unmatched_files(self, gb: Gradebook):
+        """
+        Copy the files from source to the output directory that match the allowed file patterns,
+        excluding files and directories that match any of the ignore patterns.
+        :return: None
+        """
+        dst = self._output_directory
+        src = self._input_directory
+
+        ignore_patterns = self.ignore  # List of patterns to ignore
+        files_patterns = self.get_include_patterns(gb)
 
         copied_files = []
 
@@ -285,9 +289,6 @@ class BaseConverter(LoggingConfigurable):
             ]  # Modify dirs in-place to ignore unwanted dirs
 
             for file in files:
-                if file == "gradebook.json":
-                    continue
-
                 abs_file_path = os.path.join(root, file)
                 rel_file_path = os.path.relpath(abs_file_path, src)
 

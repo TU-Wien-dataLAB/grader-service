@@ -109,6 +109,9 @@ class GitSubmissionManager(LoggingConfigurable):
             self.log.info("No files to commit.")
             return
 
+        # Make sure we do not commit the gradebook.json
+        filenames = [f for f in filenames if f != "gradebook.json"]
+
         self._run_git([self.git_executable, "add", "--", *filenames], output_path)
         self._run_git(
             [self.git_executable, "commit", "-m", self.submission.commit_hash], output_path
