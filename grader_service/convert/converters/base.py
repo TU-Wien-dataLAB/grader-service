@@ -236,18 +236,9 @@ class BaseConverter(LoggingConfigurable):
                 return False
         return True
 
-    def copy_unmatched_files(self, gb: Gradebook):
-        """
-        Copy the files from source to the output directory that match the allowed file patterns,
-        excluding files and directories that match any of the ignore patterns.
-        :return: None
-        """
-        dst = self._output_directory
-        src = self._input_directory
-
+    def get_include_patterns(self, gb: Gradebook) -> List[str]:
+        """Get glob patterns specifying which submission files to copy."""
         allowed_files = self._assignment_settings.allowed_files
-        ignore_patterns = self.ignore  # List of patterns to ignore
-
         if allowed_files is None:
             self.log.info(
                 "No additional file patterns specified; only copying files included "
@@ -257,6 +248,19 @@ class BaseConverter(LoggingConfigurable):
         else:
             self.log.info(f"Found additional file patterns: {allowed_files}")
             files_patterns = allowed_files + gb.get_extra_files()
+        return files_patterns
+
+    def copy_unmatched_files(self, gb: Gradebook):
+        """
+        Copy the files from source to the output directory that match the allowed file patterns,
+        excluding files and directories that match any of the ignore patterns.
+        :return: None
+        """
+        dst = self._output_directory
+        src = self._input_directory
+
+        ignore_patterns = self.ignore  # List of patterns to ignore
+        files_patterns = self.get_include_patterns(gb)
 
         copied_files = []
 
@@ -264,10 +268,6 @@ class BaseConverter(LoggingConfigurable):
             """
             Check if a file matches any of the allowed glob patterns.
             """
-            # Note: ignoring notebooks is needed to not overwrite converted notebooks
-            # with the original ones as currently the copying process is done after the conversion
-            if file_path.endswith(".ipynb"):
-                return False
             return any(fnmatch.fnmatch(file_path, pattern) for pattern in files_patterns)
 
         def is_ignored(file_path):
@@ -345,6 +345,10 @@ class BaseConverter(LoggingConfigurable):
             if not should_process:
                 return
 
+            json_path = os.path.join(self._output_directory, "gradebook.json")
+            with Gradebook(json_path) as gb:
+                self.copy_unmatched_files(gb)
+
             self.run_pre_convert_hook()
 
             # convert all the notebooks
@@ -354,10 +358,6 @@ class BaseConverter(LoggingConfigurable):
             # set assignment permissions
             self.set_permissions()
             self.run_post_convert_hook()
-
-            json_path = os.path.join(self._output_directory, "gradebook.json")
-            with Gradebook(json_path) as gb:
-                self.copy_unmatched_files(gb)
 
         except UnresponsiveKernelError as e:
             self.log.error(

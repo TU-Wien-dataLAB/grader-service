@@ -10,7 +10,7 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
 from grader_service.convert.converters.base import BaseConverter
 from grader_service.convert.converters.baseapp import ConverterApp
-from grader_service.convert.gradebook.gradebook import MissingEntry
+from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.preprocessors import GetGrades
 
 
@@ -55,17 +55,29 @@ class GenerateFeedback(BaseConverter):
         self.update_config(c)
         self.force = True  # always overwrite generated assignments
 
-    def convert_single_notebook(self, notebook_filename: str) -> None:
-        """Generate feedback for a single notebook.
+    def init_notebooks(self) -> None:
+        super().init_notebooks()
+        json_path = os.path.join(self._output_directory, "gradebook.json")
+        with Gradebook(json_path) as gb:
+            # `self.notebooks` contains the notebooks actually submitted by the student.
+            # `notebook_id_set` contains the original notebooks from the assignment.
+            # We generate feedback for the notebooks belonging to these both sets.
+            student_nbs = {
+                self.init_single_notebook_resources(nb)["unique_key"]: nb for nb in self.notebooks
+            }
+            assign_nb_ids = gb.model.notebook_id_set
+            self.notebooks = [path for id, path in student_nbs.items() if id in assign_nb_ids]
 
-        We ignore any notebooks for which there are no gradebook entries
-        (e.g. additional notebooks created by the student), because feedback
-        generation would fail for them anyway.
+        if len(self.notebooks) == 0:
+            self.log.warning("No notebooks to generate feedback")
+
+    def get_include_patterns(self, gb: Gradebook) -> list[str]:
+        """Get glob patterns specifying for which submission files to generate feedback.
+
+        In case of feedback generation, it can only be done for the notebooks
+        which were included in the original assignment.
         """
-        try:
-            super().convert_single_notebook(notebook_filename)
-        except MissingEntry:
-            self.log.info("Skipping notebook %s", notebook_filename)
+        return self.notebooks
 
 
 class GenerateFeedbackApp(ConverterApp):
