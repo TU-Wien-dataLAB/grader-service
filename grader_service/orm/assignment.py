@@ -33,7 +33,7 @@ class Assignment(Base, Serializable):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     """Name of the assignment"""
-    lectid = Column(Integer, ForeignKey("lecture.id"))
+    lectid = Column(Integer, ForeignKey("lecture.id", ondelete="CASCADE"))
     points = Column(DECIMAL(10, 3), nullable=True)
     status = Column(Enum("created", "pushed", "released", "complete"), default="created")
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
@@ -43,7 +43,9 @@ class Assignment(Base, Serializable):
     _settings = Column("settings", Text, server_default="", nullable=False)
 
     lecture = relationship("Lecture", back_populates="assignments")
-    submissions = relationship("Submission", back_populates="assignment")
+    submissions = relationship(
+        "Submission", back_populates="assignment", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def settings(self) -> AssignmentSettings:
