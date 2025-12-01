@@ -188,7 +188,9 @@ class SubmissionUserHandler(GraderBaseHandler):
         self.validate_parameters("format")
         response_format = self.get_argument("format", "json")
         if response_format not in ["json", "csv"]:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'")
+            raise HTTPError(
+                HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
+            )
 
         if not self.user.is_admin:
             if username != self.user.name:
@@ -533,7 +535,11 @@ class SubmissionObjectHandler(GraderBaseHandler):
             lecture_id, assignment_id, submission_id
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if not self.user.is_admin and self.get_role(lecture_id).role == Scope.student and submission.user_id != self.user.id:
+        if (
+            not self.user.is_admin
+            and self.get_role(lecture_id).role == Scope.student
+            and submission.user_id != self.user.id
+        ):
             raise HTTPError(HTTPStatus.NOT_FOUND)
         self.write_json(submission)
 
@@ -601,19 +607,26 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
             if hard_delete:
                 if not self.user.is_admin:
-                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission.")
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission."
+                    )
 
                 self.delete_submission_files(submission)
                 self.session.delete(submission)
                 self.session.commit()
             else:
                 # Do not allow students to delete other users' submissions
-                if not self.user.is_admin and self.get_role(lecture_id).role < Scope.instructor and submission.user_id != self.user.id:
+                if (
+                    not self.user.is_admin
+                    and self.get_role(lecture_id).role < Scope.instructor
+                    and submission.user_id != self.user.id
+                ):
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
 
                 if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
                     raise HTTPError(
-                        HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
+                        HTTPStatus.FORBIDDEN,
+                        reason="Only submissions without feedback can be deleted.",
                     )
 
                 # if assignment has deadline and it has already passed

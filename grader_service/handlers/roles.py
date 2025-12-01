@@ -86,16 +86,19 @@ class RoleBaseHandler(GraderBaseHandler):
 
         roles = []
         for user_req in body["users"]:
-
             user = self.session.query(User).filter(User.name == user_req["username"]).one_or_none()
             if user is None:
                 self.session.rollback()
-                raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"User {user_req['username']} not found")
+                raise HTTPError(
+                    HTTPStatus.NOT_FOUND, reason=f"User {user_req['username']} not found"
+                )
 
-            role = self.session.query(Role) \
-                .filter(Role.user_id == user.id) \
-                .filter(Role.lectid == lecture_id) \
+            role = (
+                self.session.query(Role)
+                .filter(Role.user_id == user.id)
+                .filter(Role.lectid == lecture_id)
                 .one_or_none()
+            )
             if role is None:
                 role = Role()
                 role.user_id = user.id
@@ -144,10 +147,12 @@ class RoleBaseHandler(GraderBaseHandler):
                     self.session.rollback()
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"User {username} was not found")
 
-                role = self.session.query(Role) \
-                    .filter(Role.user_id == user.id) \
-                    .filter(Role.lectid == lecture_id) \
+                role = (
+                    self.session.query(Role)
+                    .filter(Role.user_id == user.id)
+                    .filter(Role.lectid == lecture_id)
                     .one_or_none()
+                )
                 if role is not None:
                     self.session.delete(role)
             self.session.commit()

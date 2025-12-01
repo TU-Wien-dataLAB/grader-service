@@ -14,9 +14,9 @@ from grader_service.handlers import (
     health,
     lectures,
     permission,
-    submissions,
     roles,
-    users
+    submissions,
+    users,
 )
 from grader_service.handlers.handler_utils import GitRepoType
 

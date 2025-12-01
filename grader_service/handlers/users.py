@@ -16,6 +16,7 @@ class UserBaseHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /users.
     """
+
     @authorize([Scope.admin])
     async def get(self):
         """
@@ -26,6 +27,7 @@ class UserBaseHandler(GraderBaseHandler):
 
         self.set_status(HTTPStatus.OK)
         self.write_json(user)
+
 
 @register_handler(r"\/api\/users\/(?P<username>[^\/]+)\/?", VersionSpecifier.ALL)
 class UserObjectBaseHandler(GraderBaseHandler):

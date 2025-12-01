@@ -44,7 +44,10 @@ class Assignment(Base, Serializable):
 
     lecture = relationship("Lecture", back_populates="assignments")
     submissions = relationship(
-        "Submission", back_populates="assignment", cascade="all, delete-orphan", passive_deletes=True
+        "Submission",
+        back_populates="assignment",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     @property

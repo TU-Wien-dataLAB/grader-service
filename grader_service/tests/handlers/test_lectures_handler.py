@@ -8,17 +8,24 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
 from grader_service.server import GraderServer
-from .db_util import insert_assignment, insert_assignments, insert_student, insert_submission, create_git_repository
+
 from ... import orm
 from ...handlers import GitRepoType
 from ...orm.base import DeleteState
+from .db_util import (
+    create_git_repository,
+    insert_assignment,
+    insert_assignments,
+    insert_student,
+    insert_submission,
+)
 
 
 async def test_get_lectures(
@@ -651,7 +658,9 @@ async def test_delete_lecture_hard(
 
     url = service_base_url + f"lectures/{l_id}"
     delete_response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert delete_response.code == HTTPStatus.OK
 
@@ -681,7 +690,9 @@ async def test_delete_lecture_hard_unauthorized(
     url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+            url + "?hard_delete=true",
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
     assert e.code == HTTPStatus.FORBIDDEN
@@ -704,10 +715,7 @@ async def test_delete_lecture_hard_assignments_roles(
     # create assignment
     url = service_base_url + f"lectures/{l_id}/assignments"
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="released",
-        settings=AssignmentSettings(),
+        id=-1, name="pytest", status="released", settings=AssignmentSettings()
     )
     post_response = await http_server_client.fetch(
         url,
@@ -717,14 +725,24 @@ async def test_delete_lecture_hard_assignments_roles(
     )
     assert post_response.code == HTTPStatus.CREATED
 
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=1, repo_type=GitRepoType.SOURCE, username=default_admin.name)
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=1,
+        repo_type=GitRepoType.SOURCE,
+        username=default_admin.name,
+    )
 
     git_dir = Path(app.grader_service_dir) / "git" / l_code / str(a_id)
     assert git_dir.exists()
 
     url = service_base_url + f"lectures/{l_id}"
     delete_response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert delete_response.code == HTTPStatus.OK
 
@@ -762,7 +780,7 @@ async def test_delete_lecture_unknown_parameter(
     url = service_base_url + f"lectures/{l_id}?some_param=asdf"
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="DELETE", headers={"Authorization": f"Token {default_token}"},
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.BAD_REQUEST

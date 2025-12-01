@@ -13,9 +13,16 @@ from tornado.httpclient import HTTPClientError
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.server import GraderServer
-from .db_util import insert_assignments, insert_submission, check_assignment_and_status, insert_assignment, \
-    create_all_git_repositories, check_git_repositories
+
 from ... import orm
+from .db_util import (
+    check_assignment_and_status,
+    check_git_repositories,
+    create_all_git_repositories,
+    insert_assignment,
+    insert_assignments,
+    insert_submission,
+)
 
 
 async def test_get_assignments(
@@ -800,7 +807,9 @@ async def test_delete_assignment(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created")
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created"
+    )
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -846,7 +855,9 @@ async def test_delete_assignment_deleted_assignment(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created")
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created"
+    )
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -927,7 +938,9 @@ async def test_delete_assignment_same_name_twice(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created")
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created"
+    )
 
     url = service_base_url + "lectures/3/assignments/"
 
@@ -946,9 +959,16 @@ async def test_delete_assignment_same_name_twice(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created",
-                                should_exist=False)
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=second_post_assignment.id, status="created")
+    check_assignment_and_status(
+        sql_alchemy_engine,
+        l_id=l_id,
+        a_id=first_post_assignment.id,
+        status="created",
+        should_exist=False,
+    )
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=second_post_assignment.id, status="created"
+    )
 
 
 async def test_delete_released_assignment(
@@ -1065,10 +1085,14 @@ async def test_delete_assignment_hard(
     insert_assignment(sql_alchemy_engine, l_id)
 
     delete_response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created", should_exist=False)
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created", should_exist=False
+    )
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1102,7 +1126,9 @@ async def test_delete_assignment_hard_unauthorized(
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+            url + "?hard_delete=true",
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
     assert e.code == HTTPStatus.FORBIDDEN
@@ -1116,7 +1142,7 @@ async def test_delete_assignment_hard_with_submissions(
     default_roles,
     default_admin_login,
     sql_alchemy_engine,
-    default_user
+    default_user,
 ):
     l_id = 4
     l_code = "23wle1"
@@ -1126,10 +1152,7 @@ async def test_delete_assignment_hard_with_submissions(
     # create assignment
     url = service_base_url + f"lectures/{l_id}/assignments"
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="released",
-        settings=AssignmentSettings(),
+        id=-1, name="pytest", status="released", settings=AssignmentSettings()
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1144,10 +1167,14 @@ async def test_delete_assignment_hard_with_submissions(
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
     delete_response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released", should_exist=False)
+    check_assignment_and_status(
+        sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released", should_exist=False
+    )
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1165,8 +1192,9 @@ async def test_delete_assignment_hard_with_submissions(
     submissions = session.query(orm.Submission).filter(orm.Submission.assignid == a_id).all()
     assert len(submissions) == 0
 
-    check_git_repositories(app, default_user, l_code, a_id,
-                           False, False, False, False, False, False, False, False)
+    check_git_repositories(
+        app, default_user, l_code, a_id, False, False, False, False, False, False, False, False
+    )
 
 
 async def test_assignment_properties_lecture_assignment_missmatch(

@@ -9,8 +9,8 @@ from traitlets.config import LoggingConfigurable
 
 from grader_service.utils import maybe_future, url_path_join
 
-from .login import LoginHandler
 from ..handlers.base_handler import BaseHandler
+from .login import LoginHandler
 
 
 class Authenticator(LoggingConfigurable):
@@ -512,7 +512,7 @@ class Authenticator(LoggingConfigurable):
             self.log.warning("User %r not allowed.", username)
             return
 
-    async def refresh_user(self, user, handler:BaseHandler=None):
+    async def refresh_user(self, user, handler: BaseHandler = None):
         """Refresh auth data for a given user
 
         Allows refreshing or invalidating auth data.
@@ -538,7 +538,9 @@ class Authenticator(LoggingConfigurable):
                 Any fields not present will be left unchanged.
                 This can include updating `.admin` or `.auth_state` fields.
         """
-        user.is_admin = handler.authenticator.is_admin(handler=self, authentication={'name': user.name})
+        user.is_admin = handler.authenticator.is_admin(
+            handler=self, authentication={"name": user.name}
+        )
         return True
 
     def is_admin(self, handler, authentication):

@@ -18,7 +18,7 @@ import sys
 import tornado
 import uvloop as uvloop
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine, Engine, event
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
@@ -41,6 +41,7 @@ from traitlets import log as traitlets_log
 
 from grader_service import __version__
 from grader_service.auth.auth import Authenticator
+
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
@@ -406,7 +407,9 @@ class GraderService(config.Application):
 
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
-                            self.log.info(f"Adding new user with username {username} and display name {display_name}")
+                            self.log.info(
+                                f"Adding new user with username {username} and display name {display_name}"
+                            )
                             user = User()
                             user.name = username
                             user.display_name = display_name

@@ -7,18 +7,21 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service import orm
 from grader_service.server import GraderServer
-from grader_service.tests.handlers.db_util import insert_submission, create_all_git_repositories, \
-    check_git_repositories
+from grader_service.tests.handlers.db_util import (
+    check_git_repositories,
+    create_all_git_repositories,
+    insert_submission,
+)
 
 
 async def test_get_users_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     url = service_base_url + "users/"
 
@@ -31,13 +34,13 @@ async def test_get_users_unauthorized(
 
 
 async def test_get_users_admin_unknown_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + "users/?abc=123"
 
@@ -50,14 +53,14 @@ async def test_get_users_admin_unknown_parameter(
 
 
 async def test_get_users_admin(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
-        default_admin,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
+    default_admin,
 ):
     url = service_base_url + "users/"
 
@@ -73,13 +76,13 @@ async def test_get_users_admin(
 
 
 async def test_get_user_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}/"
 
@@ -92,13 +95,13 @@ async def test_get_user_unauthorized(
 
 
 async def test_get_user_admin_unknown_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}/?abc=123"
 
@@ -111,14 +114,14 @@ async def test_get_user_admin_unknown_parameter(
 
 
 async def test_get_user_admin(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
-        default_admin,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
+    default_admin,
 ):
     url = service_base_url + f"users/{default_user.name}"
 
@@ -131,13 +134,13 @@ async def test_get_user_admin(
 
 
 async def test_get_user_admin_wrong_user(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + "users/windows"
 
@@ -150,60 +153,69 @@ async def test_get_user_admin_wrong_user(
 
 
 async def test_put_user_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"}, body=json.dumps(data)
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(data),
         )
     e = exc_info.value
     assert e.code == HTTPStatus.FORBIDDEN
 
 
 async def test_put_user_admin_unknown_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}/?abc=123"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"}, body=json.dumps(data)
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(data),
         )
     e = exc_info.value
     assert e.code == HTTPStatus.BAD_REQUEST
 
 
 async def test_put_user_admin(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
-        default_admin,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
+    default_admin,
 ):
     url = service_base_url + f"users/{default_user.name}"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     response = await http_server_client.fetch(
-        url, method="PUT", headers={"Authorization": f"Token {default_token}"}, body=json.dumps(data)
+        url,
+        method="PUT",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(data),
     )
     assert response.code == HTTPStatus.OK
 
@@ -217,33 +229,36 @@ async def test_put_user_admin(
 
 
 async def test_put_user_admin_wrong_user(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + "users/windows"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="PUT", headers={"Authorization": f"Token {default_token}"}, body=json.dumps(data)
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(data),
         )
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_delete_user_unauthorized(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_user_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}"
 
@@ -256,13 +271,13 @@ async def test_delete_user_unauthorized(
 
 
 async def test_delete_user_admin_unknown_parameter(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + f"users/{default_user.name}/?abc=123"
 
@@ -275,15 +290,15 @@ async def test_delete_user_admin_unknown_parameter(
 
 
 async def test_delete_user_admin(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
-        default_admin,
-        sql_alchemy_engine,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
+    default_admin,
+    sql_alchemy_engine,
 ):
     username = default_user.name
     url = service_base_url + f"users/{username}/"
@@ -316,7 +331,9 @@ async def test_delete_user_admin(
     insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
     create_all_git_repositories(app, default_user, l_id, l_code, a_id, s_id)
 
-    old_submissions = session.query(orm.Submission).filter(orm.Submission.user_id == old_user.id).all()
+    old_submissions = (
+        session.query(orm.Submission).filter(orm.Submission.user_id == old_user.id).all()
+    )
     old_roles = session.query(orm.Role).filter(orm.Role.user_id == old_user.id).all()
     old_api_tokens = session.query(orm.APIToken).filter(orm.APIToken.user_id == old_user.id).all()
     old_auth_codes = session.query(orm.OAuthCode).filter(orm.OAuthCode.user_id == old_user.id).all()
@@ -351,18 +368,19 @@ async def test_delete_user_admin(
     assert len(api_tokens) == 0
     assert len(auth_codes) == 0
 
-    check_git_repositories(app, default_user, l_code, a_id, s_id,
-                           True, True, True, False, False, False, False)
+    check_git_repositories(
+        app, default_user, l_code, a_id, s_id, True, True, True, False, False, False, False
+    )
 
 
 async def test_delete_user_admin_wrong_user(
-        app: GraderServer,
-        service_base_url,
-        http_server_client,
-        default_token,
-        default_roles,
-        default_admin_login,
-        default_user,
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    default_user,
 ):
     url = service_base_url + "users/windows/"
 

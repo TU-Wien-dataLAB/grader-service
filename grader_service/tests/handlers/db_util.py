@@ -18,7 +18,7 @@ from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.handlers import GitRepoType
 from grader_service.handlers.git.server import GitBaseHandler
-from grader_service.orm import Assignment, Lecture, Role, Submission, User, SubmissionLogs
+from grader_service.orm import Assignment, Lecture, Role, Submission, SubmissionLogs, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -179,7 +179,7 @@ def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
 
 
 def create_user_submission_with_repo(
-        engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
+    engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
 ) -> Submission:
     """Creates a submission for `student` and a user repo for storing it.
 
@@ -224,9 +224,15 @@ def create_user_submission_with_repo(
     return submission
 
 
-def check_assignment_and_status(engine: Engine, l_id: int, a_id: int, status: str, should_exist: bool = True):
+def check_assignment_and_status(
+    engine: Engine, l_id: int, a_id: int, status: str, should_exist: bool = True
+):
     session: Session = sessionmaker(engine)()
-    assignment = session.query(orm.Assignment).filter(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id).first()
+    assignment = (
+        session.query(orm.Assignment)
+        .filter(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
+        .first()
+    )
     if should_exist:
         assert assignment is not None, "assignment is None"
         assert assignment.status == status, f"assert '{assignment.status}' == '{status}'"
@@ -236,16 +242,26 @@ def check_assignment_and_status(engine: Engine, l_id: int, a_id: int, status: st
 
 def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = True):
     session: Session = sessionmaker(engine)()
-    submission = session.query(orm.Submission).filter(orm.Submission.id == s_id,
-                                                      orm.Submission.assignid == a_id).first()
+    submission = (
+        session.query(orm.Submission)
+        .filter(orm.Submission.id == s_id, orm.Submission.assignid == a_id)
+        .first()
+    )
     if should_exist:
         assert submission is not None, "submission is None"
     else:
         assert submission is None, f"submission exists (id={s_id}, assignid={a_id})"
 
 
-def create_git_repository(app: GraderServer, l_id: int, code: str, a_id: int, s_id: int, repo_type: GitRepoType,
-                          username: str):
+def create_git_repository(
+    app: GraderServer,
+    l_id: int,
+    code: str,
+    a_id: int,
+    s_id: int,
+    repo_type: GitRepoType,
+    username: str,
+):
     git_dir = Path(app.grader_service_dir) / "git"
     git_dir.mkdir(exist_ok=True)
     path = f"/git/{code}/{a_id}/{repo_type}/{s_id}"
@@ -253,7 +269,9 @@ def create_git_repository(app: GraderServer, l_id: int, code: str, a_id: int, s_
     handler_mock.request.path = path
     handler_mock.gitbase = str(git_dir)
     handler_mock.user.name = username
-    sf = get_query_side_effect(lid=l_id, code=code, scope=Scope.instructor, a_id=a_id, s_id=s_id, username=username)
+    sf = get_query_side_effect(
+        lid=l_id, code=code, scope=Scope.instructor, a_id=a_id, s_id=s_id, username=username
+    )
     handler_mock.session.query = Mock(side_effect=sf)
     constructed_git_dir = GitBaseHandler.construct_git_dir(
         handler_mock,
@@ -267,28 +285,82 @@ def create_git_repository(app: GraderServer, l_id: int, code: str, a_id: int, s_
     assert os.path.exists(lookup_dir)
 
 
-def create_all_git_repositories(app: GraderServer, user: User, l_id: int, l_code: str, a_id: int, s_id: int):
+def create_all_git_repositories(
+    app: GraderServer, user: User, l_id: int, l_code: str, a_id: int, s_id: int
+):
     # create possible git repositories for submission
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.SOURCE,
-                          username=user.name)
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.RELEASE,
-                          username=user.name)
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.USER,
-                          username=user.name)
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.EDIT,
-                          username=user.name)
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.AUTOGRADE,
-                          username=user.name)
-    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.FEEDBACK,
-                          username=user.name)
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.SOURCE,
+        username=user.name,
+    )
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.RELEASE,
+        username=user.name,
+    )
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.USER,
+        username=user.name,
+    )
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.EDIT,
+        username=user.name,
+    )
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.AUTOGRADE,
+        username=user.name,
+    )
+    create_git_repository(
+        app=app,
+        l_id=l_id,
+        code=l_code,
+        a_id=a_id,
+        s_id=s_id,
+        repo_type=GitRepoType.FEEDBACK,
+        username=user.name,
+    )
 
-    check_git_repositories(app, user, l_code, a_id, s_id,
-                           True, True, True, True, True, True, True)
+    check_git_repositories(app, user, l_code, a_id, s_id, True, True, True, True, True, True, True)
 
 
-def check_git_repositories(app: GraderServer, user: User, l_code: str, a_id: int, s_id: int,
-                           exits_assignment: bool, exits_source: bool, exits_release: bool, exits_user: bool,
-                           exits_edit: bool, exits_feedback: bool, exits_autograde: bool):
+def check_git_repositories(
+    app: GraderServer,
+    user: User,
+    l_code: str,
+    a_id: int,
+    s_id: int,
+    exits_assignment: bool,
+    exits_source: bool,
+    exits_release: bool,
+    exits_user: bool,
+    exits_edit: bool,
+    exits_feedback: bool,
+    exits_autograde: bool,
+):
     assignment_path = Path(app.grader_service_dir) / "git" / l_code / str(a_id)
 
     source_path = assignment_path / GitRepoType.SOURCE

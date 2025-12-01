@@ -97,14 +97,18 @@ class AssignmentBaseHandler(GraderBaseHandler):
                     .all()
                 )
             else:
-                assignments = [a for a in role.lecture.assignments if (a.deleted == DeleteState.active)]
+                assignments = [
+                    a for a in role.lecture.assignments if (a.deleted == DeleteState.active)
+                ]
 
         # Handle the case that the user wants to include submissions
         include_submissions = self.get_argument("include-submissions", "true") == "true"
         if include_submissions:
             assignids = [a.id for a in assignments]
             if self.user.is_admin:
-                results = self.session.query(Submission).filter(Submission.assignid.in_(assignids)).all()
+                results = (
+                    self.session.query(Submission).filter(Submission.assignid.in_(assignids)).all()
+                )
             else:
                 results = (
                     self.session.query(Submission)
@@ -275,7 +279,6 @@ class AssignmentObjectHandler(GraderBaseHandler):
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
             self.write_json(assignment)
 
-
     @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int, assignment_id: int):
         """Soft or Hard-Deletes a specific assignment.
@@ -297,7 +300,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
             if hard_delete:
                 if not self.user.is_admin:
-                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete assignment.")
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete assignment."
+                    )
 
                 self.delete_assignment_files(assignment)
                 self.session.delete(assignment)

@@ -70,10 +70,13 @@ def check_authorization(
             raise HTTPError(403)
     elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
-    if re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", self.request.path) and self.request.method == "GET":
+    if (
+        re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", self.request.path)
+        and self.request.method == "GET"
+    ):
         return True
 
-    is_admin = self.authenticator.is_admin(handler=self, authentication={'name': self.user.name})
+    is_admin = self.authenticator.is_admin(handler=self, authentication={"name": self.user.name})
 
     role = self.session.get(Role, (self.user.id, lecture_id))
 
@@ -835,7 +838,7 @@ class GraderBaseHandler(BaseHandler):
                 subquery,
                 (Submission.user_id == subquery.c.user_id)
                 & (Submission.date == subquery.c.max_date)
-                & (Submission.assignid == assignment_id)
+                & (Submission.assignid == assignment_id),
             )
             .order_by(Submission.id)
         )
@@ -885,7 +888,7 @@ class GraderBaseHandler(BaseHandler):
                 subquery,
                 (Submission.user_id == subquery.c.user_id)
                 & (Submission.score == subquery.c.max_score)
-                & (Submission.assignid == assignment_id)
+                & (Submission.assignid == assignment_id),
             )
             .order_by(Submission.id)
         )
@@ -916,10 +919,14 @@ class GraderBaseHandler(BaseHandler):
     def delete_submission_files(self, submission: Submission):
         # delete all associated directories of the submission
         assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id))
+            os.path.join(
+                self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id)
+            )
         )
         tmp_assignment_path = os.path.abspath(
-            os.path.join(self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id))
+            os.path.join(
+                self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id)
+            )
         )
         target_names = {submission.user.name, str(submission.id)}
         matching_dirs = []
@@ -968,7 +975,9 @@ class GraderBaseHandler(BaseHandler):
         elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = os.path.join(assignment_path, repo_type, "user")
             if repo_type == GitRepoType.AUTOGRADE:
-                if (submission is None) or (not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor):
+                if (submission is None) or (
+                    not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor
+                ):
                     raise HTTPError(403)
                 path = os.path.join(type_path, submission.user.name)
             else:

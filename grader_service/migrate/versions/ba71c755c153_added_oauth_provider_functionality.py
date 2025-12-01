@@ -16,7 +16,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     Text,
     Unicode,
-    text
+    text,
 )
 
 from grader_service.utils import new_token

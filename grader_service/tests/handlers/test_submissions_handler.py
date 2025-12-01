@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import isodate
 import pytest
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
@@ -29,13 +29,17 @@ from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStat
 from grader_service.orm.submission import Submission as SubmissionORM
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
+
+from ... import orm
 from .db_util import (
+    check_git_repositories,
+    check_submission,
+    create_all_git_repositories,
     create_user_submission_with_repo,
     insert_assignments,
     insert_student,
-    insert_submission, check_submission, create_all_git_repositories, check_git_repositories,
+    insert_submission,
 )
-from ... import orm
 
 
 async def submission_test_setup(engine, default_user, a_id: int):
@@ -230,8 +234,8 @@ async def test_get_submissions_instructor_version(
     other_user = insert_student(engine, "student1", l_id)
 
     url = (
-            service_base_url
-            + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
     )
 
     insert_submission(engine, a_id, default_user.name, user_id=default_user.id)
@@ -288,8 +292,8 @@ async def test_get_submissions_instructor_version_unauthorized(
     engine = sql_alchemy_engine
 
     url = (
-            service_base_url
-            + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
     )
 
     insert_submission(engine, a_id, username=default_user.name, user_id=default_user.id)
@@ -325,8 +329,8 @@ async def test_get_submissions_latest_instructor_version(
     other_user = insert_student(engine, "student1", l_id)
 
     url = (
-            service_base_url
-            + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
     )
 
     insert_submission(engine, a_id, default_user.name, user_id=default_user.id)
@@ -386,8 +390,8 @@ async def test_get_submissions_best_instructor_version(
     other_user = insert_student(engine, "student1", l_id)
 
     url = (
-            service_base_url
-            + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=best"
+        service_base_url
+        + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=best"
     )
 
     insert_submission(
@@ -564,7 +568,9 @@ async def test_get_submissions_admin_deleted_instructor_version(
     )
     assert response.code == HTTPStatus.OK
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
+    url = (
+        service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
+    )
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -1118,7 +1124,9 @@ async def test_delete_submission_with_feedback(
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, feedback=FeedbackStatus.GENERATED)
+    insert_submission(
+        sql_alchemy_engine, a_id, default_user.name, feedback=FeedbackStatus.GENERATED
+    )
     check_submission(sql_alchemy_engine, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
@@ -1176,22 +1184,35 @@ async def test_delete_submission_hard(
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id, with_properties=True,
-                      with_logs=True)
+    insert_submission(
+        sql_alchemy_engine,
+        a_id,
+        default_user.name,
+        default_user.id,
+        with_properties=True,
+        with_logs=True,
+    )
 
     session: Session = sessionmaker(sql_alchemy_engine)()
     submissions = session.query(orm.Submission).filter(orm.Submission.id == s_id).all()
     assert len(submissions) == 1
-    submission_properties = session.query(orm.SubmissionProperties).filter(
-        orm.SubmissionProperties.sub_id == s_id).all()
+    submission_properties = (
+        session.query(orm.SubmissionProperties)
+        .filter(orm.SubmissionProperties.sub_id == s_id)
+        .all()
+    )
     assert len(submission_properties) == 1
-    submission_logs = session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
+    submission_logs = (
+        session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
+    )
     assert len(submission_logs) == 1
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
     response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert response.code == HTTPStatus.OK
 
@@ -1206,10 +1227,15 @@ async def test_delete_submission_hard(
 
     submissions = session.query(orm.Submission).filter(orm.Submission.id == s_id).all()
     assert len(submissions) == 0
-    submission_properties = session.query(orm.SubmissionProperties).filter(
-        orm.SubmissionProperties.sub_id == s_id).all()
+    submission_properties = (
+        session.query(orm.SubmissionProperties)
+        .filter(orm.SubmissionProperties.sub_id == s_id)
+        .all()
+    )
     assert len(submission_properties) == 0
-    submission_logs = session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
+    submission_logs = (
+        session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
+    )
     assert len(submission_logs) == 0
 
 
@@ -1227,14 +1253,22 @@ async def test_delete_submission_hard_unauthorized(
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id, with_properties=True,
-                      with_logs=True)
+    insert_submission(
+        sql_alchemy_engine,
+        a_id,
+        default_user.name,
+        default_user.id,
+        with_properties=True,
+        with_logs=True,
+    )
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+            url + "?hard_delete=true",
+            method="DELETE",
+            headers={"Authorization": f"Token {default_token}"},
         )
     e = exc_info.value
     assert e.code == HTTPStatus.FORBIDDEN
@@ -1261,7 +1295,9 @@ async def test_delete_submission_hard_with_files(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
     response = await http_server_client.fetch(
-        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        url + "?hard_delete=true",
+        method="DELETE",
+        headers={"Authorization": f"Token {default_token}"},
     )
     assert response.code == HTTPStatus.OK
 
@@ -1274,8 +1310,9 @@ async def test_delete_submission_hard_with_files(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    check_git_repositories(app, default_user, l_code, a_id, s_id,
-                           True, True, True, False, False, False, False)
+    check_git_repositories(
+        app, default_user, l_code, a_id, s_id, True, True, True, False, False, False, False
+    )
 
 
 async def test_post_submission_by_student(
@@ -1771,8 +1808,8 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/edit"
 
     with pytest.raises(
-            HTTPClientError,
-            match="This repo cannot be edited or reset, because it was created by instructor",
+        HTTPClientError,
+        match="This repo cannot be edited or reset, because it was created by instructor",
     ) as exc_info:
         await http_server_client.fetch(
             url,

@@ -144,7 +144,9 @@ class LectureObjectHandler(GraderBaseHandler):
 
             if hard_delete:
                 if not self.user.is_admin:
-                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete lecture.")
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete lecture."
+                    )
 
                 self.delete_lecture_files(lecture)
                 self.session.delete(lecture)
@@ -164,8 +166,7 @@ class LectureObjectHandler(GraderBaseHandler):
                     if a.status in ["released", "complete"]:
                         self.session.rollback()
                         raise HTTPError(
-                            HTTPStatus.CONFLICT,
-                            "Cannot delete released or completed assignments!",
+                            HTTPStatus.CONFLICT, "Cannot delete released or completed assignments!"
                         )
                     a.deleted = DeleteState.deleted
                 self.session.commit()

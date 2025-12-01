@@ -20,7 +20,13 @@ from grader_service.orm.takepart import Role, Scope
 
 
 def get_query_side_effect(
-    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", user_id=137, a_id=1, s_id=1
+    lid=1,
+    code="ivs21s",
+    scope: Scope = Scope.student,
+    username="test_user",
+    user_id=137,
+    a_id=1,
+    s_id=1,
 ):
     def query_side_effect(input):
         m = Mock()
