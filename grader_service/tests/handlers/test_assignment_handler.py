@@ -7,13 +7,15 @@ import json
 from http import HTTPStatus
 
 import pytest
+from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.server import GraderServer
-
-from .db_util import insert_assignments, insert_submission
+from .db_util import insert_assignments, insert_submission, check_assignment_and_status, insert_assignment, \
+    create_all_git_repositories, check_git_repositories
+from ... import orm
 
 
 async def test_get_assignments(
@@ -29,10 +31,30 @@ async def test_get_assignments(
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert response.code == 200
+    assert response.code == HTTPStatus.OK
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
-    assert len(assignments) > 0
+    assert len(assignments) == 1
+    [Assignment.from_dict(a) for a in assignments]  # assert no errors
+
+
+async def test_get_assignments_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures/1/assignments/"
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    assignments = json.loads(response.body.decode())
+    assert isinstance(assignments, list)
+    assert len(assignments) == 2
     [Assignment.from_dict(a) for a in assignments]  # assert no errors
 
 
@@ -54,7 +76,7 @@ async def test_get_assignments_instructor(
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert response.code == 200
+    assert response.code == HTTPStatus.OK
     assignments = json.loads(response.body.decode())
     assert isinstance(assignments, list)
     assert len(assignments) == num_inserted
@@ -76,7 +98,7 @@ async def test_get_assignments_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
 
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
@@ -85,7 +107,7 @@ async def test_get_assignments_lecture_deleted(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_post_assignment(
@@ -101,7 +123,7 @@ async def test_post_assignment(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     assignments = json.loads(get_response.body.decode())
     assert isinstance(assignments, list)
     orig_len = len(assignments)
@@ -118,7 +140,7 @@ async def test_post_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.id != pre_assignment.id
     assert post_assignment.name == pre_assignment.name
@@ -129,7 +151,7 @@ async def test_post_assignment(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     assignments = json.loads(get_response.body.decode())
     assert len(assignments) == orig_len + 1
 
@@ -156,7 +178,7 @@ async def test_post_assignment_name_already_used(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(post_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -167,23 +189,6 @@ async def test_post_assignment_name_already_used(
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT
-
-
-async def test_delete_assignment_not_found(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_token,
-    default_roles,
-    default_user_login,
-):
-    url = service_base_url + "lectures/3/assignments/-5"
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_put_assignment_name_already_used(
@@ -256,7 +261,7 @@ async def test_post_assignment_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
 
     url = service_base_url + "lectures/3/assignments/"
     post_assignment = Assignment(
@@ -273,7 +278,7 @@ async def test_post_assignment_lecture_deleted(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_post_assignment_decode_error(
@@ -296,7 +301,7 @@ async def test_post_assignment_decode_error(
             body=json.dumps(pre_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.BAD_REQUEST
 
     # no autograde type given
     pre_assignment = Assignment(
@@ -310,7 +315,7 @@ async def test_post_assignment_decode_error(
             body=json.dumps(pre_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.BAD_REQUEST
 
 
 async def test_post_assignment_missing_vars(
@@ -354,7 +359,7 @@ async def test_post_no_status_error(
             body=json.dumps(pre_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.BAD_REQUEST
 
 
 async def test_put_assignment(
@@ -379,7 +384,7 @@ async def test_put_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     post_assignment.name = "new name"
@@ -393,7 +398,7 @@ async def test_put_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(post_assignment.to_dict()),
     )
-    assert put_response.code == 200
+    assert put_response.code == HTTPStatus.OK
     put_assignment = Assignment.from_dict(json.loads(put_response.body.decode()))
     assert put_assignment.id == post_assignment.id
     assert put_assignment.name == "new name"
@@ -423,7 +428,7 @@ async def test_put_assignment_wrong_lecture_id(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     # now with lecture id 2 because user would be instructor there too
@@ -437,8 +442,7 @@ async def test_put_assignment_wrong_lecture_id(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
-    print(e.response)
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_put_assignment_wrong_assignment_id(
@@ -460,7 +464,7 @@ async def test_put_assignment_wrong_assignment_id(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + "99"
@@ -472,7 +476,7 @@ async def test_put_assignment_wrong_assignment_id(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_put_assignment_deleted_assignment(
@@ -497,7 +501,7 @@ async def test_put_assignment_deleted_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -505,7 +509,7 @@ async def test_put_assignment_deleted_assignment(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -515,7 +519,7 @@ async def test_put_assignment_deleted_assignment(
             body=json.dumps(post_assignment.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
     assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
@@ -541,7 +545,7 @@ async def test_put_assignment_no_point_changes(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     post_assignment.name = "new name"
@@ -556,7 +560,7 @@ async def test_put_assignment_no_point_changes(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(post_assignment.to_dict()),
     )
-    assert put_response.code == 200
+    assert put_response.code == HTTPStatus.OK
     put_assignment = Assignment.from_dict(json.loads(put_response.body.decode()))
     assert put_assignment.id == post_assignment.id
     assert put_assignment.name == "new name"
@@ -586,7 +590,7 @@ async def test_get_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -594,7 +598,7 @@ async def test_get_assignment(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     get_assignment = Assignment.from_dict(json.loads(get_response.body.decode()))
     assert get_assignment.id == post_assignment.id
     assert get_assignment.name == post_assignment.name
@@ -610,16 +614,64 @@ async def test_get_assignment_created_student(
     default_token,
     default_roles,
     default_user_login,
+    sql_alchemy_engine,
 ):
     l_id = 1  # default user is student
-    a_id = 3  # assignment is created
+    a_id = 2  # assignment is created
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
-    assert exc_info.value.code == 404
+    assert exc_info.value.code == HTTPStatus.NOT_FOUND
+
+
+async def test_get_assignment_created_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+):
+    l_id = 1  # default admin is admin
+    a_id = 2  # assignment is created
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created")
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    Assignment.from_dict(json.loads(get_response.body.decode()))
+
+
+async def test_get_assignment_unauthorized(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    sql_alchemy_engine,
+):
+    l_id = 4  # default user has no role
+    a_id = 3  # assignment is released
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    insert_assignments(sql_alchemy_engine, l_id)
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released")
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    assert exc_info.value.code == HTTPStatus.FORBIDDEN
 
 
 async def test_get_assignment_wrong_lecture_id(
@@ -645,7 +697,7 @@ async def test_get_assignment_wrong_lecture_id(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     l_id = 1
@@ -655,7 +707,7 @@ async def test_get_assignment_wrong_lecture_id(
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
-    assert exc_info.value.code == 404
+    assert exc_info.value.code == HTTPStatus.NOT_FOUND
 
 
 async def test_get_assignment_wrong_assignment_id(
@@ -681,7 +733,7 @@ async def test_get_assignment_wrong_assignment_id(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
 
     url = service_base_url + f"lectures/{l_id}/assignments/99"
 
@@ -689,10 +741,10 @@ async def test_get_assignment_wrong_assignment_id(
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
-    assert exc_info.value.code == 404
+    assert exc_info.value.code == HTTPStatus.NOT_FOUND
 
 
-async def test_get_assignment_instructor_version(
+async def test_get_assignment_unknown_parameter(
     app: GraderServer,
     service_base_url,
     http_server_client,
@@ -707,10 +759,11 @@ async def test_get_assignment_instructor_version(
     engine = sql_alchemy_engine
     insert_assignments(engine, 3)
 
-    get_response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"}
-    )
-    assert get_response.code == 200
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    assert exc_info.value.code == HTTPStatus.BAD_REQUEST
 
 
 async def test_delete_assignment(
@@ -720,8 +773,11 @@ async def test_delete_assignment(
     default_token,
     default_roles,
     default_user_login,
+    sql_alchemy_engine,
 ):
-    url = service_base_url + "lectures/3/assignments/"
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
         id=-1,
@@ -735,7 +791,7 @@ async def test_delete_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -743,7 +799,8 @@ async def test_delete_assignment(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -751,7 +808,7 @@ async def test_delete_assignment(
         )
 
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
     assert e.message == f"Assignment with id {post_assignment.id} was not found"
 
 
@@ -762,8 +819,11 @@ async def test_delete_assignment_deleted_assignment(
     default_token,
     default_roles,
     default_user_login,
+    sql_alchemy_engine,
 ):
-    url = service_base_url + "lectures/3/assignments/"
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
         id=-1,
@@ -777,7 +837,7 @@ async def test_delete_assignment_deleted_assignment(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
     url = url + str(post_assignment.id)
@@ -785,7 +845,8 @@ async def test_delete_assignment_deleted_assignment(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -793,8 +854,25 @@ async def test_delete_assignment_deleted_assignment(
         )
 
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
     assert e.message == f"Assignment with id {post_assignment.id} was not found"
+
+
+async def test_delete_assignment_not_found(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    url = service_base_url + "lectures/3/assignments/-5"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_delete_assignment_not_created(
@@ -812,7 +890,7 @@ async def test_delete_assignment_not_created(
             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_delete_assignment_same_name_twice(
@@ -822,8 +900,11 @@ async def test_delete_assignment_same_name_twice(
     default_token,
     default_roles,
     default_user_login,
+    sql_alchemy_engine,
 ):
-    url = service_base_url + "lectures/3/assignments/"
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
         id=-1,
@@ -837,15 +918,16 @@ async def test_delete_assignment_same_name_twice(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
-    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
+    assert post_response.code == HTTPStatus.CREATED
+    first_post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
-    url = url + str(post_assignment.id)
+    url = url + str(first_post_assignment.id)
 
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created")
 
     url = service_base_url + "lectures/3/assignments/"
 
@@ -855,15 +937,18 @@ async def test_delete_assignment_same_name_twice(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
-    post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
+    assert post_response.code == HTTPStatus.CREATED
+    second_post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
 
-    url = url + str(post_assignment.id)
+    url = url + str(second_post_assignment.id)
 
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created",
+                                should_exist=False)
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=second_post_assignment.id, status="created")
 
 
 async def test_delete_released_assignment(
@@ -936,6 +1021,154 @@ async def test_delete_complete_assignment(
     assert e.code == HTTPStatus.CONFLICT
 
 
+async def test_delete_assignment_with_submissions(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_user,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3  # user has to be instructor
+    a_id = 3
+    engine = sql_alchemy_engine
+
+    insert_assignments(engine, l_id)
+    insert_submission(engine, a_id, default_user.name, default_user.id)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.CONFLICT
+
+
+async def test_delete_assignment_hard(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+):
+    l_id = 3
+    a_id = 3
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    insert_assignment(sql_alchemy_engine, l_id)
+
+    delete_response = await http_server_client.fetch(
+        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created", should_exist=False)
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+    assert e.message == f"Assignment with id {a_id} was not found"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assert len(assignments) == 0
+
+
+async def test_delete_assignment_hard_unauthorized(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    sql_alchemy_engine,
+):
+    l_id = 3
+    a_id = 3
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+
+    insert_assignment(sql_alchemy_engine, l_id)
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_delete_assignment_hard_with_submissions(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+    default_user
+):
+    l_id = 4
+    l_code = "23wle1"
+    a_id = 3
+    s_id = 1
+
+    # create assignment
+    url = service_base_url + f"lectures/{l_id}/assignments"
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="released",
+        settings=AssignmentSettings(),
+    )
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_assignment.to_dict()),
+    )
+    assert post_response.code == HTTPStatus.CREATED
+
+    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    create_all_git_repositories(app, default_user, l_id, l_code, a_id, s_id)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+    delete_response = await http_server_client.fetch(
+        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released", should_exist=False)
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+    assert e.message == f"Assignment with id {a_id} was not found"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assert len(assignments) == 0
+
+    submissions = session.query(orm.Submission).filter(orm.Submission.assignid == a_id).all()
+    assert len(submissions) == 0
+
+    check_git_repositories(app, default_user, l_code, a_id,
+                           False, False, False, False, False, False, False, False)
+
+
 async def test_assignment_properties_lecture_assignment_missmatch(
     app: GraderServer,
     service_base_url,
@@ -961,14 +1194,14 @@ async def test_assignment_properties_lecture_assignment_missmatch(
             body=json.dumps(prop),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_assignment_properties_wrong_assignment_id(
@@ -996,14 +1229,14 @@ async def test_assignment_properties_wrong_assignment_id(
             body=json.dumps(prop),
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_assignment_properties_not_found(
@@ -1027,7 +1260,7 @@ async def test_assignment_properties_not_found(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_assignment_properties_properties_wrong_for_autograde(
@@ -1053,7 +1286,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.settings.autograde_type == "full_auto"
     url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
@@ -1250,7 +1483,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
     assert post_assignment.settings.autograde_type == "full_auto"
     url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
@@ -1398,33 +1631,6 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
             method="PUT",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(prop),
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.CONFLICT
-
-
-async def test_delete_assignment_with_submissions(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_token,
-    default_user,
-    sql_alchemy_engine,
-    default_roles,
-    default_user_login,
-):
-    l_id = 3  # user has to be instructor
-    a_id = 3
-    engine = sql_alchemy_engine
-
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
     assert e.code == HTTPStatus.CONFLICT

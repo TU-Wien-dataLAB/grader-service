@@ -20,7 +20,7 @@ from grader_service.orm.takepart import Role, Scope
 
 
 def get_query_side_effect(
-    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", user_id=137, a_id=1
+    lid=1, code="ivs21s", scope: Scope = Scope.student, username="test_user", user_id=137, a_id=1, s_id=1
 ):
     def query_side_effect(input):
         m = Mock()
@@ -39,9 +39,10 @@ def get_query_side_effect(
             m.get.return_value = role
         elif input is Submission:
             sub = Submission()
+            sub.id = s_id
             sub.user_id = user_id
             sub.user = User(id=user_id, name=username)
-            m.get.return_value = sub
+            m.filter.return_value.one.return_value = sub
         else:
             m.filter.return_value.one.return_value = None
         return m
@@ -268,7 +269,7 @@ def test_git_lookup_pull_autograde_instructor(tmpdir):
         repo_type=GitRepoType.AUTOGRADE,
         lecture=sf(Lecture).filter().one(),
         assignment=sf(Assignment).filter().one(),
-        submission=sf(Submission).get(),
+        submission=sf(Submission).filter().one(),
     )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
 

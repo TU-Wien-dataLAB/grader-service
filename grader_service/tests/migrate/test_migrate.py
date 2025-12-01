@@ -98,6 +98,7 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
     conn = engine.connect()
     trans = conn.begin()
     try:
@@ -145,7 +146,8 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
             assert not user_tables, "User tables not dropped after downgrade to base"
     finally:
         engine.dispose()
-        engine2.dispose()
+        if engine2 is not None:
+            engine2.dispose()
 
 
 @pytest.mark.parametrize("migration", get_migration_scripts())
@@ -212,6 +214,8 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
+    engine3 = None
     conn = engine.connect()
     trans = conn.begin()
 
@@ -280,9 +284,11 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                 assert data_before_upgrade == data_after_downgrade, "Data changed after downgrade!"
             except AssertionError as e:
                 # If the tested migration is part of the not lossless migration do not throw the error
-                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781", "4a88dacd888f"):
                     raise e
     finally:
         engine.dispose()
-        engine2.dispose()
-        engine3.dispose()
+        if engine2 is not None:
+            engine2.dispose()
+        if engine3 is not None:
+            engine3.dispose()

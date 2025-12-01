@@ -40,7 +40,8 @@ async def test_get_permission(
     groups = set()
     for lecture_code, roles_list in default_roles_dict.items():
         for role_entry in roles_list:
-            groups.add((lecture_code, role_entry["role"]))
+            if default_user.name in role_entry["members"]:
+                groups.add((lecture_code, role_entry["role"]))
 
     for p in permissions:
         t = (p["lecture_code"], get_scope(p["scope"]))

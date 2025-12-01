@@ -5,16 +5,20 @@
 # LICENSE file in the root directory of this source tree.
 import json
 from http import HTTPStatus
+from pathlib import Path
 
 import pytest
+from sqlalchemy.orm import sessionmaker, Session
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
 from grader_service.server import GraderServer
-
-from .db_util import insert_assignments, insert_student, insert_submission
+from .db_util import insert_assignment, insert_assignments, insert_student, insert_submission, create_git_repository
+from ... import orm
+from ...handlers import GitRepoType
+from ...orm.base import DeleteState
 
 
 async def test_get_lectures(
@@ -30,11 +34,33 @@ async def test_get_lectures(
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert response.code == 200
+    assert response.code == HTTPStatus.OK
     lectures = json.loads(response.body.decode())
     assert isinstance(lectures, list)
     assert lectures
     [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
+    assert len(lectures) == 3
+
+
+async def test_get_lectures_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    lectures = json.loads(response.body.decode())
+    assert isinstance(lectures, list)
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]
+    assert len(lectures) == 4
 
 
 async def test_get_lectures_with_some_parameter(
@@ -52,10 +78,10 @@ async def test_get_lectures_with_some_parameter(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.BAD_REQUEST
 
 
-async def test_post_lectures(
+async def test_post_lectures_update(
     app: GraderServer,
     service_base_url,
     http_server_client,
@@ -69,7 +95,7 @@ async def test_post_lectures(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     lectures = json.loads(get_response.body.decode())
     assert isinstance(lectures, list)
     assert len(lectures) == 3
@@ -83,7 +109,7 @@ async def test_post_lectures(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_lecture.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
     post_lecture = Lecture.from_dict(json.loads(post_response.body.decode()))
     assert post_lecture.id != pre_lecture.id
     assert post_lecture.name == pre_lecture.name
@@ -93,12 +119,12 @@ async def test_post_lectures(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     lectures = json.loads(get_response.body.decode())
     assert len(lectures) == orig_len
 
 
-async def test_post_not_found(
+async def test_post_lectures_update_unauthorized(
     app: GraderServer,
     service_base_url,
     http_server_client,
@@ -109,8 +135,7 @@ async def test_post_not_found(
 ):
     url = service_base_url + "lectures"
 
-    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="abc", complete=False)
-
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="23wle1", complete=False)
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -118,9 +143,119 @@ async def test_post_not_found(
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(pre_lecture.to_dict()),
         )
+
     e = exc_info.value
-    print(e.response.error)
-    assert e.code == HTTPStatus.NOT_FOUND
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_post_lectures_update_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())
+    assert isinstance(lectures, list)
+    assert len(lectures) == 4
+    orig_len = len(lectures)
+
+    # same code as in group of user
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="21wle1", complete=False)
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_lecture.to_dict()),
+    )
+    assert post_response.code == HTTPStatus.CREATED
+    post_lecture = Lecture.from_dict(json.loads(post_response.body.decode()))
+    assert post_lecture.id != pre_lecture.id
+    assert post_lecture.name == pre_lecture.name
+    assert post_lecture.code == pre_lecture.code
+    assert not post_lecture.complete
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())
+    assert len(lectures) == orig_len
+
+
+async def test_post_lectures_new_unauthorized(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    url = service_base_url + "lectures"
+
+    pre_lecture = Lecture(id=-1, name="pytest_lecture_new", code="abc", complete=False)
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(pre_lecture.to_dict()),
+        )
+
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_post_lectures_new_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())
+    assert isinstance(lectures, list)
+    assert len(lectures) == 4
+    orig_len = len(lectures)
+
+    # same code as in group of user
+    pre_lecture = Lecture(id=-1, name="pytest_lecture", code="abc", complete=False)
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_lecture.to_dict()),
+    )
+    assert post_response.code == HTTPStatus.CREATED
+    post_lecture = Lecture.from_dict(json.loads(post_response.body.decode()))
+    assert post_lecture.id != pre_lecture.id
+    assert post_lecture.name == pre_lecture.name
+    assert post_lecture.code == pre_lecture.code
+    assert not post_lecture.complete
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())
+    assert len(lectures) == orig_len + 1
 
 
 async def test_post_unknown_parameter(
@@ -143,7 +278,7 @@ async def test_post_unknown_parameter(
             body=json.dumps(pre_lecture.to_dict()),
         )
     e = exc_info.value
-    assert e.code == 400
+    assert e.code == HTTPStatus.BAD_REQUEST
 
 
 async def test_put_lecture(
@@ -160,7 +295,7 @@ async def test_put_lecture(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     lecture = Lecture.from_dict(json.loads(get_response.body.decode()))
     lecture.name = "new name"
     lecture.complete = not lecture.complete
@@ -174,7 +309,7 @@ async def test_put_lecture(
         body=json.dumps(lecture.to_dict()),
     )
 
-    assert put_response.code == 200
+    assert put_response.code == HTTPStatus.OK
     put_lecture = Lecture.from_dict(json.loads(put_response.body.decode()))
     assert put_lecture.name == lecture.name
     assert put_lecture.complete == lecture.complete
@@ -195,7 +330,7 @@ async def test_put_lecture_unauthorized(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     lecture = Lecture.from_dict(json.loads(get_response.body.decode()))
     lecture.name = "new name"
 
@@ -208,7 +343,7 @@ async def test_put_lecture_unauthorized(
         )
 
     e = exc_info.value
-    assert e.code == 403
+    assert e.code == HTTPStatus.FORBIDDEN
 
 
 async def test_get_lecture(
@@ -224,11 +359,11 @@ async def test_get_lecture(
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
-    assert get_response.code == 200
+    assert get_response.code == HTTPStatus.OK
     Lecture.from_dict(json.loads(get_response.body.decode()))
 
 
-async def test_get_lecture_not_found(
+async def test_get_lecture_unauthorized(
     app: GraderServer,
     service_base_url,
     http_server_client,
@@ -243,10 +378,75 @@ async def test_get_lecture_not_found(
             url, method="GET", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 403
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_get_lecture_admin_not_found(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures/999"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+
+async def test_get_lecture_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures/1"
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    Lecture.from_dict(json.loads(get_response.body.decode()))
 
 
 async def test_delete_lecture(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    sql_alchemy_engine,
+):
+    l_id = 3
+    url = service_base_url + f"lectures/{l_id}"
+
+    delete_response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    assert len(lectures) == 1
+    assert lectures[0].deleted == DeleteState.deleted
+
+
+async def test_delete_lecture_already_deleted(
     app: GraderServer,
     service_base_url,
     http_server_client,
@@ -259,14 +459,14 @@ async def test_delete_lecture(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == 200
+    assert delete_response.code == HTTPStatus.OK
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
-            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 404
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_delete_lecture_unauthorized(
@@ -284,7 +484,55 @@ async def test_delete_lecture_unauthorized(
             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
         )
     e = exc_info.value
-    assert e.code == 403
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_delete_lecture_assignment(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    default_user,
+):
+    l_id = 3
+    a_id = 3
+    url = service_base_url + f"lectures/{l_id}"
+
+    engine = sql_alchemy_engine
+    insert_assignment(engine, lecture_id=l_id)
+
+    delete_response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    assert len(lectures) == 1
+    assert lectures[0].deleted == DeleteState.deleted
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assert len(assignments) == 1
+    assert assignments[0].deleted == DeleteState.deleted
 
 
 async def test_delete_lecture_assignment_with_submissions(
@@ -298,11 +546,11 @@ async def test_delete_lecture_assignment_with_submissions(
     default_user,
 ):
     l_id = 3
-    a_id = 2
+    a_id = 3
     url = service_base_url + f"lectures/{l_id}"
 
     engine = sql_alchemy_engine
-    insert_assignments(engine, lecture_id=3)
+    insert_assignment(engine, lecture_id=l_id)
     insert_submission(engine, a_id, default_user.name, default_user.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -359,7 +607,7 @@ async def test_delete_lecture_assignment_complete(
         headers={"Authorization": f"Token {default_token}"},
         body=json.dumps(pre_assignment.to_dict()),
     )
-    assert post_response.code == 201
+    assert post_response.code == HTTPStatus.CREATED
 
     url = service_base_url + f"lectures/{l_id}"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -390,6 +638,136 @@ async def test_delete_lecture_not_found(
     assert e.code == HTTPStatus.NOT_FOUND
 
 
+async def test_delete_lecture_hard(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+):
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}"
+    delete_response = await http_server_client.fetch(
+        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    assert len(lectures) == 0
+
+
+async def test_delete_lecture_hard_unauthorized(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    sql_alchemy_engine,
+):
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_delete_lecture_hard_assignments_roles(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+    default_admin,
+):
+    l_id = 4
+    l_code = "23wle1"
+    a_id = 3
+
+    # create assignment
+    url = service_base_url + f"lectures/{l_id}/assignments"
+    pre_assignment = Assignment(
+        id=-1,
+        name="pytest",
+        status="released",
+        settings=AssignmentSettings(),
+    )
+    post_response = await http_server_client.fetch(
+        url,
+        method="POST",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(pre_assignment.to_dict()),
+    )
+    assert post_response.code == HTTPStatus.CREATED
+
+    create_git_repository(app=app, l_id=l_id, code=l_code, a_id=a_id, s_id=1, repo_type=GitRepoType.SOURCE, username=default_admin.name)
+
+    git_dir = Path(app.grader_service_dir) / "git" / l_code / str(a_id)
+    assert git_dir.exists()
+
+    url = service_base_url + f"lectures/{l_id}"
+    delete_response = await http_server_client.fetch(
+        url + "?hard_delete=true", method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    assert len(lectures) == 0
+
+    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assert len(assignments) == 0
+
+    roles = session.query(orm.Role).filter(orm.Role.lectid == l_id).all()
+    assert len(roles) == 0
+
+    assert not git_dir.exists()
+
+
+async def test_delete_lecture_unknown_parameter(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    l_id = 3
+
+    url = service_base_url + f"lectures/{l_id}?some_param=asdf"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"},
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+
+
 async def test_get_lecture_users(
     service_base_url,
     http_server_client,
@@ -411,4 +789,4 @@ async def test_get_lecture_users(
     data = json.loads(resp.body.decode())
     assert data["instructors"] == [1]
     assert data["tutors"] == []
-    assert data["students"] == [2, 3]
+    assert data["students"] == [3, 4]
