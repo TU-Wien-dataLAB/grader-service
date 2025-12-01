@@ -70,6 +70,8 @@ def check_authorization(
             raise HTTPError(403)
     elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
         return True
+    if re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", self.request.path) and self.request.method == "GET":
+        return True
 
     is_admin = self.authenticator.is_admin(handler=self, authentication={'name': self.user.name})
 
@@ -892,6 +894,42 @@ class GraderBaseHandler(BaseHandler):
             submissions_query = submissions_query.filter(Submission.deleted == DeleteState.active)
 
         return submissions_query.all()
+
+    def delete_lecture_files(self, lecture: Lecture):
+        # delete all associated directories of the lecture
+        lecture_path = os.path.abspath(os.path.join(self.gitbase, lecture.code))
+        tmp_lecture_path = os.path.abspath(os.path.join(self.tmpbase, lecture.code))
+        shutil.rmtree(lecture_path, ignore_errors=True)
+        shutil.rmtree(tmp_lecture_path, ignore_errors=True)
+
+    def delete_assignment_files(self, assignment: Assignment):
+        # delete all associated directories of the assignment
+        assignment_path = os.path.abspath(
+            os.path.join(self.gitbase, assignment.lecture.code, str(assignment.id))
+        )
+        tmp_assignment_path = os.path.abspath(
+            os.path.join(self.tmpbase, assignment.lecture.code, str(assignment.id))
+        )
+        shutil.rmtree(assignment_path, ignore_errors=True)
+        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
+
+    def delete_submission_files(self, submission: Submission):
+        # delete all associated directories of the submission
+        assignment_path = os.path.abspath(
+            os.path.join(self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id))
+        )
+        tmp_assignment_path = os.path.abspath(
+            os.path.join(self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id))
+        )
+        target_names = {submission.user.name, str(submission.id)}
+        matching_dirs = []
+        for path in [assignment_path, tmp_assignment_path]:
+            for root, dirs, _ in os.walk(path):
+                for d in dirs:
+                    if d in target_names:
+                        matching_dirs.append(os.path.join(root, d))
+        for path in matching_dirs:
+            shutil.rmtree(path, ignore_errors=True)
 
     @property
     def gitbase(self):

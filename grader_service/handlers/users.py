@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-import tornado
+from sqlalchemy.orm.exc import ObjectDeletedError
 from tornado.escape import json_decode
 from tornado.web import HTTPError
 
@@ -11,7 +11,7 @@ from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
 
-@register_handler(r"\/api\/users", VersionSpecifier.ALL)
+@register_handler(r"\/api\/users\/?", VersionSpecifier.ALL)
 class UserBaseHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /users.
@@ -61,7 +61,7 @@ class UserObjectBaseHandler(GraderBaseHandler):
         :raises HTTPError: throws err if user was not found
         """
         self.validate_parameters()
-        body = tornado.escape.json_decode(self.request.body)
+        body = json_decode(self.request.body)
         user_model = UserModel.from_dict(body)
 
         user = self.session.query(User).filter_by(name=username).first()
@@ -89,20 +89,20 @@ class UserObjectBaseHandler(GraderBaseHandler):
         """
         self.validate_parameters()
 
-        user = self.session.query(User).filter_by(name=username).first()
-        if user is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="User not found")
+        try:
+            # User can not be soft-deleted
+            if not self.user.is_admin:
+                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can delete users.")
 
-        if len(user.submissions) > 0:
-            msg = "User cannot be deleted: submissions still exist. Delete submissions first!"
-            raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-        if len(user.roles) > 0:
-            msg = "User cannot be deleted: roles still exist. Delete roles first!"
-            raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+            user = self.session.query(User).filter_by(name=username).first()
+            if user is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
 
-        for api_token in user.api_tokens:
-            self.session.delete(api_token)
-        for oauth_code in user.oauth_codes:
-            self.session.delete(oauth_code)
-        self.session.delete(user)
-        self.session.commit()
+            for submission in user.submissions:
+                self.delete_submission_files(submission)
+
+            self.session.delete(user)
+            self.session.commit()
+        except ObjectDeletedError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
+        self.write("OK")

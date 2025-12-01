@@ -3,8 +3,6 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import os
-import shutil
 from http import HTTPStatus
 
 import tornado
@@ -31,19 +29,24 @@ class LectureBaseHandler(GraderBaseHandler):
     async def get(self):
         """
         Returns all lectures the user can access.
+        - For regular users: only lectures they have a role in, which match the requested state and are not deleted.
+        - For admins: all lectures, regardless of state or deletion.
         """
         self.validate_parameters("complete")
         complete = self.get_argument("complete", "false") == "true"
-
         state = LectureState.complete if complete else LectureState.active
-        lectures = sorted(
-            [
-                role.lecture
-                for role in self.user.roles
-                if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-            ],
-            key=lambda lecture: lecture.id,
-        )
+
+        if self.user.is_admin:
+            lectures = self.session.query(Lecture).order_by(Lecture.id.asc()).all()
+        else:
+            lectures = sorted(
+                [
+                    role.lecture
+                    for role in self.user.roles
+                    if role.lecture.state == state and role.lecture.deleted == DeleteState.active
+                ],
+                key=lambda lecture: lecture.id,
+            )
 
         self.write_json(lectures)
 
@@ -55,26 +58,21 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture_model = LectureModel.from_dict(body)
-        created = False
 
         lecture = (
             self.session.query(Lecture).filter(Lecture.code == lecture_model.code).one_or_none()
         )
         if lecture is None:
             lecture = Lecture()
-            self.session.add(lecture)
-            created = True
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
         lecture.state = LectureState.complete if lecture_model.complete else LectureState.active
         lecture.deleted = DeleteState.active
 
+        self.session.add(lecture)
         self.session.commit()
-        if created:
-            self.set_status(HTTPStatus.CREATED)
-        else:
-            self.set_status(HTTPStatus.OK)
+        self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
 
 
@@ -111,14 +109,14 @@ class LectureObjectHandler(GraderBaseHandler):
         :return: lecture with given id
         """
         self.validate_parameters()
-        if not self.user.is_admin:
+        if self.user.is_admin:
+            lecture = self.get_lecture(lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+        else:
             role = self.get_role(lecture_id)
             lecture = role.lecture
             if lecture.deleted == DeleteState.deleted:
-                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
-        else:
-            lecture = self.get_lecture(lecture_id)
-            if lecture is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
         self.write_json(lecture)
 
@@ -143,40 +141,33 @@ class LectureObjectHandler(GraderBaseHandler):
             lecture = self.get_lecture(lecture_id)
             if lecture is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
-            if not hard_delete:
-                if lecture.deleted == 1:
-                    raise HTTPError(404)
-                lecture.deleted = 1
+
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete lecture.")
+
+                self.delete_lecture_files(lecture)
+                self.session.delete(lecture)
+                self.session.commit()
+            else:
+                if lecture.deleted == DeleteState.deleted:
+                    raise HTTPError(HTTPStatus.NOT_FOUND)
+
+                lecture.deleted = DeleteState.deleted
                 a: Assignment
                 for a in lecture.assignments:
-                    if (len(a.submissions)) > 0:
+                    if len(a.submissions) > 0:
                         self.session.rollback()
                         raise HTTPError(
-                            HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions"
+                            HTTPStatus.CONFLICT, "Cannot delete assignments with submissions!"
                         )
                     if a.status in ["released", "complete"]:
                         self.session.rollback()
                         raise HTTPError(
                             HTTPStatus.CONFLICT,
-                            "Cannot delete assignment because its status is not created",
+                            "Cannot delete released or completed assignments!",
                         )
-                    a.deleted = 1
-                self.session.commit()
-            else:
-                if len(lecture.assignments) > 0:
-                    msg = "Lecture cannot be deleted: assignments still exist. Delete assignments first!"
-                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-                if len(lecture.roles) > 0:
-                    msg = "Lecture cannot be deleted: roles still exist. Delete roles first!"
-                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-
-                # delete all associated directories of the lecture
-                lecture_path = os.path.abspath(os.path.join(self.gitbase, lecture.code))
-                tmp_lecture_path = os.path.abspath(os.path.join(self.tmpbase, lecture.code))
-                shutil.rmtree(lecture_path, ignore_errors=True)
-                shutil.rmtree(tmp_lecture_path, ignore_errors=True)
-
-                self.session.delete(lecture)
+                    a.deleted = DeleteState.deleted
                 self.session.commit()
         except ObjectDeletedError:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")

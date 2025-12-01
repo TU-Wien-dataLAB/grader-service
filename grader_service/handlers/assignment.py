@@ -9,6 +9,7 @@ from typing import Union
 import isodate
 import tornado
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 from tornado.web import HTTPError
 
 from grader_service.api.models.assignment import Assignment as AssignmentModel
@@ -74,7 +75,12 @@ class AssignmentBaseHandler(GraderBaseHandler):
         lecture_id = parse_ids(lecture_id)
         self.validate_parameters("include-submissions")
 
-        if not self.user.is_admin:
+        if self.user.is_admin:
+            lecture = self.get_lecture(lecture_id=lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
+            assignments = lecture.assignments
+        else:
             role = self.get_role(lecture_id)
             if role.lecture.deleted == DeleteState.deleted:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
@@ -92,25 +98,20 @@ class AssignmentBaseHandler(GraderBaseHandler):
                 )
             else:
                 assignments = [a for a in role.lecture.assignments if (a.deleted == DeleteState.active)]
-        else:
-            lecture = self.get_lecture(lecture_id=lecture_id)
-            if lecture is None:
-                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
-            assignments = lecture.assignments
 
         # Handle the case that the user wants to include submissions
         include_submissions = self.get_argument("include-submissions", "true") == "true"
         if include_submissions:
             assignids = [a.id for a in assignments]
-            if not self.user.is_admin:
-                user_id = self.user.id
+            if self.user.is_admin:
+                results = self.session.query(Submission).filter(Submission.assignid.in_(assignids)).all()
+            else:
                 results = (
                     self.session.query(Submission)
-                    .filter(Submission.assignid.in_(assignids), Submission.user_id == user_id)
+                    .filter(Submission.assignid.in_(assignids), Submission.user_id == self.user.id)
                     .all()
                 )
-            else:
-                results = self.session.query(Submission).filter(Submission.assignid.in_(assignids)).all()
+
             # Create a combined list of assignments and submissions
             assignments = [a.serialize() for a in assignments]
             submissions = [s.serialize() for s in results]
@@ -119,7 +120,7 @@ class AssignmentBaseHandler(GraderBaseHandler):
         assignments = sorted(assignments, key=lambda o: o["id"])
         self.write_json(assignments)
 
-    @authorize([Scope.instructor])
+    @authorize([Scope.instructor, Scope.admin])
     async def post(self, lecture_id: int):
         """Creates a new assignment.
 
@@ -262,8 +263,18 @@ class AssignmentObjectHandler(GraderBaseHandler):
         :raises HTTPError: throws err if assignment was not found
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
+        self.validate_parameters()
         assignment = self.get_assignment(lecture_id=lecture_id, assignment_id=assignment_id)
-        self.write_json(assignment)
+        # reflects the behavior from get assignments
+        if self.user.is_admin:
+            self.write_json(assignment)
+        else:
+            role: Role = self.get_role(lecture_id=lecture_id)
+            if role.role == Scope.student:
+                if assignment.status == "created" or assignment.status == "pushed":
+                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
+            self.write_json(assignment)
+
 
     @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int, assignment_id: int):
@@ -276,49 +287,54 @@ class AssignmentObjectHandler(GraderBaseHandler):
         :raises HTTPError: throws err if assignment was not found or deleted
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
-        self.validate_parameters()
-        assignment = self.get_assignment(lecture_id, assignment_id)
+        self.validate_parameters("hard_delete")
+        hard_delete = self.get_argument("hard_delete", "false") == "true"
 
-        if not self.user.is_admin:
-            if assignment.status in ["released", "complete"]:
-                msg = "Cannot delete released or completed assignments!"
-                raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+        try:
+            assignment = self.get_assignment(lecture_id, assignment_id)
+            if assignment is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
 
-            previously_deleted = (
-                self.session.query(Assignment)
-                .filter(
-                    Assignment.lectid == lecture_id,
-                    Assignment.name == assignment.name,
-                    Assignment.deleted == DeleteState.deleted,
-                )
-                .one_or_none()
-            )
-            if previously_deleted is not None:
-                if len(previously_deleted.submissions) > 0:
-                    msg = "Assignment cannot be deleted: submissions still exist. Delete submissions first!"
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete assignment.")
+
+                self.delete_assignment_files(assignment)
+                self.session.delete(assignment)
+                self.session.commit()
+            else:
+                if assignment.deleted == DeleteState.deleted:
+                    raise HTTPError(HTTPStatus.NOT_FOUND)
+
+                if len(assignment.submissions) > 0:
+                    msg = "Cannot delete assignments with submissions!"
+                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+                if assignment.status in ["released", "complete"]:
+                    msg = "Cannot delete released or completed assignments!"
                     raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
 
-                self.delete_assignment_files(previously_deleted)
-                self.session.delete(previously_deleted)
+                previously_deleted = (
+                    self.session.query(Assignment)
+                    .filter(
+                        Assignment.lectid == lecture_id,
+                        Assignment.name == assignment.name,
+                        Assignment.deleted == DeleteState.deleted,
+                    )
+                    .one_or_none()
+                )
+                if previously_deleted is not None:
+                    self.delete_assignment_files(previously_deleted)
+                    self.session.delete(previously_deleted)
+                    self.session.commit()
+
+                # No need to soft-delete submissions, because an assignment with submissions
+                # cannot reach this point (checked above).
+                assignment.deleted = DeleteState.deleted
                 self.session.commit()
+        except ObjectDeletedError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
+        self.write(f"OK {assignment.deleted}")
 
-            assignment.deleted = DeleteState.deleted
-            self.session.commit()
-        else:
-            if len(assignment.submissions) > 0:
-                msg = "Assignment cannot be deleted: submissions still exist. Delete submissions first!"
-                raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-
-            self.delete_assignment_files(assignment)
-            self.session.delete(assignment)
-            self.session.commit()
-
-    def delete_assignment_files(self, assignment):
-        # delete all associated directories of the assignment
-        assignment_path = os.path.abspath(os.path.join(self.gitbase, assignment.lecture.code, str(assignment.id)))
-        tmp_assignment_path = os.path.abspath(os.path.join(self.tmpbase, assignment.lecture.code, str(assignment.id)))
-        shutil.rmtree(assignment_path, ignore_errors=True)
-        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
 
 @register_handler(
     path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/reset\/?",

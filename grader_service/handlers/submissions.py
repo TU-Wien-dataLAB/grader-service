@@ -17,7 +17,7 @@ import pandas as pd
 import tornado
 from celery import chain
 from sqlalchemy import label
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, ObjectDeletedError
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 
@@ -172,7 +172,7 @@ class SubmissionUserHandler(GraderBaseHandler):
     /users/{username}/submissions.
     """
 
-    @authorize([Scope.tutor, Scope.instructor, Scope.admin])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, username: str):
         """Return the submissions of a specific user.
 
@@ -212,13 +212,13 @@ class SubmissionUserHandler(GraderBaseHandler):
         if response_format == "csv":
             self._write_csv(submissions)
         else:
-            self.write_json([submission.serialize_with_lectid() for submission in submissions])
+            self.write_json([s.serialize_with_lectid() for s in submissions])
         self.session.close()
 
     def _write_csv(self, submissions):
         self.set_header("Content-Type", "text/csv")
         for i, s in enumerate(submissions):
-            d = s.model.serialize_with_lectid()
+            d = s.serialize_with_lectid()
             if i == 0:
                 self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
             self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
@@ -309,12 +309,12 @@ class SubmissionHandler(GraderBaseHandler):
         elif submission_filter == "best":
             submissions = self.get_best_submissions(assignment_id, user_id=user_id)
         else:
-            if not self.user.is_admin:
+            if self.user.is_admin:
+                query = self.session.query(Submission).filter(Submission.assignid == assignment_id)
+            else:
                 query = self.session.query(Submission).filter(
                     Submission.assignid == assignment_id, Submission.deleted == DeleteState.active
                 )
-            else:
-                query = self.session.query(Submission).filter(Submission.assignid == assignment_id)
 
             if user_id:
                 query = query.filter(Submission.user_id == user_id)
@@ -594,55 +594,44 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.validate_parameters("hard_delete")
         hard_delete = self.get_argument("hard_delete", "false") == "true"
 
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        try:
+            submission = self.get_submission(lecture_id, assignment_id, submission_id)
+            if submission is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
 
-        if submission is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission.")
 
-        if not hard_delete:
-            # Do not allow students to delete other users' submissions
-            if not self.user.is_admin and self.get_role(lecture_id).role < Scope.instructor and submission.user_id != self.user.id:
-                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+                self.delete_submission_files(submission)
+                self.session.delete(submission)
+                self.session.commit()
+            else:
+                # Do not allow students to delete other users' submissions
+                if not self.user.is_admin and self.get_role(lecture_id).role < Scope.instructor and submission.user_id != self.user.id:
+                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
 
-            if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
-                raise HTTPError(
-                    HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
-                )
+                if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
+                    )
 
-            # if assignment has deadline and it has already passed
-            if (
-                submission.assignment.settings.deadline
-                and submission.assignment.settings.deadline
-                < datetime.datetime.now(datetime.timezone.utc)
-            ):
-                raise HTTPError(
-                    HTTPStatus.FORBIDDEN,
-                    reason="Submission can't be deleted, due date of assigment has passed.",
-                )
+                # if assignment has deadline and it has already passed
+                if (
+                    submission.assignment.settings.deadline
+                    and submission.assignment.settings.deadline
+                    < datetime.datetime.now(datetime.timezone.utc)
+                ):
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN,
+                        reason="Submission can't be deleted, due date of assigment has passed.",
+                    )
 
-            submission.deleted = DeleteState.deleted
-            self.session.commit()
-        else:
-            if not self.current_user.is_admin:
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission.")
-
-            # delete all associated directories of the submission
-            assignment_path = os.path.abspath(os.path.join(self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id)))
-            tmp_assignment_path = os.path.abspath(os.path.join(self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id)))
-            target_names = {submission.user.name, str(submission.id)}
-            matching_dirs = []
-            for path in [assignment_path, tmp_assignment_path]:
-                for root, dirs, _ in os.walk(path):
-                    for d in dirs:
-                        if d in target_names:
-                            matching_dirs.append(os.path.join(root, d))
-            for path in matching_dirs:
-                shutil.rmtree(path, ignore_errors=True)
-
-            self.session.delete(submission.logs)
-            self.session.delete(submission.properties)
-            self.session.delete(submission)
-            self.session.commit()
+                submission.deleted = DeleteState.deleted
+                self.session.commit()
+        except ObjectDeletedError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
+        self.write("OK")
 
 
 @register_handler(
