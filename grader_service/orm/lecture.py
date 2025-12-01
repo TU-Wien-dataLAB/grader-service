@@ -32,8 +32,12 @@ class Lecture(Base, Serializable):
         DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC), nullable=False
     )
 
-    assignments = relationship("Assignment", back_populates="lecture")
-    roles = relationship("Role", back_populates="lecture")
+    assignments = relationship(
+        "Assignment", back_populates="lecture", cascade="all, delete-orphan", passive_deletes=True
+    )
+    roles = relationship(
+        "Role", back_populates="lecture", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def model(self) -> lecture.Lecture:

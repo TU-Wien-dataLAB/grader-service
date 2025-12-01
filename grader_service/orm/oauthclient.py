@@ -19,9 +19,11 @@ class OAuthClient(Base):
         return self.identifier
 
     access_tokens = relationship(
-        APIToken, back_populates="oauth_client", cascade="all, delete-orphan"
+        APIToken, back_populates="oauth_client", cascade="all, delete-orphan", passive_deletes=True
     )
-    codes = relationship(OAuthCode, back_populates="client", cascade="all, delete-orphan")
+    codes = relationship(
+        OAuthCode, back_populates="client", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(identifier={self.identifier!r})>"

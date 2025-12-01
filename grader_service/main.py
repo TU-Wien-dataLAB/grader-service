@@ -11,13 +11,14 @@ import os
 import secrets
 import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
 
 import tornado
 import uvloop as uvloop
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
@@ -61,6 +62,14 @@ from grader_service.utils import url_path_join
 def get_session_maker(url) -> scoped_session:
     engine = create_engine(url)
     return scoped_session(sessionmaker(bind=engine))
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 
 class GraderService(config.Application):
@@ -398,7 +407,9 @@ class GraderService(config.Application):
 
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
-                            self.log.info(f"Adding new user with username {username} and display name {display_name}")
+                            self.log.info(
+                                f"Adding new user with username {username} and display name {display_name}"
+                            )
                             user = User()
                             user.name = username
                             user.display_name = display_name
