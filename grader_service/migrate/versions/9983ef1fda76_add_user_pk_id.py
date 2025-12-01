@@ -8,6 +8,7 @@ Create Date: 2025-07-16 18:36:33.564133
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision = "9983ef1fda76"
@@ -17,6 +18,10 @@ depends_on = None
 
 
 def upgrade():
+    conn = op.get_bind()
+    if conn.dialect.name == "sqlite":
+        conn.execute(text("PRAGMA foreign_keys=OFF;"))
+
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
 
     # 0. Drop FKs referencing user.name
@@ -86,8 +91,15 @@ def upgrade():
         batch_op.create_foreign_key("fk_oauth_code_user_id", "user", ["user_id"], ["id"])
         batch_op.drop_column("username")
 
+    if conn.dialect.name == "sqlite":
+        conn.execute(text("PRAGMA foreign_keys=OFF;"))
+
 
 def downgrade():
+    conn = op.get_bind()
+    if conn.dialect.name == "sqlite":
+        conn.execute(text("PRAGMA foreign_keys=OFF;"))
+
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
 
     def _add_username_col(table_name: str) -> None:
@@ -146,3 +158,6 @@ def downgrade():
         ]:
             with op.batch_alter_table(table) as batch_op:
                 batch_op.create_foreign_key(fk, "user", ["username"], ["name"])
+
+    if conn.dialect.name == "sqlite":
+        conn.execute(text("PRAGMA foreign_keys=OFF;"))

@@ -11,13 +11,14 @@ import os
 import secrets
 import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
 
 import tornado
 import uvloop as uvloop
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
@@ -40,7 +41,6 @@ from traitlets import log as traitlets_log
 
 from grader_service import __version__
 from grader_service.auth.auth import Authenticator
-
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
@@ -61,6 +61,14 @@ from grader_service.utils import url_path_join
 def get_session_maker(url) -> scoped_session:
     engine = create_engine(url)
     return scoped_session(sessionmaker(bind=engine))
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 
 class GraderService(config.Application):

@@ -13,6 +13,8 @@ from grader_service.orm.oauthcode import OAuthCode
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role
 from grader_service.orm.user import User
+from grader_service.orm.submission_logs import SubmissionLogs
+from grader_service.orm.submission_properties import SubmissionProperties
 
 __all__ = [
     "Lecture",
@@ -24,4 +26,6 @@ __all__ = [
     "OAuthCode",
     "OAuthClient",
     "APIToken",
+    "SubmissionLogs",
+    "SubmissionProperties"
 ]

@@ -21,8 +21,8 @@ class Scope(enum.IntEnum):
 
 class Role(Base, Serializable):
     __tablename__ = "takepart"
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    lectid = Column(Integer, ForeignKey("lecture.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    lectid = Column(Integer, ForeignKey("lecture.id", ondelete="CASCADE"), primary_key=True)
     role = Column(Enum(Scope), nullable=False)
 
     lecture = relationship("Lecture", back_populates="roles")
@@ -30,3 +30,13 @@ class Role(Base, Serializable):
 
     def serialize(self):
         return {"user_id": self.user_id, "lectid": self.lectid, "role": self.role}
+
+    def serialize_with_user(self) -> dict:
+        """Serialize the role with user information.
+
+        Returns:
+            dict: The serialized role data including user information.
+        """
+        model = self.serialize()
+        model["user"] = self.user.serialize()
+        return model
