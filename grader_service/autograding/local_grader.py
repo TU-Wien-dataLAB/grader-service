@@ -46,7 +46,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     timeout_func = Callable(
         allow_none=False,
-        help="Function that takes a lecture as an argument and returns the cell timeout in seconds.",
+        help="Function that returns the cell timeout in seconds, either user-defined, from configuration or default values.",
     ).tag(config=True)
 
     default_cell_timeout = Int(300, help="Default cell timeout in seconds, defaults to 300").tag(
