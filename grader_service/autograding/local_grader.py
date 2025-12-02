@@ -55,7 +55,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     min_cell_timeout = Int(10, help="Min cell timeout in seconds, defaults to 10.").tag(config=True)
 
-    max_cell_timeout = Int(84600, help="Max cell timeout in seconds, defaults to 86400").tag(
+    max_cell_timeout = Int(86400, help="Max cell timeout in seconds, defaults to 86400").tag(
         config=True
     )
 
