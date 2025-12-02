@@ -5,21 +5,24 @@ services:
     build:
       context: ../..
       dockerfile: examples/docker_compose/Dockerfile-Service
+    command: bash -c "
+        /app/init-db.sh
+        && grader-service -f /app/grader_service_config.py
+      "
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - service_dir:/app/service_dir
+      - ./init-db.sh:/app/init-db.sh
+      - ./data_only.sql:/app/data_only.sql
+      - ./init_repos:/app/init_repos
     environment:
-      DATABASE_TYPE: ${DATABASE_TYPE}
+      DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
       RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
-    restart: always
+    restart: unless-stopped
     depends_on:
       init-volume:
         condition: service_completed_successfully
-    networks:
-      - network
-    expose:
-      - "4010"
 
   hub:
     build:
@@ -29,18 +32,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - ./jupyterhub_config.py:/app/jupyterhub_config.py
       - ./data-hub:/data
-    restart: always
+    restart: unless-stopped
     depends_on:
       - service
-    networks:
-      - network
     ports:
       - "8080:8080"
 
   rabbitmq:
     image: rabbitmq:latest
-    networks:
-      - network
     environment:
       RABBITMQ_DEFAULT_VHOST: grader
       RABBITMQ_DEFAULT_USER: grader_user
@@ -54,8 +53,6 @@ services:
     build:
       context: ../..
       dockerfile: examples/docker_compose/Dockerfile-Service
-    networks:
-      - network
     command:
       - "grader-worker"
       - "-f"
@@ -68,7 +65,7 @@ services:
     environment:
       RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
       RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
-      DATABASE_TYPE: ${DATABASE_TYPE}
+      DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
 
   init-volume:
     build:
@@ -77,14 +74,7 @@ services:
     volumes:
       - ./service_dir:/local_service_dir
       - service_dir:/volume_service_dir
-    networks:
-      - network
-
 
 volumes:
   jupyterhub-data:
   service_dir:
-
-networks:
-  network:
-    driver: bridge

@@ -172,7 +172,7 @@ class SubmissionHandler(GraderBaseHandler):
 
     def on_finish(self):
         # we do not close the session we just commit because we might run
-        # LocalAutogradeExecutor or GenerateFeedbackExecutor in POST which
+        # LocalAutogradeExecutor or LocalFeedbackExecutor in POST which
         # still need it
         pass
 
