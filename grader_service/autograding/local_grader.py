@@ -17,14 +17,13 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Callable, Int, TraitError, Unicode, validate
+from traitlets.traitlets import Callable, Int, TraitError, Type, Unicode, validate
 
 from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.utils import collect_logs, executable_validator, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
@@ -326,32 +325,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             pass
         if self.close_session:
             self.session.close()
-
-    def _run_subprocess(self, command: str, cwd: str) -> subprocess.CompletedProcess:
-        """
-        Execute the command as a subprocess.
-        :param command: The command to execute as a string.
-        :param cwd: The working directory the subprocess should run in.
-        :return: CompletedProcess object which contains information about the execution.
-        """
-        try:
-            result = subprocess.run(
-                shlex.split(command),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=cwd,
-                text=True,  # Decodes output to string
-                check=True,  # Raises a CalledProcessError on non-zero exit code
-            )
-            return result
-        except subprocess.CalledProcessError as e:
-            self.grading_logs = e.stderr
-            self.log.error(self.grading_logs)
-            raise
-        except Exception as e:
-            self.grading_logs = (self.grading_logs or "") + str(e)
-            self.log.error(e)
-            raise
 
     def _determine_cell_timeout(self):
         cell_timeout = self.default_cell_timeout
