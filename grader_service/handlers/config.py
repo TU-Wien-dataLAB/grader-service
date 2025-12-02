@@ -3,11 +3,6 @@ from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
 
-def _get_trait_default_from_class(cls, trait_name):
-    traits = cls.class_traits()
-    return traits[trait_name].default()
-
-
 def _get_effective_executor_value(app_cfg, executor_class, trait_name):
     """
     Return the configured value for trait_name if present in app_cfg,
@@ -25,7 +20,7 @@ def _get_effective_executor_value(app_cfg, executor_class, trait_name):
         return user_node.get(trait_name)
 
     # 2) fallback to the trait's default from the class metadata
-    return _get_trait_default_from_class(executor_class, trait_name)
+    return executor_class.class_traits()[trait_name].default()
 
 
 @register_handler(path=r"\/api\/config\/?", version_specifier=VersionSpecifier.ALL)
@@ -34,7 +29,6 @@ class ConfigHandler(GraderBaseHandler):
     Handler class for requests to /config
     """
 
-    # todo: ask if this is correct
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self):
         app_cfg = self.application.config
