@@ -26,7 +26,7 @@ c.Authenticator.enable_auth_state = True
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
 
 c.DockerSpawner.use_internal_ip = True
-c.DockerSpawner.network_name = "grader_network"
+c.DockerSpawner.network_name = "grader_default"
 
 c.DockerSpawner.remove = True
 

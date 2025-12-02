@@ -114,11 +114,10 @@ and handle the evaluation of user submissions, such as running notebooks for gra
 Auto-grading is accomplished using the `grader_service.convert` submodule, which can be executed as a command-line interface (CLI). 
 Different executors are available to manage this:
 - **LocalAutogradeExecutor**: Executes the module directly within the current Python process on the worker by importing the package and invoking the converters.
-- **LocalProcessAutogradeExecutor**: Runs the submodule in a separate process.
+- **LocalAutogradeProcessExecutor**: Runs the submodule in a separate process.
 - **KubeAutogradeExecutor**: Spawns a Kubernetes pod to run the submodule. This is the only approach that allows different images for lectures, as the grading code must be executed in the same environment as the lecture.
 
 
 # How To Scale
 
 [//]: # (TODO: what is the minimal setup? what is the most sophisticated setup)
-
