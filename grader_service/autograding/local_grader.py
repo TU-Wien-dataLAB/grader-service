@@ -52,9 +52,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
     min_cell_timeout = Int(10, help="Min cell timeout in seconds, defaults to 10.").tag(config=True)
 
-    max_cell_timeout = Int(86400, help="Max cell timeout in seconds, defaults to 86400").tag(
-        config=True
-    )
+    max_cell_timeout = Int(
+        86400, help="Max cell timeout in seconds, defaults to 86400 (24 hours)"
+    ).tag(config=True)
 
     def __init__(
         self, grader_service_dir: str, submission: Submission, close_session: bool = True, **kwargs
