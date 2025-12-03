@@ -225,7 +225,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     def _get_autograde_config(self) -> Config:
         """Returns the autograde config, with the timeout set for ExecutePreprocessor."""
         c = Config()
-        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+        c.ExecutePreprocessor.timeout = self.timeout_func()
         return c
 
     def _get_whitelist_patterns(self) -> set[str]:
@@ -386,7 +386,7 @@ class LocalAutogradeProcessExecutor(LocalAutogradeExecutor):
             self.output_path,
             "-p",
             "*.ipynb",
-            f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}",
+            f"--ExecutePreprocessor.timeout={self.timeout_func()}",
         ]
         self.log.info(f"Running {command}")
         process = subprocess.run(
