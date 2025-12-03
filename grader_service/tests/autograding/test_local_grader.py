@@ -11,7 +11,7 @@ from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
     LocalAutogradeProcessExecutor,
 )
-from grader_service.orm import Assignment, Lecture
+from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
 
 
@@ -223,8 +223,8 @@ def test_submission_logs_update(local_autograde_executor):
 def test_timeout_function_default(local_autograde_executor):
     """Test default timeout function"""
 
-    timeout = local_autograde_executor.timeout_func(Lecture())
-    assert timeout == 360  # Default timeout
+    timeout = local_autograde_executor.timeout_func()
+    assert timeout == 300  # Default timeout
 
 
 @patch("grader_service.autograding.local_grader.Session")
@@ -235,17 +235,17 @@ def test_timeout_function_default(local_autograde_executor):
 def test_timeout_function_custom(mock_git, mock_session_class, tmp_path, submission_123):
     """Test custom timeout function"""
 
-    def custom_timeout(lecture):
+    def custom_timeout():
         return 720
 
     executor = LocalAutogradeExecutor(
         grader_service_dir=str(tmp_path),
         submission=submission_123,
         close_session=False,
-        timeout_func=custom_timeout,
+        default_cell_timeout=custom_timeout(),
     )
 
-    timeout = executor.timeout_func(Lecture())
+    timeout = executor.timeout_func()
     assert timeout == 720
 
 
@@ -302,7 +302,7 @@ def test_process_executor_run_failure(mock_run, process_executor):
         process_executor.output_path,
         "-p",
         "*.ipynb",
-        "--ExecutePreprocessor.timeout=360",
+        "--ExecutePreprocessor.timeout=300",
     ]
 
     mock_run.assert_called_once_with(

@@ -64,6 +64,7 @@ def test_assignment_serialization():
             "late_submission": None,
             "deadline": datetime.now(tz=timezone.utc).isoformat(),
             "group": None,
+            "cell_timeout": None,
             "max_submissions": 1,
             "autograde_type": "unassisted",
             "allowed_files": None,
