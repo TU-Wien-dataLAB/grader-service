@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from alembic import config
 from alembic.command import upgrade
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import GraderService, handlers
@@ -18,7 +20,51 @@ from grader_service.main import get_session_maker
 from grader_service.orm import User
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service.tests.handlers.db_util import insert_assignments, insert_lectures
+from grader_service.tests.handlers.db_util import (
+    insert_assignments,
+    insert_default_user,
+    insert_lectures,
+)
+
+
+@pytest.fixture(scope="function")
+def set_database_type_to_sqlite():
+    """
+    Set the DATABASE_TYPE env var to "sqlite" and register a listener
+    which enables foreign keys support for SQLite database.
+    Unset the var after the test runs.
+
+    This is a hack, because normally `DATABASE_TYPE` is not set when tests run.
+    It also cannot be set to "sqlite" by default, because we have some tests
+    running on PostgreSQL, where executing the sqlite pragma would cause an error.
+
+    Outside the test setting, the DATABASE_TYPE environment variable is set, and
+    the event listener is registered in grader_service/orm/base.py.
+    """
+    os.environ["DATABASE_TYPE"] = "sqlite"
+
+    # Original code taken from the SQLAlchemy documentation, here slightly adjusted:
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#foreign-key-support
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        database_type = os.getenv("DATABASE_TYPE")
+        if database_type == "sqlite":
+            # the sqlite3 driver will not set PRAGMA foreign_keys
+            # if autocommit=False; set to True temporarily
+            ac = dbapi_connection.autocommit
+            dbapi_connection.autocommit = True
+
+            cursor = dbapi_connection.cursor()
+            # Note: this is a SQLite-specific pragma
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
+            # restore previous autocommit setting
+            dbapi_connection.autocommit = ac
+
+    yield
+    # Unset the variable for other tests, which may use a different database type
+    os.environ.pop("DATABASE_TYPE")
 
 
 @pytest.fixture(scope="function")
@@ -68,6 +114,7 @@ def sql_alchemy_sessionmaker(db_test_config):
         upgrade(db_test_config, "head")
     insert_lectures(engine)
     insert_assignments(engine)
+    insert_default_user(engine)
     yield session_maker
 
 

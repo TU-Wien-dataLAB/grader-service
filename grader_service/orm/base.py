@@ -28,6 +28,7 @@ if database_type == "sqlite":
         dbapi_connection.autocommit = True
 
         cursor = dbapi_connection.cursor()
+        # Note: this is a SQLite-specific pragma
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 

@@ -7,13 +7,44 @@ import json
 from http import HTTPStatus
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.orm import Assignment as AssignmentORM
+from grader_service.orm import Submission
 from grader_service.server import GraderServer
 
 from .db_util import insert_assignments, insert_submission
+
+
+def test_foreign_key_constraints_in_sqlite(
+    set_database_type_to_sqlite, sql_alchemy_engine, sql_alchemy_sessionmaker, default_user
+):
+    """Make sure the FK constraints are enabled in SQLite on engine connection."""
+
+    # Note: tests use an sqlite db by default (see the `alembic_test.ini` file),
+    # but `DATABASE_TYPE` environment variable is not set. We use the fixture
+    # `set_database_type_to_sqlite` to set it to "sqlite" for this test.
+
+    a_id = 1  # This assignment exists in the test database
+    session = sql_alchemy_sessionmaker()
+    engine = session.get_bind()
+    sub = insert_submission(engine, a_id, "ubuntu", 1)
+
+    session = sql_alchemy_sessionmaker()
+
+    with pytest.raises(IntegrityError, match="FOREIGN KEY constraint failed"):
+        # Try to delete an existing assignment with a submission
+        session.query(AssignmentORM).filter(AssignmentORM.id == a_id).delete()
+        session.commit()
+
+    assign = session.query(AssignmentORM).filter(AssignmentORM.id == a_id).one_or_none()
+    sub_2 = session.query(Submission).filter(Submission.id == sub.id).one_or_none()
+    assert assign is not None
+    assert sub_2.id == assign.submissions[0].id
+    session.close()
 
 
 async def test_get_assignments(
