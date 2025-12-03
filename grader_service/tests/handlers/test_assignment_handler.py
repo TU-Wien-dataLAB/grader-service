@@ -33,8 +33,6 @@ def test_foreign_key_constraints_in_sqlite(
     engine = session.get_bind()
     sub = insert_submission(engine, a_id, "ubuntu", 1)
 
-    session = sql_alchemy_sessionmaker()
-
     with pytest.raises(IntegrityError, match="FOREIGN KEY constraint failed"):
         # Try to delete an existing assignment with a submission
         session.query(AssignmentORM).filter(AssignmentORM.id == a_id).delete()

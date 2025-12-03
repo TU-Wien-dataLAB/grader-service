@@ -11,13 +11,14 @@ import os
 import secrets
 import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
+from typing import Any, Callable
 
 import tornado
-import uvloop as uvloop
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
@@ -61,6 +62,47 @@ from grader_service.utils import url_path_join
 def get_session_maker(url) -> scoped_session:
     engine = create_engine(url)
     return scoped_session(sessionmaker(bind=engine))
+
+
+def enable_foreign_keys_for_sqlite() -> Callable[[sqlite3.Connection, Any], None] | None:
+    """
+    Register a listener that enables foreign key constraints for SQLite databases.
+
+    It returns the function that sets the foreign keys pragma, and which is
+    registered with the event listener on Engine.connect. The function can be
+    used to later remove the listener:
+
+    e.g.::
+
+        from sqlalchemy import Engine, event
+
+        event.remove(Engine, "connect", set_sqlite_pragma)
+
+    This function is a no-op if the DATABASE_TYPE environment variable is not set to "sqlite".
+    In this case it returns `None`.
+    """
+    database_type = os.getenv("DATABASE_TYPE")
+    if database_type == "sqlite":
+        # The following function is needed to enable foreign key constraints in SQLite.
+        # The code was copied from the SQLAlchemy documentation:
+        # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#foreign-key-support
+        @event.listens_for(Engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            # the sqlite3 driver will not set PRAGMA foreign_keys
+            # if autocommit=False; set to True temporarily
+            ac = dbapi_connection.autocommit
+            dbapi_connection.autocommit = True
+
+            cursor = dbapi_connection.cursor()
+            # Note: this is a SQLite-specific pragma
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
+            # restore previous autocommit setting
+            dbapi_connection.autocommit = ac
+
+        return set_sqlite_pragma
+    return None
 
 
 class GraderService(config.Application):
@@ -111,13 +153,13 @@ class GraderService(config.Application):
         allow_none=False,
     ).tag(config=True)
 
-    max_body_size = Int(104857600, help="Sets the max buffer size in bytes, default to 100mb").tag(
+    max_body_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
         config=True
     )
 
-    max_buffer_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
-        config=True
-    )
+    max_buffer_size = Int(
+        104857600, help="Sets the max buffer size in bytes, default to 100mb"
+    ).tag(config=True)
 
     service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
 
@@ -329,6 +371,8 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
+        enable_foreign_keys_for_sqlite()
+
         self.session_maker = get_session_maker(self.db_url)
         self.init_roles()
         # use uvloop instead of default asyncio loop
@@ -398,7 +442,10 @@ class GraderService(config.Application):
 
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
-                            self.log.info(f"Adding new user with username {username} and display name {display_name}")
+                            self.log.info(
+                                f"Adding new user with username {username} "
+                                f"and display name {display_name}"
+                            )
                             user = User()
                             user.name = username
                             user.display_name = display_name
