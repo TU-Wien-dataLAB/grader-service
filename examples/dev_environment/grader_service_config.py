@@ -15,6 +15,9 @@ from grader_service.orm.takepart import Scope, Role
 
 print("### loading service config")
 
+# The database used in this setup is SQLite
+os.environ["DATABASE_TYPE"] = "sqlite"
+
 c.GraderService.service_host = "127.0.0.1"
 # existing directory to use as the base directory for the grader service
 service_dir = os.path.join(os.getcwd(), "service_dir")
