@@ -205,4 +205,14 @@ def downgrade():
     op.drop_table("group")
     op.drop_table("lecture")
     op.drop_table("user")
+
+    # drop enums
+    if sa.inspect(op.get_bind()).dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS lecture_state")
+        op.execute("DROP TYPE IF EXISTS assignment_type")
+        op.execute("DROP TYPE IF EXISTS automatic_grading")
+        op.execute("DROP TYPE IF EXISTS assignment_status")
+        op.execute("DROP TYPE IF EXISTS deleted")
+        op.execute("DROP TYPE IF EXISTS auto_status")
+        op.execute("DROP TYPE IF EXISTS manual_status")
     # ### end Alembic commands ###

@@ -16,8 +16,9 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     """As an unmanage jupyter hub service, the application gets these
     environment variables from the hub
 
-    See jupyterhub docs section on launching-a-hub-managed-service
-    link: https://shorturl.at/yDGHZ"""
+    See jupyterhub docs section on launching-a-hub-managed-service:
+    https://jupyterhub.readthedocs.io/en/stable/reference/services.html#launching-a-hub-managed-service
+    """
 
     cookie_max_age_days = Float(
         14,
@@ -28,7 +29,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
 
     static_file_path = Unicode(
         os.path.join(os.path.dirname(__file__), "static"),
-        help="""Absolute to the static file directory.""",
+        help="""Absolute path to the static file directory.""",
     ).tag(config=True)
 
     logo_file = Unicode(

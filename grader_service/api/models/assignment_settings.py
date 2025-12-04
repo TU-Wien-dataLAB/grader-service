@@ -14,7 +14,7 @@ class AssignmentSettings(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto'):  # noqa: E501
+    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto', group=None):  # noqa: E501
         """AssignmentSettings - a model defined in OpenAPI
 
         :param deadline: The deadline of this AssignmentSettings.  # noqa: E501
@@ -27,13 +27,16 @@ class AssignmentSettings(Model):
         :type late_submission: List[SubmissionPeriod]
         :param autograde_type: The autograde_type of this AssignmentSettings.  # noqa: E501
         :type autograde_type: str
+        :param group: The group of this AssignmentSettings.  # noqa: E501
+        :type group: str
         """
         self.openapi_types = {
             'deadline': datetime,
             'max_submissions': int,
             'allowed_files': List[str],
             'late_submission': List[SubmissionPeriod],
-            'autograde_type': str
+            'autograde_type': str,
+            'group': str
         }
 
         self.attribute_map = {
@@ -41,7 +44,8 @@ class AssignmentSettings(Model):
             'max_submissions': 'max_submissions',
             'allowed_files': 'allowed_files',
             'late_submission': 'late_submission',
-            'autograde_type': 'autograde_type'
+            'autograde_type': 'autograde_type',
+            'group': 'group'
         }
 
         self._deadline = deadline
@@ -49,6 +53,7 @@ class AssignmentSettings(Model):
         self._allowed_files = allowed_files
         self._late_submission = late_submission
         self._autograde_type = autograde_type
+        self._group = group
 
     @classmethod
     def from_dict(cls, dikt) -> 'AssignmentSettings':
@@ -171,3 +176,24 @@ class AssignmentSettings(Model):
             )
 
         self._autograde_type = autograde_type
+
+    @property
+    def group(self) -> str:
+        """Gets the group of this AssignmentSettings.
+
+
+        :return: The group of this AssignmentSettings.
+        :rtype: str
+        """
+        return self._group
+
+    @group.setter
+    def group(self, group: str):
+        """Sets the group of this AssignmentSettings.
+
+
+        :param group: The group of this AssignmentSettings.
+        :type group: str
+        """
+
+        self._group = group

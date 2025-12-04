@@ -5,32 +5,29 @@
 # LICENSE file in the root directory of this source tree.
 
 import secrets
+import subprocess
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Optional
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.orm import Assignment, Lecture, Role, Submission
+from grader_service.orm import Assignment, Lecture, Role, Submission, User
 from grader_service.orm.base import DeleteState
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope
 
 
-def add_role(engine: Engine, username: str, l_id: int, scope: Scope) -> Role:
+def add_role(engine: Engine, user_id: int, l_id: int, scope: Scope) -> Role:
     session: Session = sessionmaker(engine)()
-    role = Role(username=username, lectid=l_id, role=scope)
+    role = Role(user_id=user_id, lectid=l_id, role=scope)
     session.add(role)
     session.commit()
     session.flush()
     return role
-
-
-def insert_users(session):
-    session.execute('INSERT INTO "user" ("name") VALUES ("user1")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user2")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user3")')
-    session.execute('INSERT INTO "user" ("name") VALUES ("user4")')
 
 
 def _get_lecture(id, name, code):
@@ -92,56 +89,103 @@ def insert_assignments(ex, lecture_id=1):
     return num_inserts
 
 
-def _get_submission(assignment_id, username, feedback="not_generated", score=None):
+def _get_submission(
+    assignment_id: int,
+    username: str,
+    user_id: int,
+    feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
+    score: Optional[float] = None,
+    commit_hash: Optional[str] = None,
+):
     s = Submission()
     s.date = datetime.now(tz=timezone.utc)
-    s.auto_status = "not_graded"
-    s.manual_status = "not_graded"
+    s.auto_status = AutoStatus.NOT_GRADED
+    s.manual_status = ManualStatus.NOT_GRADED
     s.assignid = assignment_id
-    s.username = username
+    s.user_id = user_id
     s.display_name = username
     s.score = score
-    s.commit_hash = secrets.token_hex(20)
+    s.commit_hash = commit_hash or secrets.token_hex(20)
     s.feedback_status = feedback
     return s
 
 
-def _get_submission_properties(submission_id, properties=None):
-    s = SubmissionProperties(sub_id=submission_id, properties=properties)
-    return s
-
-
 def insert_submission(
-    ex,
-    assignment_id=1,
-    username="ubuntu",
-    feedback="not_generated",
-    with_properties=True,
-    score=None,
-):
+    ex: Engine,
+    assignment_id: int = 1,
+    username: Optional[str] = "ubuntu",
+    user_id: Optional[int] = 1,
+    feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
+    with_properties: bool = True,
+    score: float = None,
+    commit_hash: Optional[str] = None,
+) -> Submission:
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id
     session: Session = sessionmaker(ex)()
-    session.add(_get_submission(assignment_id, username, feedback=feedback, score=score))
+    submission = _get_submission(
+        assignment_id, username, user_id, feedback=feedback, score=score, commit_hash=commit_hash
+    )
+    session.add(submission)
     session.commit()
+
     if with_properties:
-        id = (
-            session.query(Submission)
-            .filter(Submission.assignid == assignment_id, Submission.username == username)
-            .first()
-            .id
-        )
-        session.add(_get_submission_properties(id))
+        session.add(SubmissionProperties(sub_id=submission.id, properties=None))
         session.commit()
+    session.refresh(submission)
     session.flush()
+    return submission
 
 
-def insert_take_part(ex, lecture_id, username="ubuntu", role="student"):
-    ex.execute(
-        f'INSERT INTO "takepart" ("username","lectid","role") '
-        f'VALUES ("{username}",{lecture_id},"{role}")'
+def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
+    """Creates a user with a student role in the specified lecture."""
+    session: Session = sessionmaker(ex)(expire_on_commit=False)
+    session.add(User(name=username, display_name=username))
+    session.commit()
+    user = session.query(User).filter(User.name == username).one()
+    session.add(Role(user_id=user.id, lectid=lecture_id, role=Scope.student))
+    session.commit()
+    return user
+
+
+def create_user_submission_with_repo(
+    engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
+) -> Submission:
+    """Creates a submission for `student` and a user repo for storing it.
+
+    Note: `gitbase_dir` should be based on the pytest `tmp_path` fixture, so that the test does not
+    interfere with the file system.
+    """
+    # 1. Create and configure a student repo (a bare one, as a remote)
+    # TODO: This way of creating repo paths is brittle. We should have a function that does it.
+    submission_repo_path = gitbase_dir / lecture_code / str(assignment_id) / "user" / student.name
+    submission_repo_path.mkdir(parents=True)
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=main"], cwd=submission_repo_path, check=True
     )
 
+    # 2. Create a "local" repo, create and commit a submission file, push to the remote
+    tmp_repo_path = gitbase_dir / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
+    tmp_repo_path.mkdir(parents=True)
+    subprocess.run(["git", "init", "--initial-branch=main"], cwd=tmp_repo_path, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", str(submission_repo_path)], cwd=tmp_repo_path, check=True
+    )
+    submission_file = tmp_repo_path / "submission.ipynb"
+    submission_file.write_text("content")
+    subprocess.run(["git", "add", "--all"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "commit", "-m", "Student submission"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "push", "-u", "origin", "main"], cwd=tmp_repo_path, check=True)
 
-def insert_grading(session):
-    pass
+    # 3. Create a submission object in the database
+    commit_hash = (
+        subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=tmp_repo_path, check=True, capture_output=True
+        )
+        .stdout.strip()
+        .decode()
+    )
+    submission = insert_submission(
+        engine, assignment_id, student.name, user_id=student.id, commit_hash=commit_hash
+    )
+    return submission

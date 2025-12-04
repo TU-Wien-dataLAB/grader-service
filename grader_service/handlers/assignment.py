@@ -96,10 +96,10 @@ class AssignmentBaseHandler(GraderBaseHandler):
         include_submissions = self.get_argument("include-submissions", "true") == "true"
         if include_submissions:
             assignids = [a.id for a in assignments]
-            username = self.user.name
+            user_id = self.user.id
             results = (
                 self.session.query(Submission)
-                .filter(Submission.assignid.in_(assignids), Submission.username == username)
+                .filter(Submission.assignid.in_(assignids), Submission.user_id == user_id)
                 .all()
             )
             # Create a combined list of assignments and submissions

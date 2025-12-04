@@ -1,4 +1,8 @@
 services:
+
+  service:
+    command: []  # Use the default CMD from Dockerfile-Service, i.e. just run grader-service
+
   db-init:
     build:
       context: ../..
@@ -8,23 +12,21 @@ services:
       DATABASE_TYPE: postgres
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
+      - service_dir:/app/service_dir
       - ./data_only.sql:/app/data_only.sql
-      - ./db-init.sh:/app/db-init.sh
-    networks:
-      - network
+      - ./init-db-postgres.sh:/app/init-db-postgres.sh
+      - ./init_repos:/app/init_repos
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
     image: postgres
-    restart: always
+    restart: unless-stopped
     environment:
       # required for using postgres image
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: grader
-    networks:
-      - network
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 5s

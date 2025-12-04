@@ -1,12 +1,13 @@
+import asyncio
 from typing import Union
 
 from celery import Celery, Task
 from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp
-from grader_service.autograding.local_feedback import GenerateFeedbackExecutor
+from grader_service.autograding.local_feedback import LocalFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
-from grader_service.orm.submission import Submission
+from grader_service.orm.submission import FeedbackStatus, Submission
 from grader_service.plugins.lti import LTISyncGrades
 
 # Note: The celery instance is lazy so we can still add configuration later
@@ -77,16 +78,16 @@ def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int
             f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match"
         )
 
-    executor = GenerateFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
+    executor = LocalFeedbackExecutor(grader_service_dir, submission, config=self.celery.config)
     executor.start()
-    if submission.feedback_status == "generated":
+    if submission.feedback_status == FeedbackStatus.GENERATED:
         self.log.info("Successfully generated feedback for submission %s!", submission.id)
     else:
         self.log.error("Failed to generate feedback for submission %s!", submission.id)
 
 
 @app.task(bind=True, base=GraderTask)
-async def lti_sync_task(
+def lti_sync_task(
     self: GraderTask,
     lecture: dict,
     assignment: dict,
@@ -96,7 +97,7 @@ async def lti_sync_task(
     """Gathers submissions based on params and starts LTI sync process
     :param lecture: lecture object
     :param assignment: assignment object
-    :param submissions: submissions to be synced
+    :param submissions: submissions to be synced (including user information)
     :param feedback_sync(optional): if True, the sync task was started by a feedback generation
     """
     lti_plugin = LTISyncGrades.instance()
@@ -105,7 +106,7 @@ async def lti_sync_task(
         lecture, assignment, submissions, feedback_sync=feedback_sync
     ):
         try:
-            results = await lti_plugin.start(lecture, assignment, submissions)
+            results = asyncio.run(lti_plugin.start(lecture, assignment, submissions))
             return results
         except HTTPError as e:
             err_msg = f"Could not sync grades: {e.reason}"

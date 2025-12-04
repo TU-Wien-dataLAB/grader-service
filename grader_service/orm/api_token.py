@@ -133,7 +133,7 @@ class APIToken(Hashed, Base):
 
     __tablename__ = "api_token"
 
-    username = Column(Unicode, ForeignKey("user.name", ondelete="CASCADE"), nullable=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=True)
 
     user = relationship("User", back_populates="api_tokens")
     oauth_client = relationship("OAuthClient", back_populates="access_tokens")
@@ -188,7 +188,7 @@ class APIToken(Hashed, Base):
     def find(cls, db, token):
         """Find a token object by value. Returns None if not found."""
         prefix_match = cls.find_prefix(db, token)
-        prefix_match = prefix_match.filter(cls.username.isnot(None))
+        prefix_match = prefix_match.filter(cls.user_id.isnot(None))
         for orm_token in prefix_match:
             if orm_token.match(token):
                 # Only purge if it's explicitly broken (has no client *and* shouldn't exist)

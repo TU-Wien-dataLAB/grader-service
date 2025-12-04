@@ -6,7 +6,7 @@
 
 import json
 from datetime import date, datetime, timezone
-from typing import Any, Union
+from typing import Any, Set, Union
 
 from sqlalchemy import DECIMAL, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
@@ -68,6 +68,16 @@ class Assignment(Base, Serializable):
             if hasattr(settings, key):  # Ensure the attribute exists on AssignmentSettings
                 setattr(settings, key, value)
         self.settings = settings  # Save the updated object back
+
+    def get_whitelist_patterns(self) -> Set[str]:
+        """
+        Combines all whitelist patterns into a single set.
+        """
+        base_filter = ["*.ipynb"]
+        extra_files = json.loads(self.properties).get("extra_files", [])
+        allowed_file_patterns = self.settings.allowed_files
+
+        return set(base_filter + extra_files + allowed_file_patterns)
 
     @property
     def model(self) -> assignment.Assignment:

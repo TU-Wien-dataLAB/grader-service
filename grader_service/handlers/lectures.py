@@ -6,6 +6,7 @@
 from http import HTTPStatus
 
 import tornado
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
 from tornado.web import HTTPError
 
@@ -134,16 +135,13 @@ class LectureObjectHandler(GraderBaseHandler):
                 if (len(a.submissions)) > 0:
                     self.session.rollback()
                     raise HTTPError(
-                        HTTPStatus.CONFLICT,
-                        "Cannot delete \
-                    assignment because it has submissions",
+                        HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions"
                     )
                 if a.status in ["released", "complete"]:
                     self.session.rollback()
                     raise HTTPError(
                         HTTPStatus.CONFLICT,
-                        "Cannot delete \
-                    assignment because its status is not created",
+                        "Cannot delete assignment because its status is not created",
                     )
 
                 a.deleted = 1
@@ -164,14 +162,20 @@ class LectureStudentsHandler(GraderBaseHandler):
     @authorize([Scope.tutor, Scope.instructor])
     async def get(self, lecture_id: int):
         """
-        Finds all users of a lecture and sorts them by roles.
+        Finds all users of a lecture and groups them by roles.
+
         :param lecture_id: id of the lecture
-        :return: user, tutor and instructor list in a json object
+        :return: a dictionary of user, tutor and instructor names lists
         """
-        roles = self.session.query(Role).filter(Role.lectid == lecture_id).all()
-        students = [r.username for r in roles if r.role == Scope.student]
-        tutors = [r.username for r in roles if r.role == Scope.tutor]
-        instructors = [r.username for r in roles if r.role == Scope.instructor]
+        roles = (
+            self.session.query(Role)
+            .options(joinedload(Role.user))
+            .filter(Role.lectid == lecture_id)
+        )
+
+        students = [r.user.id for r in roles if r.role == Scope.student]
+        tutors = [r.user.id for r in roles if r.role == Scope.tutor]
+        instructors = [r.user.id for r in roles if r.role == Scope.instructor]
 
         counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)

@@ -75,12 +75,11 @@ def upgrade():
     op.add_column("user", sa.Column("cookie_id", Unicode(255), nullable=True))
 
     connection = op.get_bind()
-    result = connection.execute(sa.text('select * from "user"'))
+    result = connection.execute(sa.text('select * from "user"')).mappings()
     for row in result:
         connection.execute(
             sa.text('UPDATE "user" SET cookie_id = :uuid WHERE name = :name'),
-            uuid=new_token(),
-            name=row["name"],
+            {"uuid": new_token(), "name": row["name"]},
         )
 
     if connection.dialect.name != "sqlite":
