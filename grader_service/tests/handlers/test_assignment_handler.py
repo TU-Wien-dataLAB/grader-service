@@ -20,13 +20,14 @@ from .db_util import insert_assignments, insert_submission
 
 
 def test_foreign_key_constraints_in_sqlite(
-    set_database_type_to_sqlite, sql_alchemy_engine, sql_alchemy_sessionmaker, default_user
+    enable_foreign_keys_for_sqlite, sql_alchemy_engine, sql_alchemy_sessionmaker, default_user
 ):
     """Make sure the FK constraints are enabled in SQLite on engine connection."""
 
-    # Note: tests use an sqlite db by default (see the `alembic_test.ini` file),
-    # but `DATABASE_TYPE` environment variable is not set. We use the fixture
-    # `set_database_type_to_sqlite` to set it to "sqlite" for this test.
+    # Note: in principle, tests use an sqlite db by default (see the `alembic_test.ini` file),
+    # but some tests run with PostgreSQL.
+    # We use the `enable_foreign_keys_for_sqlite` fixture to make sure the event listener
+    # that enables FKs support for sqlite is disabled after this test.
 
     a_id = 1  # This assignment exists in the test database
     session = sql_alchemy_sessionmaker()

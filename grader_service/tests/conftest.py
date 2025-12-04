@@ -15,8 +15,9 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
-from grader_service.main import enable_foreign_keys_for_sqlite, get_session_maker
+from grader_service.main import get_session_maker
 from grader_service.orm import User
+from grader_service.orm.base import set_sqlite_pragma
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.tests.handlers.db_util import (
@@ -27,26 +28,15 @@ from grader_service.tests.handlers.db_util import (
 
 
 @pytest.fixture(scope="function")
-def set_database_type_to_sqlite():
+def enable_foreign_keys_for_sqlite():
     """
-    Set the DATABASE_TYPE env var to "sqlite" and register a listener
-    which enables foreign keys support for SQLite database.
-    Unset the var after the test runs.
-
-    This is a necessary hack, because normally `DATABASE_TYPE` is not set when tests run.
-    It also cannot be set to "sqlite" by default, because we have some tests
-    running on PostgreSQL, where executing the sqlite pragma would cause an error.
-
-    Outside the test setting, the DATABASE_TYPE environment variable is set, and
-    the event listener is registered in `grader_service/orm/base.py`.
+    Make sure the event listener is attached to the engine, and foreign keys
+    are enabled for SQLite connections during the test.
+    Remove the listener after the test runs to avoid interference with other tests.
     """
-    os.environ["DATABASE_TYPE"] = "sqlite"
-    set_sqlite_pragma = enable_foreign_keys_for_sqlite()
     assert event.contains(Engine, "connect", set_sqlite_pragma)
     yield
 
-    # Unset the variable for other tests, which may use a different database type
-    os.environ.pop("DATABASE_TYPE")
     # Remove the event listener to avoid interference with other tests
     event.remove(Engine, "connect", set_sqlite_pragma)
 
