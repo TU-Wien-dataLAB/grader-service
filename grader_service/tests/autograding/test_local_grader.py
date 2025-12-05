@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import traitlets.traitlets
 
 from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
@@ -223,7 +224,7 @@ def test_submission_logs_update(local_autograde_executor):
 def test_timeout_function_default(local_autograde_executor):
     """Test default timeout function"""
 
-    timeout = local_autograde_executor.timeout_func()
+    timeout = local_autograde_executor.cell_timeout
     assert timeout == 300  # Default timeout
 
 
@@ -235,18 +236,32 @@ def test_timeout_function_default(local_autograde_executor):
 def test_timeout_function_custom(mock_git, mock_session_class, tmp_path, submission_123):
     """Test custom timeout function"""
 
-    def custom_timeout():
-        return 720
+    custom_timeout = 720
 
     executor = LocalAutogradeExecutor(
         grader_service_dir=str(tmp_path),
         submission=submission_123,
         close_session=False,
-        default_cell_timeout=custom_timeout(),
+        default_cell_timeout=custom_timeout,
     )
 
-    timeout = executor.timeout_func()
+    timeout = executor.cell_timeout
     assert timeout == 720
+
+
+def test_invalid_custom_default_timeout(tmp_path, submission_123):
+    invalid_timeout = -1
+
+    executor = LocalAutogradeExecutor(
+        grader_service_dir=str(tmp_path), submission=submission_123, close_session=False
+    )
+    with pytest.raises(traitlets.traitlets.TraitError) as exc_info:
+        executor.default_cell_timeout = invalid_timeout
+    assert exc_info.value.args[0] == (
+        f"Invalid default_cell_timeout value ({invalid_timeout}). "
+        "Timeout values must satisfy: 0 < min_cell_timeout < default_cell_timeout < max_cell_timeout. "
+        f"Got min={executor.min_cell_timeout}, default={invalid_timeout}, max={executor.max_cell_timeout}."
+    )
 
 
 def test_gradebook_writing(local_autograde_executor):
