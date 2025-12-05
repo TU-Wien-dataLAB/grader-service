@@ -341,6 +341,26 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return cell_timeout
 
+    @validate("min_cell_timeout", "default_cell_timeout", "max_cell_timeout")
+    def _validate_cell_timeouts(self, proposal):
+        trait_name = proposal["trait"].name
+        value = proposal["value"]
+
+        # Get current or proposed values
+        min_t = value if trait_name == "min_cell_timeout" else self.min_cell_timeout
+        default_t = value if trait_name == "default_cell_timeout" else self.default_cell_timeout
+        max_t = value if trait_name == "max_cell_timeout" else self.max_cell_timeout
+
+        # Validate the constraint
+        if not (0 < min_t < default_t < max_t):
+            raise TraitError(
+                f"Invalid {trait_name} value ({value}). "
+                f"Timeout values must satisfy: 0 < min_cell_timeout < default_cell_timeout < max_cell_timeout. "
+                f"Got min={min_t}, default={default_t}, max={max_t}."
+            )
+
+        return value
+
     @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
