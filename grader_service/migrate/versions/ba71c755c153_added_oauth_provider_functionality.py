@@ -28,6 +28,12 @@ depends_on = None
 
 
 def upgrade():
+    connection = op.get_bind()
+    if connection.dialect.name == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        connection.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     op.create_table(
         "api_token",
         Column("username", Unicode(255)),
@@ -74,7 +80,6 @@ def upgrade():
     op.add_column("user", sa.Column("encrypted_auth_state", sa.types.LargeBinary, nullable=True))
     op.add_column("user", sa.Column("cookie_id", Unicode(255), nullable=True))
 
-    connection = op.get_bind()
     result = connection.execute(sa.text('select * from "user"')).mappings()
     for row in result:
         connection.execute(
@@ -92,15 +97,17 @@ def upgrade():
 
 
 def downgrade():
-    connection = op.get_bind()
+    dialect = op.get_bind().dialect.name
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     op.drop_table("api_token")
     op.drop_table("oauth_code")
     op.drop_table("oauth_client")
     op.drop_column("user", "encrypted_auth_state")
-    if connection.dialect.name != "sqlite":
-        op.drop_constraint("uq_user_cookie", "user")
-    else:
-        with op.batch_alter_table("user") as batch_op:
-            batch_op.drop_constraint("uq_user_cookie")
+    with op.batch_alter_table("user") as batch_op:
+        batch_op.drop_constraint("uq_user_cookie")
 
     op.drop_column("user", "cookie_id")

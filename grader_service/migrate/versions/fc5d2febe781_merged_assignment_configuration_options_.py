@@ -87,7 +87,7 @@ def downgrade():
             sa.Column(
                 "automatic_grading",
                 sa.Enum("unassisted", "auto", "full_auto", name="automatic_grading"),
-                server_default="auto",
+                server_default="unassisted",
                 nullable=False,
             ),
         )
@@ -125,11 +125,13 @@ def downgrade():
                 """
             ),
             {
-                "duedate": datetime.datetime.fromisoformat(settings["deadline"])
-                if settings.get("deadline")
-                else None,
+                "duedate": (
+                    datetime.datetime.fromisoformat(settings["deadline"])
+                    if settings.get("deadline")
+                    else None
+                ),
                 "type": settings.get("assignment_type", "user"),
-                "automatic_grading": settings.get("autograde_type", "auto"),
+                "automatic_grading": settings.get("autograde_type", "unassisted"),
                 "max_submissions": settings.get("max_submissions", None),
                 "allow_files": len(settings.get("allowed_files", [])) > 0,
                 "id": assignment["id"],

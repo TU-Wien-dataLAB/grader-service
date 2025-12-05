@@ -18,9 +18,15 @@ depends_on = None
 
 def upgrade():
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
+    dialect = op.get_bind().dialect.name
+
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
 
     # 0. Drop FKs referencing user.name
-    if op.get_bind().dialect.name == "postgresql":
+    if dialect == "postgresql":
         for table, fk in [
             ("takepart", "takepart_username_fkey"),
             ("submission", "submission_username_fkey"),
@@ -38,13 +44,12 @@ def upgrade():
         pass  # sqlite does not name PK constraints
 
     with op.batch_alter_table("user") as batch_op:
-        batch_op.add_column(sa.Column("id", sa.Integer(), nullable=True, autoincrement=True))
-
-    with op.batch_alter_table("user") as batch_op:
-        if op.get_bind().dialect.name == "postgresql":
-            op.execute("CREATE SEQUENCE user_id_seq")
-            op.execute("UPDATE \"user\" SET id = nextval('user_id_seq')")
-        batch_op.alter_column("id", nullable=False)
+        if dialect == "postgresql":
+            batch_op.add_column(sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True))
+        elif dialect == "sqlite":
+            # For sqlite, cannot add the PK constraint on column creation, because it causes
+            # an IntegrityError (NOT NULL) in the temporary table.
+            batch_op.add_column(sa.Column("id", sa.Integer(), nullable=False))
 
         batch_op.create_primary_key("pk_user_id", ["id"])
         batch_op.create_unique_constraint("unique_user_name", ["name"])
@@ -88,6 +93,12 @@ def upgrade():
 
 
 def downgrade():
+    dialect = op.get_bind().dialect.name
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
 
     def _add_username_col(table_name: str) -> None:
@@ -99,9 +110,6 @@ def downgrade():
             sa.select(user_table.c.name).where(user_table.c.id == table.c.user_id).scalar_subquery()
         )
         op.execute(table.update().values(username=user_subq))
-
-        with op.batch_alter_table(table_name) as batch_op:
-            batch_op.alter_column("username", nullable=False)
 
     # 5. oauth_code
     _add_username_col("oauth_code")
@@ -128,6 +136,8 @@ def downgrade():
         batch_op.drop_constraint("pk_takepart", type_="primary")
         batch_op.create_primary_key("pk_takepart", ["username", "lectid"])
         batch_op.drop_column("user_id")
+        # Note: Only "takepart" has the constraint `nullable=False` on the "username" column (!).
+        batch_op.alter_column("username", nullable=False)
 
     # 1. Switch PK back from id -> name
     with op.batch_alter_table("user") as batch_op:
@@ -137,12 +147,11 @@ def downgrade():
         batch_op.create_primary_key("user_pkey", ["name"])  # restore name as PK
 
     # 0. Create FKs referencing user.name
-    if op.get_bind().dialect.name == "postgresql":
-        for table, fk in [
-            ("takepart", "takepart_username_fkey"),
-            ("submission", "submission_username_fkey"),
-            ("api_token", "api_token_username_fkey"),
-            ("oauth_code", "oauth_code_username_fkey"),
-        ]:
-            with op.batch_alter_table(table) as batch_op:
-                batch_op.create_foreign_key(fk, "user", ["username"], ["name"])
+    for table, fk in [
+        ("takepart", "takepart_username_fkey"),
+        ("submission", "submission_username_fkey"),
+        ("api_token", "api_token_username_fkey"),
+        ("oauth_code", "oauth_code_username_fkey"),
+    ]:
+        with op.batch_alter_table(table) as batch_op:
+            batch_op.create_foreign_key(fk, "user", ["username"], ["name"])
