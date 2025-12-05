@@ -68,7 +68,7 @@ def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
     GraderService.init_roles(self=service_mock)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def db_test_config():
     cfg = config.Config(os.path.abspath(os.path.dirname(__file__) + "../../alembic_test.ini"))
     cfg.set_main_option(

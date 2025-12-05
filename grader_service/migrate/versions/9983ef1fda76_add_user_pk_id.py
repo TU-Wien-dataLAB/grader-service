@@ -20,6 +20,11 @@ def upgrade():
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
     dialect = op.get_bind().dialect.name
 
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     # 0. Drop FKs referencing user.name
     if dialect == "postgresql":
         for table, fk in [
@@ -89,6 +94,11 @@ def upgrade():
 
 def downgrade():
     dialect = op.get_bind().dialect.name
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     user_table = sa.table("user", sa.column("id"), sa.column("name"))
 
     def _add_username_col(table_name: str) -> None:
@@ -137,9 +147,6 @@ def downgrade():
         batch_op.create_primary_key("user_pkey", ["name"])  # restore name as PK
 
     # 0. Create FKs referencing user.name
-    if dialect == "sqlite":
-        op.execute("PRAGMA foreign_keys=ON")
-
     for table, fk in [
         ("takepart", "takepart_username_fkey"),
         ("submission", "submission_username_fkey"),
