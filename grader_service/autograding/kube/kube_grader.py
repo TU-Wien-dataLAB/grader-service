@@ -350,7 +350,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             "-p",
             "*.ipynb",
             "--log-level=INFO",
-            f"--ExecutePreprocessor.timeout={self.timeout_func()}",
+            f"--ExecutePreprocessor.timeout={self.cell_timeout}",
         ]
         volumes = [self.volume] + self.extra_volumes
         volume_mounts = [

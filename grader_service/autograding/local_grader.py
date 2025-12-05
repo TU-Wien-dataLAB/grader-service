@@ -17,7 +17,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Callable, Int, TraitError, Type, Unicode, validate
+from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
 
 from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.utils import collect_logs, executable_validator, rmtree
@@ -41,9 +41,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
     git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
-    timeout_func = Callable(
+    cell_timeout = Int(
         allow_none=False,
-        help="Function that returns the cell timeout in seconds, either user-defined, from configuration or default values.",
+        help="Returns the cell timeout in seconds, either user-defined, from configuration or default values.",
     ).tag(config=True)
 
     default_cell_timeout = Int(300, help="Default cell timeout in seconds, defaults to 300").tag(
@@ -90,7 +90,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         # Git manager performs the git operations when creating a new repo for the grading results
         self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
 
-        self.timeout_func = self._determine_cell_timeout
+        self.cell_timeout = self._determine_cell_timeout
 
     def start(self):
         """
@@ -225,7 +225,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     def _get_autograde_config(self) -> Config:
         """Returns the autograde config, with the timeout set for ExecutePreprocessor."""
         c = Config()
-        c.ExecutePreprocessor.timeout = self.timeout_func()
+        c.ExecutePreprocessor.timeout = self.cell_timeout
         return c
 
     def _get_whitelist_patterns(self) -> set[str]:
@@ -386,7 +386,7 @@ class LocalAutogradeProcessExecutor(LocalAutogradeExecutor):
             self.output_path,
             "-p",
             "*.ipynb",
-            f"--ExecutePreprocessor.timeout={self.timeout_func()}",
+            f"--ExecutePreprocessor.timeout={self.cell_timeout}",
         ]
         self.log.info(f"Running {command}")
         process = subprocess.run(
