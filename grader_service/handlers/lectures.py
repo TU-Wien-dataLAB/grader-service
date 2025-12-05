@@ -31,17 +31,26 @@ class LectureBaseHandler(GraderBaseHandler):
         Returns all lectures the user can access.
         """
         self.validate_parameters("complete")
-        complete = self.get_argument("complete", "false") == "true"
-
-        state = LectureState.complete if complete else LectureState.active
-        lectures = sorted(
-            [
-                role.lecture
-                for role in self.user.roles
-                if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-            ],
-            key=lambda lecture: lecture.id,
-        )
+        complete = self.get_argument("complete", None)
+        if complete is None:  # return both complete and active lectures
+            lectures = sorted(
+                [
+                    role.lecture
+                    for role in self.user.roles
+                    if role.lecture.deleted == DeleteState.active
+                ],
+                key=lambda lecture: lecture.id,
+            )
+        else:  # return either only complete or only active lectures
+            state = LectureState.complete if (complete == "true") else LectureState.active
+            lectures = sorted(
+                [
+                    role.lecture
+                    for role in self.user.roles
+                    if role.lecture.state == state and role.lecture.deleted == DeleteState.active
+                ],
+                key=lambda lecture: lecture.id,
+            )
 
         self.write_json(lectures)
 
