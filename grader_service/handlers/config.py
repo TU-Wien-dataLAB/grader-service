@@ -1,6 +1,5 @@
 import traitlets.config
 
-from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Scope
@@ -8,9 +7,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 
 def _get_effective_executor_value(
-    app_cfg: traitlets.config.Config,
-    executor_class: type[LocalAutogradeExecutor] | type[KubeAutogradeExecutor],
-    trait_name,
+    app_cfg: traitlets.config.Config, executor_class: type[LocalAutogradeExecutor], trait_name: str
 ):
     """
     Return the configured value for trait_name if present in app_cfg,
