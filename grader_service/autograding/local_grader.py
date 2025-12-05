@@ -17,21 +17,16 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Callable, TraitError, Type, Unicode, validate
+from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
 
 from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.utils import collect_logs, executable_validator, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
-from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
-
-
-def default_timeout_func(lecture: Lecture) -> int:
-    return 360
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
@@ -46,10 +41,19 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
     git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
-    timeout_func = Callable(
-        default_timeout_func,
+    cell_timeout = Int(
         allow_none=False,
-        help="Function that takes a lecture as an argument and returns the cell timeout in seconds.",
+        help="Returns the cell timeout in seconds, either user-defined, from configuration or default values.",
+    ).tag(config=True)
+
+    default_cell_timeout = Int(300, help="Default cell timeout in seconds, defaults to 300").tag(
+        config=True
+    )
+
+    min_cell_timeout = Int(10, help="Min cell timeout in seconds, defaults to 10.").tag(config=True)
+
+    max_cell_timeout = Int(
+        86400, help="Max cell timeout in seconds, defaults to 86400 (24 hours)"
     ).tag(config=True)
 
     def __init__(
@@ -85,6 +89,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.grading_logs: Optional[str] = None
         # Git manager performs the git operations when creating a new repo for the grading results
         self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
+
+        self.cell_timeout = self._determine_cell_timeout()
 
     def start(self):
         """
@@ -219,7 +225,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     def _get_autograde_config(self) -> Config:
         """Returns the autograde config, with the timeout set for ExecutePreprocessor."""
         c = Config()
-        c.ExecutePreprocessor.timeout = self.timeout_func(self.assignment.lecture)
+        c.ExecutePreprocessor.timeout = self.cell_timeout
         return c
 
     def _get_whitelist_patterns(self) -> set[str]:
@@ -320,6 +326,41 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         if self.close_session:
             self.session.close()
 
+    def _determine_cell_timeout(self):
+        cell_timeout = self.default_cell_timeout
+        # check if the cell timeout was set by user
+        if self.assignment.settings.cell_timeout is not None:
+            custom_cell_timeout = self.assignment.settings.cell_timeout
+            self.log.info(
+                f"Found custom cell timeout in assignment settings: {custom_cell_timeout} seconds."
+            )
+            cell_timeout = min(
+                self.max_cell_timeout, max(custom_cell_timeout, self.min_cell_timeout)
+            )
+            self.log.info(f"Setting custom cell timeout to {cell_timeout}.")
+
+        return cell_timeout
+
+    @validate("min_cell_timeout", "default_cell_timeout", "max_cell_timeout")
+    def _validate_cell_timeouts(self, proposal):
+        trait_name = proposal["trait"].name
+        value = proposal["value"]
+
+        # Get current or proposed values
+        min_t = value if trait_name == "min_cell_timeout" else self.min_cell_timeout
+        default_t = value if trait_name == "default_cell_timeout" else self.default_cell_timeout
+        max_t = value if trait_name == "max_cell_timeout" else self.max_cell_timeout
+
+        # Validate the constraint
+        if not (0 < min_t < default_t < max_t):
+            raise TraitError(
+                f"Invalid {trait_name} value ({value}). "
+                f"Timeout values must satisfy: 0 < min_cell_timeout < default_cell_timeout < max_cell_timeout. "
+                f"Got min={min_t}, default={default_t}, max={max_t}."
+            )
+
+        return value
+
     @validate("relative_input_path", "relative_output_path")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
@@ -358,7 +399,7 @@ class LocalAutogradeProcessExecutor(LocalAutogradeExecutor):
             self.output_path,
             "-p",
             "*.ipynb",
-            f"--ExecutePreprocessor.timeout={self.timeout_func(self.assignment.lecture)}",
+            f"--ExecutePreprocessor.timeout={self.cell_timeout}",
         ]
         self.log.info(f"Running {command}")
         process = subprocess.run(

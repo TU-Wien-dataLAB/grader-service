@@ -1,0 +1,16 @@
+meta {
+  name: get-config
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{grader-base-url}}/api/config
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

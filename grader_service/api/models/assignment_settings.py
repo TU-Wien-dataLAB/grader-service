@@ -14,7 +14,7 @@ class AssignmentSettings(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto', group=None):  # noqa: E501
+    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto', group=None, cell_timeout=None):  # noqa: E501
         """AssignmentSettings - a model defined in OpenAPI
 
         :param deadline: The deadline of this AssignmentSettings.  # noqa: E501
@@ -29,6 +29,8 @@ class AssignmentSettings(Model):
         :type autograde_type: str
         :param group: The group of this AssignmentSettings.  # noqa: E501
         :type group: str
+        :param cell_timeout: The cell_timeout of this AssignmentSettings.  # noqa: E501
+        :type cell_timeout: int
         """
         self.openapi_types = {
             'deadline': datetime,
@@ -36,7 +38,8 @@ class AssignmentSettings(Model):
             'allowed_files': List[str],
             'late_submission': List[SubmissionPeriod],
             'autograde_type': str,
-            'group': str
+            'group': str,
+            'cell_timeout': int
         }
 
         self.attribute_map = {
@@ -45,7 +48,8 @@ class AssignmentSettings(Model):
             'allowed_files': 'allowed_files',
             'late_submission': 'late_submission',
             'autograde_type': 'autograde_type',
-            'group': 'group'
+            'group': 'group',
+            'cell_timeout': 'cell_timeout'
         }
 
         self._deadline = deadline
@@ -54,6 +58,7 @@ class AssignmentSettings(Model):
         self._late_submission = late_submission
         self._autograde_type = autograde_type
         self._group = group
+        self._cell_timeout = cell_timeout
 
     @classmethod
     def from_dict(cls, dikt) -> 'AssignmentSettings':
@@ -197,3 +202,24 @@ class AssignmentSettings(Model):
         """
 
         self._group = group
+
+    @property
+    def cell_timeout(self) -> int:
+        """Gets the cell_timeout of this AssignmentSettings.
+
+
+        :return: The cell_timeout of this AssignmentSettings.
+        :rtype: int
+        """
+        return self._cell_timeout
+
+    @cell_timeout.setter
+    def cell_timeout(self, cell_timeout: int):
+        """Sets the cell_timeout of this AssignmentSettings.
+
+
+        :param cell_timeout: The cell_timeout of this AssignmentSettings.
+        :type cell_timeout: int
+        """
+
+        self._cell_timeout = cell_timeout
