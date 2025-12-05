@@ -90,7 +90,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         # Git manager performs the git operations when creating a new repo for the grading results
         self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
 
-        self.cell_timeout = self._determine_cell_timeout
+        self.cell_timeout = self._determine_cell_timeout()
 
     def start(self):
         """
