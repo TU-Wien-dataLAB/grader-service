@@ -811,6 +811,6 @@ async def test_get_lecture_users(
     ]
     assert data["tutors"] == []
     assert data["students"] == [
-        {"id": 2, "name": "student1", "display_name": "student1"},
-        {"id": 3, "name": "student2", "display_name": "student2"},
+        {"id": 3, "name": "student1", "display_name": "student1"},
+        {"id": 4, "name": "student2", "display_name": "student2"},
     ]

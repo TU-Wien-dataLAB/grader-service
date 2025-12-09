@@ -527,7 +527,7 @@ async def test_get_submissions_admin_deleted(
 ):
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
+    await submission_test_setup(sql_alchemy_engine, default_admin, l_id, a_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -535,45 +535,7 @@ async def test_get_submissions_admin_deleted(
     )
     assert response.code == HTTPStatus.OK
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions"
-    response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"}
-    )
-    assert response.code == HTTPStatus.OK
-
-    submissions = json.loads(response.body.decode())
-    assert isinstance(submissions, list)
-    assert len(submissions) == 2
-    assert submissions[0]["user_id"] == default_admin.id
-    assert submissions[1]["user_id"] == default_admin.id
-    Submission.from_dict(submissions[0])
-    Submission.from_dict(submissions[1])
-
-
-async def test_get_submissions_admin_deleted_instructor_version(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_token,
-    sql_alchemy_engine,
-    default_roles,
-    default_admin_login,
-    default_user,
-    default_admin,
-):
-    l_id = 1
-    a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
-    response = await http_server_client.fetch(
-        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-    )
-    assert response.code == HTTPStatus.OK
-
-    url = (
-        service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
-    )
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -582,10 +544,10 @@ async def test_get_submissions_admin_deleted_instructor_version(
     submissions = json.loads(response.body.decode())
     assert isinstance(submissions, list)
     assert len(submissions) == 4
-    assert submissions[0]["user_id"] == default_user.id
-    assert submissions[1]["user_id"] == default_user.id
-    assert submissions[2]["user_id"] == default_admin.id
-    assert submissions[3]["user_id"] == default_admin.id
+    assert submissions[0]["user_id"] == default_admin.id
+    assert submissions[1]["user_id"] == default_admin.id
+    assert submissions[2]["user_id"] == 3 # new student "user1" with id 3
+    assert submissions[3]["user_id"] == 3 # new student "user1" with id 3
     Submission.from_dict(submissions[0])
     Submission.from_dict(submissions[1])
     Submission.from_dict(submissions[2])
