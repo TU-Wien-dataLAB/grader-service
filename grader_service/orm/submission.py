@@ -65,12 +65,18 @@ class Submission(Base, Serializable):
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
     logs = relationship(
-        "SubmissionLogs", back_populates="submission", uselist=False,
-        cascade="all, delete-orphan", passive_deletes=True
+        "SubmissionLogs",
+        back_populates="submission",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     properties = relationship(
-        "SubmissionProperties", back_populates="submission", uselist=False,
-        cascade="all, delete-orphan", passive_deletes=True
+        "SubmissionProperties",
+        back_populates="submission",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     @hybrid_property

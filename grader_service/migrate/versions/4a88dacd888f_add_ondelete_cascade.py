@@ -5,14 +5,26 @@ Revises: 9983ef1fda76
 Create Date: 2025-11-04 11:55:10.513853
 
 """
+
 from typing import Dict, List
 
 from alembic import op
-from sqlalchemy import text, inspect, Inspector, Table, MetaData, Column, String, select, and_, Connection
+from sqlalchemy import (
+    Column,
+    Connection,
+    Inspector,
+    MetaData,
+    String,
+    Table,
+    and_,
+    inspect,
+    select,
+    text,
+)
 
 # revision identifiers, used by Alembic.
-revision = '4a88dacd888f'
-down_revision = '9983ef1fda76'
+revision = "4a88dacd888f"
+down_revision = "9983ef1fda76"
 branch_labels = None
 depends_on = None
 
@@ -39,7 +51,7 @@ def _drop_all_foreign_keys(batch_op, connection, table_name: str):
     inspector = Inspector.from_engine(connection)
     fks = inspector.get_foreign_keys(table_name)
     for fk in fks:
-        if fk['name'] is not None:
+        if fk["name"] is not None:
             batch_op.drop_constraint(fk["name"], type_="foreignkey")
 
 
@@ -56,7 +68,8 @@ def _store_old_fk(conn, table_name, local_cols, referred_table, old_name):
     """Store information about an existing foreign key in a helper table."""
     metadata = MetaData()
     fk_table = Table(
-        "alembic_fk_metadata", metadata,
+        "alembic_fk_metadata",
+        metadata,
         Column("table_name", String, primary_key=True),
         Column("column_name", String, primary_key=True),
         Column("referred_table", String),
@@ -88,7 +101,9 @@ def _get_stored_old_fk(conn, table_name, local_cols, referred_table):
     return result[0] if result else None
 
 
-def _upgrade_recreate_foreign_keys(connection: Connection, table_name: str, fk_definitions: List[Dict]) -> None:
+def _upgrade_recreate_foreign_keys(
+    connection: Connection, table_name: str, fk_definitions: List[Dict]
+) -> None:
     """
     Recreate foreign key constraints on a table during a migration.
 
@@ -122,11 +137,13 @@ def _upgrade_recreate_foreign_keys(connection: Connection, table_name: str, fk_d
                 referent_table=fk["referred_table"],
                 local_cols=fk["local_cols"],
                 remote_cols=fk["remote_cols"],
-                ondelete="CASCADE"
+                ondelete="CASCADE",
             )
 
 
-def _downgrade_recreate_foreign_keys(connection: Connection, table_name: str, fk_definitions: List[Dict]) -> None:
+def _downgrade_recreate_foreign_keys(
+    connection: Connection, table_name: str, fk_definitions: List[Dict]
+) -> None:
     """
     Restore previous foreign key constraints during a downgrade migration.
 
@@ -148,7 +165,9 @@ def _downgrade_recreate_foreign_keys(connection: Connection, table_name: str, fk
     """
     with op.batch_alter_table(table_name) as batch_op:
         for fk in fk_definitions:
-            old_fk_name = _get_stored_old_fk(connection, table_name, fk["local_cols"], fk["referred_table"])
+            old_fk_name = _get_stored_old_fk(
+                connection, table_name, fk["local_cols"], fk["referred_table"]
+            )
             if connection.dialect.name != "sqlite":
                 batch_op.drop_constraint(fk["new_constraint_name"], type_="foreignkey")
             if old_fk_name is None:
@@ -171,47 +190,80 @@ def upgrade():
         connection.execute(text("PRAGMA foreign_keys=OFF;"))
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="assignment",
+        connection=connection,
+        table_name="assignment",
         fk_definitions=[
-            {"new_constraint_name": "fk_assignment_lectid", "referred_table": "lecture",
-             "local_cols": ["lectid"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_assignment_lectid",
+                "referred_table": "lecture",
+                "local_cols": ["lectid"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission",
+        connection=connection,
+        table_name="submission",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_assignid", "referred_table": "assignment",
-             "local_cols": ["assignid"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_submission_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_assignid",
+                "referred_table": "assignment",
+                "local_cols": ["assignid"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_submission_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+        ],
     )
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission_logs",
+        connection=connection,
+        table_name="submission_logs",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_logs_sub_id", "referred_table": "submission",
-             "local_cols": ["sub_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_logs_sub_id",
+                "referred_table": "submission",
+                "local_cols": ["sub_id"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission_properties",
+        connection=connection,
+        table_name="submission_properties",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_properties_sub_id", "referred_table": "submission",
-             "local_cols": ["sub_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_properties_sub_id",
+                "referred_table": "submission",
+                "local_cols": ["sub_id"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="takepart",
+        connection=connection,
+        table_name="takepart",
         fk_definitions=[
-            {"new_constraint_name": "fk_takepart_lectid", "referred_table": "lecture",
-             "local_cols": ["lectid"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_takepart_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_takepart_lectid",
+                "referred_table": "lecture",
+                "local_cols": ["lectid"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_takepart_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+        ],
     )
 
     # invalid “api_token” entries are deleted
@@ -223,23 +275,41 @@ def upgrade():
              """)
     )
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="api_token",
+        connection=connection,
+        table_name="api_token",
         fk_definitions=[
-            {"new_constraint_name": "fk_api_token_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_api_token_client_id", "referred_table": "oauth_client",
-             "local_cols": ["client_id"], "remote_cols": ["identifier"]}
-        ]
+            {
+                "new_constraint_name": "fk_api_token_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_api_token_client_id",
+                "referred_table": "oauth_client",
+                "local_cols": ["client_id"],
+                "remote_cols": ["identifier"],
+            },
+        ],
     )
 
     _upgrade_recreate_foreign_keys(
-        connection=connection, table_name="oauth_code",
+        connection=connection,
+        table_name="oauth_code",
         fk_definitions=[
-            {"new_constraint_name": "fk_oauth_code_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_oauth_code_client_id", "referred_table": "oauth_client",
-             "local_cols": ["client_id"], "remote_cols": ["identifier"]}
-        ]
+            {
+                "new_constraint_name": "fk_oauth_code_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_oauth_code_client_id",
+                "referred_table": "oauth_client",
+                "local_cols": ["client_id"],
+                "remote_cols": ["identifier"],
+            },
+        ],
     )
 
     if dialect == "sqlite":
@@ -254,67 +324,118 @@ def downgrade():
         connection.execute(text("PRAGMA foreign_keys=OFF;"))
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="assignment",
+        connection=connection,
+        table_name="assignment",
         fk_definitions=[
-            {"new_constraint_name": "fk_assignment_lectid", "referred_table": "lecture",
-             "local_cols": ["lectid"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_assignment_lectid",
+                "referred_table": "lecture",
+                "local_cols": ["lectid"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission",
+        connection=connection,
+        table_name="submission",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_assignid", "referred_table": "assignment",
-             "local_cols": ["assignid"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_submission_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_assignid",
+                "referred_table": "assignment",
+                "local_cols": ["assignid"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_submission_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission_logs",
+        connection=connection,
+        table_name="submission_logs",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_logs_sub_id", "referred_table": "submission",
-             "local_cols": ["sub_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_logs_sub_id",
+                "referred_table": "submission",
+                "local_cols": ["sub_id"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="submission_properties",
+        connection=connection,
+        table_name="submission_properties",
         fk_definitions=[
-            {"new_constraint_name": "fk_submission_properties_sub_id", "referred_table": "submission",
-             "local_cols": ["sub_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_submission_properties_sub_id",
+                "referred_table": "submission",
+                "local_cols": ["sub_id"],
+                "remote_cols": ["id"],
+            }
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="takepart",
+        connection=connection,
+        table_name="takepart",
         fk_definitions=[
-            {"new_constraint_name": "fk_takepart_lectid", "referred_table": "lecture",
-             "local_cols": ["lectid"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_takepart_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]}
-        ]
+            {
+                "new_constraint_name": "fk_takepart_lectid",
+                "referred_table": "lecture",
+                "local_cols": ["lectid"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_takepart_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="api_token",
+        connection=connection,
+        table_name="api_token",
         fk_definitions=[
-            {"new_constraint_name": "fk_api_token_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_api_token_client_id", "referred_table": "oauth_client",
-             "local_cols": ["client_id"], "remote_cols": ["identifier"]}
-        ]
+            {
+                "new_constraint_name": "fk_api_token_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_api_token_client_id",
+                "referred_table": "oauth_client",
+                "local_cols": ["client_id"],
+                "remote_cols": ["identifier"],
+            },
+        ],
     )
 
     _downgrade_recreate_foreign_keys(
-        connection=connection, table_name="oauth_code",
+        connection=connection,
+        table_name="oauth_code",
         fk_definitions=[
-            {"new_constraint_name": "fk_oauth_code_user_id", "referred_table": "user",
-             "local_cols": ["user_id"], "remote_cols": ["id"]},
-            {"new_constraint_name": "fk_oauth_code_client_id", "referred_table": "oauth_client",
-             "local_cols": ["client_id"], "remote_cols": ["identifier"]}
-        ]
+            {
+                "new_constraint_name": "fk_oauth_code_user_id",
+                "referred_table": "user",
+                "local_cols": ["user_id"],
+                "remote_cols": ["id"],
+            },
+            {
+                "new_constraint_name": "fk_oauth_code_client_id",
+                "referred_table": "oauth_client",
+                "local_cols": ["client_id"],
+                "remote_cols": ["identifier"],
+            },
+        ],
     )
 
     op.drop_table("alembic_fk_metadata")
