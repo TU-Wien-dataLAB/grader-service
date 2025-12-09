@@ -25,18 +25,10 @@ class User(Base, Serializable):
     name = Column(String(255), nullable=False, unique=True)
     display_name = Column(String(255), nullable=False)
 
-    roles = relationship(
-        "Role", back_populates="user", cascade="all, delete-orphan", passive_deletes=True
-    )
-    submissions = relationship(
-        "Submission", back_populates="user", cascade="all, delete-orphan", passive_deletes=True
-    )
-    api_tokens = relationship(
-        "APIToken", back_populates="user", cascade="all, delete-orphan", passive_deletes=True
-    )
-    oauth_codes = relationship(
-        "OAuthCode", back_populates="user", cascade="all, delete-orphan", passive_deletes=True
-    )
+    roles = relationship("Role", back_populates="user")
+    submissions = relationship("Submission", back_populates="user")
+    api_tokens = relationship("APIToken", back_populates="user")
+    oauth_codes = relationship("OAuthCode", back_populates="user")
 
     encrypted_auth_state = Column(LargeBinary)
     cookie_id = Column(Unicode(255), default=new_token, nullable=False, unique=True)

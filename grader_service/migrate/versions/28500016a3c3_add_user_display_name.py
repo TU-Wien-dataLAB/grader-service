@@ -8,7 +8,6 @@ Create Date: 2025-04-08 12:10:09.318559
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision = "28500016a3c3"
@@ -18,10 +17,6 @@ depends_on = None
 
 
 def upgrade():
-    conn = op.get_bind()
-    if conn.dialect.name == "sqlite":
-        conn.execute(text("PRAGMA foreign_keys=OFF;"))
-
     # Step 1: Add column as nullable
     op.add_column("user", sa.Column("display_name", sa.String(), nullable=True))
 
@@ -35,9 +30,6 @@ def upgrade():
     # SQLite needs batch mode; PostgreSQL can handle direct alter
     with op.batch_alter_table("user") as batch_op:
         batch_op.alter_column("display_name", nullable=False)
-
-    if conn.dialect.name == "sqlite":
-        conn.execute(text("PRAGMA foreign_keys=OFF;"))
 
 
 def downgrade():

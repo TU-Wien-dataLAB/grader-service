@@ -16,7 +16,6 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     Text,
     Unicode,
-    text,
 )
 
 from grader_service.utils import new_token
@@ -29,10 +28,6 @@ depends_on = None
 
 
 def upgrade():
-    connection = op.get_bind()
-    if connection.dialect.name == "sqlite":
-        connection.execute(text("PRAGMA foreign_keys=OFF;"))
-
     op.create_table(
         "api_token",
         Column("username", Unicode(255)),
@@ -79,6 +74,7 @@ def upgrade():
     op.add_column("user", sa.Column("encrypted_auth_state", sa.types.LargeBinary, nullable=True))
     op.add_column("user", sa.Column("cookie_id", Unicode(255), nullable=True))
 
+    connection = op.get_bind()
     result = connection.execute(sa.text('select * from "user"')).mappings()
     for row in result:
         connection.execute(
@@ -94,15 +90,9 @@ def upgrade():
             batch_op.alter_column("cookie_id", nullable=False)
             batch_op.create_unique_constraint("uq_user_cookie", ["cookie_id"])
 
-    if connection.dialect.name == "sqlite":
-        connection.execute(text("PRAGMA foreign_keys=OFF;"))
-
 
 def downgrade():
     connection = op.get_bind()
-    if connection.dialect.name == "sqlite":
-        connection.execute(text("PRAGMA foreign_keys=OFF;"))
-
     op.drop_table("api_token")
     op.drop_table("oauth_code")
     op.drop_table("oauth_client")
@@ -114,6 +104,3 @@ def downgrade():
             batch_op.drop_constraint("uq_user_cookie")
 
     op.drop_column("user", "cookie_id")
-
-    if connection.dialect.name == "sqlite":
-        connection.execute(text("PRAGMA foreign_keys=OFF;"))
