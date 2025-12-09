@@ -126,9 +126,10 @@ async def test_get_submissions(
     default_user_login,
     default_user,
 ):
+    l_id = 1
     a_id = 1
-    url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/"
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -151,9 +152,10 @@ async def test_get_submissions_format_csv(
     default_roles,
     default_user_login,
 ):
+    l_id = 1
     a_id = 1
-    url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/?format=csv"
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?format=csv"
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -491,7 +493,7 @@ async def test_get_submissions_deleted(
 ):
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -525,7 +527,7 @@ async def test_get_submissions_admin_deleted(
 ):
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -561,7 +563,7 @@ async def test_get_submissions_admin_deleted_instructor_version(
 ):
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -1940,9 +1942,10 @@ async def test_get_submissions_username_format_csv(
     default_roles,
     default_user_login,
 ):
+    l_id = 1
     a_id = 1
     url = service_base_url + f"users/{default_user.name}/submissions?format=csv"
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
