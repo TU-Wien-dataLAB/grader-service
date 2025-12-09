@@ -176,15 +176,37 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: a dictionary of user, tutor and instructor names lists
         """
-        roles = (
+        students = (
             self.session.query(Role)
             .options(joinedload(Role.user))
             .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.student)
+        )
+        tutors = (
+            self.session.query(Role)
+            .options(joinedload(Role.user))
+            .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.tutor)
+        )
+        instructors = (
+            self.session.query(Role)
+            .options(joinedload(Role.user))
+            .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.instructor)
         )
 
-        students = [r.user.id for r in roles if r.role == Scope.student]
-        tutors = [r.user.id for r in roles if r.role == Scope.tutor]
-        instructors = [r.user.id for r in roles if r.role == Scope.instructor]
+        students = [
+            {"id": s.user.id, "name": s.user.name, "display_name": s.user.display_name}
+            for s in students
+        ]
+        tutors = [
+            {"id": t.user.id, "name": t.user.name, "display_name": t.user.display_name}
+            for t in tutors
+        ]
+        instructors = [
+            {"id": i.user.id, "name": i.user.name, "display_name": i.user.display_name}
+            for i in instructors
+        ]
 
         counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)
