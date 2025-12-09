@@ -1,6 +1,5 @@
-from datetime import datetime
 import pprint
-
+from datetime import datetime
 import typing
 
 from grader_service.api import util

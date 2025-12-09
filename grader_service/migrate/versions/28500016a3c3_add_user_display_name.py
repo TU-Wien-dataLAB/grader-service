@@ -17,6 +17,12 @@ depends_on = None
 
 
 def upgrade():
+    dialect = op.get_bind().dialect.name
+    if dialect == "sqlite":
+        # sqlite has to recreate the tables on `batch_alter_table`, but dropping a table
+        # would cause integrity errors, so we disable the foreign key constraint temporarily
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+
     # Step 1: Add column as nullable
     op.add_column("user", sa.Column("display_name", sa.String(), nullable=True))
 

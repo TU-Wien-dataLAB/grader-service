@@ -10,15 +10,35 @@ from unittest.mock import MagicMock, patch
 import pytest
 from alembic import config
 from alembic.command import upgrade
+from sqlalchemy import Engine, event
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.main import get_session_maker
 from grader_service.orm import User
+from grader_service.orm.base import set_sqlite_pragma
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
-from grader_service.tests.handlers.db_util import insert_assignments, insert_lectures
+from grader_service.tests.handlers.db_util import (
+    insert_assignments,
+    insert_default_user,
+    insert_lectures,
+)
+
+
+@pytest.fixture(scope="function")
+def enable_foreign_keys_for_sqlite():
+    """
+    Make sure the event listener is attached to the engine, and foreign keys
+    are enabled for SQLite connections during the test.
+    Remove the listener after the test runs to avoid interference with other tests.
+    """
+    assert event.contains(Engine, "connect", set_sqlite_pragma)
+    yield
+
+    # Remove the event listener to avoid interference with other tests
+    event.remove(Engine, "connect", set_sqlite_pragma)
 
 
 @pytest.fixture(scope="function")
@@ -61,7 +81,7 @@ def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
     GraderService.init_roles(self=service_mock)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def db_test_config():
     cfg = config.Config(os.path.abspath(os.path.dirname(__file__) + "../../alembic_test.ini"))
     cfg.set_main_option(
@@ -81,6 +101,7 @@ def sql_alchemy_sessionmaker(db_test_config):
         upgrade(db_test_config, "head")
     insert_lectures(engine)
     insert_assignments(engine)
+    insert_default_user(engine)
     yield session_maker
 
 

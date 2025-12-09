@@ -15,7 +15,6 @@ import subprocess
 import sys
 
 import tornado
-import uvloop as uvloop
 from jupyterhub.log import log_request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -111,13 +110,13 @@ class GraderService(config.Application):
         allow_none=False,
     ).tag(config=True)
 
-    max_body_size = Int(104857600, help="Sets the max buffer size in bytes, default to 100mb").tag(
+    max_body_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
         config=True
     )
 
-    max_buffer_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
-        config=True
-    )
+    max_buffer_size = Int(
+        104857600, help="Sets the max buffer size in bytes, default to 100mb"
+    ).tag(config=True)
 
     service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
 
@@ -399,7 +398,8 @@ class GraderService(config.Application):
                         user = db.query(User).filter(User.name == username).one_or_none()
                         if user is None:
                             self.log.info(
-                                f"Adding new user with username {username} and display name {display_name}"
+                                f"Adding new user with username {username} "
+                                f"and display name {display_name}"
                             )
                             user = User()
                             user.name = username

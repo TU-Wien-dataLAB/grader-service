@@ -33,20 +33,29 @@ class LectureBaseHandler(GraderBaseHandler):
         - For admins: all lectures, regardless of state or deletion.
         """
         self.validate_parameters("complete")
-        complete = self.get_argument("complete", "false") == "true"
-        state = LectureState.complete if complete else LectureState.active
-
+        complete = self.get_argument("complete", None)
         if self.user.is_admin:
             lectures = self.session.query(Lecture).order_by(Lecture.id.asc()).all()
         else:
-            lectures = sorted(
-                [
-                    role.lecture
-                    for role in self.user.roles
-                    if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-                ],
-                key=lambda lecture: lecture.id,
-            )
+            if complete is None:  # return both complete and active lectures
+                lectures = sorted(
+                    [
+                        role.lecture
+                        for role in self.user.roles
+                        if role.lecture.deleted == DeleteState.active
+                    ],
+                    key=lambda lecture: lecture.id,
+                )
+            else:  # return either only complete or only active lectures
+                state = LectureState.complete if (complete == "true") else LectureState.active
+                lectures = sorted(
+                    [
+                        role.lecture
+                        for role in self.user.roles
+                        if role.lecture.state == state and role.lecture.deleted == DeleteState.active
+                    ],
+                    key=lambda lecture: lecture.id,
+                )
 
         self.write_json(lectures)
 

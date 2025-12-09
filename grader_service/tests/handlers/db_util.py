@@ -178,6 +178,12 @@ def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
     return user
 
 
+def insert_default_user(ex: Engine) -> None:
+    session: Session = sessionmaker(ex)()
+    session.add(User(name="ubuntu", display_name="ubuntu"))
+    session.commit()
+
+
 def create_user_submission_with_repo(
     engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
 ) -> Submission:
@@ -210,10 +216,7 @@ def create_user_submission_with_repo(
     # 3. Create a submission object in the database
     commit_hash = (
         subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=tmp_repo_path,
-            check=True,
-            capture_output=True,
+            ["git", "rev-parse", "HEAD"], cwd=tmp_repo_path, check=True, capture_output=True
         )
         .stdout.strip()
         .decode()

@@ -42,12 +42,13 @@ from .db_util import (
 )
 
 
-async def submission_test_setup(engine, default_user, a_id: int):
+async def submission_test_setup(engine, default_user, l_id: int, a_id: int):
     insert_submission(engine, a_id, default_user.name, default_user.id)
     insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
     # should make no difference
-    insert_submission(engine, a_id, "debian", 2)
-    insert_submission(engine, a_id, "debian", 2, with_properties=False)
+    student = insert_student(engine, "user1", l_id)
+    insert_submission(engine, a_id, student.name, student.id)
+    insert_submission(engine, a_id, student.name, student.id, with_properties=False)
 
 
 async def test_get_submissions_lecture_unauthorized(
@@ -1065,7 +1066,8 @@ async def test_delete_submission_student_from_another_student(
     s_id = 1
 
     # The submission does NOT belong to the default user:
-    insert_submission(sql_alchemy_engine, a_id, "debian", 2)
+    student = insert_student(sql_alchemy_engine, "other_student", l_id)
+    insert_submission(sql_alchemy_engine, a_id, "other_student", student.id)
     check_submission(sql_alchemy_engine, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"

@@ -1,3 +1,4 @@
+import os
 import shutil
 from unittest.mock import patch
 
@@ -7,14 +8,14 @@ from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.converters import Autograde
 from grader_service.tests.convert.converters import (
     _create_input_output_dirs,
-    _generate_test_assignment,
+    _generate_test_submission,
 )
 
 
 def test_autograde(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(input_dir, output_dir)
+    _generate_test_submission(input_dir, output_dir)
 
     assert (output_dir / "simple.ipynb").exists()
     assert (output_dir / "gradebook.json").exists()
@@ -43,7 +44,7 @@ def test_autograde(tmp_path):
 def test_autograde_copy_with_all_files(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(
+    _generate_test_submission(
         input_dir, output_dir, assignment_settings_kwargs={"allowed_files": ["*"]}
     )
 
@@ -79,7 +80,7 @@ def test_autograde_copy_with_dirs(tmp_path):
     test_file = dir_3 / "test.txt"
     test_file.touch()
 
-    _generate_test_assignment(
+    _generate_test_submission(
         input_dir, output_dir, assignment_settings_kwargs={"allowed_files": ["*"]}
     )
 
@@ -113,21 +114,16 @@ def test_autograde_with_student_notebooks_copied_over(tmp_path):
     by the student should also be copied over."""
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
-    _generate_test_assignment(input_dir, output_dir)
+    _generate_test_submission(input_dir, output_dir)
 
     student_nb = output_dir / "student.ipynb"
-    student_nb.touch()
+    shutil.copyfile(input_dir / "simple.ipynb", student_nb)
 
     output_dir2 = tmp_path / "output_dir2"
     output_dir2.mkdir()
     shutil.copyfile(output_dir / "gradebook.json", output_dir2 / "gradebook.json")
 
-    with (
-        patch.object(NotebookClient, "kernel_name", "python3"),
-        patch(
-            "grader_service.convert.converters.autograde.Autograde.convert_single_notebook"
-        ) as convert_mock,
-    ):
+    with patch.object(NotebookClient, "kernel_name", "python3"):
         Autograde(
             input_dir=str(output_dir),
             output_dir=str(output_dir2),
@@ -140,4 +136,31 @@ def test_autograde_with_student_notebooks_copied_over(tmp_path):
     assert (output_dir2 / "gradebook.json").exists()
     assert (output_dir2 / "student.ipynb").exists()
 
-    assert convert_mock.call_count == 2  # `convert_single_notebook` was called for both notebooks
+
+def test_autograde_with_missing_submission_file(tmp_path):
+    """Test that Autograde handles files missing in the student submission gracefully"""
+    input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
+    _generate_test_submission(input_dir, output_dir)
+
+    # Student didn't submit the required notebook, but instead submitted a different one
+    os.remove(output_dir / "simple.ipynb")
+    student_nb = output_dir / "student.ipynb"
+    student_nb.touch()
+
+    output_dir2 = tmp_path / "output_dir2"
+    output_dir2.mkdir()
+    shutil.copyfile(output_dir / "gradebook.json", output_dir2 / "gradebook.json")
+
+    with patch.object(NotebookClient, "kernel_name", "python3"):
+        autograder = Autograde(
+            input_dir=str(output_dir),
+            output_dir=str(output_dir2),
+            file_pattern="*.ipynb",
+            assignment_settings=AssignmentSettings(allowed_files=["*.ipynb"]),
+            config=None,
+        )
+        autograder.start()
+
+    assert autograder.notebooks == [str(student_nb)]
+    assert (output_dir2 / "gradebook.json").exists()
+    assert (output_dir2 / "student.ipynb").exists()
