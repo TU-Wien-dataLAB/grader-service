@@ -204,6 +204,7 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
     conn = engine.connect()
     trans = conn.begin()
     try:
@@ -240,7 +241,8 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
             assert not user_tables, "User tables not dropped after downgrade to base"
     finally:
         engine.dispose()
-        engine2.dispose()
+        if engine2 is not None:
+            engine2.dispose()
 
 
 @pytest.mark.parametrize("migration", get_migration_scripts())
@@ -307,6 +309,8 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
+    engine3 = None
     conn = engine.connect()
     trans = conn.begin()
 
@@ -367,12 +371,15 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     f"to {prev_rev}!"
                 )
             except AssertionError as e:
-                if migration.revision != "fc5d2febe781":
+                if migration.revision != "fc5d2febe781" and migration.revision != "4a88dacd888f":
                     # In migration "fc5d2febe781"
                     # ("merged assignment configuration options into assignment settings column"):
                     # The `allow_files` default differs; before upgrade the default was `None` (!),
                     # although the column is not nullable. In the downgrade function, the server_default
                     # is set to "f".
+                    # In migration "4a88dacd888f"
+                    # Foreign keys whose names contained ‘None’ before the upgrade will retain their new names,
+                    # because SQLAlchemy does not allow ‘None’ in identifiers.
                     raise e
             # 7.b Check if the data is still the same
             data_after_downgrade = get_table_data(engine3, tables_after_downgrade)
@@ -380,6 +387,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
             data_loss_migrations = (
                 "f1ae66d52ad9",  # remove group table
                 "fc5d2febe781",  # merged assignment configuration options into assignment settings
+                "4a88dacd888f",  # invalid “api_token” entries are deleted
             )
             try:
                 assert data_before_upgrade == data_after_downgrade, (
@@ -392,8 +400,10 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     raise e
     finally:
         engine.dispose()
-        engine2.dispose()
-        engine3.dispose()
+        if engine2 is not None:
+            engine2.dispose()
+        if engine3 is not None:
+            engine3.dispose()
 
 
 @pytest.mark.parametrize("migration", get_migration_scripts())
@@ -409,6 +419,7 @@ def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
     conn = engine.connect()
     trans = conn.begin()
 
@@ -457,4 +468,5 @@ def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg
         command.downgrade(cfg, prev_rev)
     finally:
         engine.dispose()
-        engine2.dispose()
+        if engine2 is not None:
+            engine2.dispose()
