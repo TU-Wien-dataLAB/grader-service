@@ -397,6 +397,7 @@ async def test_get_lecture_users(
     sql_alchemy_engine,
     default_roles,
     default_user_login,
+    default_user,
 ):
     l_id = 3
     insert_student(sql_alchemy_engine, "student1", l_id)
@@ -409,6 +410,11 @@ async def test_get_lecture_users(
 
     assert resp.code == HTTPStatus.OK
     data = json.loads(resp.body.decode())
-    assert data["instructors"] == [1]
+    assert data["instructors"] == [
+        {"id": 1, "name": default_user.name, "display_name": default_user.display_name}
+    ]
     assert data["tutors"] == []
-    assert data["students"] == [2, 3]
+    assert data["students"] == [
+        {"id": 2, "name": "student1", "display_name": "student1"},
+        {"id": 3, "name": "student2", "display_name": "student2"},
+    ]

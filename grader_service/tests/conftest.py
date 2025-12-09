@@ -127,7 +127,7 @@ def service_base_url():
 
 @pytest.fixture(scope="function")
 def default_user():
-    user = User(id=1, name="ubuntu")
+    user = User(id=1, name="ubuntu", display_name="ubuntu")
     yield user
 
 

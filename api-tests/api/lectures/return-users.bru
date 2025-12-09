@@ -1,0 +1,15 @@
+meta {
+  name: return-users
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures/2/users
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
