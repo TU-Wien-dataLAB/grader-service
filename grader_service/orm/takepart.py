@@ -21,8 +21,8 @@ class Scope(enum.IntEnum):
 
 class Role(Base, Serializable):
     __tablename__ = "takepart"
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    lectid = Column(Integer, ForeignKey("lecture.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
+    lectid = Column(Integer, ForeignKey("lecture.id", ondelete="CASCADE"), primary_key=True)
     role = Column(Enum(Scope), nullable=False)
 
     lecture = relationship("Lecture", back_populates="roles")
