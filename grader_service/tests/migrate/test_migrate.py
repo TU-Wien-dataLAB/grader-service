@@ -371,12 +371,15 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     f"to {prev_rev}!"
                 )
             except AssertionError as e:
-                if migration.revision != "fc5d2febe781":
+                if migration.revision != "fc5d2febe781" and migration.revision != "4a88dacd888f":
                     # In migration "fc5d2febe781"
                     # ("merged assignment configuration options into assignment settings column"):
                     # The `allow_files` default differs; before upgrade the default was `None` (!),
                     # although the column is not nullable. In the downgrade function, the server_default
                     # is set to "f".
+                    # In migration "4a88dacd888f"
+                    # Foreign keys whose names contained ‘None’ before the upgrade will retain their new names,
+                    # because SQLAlchemy does not allow ‘None’ in identifiers.
                     raise e
             # 7.b Check if the data is still the same
             data_after_downgrade = get_table_data(engine3, tables_after_downgrade)
