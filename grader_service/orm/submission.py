@@ -111,3 +111,13 @@ class Submission(Base, Serializable):
         model = self.model.to_dict()
         model["user"] = self.user.serialize()
         return model
+
+    def serialize_with_lectid(self) -> dict:
+        """Serialize the submission with lectid.
+
+        Returns:
+            dict: The serialized submission data including lectid.
+        """
+        model = self.model.to_dict()
+        model["lectid"] = self.assignment.lectid
+        return model
