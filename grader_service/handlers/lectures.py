@@ -31,17 +31,26 @@ class LectureBaseHandler(GraderBaseHandler):
         Returns all lectures the user can access.
         """
         self.validate_parameters("complete")
-        complete = self.get_argument("complete", "false") == "true"
-
-        state = LectureState.complete if complete else LectureState.active
-        lectures = sorted(
-            [
-                role.lecture
-                for role in self.user.roles
-                if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-            ],
-            key=lambda lecture: lecture.id,
-        )
+        complete = self.get_argument("complete", None)
+        if complete is None:  # return both complete and active lectures
+            lectures = sorted(
+                [
+                    role.lecture
+                    for role in self.user.roles
+                    if role.lecture.deleted == DeleteState.active
+                ],
+                key=lambda lecture: lecture.id,
+            )
+        else:  # return either only complete or only active lectures
+            state = LectureState.complete if (complete == "true") else LectureState.active
+            lectures = sorted(
+                [
+                    role.lecture
+                    for role in self.user.roles
+                    if role.lecture.state == state and role.lecture.deleted == DeleteState.active
+                ],
+                key=lambda lecture: lecture.id,
+            )
 
         self.write_json(lectures)
 
@@ -167,15 +176,37 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: a dictionary of user, tutor and instructor names lists
         """
-        roles = (
+        students = (
             self.session.query(Role)
             .options(joinedload(Role.user))
             .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.student)
+        )
+        tutors = (
+            self.session.query(Role)
+            .options(joinedload(Role.user))
+            .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.tutor)
+        )
+        instructors = (
+            self.session.query(Role)
+            .options(joinedload(Role.user))
+            .filter(Role.lectid == lecture_id)
+            .filter(Role.role == Scope.instructor)
         )
 
-        students = [r.user.id for r in roles if r.role == Scope.student]
-        tutors = [r.user.id for r in roles if r.role == Scope.tutor]
-        instructors = [r.user.id for r in roles if r.role == Scope.instructor]
+        students = [
+            {"id": s.user.id, "name": s.user.name, "display_name": s.user.display_name}
+            for s in students
+        ]
+        tutors = [
+            {"id": t.user.id, "name": t.user.name, "display_name": t.user.display_name}
+            for t in tutors
+        ]
+        instructors = [
+            {"id": i.user.id, "name": i.user.name, "display_name": i.user.display_name}
+            for i in instructors
+        ]
 
         counts = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(counts)

@@ -33,6 +33,7 @@ else:
 c.GraderService.db_url = db_url
 
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+c.LocalAutogradeExecutor.default_cell_timeout = 200
 
 # get rabbitmq username and password
 rabbit_mq_username = os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")

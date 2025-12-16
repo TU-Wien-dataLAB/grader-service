@@ -159,7 +159,6 @@ class GitSubmissionManager(LoggingConfigurable):
             self.log.error(e)
             raise
 
-    # TODO: Can I decorate executable_validator with both "git_executable" and "convert_executable"?
     @validate("git_executable")
     def _validate_executable(self, proposal):
         return executable_validator(proposal)

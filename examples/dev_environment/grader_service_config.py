@@ -23,6 +23,7 @@ c.GraderService.grader_service_dir = service_dir
 c.GraderService.log_level = "DEBUG"
 
 c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+c.LocalAutogradeExecutor.default_cell_timeout = 200
 
 c.CeleryApp.conf = dict(
     broker_url="amqp://localhost",

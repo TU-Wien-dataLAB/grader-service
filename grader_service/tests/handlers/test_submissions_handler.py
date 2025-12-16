@@ -38,12 +38,13 @@ from .db_util import (
 )
 
 
-async def submission_test_setup(engine, default_user, a_id: int):
+async def submission_test_setup(engine, default_user, l_id: int, a_id: int):
     insert_submission(engine, a_id, default_user.name, default_user.id)
     insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
     # should make no difference
-    insert_submission(engine, a_id, "user1", 2137)
-    insert_submission(engine, a_id, "user1", 2137, with_properties=False)
+    student = insert_student(engine, "user1", l_id)
+    insert_submission(engine, a_id, student.name, student.id)
+    insert_submission(engine, a_id, student.name, student.id, with_properties=False)
 
 
 async def test_get_submission_unauthorized(
@@ -118,9 +119,10 @@ async def test_get_submissions(
     default_user_login,
     default_user,
 ):
+    l_id = 1
     a_id = 1
-    url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/"
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -143,9 +145,10 @@ async def test_get_submissions_format_csv(
     default_roles,
     default_user_login,
 ):
+    l_id = 1
     a_id = 1
-    url = service_base_url + f"lectures/1/assignments/{a_id}/submissions/?format=csv"
-    await submission_test_setup(sql_alchemy_engine, default_user, a_id)
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?format=csv"
+    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -789,8 +792,9 @@ async def test_delete_submission_from_another_student_fails(
 ):
     l_id = 1  # default user is student
     a_id = 1
+    student = insert_student(sql_alchemy_engine, "other_student", l_id)
     # The submission does NOT belong to the default user:
-    insert_submission(sql_alchemy_engine, a_id, "other_student", 2137)
+    insert_submission(sql_alchemy_engine, a_id, "other_student", student.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
     with pytest.raises(HTTPClientError) as exc_info:

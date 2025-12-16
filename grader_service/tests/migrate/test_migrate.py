@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from typing import Any
 
 import pytest
 import sqlalchemy as sa
@@ -64,7 +65,7 @@ def alembic_cfg(database_backend):
     return cfg, db_url
 
 
-def get_referenced_columns_by_table(inspector):
+def get_referenced_columns_by_table(inspector: sa.Inspector) -> defaultdict[Any, set]:
     refd = defaultdict(set)
     for t in inspector.get_table_names():
         if t == "alembic_version":
@@ -77,7 +78,41 @@ def get_referenced_columns_by_table(inspector):
     return refd
 
 
-def get_table_data(engine, tables):
+def insert_one_row(
+    inspector: sa.Inspector,
+    table: str,
+    generated_keys: defaultdict[Any, defaultdict[Any, set]],
+    referenced_cols: defaultdict[Any, set],
+) -> None:
+    """Insert one row of fake data into the table.
+
+    Args:
+        inspector: SQLAlchemy Inspector instance
+        table: Name of table to insert into
+        generated_keys: A dict of {table: {column: {values}}} for tracking FK relationships
+        referenced_cols: A dict of {table: {pk_columns}} for tracking which columns are referenced
+            by FKs
+    """
+    engine = inspector.engine
+    metadata = sa.MetaData()
+    metadata.reflect(bind=engine, only=[table])
+    tbl = metadata.tables[table]
+    row = generate_fake_row(table, inspector, generated_keys)
+    with engine.begin() as conn:
+        conn.execute(tbl.insert().values(**row))
+
+    # Save ANY columns that other tables FK to
+    for col in referenced_cols.get(table, []):
+        val = row.get(col)
+        if val is not None:
+            generated_keys[table][col].add(row[col])
+        else:
+            with engine.connect() as conn:
+                col_values = conn.execute(sa.select(tbl.c[col]))
+                generated_keys[table][col].update(r[0] for r in col_values)
+
+
+def get_table_data(engine: sa.Engine, tables: list[str]) -> dict[str, list[dict]]:
     """Return a dict of table_name -> list of rows as dicts"""
     metadata = sa.MetaData()
     metadata.reflect(bind=engine, only=tables)
@@ -90,14 +125,86 @@ def get_table_data(engine, tables):
     return data
 
 
+def normalize_type(col_type):
+    """Normalize SQLAlchemy type string."""
+    t = str(col_type).upper()
+    # Collapse common aliases
+    if t.startswith("VARCHAR("):
+        return "VARCHAR"  # ignore length differences
+    if t in ("INT", "INTEGER", "BIGINT"):
+        return "INTEGER"
+    if t.startswith("DATETIME"):
+        return "DATETIME"
+    if t.startswith("TIMESTAMP"):
+        return "TIMESTAMP"
+    return t
+
+
+def get_schema_snapshot(inspector, exclude_tables=("alembic_version",)):
+    """Capture a normalized schema snapshot for stable comparisons."""
+    snapshot = {}
+    for table in sorted(inspector.get_table_names()):
+        if table in exclude_tables:
+            continue
+        cols = inspector.get_columns(table)
+        pks = inspector.get_pk_constraint(table)
+        fks = inspector.get_foreign_keys(table)
+        indexes = inspector.get_indexes(table)
+        # Normalize columns
+        norm_cols = sorted(
+            [
+                (
+                    c["name"],
+                    normalize_type(c["type"]),
+                    bool(c.get("nullable", True)),
+                    c.get("default") if c.get("default") is not None else None,
+                    c.get("autoincrement"),  # This information is only included with PostgreSQL
+                )
+                for c in cols
+            ],
+            key=lambda x: x[0],
+        )
+        # Normalize PKs
+        norm_pks = sorted(pks.get("constrained_columns", []))
+        # Normalize FKs
+        norm_fks = sorted(
+            [
+                (
+                    tuple(fk["constrained_columns"]),
+                    fk["referred_table"],
+                    tuple(fk["referred_columns"]),
+                )
+                for fk in fks
+            ],
+            key=lambda x: (x[1], x[0]),
+        )
+        # Normalize Indexes
+        norm_indexes = sorted(
+            [
+                (ix["name"], tuple(sorted(ix["column_names"])), bool(ix.get("unique", False)))
+                for ix in indexes
+            ],
+            key=lambda x: x[0],
+        )
+        snapshot[table] = {
+            "columns": norm_cols,
+            "primary_keys": norm_pks,
+            "foreign_keys": norm_fks,
+            "indexes": norm_indexes,
+        }
+
+    return snapshot
+
+
 # --- Tests ---
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
-    """Upgrades to the n-th migration, adds a column to each table
+    """Upgrades to the n-th migration, adds a row to each table
     and then downgrades back to the previous revision.
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
     conn = engine.connect()
     trans = conn.begin()
     try:
@@ -108,25 +215,14 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
         assert tables, "No tables created after upgrade"
 
         # Track generated keys for foreign key relationships
-        generated_keys = defaultdict(lambda: defaultdict(list))
+        generated_keys = defaultdict(lambda: defaultdict(set))
         referenced_cols = get_referenced_columns_by_table(inspector)
         # Identify the order in which tables should be populated based on foreign key relationships
         ordered_tables = get_insert_order(inspector)
 
         for table in ordered_tables:
             try:
-                # Insert one row into the table
-                metadata = sa.MetaData()
-                metadata.reflect(bind=engine, only=[table])
-                tbl = metadata.tables[table]
-                row = generate_fake_row(table, inspector, generated_keys)
-                with engine.begin() as conn:
-                    conn.execute(tbl.insert().values(**row))
-
-                    # Save ANY columns that other tables FK to
-                    for col in referenced_cols.get(table, []):
-                        if col in row and row[col] is not None:
-                            generated_keys[table][col].append(row[col])
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
             except Exception:
                 raise Exception(f"Failed to insert into table {table}")
 
@@ -145,7 +241,8 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
             assert not user_tables, "User tables not dropped after downgrade to base"
     finally:
         engine.dispose()
-        engine2.dispose()
+        if engine2 is not None:
+            engine2.dispose()
 
 
 @pytest.mark.parametrize("migration", get_migration_scripts())
@@ -204,14 +301,16 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
     """Checks for data integrity during migration upgrade and downgrade.
     Steps:
     1. Upgrade the database to the (n-1)-th migration.
-    2. Add a new row to each table.
+    2. Insert a row to each table.
     3. Upgrade the database to the n-th migration.
     4. Perform data integrity checks after the upgrade.
     5. Downgrade the database back to the (n-1)-th migration.
-    6. Perform data integrity checks after the downgrade.
+    6. Perform schema and data integrity checks after the downgrade.
     """
     cfg, db_url = alembic_cfg
     engine = create_engine(db_url)
+    engine2 = None
+    engine3 = None
     conn = engine.connect()
     trans = conn.begin()
 
@@ -220,41 +319,31 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
     if migration.down_revision is None:
         return
     try:
-        # Upgrade the database schema to (n-1) migration
+        # 1. Upgrade the database schema to (n-1)-th migration
         command.upgrade(cfg, migration.down_revision)
         inspector = sa.inspect(engine)
+        schema_before_upgrade = get_schema_snapshot(inspector)
         tables = [t for t in inspector.get_table_names() if t != "alembic_version"]
         assert tables, "No tables created after upgrade"
 
+        # 2. Insert a row into each table
         # Track generated keys for foreign key relationships
-        generated_keys = defaultdict(lambda: defaultdict(list))
+        generated_keys = defaultdict(lambda: defaultdict(set))
         referenced_cols = get_referenced_columns_by_table(inspector)
         # Identify the order in which tables should be populated based on foreign key relationships
         ordered_tables = get_insert_order(inspector)
 
         for table in ordered_tables:
             try:
-                # Insert one row into the table
-                metadata = sa.MetaData()
-                metadata.reflect(bind=engine, only=[table])
-                tbl = metadata.tables[table]
-                row = generate_fake_row(table, inspector, generated_keys)
-                with engine.begin() as conn:
-                    conn.execute(tbl.insert().values(**row))
-
-                    # Save ANY columns that other tables FK to
-                    for col in referenced_cols.get(table, []):
-                        if row.get(col) is not None:
-                            generated_keys[table][col].append(row[col])
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
             except Exception:
                 raise Exception(f"Failed to insert into table {table}")
 
         data_before_upgrade = get_table_data(engine, tables)
 
-        # Upgrade the database schema to n-th migration
+        # 3. Upgrade the database schema to the n-th migration
         command.upgrade(cfg, migration.revision)
-
-        # Check if the migration this something
+        # 4. Check if the migration changed the data
         engine2 = create_engine(db_url)
         inspector = sa.inspect(engine2)
         tables_after_upgrade = [t for t in inspector.get_table_names() if t != "alembic_version"]
@@ -265,24 +354,119 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         trans.commit()
         conn.close()
 
-        # Downgrade to the previous revision
+        # 5. Downgrade to the previous revision
         prev_rev = migration.down_revision or "base"
         command.downgrade(cfg, prev_rev)
         engine3 = create_engine(db_url)
-        inspector = sa.inspect(engine3)
-        tables_after_downgrade = [t for t in inspector.get_table_names() if t != "alembic_version"]
+        inspector3 = sa.inspect(engine3)
+        schema_after_downgrade = get_schema_snapshot(inspector3)
+        tables_after_downgrade = [t for t in inspector3.get_table_names() if t != "alembic_version"]
         if prev_rev == "base":
             assert not tables_after_downgrade, "User tables not dropped after downgrade to base"
         else:
-            # Check if the data is still the same
-            data_after_downgrade = get_table_data(engine2, tables_after_downgrade)
+            # 6. Check schema and data integrity after downgrade
             try:
-                assert data_before_upgrade == data_after_downgrade, "Data changed after downgrade!"
+                assert schema_before_upgrade == schema_after_downgrade, (
+                    f"Schema changed after downgrade from {migration.revision} ({migration.doc}) "
+                    f"to {prev_rev}!"
+                )
+            except AssertionError as e:
+                if migration.revision != "fc5d2febe781" and migration.revision != "4a88dacd888f":
+                    # In migration "fc5d2febe781"
+                    # ("merged assignment configuration options into assignment settings column"):
+                    # The `allow_files` default differs; before upgrade the default was `None` (!),
+                    # although the column is not nullable. In the downgrade function, the server_default
+                    # is set to "f".
+                    # In migration "4a88dacd888f"
+                    # Foreign keys whose names contained ‘None’ before the upgrade will retain their new names,
+                    # because SQLAlchemy does not allow ‘None’ in identifiers.
+                    raise e
+            # 7.b Check if the data is still the same
+            data_after_downgrade = get_table_data(engine3, tables_after_downgrade)
+
+            data_loss_migrations = (
+                "f1ae66d52ad9",  # remove group table
+                "fc5d2febe781",  # merged assignment configuration options into assignment settings
+                "4a88dacd888f",  # invalid “api_token” entries are deleted
+            )
+            try:
+                assert data_before_upgrade == data_after_downgrade, (
+                    f"Data changed after downgrade from {migration.revision} ({migration.doc}) "
+                    f"to {prev_rev}!"
+                )
             except AssertionError as e:
                 # If the tested migration is part of the not lossless migration do not throw the error
-                if migration.revision not in ("f1ae66d52ad9", "fc5d2febe781"):
+                if migration.revision not in data_loss_migrations:
                     raise e
     finally:
         engine.dispose()
-        engine2.dispose()
-        engine3.dispose()
+        if engine2 is not None:
+            engine2.dispose()
+        if engine3 is not None:
+            engine3.dispose()
+
+
+@pytest.mark.parametrize("migration", get_migration_scripts())
+def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg, migration):
+    """Checks that data insertion works between migration upgrades and downgrades.
+    Steps:
+    1. Upgrade the database to the (n-1)-th migration.
+    2. Insert a row to each table.
+    3. Upgrade the database to the n-th migration.
+    4. Insert another row to each table.
+    5. Downgrade the database back to the (n-1)-th migration.
+    6. Perform schema and data integrity checks after the downgrade.
+    """
+    cfg, db_url = alembic_cfg
+    engine = create_engine(db_url)
+    engine2 = None
+    conn = engine.connect()
+    trans = conn.begin()
+
+    # Check if the migration has a down_revision; if not, skip the test
+    if migration.down_revision is None:
+        return
+    try:
+        # 1. Upgrade the database schema to (n-1)-th migration
+        command.upgrade(cfg, migration.down_revision)
+        inspector = sa.inspect(engine)
+
+        # 2. Insert a row into each table
+        # Track generated keys for foreign key relationships
+        generated_keys = defaultdict(lambda: defaultdict(set))
+        referenced_cols = get_referenced_columns_by_table(inspector)
+        # Identify the order in which tables should be populated based on foreign key relationships
+        ordered_tables = get_insert_order(inspector)
+
+        for table in ordered_tables:
+            try:
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
+            except Exception:
+                raise Exception(f"Failed to insert into table {table}")
+
+        # 3. Upgrade the database schema to the n-th migration
+        command.upgrade(cfg, migration.revision)
+
+        # Commit the transaction
+        trans.commit()
+        conn.close()
+
+        # 4. Insert a new row into each table, just to make sure that it works
+        engine2 = create_engine(db_url)
+        inspector = sa.inspect(engine2)
+        # Identify the order in which tables should be populated based on foreign key relationships
+        ordered_tables = get_insert_order(inspector)
+
+        for table in ordered_tables:
+            try:
+                insert_one_row(inspector, table, generated_keys, referenced_cols)
+            except Exception:
+                raise Exception(f"Failed to insert into table {table}")
+
+        # 5. Downgrade to the previous revision
+        prev_rev = migration.down_revision or "base"
+        command.downgrade(cfg, prev_rev)
+    finally:
+        engine.dispose()
+        if engine2 is not None:
+            engine2.dispose()

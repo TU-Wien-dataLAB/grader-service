@@ -48,8 +48,8 @@ class Submission(Base, Serializable):
     auto_status = Column(Enum(AutoStatus), default=AutoStatus.NOT_GRADED, nullable=False)
     manual_status = Column(Enum(ManualStatus), default=ManualStatus.NOT_GRADED, nullable=False)
     score = Column(Float, nullable=True)
-    assignid = Column(Integer, ForeignKey("assignment.id"))
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    assignid = Column(Integer, ForeignKey("assignment.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     commit_hash = Column(String(length=40), nullable=False)
     feedback_status = Column(
         Enum(FeedbackStatus), default=FeedbackStatus.NOT_GENERATED, nullable=False
@@ -64,8 +64,20 @@ class Submission(Base, Serializable):
 
     assignment = relationship("Assignment", back_populates="submissions")
     user = relationship("User", back_populates="submissions")
-    logs = relationship("SubmissionLogs", back_populates="submission", uselist=False)
-    properties = relationship("SubmissionProperties", back_populates="submission", uselist=False)
+    logs = relationship(
+        "SubmissionLogs",
+        back_populates="submission",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    properties = relationship(
+        "SubmissionProperties",
+        back_populates="submission",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     @hybrid_property
     def user_display_name(self) -> str:
