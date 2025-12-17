@@ -611,9 +611,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
                         HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission."
                     )
 
-                self.delete_submission_files(submission)
                 self.session.delete(submission)
                 self.session.commit()
+                self.delete_submission_files(submission)
             else:
                 # Do not allow students to delete other users' submissions
                 if (

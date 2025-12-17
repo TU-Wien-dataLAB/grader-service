@@ -19,7 +19,10 @@ from grader_service.server import GraderServer
 from ... import orm
 from ...handlers import GitRepoType
 from ...orm.base import DeleteState
+from ...orm.lecture import LectureState
+from ...orm.takepart import Scope
 from .db_util import (
+    add_role,
     create_git_repository,
     insert_assignment,
     insert_assignments,
@@ -49,6 +52,49 @@ async def test_get_lectures(
     assert len(lectures) == 3
 
 
+async def test_get_lectures_complete(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
+    sql_alchemy_engine,
+):
+    url = service_base_url + "lectures?complete=true"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    session.add(
+        orm.Lecture(
+            id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
+        )
+    )
+    session.add(
+        orm.Lecture(
+            id=11,
+            name="test2",
+            code="test2",
+            state=LectureState.complete,
+            deleted=DeleteState.deleted,
+        )
+    )
+    session.commit()
+
+    add_role(sql_alchemy_engine, default_user.id, 10, Scope.instructor)
+    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    lectures = json.loads(response.body.decode())
+    assert isinstance(lectures, list)
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
+    assert len(lectures) == 1
+
+
 async def test_get_lectures_admin(
     app: GraderServer,
     service_base_url,
@@ -68,6 +114,45 @@ async def test_get_lectures_admin(
     assert lectures
     [Lecture.from_dict(lec) for lec in lectures]
     assert len(lectures) == 4
+
+
+async def test_get_lectures_admin_complete(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_admin_login,
+    sql_alchemy_engine,
+):
+    url = service_base_url + "lectures?complete=true"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    session.add(
+        orm.Lecture(
+            id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
+        )
+    )
+    session.add(
+        orm.Lecture(
+            id=11,
+            name="test2",
+            code="test2",
+            state=LectureState.complete,
+            deleted=DeleteState.deleted,
+        )
+    )
+    session.commit()
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    lectures = json.loads(response.body.decode())
+    assert isinstance(lectures, list)
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]
+    assert len(lectures) == 2
 
 
 async def test_get_lectures_with_some_parameter(
@@ -108,7 +193,7 @@ async def test_post_lectures_update(
     assert len(lectures) == 3
     orig_len = len(lectures)
 
-    # same code as in group of user
+    # update lecture based on existing lecture code
     pre_lecture = Lecture(id=-1, name="pytest_lecture", code="20wle2", complete=False)
     post_response = await http_server_client.fetch(
         url,
@@ -175,7 +260,7 @@ async def test_post_lectures_update_admin(
     assert len(lectures) == 4
     orig_len = len(lectures)
 
-    # same code as in group of user
+    # update lecture based on existing lecture code
     pre_lecture = Lecture(id=-1, name="pytest_lecture", code="21wle1", complete=False)
     post_response = await http_server_client.fetch(
         url,
@@ -242,7 +327,7 @@ async def test_post_lectures_new_admin(
     assert len(lectures) == 4
     orig_len = len(lectures)
 
-    # same code as in group of user
+    # create new lecture
     pre_lecture = Lecture(id=-1, name="pytest_lecture", code="abc", complete=False)
     post_response = await http_server_client.fetch(
         url,

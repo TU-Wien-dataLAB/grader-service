@@ -82,13 +82,12 @@ async def test_get_roles_admin_wrong_lecture(
     l_id = 999
     url = service_base_url + f"lectures/{l_id}/roles/"
 
-    response = await http_server_client.fetch(
-        url, method="GET", headers={"Authorization": f"Token {default_token}"}
-    )
-    assert response.code == HTTPStatus.OK
-    roles = json.loads(response.body.decode())
-    assert isinstance(roles, list)
-    assert len(roles) == 0
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
 
 
 async def test_post_roles_unauthorized(

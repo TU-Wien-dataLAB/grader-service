@@ -52,8 +52,6 @@ def insert_lectures(session: Engine):
     session.add(_get_lecture(2, "lecture2", "20wle2"))
     session.add(_get_lecture(3, "lecture3", "22wle1"))
     session.add(_get_lecture(4, "lecture4", "23wle1"))
-    # session.add(_get_lecture("lecture3", "22sle3"))
-    # session.add(_get_lecture("lecture4", "21sle4"))
     session.commit()
     session.flush()
 
@@ -356,13 +354,13 @@ def check_git_repositories(
     l_code: str,
     a_id: int,
     s_id: int,
-    exits_assignment: bool,
-    exits_source: bool,
-    exits_release: bool,
-    exits_user: bool,
-    exits_edit: bool,
-    exits_feedback: bool,
-    exits_autograde: bool,
+    exists_assignment: bool,
+    exists_source: bool,
+    exists_release: bool,
+    exists_user: bool,
+    exists_edit: bool,
+    exists_feedback: bool,
+    exists_autograde: bool,
 ):
     assignment_path = Path(app.grader_service_dir) / "git" / l_code / str(a_id)
 
@@ -373,10 +371,10 @@ def check_git_repositories(
     feedback_path = assignment_path / GitRepoType.FEEDBACK / "user" / user.name
     autograde_path = assignment_path / GitRepoType.AUTOGRADE / "user" / user.name
 
-    assert assignment_path.exists() if exits_assignment else not assignment_path.exists()
-    assert source_path.exists() if exits_source else not source_path.exists()
-    assert release_path.exists() if exits_release else not release_path.exists()
-    assert user_path.exists() if exits_user else not user_path.exists()
-    assert edit_path.exists() if exits_edit else not edit_path.exists()
-    assert feedback_path.exists() if exits_feedback else not feedback_path.exists()
-    assert autograde_path.exists() if exits_autograde else not autograde_path.exists()
+    assert assignment_path.exists() == exists_assignment
+    assert source_path.exists() == exists_source
+    assert release_path.exists() == exists_release
+    assert user_path.exists() == exists_user
+    assert edit_path.exists() == exists_edit
+    assert feedback_path.exists() == exists_feedback
+    assert autograde_path.exists() == exists_autograde

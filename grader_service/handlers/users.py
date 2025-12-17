@@ -85,9 +85,7 @@ class UserObjectBaseHandler(GraderBaseHandler):
 
         :param username: the name of the user.
         :type username: str
-        :raises HTTPError:  throws err if user was not found,
-                            or user has still submissions,
-                            or user has still roles
+        :raises HTTPError: throws err if user was not found
         """
         self.validate_parameters()
 
@@ -100,11 +98,13 @@ class UserObjectBaseHandler(GraderBaseHandler):
             if user is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
 
-            for submission in user.submissions:
-                self.delete_submission_files(submission)
+            submissions = user.submissions
 
             self.session.delete(user)
             self.session.commit()
+
+            for submission in submissions:
+                self.delete_submission_files(submission)
         except ObjectDeletedError:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
         self.write("OK")

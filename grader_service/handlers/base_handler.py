@@ -1014,11 +1014,7 @@ class GraderBaseHandler(BaseHandler):
         checkout_main: bool = False,
     ):
         tmp_path_base = Path(
-            self.application.grader_service_dir,
-            "tmp",
-            assignment.lecture.code,
-            str(assignment.id),
-            str(self.user.name),
+            self.tmpbase, assignment.lecture.code, str(assignment.id), str(self.user.name)
         )
 
         # Deleting dir

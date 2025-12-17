@@ -645,7 +645,7 @@ async def test_get_assignment_created_admin(
     default_admin_login,
     sql_alchemy_engine,
 ):
-    l_id = 1  # default admin is admin
+    l_id = 1  # default user is admin
     a_id = 2  # assignment is created
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 

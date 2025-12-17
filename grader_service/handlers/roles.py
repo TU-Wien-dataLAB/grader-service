@@ -54,6 +54,10 @@ class RoleBaseHandler(GraderBaseHandler):
         lecture_id = parse_ids(lecture_id)
         self.validate_parameters()
 
+        lecture = self.get_lecture(lecture_id)
+        if lecture is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
+
         roles = self.session.query(Role).filter(Role.lectid == lecture_id).all()
 
         self.set_status(HTTPStatus.OK)
@@ -62,7 +66,7 @@ class RoleBaseHandler(GraderBaseHandler):
     @authorize([Scope.admin])
     async def post(self, lecture_id: int):
         """
-        Creates or update roles for a specific lecture.
+        Creates or updates roles for a specific lecture.
 
         Request body example:
         {
@@ -115,14 +119,29 @@ class RoleBaseHandler(GraderBaseHandler):
     async def delete(self, lecture_id: int):
         """
         Deletes roles for a specific lecture.
+        This operation is atomic. If any error occurs (e.g. user not found,
+        role not found, or concurrent modification), no changes are persisted
+        to the database.
 
         Query parameter example:
         ?usernames=alice,boby
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises HTTPError: if the lecture does not exist, no usernames were provided,
-                           or at least one user cannot be found
+        :raises HTTPError:
+            - 400 BAD_REQUEST:
+                If the "usernames" parameter is missing or empty.
+            - 403 FORBIDDEN:
+                If the caller is not an administrator.
+            - 404 NOT_FOUND:
+                If the lecture does not exist, a user does not exist,
+                or a role for a given user and lecture does not exist.
+            - 409 CONFLICT:
+                If a role was concurrently modified or deleted during the operation
+                (ObjectDeletedError).
+            - 500 INTERNAL_SERVER_ERROR:
+                For unexpected errors. In all cases, the transaction is rolled back
+                and no partial changes are persisted.
         """
         lecture_id = parse_ids(lecture_id)
         self.validate_parameters("usernames")
@@ -141,10 +160,10 @@ class RoleBaseHandler(GraderBaseHandler):
                 raise HTTPError(HTTPStatus.BAD_REQUEST, reason="usernames cannot be empty")
             usernames = raw_usernames.split(",")
 
+            roles_to_delete = []
             for username in usernames:
                 user = self.session.query(User).filter(User.name == username).one_or_none()
                 if user is None:
-                    self.session.rollback()
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason=f"User {username} was not found")
 
                 role = (
@@ -153,9 +172,19 @@ class RoleBaseHandler(GraderBaseHandler):
                     .filter(Role.lectid == lecture_id)
                     .one_or_none()
                 )
-                if role is not None:
-                    self.session.delete(role)
+                if role is None:
+                    raise HTTPError(
+                        HTTPStatus.NOT_FOUND, reason=f"Role for user {username} was not found"
+                    )
+                roles_to_delete.append(role)
+
+            for role in roles_to_delete:
+                self.session.delete(role)
             self.session.commit()
+            self.write("OK")
         except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Roles was not found")
-        self.write("OK")
+            self.session.rollback()
+            raise HTTPError(HTTPStatus.CONFLICT, reason="Role was modified or deleted concurrently")
+        except Exception:
+            self.session.rollback()
+            raise

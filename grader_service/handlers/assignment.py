@@ -283,6 +283,10 @@ class AssignmentObjectHandler(GraderBaseHandler):
     async def delete(self, lecture_id: int, assignment_id: int):
         """Soft or Hard-Deletes a specific assignment.
 
+        When performing a soft-delete and a previously soft-deleted assignment with the same
+        name already exists in the same lecture, that previous assignment is permanently
+        removed (hard-deleted) before marking the current assignment as deleted
+
         :param lecture_id: id of the lecture
         :type lecture_id: int
         :param assignment_id: id of the assignment
@@ -304,9 +308,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
                         HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete assignment."
                     )
 
-                self.delete_assignment_files(assignment)
                 self.session.delete(assignment)
                 self.session.commit()
+                self.delete_assignment_files(assignment)
             else:
                 if assignment.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND)
@@ -328,9 +332,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
                     .one_or_none()
                 )
                 if previously_deleted is not None:
-                    self.delete_assignment_files(previously_deleted)
                     self.session.delete(previously_deleted)
                     self.session.commit()
+                    self.delete_assignment_files(previously_deleted)
 
                 # No need to soft-delete submissions, because an assignment with submissions
                 # cannot reach this point (checked above).

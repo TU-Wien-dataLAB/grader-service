@@ -91,8 +91,8 @@ class Authenticator(LoggingConfigurable):
     admin_users = Set(
         help="""
         .. warning::
-            Admin users do currently not have any special privileges
-            in the Grader Service, but this may change in the future.
+            Admin users currently have access to most parts of the Grader Service.
+            Their privileges will be expanded over time.
 
         Set of users that will have admin rights on the Grader Service instance.
         Admin access should be treated the same way root access is.

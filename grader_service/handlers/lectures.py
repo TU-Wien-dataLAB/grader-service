@@ -34,29 +34,19 @@ class LectureBaseHandler(GraderBaseHandler):
         """
         self.validate_parameters("complete")
         complete = self.get_argument("complete", None)
-        if self.user.is_admin:
-            lectures = self.session.query(Lecture).order_by(Lecture.id.asc()).all()
-        else:
-            if complete is None:  # return both complete and active lectures
-                lectures = sorted(
-                    [
-                        role.lecture
-                        for role in self.user.roles
-                        if role.lecture.deleted == DeleteState.active
-                    ],
-                    key=lambda lecture: lecture.id,
-                )
-            else:  # return either only complete or only active lectures
-                state = LectureState.complete if (complete == "true") else LectureState.active
-                lectures = sorted(
-                    [
-                        role.lecture
-                        for role in self.user.roles
-                        if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-                    ],
-                    key=lambda lecture: lecture.id,
-                )
 
+        query = self.session.query(Lecture)
+
+        if complete is not None:
+            state = LectureState.complete if complete == "true" else LectureState.active
+            query = query.filter(Lecture.state == state)
+
+        if not self.user.is_admin:
+            query = query.join(Role).filter(
+                Role.user_id == self.user.id, Lecture.deleted == DeleteState.active
+            )
+
+        lectures = query.order_by(Lecture.id.asc()).all()
         self.write_json(lectures)
 
     @authorize([Scope.instructor, Scope.admin])
@@ -157,9 +147,9 @@ class LectureObjectHandler(GraderBaseHandler):
                         HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete lecture."
                     )
 
-                self.delete_lecture_files(lecture)
                 self.session.delete(lecture)
                 self.session.commit()
+                self.delete_lecture_files(lecture)
             else:
                 if lecture.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND)

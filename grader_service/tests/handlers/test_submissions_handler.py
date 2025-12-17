@@ -535,7 +535,9 @@ async def test_get_submissions_admin_deleted(
     )
     assert response.code == HTTPStatus.OK
 
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
+    url = (
+        service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions?instructor-version=true"
+    )
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -546,8 +548,8 @@ async def test_get_submissions_admin_deleted(
     assert len(submissions) == 4
     assert submissions[0]["user_id"] == default_admin.id
     assert submissions[1]["user_id"] == default_admin.id
-    assert submissions[2]["user_id"] == 3 # new student "user1" with id 3
-    assert submissions[3]["user_id"] == 3 # new student "user1" with id 3
+    assert submissions[2]["user_id"] == 3  # new student "user1" with id 3
+    assert submissions[3]["user_id"] == 3  # new student "user1" with id 3
     Submission.from_dict(submissions[0])
     Submission.from_dict(submissions[1])
     Submission.from_dict(submissions[2])
@@ -711,7 +713,7 @@ async def test_get_submission_admin_from_another_student(
     default_admin_login,
     default_admin,
 ):
-    l_id = 1  # admon has no role
+    l_id = 1  # admin has no role
     a_id = 1
     s_id = 1
     engine = sql_alchemy_engine
