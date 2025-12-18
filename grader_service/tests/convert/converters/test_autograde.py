@@ -13,7 +13,8 @@ from grader_service.tests.convert.converters import (
 )
 
 
-def _run_autograde_test(tmp_path, notebook_name):
+@pytest.mark.parametrize("notebook_name", ["simple.ipynb", "with space.ipynb"])
+def test_autograde(tmp_path, notebook_name):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, [notebook_name])
 
     _generate_test_submission(input_dir, output_dir)
@@ -40,11 +41,6 @@ def _run_autograde_test(tmp_path, notebook_name):
 
     assert (output_dir2 / notebook_name).exists()
     assert (output_dir2 / "gradebook.json").exists()
-
-
-@pytest.mark.parametrize("notebook_name", ["simple.ipynb", "with space.ipynb"])
-def test_autograde(tmp_path, notebook_name):
-    _run_autograde_test(tmp_path, notebook_name)
 
 
 def test_autograde_copy_with_all_files(tmp_path):
