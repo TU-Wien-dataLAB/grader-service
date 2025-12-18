@@ -320,7 +320,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
                     raise HTTPError(HTTPStatus.NOT_FOUND)
 
                 self.validate_assignment_for_soft_delete(assignment=assignment)
-                previously_deleted = self.delete_previous_assignment(assignment=assignment, lecture_id=lecture_id)
+                previously_deleted = self.delete_previous_assignment(
+                    assignment=assignment, lecture_id=lecture_id
+                )
                 self.session.commit()
                 if previously_deleted is not None:
                     self.delete_assignment_files(assignment=previously_deleted, lecture=lecture)
@@ -328,7 +330,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 assignment.deleted = DeleteState.deleted
                 self.session.commit()
 
-            self.write(f"OK")
+            self.write("OK")
         except ObjectDeletedError:
             self.session.rollback()
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")

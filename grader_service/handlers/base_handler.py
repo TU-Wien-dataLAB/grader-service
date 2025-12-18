@@ -938,7 +938,6 @@ class GraderBaseHandler(BaseHandler):
         for path in matching_dirs:
             shutil.rmtree(path, ignore_errors=True)
 
-
     def validate_assignment_for_soft_delete(self, assignment: Assignment):
         """Validates that an assignment can be soft-deleted.
 
@@ -951,17 +950,16 @@ class GraderBaseHandler(BaseHandler):
         """
         if assignment.submissions:
             raise HTTPError(
-                HTTPStatus.CONFLICT,
-                reason="Cannot delete assignments with submissions!"
+                HTTPStatus.CONFLICT, reason="Cannot delete assignments with submissions!"
             )
         if assignment.status in {"released", "complete"}:
             raise HTTPError(
-                HTTPStatus.CONFLICT,
-                reason="Cannot delete released or completed assignments!"
+                HTTPStatus.CONFLICT, reason="Cannot delete released or completed assignments!"
             )
 
-
-    def delete_previous_assignment(self, assignment: Assignment, lecture_id: int) -> Optional[Assignment]:
+    def delete_previous_assignment(
+        self, assignment: Assignment, lecture_id: int
+    ) -> Optional[Assignment]:
         """Deletes a previously soft-deleted assignment with the same name in the lecture, if it exists.
 
         When performing a soft-delete, a previously soft-deleted assignment with the same

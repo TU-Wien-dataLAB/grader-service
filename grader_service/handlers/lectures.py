@@ -3,7 +3,6 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import traceback
 from http import HTTPStatus
 
 import tornado
@@ -13,7 +12,6 @@ from tornado.web import HTTPError
 
 from grader_service.api.models.lecture import Lecture as LectureModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture, LectureState
 from grader_service.orm.takepart import Role, Scope
@@ -164,7 +162,9 @@ class LectureObjectHandler(GraderBaseHandler):
                 previously_deleted_assignments = []
                 for assignment in lecture.assignments:
                     self.validate_assignment_for_soft_delete(assignment=assignment)
-                    previously_deleted = self.delete_previous_assignment(assignment=assignment, lecture_id=lecture_id)
+                    previously_deleted = self.delete_previous_assignment(
+                        assignment=assignment, lecture_id=lecture_id
+                    )
                     if previously_deleted is not None:
                         previously_deleted_assignments.append(previously_deleted)
                 self.session.commit()
@@ -178,7 +178,7 @@ class LectureObjectHandler(GraderBaseHandler):
                 lecture.deleted = DeleteState.deleted
                 self.session.commit()
 
-            self.write(f"OK")
+            self.write("OK")
         except ObjectDeletedError:
             self.session.rollback()
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
