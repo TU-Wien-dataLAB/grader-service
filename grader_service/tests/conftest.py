@@ -149,7 +149,7 @@ def default_user():
 
 @pytest.fixture(scope="function")
 def default_admin():
-    user = User(id=2, name="debian")
+    user = User(id=2, name="debian", display_name="debian")
     yield user
 
 

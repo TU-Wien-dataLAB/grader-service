@@ -254,7 +254,7 @@ lectureUsers:
       - hub_auth:
           - instructor
           - tutor
-    summary: Return user ids of lecture participants grouped by roles
+    summary: Return user ids, names and display_name value of lecture participants grouped by roles
     tags:
       - "Lectures"
     parameters:
@@ -272,23 +272,12 @@ lectureUsers:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                instructors:
-                  type: array
-                  items:
-                    type: integer
-                  example: [1,2,3]
-                tutors:
-                  type: array
-                  items:
-                    type: integer
-                  example: [4,5,6]  
-                students:
-                  type: array
-                  items:
-                    type: integer
-                  example: [7,8,9]
+              instructors:
+                $ref: "./schemas.yml#/components/schemas/User"
+              tutors:
+                $ref: "./schemas.yml#/components/schemas/User"
+              students:
+                $ref: "./schemas.yml#/components/schemas/User"
       401:
         description: Unauthorized
         content:

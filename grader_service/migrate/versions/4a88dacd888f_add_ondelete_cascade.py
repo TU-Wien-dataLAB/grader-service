@@ -266,13 +266,17 @@ def upgrade():
         ],
     )
 
-    # invalid “api_token” entries are deleted
+    # OAuth/LTI tokens that reference non-existent clients are deleted
     connection.execute(
-        text("""
+        text(
+            """
              DELETE
              FROM api_token
-             WHERE client_id NOT IN (SELECT identifier FROM oauth_client)
-             """)
+             WHERE
+               client_id IS NOT NULL  -- non-OAuth tokens may not have client_id set
+               AND client_id NOT IN (SELECT identifier FROM oauth_client);
+             """
+        )
     )
     _upgrade_recreate_foreign_keys(
         connection=connection,

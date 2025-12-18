@@ -40,7 +40,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=ref,event=pr
-            type=match,pattern=\d.\d.\d.*
+            type=match,pattern=\d+\.\d+\.\d+.*
             type=sha
 
       - name: Build and push Docker image
