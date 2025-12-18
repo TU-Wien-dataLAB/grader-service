@@ -107,9 +107,36 @@ In the overview window of the assignment, you will find many ways to monitor, gr
 
 ![Assignment Overview](../_static/assets/images/instructor_guide/assignment_overview.png)
 
+## Assignment Lifecycle
+
+![Assingment Status](../_static/assets/images/instructor_guide/assignment_lifecycle.png)
+
+An assignment can have 3 states that can be switched between and represent the lifecycle of the assignment.
+
+- Edit
+  : When first created, the assignment is in "Edit mode", where the assignment files can be added and edited.
+    In this stage, the assignment is not visible to students. However, when an instructor opens the student view ("Assignments" card in launcher), it will be displayed to them.
+- Released
+  : The assignment is released to students and the students can work on it.
+    The released files are identical to the files in the release directory at the time of the release.
+    It is possible to undo the release and publish a new release. However, some students may have already pulled the old release.
+    In this case the students might have to reset their files and might loose progress, which has to be communicated.
+    In general, a re-release should be avoided.
+
+    :::{warning}
+    Revoking a released assignment may lead to diverging states of student files and submissions that fail auto-grading.
+    :::
+- Completed
+  : The assignment is over and cannot be worked on anymore and new submissions will be rejected, but it is still visible.
+    This state can be revoked without any consideration and will return to a released state.
+
 ## Assignment Settings
 
 ![Assignment Settings](../_static/assets/images/instructor_guide/assignment_settings.png)
+
+### Groups
+
+You can assign assignments to a group you specify. This allows you to cluster assignments based on different criteria, e.g. the chapters of your lecture. Please note that each assignment can be assigned to only one group. 
 
 ### Deadlines
 
@@ -127,6 +154,14 @@ You can set a limit on the number of times students can submit an assignment.
 
 **Submission Limits**:  
 You can define a maximum number of submissions for each assignment (e.g., students can submit up to 3 times). Once a student reaches this limit, they will no longer be able to make additional submissions unless you increase the limit for all students.
+
+### Cell timeout
+
+This field allows you to dynamically set the timeout of a cell per assignment in seconds. This means that the running time of each cell in the notebook(s) of the assignment will be limited by the value you specify. Please note that setting timeout for each cell separately is not possible.
+
+### Whitelist File Patterns
+
+By using `glob patterns` you can define which additional files can be submitted by the students. This allows you to have a better control over students' submissions and avoid getting unnecessary files from their side. 
 
 ### Late Submissions
 
@@ -156,28 +191,6 @@ It specifies the action taken when a user submits an assignment.
   : The assignment is auto-graded and feedback is generated as soon as the student submits their assignment.
     This requires that no manually graded cells are part of the assignment.
 
-## Assignment Lifecycle
-
-![Assingment Status](../_static/assets/images/instructor_guide/assignment_lifecycle.png)
-
-An assignment can have 3 states that can be switched between and represent the lifecycle of the assignment.
-
-- Edit
-  : When first created, the assignment is in "Edit mode", where the assignment files can be added and edited.
-    In this stage, the assignment is not visible to students. However, when an instructor opens the student view ("Assignments" card in launcher), it will be displayed to them.
-- Released
-  : The assignment is released to students and the students can work on it.
-    The released files are identical to the files in the release directory at the time of the release.
-    It is possible to undo the release and publish a new release. However, some students may have already pulled the old release.
-    In this case the students might have to reset their files and might loose progress, which has to be communicated.
-    In general, a re-release should be avoided.
-
-    :::{warning}
-    Revoking a released assignment may lead to diverging states of student files and submissions that fail auto-grading.
-    :::
-- Completed
-  : The assignment is over and cannot be worked on anymore and new submissions will be rejected, but it is still visible.
-    This state can be revoked without any consideration and will return to a released state.
 
 ## Grading Assignments
 
@@ -193,7 +206,6 @@ Naturally, submissions have to be manually graded individually. You can read mor
 Generally, submissions have to be auto-graded first before anything else can be done.
 If manual grading is not needed or not wanted, it can be skipped.
 The last step is feedback generation, at which point students will see their results.
-
 
 
 ## Manual Submissions
