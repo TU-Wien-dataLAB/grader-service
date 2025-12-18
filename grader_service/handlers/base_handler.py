@@ -905,13 +905,13 @@ class GraderBaseHandler(BaseHandler):
         shutil.rmtree(lecture_path, ignore_errors=True)
         shutil.rmtree(tmp_lecture_path, ignore_errors=True)
 
-    def delete_assignment_files(self, assignment: Assignment):
+    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture):
         # delete all associated directories of the assignment
         assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, assignment.lecture.code, str(assignment.id))
+            os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
         tmp_assignment_path = os.path.abspath(
-            os.path.join(self.tmpbase, assignment.lecture.code, str(assignment.id))
+            os.path.join(self.tmpbase, lecture.code, str(assignment.id))
         )
         shutil.rmtree(assignment_path, ignore_errors=True)
         shutil.rmtree(tmp_assignment_path, ignore_errors=True)
@@ -937,6 +937,57 @@ class GraderBaseHandler(BaseHandler):
                         matching_dirs.append(os.path.join(root, d))
         for path in matching_dirs:
             shutil.rmtree(path, ignore_errors=True)
+
+
+    def validate_assignment_for_soft_delete(self, assignment: Assignment):
+        """Validates that an assignment can be soft-deleted.
+
+        Raises an HTTPError if the assignment has submissions or is released/completed,
+        preventing a soft-delete.
+
+        :param assignment: the Assignment object to validate
+        :type assignment: Assignment
+        :raises HTTPError: if the assignment has submissions or is released/completed
+        """
+        if assignment.submissions:
+            raise HTTPError(
+                HTTPStatus.CONFLICT,
+                reason="Cannot delete assignments with submissions!"
+            )
+        if assignment.status in {"released", "complete"}:
+            raise HTTPError(
+                HTTPStatus.CONFLICT,
+                reason="Cannot delete released or completed assignments!"
+            )
+
+
+    def delete_previous_assignment(self, assignment: Assignment, lecture_id: int) -> Optional[Assignment]:
+        """Deletes a previously soft-deleted assignment with the same name in the lecture, if it exists.
+
+        When performing a soft-delete, a previously soft-deleted assignment with the same
+        name in the same lecture must be permanently removed (hard-deleted) first to avoid
+        UNIQUE constraint violations before marking the current assignment as deleted.
+
+        :param assignment: the Assignment object for which a previous duplicate may exist
+        :type assignment: Assignment
+        :param lecture_id: id of the lecture to which the assignment belongs
+        :type lecture_id: int
+        :return: the previously deleted Assignment if one existed, else None
+        :rtype: Optional[Assignment]
+        """
+        previously_deleted = (
+            self.session.query(Assignment)
+            .filter(
+                Assignment.lectid == lecture_id,
+                Assignment.name == assignment.name,
+                Assignment.deleted == DeleteState.deleted,
+            )
+            .one_or_none()
+        )
+
+        if previously_deleted is not None:
+            self.session.delete(previously_deleted)
+        return previously_deleted
 
     @property
     def gitbase(self):

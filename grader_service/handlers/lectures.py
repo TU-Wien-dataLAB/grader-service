@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import traceback
 from http import HTTPStatus
 
 import tornado
@@ -127,6 +128,10 @@ class LectureObjectHandler(GraderBaseHandler):
         but the users have no access to it.
         Hard deleting: removes lecture from the datastore and all associated directories/files.
 
+        When performing a soft-delete of a lecture, all assignments in the lecture are also soft-deleted.
+        If a previously soft-deleted assignment with the same name already exists in the lecture, that previous
+        assignment is permanently removed (hard-deleted) before the current assignment is soft-deleted.
+
         :param lecture_id: id of the lecture
         :type lecture_id: int
         :raises HTTPError: throws err if lecture was already deleted
@@ -154,24 +159,32 @@ class LectureObjectHandler(GraderBaseHandler):
                 if lecture.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND)
 
-                lecture.deleted = DeleteState.deleted
-                a: Assignment
-                for a in lecture.assignments:
-                    if len(a.submissions) > 0:
-                        self.session.rollback()
-                        raise HTTPError(
-                            HTTPStatus.CONFLICT, "Cannot delete assignments with submissions!"
-                        )
-                    if a.status in ["released", "complete"]:
-                        self.session.rollback()
-                        raise HTTPError(
-                            HTTPStatus.CONFLICT, "Cannot delete released or completed assignments!"
-                        )
-                    a.deleted = DeleteState.deleted
+                # Collect previous duplicates and delete them before commit
+                # to prevent UNIQUE constraint violations when soft-deleting current assignments
+                previously_deleted_assignments = []
+                for assignment in lecture.assignments:
+                    self.validate_assignment_for_soft_delete(assignment=assignment)
+                    previously_deleted = self.delete_previous_assignment(assignment=assignment, lecture_id=lecture_id)
+                    if previously_deleted is not None:
+                        previously_deleted_assignments.append(previously_deleted)
                 self.session.commit()
+
+                for assignment in previously_deleted_assignments:
+                    self.delete_assignment_files(assignment=assignment, lecture=lecture)
+
+                for assignment in lecture.assignments:
+                    assignment.deleted = DeleteState.deleted
+
+                lecture.deleted = DeleteState.deleted
+                self.session.commit()
+
+            self.write(f"OK")
         except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
-        self.write("OK")
+            self.session.rollback()
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
+        except Exception:
+            self.session.rollback()
+            raise
 
 
 @register_handler(

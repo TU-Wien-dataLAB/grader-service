@@ -291,13 +291,17 @@ class AssignmentObjectHandler(GraderBaseHandler):
         :type lecture_id: int
         :param assignment_id: id of the assignment
         :type assignment_id: int
-        :raises HTTPError: throws err if assignment was not found or deleted
+        :raises HTTPError: throws err if lecture was not found, assignment was not found or deleted
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters("hard_delete")
         hard_delete = self.get_argument("hard_delete", "false") == "true"
 
         try:
+            lecture = self.get_lecture(lecture_id=lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")
+
             assignment = self.get_assignment(lecture_id, assignment_id)
             if assignment is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
@@ -310,39 +314,27 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
                 self.session.delete(assignment)
                 self.session.commit()
-                self.delete_assignment_files(assignment)
+                self.delete_assignment_files(assignment=assignment, lecture=lecture)
             else:
                 if assignment.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND)
 
-                if len(assignment.submissions) > 0:
-                    msg = "Cannot delete assignments with submissions!"
-                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-                if assignment.status in ["released", "complete"]:
-                    msg = "Cannot delete released or completed assignments!"
-                    raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
-
-                previously_deleted = (
-                    self.session.query(Assignment)
-                    .filter(
-                        Assignment.lectid == lecture_id,
-                        Assignment.name == assignment.name,
-                        Assignment.deleted == DeleteState.deleted,
-                    )
-                    .one_or_none()
-                )
+                self.validate_assignment_for_soft_delete(assignment=assignment)
+                previously_deleted = self.delete_previous_assignment(assignment=assignment, lecture_id=lecture_id)
+                self.session.commit()
                 if previously_deleted is not None:
-                    self.session.delete(previously_deleted)
-                    self.session.commit()
-                    self.delete_assignment_files(previously_deleted)
+                    self.delete_assignment_files(assignment=previously_deleted, lecture=lecture)
 
-                # No need to soft-delete submissions, because an assignment with submissions
-                # cannot reach this point (checked above).
                 assignment.deleted = DeleteState.deleted
                 self.session.commit()
+
+            self.write(f"OK")
         except ObjectDeletedError:
+            self.session.rollback()
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
-        self.write(f"OK {assignment.deleted}")
+        except Exception:
+            self.session.rollback()
+            raise
 
 
 @register_handler(
