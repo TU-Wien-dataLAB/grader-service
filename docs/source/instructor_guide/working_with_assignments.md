@@ -80,7 +80,7 @@ Grader Cell Types:
     Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. 
     This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, 
     where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, 
-    but want to let them know how meny points a submission granted  them, this a perfect option for you.
+    but want to let them know how many points a submission granted  them, this a perfect option for you.
 
   ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
 
@@ -99,6 +99,13 @@ Grader Cell Types:
     The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen. 
 
   ![Manual Answer Cell](../_static/assets/images/instructor_guide/manual_answer_cell.png)
+
+## Pushing only Selected Files from the Source Repository
+
+As an instructor, you also have the option **not to push all files** you edited in your source repository. If you made changes to assignment files but only want to push specific files, you can do so by clicking the "PUSH" button, then expanding the dropdown list and selecting the files you want to push. The default behavior is to push all files from the source repository. This feature is helpful if you're working on multiple assignment files, have finished one but not another, and need the changes in one file to be available to students—or if you want to push it for yourself before releasing the assignment to students.
+
+In the following example, the instructor has edited both assignment files, *Arrays.ipynb* and *Functions.ipynb*, but has only finished editing *Functions.ipynb*. Therefore, they select only this file to push. If the assignment is released, students will see the changes the instructor made only in the file that was pushed.
+![Selecting Files to push](../_static/assets/gifs/instructor_guide/pushing_only_selected_files.gif)
 
 # Working With Assignments
 
@@ -232,13 +239,6 @@ Following video illustrates the procedure:
   In following example, student had to implement a python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
   ![Manually Change points Granted From Auto Grading](../_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
   :::
-
-## Pushing only Selected Files from the Source Repository
-
-As an instructor, you also have the option **not to push all files** you edited in your source repository. If you made changes to assignment files but only want to push specific files, you can do so by clicking the "PUSH" button, then expanding the dropdown list and selecting the files you want to push. The default behavior is to push all files from the source repository. This feature is helpful if you're working on multiple assignment files, have finished one but not another, and need the changes in one file to be available to students—or if you want to push it for yourself before releasing the assignment to students.
-
-In the following example, the instructor has edited both assignment files, *Arrays.ipynb* and *Functions.ipynb*, but has only finished editing *Functions.ipynb*. Therefore, they select only this file to push. If the assignment is released, students will see the changes the instructor made only in the file that was pushed.
-![Selecting Files to push](../_static/assets/gifs/instructor_guide/pushing_only_selected_files.gif)
 
 ## Edit Student's Submission
 

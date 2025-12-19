@@ -148,7 +148,18 @@ def test_file_matching_with_patterns(mock_git, tmp_path, submission_123):
     # Create test files in output directory
     os.makedirs(executor.output_path, exist_ok=True)
     test_dirs_and_files = [
-        (executor.output_path, ["Ex1.ipynb", "output.txt", "weird name.py", "config"]),
+        (
+            executor.output_path,
+            [
+                "Ex1.ipynb",
+                "Ex1.2.ipynb",
+                "output.txt",
+                "weird name.py",
+                "fi_le.ipynb",
+                "do:t.ipynb",
+                "config",
+            ],
+        ),
         (executor.output_path + "/.git", ["config", "description", "HEAD"]),
         (executor.output_path + "/bar", ["Ex2.ipynb", "data.gz", "config"]),
     ]
@@ -160,7 +171,15 @@ def test_file_matching_with_patterns(mock_git, tmp_path, submission_123):
     # Get files to commit matching the whitelist patterns
     files_to_commit = executor._get_whitelisted_files()
 
-    expected_files = {"Ex1.ipynb", "'weird name.py'", "bar/Ex2.ipynb", "bar/config"}
+    expected_files = {
+        "Ex1.ipynb",
+        "weird name.py",
+        "bar/Ex2.ipynb",
+        "bar/config",
+        "fi_le.ipynb",
+        "do:t.ipynb",
+        "Ex1.2.ipynb",
+    }
     assert set(files_to_commit) == expected_files
 
 

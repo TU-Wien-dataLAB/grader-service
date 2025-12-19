@@ -2,6 +2,7 @@ import os
 import shutil
 from unittest.mock import patch
 
+import pytest
 from nbclient.client import NotebookClient
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
@@ -12,12 +13,13 @@ from grader_service.tests.convert.converters import (
 )
 
 
-def test_autograde(tmp_path):
-    input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
+@pytest.mark.parametrize("notebook_name", ["simple.ipynb", "with space.ipynb"])
+def test_autograde(tmp_path, notebook_name):
+    input_dir, output_dir = _create_input_output_dirs(tmp_path, [notebook_name])
 
     _generate_test_submission(input_dir, output_dir)
 
-    assert (output_dir / "simple.ipynb").exists()
+    assert (output_dir / notebook_name).exists()
     assert (output_dir / "gradebook.json").exists()
 
     output_dir2 = tmp_path / "output_dir2"
@@ -37,7 +39,7 @@ def test_autograde(tmp_path):
             config=None,
         ).start()
 
-    assert (output_dir2 / "simple.ipynb").exists()
+    assert (output_dir2 / notebook_name).exists()
     assert (output_dir2 / "gradebook.json").exists()
 
 

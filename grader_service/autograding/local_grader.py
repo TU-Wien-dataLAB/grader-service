@@ -7,7 +7,6 @@
 import fnmatch
 import json
 import os
-import shlex
 import shutil
 import subprocess
 from datetime import datetime
@@ -258,10 +257,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
                     files_to_commit.append(file_path)
 
-        # escape filenames to handle special characters and whitespaces
-        escaped_files = [shlex.quote(f) for f in files_to_commit]
-
-        return escaped_files
+        return files_to_commit
 
     def _set_properties(self) -> None:
         """

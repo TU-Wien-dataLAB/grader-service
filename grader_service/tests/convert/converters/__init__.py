@@ -20,7 +20,7 @@ def _create_input_output_dirs(p: Path, input_notebooks=None):
     if input_notebooks:
         for n in input_notebooks:
             shutil.copyfile(tests_dir / f"preprocessors/files/{n}", input_dir / n)
-
+            assert n in [f.name for f in input_dir.iterdir()]
     return input_dir, output_dir
 
 
