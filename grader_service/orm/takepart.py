@@ -27,3 +27,16 @@ class Role(Base, Serializable):
 
     lecture = relationship("Lecture", back_populates="roles")
     user = relationship("User", back_populates="roles")
+
+    def serialize(self):
+        return {"user_id": self.user_id, "lectid": self.lectid, "role": self.role}
+
+    def serialize_with_user(self) -> dict:
+        """Serialize the role with user information.
+
+        Returns:
+            dict: The serialized role data including user information.
+        """
+        model = self.serialize()
+        model["user"] = self.user.serialize()
+        return model

@@ -46,6 +46,18 @@ def default_user_login(default_user, sql_alchemy_engine):
     engine = sql_alchemy_engine
     session: Session = sessionmaker(engine)()
     user = session.get(User, default_user.id)
+    user.is_admin = False
+
+    with patch.object(handlers.base_handler.BaseHandler, "_grader_user", new=user, create=True):
+        yield
+
+
+@pytest.fixture(scope="function")
+def default_admin_login(default_admin, sql_alchemy_engine):
+    engine = sql_alchemy_engine
+    session: Session = sessionmaker(engine)()
+    user = session.get(User, default_admin.id)
+    user.is_admin = True
 
     with patch.object(handlers.base_handler.BaseHandler, "_grader_user", new=user, create=True):
         yield
@@ -57,6 +69,7 @@ def default_roles_dict():
         "20wle2": [{"members": ["ubuntu"], "role": "instructor"}],
         "21wle1": [{"members": ["ubuntu"], "role": "student"}],
         "22wle1": [{"members": ["ubuntu"], "role": "instructor"}],
+        "23wle1": [{"members": ["debian"], "role": "instructor"}],
     }
 
 
@@ -93,14 +106,17 @@ def sql_alchemy_sessionmaker(db_test_config):
 
 
 @pytest.fixture(scope="function")
-def app(tmpdir, sql_alchemy_sessionmaker):
+def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
     service_dir = str(tmpdir.mkdir("grader_service"))
     handlers = HandlerPathRegistry.handler_list()
+
+    authenticator = DummyAuthenticator()
+    authenticator.admin_users = [default_admin.name]
 
     application = GraderServer(
         grader_service_dir=service_dir,
         base_url="/",
-        authenticator=DummyAuthenticator(),
+        authenticator=authenticator,
         handlers=handlers,
         oauth_provider=None,
         session_maker=sql_alchemy_sessionmaker,
@@ -128,6 +144,12 @@ def service_base_url():
 @pytest.fixture(scope="function")
 def default_user():
     user = User(id=1, name="ubuntu", display_name="ubuntu")
+    yield user
+
+
+@pytest.fixture(scope="function")
+def default_admin():
+    user = User(id=2, name="debian", display_name="debian")
     yield user
 
 

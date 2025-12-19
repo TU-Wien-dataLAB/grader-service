@@ -9,6 +9,7 @@ from traitlets.config import LoggingConfigurable
 
 from grader_service.utils import maybe_future, url_path_join
 
+from ..handlers.base_handler import BaseHandler
 from .login import LoginHandler
 
 
@@ -90,8 +91,8 @@ class Authenticator(LoggingConfigurable):
     admin_users = Set(
         help="""
         .. warning::
-            Admin users do currently not have any special privileges
-            in the Grader Service, but this may change in the future.
+            Admin users currently have access to most parts of the Grader Service.
+            Their privileges will be expanded over time.
 
         Set of users that will have admin rights on the Grader Service instance.
         Admin access should be treated the same way root access is.
@@ -511,7 +512,7 @@ class Authenticator(LoggingConfigurable):
             self.log.warning("User %r not allowed.", username)
             return
 
-    async def refresh_user(self, user, handler=None):
+    async def refresh_user(self, user, handler: BaseHandler = None):
         """Refresh auth data for a given user
 
         Allows refreshing or invalidating auth data.
@@ -537,6 +538,9 @@ class Authenticator(LoggingConfigurable):
                 Any fields not present will be left unchanged.
                 This can include updating `.admin` or `.auth_state` fields.
         """
+        user.is_admin = handler.authenticator.is_admin(
+            handler=self, authentication={"name": user.name}
+        )
         return True
 
     def is_admin(self, handler, authentication):

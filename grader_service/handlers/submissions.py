@@ -17,7 +17,7 @@ import pandas as pd
 import tornado
 from celery import chain
 from sqlalchemy import label
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, ObjectDeletedError
 from sqlalchemy.sql.expression import func
 from tornado.web import HTTPError
 
@@ -62,7 +62,7 @@ class SubmissionLectureHandler(GraderBaseHandler):
     /lectures/{lecture_id}/submissions.
     """
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
         """Return the submissions of a specific lecture.
 
@@ -94,25 +94,26 @@ class SubmissionLectureHandler(GraderBaseHandler):
             )
 
         if submission_filter == "latest":
-            subquery = (
+            query = (
                 self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
                 .join(Assignment, Submission.assignid == Assignment.id)
                 .filter(Assignment.lectid == lecture_id)
-                .filter(Submission.deleted == DeleteState.active)
                 .group_by(Submission.user_id, Assignment.id)
-                .subquery()
             )
         else:
-            subquery = (
+            query = (
                 self.session.query(
                     Submission.user_id, func.max(Submission.score).label("max_score")
                 )
                 .join(Assignment, Submission.assignid == Assignment.id)
                 .filter(Assignment.lectid == lecture_id)
-                .filter(Submission.deleted == DeleteState.active)
                 .group_by(Submission.user_id, Assignment.id)
-                .subquery()
             )
+
+        if not self.user.is_admin:
+            query = query.filter(Submission.deleted == DeleteState.active)
+
+        subquery = query.subquery()
 
         submissions_query = (
             self.session.query(
@@ -123,8 +124,10 @@ class SubmissionLectureHandler(GraderBaseHandler):
             .join(Assignment, Submission.assignid == Assignment.id)
             .join(User, Submission.user_id == User.id)
             .filter(Assignment.lectid == lecture_id)
-            .filter(Submission.deleted == DeleteState.active)
         )
+
+        if not self.user.is_admin:
+            submissions_query = submissions_query.filter(Submission.deleted == DeleteState.active)
 
         if submission_filter == "latest":
             submissions = (
@@ -158,6 +161,69 @@ class SubmissionLectureHandler(GraderBaseHandler):
         else:
             self.set_header("Content-Type", "application/json")
             self.write(pivoted_df.to_json(orient="columns", force_ascii=False))
+
+
+@register_handler(
+    path=r"\/api\/users\/(?P<username>[^\/]+)\/submissions\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class SubmissionUserHandler(GraderBaseHandler):
+    """Tornado Handler class for http requests to
+    /users/{username}/submissions.
+    """
+
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
+    async def get(self, username: str):
+        """Return the submissions of a specific user.
+
+        One query parameter:
+        1 - format:
+            csv: return list as comma separated values
+            json: return list as JSON
+
+        :param username: name of the user
+        :type username: str
+        :raises HTTPError: throws err if user is not authorized
+        """
+        self.validate_parameters("format")
+        response_format = self.get_argument("format", "json")
+        if response_format not in ["json", "csv"]:
+            raise HTTPError(
+                HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
+            )
+
+        if not self.user.is_admin:
+            if username != self.user.name:
+                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+
+        db_user = self.session.query(User).filter_by(name=username).first()
+        if db_user is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="User not found")
+
+        submissions_query = (
+            self.session.query(Submission)
+            .filter(Submission.user_id == db_user.id)
+            .order_by(Submission.id)
+        )
+
+        if not self.user.is_admin:
+            submissions_query = submissions_query.filter(Submission.deleted == DeleteState.active)
+
+        submissions = submissions_query.all()
+
+        if response_format == "csv":
+            self._write_csv(submissions)
+        else:
+            self.write_json([s.serialize_with_lectid() for s in submissions])
+        self.session.close()
+
+    def _write_csv(self, submissions):
+        self.set_header("Content-Type", "text/csv")
+        for i, s in enumerate(submissions):
+            d = s.serialize_with_lectid()
+            if i == 0:
+                self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+            self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
 
 
 @register_handler(
@@ -197,7 +263,7 @@ class SubmissionHandler(GraderBaseHandler):
             )
         return True
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int, assignment_id: int):
         """Return the submissions of an assignment.
 
@@ -229,23 +295,29 @@ class SubmissionHandler(GraderBaseHandler):
                 HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
             )
 
-        # check required scopes for instructor version
-        role: Role = self.get_role(lecture_id)
-        if instr_version and role.role < Scope.tutor:
-            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+        if not self.user.is_admin:
+            # check required scopes for instructor version
+            role: Role = self.get_role(lecture_id)
+            if instr_version and role.role < Scope.tutor:
+                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
         # validate that assignment is part of lecture
         self.validate_assignment(lecture_id, assignment_id)
 
         # get list of submissions based on arguments
-        user_id = None if instr_version else role.user_id
+        user_id = None if instr_version else self.user.id
+
         if submission_filter == "latest":
             submissions = self.get_latest_submissions(assignment_id, user_id=user_id)
         elif submission_filter == "best":
             submissions = self.get_best_submissions(assignment_id, user_id=user_id)
         else:
-            query = self.session.query(Submission).filter(
-                Submission.assignid == assignment_id, Submission.deleted == DeleteState.active
-            )
+            if self.user.is_admin:
+                query = self.session.query(Submission).filter(Submission.assignid == assignment_id)
+            else:
+                query = self.session.query(Submission).filter(
+                    Submission.assignid == assignment_id, Submission.deleted == DeleteState.active
+                )
+
             if user_id:
                 query = query.filter(Submission.user_id == user_id)
             submissions = query.order_by(Submission.id).all()
@@ -448,7 +520,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
     /{submission_id}.
     """
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int, assignment_id: int, submission_id: int):
         """Returns a specific submission.
 
@@ -463,7 +535,11 @@ class SubmissionObjectHandler(GraderBaseHandler):
             lecture_id, assignment_id, submission_id
         )
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if self.get_role(lecture_id).role == Scope.student and submission.user_id != self.user.id:
+        if (
+            not self.user.is_admin
+            and self.get_role(lecture_id).role == Scope.student
+            and submission.user_id != self.user.id
+        ):
             raise HTTPError(HTTPStatus.NOT_FOUND)
         self.write_json(submission)
 
@@ -502,9 +578,9 @@ class SubmissionObjectHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(sub)
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Soft-deletes a specific submission.
+        """Soft or Hard-deletes a specific submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -512,41 +588,63 @@ class SubmissionObjectHandler(GraderBaseHandler):
         :type assignment_id: int
         :param submission_id: id of the submission
         :type submission_id: int
-        :raises HTTPError: if submission has feedback, or the deadline has passed,
+        :raises HTTPError: for soft-delete if submission has feedback, or the deadline has passed,
             or it has already been (soft-)deleted, or it belongs to another student,
+            or it was not found in the given lecture and assignment.
+            for hard-delete if user is not an admin,
             or it was not found in the given lecture and assignment.
         """
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        self.validate_parameters()
-        submission = self.get_submission(lecture_id, assignment_id, submission_id)
+        self.validate_parameters("hard_delete")
+        hard_delete = self.get_argument("hard_delete", "false") == "true"
 
-        if submission is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+        try:
+            submission = self.get_submission(lecture_id, assignment_id, submission_id)
+            if submission is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
 
-        # Do not allow students to delete other users' submissions
-        if self.get_role(lecture_id).role < Scope.instructor and submission.user_id != self.user.id:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete submission."
+                    )
 
-        if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
-            raise HTTPError(
-                HTTPStatus.FORBIDDEN, reason="Only submissions without feedback can be deleted."
-            )
+                self.session.delete(submission)
+                self.session.commit()
+                self.delete_submission_files(submission)
+            else:
+                # Do not allow students to delete other users' submissions
+                if (
+                    not self.user.is_admin
+                    and self.get_role(lecture_id).role < Scope.instructor
+                    and submission.user_id != self.user.id
+                ):
+                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission to delete not found.")
 
-        # if assignment has deadline and it has already passed
-        if (
-            submission.assignment.settings.deadline
-            and submission.assignment.settings.deadline
-            < datetime.datetime.now(datetime.timezone.utc)
-        ):
-            raise HTTPError(
-                HTTPStatus.FORBIDDEN,
-                reason="Submission can't be deleted, due date of assigment has passed.",
-            )
+                if submission.feedback_status != FeedbackStatus.NOT_GENERATED:
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN,
+                        reason="Only submissions without feedback can be deleted.",
+                    )
 
-        submission.deleted = DeleteState.deleted
-        self.session.commit()
+                # if assignment has deadline and it has already passed
+                if (
+                    submission.assignment.settings.deadline
+                    and submission.assignment.settings.deadline
+                    < datetime.datetime.now(datetime.timezone.utc)
+                ):
+                    raise HTTPError(
+                        HTTPStatus.FORBIDDEN,
+                        reason="Submission can't be deleted, due date of assigment has passed.",
+                    )
+
+                submission.deleted = DeleteState.deleted
+                self.session.commit()
+        except ObjectDeletedError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Submission was not found")
+        self.write("OK")
 
 
 @register_handler(

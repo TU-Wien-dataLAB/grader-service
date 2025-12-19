@@ -12,7 +12,6 @@ from tornado.web import HTTPError
 
 from grader_service.api.models.lecture import Lecture as LectureModel
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture, LectureState
 from grader_service.orm.takepart import Role, Scope
@@ -25,41 +24,34 @@ class LectureBaseHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures.
     """
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self):
         """
         Returns all lectures the user can access.
+        - For regular users: only lectures they have a role in, which match the requested state and are not deleted.
+        - For admins: all lectures, regardless of state or deletion.
         """
         self.validate_parameters("complete")
         complete = self.get_argument("complete", None)
-        if complete is None:  # return both complete and active lectures
-            lectures = sorted(
-                [
-                    role.lecture
-                    for role in self.user.roles
-                    if role.lecture.deleted == DeleteState.active
-                ],
-                key=lambda lecture: lecture.id,
-            )
-        else:  # return either only complete or only active lectures
-            state = LectureState.complete if (complete == "true") else LectureState.active
-            lectures = sorted(
-                [
-                    role.lecture
-                    for role in self.user.roles
-                    if role.lecture.state == state and role.lecture.deleted == DeleteState.active
-                ],
-                key=lambda lecture: lecture.id,
+
+        query = self.session.query(Lecture)
+
+        if complete is not None:
+            state = LectureState.complete if complete == "true" else LectureState.active
+            query = query.filter(Lecture.state == state)
+
+        if not self.user.is_admin:
+            query = query.join(Role).filter(
+                Role.user_id == self.user.id, Lecture.deleted == DeleteState.active
             )
 
+        lectures = query.order_by(Lecture.id.asc()).all()
         self.write_json(lectures)
 
-    @authorize([Scope.instructor])
+    @authorize([Scope.instructor, Scope.admin])
     async def post(self):
         """
-        Creates a new lecture from a "ghost"-lecture.
-
-        :raises HTTPError: throws err if "ghost"-lecture was not found
+        Creates a new lecture or updates an existing one.
         """
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
@@ -69,13 +61,14 @@ class LectureBaseHandler(GraderBaseHandler):
             self.session.query(Lecture).filter(Lecture.code == lecture_model.code).one_or_none()
         )
         if lecture is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture template not found")
+            lecture = Lecture()
 
         lecture.name = lecture_model.name
         lecture.code = lecture_model.code
         lecture.state = LectureState.complete if lecture_model.complete else LectureState.active
         lecture.deleted = DeleteState.active
 
+        self.session.add(lecture)
         self.session.commit()
         self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
@@ -87,7 +80,7 @@ class LectureObjectHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}.
     """
 
-    @authorize([Scope.instructor])
+    @authorize([Scope.instructor, Scope.admin])
     async def put(self, lecture_id: int):
         """
         Updates a lecture.
@@ -106,7 +99,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(lecture)
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
         """
         Finds lecture with the given lecture id.
@@ -114,18 +107,28 @@ class LectureObjectHandler(GraderBaseHandler):
         :return: lecture with given id
         """
         self.validate_parameters()
-        role = self.get_role(lecture_id)
-        if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+        if self.user.is_admin:
+            lecture = self.get_lecture(lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+        else:
+            role = self.get_role(lecture_id)
+            lecture = role.lecture
+            if lecture.deleted == DeleteState.deleted:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+        self.write_json(lecture)
 
-        self.write_json(role.lecture)
-
-    @authorize([Scope.instructor])
+    @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int):
         """
-        "Soft"-delete a lecture.
-        Softdeleting: lecture is still saved in the datastore
-        but the users have not access to it.
+        Soft or Hard-Deletes a specific lecture.
+        Soft deleting: lecture is still saved in the datastore
+        but the users have no access to it.
+        Hard deleting: removes lecture from the datastore and all associated directories/files.
+
+        When performing a soft-delete of a lecture, all assignments in the lecture are also soft-deleted.
+        If a previously soft-deleted assignment with the same name already exists in the lecture, that previous
+        assignment is permanently removed (hard-deleted) before the current assignment is soft-deleted.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -133,31 +136,55 @@ class LectureObjectHandler(GraderBaseHandler):
         or was not found
 
         """
-        self.validate_parameters()
+        self.validate_parameters("hard_delete")
+        hard_delete = self.get_argument("hard_delete", "false") == "true"
+
         try:
-            lecture = self.session.get(Lecture, lecture_id)
-            if lecture.deleted == 1:
-                raise HTTPError(404)
-            lecture.deleted = 1
-            a: Assignment
-            for a in lecture.assignments:
-                if (len(a.submissions)) > 0:
-                    self.session.rollback()
+            lecture = self.get_lecture(lecture_id)
+            if lecture is None:
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
+
+            if hard_delete:
+                if not self.user.is_admin:
                     raise HTTPError(
-                        HTTPStatus.CONFLICT, "Cannot delete assignment because it has submissions"
-                    )
-                if a.status in ["released", "complete"]:
-                    self.session.rollback()
-                    raise HTTPError(
-                        HTTPStatus.CONFLICT,
-                        "Cannot delete assignment because its status is not created",
+                        HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete lecture."
                     )
 
-                a.deleted = 1
-            self.session.commit()
+                self.session.delete(lecture)
+                self.session.commit()
+                self.delete_lecture_files(lecture)
+            else:
+                if lecture.deleted == DeleteState.deleted:
+                    raise HTTPError(HTTPStatus.NOT_FOUND)
+
+                # Collect previous duplicates and delete them before commit
+                # to prevent UNIQUE constraint violations when soft-deleting current assignments
+                previously_deleted_assignments = []
+                for assignment in lecture.assignments:
+                    self.validate_assignment_for_soft_delete(assignment=assignment)
+                    previously_deleted = self.delete_previous_assignment(
+                        assignment=assignment, lecture_id=lecture_id
+                    )
+                    if previously_deleted is not None:
+                        previously_deleted_assignments.append(previously_deleted)
+                self.session.commit()
+
+                for assignment in previously_deleted_assignments:
+                    self.delete_assignment_files(assignment=assignment, lecture=lecture)
+
+                for assignment in lecture.assignments:
+                    assignment.deleted = DeleteState.deleted
+
+                lecture.deleted = DeleteState.deleted
+                self.session.commit()
+
+            self.write("OK")
         except ObjectDeletedError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
-        self.write("OK")
+            self.session.rollback()
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
+        except Exception:
+            self.session.rollback()
+            raise
 
 
 @register_handler(
@@ -168,7 +195,7 @@ class LectureStudentsHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}/users.
     """
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
         """
         Finds all users of a lecture and groups them by roles.
