@@ -42,6 +42,7 @@ components:
           type: "string"
           example: "Baz Bar"
       example:
+        id: 1
         name: "Baz Bar"
         display_name: "Baz Bar"
     Lecture:
