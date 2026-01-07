@@ -100,11 +100,11 @@ class UserObjectBaseHandler(GraderBaseHandler):
 
             submissions = user.submissions
 
-            self.session.delete(user)
-            self.session.commit()
-
             for submission in submissions:
                 self.delete_submission_files(submission)
+
+            self.session.delete(user)
+            self.session.commit()
         except ObjectDeletedError:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
         self.write("OK")
