@@ -4,7 +4,7 @@ info:
   description: The REST API for the grader service
   license:
     name: BSD-3-Clause
-  version: '0.10.1'
+  version: '0.11.0'
 servers:
   - url: /api
     description: relative path to mock
