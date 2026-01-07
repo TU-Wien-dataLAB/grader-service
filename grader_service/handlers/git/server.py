@@ -6,6 +6,7 @@
 import os
 import shlex
 import subprocess
+import zlib
 from pathlib import Path
 from string import Template
 from typing import List, Optional
@@ -26,6 +27,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 class GitBaseHandler(GraderBaseHandler):
     async def data_received(self, chunk: bytes):
+        self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
         return self.process.stdin.write(chunk)
 
     def write_error(self, status_code: int, **kwargs) -> None:
@@ -44,7 +46,21 @@ class GitBaseHandler(GraderBaseHandler):
                 self.process.stdout.close()
             if self.process.stderr is not None:
                 self.process.stderr.close()
-            IOLoop.current().spawn_callback(self.process.wait_for_exit)
+            IOLoop.current().spawn_callback(self._wait_and_log)
+
+    async def _wait_and_log(self):
+        try:
+            await self.process.wait_for_exit()
+        except subprocess.CalledProcessError as e:
+            stderr = b""
+            if self.process.stderr:
+                try:
+                    stderr = await self.process.stderr.read_until_close()
+                except Exception:
+                    pass
+            self.log.error(
+                "Git process failed (code=%s): %s", e.returncode, stderr.decode(errors="replace")
+            )
 
     async def git_response(self):
         try:
@@ -252,6 +268,14 @@ class RPCHandler(GitBaseHandler):
 
     async def prepare(self):
         await super().prepare()
+        # check if payload is gzipped
+        self._gunzip = None
+        encoding = self.request.headers.get("Content-Encoding", "")
+        if encoding == "gzip":
+            # 16 + MAX_WBITS enables gzip decoding
+            self._gunzip = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+        # now setup git process
         self.rpc = self.path_args[0]
         self.gitdir = self.get_gitdir(rpc=self.rpc)
         self.cmd = f'git {self.rpc} --stateless-rpc "{self.gitdir}"'
@@ -262,6 +286,24 @@ class RPCHandler(GitBaseHandler):
             stderr=Subprocess.STREAM,
             stdout=Subprocess.STREAM,
         )
+
+    async def data_received(self, chunk: bytes):
+        if self._gunzip:
+            try:
+                chunk = self._gunzip.decompress(chunk)
+            except zlib.error:
+                raise HTTPError(400, "Invalid gzip stream")
+        return self.process.stdin.write(chunk)
+
+    def on_finish(self):
+        if self._gunzip:
+            try:
+                tail = self._gunzip.flush()
+                if tail:
+                    self.process.stdin.write(tail)
+            except Exception:
+                pass
+        super().on_finish()
 
     async def post(self, rpc):
         self.set_header("Content-Type", "application/x-git-%s-result" % rpc)
@@ -294,10 +336,13 @@ class InfoRefsHandler(GitBaseHandler):
         self.set_header("Content-Type", "application/x-git-%s-advertisement" % self.rpc)
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 
-        prelude = f"# service=git-{self.rpc}\n0000"
-        size = str(hex(len(prelude))[2:].rjust(4, "0"))
+        prelude = f"# service=git-{self.rpc}\n"
+        pkt_len = len(prelude) + 4
+        size = f"{pkt_len:04x}"
+
         self.write(size)
         self.write(prelude)
+        self.write("0000")  # flush-pkt
         await self.flush()
 
         await self.git_response()
