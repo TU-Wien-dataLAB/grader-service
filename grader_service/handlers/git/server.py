@@ -65,8 +65,6 @@ class GitBaseHandler(GraderBaseHandler):
     async def git_response(self):
         try:
             while data := await self.process.stdout.read_bytes(8192, partial=True):
-                if not data:
-                    break
                 self.write(data)
                 await self.flush()
         except StreamClosedError:
