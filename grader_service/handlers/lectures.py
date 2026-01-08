@@ -36,9 +36,8 @@ class LectureBaseHandler(GraderBaseHandler):
 
         query = self.session.query(Lecture)
 
-        if complete is not None:
-            state = LectureState.complete if complete == "true" else LectureState.active
-            query = query.filter(Lecture.state == state)
+        state = LectureState.complete if complete == "true" else LectureState.active
+        query = query.filter(Lecture.state == state)
 
         if not self.user.is_admin:
             query = query.join(Role).filter(
