@@ -28,11 +28,12 @@ class LectureBaseHandler(GraderBaseHandler):
     async def get(self):
         """
         Returns all lectures the user can access.
-        - For regular users: only lectures they have a role in, which match the requested state and are not deleted.
+        - For regular users: only lectures they have a role in, which match the requested states and are not deleted.
         - For admins: all lectures, regardless of state or deletion.
         """
-        self.validate_parameters("complete")
+        self.validate_parameters("complete", "instructor")
         complete = self.get_argument("complete", None)
+        instructor = self.get_argument("instructor", None)
 
         query = self.session.query(Lecture)
 
@@ -41,9 +42,16 @@ class LectureBaseHandler(GraderBaseHandler):
             query = query.filter(Lecture.state == state)
 
         if not self.user.is_admin:
-            query = query.join(Role).filter(
-                Role.user_id == self.user.id, Lecture.deleted == DeleteState.active
-            )
+            if instructor == "true":
+                query = query.join(Role).filter(
+                    Role.user_id == self.user.id,
+                    Role.role.in_([Scope.instructor, Scope.tutor]),
+                    Lecture.deleted == DeleteState.active,
+                )
+            else:
+                query = query.join(Role).filter(
+                    Role.user_id == self.user.id, Lecture.deleted == DeleteState.active
+                )
 
         lectures = query.order_by(Lecture.id.asc()).all()
         self.write_json(lectures)

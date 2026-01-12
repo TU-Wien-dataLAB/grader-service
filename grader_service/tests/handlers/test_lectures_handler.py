@@ -95,6 +95,92 @@ async def test_get_lectures_complete(
     assert len(lectures) == 1
 
 
+async def test_get_lectures_instructor(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
+    sql_alchemy_engine,
+):
+    url = service_base_url + "lectures?instructor=true"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    session.add(
+        orm.Lecture(
+            id=10, name="test", code="test", state=LectureState.active, deleted=DeleteState.active
+        )
+    )
+    session.add(
+        orm.Lecture(
+            id=11, name="test2", code="test2", state=LectureState.active, deleted=DeleteState.active
+        )
+    )
+    session.commit()
+
+    add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
+    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    lectures = json.loads(response.body.decode())
+    assert isinstance(lectures, list)
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
+    assert len(lectures) == 3
+    assert lectures[0]["id"] == 2
+    assert lectures[1]["id"] == 3
+    assert lectures[2]["id"] == 11
+
+
+async def test_get_lectures_instructor_and_complete(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    default_user,
+    sql_alchemy_engine,
+):
+    url = service_base_url + "lectures?complete=true&instructor=true"
+
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    session.add(
+        orm.Lecture(
+            id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
+        )
+    )
+    session.add(
+        orm.Lecture(
+            id=11,
+            name="test2",
+            code="test2",
+            state=LectureState.complete,
+            deleted=DeleteState.active,
+        )
+    )
+    session.commit()
+
+    add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
+    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    lectures = json.loads(response.body.decode())
+    assert isinstance(lectures, list)
+    assert lectures
+    [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
+    assert len(lectures) == 1
+    assert lectures[0]["id"] == 11
+
+
 async def test_get_lectures_admin(
     app: GraderServer,
     service_base_url,
