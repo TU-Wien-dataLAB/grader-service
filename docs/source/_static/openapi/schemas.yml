@@ -1,7 +1,7 @@
 ## Model generation:
 #  
 # Typescript:
-# java -jar ../openapi-generator-cli.jar generate -i docs/source/_static/openapi/schemas.yml -g typescript-angular -o src --global-property models
+# java -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g typescript-angular -o src --global-property models
 #
 # Python (service):
 # call in service root directory
