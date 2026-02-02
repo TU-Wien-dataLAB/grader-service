@@ -86,7 +86,7 @@ def check_authorization(
             self.user.name,
             self.request.path,
         )
-        raise HTTPError(403)
+        raise HTTPError(403, reason="Permission denied")
     return True
 
 
@@ -780,7 +780,7 @@ class GraderBaseHandler(BaseHandler):
     def get_role(self, lecture_id: int) -> Role:
         role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
-            raise HTTPError(403)
+            raise HTTPError(403, reason="No role found")
         return role
 
     def get_lecture(self, lecture_id: int) -> Lecture:
@@ -1106,6 +1106,7 @@ class GraderBaseHandler(BaseHandler):
             ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
+            # TODO: do we want to replace this with APIError?
             raise HTTPError(500, reason="Subprocess Error")
         except FileNotFoundError as e:
             self.log.error(e)
@@ -1139,6 +1140,7 @@ class GraderBaseHandler(BaseHandler):
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             self.log.error(stderr.decode())
+            # TODO: do we want to replace this with APIError?
             raise HTTPError(500, reason="Subprocess Error")
         return stdout.decode()
 
@@ -1175,13 +1177,13 @@ def authenticated(
     """Decorate methods with this to require that the user be logged in.
 
     If the user is not logged in `tornado.web.HTTPError`
-    with code 403 will be raised.
+    with code 401 will be raised.
     """
 
     @functools.wraps(method)
     def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
         if not self.current_user:
-            raise HTTPError(403)
+            raise HTTPError(401, reason="User not authenticated")
         return method(self, *args, **kwargs)
 
     return wrapper

@@ -140,7 +140,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises HTTPError: throws err if lecture was already deleted
+        :raises ,HTTPError: throws err if lecture was already deleted
         or was not found
 
         """
@@ -163,7 +163,7 @@ class LectureObjectHandler(GraderBaseHandler):
                 self.delete_lecture_files(lecture)
             else:
                 if lecture.deleted == DeleteState.deleted:
-                    raise HTTPError(HTTPStatus.NOT_FOUND)
+                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was deleted.")
 
                 # Collect previous duplicates and delete them before commit
                 # to prevent UNIQUE constraint violations when soft-deleting current assignments
