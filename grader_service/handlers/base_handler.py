@@ -766,14 +766,7 @@ class BaseHandler(web.RequestHandler):
         return url
 
 
-class GraderBaseHandler(BaseHandler):
-    def validate_parameters(self, *args):
-        if len(self.request.arguments) == 0:
-            return
-        unknown_args = set(self.request.query_arguments.keys()) - set(args)
-        if len(unknown_args) != 0:
-            raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
-
+class GraderErrorMixin:
     def write_error(self, status_code, **kwargs):
         self.log.error("Error %s: %s", status_code, self._reason)
 
@@ -789,6 +782,15 @@ class GraderBaseHandler(BaseHandler):
             self.finish(json.dumps(reply))
         else:
             super().write_error(status_code, exc_info=exc)
+
+
+class GraderBaseHandler(GraderErrorMixin, BaseHandler):
+    def validate_parameters(self, *args):
+        if len(self.request.arguments) == 0:
+            return
+        unknown_args = set(self.request.query_arguments.keys()) - set(args)
+        if len(unknown_args) != 0:
+            raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
     def get_role(self, lecture_id: int) -> Role:
         role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
