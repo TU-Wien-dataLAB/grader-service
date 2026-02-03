@@ -37,6 +37,7 @@ from traitlets.config import SingletonConfigurable
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.errors import APIError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -775,7 +776,19 @@ class GraderBaseHandler(BaseHandler):
 
     def write_error(self, status_code, **kwargs):
         self.log.error("Error %s: %s", status_code, self._reason)
-        return super().write_error(status_code, **kwargs)
+
+        exc = kwargs.get("exc_info", (None, None, None))[1]
+        if isinstance(exc, APIError):
+            self.set_header("Content-Type", "application/json")
+
+            reply = {"status": status_code, "message": exc.message}
+
+            if exc.reason is not None:
+                reply["error"] = exc.reason
+
+            self.finish(json.dumps(reply))
+        else:
+            super().write_error(status_code, exc_info=exc)
 
     def get_role(self, lecture_id: int) -> Role:
         role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
