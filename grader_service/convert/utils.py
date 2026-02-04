@@ -67,6 +67,23 @@ def is_grade(cell: NotebookNode) -> bool:
     return cell.metadata["nbgrader"].get("grade", False)
 
 
+def has_cell_type(cell: NotebookNode) -> bool:
+    """Returns True if the cell has a cell type."""
+    if "nbgrader" not in cell.metadata:
+        return False
+
+    # validate cell metadata
+    grade = cell.metadata["nbgrader"]["grade"]
+    solution = cell.metadata["nbgrader"]["solution"]
+    locked = cell.metadata["nbgrader"]["locked"]
+    grade_id = cell.metadata["nbgrader"]["grade_id"]
+
+    if not grade and not solution and not locked and not grade_id:
+        return False
+
+    return True
+
+
 def is_solution(cell: NotebookNode) -> bool:
     """Returns True if the cell is a solution cell."""
     if "nbgrader" not in cell.metadata:
