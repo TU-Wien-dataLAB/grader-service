@@ -1003,6 +1003,7 @@ class GraderBaseHandler(BaseHandler):
         lecture: Lecture,
         assignment: Assignment,
         submission: Optional[Submission] = None,
+        username: Optional[str] = None,
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
         directories which returns the path of the repository based on
@@ -1033,7 +1034,19 @@ class GraderBaseHandler(BaseHandler):
                 path = os.path.join(type_path, self.user.name)
         elif repo_type == GitRepoType.USER:
             user_path = os.path.join(assignment_path, repo_type)
-            path = os.path.join(user_path, self.user.name)
+            # we allow two different paths for user repos:
+            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
+            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
+            if username is None:
+                path = os.path.join(user_path, self.user.name)
+            else:
+                user_role = self.get_role(lecture.id).role
+                if not self.user.is_admin and user_role < Scope.tutor:
+                    raise HTTPError(
+                        403,
+                        reason="Only tutors, instructors and admins can access other users' repositories.",
+                    )
+                path = os.path.join(user_path, username)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 
