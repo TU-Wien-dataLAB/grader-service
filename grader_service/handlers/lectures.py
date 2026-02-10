@@ -140,7 +140,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises ,HTTPError: throws err if lecture was already deleted
+        :raises HTTPError: throws err if lecture was already deleted
         or was not found
 
         """
