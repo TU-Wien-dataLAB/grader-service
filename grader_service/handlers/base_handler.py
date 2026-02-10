@@ -1121,7 +1121,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
             ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
-            # TODO: do we want to replace this with APIError?
             raise HTTPError(500, reason="Subprocess Error")
         except FileNotFoundError as e:
             self.log.error(e)
@@ -1155,7 +1154,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             self.log.error(stderr.decode())
-            # TODO: do we want to replace this with APIError?
             raise HTTPError(500, reason="Subprocess Error")
         return stdout.decode()
 
