@@ -123,7 +123,7 @@ async def test_get_user_admin(
     default_user,
     default_admin,
 ):
-    url = service_base_url + f"users/{default_user.name}"
+    url = service_base_url + f"users/{default_user.id}"
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -208,7 +208,7 @@ async def test_put_user_admin(
     default_user,
     default_admin,
 ):
-    url = service_base_url + f"users/{default_user.name}"
+    url = service_base_url + f"users/{default_user.id}"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     response = await http_server_client.fetch(
@@ -301,7 +301,7 @@ async def test_delete_user_admin(
     sql_alchemy_engine,
 ):
     username = default_user.name
-    url = service_base_url + f"users/{username}/"
+    url = service_base_url + f"users/{default_user.id}/"
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
