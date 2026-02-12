@@ -1291,9 +1291,16 @@ async def test_post_submission_by_student(
     sql_alchemy_engine,
     default_roles,
     default_user_login,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 1  # default user is student
     a_id = 1
+
+    # add properties to the assignment
+    session = sql_alchemy_sessionmaker()
+    assignment = session.query(AssignmentORM).filter_by(id=a_id).first()
+    assignment.properties = json.dumps({"notebooks": {}})
+    session.commit()
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1330,6 +1337,16 @@ async def test_post_submission_by_instructor(
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     insert_student(engine, student_username, l_id)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
+    prop = {"notebooks": {}}
+
+    await http_server_client.fetch(
+        url,
+        method="PUT",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(prop),
+    )
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1442,6 +1459,7 @@ async def test_post_submission_max_submissions_assignment(
         max_submissions=1,
         autograde_type="unassisted",
     )
+    assignment_orm.properties = json.dumps({"notebooks": {}})
     session.add(assignment_orm)
     session.commit()
     assert assignment_orm.id == 3
@@ -1754,6 +1772,16 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     insert_student(engine, student_username, l_id)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
+    prop = {"notebooks": {}}
+
+    await http_server_client.fetch(
+        url,
+        method="PUT",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(prop),
+    )
 
     post_url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
