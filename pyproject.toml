@@ -130,7 +130,7 @@ dev = [
 ]
 test = [
     "faker>=37.11.0",
-    "nbconvert>=7.16.6",
+    "nbconvert", # minimal dependency of jupyterlab required to run tests
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
