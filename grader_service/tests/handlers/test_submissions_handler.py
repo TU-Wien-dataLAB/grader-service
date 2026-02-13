@@ -1490,6 +1490,36 @@ async def test_post_submission_max_submissions_assignment(
     assert e.code == HTTPStatus.CONFLICT
 
 
+async def test_post_submission_no_assignment_properties(
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    tmp_path,
+    default_roles,
+    default_user_login,
+):
+    l_id = 1
+    a_id = 1
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
+    with (
+        patch("subprocess.run"),
+        patch.object(SubmissionHandler, "construct_git_dir", return_value=str(tmp_path)),
+        pytest.raises(HTTPClientError) as exc_info,
+    ):
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps({"commit_hash": secrets.token_hex(20)}),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+    assert e.message == "Assignment properties not found"
+
+
 async def test_submission_properties(
     app: GraderServer,
     service_base_url,
@@ -1523,6 +1553,101 @@ async def test_submission_properties(
     assert get_response.code == HTTPStatus.OK
     assignment_props = json.loads(get_response.body.decode())
     assert assignment_props == prop
+
+
+async def test_submission_properties_student(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    sql_alchemy_engine,
+    default_roles,
+    default_user_login,
+    sql_alchemy_sessionmaker,
+    tmp_path,
+):
+    l_id = 1
+    a_id = 3
+    s_id = 1
+
+    props = {
+        "_type": "GradeBookModel",
+        "extra_files": [],
+        "schema_version": "1",
+        "notebooks": {
+            "notebook1": {
+                "_type": "Notebook",
+                "id": "notebook1",
+                "name": "Notebook 1",
+                "flagged": False,
+                "kernelspec": "python3",
+                "grade_cells_dict": {},
+                "solution_cells_dict": {},
+                "task_cells_dict": {},
+                "source_cells_dict": {
+                    "cell-1e1d884e2e83e97f": {
+                        "_type": "SourceCell",
+                        "cell_type": "code",
+                        "checksum": "6453ffdd62ea1a1eabcf95616174dd88",
+                        "id": None,
+                        "locked": True,
+                        "name": "cell-1e1d884e2e83e97f",
+                        "notebook_id": None,
+                        "source": "assert sum_numbers(1) == 1\nassert sum_numbers(2) == 3\nassert sum_numbers(5) == 15",
+                    }
+                },
+                "grades_dict": {},
+                "comments_dict": {},
+            }
+        },
+    }
+
+    assignment = AssignmentORM(
+        id=a_id,
+        lectid=l_id,
+        name="assignment",
+        points=10,
+        status="released",
+        deleted=DeleteState.active,
+    )
+    sql_alchemy_sessionmaker.add(assignment)
+    sql_alchemy_sessionmaker.commit()
+
+    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+
+    submission = sql_alchemy_sessionmaker().query(SubmissionORM).filter_by(id=s_id).first()
+    submission.properties.properties = json.dumps(props)
+
+    sql_alchemy_sessionmaker().merge(submission)
+
+    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/properties"
+
+    response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert response.code == HTTPStatus.OK
+    response_data = json.loads(response.body.decode())
+    assert response_data == {
+        "_type": "GradeBookModel",
+        "extra_files": [],
+        "schema_version": "1",
+        "notebooks": {
+            "notebook1": {
+                "_type": "Notebook",
+                "id": "notebook1",
+                "name": "Notebook 1",
+                "flagged": False,
+                "kernelspec": "python3",
+                "grade_cells_dict": {},
+                "solution_cells_dict": {},
+                "task_cells_dict": {},
+                "source_cells_dict": {},
+                "grades_dict": {},
+                "comments_dict": {},
+            }
+        },
+    }
 
 
 async def test_submission_properties_not_correct(
