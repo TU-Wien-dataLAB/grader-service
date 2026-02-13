@@ -437,10 +437,14 @@ class SubmissionHandler(GraderBaseHandler):
         self.write_json(submission)
 
         # set submission properties
-        properties = self.create_properties(json.loads(assignment.properties), submission.id)
+        try:
+            properties = self.create_properties(json.loads(assignment.properties), submission.id)
 
-        self.session.add(properties)
-        self.session.commit()
+            self.session.add(properties)
+            self.session.commit()
+        except Exception:
+            self.log.info("No assignment properties found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment properties not found")
 
         # If the assignment has automatic or fully automatic grading, run the necessary tasks.
         # The autograding is not performed when an instructor creates a new submission for a student.
