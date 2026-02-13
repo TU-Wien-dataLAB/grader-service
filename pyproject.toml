@@ -130,6 +130,7 @@ dev = [
 ]
 test = [
     "faker>=37.11.0",
+    "nbconvert>=7.16.6",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
@@ -138,7 +139,6 @@ test = [
     "pytest-mock>=3.15.1",
     "pytest-tornasync>=0.6.0.post2",
     "testcontainers>=4.13.0",
-    "jupyterlab>=4.0.0,<5",
 ]
 
 [tool.ruff]
