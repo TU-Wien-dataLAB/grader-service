@@ -12,8 +12,6 @@ from tornado.web import HTTPError
 from traitlets import Bool, Callable, Unicode, Union
 from traitlets.config import SingletonConfigurable
 
-from grader_service.errors import APIError
-
 
 def default_lti_username_match(member, submission, log) -> bool:
     return False
@@ -299,8 +297,8 @@ class LTISyncGrades(SingletonConfigurable):
         try:
             encoded = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
         except Exception as e:
-            raise APIError(
-                HTTPStatus.UNPROCESSABLE_ENTITY, message=f"Unable to encode payload: {str(e)}"
+            raise HTTPError(
+                HTTPStatus.UNPROCESSABLE_ENTITY, reason=f"Unable to encode payload: {str(e)}"
             )
         scopes = [
             "https://purl.imsglobal.org/spec/lti-ags/scope/score",

@@ -28,7 +28,6 @@ from grader_service.autograding.celery.tasks import (
     lti_sync_task,
 )
 from grader_service.convert.gradebook.models import GradeBookModel
-from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.handlers.handler_utils import GitRepoType, parse_ids
 from grader_service.orm.assignment import Assignment
@@ -959,7 +958,7 @@ class LtiSyncHandler(GraderBaseHandler):
             except Exception as e:
                 err_msg = f"Could not process submission IDs: {e}"
                 self.log.error(err_msg)
-                raise APIError(HTTPStatus.BAD_REQUEST, message=err_msg)
+                raise HTTPError(HTTPStatus.BAD_REQUEST, reason=err_msg)
 
         lti_plugin = LTISyncGrades.instance()
         lecture_model = lecture.serialize()
@@ -976,7 +975,7 @@ class LtiSyncHandler(GraderBaseHandler):
             except HTTPError as e:
                 err_msg = f"Could not sync grades: {e.reason}"
                 self.log.info(err_msg)
-                raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=err_msg)
+                raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, reason=err_msg)
             except Exception as e:
                 self.log.error("Could not sync grades: " + str(e))
                 raise HTTPError(500, reason="An unexpected error occurred.")

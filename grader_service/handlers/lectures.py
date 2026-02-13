@@ -163,7 +163,7 @@ class LectureObjectHandler(GraderBaseHandler):
                 self.delete_lecture_files(lecture)
             else:
                 if lecture.deleted == DeleteState.deleted:
-                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was deleted.")
+                    raise HTTPError(HTTPStatus.NOT_FOUND)
 
                 # Collect previous duplicates and delete them before commit
                 # to prevent UNIQUE constraint violations when soft-deleting current assignments

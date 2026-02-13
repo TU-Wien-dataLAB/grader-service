@@ -17,7 +17,6 @@ from tornado.iostream import StreamClosedError
 from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
-from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.lecture import Lecture
@@ -72,7 +71,7 @@ class GitBaseHandler(GraderBaseHandler):
             pass
         except Exception as e:
             self.log.error(f"Error from git response {e}")
-            raise APIError(500, message=str(e))
+            raise HTTPError(500, str(e))
 
     def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
         repo_type: str = pathlets[2]

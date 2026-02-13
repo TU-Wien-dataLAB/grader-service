@@ -11,7 +11,6 @@ from tornado.httputil import url_concat
 from tornado.log import app_log
 from tornado.web import HTTPError, MissingArgumentError, RequestHandler
 
-from grader_service.errors import APIError
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.utils import convert_request_to_dict, url_path_join
 
@@ -366,14 +365,14 @@ class LTI13CallbackHandler(BaseHandler):
         try:
             id_token = self.decode_and_validate_launch_request()
         except InvalidAudienceError as e:
-            raise APIError(401, message=str(e))
+            raise HTTPError(401, reason=str(e))
         except ValidationError as e:
-            raise APIError(400, message=str(e))
+            raise HTTPError(400, reason=str(e))
 
         try:
             user = await self.login_user(id_token)
         except LoginError as e:
-            raise APIError(400, message=str(e))
+            raise HTTPError(400, reason=str(e))
         self.log.debug(f"user logged in: {user}")
         if user is None:
             raise HTTPError(403, reason="User missing or null")

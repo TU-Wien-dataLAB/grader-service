@@ -10,7 +10,6 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from oauthlib import oauth2
 from tornado import web
 
-from grader_service.errors import APIError
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm.api_token import APIToken
 from grader_service.utils import get_browser_protocol, url_path_join
@@ -219,7 +218,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
 
         # Errors that should be shown to the user on the provider website
         except oauth2.FatalClientError as e:
-            raise APIError(e.status_code, message=e.description)
+            raise web.HTTPError(e.status_code, e.description)
 
         # Errors embedded in the redirect URI back to the client
         except oauth2.OAuth2Error as e:
@@ -243,7 +242,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
                 uri, http_method, body, headers, scopes, credentials
             )
         except oauth2.FatalClientError as e:
-            raise APIError(e.status_code, message=e.description)
+            raise web.HTTPError(e.status_code, e.description)
         else:
             self.send_oauth_response(headers, body, status)
 
@@ -258,7 +257,7 @@ class OAuthTokenHandler(OAuthHandler, BaseHandler):
                 uri, http_method, body, headers, credentials
             )
         except oauth2.FatalClientError as e:
-            raise APIError(e.status_code, message=e.description)
+            raise web.HTTPError(e.status_code, e.description)
         else:
             self.send_oauth_response(headers, body, status)
 

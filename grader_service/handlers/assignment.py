@@ -15,7 +15,6 @@ from tornado.web import HTTPError
 from grader_service.api.models.assignment import Assignment as AssignmentModel
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.gradebook.models import GradeBookModel
-from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.handlers.submissions import SubmissionHandler
 from grader_service.orm.assignment import Assignment
@@ -136,13 +135,13 @@ class AssignmentBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         role = self.get_role(lecture_id)
         if role.lecture.deleted == DeleteState.deleted:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was deleted")
+            raise HTTPError(HTTPStatus.NOT_FOUND)
         try:
             body = tornado.escape.json_decode(self.request.body)
             assignment_model = AssignmentModel.from_dict(body)
         except ValueError as e:
             # TODO Return useful error message
-            raise APIError(HTTPStatus.BAD_REQUEST, message=str(e))
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason=str(e))
         assignment = Assignment()
 
         assignment.name = assignment_model.name
@@ -318,7 +317,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 self.delete_assignment_files(assignment=assignment, lecture=lecture)
             else:
                 if assignment.deleted == DeleteState.deleted:
-                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was deleted.")
+                    raise HTTPError(HTTPStatus.NOT_FOUND)
 
                 self.validate_assignment_for_soft_delete(assignment=assignment)
                 previously_deleted = self.delete_previous_assignment(
