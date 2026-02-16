@@ -18,6 +18,9 @@ spec:
       labels:
         {{- include "grader-service.selectorLabels" . | nindent 8 }}
         hub.jupyter.org/network-access-hub: "true"
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -40,18 +43,10 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
-          # Include extra environment variables if they exist
-            {{- range .Values.extraEnv }}
-            - name: {{ .name }}
-              {{- if .value }}
-              value: {{ .value }}
-              {{- else if .secretKeyRef }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .secretKeyRef.name }}
-                  key: {{ .secretKeyRef.key }}
-              {{- end }}
-            {{- end }}
+            {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
+            {{- include "grader-service.dbEnv" . | nindent 12 }}
+            {{- include "grader-service.ltiEnv" . | nindent 12 }}
+            {{- include "grader-service.rabbitmqEnv" . | nindent 12 }}
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}
             - name: GRADER_PORT
@@ -64,18 +59,10 @@ spec:
               value: {{ .Values.db.dialect }}
             - name: GRADER_DB_HOST
               value: {{ .Values.db.host }}
-            - name: GRADER_DB_URL
-              value: {{ .Values.db.url }}
-            - name: RABBITMQ_GRADER_SERVICE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  key: username
-                  name: rabbitmq-grader-service-default-user
-            - name: RABBITMQ_GRADER_SERVICE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  key: password
-                  name: rabbitmq-grader-service-default-user
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/grader-service
@@ -90,7 +77,7 @@ spec:
               subPath: .gitconfig
   
       initContainers:
-{{ if .Values.volumePermissions.enabled }}
+{{- if .Values.volumePermissions.enabled }}
         - name: volume-permissions
           image: busybox
           command: ["/bin/sh","-c"]
@@ -101,12 +88,19 @@ spec:
 {{- if .Values.subPath }}
               subPath: {{ .Values.subPath }}
 {{- end }}
-{{ end }}
+{{- end }}
 
         - name: db-migration
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: ["grader-service-migrate", "-f", "/etc/grader-service/grader_service_config.py"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
+            {{- include "grader-service.dbEnv" . | nindent 12 }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /etc/grader-service/grader_service_config.py
@@ -132,7 +126,6 @@ spec:
           configMap:
             defaultMode: 444
             name: grader-service
-
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
