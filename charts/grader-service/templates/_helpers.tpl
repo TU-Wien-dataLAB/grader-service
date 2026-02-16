@@ -58,19 +58,23 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Resolve a value-or-secret field.
-Accepts a value that is either a plain string or a map with a `secretKeyRef` key.
+Render a Kubernetes env var entry from the value/valueFrom pattern.
+Accepts a dict with "name" (env var name) and "val" (the map from values.yaml).
+The map must contain exactly one of:
+  - value: <string>
+  - valueFrom: { secretKeyRef: { name, key } }
+
 Usage: {{ include "grader-service.envVar" (dict "name" "GRADER_DB_URL" "val" .Values.db.url) }}
 */}}
 {{- define "grader-service.envVar" -}}
 - name: {{ .name }}
-{{- if eq (kindOf .val) "map" }}
+{{- if hasKey .val "valueFrom" }}
   valueFrom:
-    secretKeyRef:
-      name: {{ .val.secretKeyRef.name }}
-      key: {{ .val.secretKeyRef.key }}
+    {{- toYaml .val.valueFrom | nindent 4 }}
+{{- else if hasKey .val "value" }}
+  value: {{ .val.value | quote }}
 {{- else }}
-  value: {{ .val | quote }}
+  {{- fail (printf "%s: must contain either 'value' or 'valueFrom'. Got: %s" .name (toJson .val)) }}
 {{- end }}
 {{- end }}
 
@@ -85,12 +89,11 @@ This is used by all containers that need database access (main, worker, db-migra
 
 {{/*
 LTI private key environment variable.
-Only rendered when LTI is enabled.
-If the value is a secretKeyRef map it is injected as an env var;
-otherwise it is written into the config file directly and no env var is needed.
+Only rendered when LTI is enabled AND the key is sourced from a secret (valueFrom).
+When using a plain value, the key is written directly into the config file.
 */}}
 {{- define "grader-service.ltiEnv" -}}
-{{- if and .Values.ltiSyncGrades.enabled (eq (kindOf .Values.ltiSyncGrades.token_private_key) "map") }}
+{{- if and .Values.ltiSyncGrades.enabled (hasKey .Values.ltiSyncGrades.token_private_key "valueFrom") }}
 {{ include "grader-service.envVar" (dict "name" "LTI_PRIVATE_KEY" "val" .Values.ltiSyncGrades.token_private_key) }}
 {{- end }}
 {{- end }}
@@ -112,7 +115,7 @@ RabbitMQ credential environment variables.
 {{- end }}
 
 {{/*
-Extra environment variables (supports value, valueFrom, and legacy secretKeyRef).
+Extra environment variables. Standard Kubernetes env var syntax only.
 */}}
 {{- define "grader-service.extraEnv" -}}
 {{- range . }}
@@ -122,11 +125,6 @@ Extra environment variables (supports value, valueFrom, and legacy secretKeyRef)
 {{- else if .valueFrom }}
   valueFrom:
     {{- toYaml .valueFrom | nindent 4 }}
-{{- else if .secretKeyRef }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ .secretKeyRef.name }}
-      key: {{ .secretKeyRef.key }}
 {{- end }}
 {{- end }}
 {{- end }}

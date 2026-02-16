@@ -39,10 +39,10 @@ data:
 {{- end }}
 
     ### Database
-{{- if eq (kindOf .Values.db.url) "map" }}
+{{- if hasKey .Values.db.url "valueFrom" }}
     c.GraderService.db_url = os.environ.get("GRADER_DB_URL", "")
 {{- else }}
-    c.GraderService.db_url = os.environ.get("GRADER_DB_URL", {{ .Values.db.url | quote }})
+    c.GraderService.db_url = os.environ.get("GRADER_DB_URL", {{ .Values.db.url.value | quote }})
 {{- end }}
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
@@ -65,10 +65,10 @@ data:
 {{- end }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
-{{- if eq (kindOf .Values.ltiSyncGrades.token_private_key) "map" }}
+{{- if hasKey .Values.ltiSyncGrades.token_private_key "valueFrom" }}
     c.LTISyncGrades.token_private_key = os.environ.get("LTI_PRIVATE_KEY", "")
 {{- else }}
-    c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
+    c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key.value | quote }}
 {{- end }}
 {{- end }}
 
