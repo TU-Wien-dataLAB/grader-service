@@ -3,6 +3,16 @@ entries:
   grader-service:
   - apiVersion: v2
     appVersion: 0.11.2
+    created: "2026-02-16T11:24:27.584976886Z"
+    description: A Helm chart for Kubernetes
+    digest: 98edc05ed340e57faa814f65d415654614bbbd60225a603a8ee9719e8f427af3
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/grader-service/releases/download/grader-service-helm-0.11.3/grader-service-0.11.3.tgz
+    version: 0.11.3
+  - apiVersion: v2
+    appVersion: 0.11.2
     created: "2026-01-07T15:01:28.568350723Z"
     description: A Helm chart for Kubernetes
     digest: f988ea37710e2c987b9d5a7e26aa5dae8629341c3ba391271fde0b3f51153715
@@ -103,9 +113,9 @@ entries:
     version: 0.9.0
   - apiVersion: v2
     appVersion: 0.9.0-a2
-    created: "2025-09-08T13:56:09.870314274Z"
+    created: "2025-09-16T13:17:39.928924369Z"
     description: A Helm chart for Kubernetes
-    digest: 9887c7e64adcab8fb2725a6a6a0fd51b4cefb065f831d7fabc51b59dcfa30323
+    digest: 6c12d5c9c6b03a2d3e587a792f054b9f494d89e42c7e0b5a90de1bf8e9fad760
     name: grader-service
     type: application
     urls:
@@ -113,9 +123,9 @@ entries:
     version: 0.9.0-a2
   - apiVersion: v2
     appVersion: 0.9.0-a2
-    created: "2025-09-16T13:17:39.928924369Z"
+    created: "2025-09-08T13:56:09.870314274Z"
     description: A Helm chart for Kubernetes
-    digest: 6c12d5c9c6b03a2d3e587a792f054b9f494d89e42c7e0b5a90de1bf8e9fad760
+    digest: 9887c7e64adcab8fb2725a6a6a0fd51b4cefb065f831d7fabc51b59dcfa30323
     name: grader-service
     type: application
     urls:
@@ -363,9 +373,9 @@ entries:
     version: 0.6.0
   - apiVersion: v2
     appVersion: 0.6.0-a1
-    created: "2024-11-11T15:07:33.449526248Z"
+    created: "2024-11-11T13:12:28.651847412Z"
     description: A Helm chart for Kubernetes
-    digest: bf2844b3cd90bb8f2ecfb6bd68d693309aeb7a1681fe8679742948e073d859d8
+    digest: 55b669363eca979f813d18c25d9b430c524b34626b418404fc9fe5da2f9ebbad
     name: grader-service
     type: application
     urls:
@@ -373,9 +383,9 @@ entries:
     version: 0.6.0-a1
   - apiVersion: v2
     appVersion: 0.6.0-a1
-    created: "2024-11-11T13:12:28.651847412Z"
+    created: "2024-11-11T15:07:33.449526248Z"
     description: A Helm chart for Kubernetes
-    digest: 55b669363eca979f813d18c25d9b430c524b34626b418404fc9fe5da2f9ebbad
+    digest: bf2844b3cd90bb8f2ecfb6bd68d693309aeb7a1681fe8679742948e073d859d8
     name: grader-service
     type: application
     urls:
@@ -792,16 +802,6 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.10-a2/grader-service-0.2.10-a2.tgz
     version: 0.2.10-a2
   - apiVersion: v2
-    appVersion: 0.2.8a2
-    created: "2023-10-30T11:58:31.920966157Z"
-    description: A Helm chart for Kubernetes
-    digest: 96e917752e8995197a2b8dace9ba365d46c23c8a89f45f170f1c04248b6ebec6
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.10-a1/grader-service-0.2.10-a1.tgz
-    version: 0.2.10-a1
-  - apiVersion: v2
     appVersion: 0.2.8a1
     created: "2023-10-13T09:04:49.119701155Z"
     description: A Helm chart for Kubernetes
@@ -842,6 +842,16 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.10-a1/grader-service-0.2.10-a1.tgz
     version: 0.2.10-a1
   - apiVersion: v2
+    appVersion: 0.2.8a2
+    created: "2023-10-30T11:58:31.920966157Z"
+    description: A Helm chart for Kubernetes
+    digest: 96e917752e8995197a2b8dace9ba365d46c23c8a89f45f170f1c04248b6ebec6
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.10-a1/grader-service-0.2.10-a1.tgz
+    version: 0.2.10-a1
+  - apiVersion: v2
     appVersion: 0.2.7
     created: "2023-10-04T10:12:25.873640211Z"
     description: A Helm chart for Kubernetes
@@ -872,6 +882,16 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.7/grader-service-0.2.7.tgz
     version: 0.2.7
   - apiVersion: v2
+    appVersion: 0.2.5a1
+    created: "2023-10-03T13:54:09.189110844Z"
+    description: A Helm chart for Kubernetes
+    digest: fb209cea118742223ac0f6a5af78485f60fdd80e0ab1c05c22cc9427f6322cd1
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.7-a5/grader-service-0.2.7-a5.tgz
+    version: 0.2.7-a5
+  - apiVersion: v2
     appVersion: 0.2.6
     created: "2023-10-04T08:30:54.376851015Z"
     description: A Helm chart for Kubernetes
@@ -886,16 +906,6 @@ entries:
     created: "2023-10-03T14:51:29.998687321Z"
     description: A Helm chart for Kubernetes
     digest: 63eeed8e6af5707c8120deb9b4874298094754ef8cbdb8cd02d8072d41867046
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.7-a5/grader-service-0.2.7-a5.tgz
-    version: 0.2.7-a5
-  - apiVersion: v2
-    appVersion: 0.2.5a1
-    created: "2023-10-03T13:54:09.189110844Z"
-    description: A Helm chart for Kubernetes
-    digest: fb209cea118742223ac0f6a5af78485f60fdd80e0ab1c05c22cc9427f6322cd1
     name: grader-service
     type: application
     urls:
@@ -932,20 +942,20 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.7-a2/grader-service-0.2.7-a2.tgz
     version: 0.2.7-a2
   - apiVersion: v2
-    appVersion: 0.2.3
-    created: "2023-09-22T11:03:47.114272073Z"
+    appVersion: 0.2.5a1
+    created: "2023-10-02T14:03:08.908470771Z"
     description: A Helm chart for Kubernetes
-    digest: 38457edde2d2451aefadc6bdee2c43216c8ef022783b4496b1b4086baf17a17e
+    digest: 1780916b3aba0a349f02e12ba885e7fad32c468421b700139f928ca15a80d03b
     name: grader-service
     type: application
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.2.7-a1/grader-service-0.2.7-a1.tgz
     version: 0.2.7-a1
   - apiVersion: v2
-    appVersion: 0.2.5a1
-    created: "2023-10-02T14:03:08.908470771Z"
+    appVersion: 0.2.3
+    created: "2023-09-22T11:03:47.114272073Z"
     description: A Helm chart for Kubernetes
-    digest: 1780916b3aba0a349f02e12ba885e7fad32c468421b700139f928ca15a80d03b
+    digest: 38457edde2d2451aefadc6bdee2c43216c8ef022783b4496b1b4086baf17a17e
     name: grader-service
     type: application
     urls:
@@ -1173,9 +1183,9 @@ entries:
     version: 0.1.76-489bcecb
   - apiVersion: v2
     appVersion: 033b3d0e
-    created: "2023-03-29T02:41:12.734920672Z"
+    created: "2023-03-30T02:34:51.832544986Z"
     description: A Helm chart for Kubernetes
-    digest: 63be4b06ecb247756b6a3c64f90b8b8a3922ae57c8e07870d2372ad89ff8a4c2
+    digest: 998e3acbedc04a029e3dc57392fccd91e9898b1d13d3913bbce9c54d39c8a934
     name: grader-service
     type: application
     urls:
@@ -1203,19 +1213,9 @@ entries:
     version: 0.1.76-033b3d0e
   - apiVersion: v2
     appVersion: 033b3d0e
-    created: "2023-03-27T02:32:15.148984818Z"
+    created: "2023-03-29T02:41:12.734920672Z"
     description: A Helm chart for Kubernetes
-    digest: f573452feb50ea8eb91e8655dc34c744c34d2dbb89232b4d27834876a217c711
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.76-033b3d0e/grader-service-0.1.76-033b3d0e.tgz
-    version: 0.1.76-033b3d0e
-  - apiVersion: v2
-    appVersion: 033b3d0e
-    created: "2023-03-25T02:30:36.900479283Z"
-    description: A Helm chart for Kubernetes
-    digest: cf234ae4867b7356bd1ea55bc1dab3f7e41b35753d891e1d5ff2d44689bf45bd
+    digest: 63be4b06ecb247756b6a3c64f90b8b8a3922ae57c8e07870d2372ad89ff8a4c2
     name: grader-service
     type: application
     urls:
@@ -1233,9 +1233,19 @@ entries:
     version: 0.1.76-033b3d0e
   - apiVersion: v2
     appVersion: 033b3d0e
-    created: "2023-03-30T02:34:51.832544986Z"
+    created: "2023-03-25T02:30:36.900479283Z"
     description: A Helm chart for Kubernetes
-    digest: 998e3acbedc04a029e3dc57392fccd91e9898b1d13d3913bbce9c54d39c8a934
+    digest: cf234ae4867b7356bd1ea55bc1dab3f7e41b35753d891e1d5ff2d44689bf45bd
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.76-033b3d0e/grader-service-0.1.76-033b3d0e.tgz
+    version: 0.1.76-033b3d0e
+  - apiVersion: v2
+    appVersion: 033b3d0e
+    created: "2023-03-27T02:32:15.148984818Z"
+    description: A Helm chart for Kubernetes
+    digest: f573452feb50ea8eb91e8655dc34c744c34d2dbb89232b4d27834876a217c711
     name: grader-service
     type: application
     urls:
@@ -1253,9 +1263,9 @@ entries:
     version: 0.1.75
   - apiVersion: v2
     appVersion: 7c5c5c23
-    created: "2023-03-22T02:31:39.701334342Z"
+    created: "2023-03-21T02:29:06.742802695Z"
     description: A Helm chart for Kubernetes
-    digest: edb76a43ce1b037f44b25cbd3ee83e426e264a810c10a890febb6deaecfc0f09
+    digest: 4da366e2f393467d3388a777a7d07e3436e844d16fb0009ae3117e96a67a1d6b
     name: grader-service
     type: application
     urls:
@@ -1263,9 +1273,9 @@ entries:
     version: 0.1.75-7c5c5c23
   - apiVersion: v2
     appVersion: 7c5c5c23
-    created: "2023-03-21T02:29:06.742802695Z"
+    created: "2023-03-22T02:31:39.701334342Z"
     description: A Helm chart for Kubernetes
-    digest: 4da366e2f393467d3388a777a7d07e3436e844d16fb0009ae3117e96a67a1d6b
+    digest: edb76a43ce1b037f44b25cbd3ee83e426e264a810c10a890febb6deaecfc0f09
     name: grader-service
     type: application
     urls:
@@ -1303,16 +1313,6 @@ entries:
     version: 0.1.74-38602b2c
   - apiVersion: v2
     appVersion: 38602b2c
-    created: "2023-03-17T02:35:48.833462353Z"
-    description: A Helm chart for Kubernetes
-    digest: 710a68a59e2b80bdd57ed8b113da850ac91712e73ef294c0e5d38b119c1c8f14
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.74-38602b2c/grader-service-0.1.74-38602b2c.tgz
-    version: 0.1.74-38602b2c
-  - apiVersion: v2
-    appVersion: 38602b2c
     created: "2023-03-20T02:41:56.380513858Z"
     description: A Helm chart for Kubernetes
     digest: 883ad51a2255a3c22282b55a135f866aeebc0ac0e0cb5573a92d3cc3df829409
@@ -1326,6 +1326,16 @@ entries:
     created: "2023-03-19T02:44:56.073859421Z"
     description: A Helm chart for Kubernetes
     digest: ff288e408156532646f8224f37c50affa0c92b148046c4b7a702ce2e6dc3ece5
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.74-38602b2c/grader-service-0.1.74-38602b2c.tgz
+    version: 0.1.74-38602b2c
+  - apiVersion: v2
+    appVersion: 38602b2c
+    created: "2023-03-17T02:35:48.833462353Z"
+    description: A Helm chart for Kubernetes
+    digest: 710a68a59e2b80bdd57ed8b113da850ac91712e73ef294c0e5d38b119c1c8f14
     name: grader-service
     type: application
     urls:
@@ -1383,16 +1393,6 @@ entries:
     version: 0.1.72-842a7709
   - apiVersion: v2
     appVersion: 38b8e48c
-    created: "2023-03-13T02:38:02.697439094Z"
-    description: A Helm chart for Kubernetes
-    digest: a98361d6e1c4d70d573018ccdb0442c4e2ad13dd2ef124bed8096daf65aa6cfd
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.72-38b8e48c/grader-service-0.1.72-38b8e48c.tgz
-    version: 0.1.72-38b8e48c
-  - apiVersion: v2
-    appVersion: 38b8e48c
     created: "2023-03-12T02:45:06.540274893Z"
     description: A Helm chart for Kubernetes
     digest: 3bd4ccf511cf7f2135e5bdc40f9cbddfd38c9a9eeef624d604883d93aede0d56
@@ -1406,6 +1406,16 @@ entries:
     created: "2023-03-11T02:34:58.734504037Z"
     description: A Helm chart for Kubernetes
     digest: 0630da247e9625af19a8214243652bf4927205cc70b5becc1c30228f39ada919
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.72-38b8e48c/grader-service-0.1.72-38b8e48c.tgz
+    version: 0.1.72-38b8e48c
+  - apiVersion: v2
+    appVersion: 38b8e48c
+    created: "2023-03-13T02:38:02.697439094Z"
+    description: A Helm chart for Kubernetes
+    digest: a98361d6e1c4d70d573018ccdb0442c4e2ad13dd2ef124bed8096daf65aa6cfd
     name: grader-service
     type: application
     urls:
@@ -1503,9 +1513,9 @@ entries:
     version: 0.1.65
   - apiVersion: v2
     appVersion: d4ce7f12
-    created: "2023-03-05T02:58:59.392497922Z"
+    created: "2023-03-04T02:43:41.260300143Z"
     description: A Helm chart for Kubernetes
-    digest: 63268f00677b998f77913f46512b2f1b70a4db7ef775a4d58c4897c47847b276
+    digest: 4e0bdeccce5bd32f5c38354364072051e3777f105de74f898af8649f8567bba6
     name: grader-service
     type: application
     urls:
@@ -1523,9 +1533,9 @@ entries:
     version: 0.1.65-d4ce7f12
   - apiVersion: v2
     appVersion: d4ce7f12
-    created: "2023-03-03T04:12:44.783459581Z"
+    created: "2023-03-05T02:58:59.392497922Z"
     description: A Helm chart for Kubernetes
-    digest: d7dbda82dc7088837d39dd56f2ff7342f89f6ec90b1a20f7e4b828bcf6ffd61a
+    digest: 63268f00677b998f77913f46512b2f1b70a4db7ef775a4d58c4897c47847b276
     name: grader-service
     type: application
     urls:
@@ -1543,6 +1553,16 @@ entries:
     version: 0.1.65-d4ce7f12
   - apiVersion: v2
     appVersion: d4ce7f12
+    created: "2023-03-03T04:12:44.783459581Z"
+    description: A Helm chart for Kubernetes
+    digest: d7dbda82dc7088837d39dd56f2ff7342f89f6ec90b1a20f7e4b828bcf6ffd61a
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.65-d4ce7f12/grader-service-0.1.65-d4ce7f12.tgz
+    version: 0.1.65-d4ce7f12
+  - apiVersion: v2
+    appVersion: d4ce7f12
     created: "2023-03-02T02:52:29.388921515Z"
     description: A Helm chart for Kubernetes
     digest: 0a840628ec98f504ba098ba15d27de32e444cb4982720ef318b77f8acb862433
@@ -1551,26 +1571,6 @@ entries:
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.65-d4ce7f12/grader-service-0.1.65-d4ce7f12.tgz
     version: 0.1.65-d4ce7f12
-  - apiVersion: v2
-    appVersion: d4ce7f12
-    created: "2023-03-04T02:43:41.260300143Z"
-    description: A Helm chart for Kubernetes
-    digest: 4e0bdeccce5bd32f5c38354364072051e3777f105de74f898af8649f8567bba6
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.65-d4ce7f12/grader-service-0.1.65-d4ce7f12.tgz
-    version: 0.1.65-d4ce7f12
-  - apiVersion: v2
-    appVersion: 0d600f47
-    created: "2023-02-27T02:48:23.180493574Z"
-    description: A Helm chart for Kubernetes
-    digest: b388e55f2f7b421429050855a219a05390f2892e012044a4d7c10607a87aeb14
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.65-0d600f47/grader-service-0.1.65-0d600f47.tgz
-    version: 0.1.65-0d600f47
   - apiVersion: v2
     appVersion: 0d600f47
     created: "2023-02-28T02:46:34.33674546Z"
@@ -1606,6 +1606,16 @@ entries:
     created: "2023-02-26T02:56:33.065400599Z"
     description: A Helm chart for Kubernetes
     digest: 9752fbdc556b7f48c53902e458e2dfea11c25264de541fa44ade1e585cc96de6
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-nightly-0.1.65-0d600f47/grader-service-0.1.65-0d600f47.tgz
+    version: 0.1.65-0d600f47
+  - apiVersion: v2
+    appVersion: 0d600f47
+    created: "2023-02-27T02:48:23.180493574Z"
+    description: A Helm chart for Kubernetes
+    digest: b388e55f2f7b421429050855a219a05390f2892e012044a4d7c10607a87aeb14
     name: grader-service
     type: application
     urls:
@@ -1663,16 +1673,6 @@ entries:
     version: 0.1.64-14b0f3d3
   - apiVersion: v2
     appVersion: 14b0f3d3
-    created: "2023-02-17T13:46:43.699538272Z"
-    description: A Helm chart for Kubernetes
-    digest: dac6249fa9476b34b1d82cda88c78e483f524be4ef6ee50b3a6abf3eba0f7003
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.64-14b0f3d3/grader-service-0.1.64-14b0f3d3.tgz
-    version: 0.1.64-14b0f3d3
-  - apiVersion: v2
-    appVersion: 14b0f3d3
     created: "2023-02-21T02:49:35.868527801Z"
     description: A Helm chart for Kubernetes
     digest: c50d65b39ea2cf937d2b6aa4a8ebd3b90a31e550a155e966c19fe000492edac8
@@ -1696,6 +1696,16 @@ entries:
     created: "2023-02-20T02:49:21.660840962Z"
     description: A Helm chart for Kubernetes
     digest: 0f7701a579d9accd869d7ea44c9d857d85feec91ccab6dc368bf921437562838
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.64-14b0f3d3/grader-service-0.1.64-14b0f3d3.tgz
+    version: 0.1.64-14b0f3d3
+  - apiVersion: v2
+    appVersion: 14b0f3d3
+    created: "2023-02-17T13:46:43.699538272Z"
+    description: A Helm chart for Kubernetes
+    digest: dac6249fa9476b34b1d82cda88c78e483f524be4ef6ee50b3a6abf3eba0f7003
     name: grader-service
     type: application
     urls:
@@ -1762,16 +1772,6 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.59-b/grader-service-0.1.59-b.tgz
     version: 0.1.59-b
   - apiVersion: v2
-    appVersion: 0.1.26a5
-    created: "2023-02-02T16:59:50.263613742Z"
-    description: A Helm chart for Kubernetes
-    digest: 0178d8beb955bc3137b523dcd7f18e7e284a5871269f913a473b09bddf0a690b
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.59-b/grader-service-0.1.59-b.tgz
-    version: 0.1.59-b
-  - apiVersion: v2
     appVersion: 0.1.26a4
     created: "2023-02-02T16:51:27.825968417Z"
     description: A Helm chart for Kubernetes
@@ -1782,20 +1782,30 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.59-b/grader-service-0.1.59-b.tgz
     version: 0.1.59-b
   - apiVersion: v2
-    appVersion: 0.1.26a2
-    created: "2023-02-02T15:41:34.93093307Z"
+    appVersion: 0.1.26a5
+    created: "2023-02-02T16:59:50.263613742Z"
     description: A Helm chart for Kubernetes
-    digest: 96326c49ae7406ccc4fd09a468cb79b381ead2094f4dd88244f4abaf7e15f719
+    digest: 0178d8beb955bc3137b523dcd7f18e7e284a5871269f913a473b09bddf0a690b
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.59-b/grader-service-0.1.59-b.tgz
+    version: 0.1.59-b
+  - apiVersion: v2
+    appVersion: 0.1.26a3
+    created: "2023-02-02T15:59:37.208186834Z"
+    description: A Helm chart for Kubernetes
+    digest: eaaf55ec7721e45bc8c7d19a3daa3ec2f6b4e55b8893f7782b987fe3a10a2450
     name: grader-service
     type: application
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.59-a/grader-service-0.1.59-a.tgz
     version: 0.1.59-a
   - apiVersion: v2
-    appVersion: 0.1.26a3
-    created: "2023-02-02T15:59:37.208186834Z"
+    appVersion: 0.1.26a2
+    created: "2023-02-02T15:41:34.93093307Z"
     description: A Helm chart for Kubernetes
-    digest: eaaf55ec7721e45bc8c7d19a3daa3ec2f6b4e55b8893f7782b987fe3a10a2450
+    digest: 96326c49ae7406ccc4fd09a468cb79b381ead2094f4dd88244f4abaf7e15f719
     name: grader-service
     type: application
     urls:
@@ -2172,20 +2182,20 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.29-a3/grader-service-0.1.29-a3.tgz
     version: 0.1.29-a3
   - apiVersion: v2
-    appVersion: 0.1.15-a1
-    created: "2022-10-16T17:17:32.877615776Z"
+    appVersion: 0.1.15-a0
+    created: "2022-10-16T17:06:45.779985516Z"
     description: A Helm chart for Kubernetes
-    digest: 81cbae21153af485aef3bc2cd3a63f51575365d5e65e0e99a1dcecb186fa640f
+    digest: 1300fc9aaee55f88246213e3e47b409540e0f7ab94e4da067c601a59c3489b59
     name: grader-service
     type: application
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.29-a2/grader-service-0.1.29-a2.tgz
     version: 0.1.29-a2
   - apiVersion: v2
-    appVersion: 0.1.15-a0
-    created: "2022-10-16T17:06:45.779985516Z"
+    appVersion: 0.1.15-a1
+    created: "2022-10-16T17:17:32.877615776Z"
     description: A Helm chart for Kubernetes
-    digest: 1300fc9aaee55f88246213e3e47b409540e0f7ab94e4da067c601a59c3489b59
+    digest: 81cbae21153af485aef3bc2cd3a63f51575365d5e65e0e99a1dcecb186fa640f
     name: grader-service
     type: application
     urls:
@@ -2402,16 +2412,6 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.17-a6/grader-service-0.1.17-a6.tgz
     version: 0.1.17-a6
   - apiVersion: v2
-    appVersion: 0.1.9-a6
-    created: "2022-10-04T13:02:07.450317782Z"
-    description: A Helm chart for Kubernetes
-    digest: a693071303dafdbb4562babd7657ee448faea1ce23e532ec1a79766ca15bbfeb
-    name: grader-service
-    type: application
-    urls:
-    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.17-a5/grader-service-0.1.17-a5.tgz
-    version: 0.1.17-a5
-  - apiVersion: v2
     appVersion: 0.1.9-a5
     created: "2022-10-04T12:31:39.324342418Z"
     description: A Helm chart for Kubernetes
@@ -2426,6 +2426,16 @@ entries:
     created: "2022-10-04T14:10:12.510870168Z"
     description: A Helm chart for Kubernetes
     digest: 22fb7c2f05e0b5e6b51ac880a67936097155e6162e348eb5377b38e7b4551d8d
+    name: grader-service
+    type: application
+    urls:
+    - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.17-a5/grader-service-0.1.17-a5.tgz
+    version: 0.1.17-a5
+  - apiVersion: v2
+    appVersion: 0.1.9-a6
+    created: "2022-10-04T13:02:07.450317782Z"
+    description: A Helm chart for Kubernetes
+    digest: a693071303dafdbb4562babd7657ee448faea1ce23e532ec1a79766ca15bbfeb
     name: grader-service
     type: application
     urls:
@@ -2482,20 +2492,20 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.17-a3/grader-service-0.1.17-a3.tgz
     version: 0.1.17-a3
   - apiVersion: v2
-    appVersion: 0.1.10
-    created: "2022-10-05T11:00:06.529512282Z"
+    appVersion: 0.1.9-a10
+    created: "2022-10-05T10:32:43.662428827Z"
     description: A Helm chart for Kubernetes
-    digest: c209cce22470bf356da7c58d36c94501dd5ee6b16553564e07b1b73fb2a30c21
+    digest: d5abd9e98fd2d3755316947cf2fd73813a173ed901981355787b164d198ea73b
     name: grader-service
     type: application
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.17-a10/grader-service-0.1.17-a10.tgz
     version: 0.1.17-a10
   - apiVersion: v2
-    appVersion: 0.1.9-a10
-    created: "2022-10-05T10:32:43.662428827Z"
+    appVersion: 0.1.10
+    created: "2022-10-05T11:00:06.529512282Z"
     description: A Helm chart for Kubernetes
-    digest: d5abd9e98fd2d3755316947cf2fd73813a173ed901981355787b164d198ea73b
+    digest: c209cce22470bf356da7c58d36c94501dd5ee6b16553564e07b1b73fb2a30c21
     name: grader-service
     type: application
     urls:
@@ -2652,20 +2662,20 @@ entries:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.8/grader-service-0.1.8.tgz
     version: 0.1.8
   - apiVersion: v2
-    appVersion: 0.1.7
-    created: "2022-09-28T10:19:54.261947556Z"
+    appVersion: 0.1.7-alpha
+    created: "2022-09-26T10:21:10.208817007Z"
     description: A Helm chart for Kubernetes
-    digest: 5c2e1ec1e3f3fdc38a590fd8dd3bce9a8bf9884845d165e3da86412517c27fb0
+    digest: 89df7c6af96fe993164e5118b0b1c95380552729347588705341ba06f0fb331a
     name: grader-service
     type: application
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.8-alpha/grader-service-0.1.8-alpha.tgz
     version: 0.1.8-alpha
   - apiVersion: v2
-    appVersion: 0.1.7-alpha
-    created: "2022-09-26T10:21:10.208817007Z"
+    appVersion: 0.1.7
+    created: "2022-09-28T10:19:54.261947556Z"
     description: A Helm chart for Kubernetes
-    digest: 89df7c6af96fe993164e5118b0b1c95380552729347588705341ba06f0fb331a
+    digest: 5c2e1ec1e3f3fdc38a590fd8dd3bce9a8bf9884845d165e3da86412517c27fb0
     name: grader-service
     type: application
     urls:
@@ -2711,4 +2721,4 @@ entries:
     urls:
     - https://github.com/TU-Wien-dataLAB/Grader-Service/releases/download/grader-service-helm-0.1.4/grader-service-0.1.4.tgz
     version: 0.1.4
-generated: "2026-01-07T15:01:28.573190534Z"
+generated: "2026-02-16T11:24:27.587818022Z"
