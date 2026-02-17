@@ -13,7 +13,7 @@ from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
 from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm.submission import FeedbackStatus, Submission
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission
 
 
 class FeedbackGitSubmissionManager(GitSubmissionManager):
@@ -24,7 +24,18 @@ class FeedbackGitSubmissionManager(GitSubmissionManager):
 
     def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
         super().__init__(grader_service_dir, submission, **kwargs)
-        self.input_branch = f"submission_{self.submission.commit_hash}"
+        assignment = submission.assignment
+        # When autograding is unassisted and submission hasn't been autograded,
+        # pull from user repo to generate feedback
+        if (
+            assignment.settings.autograde_type == "unassisted"
+            and submission.auto_status == AutoStatus.NOT_GRADED
+            and submission.manual_status == ManualStatus.MANUALLY_GRADED
+        ):
+            self.input_repo_type = GitRepoType.USER
+        else:
+            self.input_branch = f"submission_{self.submission.commit_hash}"
+
         self.output_branch = f"feedback_{self.submission.commit_hash}"
 
 
