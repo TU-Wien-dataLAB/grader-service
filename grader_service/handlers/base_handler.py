@@ -149,6 +149,8 @@ class BaseHandler(web.RequestHandler):
                 self.settings["login_url"],
                 self.application.base_url.rstrip("/"),
                 url_path_join(self.application.base_url, "/health"),
+                url_path_join(self.application.base_url, "/api/metrics"),
+                url_path_join(self.application.base_url, "/v1/api/metrics"),
                 url_path_join(self.application.base_url, "/api/oauth2/token"),
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback"),
