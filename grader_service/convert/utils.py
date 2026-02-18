@@ -69,7 +69,7 @@ def is_grade(cell: NotebookNode) -> bool:
 
 def has_cell_type(cell: NotebookNode) -> bool:
     """Returns True if the cell has a cell type."""
-    if "nbgrader" not in cell.metadata:
+    if not grade_id_present(cell):
         return False
 
     # validate cell metadata
@@ -613,3 +613,7 @@ def notebook_hash(path, unique_key=None):
 
 def make_unique_key(course_id, assignment_id, notebook_id, student_id, timestamp):
     return "+".join([course_id, assignment_id, notebook_id, student_id, timestamp])
+
+
+def grade_id_present(cell):
+    return "nbgrader" in cell.metadata and cell.metadata.nbgrader.get("grade_id", None) is not None
