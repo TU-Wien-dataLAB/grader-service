@@ -52,6 +52,9 @@ class Gradebook:
     """
     The gradebook object to interface with the JSON output file of a conversion.
     Should only be used as a context manager when changing the data.
+    :param dest_json: path to the JSON file to read from
+    :param data_dict: dictionary with notebooks
+    :log: logger instance
     """
 
     def __init__(
@@ -69,6 +72,9 @@ class Gradebook:
 
         self.json_file = dest_json
 
+        if (data_dict is None) == (dest_json is None):
+            raise ValueError("Exactly one of data_dict or dest_json must be provided")
+
         if data_dict is not None:
             self.data = data_dict
 
@@ -82,8 +88,6 @@ class Gradebook:
             self.data: dict = {"notebooks": dict()}
             with open(self.json_file, "w") as f:
                 json.dump(self.data, f)
-        else:
-            raise ValueError("Either dest_json or data_dict must be provided")
         self.model: GradeBookModel = GradeBookModel.from_dict(self.data)
 
         self.in_context: int = 0
