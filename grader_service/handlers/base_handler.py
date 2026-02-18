@@ -76,14 +76,17 @@ def check_authorization(
     ):
         return True
 
-    # the only time when we pass lecture_id as query parameter is when pulling original submission from user repo
-    if self.request.query_arguments.get("lecture_id", None) is not None:
+    if lecture_id is None:
+        arg = self.get_argument("lecture_id", None)
+        lecture_id = int(arg) if arg is not None else None
+
+    role = self.session.get(Role, (self.user.id, lecture_id))
+
+    if lecture_id is not None and role.role >= Scope.tutor:
         self.log.info("Accessing user repo as admin, instructor or tutor.")
         return True
 
     is_admin = self.authenticator.is_admin(handler=self, authentication={"name": self.user.name})
-
-    role = self.session.get(Role, (self.user.id, lecture_id))
 
     if not ((is_admin and Scope.admin in scopes) or (role is not None and role.role in scopes)):
         self.log.warning(
