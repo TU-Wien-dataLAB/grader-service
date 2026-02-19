@@ -12,6 +12,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.orm import Assignment as ORM_Assignment
 from grader_service.server import GraderServer
 
 from ... import orm
@@ -1275,11 +1276,17 @@ async def test_assignment_properties_not_found(
     sql_alchemy_engine,
     default_roles,
     default_user_login,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
     a_id = 3
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
+
+    session = sql_alchemy_sessionmaker()
+    assignment = session.query(ORM_Assignment).filter_by(id=a_id).first()
+    assignment.properties = None
+    session.commit()
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
 

@@ -1296,12 +1296,6 @@ async def test_post_submission_by_student(
     l_id = 1  # default user is student
     a_id = 1
 
-    # add properties to the assignment
-    session = sql_alchemy_sessionmaker()
-    assignment = session.query(AssignmentORM).filter_by(id=a_id).first()
-    assignment.properties = json.dumps({"notebooks": {}})
-    session.commit()
-
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
     with (
@@ -1337,16 +1331,6 @@ async def test_post_submission_by_instructor(
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     insert_student(engine, student_username, l_id)
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
-    prop = {"notebooks": {}}
-
-    await http_server_client.fetch(
-        url,
-        method="PUT",
-        headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(prop),
-    )
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1499,9 +1483,15 @@ async def test_post_submission_no_assignment_properties(
     tmp_path,
     default_roles,
     default_user_login,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 1
     a_id = 1
+
+    session = sql_alchemy_sessionmaker()
+    assignment = session.query(AssignmentORM).filter_by(id=a_id).first()
+    assignment.properties = None
+    session.commit()
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     with (
@@ -1516,8 +1506,7 @@ async def test_post_submission_no_assignment_properties(
             body=json.dumps({"commit_hash": secrets.token_hex(20)}),
         )
     e = exc_info.value
-    assert e.code == HTTPStatus.NOT_FOUND
-    assert e.message == "Assignment properties not found"
+    assert e.code == 500
 
 
 async def test_submission_properties(
@@ -1897,16 +1886,6 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     insert_student(engine, student_username, l_id)
-
-    url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
-    prop = {"notebooks": {}}
-
-    await http_server_client.fetch(
-        url,
-        method="PUT",
-        headers={"Authorization": f"Token {default_token}"},
-        body=json.dumps(prop),
-    )
 
     post_url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
