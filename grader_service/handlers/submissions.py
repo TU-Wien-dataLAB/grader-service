@@ -442,9 +442,11 @@ class SubmissionHandler(GraderBaseHandler):
 
             self.session.add(properties)
             self.session.commit()
-        except Exception:
-            self.log.info("No assignment properties found")
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment properties not found")
+        except Exception as e:
+            self.log.info(
+                f"Error while creating submission properties for submission {submission.id}: {e}"
+            )
+            raise e
 
         # If the assignment has automatic or fully automatic grading, run the necessary tasks.
         # The autograding is not performed when an instructor creates a new submission for a student.
@@ -517,7 +519,7 @@ class SubmissionHandler(GraderBaseHandler):
         return scaling
 
     @staticmethod
-    def create_properties(properties_dict: dict, submission_id) -> SubmissionProperties:
+    def create_properties(properties_dict: dict, submission_id: int) -> SubmissionProperties:
         gradebook = Gradebook(data_dict=properties_dict)
 
         for notebook_name, notebook in gradebook.model.notebooks.items():
