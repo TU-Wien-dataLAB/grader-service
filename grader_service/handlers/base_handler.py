@@ -76,13 +76,14 @@ def check_authorization(
     ):
         return True
 
+    lecture_id_arg = None
     if lecture_id is None:
         arg = self.get_argument("lecture_id", None)
-        lecture_id = int(arg) if arg is not None else None
+        lecture_id_arg = int(arg) if arg is not None else None
 
     role = self.session.get(Role, (self.user.id, lecture_id))
 
-    if lecture_id is not None and role.role >= Scope.tutor:
+    if lecture_id_arg is not None and role.role >= Scope.tutor:
         self.log.info("Accessing user repo as admin, instructor or tutor.")
         return True
 
