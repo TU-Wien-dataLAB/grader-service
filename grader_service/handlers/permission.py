@@ -15,7 +15,7 @@ class PermissionHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /permissions.
     """
 
-    @authorize([Scope.student, Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self):
         """
         Finds the permissions of a user.
