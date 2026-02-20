@@ -37,6 +37,7 @@ from traitlets.config import SingletonConfigurable
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.errors import APIError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -117,7 +118,12 @@ def check_authorization(
         self.log.warning(
             "User %s tried to access %s with insufficient privileges", self.user.name, request_path
         )
+<<<<<<< feat/allow-plain-manual-grading-of-assignments
         raise HTTPError(403)
+=======
+        raise HTTPError(403, reason="Permission denied")
+    return True
+>>>>>>> release-0.11.0
 
 
 def authorize(scopes: list[Scope]):
@@ -795,7 +801,25 @@ class BaseHandler(web.RequestHandler):
         return url
 
 
-class GraderBaseHandler(BaseHandler):
+class GraderErrorMixin:
+    def write_error(self, status_code, **kwargs):
+        self.log.error("Error %s: %s", status_code, self._reason)
+
+        exc = kwargs.get("exc_info", (None, None, None))[1]
+        if isinstance(exc, APIError):
+            self.set_header("Content-Type", "application/json")
+
+            reply = {"status": status_code, "message": exc.message}
+
+            if exc.reason is not None:
+                reply["error"] = exc.reason
+
+            self.finish(json.dumps(reply))
+        else:
+            super().write_error(status_code, exc_info=exc)
+
+
+class GraderBaseHandler(GraderErrorMixin, BaseHandler):
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -803,14 +827,10 @@ class GraderBaseHandler(BaseHandler):
         if len(unknown_args) != 0:
             raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
-    def write_error(self, status_code, **kwargs):
-        self.log.error("Error %s: %s", status_code, self._reason)
-        return super().write_error(status_code, **kwargs)
-
     def get_role(self, lecture_id: int) -> Role:
         role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
-            raise HTTPError(403)
+            raise HTTPError(403, reason="No role found")
         return role
 
     def get_lecture(self, lecture_id: int) -> Lecture:
@@ -1218,13 +1238,13 @@ def authenticated(
     """Decorate methods with this to require that the user be logged in.
 
     If the user is not logged in `tornado.web.HTTPError`
-    with code 403 will be raised.
+    with code 401 will be raised.
     """
 
     @functools.wraps(method)
     def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
         if not self.current_user:
-            raise HTTPError(403)
+            raise HTTPError(401, reason="User not authenticated")
         return method(self, *args, **kwargs)
 
     return wrapper

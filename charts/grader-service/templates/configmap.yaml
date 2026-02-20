@@ -8,6 +8,8 @@ metadata:
 data:
   grader_service_config.py: |
     # Grader Service Config
+    import os
+
     ### Log Level
     c.GraderService.log_level = "{{ .Values.logLevel }}"
 
@@ -37,12 +39,15 @@ data:
 {{- end }}
 
     ### Database
-    c.GraderService.db_url = "{{ .Values.db.url }}"
+{{- if hasKey .Values.db.url "valueFrom" }}
+    c.GraderService.db_url = os.environ.get("GRADER_DB_URL", "")
+{{- else }}
+    c.GraderService.db_url = os.environ.get("GRADER_DB_URL", {{ .Values.db.url.value | quote }})
+{{- end }}
     c.GraderService.max_buffer_size = {{ .Values.requestHandlerConfig.max_buffer_size | int }}
     c.GraderService.max_body_size = {{ .Values.requestHandlerConfig.max_body_size | int }}
 
     ### RabbitMQ
-    import os
     broker_url=f'amqp://{os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")}:{os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")}@rabbitmq-grader-service.{{.Release.Namespace}}.svc.cluster.local'
     c.CeleryApp.conf = dict(
         broker_url=broker_url,
@@ -60,7 +65,11 @@ data:
 {{- end }}
     c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
     c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
-    c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key | quote }}
+{{- if hasKey .Values.ltiSyncGrades.token_private_key "valueFrom" }}
+    c.LTISyncGrades.token_private_key = os.environ.get("LTI_PRIVATE_KEY", "")
+{{- else }}
+    c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key.value | quote }}
+{{- end }}
 {{- end }}
 
 {{- if .Values.extraConfig }}

@@ -2,27 +2,46 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- Container image configuration
 image:
+  # -- Image repository
   repository: ghcr.io/tu-wien-datalab/grader-service
+  # -- Image pull policy
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  #tag: "latest"
+  # -- Overrides the image tag whose default is the chart appVersion
+  # tag: "latest"
 
+# -- Image pull secrets for private registries
 imagePullSecrets: []
+# -- Override the name of the chart
 nameOverride: ""
+# -- Override the full name of the chart
 fullnameOverride: "grader-service"
 
+# -- Service account configuration
 serviceAccount:
-  # Specifies whether a service account should be created or not
+  # -- Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
+  # -- Annotations to add to the service account
   annotations: {}
 
+# ---------------------------------------------------------------------------
+# Pod configuration (shared defaults for all deployments)
+# These values apply to both the main deployment and the worker deployment
+# unless overridden in the `workers` section.
+# ---------------------------------------------------------------------------
+
+# -- Annotations to add to all pods (main + worker)
 podAnnotations: {}
 
+# -- Extra labels to add to all pods (main + worker)
+podLabels: {}
+
+# -- Pod-level security context (shared)
 podSecurityContext: {}
   # fsGroup: 2000
 
+# -- Container-level security context (shared)
 securityContext: {}
   # capabilities:
   #   drop:
@@ -31,101 +50,280 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# ---------------------------------------------------------------------------
+# Environment variables
+# ---------------------------------------------------------------------------
+
+# -- Extra environment variables injected into all containers (main, worker, init).
+# Uses standard Kubernetes env var syntax.
+# @default -- `[]`
+# Example:
+#   extraEnv:
+#     - name: MY_VAR
+#       value: "my-value"
+#     - name: MY_SECRET_VAR
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-secret
+#           key: my-key
 extraEnv: []
 
+# -- Mount entire Secrets or ConfigMaps as environment variables in all containers.
+# @default -- `[]`
+# Example:
+#   extraEnvFrom:
+#     - secretRef:
+#         name: my-secret
+#     - configMapRef:
+#         name: my-configmap
+extraEnvFrom: []
+
+# ---------------------------------------------------------------------------
+# Service configuration
+# ---------------------------------------------------------------------------
+
+# -- Kubernetes service configuration
 service:
+  # -- Service type
   type: ClusterIP
+  # -- Service port
   port: 4010
+
+# -- Container port for the grader service
 port: 4010
 
+# ---------------------------------------------------------------------------
+# JupyterHub integration
+# ---------------------------------------------------------------------------
+
 jupyterhub:
+  # -- JupyterHub API URL
   apiUrl: http://hub:8081/hub/api
+  # -- JupyterHub base URL path
   baseUrl: /
+  # -- JupyterHub API token (stored in the grader-service Secret)
+  # apiToken: ""
+
+# ---------------------------------------------------------------------------
+# Database configuration
+# ---------------------------------------------------------------------------
 
 db:
+  # -- Database dialect (e.g. sqlite, postgresql)
   dialect: sqlite
+  # -- Database host (used as env var GRADER_DB_HOST)
   host: /var/lib/grader-service/grader.db
-  url: "sqlite:///grader.db"
+  # -- Full database URL.
+  # Use `value:` for a plain string, or `valueFrom:` to source from a Secret.
+  #
+  # Plain value (default):
+  #   url:
+  #     value: "sqlite:///grader.db"
+  #
+  # From a Kubernetes Secret:
+  #   url:
+  #     valueFrom:
+  #       secretKeyRef:
+  #         name: grader-db-credentials
+  #         key: url
+  url:
+    value: "sqlite:///grader.db"
+
+# ---------------------------------------------------------------------------
+# Git configuration
+# ---------------------------------------------------------------------------
 
 gitConfig:
+  # -- Git user name used for commits
   gitUser: "grader-service"
+  # -- Git user email used for commits
   gitEmail: "grader-service@mail.com"
 
+# ---------------------------------------------------------------------------
+# Volume permissions init container
+# ---------------------------------------------------------------------------
+
 volumePermissions:
+  # -- Enable init container that fixes volume ownership
   enabled: true
 
+# ---------------------------------------------------------------------------
+# Autograding configuration
+# ---------------------------------------------------------------------------
+
+# -- Autograde executor class. Set to "KubeAutogradeExecutor" for Kubernetes
+# or "LocalAutogradeExecutor" for local execution.
 autogradeExecutorClass: KubeAutogradeExecutor
+
+# -- Configuration for the Kubernetes autograde executor
 kubeAutogradeExecutor:
+  # -- Annotations for autograde pods
   annotations: {}
+  # -- Image to use for autograde pods
   image: ghcr.io/tu-wien-datalab/grader-service-labextension
+  # -- Image tag for autograde pods
   tag: latest
+  # -- Image pull policy for autograde pods
   imagePullPolicy: "Always"
+  # -- Image pull secrets for autograde pods
   imagePullSecrets: []
+  # -- Labels for autograde pods
   labels: {}
+  # -- Namespace for autograde pods (defaults to release namespace)
   namespace: null
+  # -- Extra volumes for autograde pods (Python list literal as string)
   extraVolumes: ""
+  # -- Extra volume mounts for autograde pods (Python list literal as string)
   extraVolumeMounts: ""
 
+# -- Extra Python configuration appended to grader_service_config.py
 extraConfig: ""
 
+# -- Request handler configuration
 requestHandlerConfig:
+  # -- Max git file size in MB
   git_max_file_size_mb: 500
+  # -- Max buffer size in bytes (default 100MB)
   max_buffer_size: 104857600
+  # -- Max body size in bytes (default 100MB)
   max_body_size: 104857600
 
-# lti
-ltiSyncGrades:
-  enabled: false
-  sync_on_feedback: false
-  client_id: ""
-  token_url: ""
-  token_private_key: ""
+# ---------------------------------------------------------------------------
+# LTI Grade Sync plugin
+# ---------------------------------------------------------------------------
 
+ltiSyncGrades:
+  # -- Enable LTI grade synchronization
+  enabled: false
+  # -- Automatically sync grades when feedback is generated
+  sync_on_feedback: false
+  # -- LTI OAuth2 client ID
+  client_id: ""
+  # -- LTI OAuth2 token endpoint URL
+  token_url: ""
+  # -- Private key for signing LTI token requests (PEM format).
+  # Use `value:` for a plain string, or `valueFrom:` to source from a Secret.
+  #
+  # Plain value:
+  #   token_private_key:
+  #     value: |
+  #       -----BEGIN RSA PRIVATE KEY-----
+  #       ...
+  #       -----END RSA PRIVATE KEY-----
+  #
+  # From a Kubernetes Secret:
+  #   token_private_key:
+  #     valueFrom:
+  #       secretKeyRef:
+  #         name: lti-credentials
+  #         key: private_key
+  token_private_key:
+    value: ""
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+# -- Log level for the grader service
 logLevel: "INFO"
 
+# ---------------------------------------------------------------------------
+# Storage / PVC configuration
+# ---------------------------------------------------------------------------
 
-# pvc
+# -- Storage class name for the PVC (empty = cluster default)
 storageClassName: ""
+# -- Access mode for the PVC
 accessMode: "ReadWriteMany"
+# -- Storage capacity for the PVC
 capacity: "10G"
+# -- Existing PersistentVolume name to bind to
 volume: ""
+# -- Use a hostPath volume instead of a PVC
 hostpath: ""
+# -- SubPath within the volume to mount
+subPath: ""
+
+# ---------------------------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------------------------
 
 ingress:
+  # -- Enable ingress
   enabled: false
+  # -- Ingress class name
   className: ""
+  # -- Ingress annotations
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
+  # -- Ingress host rules
   hosts:
     - host: chart-example.local
       paths:
         - path: /
           pathType: ImplementationSpecific
+  # -- Ingress TLS configuration
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
 
+# ---------------------------------------------------------------------------
+# RabbitMQ
+# ---------------------------------------------------------------------------
+
 rabbitmq:
+  # -- Resource requests and limits for the RabbitMQ cluster
   resources:
-      requests:
-        cpu: 2
-        memory: 4Gi
-      limits:
-        cpu: 2
-        memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  # -- Override spec for the RabbitmqCluster CR
   override: {}
 
+# ---------------------------------------------------------------------------
+# Celery workers
+# ---------------------------------------------------------------------------
+
 workers:
+  # -- Number of worker replicas
   replication: 1
+  # -- Resource requests and limits for worker containers
   resources: {}
 
+  # Per-deployment overrides (if not set, inherits from global values above)
+
+  # -- Extra labels for worker pods only
+  podLabels: {}
+  # -- Annotations for worker pods only
+  podAnnotations: {}
+  # -- Pod-level security context for workers
+  podSecurityContext: {}
+  # -- Container-level security context for workers
+  securityContext: {}
+  # -- Node selector for worker pods
+  nodeSelector: {}
+  # -- Tolerations for worker pods
+  tolerations: []
+  # -- Affinity rules for worker pods
+  affinity: {}
+  # -- Extra environment variables for worker containers only
+  # (these are added on top of the global `extraEnv`)
+  extraEnv: []
+  # -- Extra envFrom sources for worker containers only
+  # (these are added on top of the global `extraEnvFrom`)
+  extraEnvFrom: []
+
+# ---------------------------------------------------------------------------
+# Main deployment scheduling
+# ---------------------------------------------------------------------------
+
+# -- Resource requests and limits for the main grader-service container
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #   cpu: 100m
   #   memory: 128Mi
@@ -133,9 +331,11 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+# -- Node selector for main deployment pods
 nodeSelector: {}
 
+# -- Tolerations for main deployment pods
 tolerations: []
 
+# -- Affinity rules for main deployment pods
 affinity: {}
-
