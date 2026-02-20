@@ -118,12 +118,7 @@ def check_authorization(
         self.log.warning(
             "User %s tried to access %s with insufficient privileges", self.user.name, request_path
         )
-<<<<<<< feat/allow-plain-manual-grading-of-assignments
         raise HTTPError(403)
-=======
-        raise HTTPError(403, reason="Permission denied")
-    return True
->>>>>>> release-0.11.0
 
 
 def authorize(scopes: list[Scope]):
