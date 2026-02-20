@@ -90,10 +90,6 @@ class UserObjectBaseHandler(GraderBaseHandler):
         self.validate_parameters()
 
         try:
-            # User can not be soft-deleted
-            if not self.user.is_admin:
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can delete users.")
-
             user = self.session.query(User).filter_by(id=user_id).first()
             if user is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
