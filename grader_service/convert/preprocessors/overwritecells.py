@@ -192,7 +192,7 @@ class OverwriteCells(NbGraderPreprocessor):
         submitted_ids = [
             cell["metadata"]["nbgrader"]["grade_id"]
             for cell in nb.cells
-            if "nbgrader" in cell["metadata"]
+            if utils.grade_id_present(cell)
         ]
         for task_cell in source_nb.task_cells:
             if task_cell.name not in submitted_ids:

@@ -616,4 +616,4 @@ def make_unique_key(course_id, assignment_id, notebook_id, student_id, timestamp
 
 
 def grade_id_present(cell):
-    return "nbgrader" in cell.metadata and cell.metadata.nbgrader.get("grade_id", None) is not None
+    return cell.metadata.get("nbgrader", {}).get("grade_id") is not None

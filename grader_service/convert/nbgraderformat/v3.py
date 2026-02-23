@@ -73,7 +73,6 @@ class MetadataValidatorV3(BaseMetadataValidator):
         if grade or solution or locked:
             if not utils.grade_id_present(cell):
                 self.log.warning("nbgrader cell does not have a grade_id: {}".format(cell.source))
-                return
             if utils.grade_id_present(cell) and meta["grade_id"] == "":
                 raise ValidationError("grade_id is empty")
 
