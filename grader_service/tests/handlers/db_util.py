@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import json
 import os
 import secrets
 import subprocess
@@ -64,7 +65,7 @@ def _get_assignment(name, lectid, points, status, settings):
     a.status = status
     a.settings = settings
     a.deleted = DeleteState.active
-    a.properties = None
+    a.properties = json.dumps({"notebooks": {}})
     return a
 
 

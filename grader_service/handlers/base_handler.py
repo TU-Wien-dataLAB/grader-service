@@ -57,38 +57,68 @@ auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNO
 def check_authorization(
     self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]
 ) -> bool:
-    if ("/permissions" in self.request.path) or ("/config" in self.request.path):
-        return True
-    if lecture_id is None and "/lectures" in self.request.path and self.request.method == "POST":
-        # lecture code is in post body
-        try:
-            data = json_decode(self.request.body)
-            lecture = self.session.query(Lecture).filter(Lecture.code == data["code"]).one_or_none()
-            lecture_id = lecture.id if lecture else None
-        except MultipleResultsFound:
-            raise HTTPError(403)
-        except json.decoder.JSONDecodeError:
-            raise HTTPError(403)
-    elif lecture_id is None and "/lectures" in self.request.path and self.request.method == "GET":
-        return True
-    if (
-        re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", self.request.path)
-        and self.request.method == "GET"
-    ):
-        return True
-
+    request_path = self.request.path
     is_admin = self.authenticator.is_admin(handler=self, authentication={"name": self.user.name})
+    role = None
 
-    role = self.session.get(Role, (self.user.id, lecture_id))
+    # this check is necessary since we don't save admin users to the database
+    if is_admin and Scope.admin in scopes:
+        return True
 
-    if not ((is_admin and Scope.admin in scopes) or (role is not None and role.role in scopes)):
+    if lecture_id is not None:
+        # check authorization rights based on user's role in the lecture
+        role = self.session.get(Role, (self.user.id, lecture_id))
+
+        if not (role is not None and role.role in scopes):
+            self.log.warning(
+                "User %s tried to access %s with insufficient privileges",
+                self.user.name,
+                request_path,
+            )
+            raise HTTPError(403)
+        else:
+            return True
+    else:
+        # handle cases where we can't authorize users based on lecture roles
+        lecture_id_arg = None
+        if self.request.method == "GET" and (
+            "/permissions" in request_path
+            or "/lectures" in request_path
+            or "/health" in request_path
+        ):
+            # all users are allowed to access these endpoints
+            return True
+        elif (
+            re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", request_path)
+            and self.request.method == "GET"
+        ):
+            return True
+        elif self.request.method == "POST" and "/lectures" in request_path:
+            # lecture code is in post body
+            try:
+                data = json_decode(self.request.body)
+                lecture = (
+                    self.session.query(Lecture).filter(Lecture.code == data["code"]).one_or_none()
+                )
+                lecture_id_arg = lecture.id if lecture else None
+            except MultipleResultsFound:
+                raise HTTPError(403)
+            except json.decoder.JSONDecodeError:
+                raise HTTPError(403)
+        elif re.match(r"/api/users/(?P<user_id>[^/]+)/?", request_path):
+            # lecture_id is in query parameter
+            arg = self.get_argument("lecture_id", None)
+            lecture_id_arg = int(arg) if arg else None
+
+        if lecture_id_arg is not None:
+            role = self.session.get(Role, (self.user.id, lecture_id_arg))
+        if role is not None and role.role in scopes:
+            return True
+
         self.log.warning(
-            "User %s tried to access %s with insufficient privileges",
-            self.user.name,
-            self.request.path,
+            "User %s tried to access %s with insufficient privileges", self.user.name, request_path
         )
-        raise HTTPError(403, reason="Permission denied")
-    return True
+        raise HTTPError(403)
 
 
 def authorize(scopes: list[Scope]):
@@ -1018,6 +1048,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         lecture: Lecture,
         assignment: Assignment,
         submission: Optional[Submission] = None,
+        username: Optional[str] = None,
     ) -> Optional[str]:
         """Helper method for every handler that needs to access git
         directories which returns the path of the repository based on
@@ -1048,7 +1079,19 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
                 path = os.path.join(type_path, self.user.name)
         elif repo_type == GitRepoType.USER:
             user_path = os.path.join(assignment_path, repo_type)
-            path = os.path.join(user_path, self.user.name)
+            # we allow two different paths for user repos:
+            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
+            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
+            if username is None:
+                path = os.path.join(user_path, self.user.name)
+            else:
+                user_role = self.get_role(lecture.id).role
+                if not self.user.is_admin and user_role < Scope.tutor:
+                    raise HTTPError(
+                        403,
+                        reason="Only tutors, instructors and admins can access other users' repositories.",
+                    )
+                path = os.path.join(user_path, username)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 

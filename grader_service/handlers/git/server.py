@@ -164,7 +164,26 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(403, "Invalid or missing submission id")
             submission = self.get_submission(lecture.id, assignment.id, sub_id)
 
-        path = self.construct_git_dir(repo_type, lecture, assignment, submission=submission)
+        # if repo_type is user, get username from path, if it exists
+        username = None
+        if repo_type == GitRepoType.USER:
+            try:
+                if (
+                    pathlets_tail == ["info", "refs"]
+                    or pathlets_tail == ["git-upload-pack"]
+                    or pathlets_tail == ["git-receive-pack"]
+                ):
+                    self.log.warning(
+                        "DEPRECATED: No username specified in path, but info/refs or git-upload-pack/git-receive-pack called. Assuming user is trying to access their own repo."
+                    )
+                else:
+                    username = pathlets_tail[0]
+            except IndexError:
+                pass
+
+        path = self.construct_git_dir(
+            repo_type, lecture, assignment, submission=submission, username=username
+        )
         if path is None:
             return None
 

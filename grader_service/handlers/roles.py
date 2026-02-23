@@ -148,10 +148,6 @@ class RoleBaseHandler(GraderBaseHandler):
         raw_usernames = self.get_argument("usernames", "")
 
         try:
-            # Roles can not be soft-deleted
-            if not self.user.is_admin:
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can delete roles.")
-
             lecture = self.get_lecture(lecture_id)
             if lecture is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture not found")

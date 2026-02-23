@@ -27,6 +27,7 @@ from grader_service.autograding.celery.tasks import (
     generate_feedback_task,
     lti_sync_task,
 )
+from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
@@ -436,6 +437,18 @@ class SubmissionHandler(GraderBaseHandler):
         self.set_status(HTTPStatus.CREATED)
         self.write_json(submission)
 
+        # set submission properties
+        try:
+            properties = self.create_properties(json.loads(assignment.properties), submission.id)
+
+            self.session.add(properties)
+            self.session.commit()
+        except Exception as e:
+            self.log.info(
+                f"Error while creating submission properties for submission {submission.id}: {e}"
+            )
+            raise e
+
         # If the assignment has automatic or fully automatic grading, run the necessary tasks.
         # The autograding is not performed when an instructor creates a new submission for a student.
         # Note: A specific commit hash is used to differentiate between submissions created by
@@ -467,9 +480,6 @@ class SubmissionHandler(GraderBaseHandler):
             else:
                 grading_chain = chain(autograde_task.si(lecture_id, assignment_id, submission.id))
             grading_chain()
-
-        if automatic_grading == "unassisted":
-            self.session.close()
 
     @staticmethod
     def calculate_late_submission_scaling(
@@ -508,6 +518,33 @@ class SubmissionHandler(GraderBaseHandler):
                 else:
                     scaling = 0.0
         return scaling
+
+    @staticmethod
+    def create_properties(properties_dict: dict, submission_id: int) -> SubmissionProperties:
+        gradebook = Gradebook(data_dict=properties_dict)
+
+        for notebook_name, notebook in gradebook.model.notebooks.items():
+            grades_dict = properties_dict["notebooks"][notebook_name]["grades_dict"]
+            comments_dict = properties_dict["notebooks"][notebook_name]["comments_dict"]
+
+            # add entries for grades_dict
+            for grade_cell in notebook.grade_cells_dict.keys():
+                grades_dict[grade_cell] = gradebook.find_grade(grade_cell, notebook_name).to_dict()
+
+            # add entries for comments_dict
+            for solution_cell in notebook.solution_cells_dict.keys():
+                comments_dict[solution_cell] = gradebook.find_comment(
+                    solution_cell, notebook_name
+                ).to_dict()
+
+            # add entries for both
+            for task_cell in notebook.task_cells_dict.keys():
+                grades_dict[task_cell] = gradebook.find_grade(task_cell, notebook_name).to_dict()
+                comments_dict[task_cell] = gradebook.find_comment(
+                    task_cell, notebook_name
+                ).to_dict()
+
+        return SubmissionProperties(properties=json.dumps(properties_dict), sub_id=submission_id)
 
 
 @register_handler(

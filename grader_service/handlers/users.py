@@ -29,24 +29,24 @@ class UserBaseHandler(GraderBaseHandler):
         self.write_json(user)
 
 
-@register_handler(r"\/api\/users\/(?P<username>[^\/]+)\/?", VersionSpecifier.ALL)
+@register_handler(r"\/api\/users\/(?P<user_id>[^\/]+)\/?", VersionSpecifier.ALL)
 class UserObjectBaseHandler(GraderBaseHandler):
     """
-    Tornado Handler class for http requests to /users/{username}.
+    Tornado Handler class for http requests to /users/{user_id}.
     """
 
-    @authorize([Scope.admin])
-    async def get(self, username: str):
+    @authorize([Scope.admin, Scope.instructor, Scope.tutor])
+    async def get(self, user_id: int):
         """
         Returns a specific user.
 
-        :param username: the name of the user.
-        :type username: str
+        :param user_id: the ID of the user.
+        :type user_id: int
         :raises HTTPError: throws err if user was not found
         """
-        self.validate_parameters()
+        self.validate_parameters("lecture_id")
 
-        user = self.session.query(User).filter_by(name=username).first()
+        user = self.session.query(User).filter_by(id=user_id).first()
         if user is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="User not found")
 
@@ -54,19 +54,19 @@ class UserObjectBaseHandler(GraderBaseHandler):
         self.write_json(user)
 
     @authorize([Scope.admin])
-    async def put(self, username: str):
+    async def put(self, user_id: int):
         """
         Updates a specific user.
 
-        :param username: the name of the user.
-        :type username: str
+        :param user_id: the ID of the user.
+        :type user_id: int
         :raises HTTPError: throws err if user was not found
         """
         self.validate_parameters()
         body = json_decode(self.request.body)
         user_model = UserModel.from_dict(body)
 
-        user = self.session.query(User).filter_by(name=username).first()
+        user = self.session.query(User).filter_by(id=user_id).first()
         if user is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="User not found")
 
@@ -78,23 +78,19 @@ class UserObjectBaseHandler(GraderBaseHandler):
         self.write_json(user)
 
     @authorize([Scope.admin])
-    async def delete(self, username: str):
+    async def delete(self, user_id: int):
         """
         Hard-Deletes a specific user.
         Hard deleting: removes user from datastore.
 
-        :param username: the name of the user.
-        :type username: str
+        :param user_id: the ID of the user.
+        :type user_id: int
         :raises HTTPError: throws err if user was not found
         """
         self.validate_parameters()
 
         try:
-            # User can not be soft-deleted
-            if not self.user.is_admin:
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Only Admins can delete users.")
-
-            user = self.session.query(User).filter_by(name=username).first()
+            user = self.session.query(User).filter_by(id=user_id).first()
             if user is None:
                 raise HTTPError(HTTPStatus.NOT_FOUND, reason="User was not found")
 

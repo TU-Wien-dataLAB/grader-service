@@ -52,9 +52,17 @@ class Gradebook:
     """
     The gradebook object to interface with the JSON output file of a conversion.
     Should only be used as a context manager when changing the data.
+    :param dest_json: path to the JSON file to read from
+    :param data_dict: dictionary with notebooks
+    :log: logger instance
     """
 
-    def __init__(self, dest_json: str, log: logging.Logger = None) -> None:
+    def __init__(
+        self,
+        dest_json: Optional[str] = None,
+        data_dict: Optional[dict] = None,
+        log: logging.Logger = None,
+    ) -> None:
         if log is None:
             from traitlets import log as l
 
@@ -62,13 +70,20 @@ class Gradebook:
         else:
             self.log = log
 
-        self.json_file: str = dest_json
-        if os.path.isfile(self.json_file):
+        self.json_file = dest_json
+
+        if (data_dict is None) == (dest_json is None):
+            raise ValueError("Exactly one of data_dict or dest_json must be provided")
+
+        if data_dict is not None:
+            self.data = data_dict
+
+        elif dest_json is not None and os.path.isfile(dest_json):
             with open(self.json_file, "r") as f:
                 data = f.read()
                 self.log.info(f"Reading {len(data)} bytes from {self.json_file}")
                 self.data: dict = json.loads(data)
-        else:
+        elif dest_json is not None:
             os.makedirs(os.path.dirname(self.json_file), exist_ok=True)
             self.data: dict = {"notebooks": dict()}
             with open(self.json_file, "w") as f:
@@ -96,6 +111,8 @@ class Gradebook:
 
     def write_model(self):
         """Writes JSON string to a JSON file"""
+        if self.json_file is None:
+            return
         with open(self.json_file, "w") as f:
             json_str = json.dumps(self.model.to_dict())
             self.log.info(f"Writing {len(json_str.encode('utf-8'))} bytes to {self.json_file}")
