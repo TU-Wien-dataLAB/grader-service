@@ -89,7 +89,7 @@ def check_authorization(
             # all users are allowed to access these endpoints
             return True
         elif (
-            re.match(r"/api/users/(?P<username>[^/]+)/submissions/?", request_path)
+            re.search(r"/api/users/(?P<username>[^/]+)/submissions/?", request_path)
             and self.request.method == "GET"
         ):
             return True
@@ -105,7 +105,7 @@ def check_authorization(
                 raise HTTPError(403)
             except json.decoder.JSONDecodeError:
                 raise HTTPError(403)
-        elif re.match(r"/api/users/(?P<user_id>[^/]+)/?", request_path):
+        elif re.search(r"/api/users/(?P<user_id>[^/]+)", request_path):
             # lecture_id is in query parameter
             arg = self.get_argument("lecture_id", None)
             lecture_id_arg = int(arg) if arg else None
