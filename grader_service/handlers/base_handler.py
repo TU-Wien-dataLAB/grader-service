@@ -85,6 +85,7 @@ def check_authorization(
             "/permissions" in request_path
             or "/lectures" in request_path
             or "/health" in request_path
+            or "/config" in request_path
         ):
             # all users are allowed to access these endpoints
             return True
@@ -811,7 +812,7 @@ class GraderErrorMixin:
 
             self.finish(json.dumps(reply))
         else:
-            super().write_error(status_code, exc_info=exc)
+            super().write_error(status_code, **kwargs)
 
 
 class GraderBaseHandler(GraderErrorMixin, BaseHandler):
