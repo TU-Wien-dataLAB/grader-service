@@ -1,7 +1,8 @@
 import traitlets.config
 
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.handlers.base_handler import GraderBaseHandler
+from grader_service.handlers.base_handler import GraderBaseHandler, authorize
+from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
 
@@ -30,6 +31,7 @@ class ConfigHandler(GraderBaseHandler):
     Handler class for requests to /config
     """
 
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self):
         app_cfg = self.application.config
         executor_class = app_cfg.RequestHandlerConfig.autograde_executor_class
