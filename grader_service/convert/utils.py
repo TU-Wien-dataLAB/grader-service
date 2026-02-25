@@ -78,10 +78,7 @@ def has_cell_type(cell: NotebookNode) -> bool:
     locked = cell.metadata["nbgrader"]["locked"]
     grade_id = cell.metadata["nbgrader"]["grade_id"]
 
-    if not grade and not solution and not locked and not grade_id:
-        return False
-
-    return True
+    return any([grade, solution, locked, grade_id])
 
 
 def is_solution(cell: NotebookNode) -> bool:
