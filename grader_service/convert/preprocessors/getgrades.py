@@ -77,6 +77,9 @@ class GetGrades(NbGraderPreprocessor):
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
+        # if a cell doesn't have a grade id, ignore
+        if not utils.grade_id_present(cell):
+            return cell, resources
         # if it's a solution cell, then add a comment
         if utils.is_solution(cell):
             self._get_comment(cell, resources)

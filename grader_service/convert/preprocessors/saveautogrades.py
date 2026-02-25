@@ -66,6 +66,10 @@ class SaveAutoGrades(NbGraderPreprocessor):
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
+        # if a cell doesn't have a grade id, ignore
+        if not utils.grade_id_present(cell):
+            return cell, resources
+
         # if it's a grade cell, the add a grade
         if utils.is_grade(cell):
             self._add_score(cell, resources)
