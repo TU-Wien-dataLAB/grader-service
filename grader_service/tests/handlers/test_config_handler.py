@@ -17,7 +17,7 @@ from grader_service.server import GraderServer
 class TestConfigHandler:
     """Tests for the ConfigHandler endpoint."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=False)
     def ensure_app_config(self, app):
         # minimal fixture to ensure app.config and required fields are set for the handler logic
         app.application = app
@@ -68,7 +68,6 @@ class TestConfigHandler:
         default_token,
         default_roles,
         default_user_login,
-        ensure_app_config,
     ):
         """Test retrieval of custom cell timeout values when set in config."""
         # Create custom config
@@ -139,6 +138,7 @@ class TestConfigHandler:
         default_token,
         default_roles,
         default_user_login,
+        ensure_app_config,
     ):
         """Test that config response has the expected structure."""
         url = service_base_url + "config"
