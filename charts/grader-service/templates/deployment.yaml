@@ -74,6 +74,7 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
+            {{- include "grader-service.extraFiles.volumeMounts" . | nindent 12 }}
   
       initContainers:
 {{- if .Values.volumePermissions.enabled }}
@@ -125,6 +126,7 @@ spec:
           configMap:
             defaultMode: 444
             name: grader-service
+        {{- include "grader-service.extraFiles.volumes" . | nindent 8 }}
 
       {{- with .Values.nodeSelector }}
       nodeSelector:

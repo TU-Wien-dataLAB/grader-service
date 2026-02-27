@@ -134,3 +134,62 @@ envFrom:
   {{- toYaml $sources | nindent 2 }}
 {{- end }}
 {{- end }}
+
+{{/*
+Extra-files volume mounts.
+Generates one volumeMount per entry in .Values.extraFiles, each mounting a
+single file at the configured mountPath.
+Usage: {{ include "grader-service.extraFiles.volumeMounts" . | nindent 12 }}
+*/}}
+{{- define "grader-service.extraFiles.volumeMounts" -}}
+{{- range $name, $spec := .Values.extraFiles }}
+- name: extra-file-{{ $name }}
+  mountPath: {{ $spec.mountPath }}
+  subPath: {{ $name }}
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{/*
+Extra-files volumes.
+Generates one volume per entry in .Values.extraFiles.
+The source can be:
+  - `secret`    – mounts a key from an existing Secret
+  - `configMap` – mounts a key from an existing ConfigMap
+  - `content`   – mounts inline content via a chart-managed ConfigMap
+Usage: {{ include "grader-service.extraFiles.volumes" . | nindent 8 }}
+*/}}
+{{- define "grader-service.extraFiles.volumes" -}}
+{{- $fullname := include "grader-service.fullname" . -}}
+{{- range $name, $spec := .Values.extraFiles }}
+- name: extra-file-{{ $name }}
+{{- if $spec.secret }}
+  secret:
+    secretName: {{ $spec.secret.secretName }}
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $spec.secret.key }}
+        path: {{ $name }}
+{{- else if $spec.configMap }}
+  configMap:
+    name: {{ $spec.configMap.name }}
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $spec.configMap.key }}
+        path: {{ $name }}
+{{- else if $spec.content }}
+  configMap:
+    name: {{ $fullname }}-extra-files
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $name }}
+        path: {{ $name }}
+{{- end }}
+{{- end }}
+{{- end }}

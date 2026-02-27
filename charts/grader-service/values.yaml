@@ -179,6 +179,35 @@ kubeAutogradeExecutor:
 # -- Extra Python configuration appended to grader_service_config.py
 extraConfig: ""
 
+# ---------------------------------------------------------------------------
+# Extra file mounts
+# ---------------------------------------------------------------------------
+
+# -- Mount extra files into all containers (main deployment and workers).
+# Useful for private keys, certificates, or other config files.
+# Each key becomes the volume name; provide exactly one of `content`,
+# `configMap`, or `secret` as the source.
+#
+# @default -- `{}`
+# Example:
+#   extraFiles:
+#     lti-private-key:
+#       mountPath: /secrets/lti/private_key.pem
+#       mode: 0400
+#       secret:
+#         secretName: lti-private-key
+#         key: private_key.pem
+#     my-cert:
+#       mountPath: /etc/ssl/custom/ca.crt
+#       configMap:
+#         name: my-ca-bundle
+#         key: ca.crt
+#     inline-config:
+#       mountPath: /etc/myapp/settings.json
+#       content: |
+#         {"debug": false}
+extraFiles: {}
+
 # -- Request handler configuration
 requestHandlerConfig:
   # -- Max git file size in MB
