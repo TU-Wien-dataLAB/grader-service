@@ -572,7 +572,7 @@ class LTISyncGrades(GraderPlugin):
         try:
             private_key = platform.get_private_key()
         except (ValueError, FileNotFoundError) as exc:
-            raise HTTPError(
+            raise APIError(
                 HTTPStatus.NOT_FOUND,
                 reason=f"Unable to load private key for platform '{platform.name}': {exc}",
             )
