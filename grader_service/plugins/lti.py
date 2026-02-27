@@ -574,7 +574,7 @@ class LTISyncGrades(GraderPlugin):
         except (ValueError, FileNotFoundError) as exc:
             raise APIError(
                 HTTPStatus.NOT_FOUND,
-                reason=f"Unable to load private key for platform '{platform.name}': {exc}",
+                message=f"Unable to load private key for platform '{platform.name}': {exc}",
             )
 
         kid = platform.kid
