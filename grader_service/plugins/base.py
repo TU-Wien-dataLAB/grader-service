@@ -137,6 +137,6 @@ def create_plugin_manager(config=None, log=None) -> PluginManager:
             plugin = cls(**kwargs)
             manager.register(plugin)
         except Exception:
-            _log.exception("Failed to create plugin %s", cls.__name__)
+            _log.exception(f"Failed to create plugin {cls.__name__}")
 
     return manager
