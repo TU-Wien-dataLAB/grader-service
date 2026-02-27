@@ -939,8 +939,6 @@ class SubmissionEditHandler(GraderBaseHandler):
     version_specifier=VersionSpecifier.ALL,
 )
 class LtiSyncHandler(GraderBaseHandler):
-    cache_token = {"token": None, "ttl": datetime.datetime.now()}
-
     @authorize([Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int):
         """Starts the LTI sync process (if enabled).
@@ -1004,7 +1002,10 @@ class LtiSyncHandler(GraderBaseHandler):
                 self.log.error(err_msg)
                 raise APIError(HTTPStatus.BAD_REQUEST, message=err_msg)
 
-        lti_plugin = LTISyncGrades.instance()
+        lti_plugin: LTISyncGrades | None = self.application.plugin_manager.get("lti")
+        if lti_plugin is None:
+            self.log.error("LTI plugin not loaded")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="LTI plugin not loaded")
         lecture_model = lecture.serialize()
         assignment_model = assignment.serialize()
         submissions_model = [sub.serialize_with_user() for sub in submissions]

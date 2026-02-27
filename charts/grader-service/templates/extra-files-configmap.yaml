@@ -1,0 +1,22 @@
+{{- $hasContent := false -}}
+{{- range $name, $spec := .Values.extraFiles -}}
+  {{- if $spec.content -}}
+    {{- $hasContent = true -}}
+  {{- end -}}
+{{- end -}}
+{{- if $hasContent }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "grader-service.fullname" . }}-extra-files
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "grader-service.labels" . | nindent 4 }}
+data:
+  {{- range $name, $spec := .Values.extraFiles }}
+  {{- if $spec.content }}
+  {{ $name }}: |
+    {{- $spec.content | nindent 4 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

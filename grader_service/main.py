@@ -51,7 +51,7 @@ from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
-from grader_service.plugins.lti import LTISyncGrades
+from grader_service.plugins import create_plugin_manager
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
@@ -342,9 +342,10 @@ class GraderService(config.Application):
             raise RuntimeError(msg)
 
     def set_config(self):
-        """Pass config to singletons."""
+        """Create plugin manager and pass config to singletons."""
         RequestHandlerConfig.config = self.config
-        LTISyncGrades.config = self.config
+        self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
+        self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
@@ -461,6 +462,7 @@ class GraderService(config.Application):
                 cookie_secret=self.grader_cookie_secret,  # generate new cookie secret at startup
                 config=self.config,
                 session_maker=self.session_maker,
+                plugin_manager=self.plugin_manager,
                 parent=self,
                 login_url=self.authenticator.login_url(self.base_url_path),
                 logout_url=self.authenticator.logout_url(self.base_url_path),

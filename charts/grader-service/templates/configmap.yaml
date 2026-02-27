@@ -58,18 +58,24 @@ data:
         broker_connection_retry_on_startup=True,
     )
 {{- if .Values.ltiSyncGrades.enabled }}
-    ### LTI Grade Sync Plugin 
+    ### LTI Grade Sync Plugin (multi-platform)
     c.LTISyncGrades.enabled = True
 {{- if .Values.ltiSyncGrades.sync_on_feedback }}
     c.LTISyncGrades.sync_on_feedback = True
 {{- end }}
-    c.LTISyncGrades.token_url = {{ .Values.ltiSyncGrades.token_url | quote }}
-    c.LTISyncGrades.client_id = {{ .Values.ltiSyncGrades.client_id | quote }}
-{{- if hasKey .Values.ltiSyncGrades.token_private_key "valueFrom" }}
-    c.LTISyncGrades.token_private_key = os.environ.get("LTI_PRIVATE_KEY", "")
-{{- else }}
-    c.LTISyncGrades.token_private_key = {{ .Values.ltiSyncGrades.token_private_key.value | quote }}
+    c.LTISyncGrades.systems = [
+{{- range .Values.ltiSyncGrades.systems }}
+        {
+            "name": {{ .name | quote }},
+            "url_pattern": {{ .url_pattern | default "" | quote }},
+            "client_id": {{ .client_id | default "" | quote }},
+            "token_url": {{ .token_url | quote }},
+            "platform_url": {{ .platform_url | default "" | quote }},
+            "private_key_path": {{ .private_key_path | default "" | quote }},
+            "deployment_id": {{ .deployment_id | default "" | quote }},
+        },
 {{- end }}
+    ]
 {{- end }}
 
 {{- if .Values.extraConfig }}

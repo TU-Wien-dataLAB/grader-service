@@ -57,3 +57,16 @@ class CeleryApp(SingletonConfigurable):
             db_url = GraderService.instance().db_url
             self._session_maker = get_session_maker(db_url)
         return self._session_maker
+
+    @property
+    def plugin_manager(self):
+        """Lazily create a :class:`PluginManager` from the current config.
+
+        This is used by celery tasks to access plugins (e.g. the LTI plugin)
+        without relying on global singletons.
+        """
+        if not hasattr(self, "_plugin_manager") or self._plugin_manager is None:
+            from grader_service.plugins import create_plugin_manager
+
+            self._plugin_manager = create_plugin_manager(config=self.config, log=self.log)
+        return self._plugin_manager

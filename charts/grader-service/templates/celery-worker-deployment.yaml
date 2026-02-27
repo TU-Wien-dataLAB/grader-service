@@ -60,7 +60,6 @@ spec:
             {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
             {{- include "grader-service.extraEnv" .Values.workers.extraEnv | nindent 12 }}
             {{- include "grader-service.dbEnv" . | nindent 12 }}
-            {{- include "grader-service.ltiEnv" . | nindent 12 }}
             {{- include "grader-service.rabbitmqEnv" . | nindent 12 }}
             - name: GRADER_PORT
               value: {{ .Values.port | quote }}
@@ -81,6 +80,7 @@ spec:
             - name: config
               mountPath: /var/lib/grader-service/.gitconfig
               subPath: .gitconfig
+            {{- include "grader-service.extraFiles.volumeMounts" . | nindent 12 }}
       volumes:
         - name: data
 {{- if .Values.hostpath }}
@@ -96,6 +96,7 @@ spec:
           configMap:
             defaultMode: 444
             name: grader-service
+        {{- include "grader-service.extraFiles.volumes" . | nindent 8 }}
 
       {{- with (.Values.workers.nodeSelector | default .Values.nodeSelector) }}
       nodeSelector:

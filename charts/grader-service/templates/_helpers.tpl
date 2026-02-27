@@ -88,17 +88,6 @@ This is used by all containers that need database access (main, worker, db-migra
 {{- end }}
 
 {{/*
-LTI private key environment variable.
-Only rendered when LTI is enabled AND the key is sourced from a secret (valueFrom).
-When using a plain value, the key is written directly into the config file.
-*/}}
-{{- define "grader-service.ltiEnv" -}}
-{{- if and .Values.ltiSyncGrades.enabled (hasKey .Values.ltiSyncGrades.token_private_key "valueFrom") }}
-{{ include "grader-service.envVar" (dict "name" "LTI_PRIVATE_KEY" "val" .Values.ltiSyncGrades.token_private_key) }}
-{{- end }}
-{{- end }}
-
-{{/*
 RabbitMQ credential environment variables.
 */}}
 {{- define "grader-service.rabbitmqEnv" -}}
@@ -143,5 +132,64 @@ Usage: {{ include "grader-service.envFrom" (list .Values.extraEnvFrom .Values.wo
 {{- if $sources }}
 envFrom:
   {{- toYaml $sources | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Extra-files volume mounts.
+Generates one volumeMount per entry in .Values.extraFiles, each mounting a
+single file at the configured mountPath.
+Usage: {{ include "grader-service.extraFiles.volumeMounts" . | nindent 12 }}
+*/}}
+{{- define "grader-service.extraFiles.volumeMounts" -}}
+{{- range $name, $spec := .Values.extraFiles }}
+- name: extra-file-{{ $name }}
+  mountPath: {{ $spec.mountPath }}
+  subPath: {{ $name }}
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{/*
+Extra-files volumes.
+Generates one volume per entry in .Values.extraFiles.
+The source can be:
+  - `secret`    – mounts a key from an existing Secret
+  - `configMap` – mounts a key from an existing ConfigMap
+  - `content`   – mounts inline content via a chart-managed ConfigMap
+Usage: {{ include "grader-service.extraFiles.volumes" . | nindent 8 }}
+*/}}
+{{- define "grader-service.extraFiles.volumes" -}}
+{{- $fullname := include "grader-service.fullname" . -}}
+{{- range $name, $spec := .Values.extraFiles }}
+- name: extra-file-{{ $name }}
+{{- if $spec.secret }}
+  secret:
+    secretName: {{ $spec.secret.secretName }}
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $spec.secret.key }}
+        path: {{ $name }}
+{{- else if $spec.configMap }}
+  configMap:
+    name: {{ $spec.configMap.name }}
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $spec.configMap.key }}
+        path: {{ $name }}
+{{- else if $spec.content }}
+  configMap:
+    name: {{ $fullname }}-extra-files
+    {{- if $spec.mode }}
+    defaultMode: {{ $spec.mode }}
+    {{- end }}
+    items:
+      - key: {{ $name }}
+        path: {{ $name }}
+{{- end }}
 {{- end }}
 {{- end }}

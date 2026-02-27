@@ -179,6 +179,35 @@ kubeAutogradeExecutor:
 # -- Extra Python configuration appended to grader_service_config.py
 extraConfig: ""
 
+# ---------------------------------------------------------------------------
+# Extra file mounts
+# ---------------------------------------------------------------------------
+
+# -- Mount extra files into all containers (main deployment and workers).
+# Useful for private keys, certificates, or other config files.
+# Each key becomes the volume name; provide exactly one of `content`,
+# `configMap`, or `secret` as the source.
+#
+# @default -- `{}`
+# Example:
+#   extraFiles:
+#     lti-private-key:
+#       mountPath: /secrets/lti/private_key.pem
+#       mode: 0400
+#       secret:
+#         secretName: lti-private-key
+#         key: private_key.pem
+#     my-cert:
+#       mountPath: /etc/ssl/custom/ca.crt
+#       configMap:
+#         name: my-ca-bundle
+#         key: ca.crt
+#     inline-config:
+#       mountPath: /etc/myapp/settings.json
+#       content: |
+#         {"debug": false}
+extraFiles: {}
+
 # -- Request handler configuration
 requestHandlerConfig:
   # -- Max git file size in MB
@@ -188,37 +217,29 @@ requestHandlerConfig:
   # -- Max body size in bytes (default 100MB)
   max_body_size: 104857600
 
-# ---------------------------------------------------------------------------
-# LTI Grade Sync plugin
-# ---------------------------------------------------------------------------
 
 ltiSyncGrades:
   # -- Enable LTI grade synchronization
   enabled: false
   # -- Automatically sync grades when feedback is generated
   sync_on_feedback: false
-  # -- LTI OAuth2 client ID
-  client_id: ""
-  # -- LTI OAuth2 token endpoint URL
-  token_url: ""
-  # -- Private key for signing LTI token requests (PEM format).
-  # Use `value:` for a plain string, or `valueFrom:` to source from a Secret.
+
+  # -- List of LTI platform / system configurations.
+  # Each entry configures a separate LTI 1.3 platform that grades can be
+  # synced to.  The grader service can sync to multiple platforms
+  # simultaneously (e.g. different Moodle instances at different universities).
   #
-  # Plain value:
-  #   token_private_key:
-  #     value: |
-  #       -----BEGIN RSA PRIVATE KEY-----
-  #       ...
-  #       -----END RSA PRIVATE KEY-----
-  #
-  # From a Kubernetes Secret:
-  #   token_private_key:
-  #     valueFrom:
-  #       secretKeyRef:
-  #         name: lti-credentials
-  #         key: private_key
-  token_private_key:
-    value: ""
+  # Example:
+  #   systems:
+  #     - name: "Moodle"
+  #       url_pattern: "https://moodle.university.edu"
+  #       client_id: "my-client-id"
+  #       token_url: "https://moodle.university.edu/mod/lti/token.php"
+  #       platform_url: "https://moodle.university.edu"
+  #       private_key_path: "/secrets/lti/private_key.pem"
+  #       deployment_id: "1"
+
+  systems: []
 
 # ---------------------------------------------------------------------------
 # Logging
