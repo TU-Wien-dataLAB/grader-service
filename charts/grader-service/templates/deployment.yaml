@@ -45,7 +45,6 @@ spec:
           env:
             {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
             {{- include "grader-service.dbEnv" . | nindent 12 }}
-            {{- include "grader-service.ltiEnv" . | nindent 12 }}
             {{- include "grader-service.rabbitmqEnv" . | nindent 12 }}
             - name: JUPYTERHUB_API_URL
               value: {{ .Values.jupyterhub.apiUrl }}

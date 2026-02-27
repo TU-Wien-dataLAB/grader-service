@@ -8,7 +8,6 @@ from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import LocalFeedbackExecutor
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.orm.submission import FeedbackStatus, Submission
-from grader_service.plugins.lti import LTISyncGrades
 
 # Note: The celery instance is lazy so we can still add configuration later
 app = Celery(set_as_current=True)
@@ -100,7 +99,11 @@ def lti_sync_task(
     :param submissions: submissions to be synced (including user information)
     :param feedback_sync(optional): if True, the sync task was started by a feedback generation
     """
-    lti_plugin = LTISyncGrades.instance()
+    lti_plugin = self.celery.plugin_manager.get("lti")
+    if lti_plugin is None:
+        if not feedback_sync:
+            raise HTTPError(403, reason="LTI plugin is not available.")
+        return None
     # check if the lti plugin is enabled
     if lti_plugin.check_if_lti_enabled(
         lecture, assignment, submissions, feedback_sync=feedback_sync

@@ -88,17 +88,6 @@ This is used by all containers that need database access (main, worker, db-migra
 {{- end }}
 
 {{/*
-LTI private key environment variable.
-Only rendered when LTI is enabled AND the key is sourced from a secret (valueFrom).
-When using a plain value, the key is written directly into the config file.
-*/}}
-{{- define "grader-service.ltiEnv" -}}
-{{- if and .Values.ltiSyncGrades.enabled (hasKey .Values.ltiSyncGrades.token_private_key "valueFrom") }}
-{{ include "grader-service.envVar" (dict "name" "LTI_PRIVATE_KEY" "val" .Values.ltiSyncGrades.token_private_key) }}
-{{- end }}
-{{- end }}
-
-{{/*
 RabbitMQ credential environment variables.
 */}}
 {{- define "grader-service.rabbitmqEnv" -}}

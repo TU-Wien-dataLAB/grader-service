@@ -60,7 +60,6 @@ spec:
             {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
             {{- include "grader-service.extraEnv" .Values.workers.extraEnv | nindent 12 }}
             {{- include "grader-service.dbEnv" . | nindent 12 }}
-            {{- include "grader-service.ltiEnv" . | nindent 12 }}
             {{- include "grader-service.rabbitmqEnv" . | nindent 12 }}
             - name: GRADER_PORT
               value: {{ .Values.port | quote }}
