@@ -530,6 +530,9 @@ class SubmissionHandler(GraderBaseHandler):
             # add entries for grades_dict
             for grade_cell in notebook.grade_cells_dict.keys():
                 grades_dict[grade_cell] = gradebook.find_grade(grade_cell, notebook_name).to_dict()
+                grades_dict[grade_cell]["max_score_gradecell"] = gradebook.find_grade_cell(
+                    grade_cell, notebook_name
+                ).max_score
 
             # add entries for comments_dict
             for solution_cell in notebook.solution_cells_dict.keys():
@@ -540,6 +543,9 @@ class SubmissionHandler(GraderBaseHandler):
             # add entries for both
             for task_cell in notebook.task_cells_dict.keys():
                 grades_dict[task_cell] = gradebook.find_grade(task_cell, notebook_name).to_dict()
+                grades_dict[task_cell]["max_score_taskcell"] = gradebook.find_task_cell(
+                    task_cell, notebook_name
+                ).max_score
                 comments_dict[task_cell] = gradebook.find_comment(
                     task_cell, notebook_name
                 ).to_dict()
