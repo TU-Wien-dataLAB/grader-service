@@ -223,7 +223,9 @@ Following video illustrates the procedure:
 ![Manual Submission](../_static/assets/gifs/instructor_guide/manual_submission.gif)
    
 ### How To Grade Manual Answer Cells?
-  - Once a student submits their work, it will appear in the "Submissions" list. To manually grade a submission, it must first be automatically graded (this sets the necessary metadata for successful grading). If you selected "Automatic Grading" when creating the assignment, this will be done automatically and you may immediately proceed with manual grading. If you chose "No Automatic Grading," you must first select the submission and click "AUTOGRADE." Afterward, you will be able to manually grade the submission.
+  - Once a student submits their work, it will appear in the "Submissions" list. 
+    If you selected "Automatic Grading" when creating the assignment, the submission has to be automatically graded and afterwards you may
+    immediately proceed with manual grading. If you chose "No Automatic Grading", you can just pull the submission right away and manually grade it. 
   - Click on submission in the Submission List and pull it. This will reveal files the student has submitted.
   - Click on notebook that you want to manually grade and when the notebook opens up enable "Grading Mode".
   - You can now assign points, leave comments or even give extra credits for the solution.
