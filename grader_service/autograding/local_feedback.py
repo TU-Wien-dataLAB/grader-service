@@ -29,7 +29,10 @@ class FeedbackGitSubmissionManager(GitSubmissionManager):
         # pull from user repo to generate feedback
         if (
             assignment.settings.autograde_type == "unassisted"
-            and submission.auto_status == AutoStatus.NOT_GRADED
+            and (
+                submission.auto_status == AutoStatus.NOT_GRADED
+                or submission.auto_status == AutoStatus.GRADING_FAILED
+            )
             and submission.manual_status == ManualStatus.MANUALLY_GRADED
         ):
             self.input_repo_type = GitRepoType.USER
