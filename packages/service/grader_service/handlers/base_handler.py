@@ -38,6 +38,7 @@ from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
+from grader_service.handlers.file_services.assignment_files_service import AssignmentFileService
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -163,6 +164,12 @@ class BaseHandler(web.RequestHandler):
         self.application: GraderServer = self.application
         self.authenticator = self.application.authenticator
         self.log = self.application.log
+
+        self.assignment_files_service = AssignmentFileService(
+            grader_service_dir=Path(self.application.grader_service_dir),
+            user=self.user,
+            log=self.log,
+        )
 
     async def prepare(self) -> Optional[Awaitable[None]]:
         # strip trailing slash

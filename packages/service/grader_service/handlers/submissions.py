@@ -871,12 +871,7 @@ class SubmissionEditHandler(GraderBaseHandler):
 
         # Create temporary paths to copy the submission files in the edit repository
         tmp_path = os.path.join(
-            self.application.grader_service_dir,
-            "tmp",
-            lecture.code,
-            str(assignment.id),
-            "edit",
-            str(submission.id),
+            str(self.tmpbase), lecture.code, str(assignment.id), "edit", str(submission.id)
         )
 
         tmp_input_path = os.path.join(tmp_path, "input")

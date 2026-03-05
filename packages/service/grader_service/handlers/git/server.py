@@ -240,12 +240,8 @@ class GitBaseHandler(GraderBaseHandler):
                 )
                 if not os.path.exists(repo_path_release):
                     return None
-                self.duplicate_release_repo(
-                    repo_path_release=repo_path_release,
-                    repo_path_user=path,
-                    assignment=assignment,
-                    message="Initialize with Release",
-                    checkout_main=True,
+                self.assignment_files_service.init_user_repo_from_release(
+                    assignment=assignment, message="Initialize with Release", checkout_main=True
                 )
 
             self.write_pre_receive_hook(path)
