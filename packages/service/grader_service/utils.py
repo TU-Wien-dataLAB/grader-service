@@ -7,6 +7,7 @@ import concurrent.futures
 import hashlib
 import inspect
 import secrets
+import shutil
 import uuid
 from binascii import b2a_hex
 from datetime import datetime, timezone
@@ -14,6 +15,7 @@ from hmac import compare_digest
 from typing import Any
 
 from tornado.log import app_log
+from traitlets import TraitError
 
 
 def isoformat(dt):
@@ -192,3 +194,11 @@ def convert_request_to_dict(arguments: dict[str, list[bytes]]) -> dict[str, Any]
     for k, values in arguments.items():
         args[k] = values[0].decode()
     return args
+
+
+def executable_validator(proposal: dict) -> str:
+    """Used in Configurable's validators to check that a configured executable exists."""
+    exec: str = proposal["value"]
+    if shutil.which(exec) is None:
+        raise TraitError(f"The executable is not valid: {exec}")
+    return exec

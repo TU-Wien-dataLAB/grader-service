@@ -12,7 +12,6 @@ import sys
 from contextlib import contextmanager
 from typing import Iterator
 
-from traitlets import TraitError
 from traitlets.config.configurable import LoggerType
 
 
@@ -71,10 +70,3 @@ def collect_logs(logger: LoggerType) -> Iterator[io.StringIO]:
     finally:
         logger.removeHandler(handler)
         handler.close()
-
-
-def executable_validator(proposal: dict) -> str:
-    exec: str = proposal["value"]
-    if shutil.which(exec) is None:
-        raise TraitError(f"The executable is not valid: {exec}")
-    return exec
