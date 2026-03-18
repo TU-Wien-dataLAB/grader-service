@@ -6,9 +6,6 @@
 # grader_s/grader_s/handlers
 import datetime
 import json
-import os.path
-import shutil
-import subprocess
 from http import HTTPStatus
 from typing import List
 
@@ -30,8 +27,9 @@ from grader_service.autograding.celery.tasks import (
 from grader_service.convert.gradebook.gradebook import Gradebook
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.errors import APIError
+from grader_service.file_services import FileServiceError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.handlers.handler_utils import GitRepoType, parse_ids
+from grader_service.handlers.handler_utils import parse_ids
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture
@@ -372,10 +370,6 @@ class SubmissionHandler(GraderBaseHandler):
         # use implicit utc time to compare with database objects
         # submission_ts = submission_ts.replace(tzinfo=None)
 
-        score_scaling = 1.0
-        if assignment.settings.deadline is not None:
-            score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
-
         if assignment.settings.max_submissions and role.role < Scope.tutor:
             submissions = assignment.submissions
             user_submissions = [s for s in submissions if s.user_id == role.user_id]
@@ -385,9 +379,6 @@ class SubmissionHandler(GraderBaseHandler):
                 )
 
         submission = Submission()
-        submission.assignid = assignment.id
-        submission.date = submission_ts
-        submission.score_scaling = score_scaling
 
         username = body.get("username")
         if username is not None and role.role >= Scope.tutor:
@@ -406,24 +397,19 @@ class SubmissionHandler(GraderBaseHandler):
             # A user creates a submission for themselves.
             submission.user_id = self.user.id
 
-            git_repo_path = self.construct_git_dir(
-                repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
-            )
+        # TODO: This [whole endpoint] is git-specific. How to make it file-backend-agnostic?
+        try:
+            self.file_service.validate_commit_hash(commit_hash, assignment)
+        except FileServiceError as e:
+            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
 
-            # If no submissions for the student exists, we cannot reference a non-existing
-            # commit_hash.
-            if not os.path.exists(git_repo_path):
-                raise HTTPError(
-                    HTTPStatus.UNPROCESSABLE_ENTITY, reason="User git repository not found"
-                )
-            try:
-                subprocess.run(
-                    ["git", "branch", "main", "--contains", commit_hash],
-                    cwd=git_repo_path,
-                    capture_output=True,
-                )
-            except subprocess.CalledProcessError:
-                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit not found")
+        submission.assignid = assignment.id
+        submission.date = submission_ts
+
+        score_scaling = 1.0
+        if assignment.settings.deadline is not None:
+            score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
+        submission.score_scaling = score_scaling
 
         submission.commit_hash = commit_hash
         submission.auto_status = AutoStatus.NOT_GRADED
@@ -624,7 +610,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Soft or Hard-deletes a specific submission.
+        """Soft- or hard-deletes a specific submission.
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
@@ -657,7 +643,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
                 self.session.delete(submission)
                 self.session.commit()
-                self.delete_submission_files(submission)
+                self.file_service.delete_submission_files(submission)
             else:
                 # Do not allow students to delete other users' submissions
                 if (
@@ -838,91 +824,10 @@ class SubmissionEditHandler(GraderBaseHandler):
                 reason="This repo cannot be edited or reset, because it was created by instructor",
             )
 
-        assignment = submission.assignment
-        lecture = assignment.lecture
-
-        # Path to the (bare!) repository which will store edited submission files
-        git_repo_path = self.construct_git_dir(
-            repo_type=GitRepoType.EDIT,
-            lecture=lecture,
-            assignment=assignment,
-            submission=submission,
-        )
-
-        # Path to repository of student which contains the submitted files
-        submission_repo_path = os.path.join(
-            self.gitbase, lecture.code, str(assignment.id), "user", submission.user.name
-        )
-        if not os.path.exists(submission_repo_path):
-            raise HTTPError(
-                HTTPStatus.BAD_REQUEST, reason="The user submission repository does not exist"
-            )
-
-        if os.path.exists(git_repo_path):
-            shutil.rmtree(git_repo_path)
-
-        # Creating bare repository
-        if not os.path.exists(git_repo_path):
-            os.makedirs(git_repo_path, exist_ok=True)
-
-        await self._run_command_async(
-            ["git", "init", "--bare", "--initial-branch=main"], git_repo_path
-        )
-
-        # Create temporary paths to copy the submission files in the edit repository
-        tmp_path = os.path.join(
-            str(self.tmpbase), lecture.code, str(assignment.id), "edit", str(submission.id)
-        )
-
-        tmp_input_path = os.path.join(tmp_path, "input")
-
-        tmp_output_path = os.path.join(tmp_path, "output")
-
-        if os.path.exists(tmp_path):
-            shutil.rmtree(tmp_path, ignore_errors=True)
-
-        os.makedirs(tmp_input_path, exist_ok=True)
-
-        # Init local repository
-        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_input_path)
-
-        # Pull user repository
-        await self._run_command_async(
-            ["git", "pull", str(submission_repo_path), "main"], tmp_input_path
-        )
-        self.log.info("Successfully cloned repo")
-
-        # Checkout to correct submission commit
-        await self._run_command_async(["git", "checkout", submission.commit_hash], tmp_input_path)
-        self.log.info(f"Now at commit {submission.commit_hash}")
-
-        # Copy files to output directory
-        shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
-
-        # Init local repository
-        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_output_path)
-
-        # Add edit remote
-        await self._run_command_async(
-            ["git", "remote", "add", "edit", str(git_repo_path)], tmp_output_path
-        )
-        self.log.info("Successfully added edit remote")
-
-        # Switch to main
-        await self._run_command_async(["git", "switch", "-c", "main"], tmp_output_path)
-        self.log.info("Successfully switched to branch main")
-
-        # Add files to staging
-        await self._run_command_async(["git", "add", "-A"], tmp_output_path)
-        self.log.info("Successfully added files to staging")
-
-        # Commit Files
-        await self._run_command_async(["git", "commit", "-m", "Initial commit"], tmp_output_path)
-        self.log.info("Successfully commited files")
-
-        # Push copied files
-        await self._run_command_async(["git", "push", "edit", "main"], tmp_output_path)
-        self.log.info("Successfully pushed copied files")
+        try:
+            await self.file_service.edit_submission(submission)
+        except FileServiceError:
+            raise HTTPError(500, reason="Submission files error")
 
         submission.edited = True
         self.session.commit()

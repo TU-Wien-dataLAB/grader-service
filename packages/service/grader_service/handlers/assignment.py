@@ -312,7 +312,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
                 self.session.delete(assignment)
                 self.session.commit()
-                self.delete_assignment_files(assignment=assignment, lecture=lecture)
+                self.file_service.delete_assignment_files(assignment=assignment, lecture=lecture)
             else:
                 if assignment.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was deleted.")
@@ -323,7 +323,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 )
                 self.session.commit()
                 if previously_deleted is not None:
-                    self.delete_assignment_files(assignment=previously_deleted, lecture=lecture)
+                    self.file_service.delete_assignment_files(
+                        assignment=previously_deleted, lecture=lecture
+                    )
 
                 assignment.deleted = DeleteState.deleted
                 self.session.commit()
@@ -352,9 +354,7 @@ class AssignmentResetHandler(GraderBaseHandler):
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        self.assignment_files_service.init_user_repo_from_release(
-            assignment, message="Reset Assignment"
-        )
+        self.file_service.init_user_repo_from_release(assignment, message="Reset Assignment")
 
         self.write_json(assignment)
 

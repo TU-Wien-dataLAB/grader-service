@@ -7,6 +7,7 @@ import os
 import shlex
 import subprocess
 import zlib
+from http import HTTPStatus
 from pathlib import Path
 from string import Template
 from typing import List, Optional
@@ -20,13 +21,17 @@ from tornado.web import HTTPError, stream_request_body
 from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
-from grader_service.orm.takepart import Role, Scope
+from grader_service.orm import Assignment, Lecture, Role, Submission
+from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
 
 class GitBaseHandler(GraderBaseHandler):
+    # TODO
+    @property
+    def gitbase(self):
+        return os.path.join(self.application.grader_service_dir, "git")
+
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
         return self.process.stdin.write(chunk)
@@ -240,12 +245,83 @@ class GitBaseHandler(GraderBaseHandler):
                 )
                 if not os.path.exists(repo_path_release):
                     return None
-                self.assignment_files_service.init_user_repo_from_release(
+                self.file_service.init_user_repo_from_release(
                     assignment=assignment, message="Initialize with Release", checkout_main=True
                 )
 
             self.write_pre_receive_hook(path)
             return path
+
+    # TODO: This is duplicated in the Git files service (with slight changes).
+    def construct_git_dir(
+        self,
+        repo_type: GitRepoType,
+        lecture: Lecture,
+        assignment: Assignment,
+        submission: Optional[Submission] = None,
+        username: Optional[str] = None,
+    ) -> Optional[str]:
+        """Helper method for every handler that needs to access git
+        directories which returns the path of the repository based on
+        the inputs or None if the repo_type is not recognized.
+
+        Raises HTTPError 400 if the normalised path does not start with
+        `self.gitbase`, to make it robust against fabricated lecture codes
+        or usernames containing substrings like "../..".
+        """
+        # TODO: refactor
+        assignment_path = os.path.abspath(
+            os.path.join(self.gitbase, lecture.code, str(assignment.id))
+        )
+        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
+        if repo_type in allowed_types:
+            path = os.path.join(assignment_path, repo_type)
+            if repo_type == GitRepoType.EDIT:
+                path = os.path.join(path, str(submission.id))
+        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
+            type_path = os.path.join(assignment_path, repo_type, "user")
+            if repo_type == GitRepoType.AUTOGRADE:
+                if (submission is None) or (
+                    not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor
+                ):
+                    raise HTTPError(403)
+                path = os.path.join(type_path, submission.user.name)
+            else:
+                path = os.path.join(type_path, self.user.name)
+        elif repo_type == GitRepoType.USER:
+            user_path = os.path.join(assignment_path, repo_type)
+            # we allow two different paths for user repos:
+            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
+            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
+            if username is None:
+                path = os.path.join(user_path, self.user.name)
+            else:
+                user_role = self.get_role(lecture.id).role
+                if not self.user.is_admin and user_role < Scope.tutor:
+                    raise HTTPError(
+                        403,
+                        reason="Only tutors, instructors and admins can access other users' repositories.",
+                    )
+                path = os.path.join(user_path, username)
+        else:
+            raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
+
+        path = os.path.normpath(path)
+        if not path.startswith(self.gitbase):
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
+
+        return path
+
+    @staticmethod
+    def is_base_git_dir(path: str) -> bool:
+        try:
+            out = subprocess.run(
+                ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
+            )
+            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
+        except FileNotFoundError:
+            is_git = False
+        return is_git
 
     def write_pre_receive_hook(self, path: str):
         hook_dir = os.path.join(path, "hooks")

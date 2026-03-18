@@ -9,7 +9,8 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import patch
 
 import isodate
 import pytest
@@ -17,20 +18,20 @@ from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
+from grader_service.file_services import SubmissionGitFileService
 from grader_service.handlers.submissions import (
     INSTRUCTOR_SUBMISSION_COMMIT_HASH,
     SubmissionEditHandler,
     SubmissionHandler,
 )
 from grader_service.orm import Assignment as AssignmentORM
-from grader_service.orm import Role
+from grader_service.orm import Role, SubmissionLogs, SubmissionProperties
+from grader_service.orm import Submission as SubmissionORM
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
-from grader_service.orm.submission import Submission as SubmissionORM
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
-from ... import orm
 from .db_util import (
     check_git_repositories,
     check_submission,
@@ -1075,7 +1076,7 @@ async def test_delete_submission_admin_from_another_student(
     Submission.from_dict(submission_dict)
 
     session: Session = sessionmaker(sql_alchemy_engine)()
-    submission = session.query(orm.Submission).filter(orm.Submission.id == s_id).first()
+    submission = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).first()
     assert submission.deleted == DeleteState.deleted
 
 
@@ -1162,17 +1163,13 @@ async def test_delete_submission_hard(
     )
 
     session: Session = sessionmaker(sql_alchemy_engine)()
-    submissions = session.query(orm.Submission).filter(orm.Submission.id == s_id).all()
+    submissions = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).all()
     assert len(submissions) == 1
     submission_properties = (
-        session.query(orm.SubmissionProperties)
-        .filter(orm.SubmissionProperties.sub_id == s_id)
-        .all()
+        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).all()
     )
     assert len(submission_properties) == 1
-    submission_logs = (
-        session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
-    )
+    submission_logs = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).all()
     assert len(submission_logs) == 1
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
@@ -1193,17 +1190,13 @@ async def test_delete_submission_hard(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    submissions = session.query(orm.Submission).filter(orm.Submission.id == s_id).all()
+    submissions = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).all()
     assert len(submissions) == 0
     submission_properties = (
-        session.query(orm.SubmissionProperties)
-        .filter(orm.SubmissionProperties.sub_id == s_id)
-        .all()
+        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).all()
     )
     assert len(submission_properties) == 0
-    submission_logs = (
-        session.query(orm.SubmissionLogs).filter(orm.SubmissionLogs.sub_id == s_id).all()
-    )
+    submission_logs = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).all()
     assert len(submission_logs) == 0
 
 
@@ -1336,7 +1329,7 @@ async def test_post_submission_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionHandler, "construct_git_dir", str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
         response = await http_server_client.fetch(
@@ -1496,7 +1489,7 @@ async def test_post_submission_no_assignment_properties(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionHandler, "construct_git_dir", return_value=str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
         pytest.raises(HTTPClientError) as exc_info,
     ):
         await http_server_client.fetch(
@@ -1554,7 +1547,6 @@ async def test_submission_properties_student(
     default_roles,
     default_user_login,
     sql_alchemy_sessionmaker,
-    tmp_path,
 ):
     l_id = 1
     a_id = 3
@@ -1818,6 +1810,7 @@ async def test_submission_properties_not_found(
 
 
 async def test_submission_create_edit_repo(
+    app,
     service_base_url,
     http_server_client,
     default_user,
@@ -1825,14 +1818,13 @@ async def test_submission_create_edit_repo(
     sql_alchemy_engine,
     default_roles,
     default_user_login,
-    tmp_path,
 ):
     """Create or reset an edit repository (there is no difference) - SubmissionEditHandler.put()"""
     l_id = 3  # default user has to be instructor
     l_code = "22wle1"  # the code of the lecture with id=3
     a_id = 3
 
-    gitbase_dir = tmp_path / "git"
+    gitbase_dir = Path(app.grader_service_dir) / "git"
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
@@ -1844,21 +1836,9 @@ async def test_submission_create_edit_repo(
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{submission.id}/edit"
 
-    with (
-        patch(
-            "grader_service.handlers.submissions.SubmissionEditHandler", new=SubmissionEditHandler
-        ) as handler_mock,
-        patch.object(SubmissionEditHandler, "gitbase", str(gitbase_dir)),
-    ):
-        handler_mock.application = MagicMock(spec=GraderServer)
-        handler_mock.application.grader_service_dir = str(tmp_path)
-
-        resp = await http_server_client.fetch(
-            url,
-            method="PUT",
-            headers={"Authorization": f"Token {default_token}"},
-            body=json.dumps({}),
-        )
+    resp = await http_server_client.fetch(
+        url, method="PUT", headers={"Authorization": f"Token {default_token}"}, body=json.dumps({})
+    )
 
     assert resp.code == HTTPStatus.OK
     submission_dict = json.loads(resp.body.decode())
@@ -1891,7 +1871,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionHandler, "construct_git_dir", str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
         patch("grader_service.handlers.submissions.chain", autospec=True),
     ):
         response = await http_server_client.fetch(
