@@ -160,7 +160,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
                 self.session.delete(lecture)
                 self.session.commit()
-                self.delete_lecture_files(lecture)
+                self.file_service.delete_lecture_files(lecture)
             else:
                 if lecture.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was deleted.")
@@ -178,7 +178,9 @@ class LectureObjectHandler(GraderBaseHandler):
                 self.session.commit()
 
                 for assignment in previously_deleted_assignments:
-                    self.delete_assignment_files(assignment=assignment, lecture=lecture)
+                    self.file_service.delete_assignment_files(
+                        assignment=assignment, lecture=lecture
+                    )
 
                 for assignment in lecture.assignments:
                     assignment.deleted = DeleteState.deleted

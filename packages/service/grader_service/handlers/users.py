@@ -97,7 +97,7 @@ class UserObjectBaseHandler(GraderBaseHandler):
             submissions = user.submissions
 
             for submission in submissions:
-                self.delete_submission_files(submission)
+                self.file_service.delete_submission_files(submission)
 
             self.session.delete(user)
             self.session.commit()

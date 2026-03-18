@@ -3,16 +3,11 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import asyncio
 import base64
 import datetime
 import functools
 import json
-import os
 import re
-import shlex
-import shutil
-import subprocess
 import time
 import uuid
 from _decimal import Decimal
@@ -38,8 +33,7 @@ from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
-from grader_service.handlers.file_services.assignment_files_service import AssignmentFileService
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.file_services import SubmissionGitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -164,12 +158,6 @@ class BaseHandler(web.RequestHandler):
         self.application: GraderServer = self.application
         self.authenticator = self.application.authenticator
         self.log = self.application.log
-
-        self.assignment_files_service = AssignmentFileService(
-            grader_service_dir=Path(self.application.grader_service_dir),
-            user=self.user,
-            log=self.log,
-        )
 
     async def prepare(self) -> Optional[Awaitable[None]]:
         # strip trailing slash
@@ -825,6 +813,18 @@ class GraderErrorMixin:
 
 
 class GraderBaseHandler(GraderErrorMixin, BaseHandler):
+    def __init__(
+        self, application: GraderServer, request: httputil.HTTPServerRequest, **kwargs: Any
+    ) -> None:
+        super().__init__(application, request, **kwargs)
+
+        # TODO: get the class from the config? (DIP!)
+        self.file_service = SubmissionGitFileService(
+            grader_service_dir=Path(self.application.grader_service_dir),
+            user=self.user,
+            log=self.log,
+        )
+
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -953,46 +953,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
         return submissions_query.all()
 
-    def delete_lecture_files(self, lecture: Lecture):
-        # delete all associated directories of the lecture
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, lecture.code))
-        tmp_lecture_path = os.path.abspath(os.path.join(self.tmpbase, lecture.code))
-        shutil.rmtree(lecture_path, ignore_errors=True)
-        shutil.rmtree(tmp_lecture_path, ignore_errors=True)
-
-    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture):
-        # delete all associated directories of the assignment
-        assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, lecture.code, str(assignment.id))
-        )
-        tmp_assignment_path = os.path.abspath(
-            os.path.join(self.tmpbase, lecture.code, str(assignment.id))
-        )
-        shutil.rmtree(assignment_path, ignore_errors=True)
-        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
-
-    def delete_submission_files(self, submission: Submission):
-        # delete all associated directories of the submission
-        assignment_path = os.path.abspath(
-            os.path.join(
-                self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id)
-            )
-        )
-        tmp_assignment_path = os.path.abspath(
-            os.path.join(
-                self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id)
-            )
-        )
-        target_names = {submission.user.name, str(submission.id)}
-        matching_dirs = []
-        for path in [assignment_path, tmp_assignment_path]:
-            for root, dirs, _ in os.walk(path):
-                for d in dirs:
-                    if d in target_names:
-                        matching_dirs.append(os.path.join(root, d))
-        for path in matching_dirs:
-            shutil.rmtree(path, ignore_errors=True)
-
     def validate_assignment_for_soft_delete(self, assignment: Assignment):
         """Validates that an assignment can be soft-deleted.
 
@@ -1041,174 +1001,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         if previously_deleted is not None:
             self.session.delete(previously_deleted)
         return previously_deleted
-
-    @property
-    def gitbase(self):
-        app: GraderServer = self.application
-        return os.path.join(app.grader_service_dir, "git")
-
-    @property
-    def tmpbase(self):
-        app: GraderServer = self.application
-        return os.path.join(app.grader_service_dir, "tmp")
-
-    def construct_git_dir(
-        self,
-        repo_type: GitRepoType,
-        lecture: Lecture,
-        assignment: Assignment,
-        submission: Optional[Submission] = None,
-        username: Optional[str] = None,
-    ) -> Optional[str]:
-        """Helper method for every handler that needs to access git
-        directories which returns the path of the repository based on
-        the inputs or None if the repo_type is not recognized.
-
-        Raises HTTPError 400 if the normalised path does not start with
-        `self.gitbase`, to make it robust against fabricated lecture codes
-        or usernames containing substrings like "../..".
-        """
-        # TODO: refactor
-        assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, lecture.code, str(assignment.id))
-        )
-        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
-        if repo_type in allowed_types:
-            path = os.path.join(assignment_path, repo_type)
-            if repo_type == GitRepoType.EDIT:
-                path = os.path.join(path, str(submission.id))
-        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
-            type_path = os.path.join(assignment_path, repo_type, "user")
-            if repo_type == GitRepoType.AUTOGRADE:
-                if (submission is None) or (
-                    not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor
-                ):
-                    raise HTTPError(403)
-                path = os.path.join(type_path, submission.user.name)
-            else:
-                path = os.path.join(type_path, self.user.name)
-        elif repo_type == GitRepoType.USER:
-            user_path = os.path.join(assignment_path, repo_type)
-            # we allow two different paths for user repos:
-            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
-            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
-            if username is None:
-                path = os.path.join(user_path, self.user.name)
-            else:
-                user_role = self.get_role(lecture.id).role
-                if not self.user.is_admin and user_role < Scope.tutor:
-                    raise HTTPError(
-                        403,
-                        reason="Only tutors, instructors and admins can access other users' repositories.",
-                    )
-                path = os.path.join(user_path, username)
-        else:
-            raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
-
-        path = os.path.normpath(path)
-        if not path.startswith(self.gitbase):
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
-
-        return path
-
-    @staticmethod
-    def is_base_git_dir(path: str) -> bool:
-        try:
-            out = subprocess.run(
-                ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
-            )
-            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
-        except FileNotFoundError:
-            is_git = False
-        return is_git
-
-    def duplicate_release_repo(
-        self,
-        repo_path_release: str,
-        repo_path_user: str,
-        assignment: Assignment,
-        message: str,
-        checkout_main: bool = False,
-    ):
-        tmp_path_base = Path(
-            self.tmpbase, assignment.lecture.code, str(assignment.id), str(self.user.name)
-        )
-
-        # Deleting dir
-        if os.path.exists(tmp_path_base):
-            shutil.rmtree(tmp_path_base)
-
-        os.makedirs(tmp_path_base, exist_ok=True)
-        tmp_path_release = tmp_path_base.joinpath("release")
-        tmp_path_user = tmp_path_base.joinpath(self.user.name)
-
-        self.log.info(f"Duplicating release repository {repo_path_release}")
-        self.log.info(f"Temporary path used for copying: {tmp_path_base}")
-
-        try:
-            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
-            if checkout_main:
-                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-                self._run_command("git checkout -b main", cwd=tmp_path_user)
-            else:
-                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
-
-            msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
-            self.log.info(msg)
-            ignore = shutil.ignore_patterns(".git", "__pycache__")
-            shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            self._run_command("git add -A", tmp_path_user)
-            self._run_command(f'git commit --allow-empty -m "{message}"', tmp_path_user)
-            self._run_command("git push -u origin main", tmp_path_user)
-        finally:
-            shutil.rmtree(tmp_path_base)
-
-    def _run_command(
-        self, command: str, cwd: Optional[Path] = None, capture_output: bool = False
-    ) -> Optional[str]:
-        # TODO currently there are two run_command functions,
-        #  because duplicate_release_repo does not work
-        #  with the _run_command_async
-        self.log.info("Running: %r", command)
-        try:
-            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
-        except subprocess.CalledProcessError as e:
-            self.log.error(e.stderr)
-            raise HTTPError(500, reason="Subprocess Error")
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise HTTPError(404, reason="File not found")
-        if capture_output:
-            return str(ret.stdout, "utf-8")
-
-    async def _run_command_async(self, command_args: List[str], cwd: Optional[str] = None):
-        """Runs a command asynchronously in a subprocess.
-
-        Args:
-            command_args List[str]: List of command arguments to execute.
-            cwd (str, optional): states where the command is getting run.
-                                 Defaults to None.
-
-        Raises:
-            GitError: returns appropriate git error
-        """
-        self.log.info("Running: %s", " ".join(command_args))
-        try:
-            ret = await asyncio.create_subprocess_exec(
-                *command_args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd,
-            )
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise HTTPError(404, reason="File not found")
-
-        stdout, stderr = await ret.communicate()
-        if ret.returncode != 0:
-            self.log.error(stderr.decode())
-            raise HTTPError(500, reason="Subprocess Error")
-        return stdout.decode()
 
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
