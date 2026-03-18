@@ -143,9 +143,17 @@ class OverwriteCells(NbGraderPreprocessor):
                 # Deleted cell is not the first, add it after the previous solution/grade cell
                 else:
                     prev_cell_id = source_cell_ids[source_cell_idx - 1]
-                    prev_cell_idx = submitted_cell_idxs[prev_cell_id] + added_count
-                    nb.cells.insert(prev_cell_idx + 1, cell_to_add)  # +1 to add it after
-                    submitted_cell_idxs[grade_cell_id] = submitted_cell_idxs[prev_cell_id]
+                    if len(submitted_cell_idxs) == 0:
+                        self.log.warning(
+                            f"No grade or solution cells were submitted, adding missing grade cell {grade_cell_id} to the start of the notebook"
+                        )
+                        prev_cell_idx = 0
+                        nb.cells.insert(prev_cell_idx, cell_to_add)
+                        submitted_cell_idxs[grade_cell_id] = prev_cell_idx
+                    else:
+                        prev_cell_idx = submitted_cell_idxs[prev_cell_id] + added_count
+                        nb.cells.insert(prev_cell_idx + 1, cell_to_add)  # +1 to add it after
+                        submitted_cell_idxs[grade_cell_id] = submitted_cell_idxs[prev_cell_id]
 
                 # If the cell we just added is followed by other missing cells, we need to know its index in the nb
                 # However, no need to add `added_count` to avoid double-counting
