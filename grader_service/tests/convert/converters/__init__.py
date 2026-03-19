@@ -11,7 +11,14 @@ from grader_service.convert.converters import Autograde, GenerateAssignment
 tests_dir = Path(__file__).parent.parent
 
 
-def _create_input_output_dirs(p: Path, input_notebooks=None):
+def _create_input_output_dirs(
+    p: Path, input_notebooks: list[str] | None = None
+) -> tuple[Path, Path]:
+    """Create input and output dirs in the provided `p` path,
+    and copy test files with the names from `input_notebooks` to the input dir.
+
+    Note:
+    """
     input_dir = p / "input"
     output_dir = p / "output"
     input_dir.mkdir()
@@ -20,13 +27,12 @@ def _create_input_output_dirs(p: Path, input_notebooks=None):
     if input_notebooks:
         for n in input_notebooks:
             shutil.copyfile(tests_dir / f"preprocessors/files/{n}", input_dir / n)
-            assert n in [f.name for f in input_dir.iterdir()]
     return input_dir, output_dir
 
 
 def _generate_test_submission(
-    input_dir: str,
-    output_dir: str,
+    input_dir: str | Path,
+    output_dir: str | Path,
     file_pattern: str = "*.ipynb",
     assignment_settings_kwargs: Dict[str, Any] = None,
 ):
