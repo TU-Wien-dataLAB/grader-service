@@ -1,6 +1,8 @@
 import json
 import os
 
+import pytest
+
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert.converters import GenerateFeedback
 from grader_service.tests.convert.converters import _create_input_output_dirs
@@ -35,6 +37,7 @@ def _create_minimal_gradebook(nb_names: list | None = None):
     }
 
 
+@pytest.mark.slow
 def test_generate_feedback(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(
         tmp_path, ["simple.ipynb", "test.ipynb", "assignment_data.csv"]
@@ -56,6 +59,7 @@ def test_generate_feedback(tmp_path):
     assert not (output_dir / "assignment_data.csv").exists()
 
 
+@pytest.mark.slow
 def test_generate_feedback_copy_with_all_files_allowed(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
     test_file = input_dir / "test.txt"
@@ -78,6 +82,7 @@ def test_generate_feedback_copy_with_all_files_allowed(tmp_path):
     assert not (output_dir / "test.txt").exists()
 
 
+@pytest.mark.slow
 def test_generate_feedback_with_student_notebooks(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
     student_nb = input_dir / "student.ipynb"
@@ -101,6 +106,7 @@ def test_generate_feedback_with_student_notebooks(tmp_path):
     assert not (output_dir / "student.html").exists()
 
 
+@pytest.mark.slow
 def test_generate_feedback_with_dirs(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 

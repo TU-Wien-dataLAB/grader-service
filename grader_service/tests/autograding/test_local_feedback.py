@@ -162,6 +162,7 @@ def test_gradebook_writing(local_feedback_executor):
 # =============== LocalFeedbackProcessExecutor tests ===============
 
 
+@pytest.mark.slow
 def test_process_executor_start_success(process_executor):
     """Test successful execution of feedback generation process"""
     process_executor.start()

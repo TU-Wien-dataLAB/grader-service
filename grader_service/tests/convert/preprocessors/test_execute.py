@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from nbconvert.exporters.exporter import ResourcesDict
 from nbconvert.preprocessors import ExecutePreprocessor
 
@@ -8,6 +9,7 @@ from grader_service.convert.preprocessors import Execute
 from .base import BaseTestPreprocessor
 
 
+@pytest.mark.slow
 class TestExecute(BaseTestPreprocessor):
     def test_simple_execute_nbconvert(self):
         nb = self._read_nb(os.path.join("files", "simple.ipynb"))

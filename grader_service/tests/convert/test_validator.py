@@ -21,6 +21,7 @@ def stream() -> StringIO:
     return io.StringIO()
 
 
+@pytest.mark.slow
 class TestValidator(object):
     def _add_error(self, cell):
         cell.outputs.append(
