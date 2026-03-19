@@ -143,7 +143,7 @@ class OverwriteCells(NbGraderPreprocessor):
                 # Deleted cell is not the first, add it after the previous solution/grade cell
                 else:
                     prev_cell_id = source_cell_ids[source_cell_idx - 1]
-                    if submitted_cell_idxs:
+                    if not submitted_cell_idxs:
                         self.log.warning(
                             f"No grade or solution cells were submitted, adding missing grade cell {grade_cell_id} to the start of the notebook"
                         )
