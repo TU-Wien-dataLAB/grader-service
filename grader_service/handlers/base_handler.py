@@ -8,7 +8,6 @@ import base64
 import datetime
 import functools
 import json
-import os
 import re
 import shlex
 import shutil
@@ -19,7 +18,7 @@ from _decimal import Decimal
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Optional, Union
-from urllib.parse import parse_qsl, urlparse
+from urllib.parse import parse_qsl, urljoin, urlparse
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -666,7 +665,7 @@ class BaseHandler(web.RequestHandler):
     @property
     def template_namespace(self):
         user = self.current_user
-        base_url = os.path.join(self.application.base_url, "")  # make sure "/" is at the end
+        base_url = urljoin(self.application.base_url, "/")  # make sure "/" is at the end
         ns = dict(
             base_url=base_url,
             prefix=base_url,
