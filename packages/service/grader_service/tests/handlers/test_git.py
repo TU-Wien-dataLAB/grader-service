@@ -299,7 +299,8 @@ def test_git_lookup_pull_autograde_student_error(git_handler_factory):
 def test_git_lookup_forbidden_actions_for_repo_types(
     git_handler_factory, repo_type, rpc_cmd, scope
 ):
-    git_handler = git_handler_factory(repo_type=repo_type, query_kw={"scope": scope})
+    req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="1")
+    git_handler = git_handler_factory(req_path=req_path, query_kw={"scope": scope})
 
     with pytest.raises(HTTPError) as e:
         GitBaseHandler.gitlookup(git_handler, rpc_cmd)
