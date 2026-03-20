@@ -81,41 +81,38 @@ class GitBaseHandler(GraderBaseHandler):
             self.log.error(f"Error from git response {e}")
             raise APIError(500, message=str(e))
 
-    def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
-        repo_type: str = pathlets[2]
-
-        if role.role == Scope.student:
-            # 1. no source or release interaction with source repo for students
+    def _check_git_repo_permissions(
+        self, rpc: str, role: Role, repo_type: GitRepoType, sub_id: int | None = None
+    ):
+        if role.role == Scope.student and not self.user.is_admin:
+            # 1. no interaction with source, release, and edit repo for students
             # 2. no pull allowed for autograde for students
             if (repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}) or (
                 repo_type == GitRepoType.AUTOGRADE and rpc == "upload-pack"
             ):
-                raise HTTPError(403)
+                raise HTTPError(403, "forbidden action")
 
             # 3. students should not be able to pull other submissions
             #    -> add query param for sub_id
             if (repo_type == GitRepoType.FEEDBACK) and (rpc == "upload-pack"):
-                try:
-                    sub_id = int(pathlets[3])
-                except (ValueError, IndexError):
-                    raise HTTPError(403)
                 submission = self.session.query(Submission).get(sub_id)
                 if submission is None or submission.user_id != self.user.id:
-                    raise HTTPError(403)
+                    raise HTTPError(404, "Submission not found")
 
         # 4. no push allowed for autograde and feedback
         #    -> the autograder executor can push locally (will bypass this)
         if (repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}) and (
             rpc in ["send-pack", "receive-pack"]
         ):
-            raise HTTPError(403)
+            raise HTTPError(403, "forbidden action for the repo type")
 
     def gitlookup(self, rpc: str) -> Optional[str]:
         """Resolve and initialize a git repository path based on the request URL.
 
         Parses the request path to extract lecture, assignment, and repository type,
         validates permissions against the database, and returns the filesystem path
-        to the appropriate git repository. Creates the repository if it doesn't exist.
+        to the appropriate git repository. Creates the directory and initializes
+        the repository if they don't exist.
 
         Args:
             rpc: The RPC method name (e.g., "upload-pack", "receive-pack"),
@@ -157,66 +154,53 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             return None
 
-        # get lecture and assignment if they exist
+        # get lecture and user's role in it, if they exist
         try:
             lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
 
-        role = self.session.get(Role, (self.user.id, lecture.id))
-        self._check_git_repo_permissions(rpc, role, pathlets)
+        role = self.get_role(lecture.id)
+
+        # The next pathlet can be a sub_id, username, or something else, depending
+        # on the repo type and action.
+        sub_id: str | None = pathlets_tail[0] if pathlets_tail else None
+
+        #  For the following repo types, sub_id is required and has to be a number
+        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
+            try:
+                sub_id: int = int(sub_id)
+            except (TypeError, ValueError):
+                raise HTTPError(400, "Invalid or missing submission id")
+        self._check_git_repo_permissions(rpc, role, repo_type, sub_id)
 
         try:
             assignment = self.get_assignment(lecture.id, int(assign_id))
         except ValueError:
             raise HTTPError(404, reason="Assignment not found")
 
-        # create directories once we know they exist in the database
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
-        assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
-
-        def _contained(p: str, base: str) -> bool:
-            try:
-                return os.path.commonpath([p, base]) == base
-            except ValueError:
-                return False
-
-        if not _contained(lecture_path, self.gitbase) or not _contained(
-            assignment_path, self.gitbase
-        ):
-            raise HTTPError(400, reason="Invalid repository path")
-
-        if not os.path.exists(lecture_path):
-            os.mkdir(lecture_path)
-        if not os.path.exists(assignment_path):
-            os.mkdir(assignment_path)
-
         submission = None
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
-            try:
-                sub_id = int(pathlets_tail[0])
-            except (ValueError, IndexError):
-                raise HTTPError(403, "Invalid or missing submission id")
-            submission = self.get_submission(lecture.id, assignment.id, sub_id)
+            submission = self.get_submission(lecture.id, assignment.id, int(sub_id))
 
         # if repo_type is user, get username from path, if it exists
         username = None
         if repo_type == GitRepoType.USER:
-            try:
-                if (
-                    pathlets_tail == ["info", "refs"]
-                    or pathlets_tail == ["git-upload-pack"]
-                    or pathlets_tail == ["git-receive-pack"]
-                ):
-                    self.log.warning(
-                        "DEPRECATED: No username specified in path, but info/refs "
-                        "or git-upload-pack/git-receive-pack called. "
-                        "Assuming user is trying to access their own repo."
-                    )
-                else:
+            if (
+                pathlets_tail == ["info", "refs"]
+                or pathlets_tail == ["git-upload-pack"]
+                or pathlets_tail == ["git-receive-pack"]
+            ):
+                self.log.warning(
+                    "DEPRECATED: No username specified in path, but info/refs "
+                    "or git-upload-pack/git-receive-pack called. "
+                    "Assuming user is trying to access their own repo."
+                )
+            else:
+                try:
                     username = pathlets_tail[0]
-            except IndexError:
-                pass
+                except IndexError:
+                    pass
 
         path = self.construct_git_dir(
             repo_type, lecture, assignment, submission=submission, username=username
@@ -224,33 +208,25 @@ class GitBaseHandler(GraderBaseHandler):
         if path is None:
             return None
 
-        os.makedirs(os.path.dirname(path), exist_ok=True)
         is_git = self.is_base_git_dir(path)
-        # return git repo path
-        if os.path.exists(path) and is_git:
-            self.write_pre_receive_hook(path)
-            return path
-        else:
-            os.mkdir(path)
-            # this path has to be a git dir -> call git init
+        if not is_git:
+            os.makedirs(path, exist_ok=True)
+            self.log.info("Running: git init --bare")
             try:
-                self.log.info("Running: git init --bare")
                 subprocess.run(["git", "init", "--bare", path], check=True)
             except subprocess.CalledProcessError:
                 return None
 
             if repo_type == GitRepoType.USER:
-                repo_path_release = self.construct_git_dir(
-                    GitRepoType.RELEASE, assignment.lecture, assignment
-                )
+                repo_path_release = self.construct_git_dir(GitRepoType.RELEASE, lecture, assignment)
                 if not os.path.exists(repo_path_release):
                     return None
                 self.file_service.init_user_repo_from_release(
                     assignment=assignment, message="Initialize with Release", checkout_main=True
                 )
 
-            self.write_pre_receive_hook(path)
-            return path
+        self.write_pre_receive_hook(path)
+        return path
 
     # TODO: This is duplicated in the Git files service (with slight changes).
     def construct_git_dir(
@@ -281,9 +257,7 @@ class GitBaseHandler(GraderBaseHandler):
         elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = os.path.join(assignment_path, repo_type, "user")
             if repo_type == GitRepoType.AUTOGRADE:
-                if (submission is None) or (
-                    not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor
-                ):
+                if submission is None:
                     raise HTTPError(403)
                 path = os.path.join(type_path, submission.user.name)
             else:

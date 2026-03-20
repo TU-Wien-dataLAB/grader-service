@@ -33,7 +33,7 @@ class BaseGitFileService(BaseFileService):
         `self.gitbase`, to make it robust against fabricated lecture codes
         or usernames containing substrings like "../..".
         """
-        # TODO: this is duplicated from base handler. Extract it somewhere? and refactor.
+        # TODO: this is duplicated from Git base handler. Extract it somewhere? and refactor.
         # TODO: Maybe permissions check should be performed somewhere else. This shouldn't
         #  have to touch the database. I guess?
         assignment_path = os.path.abspath(
