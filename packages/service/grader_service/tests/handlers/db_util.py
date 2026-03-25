@@ -270,7 +270,6 @@ def create_git_repository(
     git_dir.mkdir(exist_ok=True)
     path = f"/git/{code}/{a_id}/{repo_type}/{s_id}"
     handler_mock = Mock(autospec=True)
-    # handler_mock.is_base_git_dir.return_value = False
     handler_mock.request.path = path
     handler_mock.gitbase = str(git_dir)
     handler_mock.user.name = username
@@ -280,7 +279,7 @@ def create_git_repository(
         scope=Scope.instructor,
         a_id=a_id,
         s_id=s_id,
-        s_username=s_username,
+        s_username=s_username or username,
         s_user_id=s_user_id,
     )
     handler_mock.session.query = Mock(side_effect=sf)
@@ -292,6 +291,7 @@ def create_git_repository(
         submission=sf(orm.Submission).filter().one(),
     )
     handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
+    handler_mock.is_base_git_dir.return_value = False
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "send-pack")
     assert os.path.exists(lookup_dir)
 
@@ -335,8 +335,6 @@ def create_all_git_repositories(
         s_id=s_id,
         repo_type=GitRepoType.EDIT,
         username=user.name,
-        s_username="student_name",
-        s_user_id=2137,
     )
     create_git_repository(
         app=app,

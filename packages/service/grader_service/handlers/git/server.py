@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import contextlib
 import os
 import shlex
 import subprocess
@@ -82,7 +83,12 @@ class GitBaseHandler(GraderBaseHandler):
             raise APIError(500, message=str(e))
 
     def _check_git_repo_permissions(
-        self, rpc: str, role: Role, repo_type: GitRepoType, sub_id: int | None = None
+        self,
+        rpc: str,
+        role: Role,
+        repo_type: GitRepoType,
+        submission: Submission | None,
+        username: str | None,
     ):
         if role.role == Scope.student and not self.user.is_admin:
             # 1. no interaction with source, release, and edit repo for students
@@ -93,13 +99,15 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(403, "forbidden action")
 
             # 3. students should not be able to pull other submissions
-            #    -> add query param for sub_id
             if (repo_type == GitRepoType.FEEDBACK) and (rpc == "upload-pack"):
-                submission = self.session.query(Submission).get(sub_id)
                 if submission is None or submission.user_id != self.user.id:
                     raise HTTPError(404, "Submission not found")
 
-        # 4. no push allowed for autograde and feedback
+            # 4. students should not be able to access other user's repositories
+            if repo_type == GitRepoType.USER and username is not None:
+                raise HTTPError(403, "Students cannot access other users' repositories")
+
+        # 5. no push allowed for autograde and feedback
         #    -> the autograder executor can push locally (will bypass this)
         if (repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}) and (
             rpc in ["send-pack", "receive-pack"]
@@ -141,6 +149,8 @@ class GitBaseHandler(GraderBaseHandler):
 
         # cut git prefix
         pathlets = pathlets[1:]
+        # pathlets_tail can be empty, a sub_id, a username, or something else, depending
+        # on the repo type and action.
         lect_code, assign_id, repo_type, *pathlets_tail = pathlets
 
         # Repo type "assignment" has been replaced by "user", so this should not happen,
@@ -154,7 +164,7 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             return None
 
-        # get lecture and user's role in it, if they exist
+        # get lecture, user's role in it, and assignment - if they exist
         try:
             lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
@@ -162,25 +172,18 @@ class GitBaseHandler(GraderBaseHandler):
 
         role = self.get_role(lecture.id)
 
-        # The next pathlet can be a sub_id, username, or something else, depending
-        # on the repo type and action.
-        sub_id: str | None = pathlets_tail[0] if pathlets_tail else None
-
-        #  For the following repo types, sub_id is required and has to be a number
-        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
-            try:
-                sub_id: int = int(sub_id)
-            except (TypeError, ValueError):
-                raise HTTPError(400, "Invalid or missing submission id")
-        self._check_git_repo_permissions(rpc, role, repo_type, sub_id)
-
         try:
             assignment = self.get_assignment(lecture.id, int(assign_id))
         except ValueError:
-            raise HTTPError(404, reason="Assignment not found")
+            raise HTTPError(400, reason="Invalid assignment id")
 
+        #  For the following repo types, sub_id is required and has to be a number
         submission = None
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
+            try:
+                sub_id = int(pathlets_tail[0])
+            except (IndexError, TypeError, ValueError):
+                raise HTTPError(400, "Invalid or missing submission id")
             submission = self.get_submission(lecture.id, assignment.id, int(sub_id))
 
         # if repo_type is user, get username from path, if it exists
@@ -197,10 +200,10 @@ class GitBaseHandler(GraderBaseHandler):
                     "Assuming user is trying to access their own repo."
                 )
             else:
-                try:
+                with contextlib.suppress(IndexError):
                     username = pathlets_tail[0]
-                except IndexError:
-                    pass
+
+        self._check_git_repo_permissions(rpc, role, repo_type, submission, username)
 
         path = self.construct_git_dir(
             repo_type, lecture, assignment, submission=submission, username=username
@@ -245,7 +248,6 @@ class GitBaseHandler(GraderBaseHandler):
         `self.gitbase`, to make it robust against fabricated lecture codes
         or usernames containing substrings like "../..".
         """
-        # TODO: refactor
         assignment_path = os.path.abspath(
             os.path.join(self.gitbase, lecture.code, str(assignment.id))
         )
@@ -257,25 +259,19 @@ class GitBaseHandler(GraderBaseHandler):
         elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = os.path.join(assignment_path, repo_type, "user")
             if repo_type == GitRepoType.AUTOGRADE:
-                if submission is None:
-                    raise HTTPError(403)
+                assert submission is not None, f"Missing submission for repo type {repo_type}"
                 path = os.path.join(type_path, submission.user.name)
             else:
                 path = os.path.join(type_path, self.user.name)
         elif repo_type == GitRepoType.USER:
             user_path = os.path.join(assignment_path, repo_type)
             # we allow two different paths for user repos:
-            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
-            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
+            # - if username is not specified, we assume the user is trying to access their own repo,
+            #   so we use self.user.name.
+            # - if username is specified, use the specified username.
             if username is None:
                 path = os.path.join(user_path, self.user.name)
             else:
-                user_role = self.get_role(lecture.id).role
-                if not self.user.is_admin and user_role < Scope.tutor:
-                    raise HTTPError(
-                        403,
-                        reason="Only tutors, instructors and admins can access other users' repositories.",
-                    )
                 path = os.path.join(user_path, username)
         else:
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")

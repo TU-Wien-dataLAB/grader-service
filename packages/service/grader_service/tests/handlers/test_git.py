@@ -23,21 +23,21 @@ from grader_service.orm.takepart import Role, Scope
 _REQUEST_PATH_TEMPLATE = "/git/iv21s/1/{repo_type}/{tail}"
 
 
-def _create_lecture(l_id: int = 1, code: str = "iv21s") -> Lecture:
+def _get_lecture(l_id: int = 1, code: str = "iv21s") -> Lecture:
     lecture = Lecture()
     lecture.id = l_id
     lecture.code = code
     return lecture
 
 
-def _create_assignment(a_id: int = 1, l_id: int = 1) -> Assignment:
+def _get_assignment(a_id: int = 1, l_id: int = 1) -> Assignment:
     assignment = Assignment()
     assignment.id = a_id
     assignment.lectid = l_id
     return assignment
 
 
-def _create_role(l_id: int = 1, user_id: int = 137, scope: Scope = Scope.student) -> Role:
+def _get_role(l_id: int = 1, user_id: int = 137, scope: Scope = Scope.student) -> Role:
     role = Role()
     role.role = scope
     role.lectid = l_id
@@ -45,12 +45,12 @@ def _create_role(l_id: int = 1, user_id: int = 137, scope: Scope = Scope.student
     return role
 
 
-def _create_submission(s_id: int, user_id: int, username: str) -> Submission:
+def _get_submission(s_id: int, user_id: int, username: str) -> Submission:
     sub = Submission()
     sub.id = s_id
     sub.user_id = user_id
     sub.user = User(id=user_id, name=username)
-    sub.assignment = _create_assignment(a_id=1)
+    sub.assignment = _get_assignment(a_id=1)
     sub.assignid = 1
     return sub
 
@@ -74,16 +74,16 @@ def get_query_side_effect(
     def query_side_effect(input):
         query = Mock()
         if input is Lecture:
-            lecture = _create_lecture(l_id, code)
+            lecture = _get_lecture(l_id, code)
             query.filter.return_value.one.return_value = lecture
         elif input is Assignment:
-            assignment = _create_assignment(a_id, l_id)
+            assignment = _get_assignment(a_id, l_id)
             query.filter.return_value.one.return_value = assignment
         elif input is Role:
-            role = _create_role(l_id, user_id, scope)
+            role = _get_role(l_id, user_id, scope)
             query.filter.return_value.one.return_value = role
         elif input is Submission:
-            sub = _create_submission(s_id, s_user_id, s_username)
+            sub = _get_submission(s_id, s_user_id, s_username)
             query.get.return_value = sub
             query.filter.return_value.one.return_value = sub
         else:
@@ -101,18 +101,23 @@ def get_get_side_effect(
     user_id=137,
     a_id=1,
     s_id=1,
-    s_username="test_user",
-    s_user_id=137,
+    s_username=None,
+    s_user_id=None,
 ):
+    if s_username is None:
+        s_username = username
+    if s_user_id is None:
+        s_user_id = user_id
+
     def get_side_effect(input, *args, **kwargs):
         if input is Lecture:
-            return _create_lecture(l_id, code)
+            return _get_lecture(l_id, code)
         elif input is Assignment:
-            return _create_assignment(a_id, l_id)
+            return _get_assignment(a_id, l_id)
         elif input is Role:
-            return _create_role(l_id, user_id, scope)
+            return _get_role(l_id, user_id, scope)
         elif input is Submission:
-            return _create_submission(s_id, s_user_id, s_username)
+            return _get_submission(s_id, s_user_id, s_username)
         return None
 
     return get_side_effect
@@ -147,9 +152,9 @@ def git_handler_factory(app, default_user, default_user_login, sql_alchemy_engin
 
 
 def _create_release_dir(handler: GitBaseHandler):
-    # For user repo_type, the release repo has to exist first
-    lec = _create_lecture()
-    a = _create_assignment()
+    # To create "USER" repo, the release repo has to exist first
+    lec = _get_lecture()
+    a = _get_assignment()
     repo_path_release = GitBaseHandler.construct_git_dir(handler, GitRepoType.RELEASE, lec, a)
     os.makedirs(repo_path_release, exist_ok=True)
 
@@ -194,15 +199,17 @@ def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
 
 
 @pytest.mark.parametrize(
-    "repo_type, req_path_tail",
+    "repo_type, req_path_tail, expected_subdir",
     [
-        (GitRepoType.USER, "student-name"),  # should it be available??
-        (GitRepoType.EDIT, 1),
-        (GitRepoType.AUTOGRADE, 1),
-        (GitRepoType.FEEDBACK, 1),
+        (GitRepoType.USER, "student-name", "student-name"),
+        (GitRepoType.EDIT, 1, "1"),
+        (GitRepoType.AUTOGRADE, 1, "user/student-name"),
+        (GitRepoType.FEEDBACK, 1, "user/ubuntu"),
     ],
 )
-def test_git_lookup_pull_with_submission_instructor(git_handler_factory, repo_type, req_path_tail):
+def test_git_lookup_pull_with_submission_instructor(
+    git_handler_factory, repo_type, req_path_tail, expected_subdir
+):
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
     sub_id = 1
     student_name = "student-name"
@@ -226,16 +233,10 @@ def test_git_lookup_pull_with_submission_instructor(git_handler_factory, repo_ty
     assert lookup_path.is_relative_to(git_handler.gitbase)
     created_paths = lookup_path.relative_to(git_handler.gitbase)
 
-    # Note: the submission user is not the current user
-    if repo_type == GitRepoType.USER:
-        expected_path = f"iv21s/1/{repo_type}/{student_name}"
-    elif repo_type == GitRepoType.EDIT:
-        expected_path = f"iv21s/1/{repo_type}/{sub_id}"
-    elif repo_type == GitRepoType.AUTOGRADE:
-        expected_path = f"iv21s/1/{repo_type}/user/{student_name}"
-    else:  # repo_type == GitRepoType.FEEDBACK
-        expected_path = f"iv21s/1/{repo_type}/user/{git_handler.user.name}"
-    assert created_paths == Path(expected_path)
+    # Note: the submission user is not the same as the currently logged-in user.
+    base_dir = Path(f"iv21s/1/{repo_type}/")
+    expected_path = base_dir / expected_subdir
+    assert created_paths == expected_path
 
 
 @pytest.mark.parametrize("rpc_cmd", ["upload-pack", "receive-pack", "send-pack"])
@@ -258,7 +259,8 @@ def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
 def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req_path_tail):
     repo_type = GitRepoType.FEEDBACK
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
-    git_handler = git_handler_factory(req_path=req_path)
+    logged_user = User(id=137, name="test-user")  # matches mocked db queries
+    git_handler = git_handler_factory(req_path=req_path, user=logged_user)
 
     lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
     lookup_path = Path(lookup_dir)
@@ -273,19 +275,26 @@ def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req
 # ===============  Forbidden actions tests  ===============
 
 
+@pytest.mark.parametrize("rpc_cmd", ["send-pack", "receive-pack", "upload-pack"])
 @pytest.mark.parametrize("repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT])
-def test_git_lookup_push_student_error(git_handler_factory, repo_type):
-    git_handler = git_handler_factory(repo_type=repo_type)
+def test_git_lookup_forbidden_repo_types_student_error(git_handler_factory, repo_type, rpc_cmd):
+    req_path_tail = ""
+    if repo_type == GitRepoType.EDIT:
+        # Submission id has to be provided in the url for the "edit" repo
+        req_path_tail = "1"
+    req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
+    git_handler = git_handler_factory(req_path=req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, "send-pack")
+        GitBaseHandler.gitlookup(git_handler, rpc_cmd)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "forbidden action"
 
 
 def test_git_lookup_pull_autograde_student_error(git_handler_factory):
     repo_type = GitRepoType.AUTOGRADE
-    git_handler = git_handler_factory(repo_type=repo_type)
+    req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="1")
+    git_handler = git_handler_factory(req_path=req_path)
 
     with pytest.raises(HTTPError) as e:
         GitBaseHandler.gitlookup(git_handler, "upload-pack")
@@ -296,7 +305,7 @@ def test_git_lookup_pull_autograde_student_error(git_handler_factory):
 @pytest.mark.parametrize("scope", [Scope.instructor, Scope.student])
 @pytest.mark.parametrize("rpc_cmd", ["send-pack", "receive-pack"])
 @pytest.mark.parametrize("repo_type", [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK])
-def test_git_lookup_forbidden_actions_for_repo_types(
+def test_git_lookup_forbidden_actions_for_repo_types_error(
     git_handler_factory, repo_type, rpc_cmd, scope
 ):
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="1")
@@ -308,52 +317,38 @@ def test_git_lookup_forbidden_actions_for_repo_types(
     assert e.value.log_message == "forbidden action for the repo type"
 
 
-def test_git_lookup_pull_feedback_student_with_invalid_id_error(git_handler_factory, tmp_path):
-    l_code = "iv21s"
+def test_git_lookup_pull_feedback_student_other_user_submission_error(git_handler_factory):
     repo_type = GitRepoType.FEEDBACK
     sub_id = 1
-    path = f"/git/{l_code}/1/{repo_type}/{sub_id}"
+    req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=f"{sub_id}")
 
-    # test that submission with id 1 comes from "other_user"
-    sf = get_query_side_effect(code=l_code, scope=Scope.student, username="other_user", user_id=999)
-    role = sf(Role).get()
-    git_handler = git_handler_factory(path, user=User(name="other_user", id=999))
+    # Submission with id 1 comes from "other_user":
+    git_handler = git_handler_factory(
+        req_path, query_kw={"s_username": "other_user", "s_user_id": 999}
+    )
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler._check_git_repo_permissions(
-            git_handler, "upload-pack", role, repo_type, sub_id
-        )
-    assert e.value.status_code == 404
+        GitBaseHandler.gitlookup(git_handler, "upload-pack")
+    assert e.value.status_code == HTTPStatus.NOT_FOUND
     assert e.value.log_message == "Submission not found"
 
 
-def test_git_lookup_pull_feedback_student_no_id_error(git_handler_factory, tmp_path):
-    repo_type = GitRepoType.FEEDBACK
+def test_git_lookup_pull_user_repo_student_username_error(git_handler_factory):
+    repo_type = GitRepoType.USER
+    req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="other_user")
+    git_handler = git_handler_factory(req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler_factory(repo_type=repo_type), "upload-pack")
-    assert e.value.status_code == 400
-    assert e.value.log_message == "Invalid or missing submission id"
+        GitBaseHandler.gitlookup(git_handler, "upload-pack")
+    assert e.value.status_code == HTTPStatus.FORBIDDEN
+    assert e.value.log_message == "Students cannot access other users' repositories"
 
 
-def test_git_lookup_pull_feedback_student_no_id_error_extra(git_handler_factory, tmp_path):
-    # l_code = "20wle2"
+@pytest.mark.parametrize("req_path_tail", ["", "info/refs&service=git-upload-pack", "invalid-id"])
+def test_git_lookup_pull_feedback_student_invalid_sub_id_error(git_handler_factory, req_path_tail):
     repo_type = GitRepoType.FEEDBACK
-    path = _REQUEST_PATH_TEMPLATE.format(
-        repo_type=repo_type, tail="info/refs&service=git-upload-pack"
-    )
+    path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler_factory(path), "upload-pack")
-    assert e.value.status_code == 400
-    assert e.value.log_message == "Invalid or missing submission id"
-
-
-def test_git_lookup_pull_feedback_student_bad_id_error(git_handler_factory, tmp_path):
-    repo_type = GitRepoType.FEEDBACK
-    sub_id = "abc"
-    path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=f"{sub_id}")
-
-    with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler_factory(path), "upload-pack")
-    assert e.value.status_code == 400
+        GitBaseHandler.gitlookup(git_handler_factory(req_path=path), "upload-pack")
+    assert e.value.status_code == HTTPStatus.BAD_REQUEST
     assert e.value.log_message == "Invalid or missing submission id"
