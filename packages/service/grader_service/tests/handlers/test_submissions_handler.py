@@ -1274,6 +1274,7 @@ async def test_delete_submission_hard_with_files(
 
 
 async def test_post_submission_by_student(
+    app,
     service_base_url,
     http_server_client,
     default_user,
@@ -1290,7 +1291,7 @@ async def test_post_submission_by_student(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.autograding.celery.tasks.CeleryApp", autospec=True),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
@@ -1326,7 +1327,7 @@ async def test_post_submission_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
         response = await http_server_client.fetch(
@@ -1445,7 +1446,7 @@ async def test_post_submission_max_submissions_assignment(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
     ):
         response = await http_server_client.fetch(
             url,
@@ -1489,7 +1490,7 @@ async def test_post_submission_no_assignment_properties(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
         pytest.raises(HTTPClientError) as exc_info,
     ):
         await http_server_client.fetch(
@@ -1871,7 +1872,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.handlers.submissions.chain", autospec=True),
     ):
         response = await http_server_client.fetch(

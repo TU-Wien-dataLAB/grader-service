@@ -23,7 +23,51 @@ def validate_path_relative_to(path: Path, base: Path) -> None:
         raise ValueError("Invalid path")
 
 
-class BaseGitFileService(BaseFileService):
+def construct_git_dir(
+    gitbase: Path,
+    repo_type: GitRepoType,
+    lect_code: str,
+    assignment_id: int | str,
+    submission_id: int | str | None = None,
+    username: str | None = None,
+) -> Path | None:
+    """Returns the path of the repository based on the inputs,
+     or None if the repo_type is not recognized.
+
+    Raises ValueError if the normalised path does not start with
+    `gitbase`, to make it robust against fabricated lecture codes
+    or usernames containing substrings like "../..".
+    """
+    # TODO: Permissions check should be performed somewhere else. This method shouldn't
+    #  have to touch the database.
+    repo_type_path = gitbase / lect_code / str(assignment_id) / repo_type
+    if repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}:
+        if repo_type == GitRepoType.EDIT:
+            assert submission_id is not None, f"Missing submission_id for repo type {repo_type}"
+            path = repo_type_path / str(submission_id)
+        else:
+            path = repo_type_path
+    else:
+        assert username is not None, f"Missing username for repo type {repo_type}"
+        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
+            # Note: username should be that of the submission's user for autograde,
+            # and the logged-in user for feedback.
+            path = repo_type_path / "user" / username
+        elif repo_type == GitRepoType.USER:
+            # we allow two different paths for user repos:
+            #  - the logged-in user is trying to access their own repo,
+            #  - the tutor/instructor accesses the repo of the user with the specified username.
+            path = repo_type_path / username
+        else:
+            raise ValueError(f"Unknown repo type: {repo_type}")
+
+    validate_path_relative_to(path, gitbase)
+    return path
+
+
+class SubmissionGitFileService(BaseFileService):
+    """Service for submission-related file operations"""
+
     def __init__(self, grader_service_dir: Path, user: User, log: Any):
         self.grader_service_dir: Path = grader_service_dir
         self.tmpbase: Path = self.grader_service_dir / "tmp"
@@ -31,66 +75,14 @@ class BaseGitFileService(BaseFileService):
         self.user: User = user
         self.log: Any = log
 
-    def _construct_git_dir(
-        self,
-        repo_type: GitRepoType,
-        lecture: Lecture,
-        assignment: Assignment,
-        submission: Submission | None = None,
-        username: str | None = None,
-    ) -> Path | None:
-        """Returns the path of the repository based on
-        the inputs or None if the repo_type is not recognized.
-
-        Raises ValueError if the normalised path does not start with
-        `self.gitbase`, to make it robust against fabricated lecture codes
-        or usernames containing substrings like "../..".
-        """
-        # TODO: this is duplicated in Git base handler. Extract it somewhere?
-        # TODO: Permissions check should be performed somewhere else. This shouldn't
-        #  have to touch the database. I guess?
-        assignment_path = self.gitbase / lecture.code / str(assignment.id)
-        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
-        if repo_type in allowed_types:
-            path = assignment_path / repo_type
-            if repo_type == GitRepoType.EDIT:
-                assert submission is not None, f"Missing submission for repo type {repo_type}"
-                path = path / str(submission.id)
-        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
-            type_path = assignment_path / repo_type / "user"
-            if repo_type == GitRepoType.AUTOGRADE:
-                assert submission is not None, f"Missing submission for repo type {repo_type}"
-                # TODO: This should only be available for admins/instructors/tutors
-                path = type_path / submission.user.name
-            else:
-                path = type_path / self.user.name
-        elif repo_type == GitRepoType.USER:
-            user_path = assignment_path / repo_type
-            # we allow two different paths for user repos:
-            #  - if username is not specified, we assume the user is trying to access their
-            #    own repo, so we use `self.user.name`.
-            #  - if username is specified, [we should check if the user has permission to access
-            #    other users' repos, and then] use the specified username.
-            if username is None:
-                path = user_path / self.user.name
-            else:
-                # TODO: This should only be available for admins/instructors/tutors
-                path = user_path / username
-        else:
-            raise ValueError(f"Unknown repo type: {repo_type}")
-
-        validate_path_relative_to(path, self.gitbase)
-
-        return path
-
-
-class SubmissionGitFileService(BaseGitFileService):
-    """Service for submission-related file operations"""
-
     def validate_commit_hash(self, commit_hash: str, assignment: Assignment):
         """Checks that the user repo exists and that `main` branch contains the commit with the `commit_hash`."""
-        git_repo_path = self._construct_git_dir(
-            repo_type=GitRepoType.USER, lecture=assignment.lecture, assignment=assignment
+        git_repo_path = construct_git_dir(
+            gitbase=self.gitbase,
+            repo_type=GitRepoType.USER,
+            lect_code=assignment.lecture.code,
+            assignment_id=assignment.id,
+            username=self.user.name,
         )
 
         # If no submissions for the student exists, we cannot reference a non-existing
@@ -126,10 +118,16 @@ class SubmissionGitFileService(BaseGitFileService):
         tmp_path_release = tmp_path_base / "release"
         tmp_path_user = tmp_path_base / self.user.name
 
-        repo_path_release = self._construct_git_dir(
-            GitRepoType.RELEASE, assignment.lecture, assignment
+        repo_path_release = construct_git_dir(
+            self.gitbase, GitRepoType.RELEASE, assignment.lecture.code, assignment.id
         )
-        repo_path_user = self._construct_git_dir(GitRepoType.USER, assignment.lecture, assignment)
+        repo_path_user = construct_git_dir(
+            self.gitbase,
+            GitRepoType.USER,
+            assignment.lecture.code,
+            assignment.id,
+            username=self.user.name,
+        )
 
         self.log.info("Creating user repository from the release repo; %s", repo_path_release)
         self.log.debug("Temporary path used for copying: %s", tmp_path_base)
@@ -158,17 +156,19 @@ class SubmissionGitFileService(BaseGitFileService):
         lecture = assignment.lecture
 
         # Path to the (bare!) repository which will store edited submission files
-        edit_repo_path = self._construct_git_dir(
+        edit_repo_path = construct_git_dir(
+            gitbase=self.gitbase,
             repo_type=GitRepoType.EDIT,
-            lecture=lecture,
-            assignment=assignment,
-            submission=submission,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
+            submission_id=submission.id,
         )
         # Path to repository of student which contains the submitted files
-        submission_repo_path = self._construct_git_dir(
+        submission_repo_path = construct_git_dir(
+            gitbase=self.gitbase,
             repo_type=GitRepoType.USER,
-            lecture=lecture,
-            assignment=assignment,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
             username=submission.user.name,
         )
         if not submission_repo_path.exists():
