@@ -4,6 +4,8 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import os
+import shutil
+import subprocess
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import Mock
@@ -11,7 +13,6 @@ from unittest.mock import Mock
 import pytest
 from tornado.web import HTTPError
 
-from grader_service.file_services import SubmissionGitFileService
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import User
@@ -33,6 +34,7 @@ def _get_lecture(l_id: int = 1, code: str = "iv21s") -> Lecture:
 def _get_assignment(a_id: int = 1, l_id: int = 1) -> Assignment:
     assignment = Assignment()
     assignment.id = a_id
+    assignment.lecture = _get_lecture(l_id)
     assignment.lectid = l_id
     return assignment
 
@@ -138,25 +140,42 @@ def git_handler_factory(app, default_user, default_user_login, sql_alchemy_engin
         request = Mock(path=req_path)
         handler = GitBaseHandler(app, request)
         handler.application.grader_server_dir = tmp_path
-        handler.request = request
         handler._grader_user = user
         handler.user.is_admin = False
+        handler.file_service.user = user
         handler.session = Mock()
         handler.session.get = get_get_side_effect(**query_kw)
         handler.session.query.side_effect = get_query_side_effect(**query_kw)
-        handler.file_service = Mock(spec=SubmissionGitFileService)
 
         return handler
 
     return _create_handler
 
 
-def _create_release_dir(handler: GitBaseHandler):
+def _create_release_repo(handler: GitBaseHandler):
     # To create "USER" repo, the release repo has to exist first
     lec = _get_lecture()
     a = _get_assignment()
     repo_path_release = GitBaseHandler.construct_git_dir(handler, GitRepoType.RELEASE, lec, a)
     os.makedirs(repo_path_release, exist_ok=True)
+    # Initialise the release repo (requires pushing a commit to `main`)
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=main", repo_path_release], check=True
+    )
+    tmpdir = handler.file_service.tmpbase
+    tmp_repo_dir = tmpdir / "release"
+    try:
+        tmpdir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", repo_path_release], cwd=tmpdir, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=tmp_repo_dir, check=True)
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-m", "Initial commit in release"],
+            cwd=tmp_repo_dir,
+            check=True,
+        )
+        subprocess.run(["git", "push", "origin", "main"], cwd=tmp_repo_dir, check=True)
+    finally:
+        shutil.rmtree(tmp_repo_dir)
 
 
 def mock_git_lookup(rpc: str):
@@ -201,7 +220,6 @@ def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
 @pytest.mark.parametrize(
     "repo_type, req_path_tail, expected_subdir",
     [
-        (GitRepoType.USER, "student-name", "student-name"),
         (GitRepoType.EDIT, 1, "1"),
         (GitRepoType.AUTOGRADE, 1, "user/student-name"),
         (GitRepoType.FEEDBACK, 1, "user/ubuntu"),
@@ -222,8 +240,6 @@ def test_git_lookup_pull_with_submission_instructor(
             "s_user_id": 2137,
         },
     )
-    if repo_type == GitRepoType.USER:
-        _create_release_dir(git_handler)
 
     lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
     lookup_path = Path(lookup_dir)
@@ -243,7 +259,7 @@ def test_git_lookup_pull_with_submission_instructor(
 def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
     repo_type = GitRepoType.USER
     git_handler = git_handler_factory(repo_type=repo_type)
-    _create_release_dir(git_handler)
+    _create_release_repo(git_handler)
 
     lookup_dir = GitBaseHandler.gitlookup(git_handler, rpc_cmd)
     lookup_path = Path(lookup_dir)

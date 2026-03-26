@@ -224,7 +224,7 @@ class GitBaseHandler(GraderBaseHandler):
                 repo_path_release = self.construct_git_dir(GitRepoType.RELEASE, lecture, assignment)
                 if not os.path.exists(repo_path_release):
                     return None
-                self.file_service.init_user_repo_from_release(
+                self.file_service.create_submission_from_assignment_files(
                     assignment=assignment, message="Initialize with Release", checkout_main=True
                 )
 
