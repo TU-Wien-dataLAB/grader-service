@@ -47,13 +47,14 @@ class BaseGitFileService(BaseFileService):
         or usernames containing substrings like "../..".
         """
         # TODO: this is duplicated in Git base handler. Extract it somewhere?
-        # TODO: Maybe permissions check should be performed somewhere else. This shouldn't
+        # TODO: Permissions check should be performed somewhere else. This shouldn't
         #  have to touch the database. I guess?
         assignment_path = self.gitbase / lecture.code / str(assignment.id)
         allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
         if repo_type in allowed_types:
             path = assignment_path / repo_type
             if repo_type == GitRepoType.EDIT:
+                assert submission is not None, f"Missing submission for repo type {repo_type}"
                 path = path / str(submission.id)
         elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             type_path = assignment_path / repo_type / "user"
@@ -105,15 +106,15 @@ class SubmissionGitFileService(BaseGitFileService):
         except subprocess.CalledProcessError:
             raise FileServiceError("Commit not found")
 
-    def create_submission(self): ...  # TODO?
-
-    # TODO: Call this `create_submission`? (it recreates user repo; but is also used for resetting it)
-    def init_user_repo_from_release(
+    def create_submission_from_assignment_files(
         self, assignment: Assignment, message: str, checkout_main: bool = False
     ) -> None:
-        """...TODO..."""
+        """Creates a new user repository from release files.
 
-        # TODO: this could probably replace `gitlookup`, i.e. at least parts thereof.
+        This method can also be used to reset (=recreate) a user repo.
+        Release repository has to exist already.
+        """
+
         tmp_path_base = self.tmpbase / assignment.lecture.code / str(assignment.id) / self.user.name
         validate_path_relative_to(tmp_path_base, self.tmpbase)
 
@@ -135,6 +136,7 @@ class SubmissionGitFileService(BaseGitFileService):
 
         try:
             self._run_command(["git", "clone", "-b", "main", repo_path_release], cwd=tmp_path_base)
+            # TODO: Why are there these two cases? Do we need to keep them both?
             if checkout_main:
                 self._run_command(["git", "clone", repo_path_user], cwd=tmp_path_base)
                 self._run_command(["git", "checkout", "-b", "main"], cwd=tmp_path_user)
@@ -150,8 +152,8 @@ class SubmissionGitFileService(BaseGitFileService):
         finally:
             shutil.rmtree(tmp_path_base)
 
-    async def edit_submission(self, submission: Submission):
-        """Creates or overwrites (resets) the repository which stores changes of submissions files"""
+    async def edit_submission(self, submission: Submission) -> None:
+        """Creates or overwrites (resets) the repo which stores instructor's changes to submissions files."""
         assignment = submission.assignment
         lecture = assignment.lecture
 
@@ -275,7 +277,7 @@ class SubmissionGitFileService(BaseGitFileService):
             raise FileServiceError("Subprocess Error")
         return stdout.decode()
 
-    def delete_lecture_files(self, lecture: Lecture):
+    def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
         lecture_path = (self.gitbase / lecture.code).resolve()
         validate_path_relative_to(lecture_path, self.gitbase)
@@ -284,7 +286,7 @@ class SubmissionGitFileService(BaseGitFileService):
         shutil.rmtree(lecture_path, ignore_errors=True)
         shutil.rmtree(tmp_lecture_path, ignore_errors=True)
 
-    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture):
+    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
         """Delete all associated directories of the assignment."""
         assignment_path = (self.gitbase / lecture.code / str(assignment.id)).resolve()
         validate_path_relative_to(assignment_path, self.gitbase)
@@ -293,7 +295,7 @@ class SubmissionGitFileService(BaseGitFileService):
         shutil.rmtree(assignment_path, ignore_errors=True)
         shutil.rmtree(tmp_assignment_path, ignore_errors=True)
 
-    def delete_submission_files(self, submission: Submission):
+    def delete_submission_files(self, submission: Submission) -> None:
         """Delete all associated directories of the submission."""
         lect_code = submission.assignment.lecture.code
         a_id = str(submission.assignment.id)
