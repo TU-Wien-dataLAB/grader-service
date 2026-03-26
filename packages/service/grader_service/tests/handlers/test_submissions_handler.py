@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 import csv
 import json
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
@@ -444,7 +443,6 @@ async def test_get_submissions_lecture_assignment_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -466,7 +464,6 @@ async def test_get_submissions_wrong_assignment_id(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -1284,7 +1281,7 @@ async def test_post_submission_by_student(
     sql_alchemy_engine,
     default_roles,
     default_user_login,
-    sql_alchemy_sessionmaker,
+    tmp_path,
 ):
     l_id = 1  # default user is student
     a_id = 1
@@ -1292,8 +1289,8 @@ async def test_post_submission_by_student(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
     with (
-        patch("os.path.exists"),
         patch("subprocess.run"),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
         patch("grader_service.autograding.celery.tasks.CeleryApp", autospec=True),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
@@ -1329,7 +1326,7 @@ async def test_post_submission_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
         response = await http_server_client.fetch(
@@ -1422,6 +1419,7 @@ async def test_post_submission_max_submissions_assignment(
     sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
+    tmp_path,
 ):
     l_id = 1  # default user is student
     a_id = 3
@@ -1445,7 +1443,10 @@ async def test_post_submission_max_submissions_assignment(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     post_body = {"commit_hash": secrets.token_hex(20)}
 
-    with patch("subprocess.run"), patch("os.path.exists"):
+    with (
+        patch("subprocess.run"),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
+    ):
         response = await http_server_client.fetch(
             url,
             method="POST",
@@ -1472,7 +1473,6 @@ async def test_post_submission_no_assignment_properties(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     tmp_path,
     default_roles,
     default_user_login,
@@ -1489,7 +1489,7 @@ async def test_post_submission_no_assignment_properties(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
         pytest.raises(HTTPClientError) as exc_info,
     ):
         await http_server_client.fetch(
@@ -1845,7 +1845,7 @@ async def test_submission_create_edit_repo(
     assert submission_dict["edited"] is True
     assert submission_dict["commit_hash"] == commit_hash
     assert submission_dict["user_display_name"] == student_username
-    assert os.path.exists(gitbase_dir / l_code / str(a_id) / "edit" / str(submission_dict["id"]))
+    assert (gitbase_dir / l_code / str(a_id) / "edit" / str(submission_dict["id"])).exists()
 
 
 async def test_submission_cannot_edit_submission_created_by_instructor(
@@ -1871,7 +1871,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=str(tmp_path)),
+        patch.object(SubmissionGitFileService, "_construct_git_dir", return_value=tmp_path),
         patch("grader_service.handlers.submissions.chain", autospec=True),
     ):
         response = await http_server_client.fetch(
@@ -2046,7 +2046,6 @@ async def test_get_submissions_username_format_wrong(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
     default_user,
@@ -2067,7 +2066,6 @@ async def test_get_submissions_username_filter_wrong(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
