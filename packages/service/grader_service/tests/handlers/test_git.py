@@ -13,6 +13,7 @@ from unittest.mock import Mock
 import pytest
 from tornado.web import HTTPError
 
+from grader_service.file_services.git_files_service import construct_git_dir
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import User
@@ -156,7 +157,7 @@ def _create_release_repo(handler: GitBaseHandler):
     # To create "USER" repo, the release repo has to exist first
     lec = _get_lecture()
     a = _get_assignment()
-    repo_path_release = GitBaseHandler.construct_git_dir(handler, GitRepoType.RELEASE, lec, a)
+    repo_path_release = construct_git_dir(handler.gitbase, GitRepoType.RELEASE, lec.code, a.id)
     os.makedirs(repo_path_release, exist_ok=True)
     # Initialise the release repo (requires pushing a commit to `main`)
     subprocess.run(

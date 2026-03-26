@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.file_services.git_files_service import construct_git_dir
 from grader_service.handlers import GitRepoType
 from grader_service.handlers.git.server import GitBaseHandler
 from grader_service.orm import Assignment, Lecture, Role, Submission, SubmissionLogs, User
@@ -192,8 +193,9 @@ def create_user_submission_with_repo(
     interfere with the file system.
     """
     # 1. Create and configure a student repo (a bare one, as a remote)
-    # TODO: This way of creating repo paths is brittle. We should have a function that does it.
-    submission_repo_path = gitbase_dir / lecture_code / str(assignment_id) / "user" / student.name
+    submission_repo_path = construct_git_dir(
+        gitbase_dir, GitRepoType.USER, lecture_code, assignment_id, username=student.name
+    )
     submission_repo_path.mkdir(parents=True)
     subprocess.run(
         ["git", "init", "--bare", "--initial-branch=main"], cwd=submission_repo_path, check=True
@@ -268,10 +270,13 @@ def create_git_repository(
 ):
     git_dir = Path(app.grader_service_dir) / "git"
     git_dir.mkdir(exist_ok=True)
-    path = f"/git/{code}/{a_id}/{repo_type}/{s_id}"
+    if repo_type == GitRepoType.USER:
+        url = f"/git/{code}/{a_id}/{repo_type}/{username}"
+    else:
+        url = f"/git/{code}/{a_id}/{repo_type}/{s_id}"
     handler_mock = Mock(autospec=True)
-    handler_mock.request.path = path
-    handler_mock.gitbase = str(git_dir)
+    handler_mock.request.path = url
+    handler_mock.gitbase = git_dir
     handler_mock.user.name = username
     sf = get_query_side_effect(
         l_id=l_id,
@@ -283,14 +288,6 @@ def create_git_repository(
         s_user_id=s_user_id,
     )
     handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(
-        handler_mock,
-        repo_type=repo_type,
-        lecture=sf(orm.Lecture).filter().one(),
-        assignment=sf(orm.Assignment).filter().one(),
-        submission=sf(orm.Submission).filter().one(),
-    )
-    handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
     handler_mock.is_base_git_dir.return_value = False
     lookup_dir = GitBaseHandler.gitlookup(handler_mock, "send-pack")
     assert os.path.exists(lookup_dir)
