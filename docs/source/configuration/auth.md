@@ -82,6 +82,7 @@ from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 c.Authenticator.allow_all = True
+# c.Authenticator.admin_users = {'admin1', 'admin2'}
 c.JupyterHubTokenAuthenticator.user_info_url = "<jupyterhub-url>/hub/api/user"
 
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):

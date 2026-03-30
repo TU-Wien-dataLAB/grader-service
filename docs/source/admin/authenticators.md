@@ -7,8 +7,9 @@ from grader_service.auth.dummy import DummyAuthenticator
 c.GraderService.authenticator_class = DummyAuthenticator
 
 c.DummyAuthenticator.password = 'test'
-# c.Authenticator.allowed_users = {'instructor', 'tutor', 'student1', 'student2'}
+# c.Authenticator.allowed_users = {'admin1', 'admin2', 'instructor', 'tutor', 'student1', 'student2'}
 c.Authenticator.allow_all = True
+# c.Authenticator.admin_users = {'admin1', 'admin2'}
 ```
 
 ## PAMAuthenticator
@@ -36,6 +37,7 @@ c.OAuthenticator.scope = ['email']
 
 c.OAuthenticator.userdata_url = "https://www.googleapis.com/oauth2/v1/userinfo"
 c.OAuthenticator.username_claim = "email"
+# c.OAuthenticator.admin_users = {'admin1', 'admin2'}
 ```
 
 ## LTI 1.3 Authenticator

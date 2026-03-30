@@ -6,6 +6,7 @@ from nbformat import write as _write
 from nbformat import writes as _writes
 from nbformat.notebooknode import NotebookNode
 
+from .. import utils
 from .common import BaseMetadataValidator, ValidationError
 from .v1 import MetadataValidatorV1
 from .v2 import MetadataValidatorV2
@@ -70,11 +71,9 @@ class MetadataValidatorV3(BaseMetadataValidator):
 
         # check for a valid grade id
         if grade or solution or locked:
-            if "grade_id" not in meta:
-                raise ValidationError(
-                    "nbgrader cell does not have a grade_id: {}".format(cell.source)
-                )
-            if meta["grade_id"] == "":
+            if not utils.grade_id_present(cell):
+                self.log.warning(f"nbgrader cell does not have a grade_id: {cell.source}")
+            if utils.grade_id_present(cell) and meta["grade_id"] == "":
                 raise ValidationError("grade_id is empty")
 
         # check for valid points
@@ -105,16 +104,8 @@ class MetadataValidatorV3(BaseMetadataValidator):
 
         ids = set([])
         for cell in nb.cells:
-            if "nbgrader" not in cell.metadata:
+            if not utils.has_cell_type(cell):
                 continue
-
-            grade = cell.metadata["nbgrader"]["grade"]
-            solution = cell.metadata["nbgrader"]["solution"]
-            locked = cell.metadata["nbgrader"]["locked"]
-
-            if not grade and not solution and not locked:
-                continue
-
             grade_id = cell.metadata["nbgrader"]["grade_id"]
             if grade_id in ids:
                 raise ValidationError("Duplicate grade id: {}".format(grade_id))

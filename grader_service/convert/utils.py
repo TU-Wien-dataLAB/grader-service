@@ -67,6 +67,20 @@ def is_grade(cell: NotebookNode) -> bool:
     return cell.metadata["nbgrader"].get("grade", False)
 
 
+def has_cell_type(cell: NotebookNode) -> bool:
+    """Returns True if the cell has a cell type."""
+    if not grade_id_present(cell):
+        return False
+
+    # validate cell metadata
+    grade = cell.metadata["nbgrader"]["grade"]
+    solution = cell.metadata["nbgrader"]["solution"]
+    locked = cell.metadata["nbgrader"]["locked"]
+    grade_id = cell.metadata["nbgrader"]["grade_id"]
+
+    return any([grade, solution, locked, grade_id])
+
+
 def is_solution(cell: NotebookNode) -> bool:
     """Returns True if the cell is a solution cell."""
     if "nbgrader" not in cell.metadata:
@@ -596,3 +610,7 @@ def notebook_hash(path, unique_key=None):
 
 def make_unique_key(course_id, assignment_id, notebook_id, student_id, timestamp):
     return "+".join([course_id, assignment_id, notebook_id, student_id, timestamp])
+
+
+def grade_id_present(cell):
+    return cell.metadata.get("nbgrader", {}).get("grade_id") is not None

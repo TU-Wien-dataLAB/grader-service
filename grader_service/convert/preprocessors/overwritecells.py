@@ -115,7 +115,7 @@ class OverwriteCells(NbGraderPreprocessor):
         # track indices of solution and grade cells in the submitted notebook
         submitted_cell_idxs = dict()
         for idx, cell in enumerate(nb.cells):
-            if utils.is_grade(cell) or utils.is_solution(cell):
+            if utils.grade_id_present(cell) and (utils.is_grade(cell) or utils.is_solution(cell)):
                 submitted_cell_idxs[cell.metadata.nbgrader["grade_id"]] = idx
 
         # Every time we add a cell, the idxs above get shifted
@@ -167,7 +167,7 @@ class OverwriteCells(NbGraderPreprocessor):
         submitted_ids = [
             cell["metadata"]["nbgrader"]["grade_id"]
             for cell in nb.cells
-            if "nbgrader" in cell["metadata"]
+            if utils.grade_id_present(cell)
         ]
         for task_cell in source_nb.task_cells:
             if task_cell.name not in submitted_ids:
@@ -192,7 +192,7 @@ class OverwriteCells(NbGraderPreprocessor):
         submitted_ids = [
             cell["metadata"]["nbgrader"]["grade_id"]
             for cell in nb.cells
-            if "nbgrader" in cell["metadata"]
+            if utils.grade_id_present(cell)
         ]
         for task_cell in source_nb.task_cells:
             if task_cell.name not in submitted_ids:
@@ -229,10 +229,9 @@ class OverwriteCells(NbGraderPreprocessor):
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
     ) -> Tuple[NotebookNode, ResourcesDict]:
-        grade_id = cell.metadata.get("nbgrader", {}).get("grade_id", None)
-        if grade_id is None:
+        if not utils.grade_id_present(cell):
             return cell, resources
-
+        grade_id = cell.metadata.nbgrader["grade_id"]
         try:
             source_cell = self.gradebook.find_source_cell(grade_id, self.notebook_id)
         except MissingEntry:

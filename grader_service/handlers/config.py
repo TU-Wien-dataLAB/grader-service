@@ -31,7 +31,7 @@ class ConfigHandler(GraderBaseHandler):
     Handler class for requests to /config
     """
 
-    @authorize([Scope.tutor, Scope.instructor])
+    @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self):
         app_cfg = self.application.config
         executor_class = app_cfg.RequestHandlerConfig.autograde_executor_class

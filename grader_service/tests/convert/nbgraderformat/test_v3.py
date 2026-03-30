@@ -232,11 +232,9 @@ def test_invalid_metadata():
     cell = create_grade_cell("", "code", "foo", 5, 3)
     validator.validate_cell(cell)
 
-    # missing grade_id
+    # missing grade_id -> ignored
     cell = create_grade_cell("", "code", "foo", 5, 3)
     del cell.metadata.nbgrader["grade_id"]
-    with pytest.raises(ValidationError):
-        validator.validate_cell(cell)
 
     # grade_id is empty
     cell = create_grade_cell("", "code", "", 5, 3)

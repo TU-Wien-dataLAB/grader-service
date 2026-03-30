@@ -62,6 +62,13 @@ lectures:
         example: "true"
         schema:
           type: string
+      - name: instructor
+        in: query
+        description: Filters lectures based on whether the user is an instructor in the lecture
+        required: false
+        example: "true"
+        schema:
+          type: string
     responses:
       200:
         description: OK
