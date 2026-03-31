@@ -11,5 +11,5 @@ def test_git_repo_path_with_fabricated_user_name(submission_123, tmp_path):
     grader_service_dir = str(tmp_path)
     git_manager = GitSubmissionManager(grader_service_dir, submission_123)
 
-    with pytest.raises(PermissionError, match="Invalid repository path"):
+    with pytest.raises(ValueError, match="Invalid path"):
         git_manager._get_repo_path(GitRepoType.USER)
