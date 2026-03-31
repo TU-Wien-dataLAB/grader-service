@@ -48,13 +48,13 @@ def _get_role(l_id: int = 1, user_id: int = 137, scope: Scope = Scope.student) -
     return role
 
 
-def _get_submission(s_id: int, user_id: int, username: str) -> Submission:
+def _get_submission(s_id: int, a_id: int, l_id: int, user_id: int, username: str) -> Submission:
     sub = Submission()
     sub.id = s_id
     sub.user_id = user_id
     sub.user = User(id=user_id, name=username)
-    sub.assignment = _get_assignment(a_id=1)
-    sub.assignid = 1
+    sub.assignment = _get_assignment(a_id=a_id, l_id=l_id)
+    sub.assignid = a_id
     return sub
 
 
@@ -86,7 +86,7 @@ def get_query_side_effect(
             role = _get_role(l_id, user_id, scope)
             query.filter.return_value.one.return_value = role
         elif input is Submission:
-            sub = _get_submission(s_id, s_user_id, s_username)
+            sub = _get_submission(s_id, a_id, l_id, s_user_id, s_username)
             query.get.return_value = sub
             query.filter.return_value.one.return_value = sub
         else:
@@ -120,7 +120,7 @@ def get_get_side_effect(
         elif input is Role:
             return _get_role(l_id, user_id, scope)
         elif input is Submission:
-            return _get_submission(s_id, s_user_id, s_username)
+            return _get_submission(s_id, a_id, l_id, s_user_id, s_username)
         return None
 
     return get_side_effect
@@ -223,7 +223,7 @@ def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
     [
         (GitRepoType.EDIT, 1, "1"),
         (GitRepoType.AUTOGRADE, 1, "user/student-name"),
-        (GitRepoType.FEEDBACK, 1, "user/ubuntu"),
+        (GitRepoType.FEEDBACK, 1, "user/student-name"),
     ],
 )
 def test_git_lookup_pull_with_submission_instructor(
@@ -276,7 +276,7 @@ def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
 def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req_path_tail):
     repo_type = GitRepoType.FEEDBACK
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
-    logged_user = User(id=137, name="test-user")  # matches mocked db queries
+    logged_user = User(id=137, name="test_user")  # matches mocked db queries
     git_handler = git_handler_factory(req_path=req_path, user=logged_user)
 
     lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
