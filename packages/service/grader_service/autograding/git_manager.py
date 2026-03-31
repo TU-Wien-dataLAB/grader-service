@@ -1,13 +1,15 @@
 import os
 import subprocess
-from typing import Any, List, Optional
+from pathlib import Path
+from typing import Any
 
 from traitlets import Unicode, validate
 from traitlets.config import LoggingConfigurable
 
 from grader_service.autograding.utils import executable_validator
+from grader_service.file_services.git_files_service import construct_git_dir
 from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.orm import Assignment, Submission
 
 
 class GitSubmissionManager(LoggingConfigurable):
@@ -32,34 +34,25 @@ class GitSubmissionManager(LoggingConfigurable):
         self.input_branch = "main"
         self.output_branch = f"submission_{self.submission.commit_hash}"
 
-    def _get_repo_path(self, repo_type: GitRepoType) -> str:
+    def _get_repo_path(self, repo_type: GitRepoType) -> Path:
         """Determines the Git repository path for the submission."""
+        gitbase: Path = Path(self.grader_service_dir) / "git"
         assignment: Assignment = self.submission.assignment
-        lecture: Lecture = assignment.lecture
-        repo_name = self.submission.user.name
+        l_code: str = assignment.lecture.code
+        s_id = self.submission.id
+        username: str = self.submission.user.name
 
-        base_repo_path = os.path.join(
-            self.grader_service_dir, "git", lecture.code, str(assignment.id), repo_type
-        )
-        if repo_type in [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK]:
-            path = os.path.join(base_repo_path, "user", repo_name)
-        elif repo_type == GitRepoType.EDIT:
-            path = os.path.join(base_repo_path, str(self.submission.id))
-        elif repo_type == GitRepoType.USER:
-            path = os.path.join(base_repo_path, repo_name)
-        else:
+        if repo_type not in {
+            GitRepoType.USER,
+            GitRepoType.EDIT,
+            GitRepoType.AUTOGRADE,
+            GitRepoType.FEEDBACK,
+        }:
             raise ValueError(f"Cannot determine repo path for repo type {repo_type}")
 
-        path = os.path.normpath(path)
-
-        if not path.startswith(self.grader_service_dir):
-            self.log.error(
-                f"Invalid repo path: {path}. Possibly suspicious values: "
-                f"lecture code: '{lecture.code}' or user name: '{repo_name}'"
-            )
-            raise PermissionError("Invalid repository path.")
-
-        return path
+        return construct_git_dir(
+            gitbase, repo_type, l_code, assignment.id, submission_id=s_id, username=username
+        )
 
     def pull_submission(self, input_path: str) -> None:
         """Inits and pulls the submission repository into the input path.
@@ -99,7 +92,7 @@ class GitSubmissionManager(LoggingConfigurable):
         self._run_git(command, output_path)
         self.log.info(f"Now at branch {self.output_branch}")
 
-    def _commit_files(self, filenames: List[str], output_path: str) -> None:
+    def _commit_files(self, filenames: list[str], output_path: str) -> None:
         """
         Commits the provided files in the repo at `output_path`.
         """
@@ -117,7 +110,7 @@ class GitSubmissionManager(LoggingConfigurable):
             [self.git_executable, "commit", "-m", self.submission.commit_hash], output_path
         )
 
-    def push_results(self, filenames: List[str], output_path: str) -> None:
+    def push_results(self, filenames: list[str], output_path: str) -> None:
         """Creates the output repository, commits and pushes the changes."""
         self._set_up_output_repo(output_path)
         self._commit_files(filenames, output_path)
@@ -130,7 +123,7 @@ class GitSubmissionManager(LoggingConfigurable):
         )
         self.log.info("Pushing complete")
 
-    def _run_git(self, command: list[str], cwd: Optional[str]) -> None:
+    def _run_git(self, command: list[str], cwd: str | None) -> None:
         """
         Execute a git command as a subprocess.
 
