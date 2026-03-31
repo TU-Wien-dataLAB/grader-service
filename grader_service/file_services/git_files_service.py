@@ -50,8 +50,7 @@ def construct_git_dir(
     else:
         assert username is not None, f"Missing username for repo type {repo_type}"
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
-            # Note: username should be that of the submission's user for autograde,
-            # and the logged-in user for feedback.
+            # Note: username should be that of the submission's user!
             path = repo_type_path / "user" / username
         elif repo_type == GitRepoType.USER:
             # we allow two different paths for user repos:

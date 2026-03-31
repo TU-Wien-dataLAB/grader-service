@@ -324,12 +324,12 @@ async def test_delete_user_admin(
     session.add(auth_code)
     session.commit()
 
-    l_id = 1  # admin has no role
+    _l_id = 1  # admin has no role
     l_code = "21wle1"
     a_id = 1
     s_id = 1
     insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    create_all_git_repositories(app, default_user, l_id, l_code, a_id, s_id)
+    create_all_git_repositories(app, default_user, l_code, a_id, s_id)
 
     old_submissions = (
         session.query(orm.Submission).filter(orm.Submission.user_id == old_user.id).all()

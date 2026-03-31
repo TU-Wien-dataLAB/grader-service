@@ -206,10 +206,8 @@ class GitBaseHandler(GraderBaseHandler):
                     username = pathlets_tail[0]
                 except IndexError:
                     username = self.user.name
-        elif repo_type == GitRepoType.AUTOGRADE:
+        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             username = submission.user.name
-        elif repo_type == GitRepoType.FEEDBACK:
-            username = self.user.name
 
         self._check_git_repo_permissions(rpc, role, repo_type, submission, username)
 

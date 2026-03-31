@@ -1164,7 +1164,7 @@ async def test_delete_assignment_hard_with_submissions(
     assert post_response.code == HTTPStatus.CREATED
 
     insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    create_all_git_repositories(app, default_user, l_id, l_code, a_id, s_id)
+    create_all_git_repositories(app, default_user, l_code, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
     delete_response = await http_server_client.fetch(

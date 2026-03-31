@@ -898,8 +898,7 @@ async def test_delete_lecture_hard_assignments_roles(
 
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
         s_id=1,
         repo_type=GitRepoType.SOURCE,
