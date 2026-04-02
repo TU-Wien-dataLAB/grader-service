@@ -43,7 +43,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 # Commit hash is used to differentiate between submissions created by instructors for students and
 # normal submissions by any user.
-INSTRUCTOR_SUBMISSION_COMMIT_HASH = "0" * 40
+INSTRUCTOR_SUBMISSION_HASH = "0" * 40
 
 
 def remove_points_from_submission(submissions):
@@ -354,7 +354,7 @@ class SubmissionHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         try:
-            commit_hash = body["commit_hash"]
+            submission_hash = body["commit_hash"]
         except KeyError:
             raise HTTPError(400, reason="Commit hash not found in body")
 
@@ -396,10 +396,10 @@ class SubmissionHandler(GraderBaseHandler):
         else:
             # A user creates a submission for themselves.
             submission.user_id = self.user.id
+            username = self.user.name
 
-        # TODO: This [whole endpoint] is git-specific. How to make it file-backend-agnostic?
         try:
-            self.file_service.validate_commit_hash(commit_hash, assignment)
+            self.file_service.validate_submission_exists(submission_hash, assignment, username)
         except FileServiceError as e:
             raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
 
@@ -411,7 +411,7 @@ class SubmissionHandler(GraderBaseHandler):
             score_scaling = self.calculate_late_submission_scaling(assignment, submission_ts, role)
         submission.score_scaling = score_scaling
 
-        submission.commit_hash = commit_hash
+        submission.commit_hash = submission_hash
         submission.auto_status = AutoStatus.NOT_GRADED
         submission.manual_status = ManualStatus.NOT_GRADED
         submission.feedback_status = FeedbackStatus.NOT_GENERATED
@@ -441,7 +441,7 @@ class SubmissionHandler(GraderBaseHandler):
         # instructors for students and normal submissions by any user.
         if (
             automatic_grading in ["auto", "full_auto"]
-            and commit_hash != INSTRUCTOR_SUBMISSION_COMMIT_HASH
+            and submission_hash != INSTRUCTOR_SUBMISSION_HASH
         ):
             submission.auto_status = AutoStatus.PENDING
             self.session.commit()
@@ -818,7 +818,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.validate_parameters()
 
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_HASH:
+        if submission.commit_hash == INSTRUCTOR_SUBMISSION_HASH:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
                 reason="This repo cannot be edited or reset, because it was created by instructor",
