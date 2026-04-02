@@ -1,4 +1,4 @@
 from grader_service.file_services.base_files_service import FileServiceError
-from grader_service.file_services.git_files_service import SubmissionGitFileService
+from grader_service.file_services.git_files_service import GitFileService
 
-__all__ = ["SubmissionGitFileService", "FileServiceError"]
+__all__ = ["GitFileService", "FileServiceError"]

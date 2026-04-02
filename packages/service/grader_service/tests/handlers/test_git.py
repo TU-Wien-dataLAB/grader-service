@@ -14,7 +14,7 @@ import pytest
 from tornado.web import HTTPError
 
 from grader_service.file_services.git_files_service import construct_git_dir
-from grader_service.handlers.git.server import GitBaseHandler
+from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
@@ -207,7 +207,7 @@ def test_get_gitdir():
 @pytest.mark.parametrize("repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE])
 def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
     git_handler = git_handler_factory(repo_type=repo_type, query_kw={"scope": Scope.instructor})
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
+    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -242,7 +242,7 @@ def test_git_lookup_pull_with_submission_instructor(
         },
     )
 
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
+    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -256,7 +256,7 @@ def test_git_lookup_pull_with_submission_instructor(
     assert created_paths == expected_path
 
 
-@pytest.mark.parametrize("rpc_cmd", ["upload-pack", "receive-pack", "send-pack"])
+@pytest.mark.parametrize("rpc_cmd", GitRpcCmd)
 def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
     repo_type = GitRepoType.USER
     git_handler = git_handler_factory(repo_type=repo_type)
@@ -279,7 +279,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req
     logged_user = User(id=137, name="test_user")  # matches mocked db queries
     git_handler = git_handler_factory(req_path=req_path, user=logged_user)
 
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, "upload-pack")
+    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -292,7 +292,7 @@ def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req
 # ===============  Forbidden actions tests  ===============
 
 
-@pytest.mark.parametrize("rpc_cmd", ["send-pack", "receive-pack", "upload-pack"])
+@pytest.mark.parametrize("rpc_cmd", GitRpcCmd.UPLOAD_PACK)
 @pytest.mark.parametrize("repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT])
 def test_git_lookup_forbidden_repo_types_student_error(git_handler_factory, repo_type, rpc_cmd):
     req_path_tail = ""
@@ -314,13 +314,13 @@ def test_git_lookup_pull_autograde_student_error(git_handler_factory):
     git_handler = git_handler_factory(req_path=req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, "upload-pack")
+        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "forbidden action"
 
 
 @pytest.mark.parametrize("scope", [Scope.instructor, Scope.student])
-@pytest.mark.parametrize("rpc_cmd", ["send-pack", "receive-pack"])
+@pytest.mark.parametrize("rpc_cmd", [GitRpcCmd.SEND_PACK, GitRpcCmd.RECEIVE_PACK])
 @pytest.mark.parametrize("repo_type", [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK])
 def test_git_lookup_forbidden_actions_for_repo_types_error(
     git_handler_factory, repo_type, rpc_cmd, scope
@@ -344,7 +344,7 @@ def test_git_lookup_pull_feedback_student_other_user_submission_error(git_handle
         req_path, query_kw={"s_username": "other_user", "s_user_id": 999}
     )
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, "upload-pack")
+        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.NOT_FOUND
     assert e.value.log_message == "Submission not found"
 
@@ -355,7 +355,7 @@ def test_git_lookup_pull_user_repo_student_username_error(git_handler_factory):
     git_handler = git_handler_factory(req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, "upload-pack")
+        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "Students cannot access other users' repositories"
 
@@ -366,6 +366,6 @@ def test_git_lookup_pull_feedback_student_invalid_sub_id_error(git_handler_facto
     path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler_factory(req_path=path), "upload-pack")
+        GitBaseHandler.gitlookup(git_handler_factory(req_path=path), GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.BAD_REQUEST
     assert e.value.log_message == "Invalid or missing submission id"
