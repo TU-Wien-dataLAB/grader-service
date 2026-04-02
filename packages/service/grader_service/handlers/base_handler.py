@@ -33,7 +33,7 @@ from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
-from grader_service.file_services import SubmissionGitFileService
+from grader_service.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -819,7 +819,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         super().__init__(application, request, **kwargs)
 
         # TODO: get the class from the config? (DIP!)
-        self.file_service = SubmissionGitFileService(
+        self.file_service = GitFileService(
             grader_service_dir=Path(self.application.grader_service_dir),
             user=self.user,
             log=self.log,

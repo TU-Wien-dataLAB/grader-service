@@ -257,6 +257,9 @@ def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = 
 def create_git_repository(
     app: GraderServer, l_code: str, a_id: int, s_id: int, repo_type: GitRepoType, username: str
 ):
+    """Creates the directory where the repo of the given `repo_type` should be located.
+
+    Note: this function does not actually init a Git repo."""
     git_dir = Path(app.grader_service_dir) / "git"
     git_dir.mkdir(exist_ok=True)
     lookup_dir = construct_git_dir(
@@ -268,7 +271,7 @@ def create_git_repository(
 
 
 def create_all_git_repositories(app: GraderServer, user: User, l_code: str, a_id: int, s_id: int):
-    # create possible git repositories for submission
+    """Creates all possible git repositories for a submission."""
     create_git_repository(
         app=app,
         l_code=l_code,

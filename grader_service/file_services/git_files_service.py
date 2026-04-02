@@ -64,7 +64,7 @@ def construct_git_dir(
     return path
 
 
-class SubmissionGitFileService(BaseFileService):
+class GitFileService(BaseFileService):
     """Service for submission-related file operations"""
 
     def __init__(self, grader_service_dir: Path, user: User, log: Any):

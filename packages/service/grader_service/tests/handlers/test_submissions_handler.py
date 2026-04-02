@@ -17,12 +17,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
-from grader_service.file_services import SubmissionGitFileService
-from grader_service.handlers.submissions import (
-    INSTRUCTOR_SUBMISSION_COMMIT_HASH,
-    SubmissionEditHandler,
-    SubmissionHandler,
-)
+from grader_service.file_services import GitFileService
+from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_COMMIT_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role, SubmissionLogs, SubmissionProperties
 from grader_service.orm import Submission as SubmissionORM
@@ -1291,7 +1287,7 @@ async def test_post_submission_by_student(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
+        patch.object(GitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.autograding.celery.tasks.CeleryApp", autospec=True),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
@@ -1327,7 +1323,7 @@ async def test_post_submission_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
+        patch.object(GitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.handlers.submissions.chain", autospec=True) as mock_chain,
     ):
         response = await http_server_client.fetch(
@@ -1446,7 +1442,7 @@ async def test_post_submission_max_submissions_assignment(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
+        patch.object(GitFileService, "validate_commit_hash", return_value=None),
     ):
         response = await http_server_client.fetch(
             url,
@@ -1490,7 +1486,7 @@ async def test_post_submission_no_assignment_properties(
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
+        patch.object(GitFileService, "validate_commit_hash", return_value=None),
         pytest.raises(HTTPClientError) as exc_info,
     ):
         await http_server_client.fetch(
@@ -1872,7 +1868,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
 
     with (
         patch("subprocess.run"),
-        patch.object(SubmissionGitFileService, "validate_commit_hash", return_value=None),
+        patch.object(GitFileService, "validate_commit_hash", return_value=None),
         patch("grader_service.handlers.submissions.chain", autospec=True),
     ):
         response = await http_server_client.fetch(
