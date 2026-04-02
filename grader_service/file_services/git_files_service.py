@@ -74,14 +74,16 @@ class GitFileService(BaseFileService):
         self.user: User = user
         self.log: Any = log
 
-    def validate_commit_hash(self, commit_hash: str, assignment: Assignment):
-        """Checks that the user repo exists and that `main` branch contains the commit with the `commit_hash`."""
+    def validate_submission_exists(
+        self, submission_hash: str, assignment: Assignment, username: str
+    ) -> None:
+        """Checks that user repo exists and `main` branch contains the commit with `submission_hash`."""
         git_repo_path = construct_git_dir(
             gitbase=self.gitbase,
             repo_type=GitRepoType.USER,
             lect_code=assignment.lecture.code,
             assignment_id=assignment.id,
-            username=self.user.name,
+            username=username,
         )
 
         # If no submissions for the student exists, we cannot reference a non-existing
@@ -90,14 +92,14 @@ class GitFileService(BaseFileService):
             raise FileServiceError("User git repository not found")
         try:
             subprocess.run(
-                ["git", "branch", "main", "--contains", commit_hash],
+                ["git", "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
                 capture_output=True,
             )
         except subprocess.CalledProcessError:
             raise FileServiceError("Commit not found")
 
-    def create_submission_from_assignment_files(
+    def init_submission(
         self, assignment: Assignment, message: str, checkout_main: bool = False
     ) -> None:
         """Creates a new user repository from release files.

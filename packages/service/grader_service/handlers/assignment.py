@@ -354,9 +354,7 @@ class AssignmentResetHandler(GraderBaseHandler):
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
 
-        self.file_service.create_submission_from_assignment_files(
-            assignment, message="Reset Assignment"
-        )
+        self.file_service.init_submission(assignment, message="Reset Assignment")
 
         self.write_json(assignment)
 
