@@ -233,7 +233,6 @@ def make_pod(
     volume_mounts: Optional[list] = None,
     labels: Optional[dict] = None,
     annotations: Optional[dict] = None,
-    node_selector: Optional[dict] = None,
     tolerations: Optional[list] = None,
     run_as_user: Optional[int] = None,
 ) -> V1Pod:
@@ -243,6 +242,7 @@ def make_pod(
     Args:
         name (str): The name of the pod.
         cmd (list[str]): The command to run in the pod.
+        env (list[V1EnvVar]): List of env vars to set in the autograde container.
         image (str): The Docker image to use for the pod's container.
         image_pull_policy (str): The image pull policy.
         image_pull_secrets (Optional[list], default None): List of secrets to pull images from private registries.
@@ -251,7 +251,6 @@ def make_pod(
         volume_mounts (Optional[list], default None): List of volume mounts for the container.
         labels (Optional[dict], default None): Labels to associate with the pod.
         annotations (Optional[dict], default None): Annotations to associate with the pod.
-        node_selector (Optional[dict], default None): Node selectors to determine where the pod should be scheduled.
         tolerations (Optional[list], default None): Tolerations to apply for the pod.
         run_as_user (Optional[int], default None): The user ID under which the container should run.
 
@@ -271,7 +270,6 @@ def make_pod(
         security_context=V1PodSecurityContext(),
         image_pull_secrets=image_pull_secrets,
         restart_policy="Never",
-        node_selector=node_selector,
     )
     # TODO maybe get userid of jupyterhub user
     autograde_container = V1Container(
