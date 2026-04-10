@@ -160,9 +160,7 @@ def _create_release_repo(handler: GitBaseHandler):
     repo_path_release = construct_git_dir(handler.gitbase, GitRepoType.RELEASE, lec.code, a.id)
     os.makedirs(repo_path_release, exist_ok=True)
     # Initialise the release repo (requires pushing a commit to `main`)
-    subprocess.run(
-        ["git", "init", "--bare", "--initial-branch=main", repo_path_release], check=True
-    )
+    subprocess.run(["git", "init", "--bare", repo_path_release], check=True)
     tmpdir = handler.file_service.tmpbase
     tmp_repo_dir = tmpdir / "release"
     try:
