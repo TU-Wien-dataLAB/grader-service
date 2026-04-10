@@ -900,8 +900,8 @@ async def test_delete_lecture_hard_assignments_roles(
         app=app,
         l_code=l_code,
         a_id=a_id,
-        s_id=1,
         repo_type=GitRepoType.SOURCE,
+        s_id=1,
         username=default_admin.name,
     )
 

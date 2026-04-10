@@ -4,8 +4,8 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import json
-import os
 import secrets
+import shutil
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -194,19 +194,17 @@ def create_user_submission_with_repo(
         gitbase_dir, GitRepoType.USER, lecture_code, assignment_id, username=student.name
     )
     submission_repo_path.mkdir(parents=True)
-    subprocess.run(
-        ["git", "init", "--bare", "--initial-branch=main"], cwd=submission_repo_path, check=True
-    )
+    subprocess.run(["git", "init", "--bare"], cwd=submission_repo_path, check=True)
 
     # 2. Create a "local" repo, create and commit a submission file, push to the remote
     tmp_repo_path = gitbase_dir / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
     tmp_repo_path.mkdir(parents=True)
-    subprocess.run(["git", "init", "--initial-branch=main"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "init"], cwd=tmp_repo_path, check=True)
     subprocess.run(
         ["git", "remote", "add", "origin", str(submission_repo_path)], cwd=tmp_repo_path, check=True
     )
     submission_file = tmp_repo_path / "submission.ipynb"
-    submission_file.write_text("content")
+    submission_file.write_text("User submission content")
     subprocess.run(["git", "add", "--all"], cwd=tmp_repo_path, check=True)
     subprocess.run(["git", "commit", "-m", "Student submission"], cwd=tmp_repo_path, check=True)
     subprocess.run(["git", "push", "-u", "origin", "main"], cwd=tmp_repo_path, check=True)
@@ -255,19 +253,40 @@ def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = 
 
 
 def create_git_repository(
-    app: GraderServer, l_code: str, a_id: int, s_id: int, repo_type: GitRepoType, username: str
+    app: GraderServer,
+    l_code: str,
+    a_id: int,
+    repo_type: GitRepoType,
+    s_id: int | None = None,
+    username: str | None = None,
+    init_repo: bool = False,
 ):
     """Creates the directory where the repo of the given `repo_type` should be located.
 
-    Note: this function does not actually init a Git repo."""
+    Note: this function does not actually init a Git repo unless `init_repo` is set to `True`.
+    """
     git_dir = Path(app.grader_service_dir) / "git"
     git_dir.mkdir(exist_ok=True)
-    lookup_dir = construct_git_dir(
+    repo_dir = construct_git_dir(
         git_dir, repo_type, l_code, a_id, submission_id=s_id, username=username
     )
-    lookup_dir.mkdir(parents=True, exist_ok=True)
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    if init_repo:
+        subprocess.run(["git", "init", "--bare"], cwd=repo_dir, check=True)
+        tmp_base = Path(app.grader_service_dir) / "tmp"
+        tmp_repo_dir = tmp_base / repo_type
+        try:
+            tmp_base.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["git", "clone", repo_dir], cwd=tmp_base, check=True)
+            submission_file = tmp_repo_dir / "submission.ipynb"
+            submission_file.write_text(f"Test content for {repo_type} repo")
+            subprocess.run(["git", "add", "-A"], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "push", "origin", "main"], cwd=tmp_repo_dir, check=True)
+        finally:
+            shutil.rmtree(tmp_repo_dir)
 
-    assert os.path.exists(lookup_dir)
+    assert repo_dir.exists()
 
 
 def create_all_git_repositories(app: GraderServer, user: User, l_code: str, a_id: int, s_id: int):
@@ -276,38 +295,38 @@ def create_all_git_repositories(app: GraderServer, user: User, l_code: str, a_id
         app=app,
         l_code=l_code,
         a_id=a_id,
-        s_id=s_id,
         repo_type=GitRepoType.SOURCE,
+        s_id=s_id,
         username=user.name,
     )
     create_git_repository(
         app=app,
         l_code=l_code,
         a_id=a_id,
-        s_id=s_id,
         repo_type=GitRepoType.RELEASE,
+        s_id=s_id,
         username=user.name,
     )
     create_git_repository(
-        app=app, l_code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.USER, username=user.name
+        app=app, l_code=l_code, a_id=a_id, repo_type=GitRepoType.USER, s_id=s_id, username=user.name
     )
     create_git_repository(
-        app=app, l_code=l_code, a_id=a_id, s_id=s_id, repo_type=GitRepoType.EDIT, username=user.name
+        app=app, l_code=l_code, a_id=a_id, repo_type=GitRepoType.EDIT, s_id=s_id, username=user.name
     )
     create_git_repository(
         app=app,
         l_code=l_code,
         a_id=a_id,
-        s_id=s_id,
         repo_type=GitRepoType.AUTOGRADE,
+        s_id=s_id,
         username=user.name,
     )
     create_git_repository(
         app=app,
         l_code=l_code,
         a_id=a_id,
-        s_id=s_id,
         repo_type=GitRepoType.FEEDBACK,
+        s_id=s_id,
         username=user.name,
     )
 

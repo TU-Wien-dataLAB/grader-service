@@ -350,11 +350,21 @@ class AssignmentResetHandler(GraderBaseHandler):
 
     @authorize([Scope.instructor, Scope.tutor, Scope.student])
     async def get(self, lecture_id: int, assignment_id: int):
+        """
+        Resets the user's submission files to the original release version.
+
+        Note that it a user can only reset their own files, and not those of
+        another user. The assignment's status has to be "released".
+        Existing submissions are NOT deleted from the database, and submission
+        files history is preserved.
+        """
         self.validate_parameters()
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         assignment = self.get_assignment(lecture_id, assignment_id)
+        if assignment.status != "released":
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
 
-        self.file_service.init_submission(assignment, message="Reset Assignment")
+        self.file_service.init_submission_files(assignment, message="Reset Assignment")
 
         self.write_json(assignment)
 
