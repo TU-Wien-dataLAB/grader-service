@@ -99,13 +99,14 @@ class GitFileService(BaseFileService):
         except subprocess.CalledProcessError:
             raise FileServiceError("Commit not found")
 
-    def init_submission(
-        self, assignment: Assignment, message: str, checkout_main: bool = False
-    ) -> None:
+    def init_submission_files(self, assignment: Assignment, message: str) -> None:
         """Creates a new user repository from release files.
 
-        This method can also be used to reset (=recreate) a user repo.
-        Release repository has to exist already.
+        This method can also be used to "reset" one's own repo. Note that it does
+        *not* reset its git history, but rather overwrites the submission files
+        and creates a new commit.
+        Release repository, as well as the remote dir for the user repository,
+        have to exist already.
         """
 
         tmp_path_base = self.tmpbase / assignment.lecture.code / str(assignment.id) / self.user.name
@@ -119,10 +120,10 @@ class GitFileService(BaseFileService):
         tmp_path_release = tmp_path_base / "release"
         tmp_path_user = tmp_path_base / self.user.name
 
-        repo_path_release = construct_git_dir(
+        remote_path_release = construct_git_dir(
             self.gitbase, GitRepoType.RELEASE, assignment.lecture.code, assignment.id
         )
-        repo_path_user = construct_git_dir(
+        remote_path_user = construct_git_dir(
             self.gitbase,
             GitRepoType.USER,
             assignment.lecture.code,
@@ -130,24 +131,21 @@ class GitFileService(BaseFileService):
             username=self.user.name,
         )
 
-        self.log.info("Creating user repository from the release repo; %s", repo_path_release)
+        self.log.info("Creating user repository from the release repo; %s", remote_path_release)
         self.log.debug("Temporary path used for copying: %s", tmp_path_base)
 
         try:
-            self._run_command(["git", "clone", "-b", "main", repo_path_release], cwd=tmp_path_base)
-            # TODO: Why are there these two cases? Do we need to keep them both?
-            if checkout_main:
-                self._run_command(["git", "clone", repo_path_user], cwd=tmp_path_base)
-                self._run_command(["git", "checkout", "-b", "main"], cwd=tmp_path_user)
-            else:
-                self._run_command(["git", "clone", "-b", "main", repo_path_user], cwd=tmp_path_base)
+            self._run_command(["git", "clone", remote_path_release], cwd=tmp_path_base)
+            self._run_command(["git", "clone", remote_path_user], cwd=tmp_path_base)
+            # Ensure the user repo is on `main`
+            self._run_command(["git", "checkout", "-B", "main"], cwd=tmp_path_user)
 
             self.log.debug("Copying repo from %s to %s", tmp_path_release, tmp_path_user)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
             shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            self._run_command(["git", "add", "-A"], tmp_path_user)
-            self._run_command(["git", "commit", "--allow-empty", "-m", message], tmp_path_user)
-            self._run_command(["git", "push", "-u", "origin", "main"], tmp_path_user)
+            self._run_command(["git", "add", "-A"], cwd=tmp_path_user)
+            self._run_command(["git", "commit", "--allow-empty", "-m", message], cwd=tmp_path_user)
+            self._run_command(["git", "push", "-u", "origin", "main"], cwd=tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 

@@ -7,11 +7,9 @@ class BaseFileService(abc.ABC):
     """Abstract class defining the interface for handling assignment and submission files."""
 
     @abc.abstractmethod
-    def init_submission(
-        self, assignment: Assignment, message: str, checkout_main: bool = False
-    ) -> None:
+    def init_submission_files(self, assignment: Assignment, message: str) -> None:
         """Initialize a new user's submission from the assignment files."""
-        # TODO: "message" and "checkout_main" are git-specific!
+        # TODO: "message" is git-specific!
         raise NotImplementedError()
 
     @abc.abstractmethod
