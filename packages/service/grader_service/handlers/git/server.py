@@ -230,7 +230,7 @@ class GitBaseHandler(GraderBaseHandler):
         if path is None:
             return None
 
-        is_git = self.is_base_git_dir(path)
+        is_git = self.is_bare_git_dir(path)
         if not is_git:
             path.mkdir(parents=True, exist_ok=True)
             self.log.info("Running: git init --bare")
@@ -245,15 +245,15 @@ class GitBaseHandler(GraderBaseHandler):
                 )
                 if not repo_path_release.exists():
                     return None
-                self.file_service.init_submission(
-                    assignment=assignment, message="Initialize with Release", checkout_main=True
+                self.file_service.init_submission_files(
+                    assignment=assignment, message="Initialize from Release"
                 )
 
         self.write_pre_receive_hook(path)
         return path
 
     @staticmethod
-    def is_base_git_dir(path: Path) -> bool:
+    def is_bare_git_dir(path: Path) -> bool:
         try:
             out = subprocess.run(
                 ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
@@ -340,7 +340,7 @@ class RPCHandler(GitBaseHandler):
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
         self.gitdir = self.get_gitdir(rpc=self.rpc)
-        self.cmd = ["git", self.rpc, "--stateless-rpc", self.gitdir]
+        self.cmd = ["git", self.rpc, "--stateless-rpc", str(self.gitdir)]
         self.log.info(f"Running command: {' '.join(self.cmd)}")
         self.process = Subprocess(
             self.cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
@@ -392,7 +392,7 @@ class InfoRefsHandler(GitBaseHandler):
             self.rpc,
             "--stateless-rpc",
             "--advertise-refs",
-            self.get_gitdir(self.rpc),
+            str(self.get_gitdir(self.rpc)),
         ]
         self.log.info(f"Running command: {' '.join(self.cmd)}")
         self.process = Subprocess(

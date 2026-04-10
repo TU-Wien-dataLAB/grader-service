@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -228,8 +229,10 @@ def check_assignment_and_status(
 ):
     session: Session = sessionmaker(engine)()
     assignment = (
-        session.query(orm.Assignment)
-        .filter(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
+        session.execute(
+            select(orm.Assignment).where(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
+        )
+        .scalars()
         .first()
     )
     if should_exist:
@@ -242,8 +245,10 @@ def check_assignment_and_status(
 def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = True):
     session: Session = sessionmaker(engine)()
     submission = (
-        session.query(orm.Submission)
-        .filter(orm.Submission.id == s_id, orm.Submission.assignid == a_id)
+        session.execute(
+            select(orm.Submission).where(orm.Submission.id == s_id, orm.Submission.assignid == a_id)
+        )
+        .scalars()
         .first()
     )
     if should_exist:
