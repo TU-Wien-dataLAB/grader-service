@@ -154,12 +154,8 @@ class GraderService(config.Application):
 
         Each lecture code maps to a list of role definitions. Each role definition must include:
           - 'role': the role name (e.g. 'student', 'tutor', 'instructor')
-          - 'members': either
-              * a list of username strings (legacy format), e.g. ['alice', 'bob']
-              OR
-              * a list of user objects, each with:
-                  - 'username' (required): the unique username
-                  - 'display_name' (optional): the user's display name; if omitted, defaults to the username
+          - 'members': either a list of username strings (legacy format),
+        e.g. ``['alice', 'bob']``, **or** a list of user objects, each with:
 
         Example::
 
