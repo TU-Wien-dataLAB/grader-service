@@ -91,11 +91,13 @@ class GraderService(config.Application):
         False, help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
-    grader_service_dir = Unicode(os.getenv("GRADER_SERVICE_DIRECTORY"), allow_none=False).tag(
-        config=True
-    )
+    grader_service_dir = Unicode(
+        os.getenv("GRADER_SERVICE_DIRECTORY"),
+        allow_none=False,
+        help="The directory where the grader service stores its data",
+    ).tag(config=True)
 
-    db_url = Unicode(allow_none=False).tag(config=True)
+    db_url = Unicode(allow_none=False, help="The URL of the database to use").tag(config=True)
 
     oauth_provider = None
 
@@ -108,6 +110,7 @@ class GraderService(config.Application):
     grader_cookie_secret = Unicode(
         default_value=os.getenv("GRADER_COOKIE_SECRET", secrets.token_hex(nbytes=32)),
         allow_none=False,
+        help="Secret key used for cookie encryption",
     ).tag(config=True)
 
     max_body_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
@@ -118,9 +121,13 @@ class GraderService(config.Application):
         104857600, help="Sets the max buffer size in bytes, default to 100mb"
     ).tag(config=True)
 
-    service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
+    service_git_username = Unicode(
+        "grader-service", allow_none=False, help="Git username used by the service for commits"
+    ).tag(config=True)
 
-    service_git_email = Unicode("", allow_none=False).tag(config=True)
+    service_git_email = Unicode(
+        "", allow_none=False, help="Git email used by the service for commits"
+    ).tag(config=True)
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -152,12 +159,12 @@ class GraderService(config.Application):
         help="""
         Dict of lecture-code to role definitions, loaded at startup.
 
-        Each key is a lecture code; each value is a list of role dicts.
-        Each role dict must have:
+        Each lecture code maps to a list of role definitions. Each role dict must include:
 
         - ``role``: the role name (``student``, ``tutor``, or ``instructor``)
-        - ``members``: a list of usernames (plain strings) **or** user dicts
-        with ``username`` (required) and ``display_name`` (optional)
+        - ``members``: a list of usernames (plain strings) or user dicts
+          with ``username`` (required) and ``display_name`` (optional,
+          defaults to username)
 
         Example::
 
@@ -166,7 +173,10 @@ class GraderService(config.Application):
                     {'members': ['student1', 'student2'], 'role': 'student'},
                     {
                         'members': [
-                            {'username': 'instructor1', 'display_name': 'Instructor 1'},
+                            {
+                                'username': 'instructor1',
+                                'display_name': 'Instructor 1'
+                            },
                             {'username': 'instructor2'}
                         ],
                         'role': 'instructor'
@@ -251,6 +261,7 @@ class GraderService(config.Application):
             "NOTSET",
         ],
         "INFO",
+        help="Set the logging level for the application",
     ).tag(config=True)
 
     def setup_loggers(self, log_level: str):  # pragma: no cover
