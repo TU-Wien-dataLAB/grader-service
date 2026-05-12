@@ -91,11 +91,13 @@ class GraderService(config.Application):
         False, help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
-    grader_service_dir = Unicode(os.getenv("GRADER_SERVICE_DIRECTORY"), allow_none=False).tag(
-        config=True
-    )
+    grader_service_dir = Unicode(
+        os.getenv("GRADER_SERVICE_DIRECTORY"),
+        allow_none=False,
+        help="The directory where the grader service stores its data",
+    ).tag(config=True)
 
-    db_url = Unicode(allow_none=False).tag(config=True)
+    db_url = Unicode(allow_none=False, help="The URL of the database to use").tag(config=True)
 
     oauth_provider = None
 
@@ -108,6 +110,7 @@ class GraderService(config.Application):
     grader_cookie_secret = Unicode(
         default_value=os.getenv("GRADER_COOKIE_SECRET", secrets.token_hex(nbytes=32)),
         allow_none=False,
+        help="Secret key used for cookie encryption",
     ).tag(config=True)
 
     max_body_size = Int(104857600, help="Sets the max body size in bytes, default to 100mb").tag(
@@ -118,9 +121,13 @@ class GraderService(config.Application):
         104857600, help="Sets the max buffer size in bytes, default to 100mb"
     ).tag(config=True)
 
-    service_git_username = Unicode("grader-service", allow_none=False).tag(config=True)
+    service_git_username = Unicode(
+        "grader-service", allow_none=False, help="Git username used by the service for commits"
+    ).tag(config=True)
 
-    service_git_email = Unicode("", allow_none=False).tag(config=True)
+    service_git_email = Unicode(
+        "", allow_none=False, help="Git email used by the service for commits"
+    ).tag(config=True)
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -150,36 +157,32 @@ class GraderService(config.Application):
     load_roles = Dict(
         List(),
         help="""
-        Dict of `'<lecture-code>': List[{'members': List[Union[str, Dict[str, Optional[str]]]], 'role': str}]` entries to load at startup.
+        Dict of lecture-code to role definitions, loaded at startup.
 
-        Each lecture code maps to a list of role definitions. Each role definition must include:
-          - 'role': the role name (e.g. 'student', 'tutor', 'instructor')
-          - 'members': either
-              * a list of username strings (legacy format), e.g. ['alice', 'bob']
-              OR
-              * a list of user objects, each with:
-                  - 'username' (required): the unique username
-                  - 'display_name' (optional): the user's display name; if omitted, defaults to the username
+        Each lecture code maps to a list of role definitions. Each role dict must include:
+
+        - ``role``: the role name (``student``, ``tutor``, or ``instructor``)
+        - ``members``: a list of usernames (plain strings) or user dicts
+          with ``username`` (required) and ``display_name`` (optional,
+          defaults to username)
 
         Example::
 
             c.GraderService.load_roles = {
                 'lecture1': [
+                    {'members': ['student1', 'student2'], 'role': 'student'},
                     {
-                    'members': ['student1', 'student2'],  # legacy simple list
-                    'role': 'student'
-                    },
-                    {
-                    'members': [
-                        {'username': 'instructor1', 'display_name': 'Instructor 1'},
-                        {'username': 'instructor2'}
-                    ],
-                    'role': 'instructor'
+                        'members': [
+                            {
+                                'username': 'instructor1',
+                                'display_name': 'Instructor 1'
+                            },
+                            {'username': 'instructor2'}
+                        ],
+                        'role': 'instructor'
                     }
                 ],
             }
-
-
         """,
     ).tag(config=True)
 
@@ -258,6 +261,7 @@ class GraderService(config.Application):
             "NOTSET",
         ],
         "INFO",
+        help="Set the logging level for the application",
     ).tag(config=True)
 
     def setup_loggers(self, log_level: str):  # pragma: no cover
