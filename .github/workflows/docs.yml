@@ -11,15 +11,11 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'docs/**'
-      - '.readthedocs.yml'
-      - 'requirements-docs.txt'
 
 jobs:
   docs:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,3 +47,4 @@ jobs:
           name: documentation
           path: docs/_build/html/
           retention-days: 7
+
