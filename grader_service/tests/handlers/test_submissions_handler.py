@@ -18,7 +18,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.handlers.submissions import (
-    INSTRUCTOR_SUBMISSION_COMMIT_CASH,
+    INSTRUCTOR_SUBMISSION_COMMIT_HASH,
     SubmissionEditHandler,
     SubmissionHandler,
 )
@@ -1344,7 +1344,7 @@ async def test_post_submission_by_instructor(
             method="POST",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(
-                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_HASH, "username": student_username}
             ),
         )
 
@@ -1899,7 +1899,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
             method="POST",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(
-                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_HASH, "username": student_username}
             ),
         )
     assert response.code == HTTPStatus.CREATED

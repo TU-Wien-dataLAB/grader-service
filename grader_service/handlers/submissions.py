@@ -45,7 +45,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 # Commit hash is used to differentiate between submissions created by instructors for students and
 # normal submissions by any user.
-INSTRUCTOR_SUBMISSION_COMMIT_CASH = "0" * 40
+INSTRUCTOR_SUBMISSION_COMMIT_HASH = "0" * 40
 
 
 def remove_points_from_submission(submissions):
@@ -455,7 +455,7 @@ class SubmissionHandler(GraderBaseHandler):
         # instructors for students and normal submissions by any user.
         if (
             automatic_grading in ["auto", "full_auto"]
-            and commit_hash != INSTRUCTOR_SUBMISSION_COMMIT_CASH
+            and commit_hash != INSTRUCTOR_SUBMISSION_COMMIT_HASH
         ):
             submission.auto_status = AutoStatus.PENDING
             self.session.commit()
@@ -832,7 +832,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         self.validate_parameters()
 
         submission = self.get_submission(lecture_id, assignment_id, submission_id)
-        if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_CASH:
+        if submission.commit_hash == INSTRUCTOR_SUBMISSION_COMMIT_HASH:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
                 reason="This repo cannot be edited or reset, because it was created by instructor",
