@@ -16,8 +16,6 @@ def _create_input_output_dirs(
 ) -> tuple[Path, Path]:
     """Create input and output dirs in the provided `p` path,
     and copy test files with the names from `input_notebooks` to the input dir.
-
-    Note:
     """
     input_dir = p / "input"
     output_dir = p / "output"
