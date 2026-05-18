@@ -364,7 +364,9 @@ class AssignmentResetHandler(GraderBaseHandler):
         if assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
 
-        self.file_service.init_submission_files(assignment, message="Reset Assignment")
+        self.file_service.init_submission_files(
+            assignment, username=self.user.name, message="Reset Assignment"
+        )
 
         self.write_json(assignment)
 

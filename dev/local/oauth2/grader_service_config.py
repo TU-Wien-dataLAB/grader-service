@@ -1,6 +1,7 @@
 import os
 
 from grader_service.auth.auth import Authenticator
+from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import BaseHandler
@@ -47,8 +48,6 @@ c.GraderService.oauth_clients = [
     }
 ]
 
-from grader_service.auth.dummy import DummyAuthenticator
-
 c.GraderService.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
 c.Authenticator.admin_users = {"admin"}
@@ -59,3 +58,7 @@ c.GraderService.load_roles = {
         {"members": ["instructor", "admin"], "role": "instructor"},
     ]
 }
+
+# TODO: This is not really necessary (GitFileService is default); it's here as an example
+c.GraderService.file_service_class = GitFileService
+# c.FileService.setting1 = ...  # a LoggingConfigurable - cf. auth.auth.Authenticator

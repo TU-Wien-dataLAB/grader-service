@@ -246,7 +246,7 @@ class GitBaseHandler(GraderBaseHandler):
                 if not repo_path_release.exists():
                     return None
                 self.file_service.init_submission_files(
-                    assignment=assignment, message="Initialize from Release"
+                    assignment=assignment, username=username, message="Initialize from Release"
                 )
 
         self.write_pre_receive_hook(path)
