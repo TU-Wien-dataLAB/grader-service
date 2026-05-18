@@ -566,6 +566,7 @@ class GraderService(config.Application):
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
-        git_path = os.path.join(path, "git")
-        if not os.path.isdir(git_path):
-            os.mkdir(git_path, mode=0o700)
+        git_path = Path(path) / "git"
+        git_path.mkdir(exist_ok=True)
+        # TODO: Verify that this works everywhere
+        self.file_service.grader_service_dir = path

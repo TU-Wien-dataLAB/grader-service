@@ -18,6 +18,7 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
+from grader_service.file_services import GitFileService
 from grader_service.file_services.git_files_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.handlers.handler_utils import GitRepoType
@@ -33,11 +34,14 @@ class GitRpcCmd(enum.StrEnum):
 
 
 class GitBaseHandler(GraderBaseHandler):
-    # TODO: This handler requires file_service to be a git one.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: This handler requires file_service to be a git one. Where to best assert that?
+        if not isinstance(self.file_service, GitFileService):
+            msg = "File service has to be GitFileService. Check configuration of Grader Service."
+            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, log_message=msg)
 
-    @property
-    def gitbase(self) -> Path:
-        return Path(self.application.grader_service_dir) / "git"
+        self.gitbase = self.file_service.gitbase
 
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")

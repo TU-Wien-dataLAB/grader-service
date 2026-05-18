@@ -3,6 +3,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from traitlets import observe
+
 from grader_service.file_services.base_files_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
@@ -75,11 +77,17 @@ class GitFileService(FileService):
     #     "", allow_none=False, help="Git email used by the service for commits"
     # ).tag(config=True)
 
+    @observe("grader_service_dir")
+    def _observe_service_dir(self, change):
+        path = change["new"]
+        self.gitbase = Path(path) / "git"
+        self.tmpbase = Path(path) / "tmp"
+
     def __init__(self, grader_service_dir: Path | str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.grader_service_dir: Path = Path(grader_service_dir)
         self.tmpbase: Path = self.grader_service_dir / "tmp"
-        self.gitbase: Path = self.grader_service_dir / "git"  # TODO: duplicated in Git base handler
+        self.gitbase: Path = self.grader_service_dir / "git"
 
         self._check_environment()
 
