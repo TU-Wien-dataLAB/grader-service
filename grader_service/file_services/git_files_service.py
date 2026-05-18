@@ -2,11 +2,10 @@ import asyncio
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
 
-from grader_service.file_services.base_files_service import BaseFileService, FileServiceError
+from grader_service.file_services.base_files_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm import Assignment, Lecture, Submission, User
+from grader_service.orm import Assignment, Lecture, Submission
 
 
 def validate_path_relative_to(path: Path, base: Path) -> None:
@@ -64,15 +63,61 @@ def construct_git_dir(
     return path
 
 
-class GitFileService(BaseFileService):
+class GitFileService(FileService):
     """Service for submission-related file operations"""
 
-    def __init__(self, grader_service_dir: Path, user: User, log: Any):
-        self.grader_service_dir: Path = grader_service_dir
+    # TODO: Apparently, not used anywhere! But hard-coded in helm charts and git workflows
+    # service_git_username = Unicode(
+    #     "grader-service", allow_none=False, help="Git username used by the service for commits"
+    # ).tag(config=True)
+    #
+    # service_git_email = Unicode(
+    #     "", allow_none=False, help="Git email used by the service for commits"
+    # ).tag(config=True)
+
+    def __init__(self, grader_service_dir: Path | str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.grader_service_dir: Path = Path(grader_service_dir)
         self.tmpbase: Path = self.grader_service_dir / "tmp"
         self.gitbase: Path = self.grader_service_dir / "git"  # TODO: duplicated in Git base handler
-        self.user: User = user
-        self.log: Any = log
+
+        self._check_environment()
+
+    def _check_environment(self):
+        if shutil.which("git") is None:
+            msg = (
+                "No git executable found! Git is necessary to run Grader Service "
+                "with GitFileService!"
+            )
+            raise RuntimeError(msg)
+
+        if not self.gitbase.exists():
+            self.gitbase.mkdir()
+
+        # check if git is configured so that git commits don't fail
+        if (
+            subprocess.run(
+                ["git", "config", "init.defaultBranch"], check=False, capture_output=True
+            )
+            .stdout.decode()
+            .strip()
+            != "main"
+        ):
+            raise RuntimeError("Git default branch has to be set to 'main'!")
+        if (
+            subprocess.run(["git", "config", "user.name"], check=False, capture_output=True)
+            .stdout.decode()
+            .strip()
+            == ""
+        ):
+            raise RuntimeError("Git user.name has to be set!")
+        if (
+            subprocess.run(["git", "config", "user.email"], check=False, capture_output=True)
+            .stdout.decode()
+            .strip()
+            == ""
+        ):
+            raise RuntimeError("Git user.email has to be set!")
 
     def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
@@ -99,7 +144,7 @@ class GitFileService(BaseFileService):
         except subprocess.CalledProcessError:
             raise FileServiceError("Commit not found")
 
-    def init_submission_files(self, assignment: Assignment, message: str) -> None:
+    def init_submission_files(self, assignment: Assignment, username: str, message: str) -> None:
         """Creates a new user repository from release files.
 
         This method can also be used to "reset" one's own repo. Note that it does
@@ -109,7 +154,7 @@ class GitFileService(BaseFileService):
         have to exist already.
         """
 
-        tmp_path_base = self.tmpbase / assignment.lecture.code / str(assignment.id) / self.user.name
+        tmp_path_base = self.tmpbase / assignment.lecture.code / str(assignment.id) / username
         validate_path_relative_to(tmp_path_base, self.tmpbase)
 
         # Recreate temporary base Git dir for the user:
@@ -118,7 +163,7 @@ class GitFileService(BaseFileService):
         tmp_path_base.mkdir(parents=True, exist_ok=True)
 
         tmp_path_release = tmp_path_base / "release"
-        tmp_path_user = tmp_path_base / self.user.name
+        tmp_path_user = tmp_path_base / username
 
         remote_path_release = construct_git_dir(
             self.gitbase, GitRepoType.RELEASE, assignment.lecture.code, assignment.id
@@ -128,7 +173,7 @@ class GitFileService(BaseFileService):
             GitRepoType.USER,
             assignment.lecture.code,
             assignment.id,
-            username=self.user.name,
+            username=username,
         )
 
         self.log.info("Creating user repository from the release repo; %s", remote_path_release)

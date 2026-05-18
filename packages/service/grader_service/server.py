@@ -9,6 +9,7 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PrefixLoader
 from tornado import web
 from traitlets import Dict, Float, List, Unicode, config, default
 
+from grader_service.file_services.base_files_service import FileService
 from grader_service.plugins.base import PluginManager
 
 GRADER_COOKIE_NAME = "grader_service_login"
@@ -79,6 +80,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
     def __init__(
         self,
         grader_service_dir: str,
+        file_service: FileService,
         base_url: str,
         authenticator,
         oauth_provider,
@@ -89,6 +91,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         kwargs.update(dict(static_path=self.static_file_path))
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
+        self.file_service = file_service
         self.base_url = base_url
         self.authenticator = authenticator
         self.oauth_provider = oauth_provider

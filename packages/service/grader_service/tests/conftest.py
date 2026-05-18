@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
+from grader_service.file_services import GitFileService
 from grader_service.main import get_session_maker
 from grader_service.orm import User
 from grader_service.orm.base import set_sqlite_pragma
@@ -107,14 +108,15 @@ def sql_alchemy_sessionmaker(db_test_config):
 
 @pytest.fixture(scope="function")
 def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
-    service_dir = str(tmpdir.mkdir("grader_service"))
+    service_dir = tmpdir.mkdir("grader_service")
     handlers = HandlerPathRegistry.handler_list()
 
     authenticator = DummyAuthenticator()
     authenticator.admin_users = [default_admin.name]
 
     application = GraderServer(
-        grader_service_dir=service_dir,
+        grader_service_dir=str(service_dir),
+        file_service=GitFileService(service_dir),
         base_url="/",
         authenticator=authenticator,
         handlers=handlers,

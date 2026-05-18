@@ -9,10 +9,9 @@ import inspect
 import logging
 import os
 import secrets
-import shutil
 import signal
-import subprocess
 import sys
+from pathlib import Path
 
 import tornado
 from jupyterhub.log import log_request
@@ -43,6 +42,8 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
+from grader_service.file_services import GitFileService
+from grader_service.file_services.base_files_service import FileService
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
@@ -91,6 +92,7 @@ class GraderService(config.Application):
         False, help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
+    # TODO: use pathlib.Path, not string
     grader_service_dir = Unicode(
         os.getenv("GRADER_SERVICE_DIRECTORY"),
         allow_none=False,
@@ -121,13 +123,20 @@ class GraderService(config.Application):
         104857600, help="Sets the max buffer size in bytes, default to 100mb"
     ).tag(config=True)
 
-    service_git_username = Unicode(
-        "grader-service", allow_none=False, help="Git username used by the service for commits"
-    ).tag(config=True)
-
-    service_git_email = Unicode(
-        "", allow_none=False, help="Git email used by the service for commits"
-    ).tag(config=True)
+    file_service_class = Type(
+        default_value=GitFileService,
+        klass=FileService,
+        allow_none=False,
+        config=True,
+        help="""
+        The file service class is responsible for all operations on assignment
+        and submission files (e.g. submitting assignment files by an instructor,
+        submitting a submission by a student, fetching a submission by instructor,
+        etc.). Default is GitFileService, which stores files in Git repos
+        and uses git to perform file operations.
+        """,
+    )
+    file_service = Instance(klass=FileService)
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -341,9 +350,6 @@ class GraderService(config.Application):
         if sys.version_info.major < 3 or sys.version_info.minor < 9:
             msg = "Grader Service needs Python version 3.9 or above to run!"
             raise RuntimeError(msg)
-        if shutil.which("git") is None:
-            msg = "No git executable found! Git is necessary to run Grader Service!"
-            raise RuntimeError(msg)
 
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
@@ -455,10 +461,16 @@ class GraderService(config.Application):
         handlers.extend(oauth_provider_handlers)
         self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
+        # init the file service
+        self.file_service: FileService = self.file_service_class(
+            grader_service_dir=Path(self.grader_service_dir)
+        )
+
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
+                file_service=self.file_service,
                 base_url=self.base_url_path,
                 authenticator=self.authenticator,
                 handlers=handlers,
@@ -493,34 +505,6 @@ class GraderService(config.Application):
 
         # finish start
         self._start_future.set_result(None)
-
-    def _setup_environment(self):
-        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
-            os.mkdir(os.path.join(self.grader_service_dir, "git"))
-        # check if git config exits so that git commits don't fail
-        if (
-            subprocess.run(
-                ["git", "config", "init.defaultBranch"], check=False, capture_output=True
-            )
-            .stdout.decode()
-            .strip()
-            != "main"
-        ):
-            raise RuntimeError("Git default branch has to be set to 'main'!")
-        if (
-            subprocess.run(["git", "config", "user.name"], check=False, capture_output=True)
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
-            raise RuntimeError("Git user.name has to be set!")
-        if (
-            subprocess.run(["git", "config", "user.email"], check=False, capture_output=True)
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
-            raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""
@@ -569,6 +553,7 @@ class GraderService(config.Application):
                 task.result()
             loop.stop()
 
+    # TODO: replace os.path with pathlib in the whole file
     @validate("grader_service_dir")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
