@@ -193,7 +193,6 @@ def _get_k8s_model_attribute(model_type, field_name):
         'image_pull_secrets': 'imagePullSecrets',
         'init_containers': 'initContainers',
         'node_name': 'nodeName',
-        'node_selector': 'nodeSelector',
         'priority': 'priority',
         'priority_class_name': 'priorityClassName',
         'restart_policy': 'restartPolicy',
@@ -217,7 +216,7 @@ def _get_k8s_model_attribute(model_type, field_name):
             return key
     else:
         raise ValueError(
-            "'{}' did not have an attribute matching '{}'".format(model_type.__name__, field_name)
+            f"'{model_type.__name__}' did not have an attribute matching '{field_name}'"
         )
 
 
