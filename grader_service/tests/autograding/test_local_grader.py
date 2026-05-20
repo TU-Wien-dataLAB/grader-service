@@ -303,6 +303,7 @@ def test_gradebook_writing(local_autograde_executor):
 # =============== LocalAutogradeProcessExecutor tests ===============
 
 
+@pytest.mark.slow
 def test_process_executor_start_success(process_executor):
     """Test successful execution of autograding process"""
 

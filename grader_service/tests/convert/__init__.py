@@ -1,9 +1,4 @@
-import glob
-import os
-import shutil
 import socket
-import subprocess as sp
-import warnings
 
 from nbformat.v4 import new_code_cell, new_markdown_cell
 
@@ -143,38 +138,6 @@ def create_task_cell(source, cell_type, grade_id, points, schema_version=SCHEMA_
     cell.metadata.nbgrader["schema_version"] = schema_version
 
     return cell
-
-
-def start_subprocess(command, **kwargs):
-    kwargs["env"] = kwargs.get("env", os.environ.copy())
-    proc = sp.Popen(command, **kwargs)
-    return proc
-
-
-def copy_coverage_files():
-    root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    if os.getcwd() != root:
-        coverage_files = glob.glob(".coverage.*")
-        if len(coverage_files) == 0 and "COVERAGE_PROCESS_START" in os.environ:
-            warnings.warn("No coverage files produced")
-        for filename in coverage_files:
-            shutil.copyfile(filename, os.path.join(root, filename))
-
-
-def run_command(command, retcode=0, coverage=True, **kwargs):
-    proc = start_subprocess(command, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs)
-    output = proc.communicate()[0].decode()
-    output = output.replace("Coverage.py warning: No data was collected.\n", "")
-    print(output)
-
-    true_retcode = proc.poll()
-    if true_retcode != retcode:
-        raise AssertionError("process returned an unexpected return code: {}".format(true_retcode))
-
-    if coverage:
-        copy_coverage_files()
-
-    return output
 
 
 def get_free_ports(n):

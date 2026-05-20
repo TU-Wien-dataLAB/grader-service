@@ -9,18 +9,7 @@ Create Date: 2025-11-04 11:55:10.513853
 from typing import Dict, List
 
 from alembic import op
-from sqlalchemy import (
-    Column,
-    Connection,
-    Inspector,
-    MetaData,
-    String,
-    Table,
-    and_,
-    inspect,
-    select,
-    text,
-)
+from sqlalchemy import Column, Connection, MetaData, String, Table, and_, inspect, select, text
 
 # revision identifiers, used by Alembic.
 revision = "4a88dacd888f"
@@ -41,14 +30,14 @@ The exception is SQLite, because SQLAlchemy does not allow “None” in names, 
 """
 
 
-def _drop_all_foreign_keys(batch_op, connection, table_name: str):
+def _drop_all_foreign_keys(batch_op, conn, table_name: str):
     """
     Remove all foreign key constraints from the specified table.
 
     Only drops constraints that have a defined name, since unnamed foreign keys
     cannot be dropped explicitly. (SQLite)
     """
-    inspector = Inspector.from_engine(connection)
+    inspector = inspect(conn)
     fks = inspector.get_foreign_keys(table_name)
     for fk in fks:
         if fk["name"] is not None:

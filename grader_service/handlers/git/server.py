@@ -11,7 +11,7 @@ from pathlib import Path
 from string import Template
 from typing import List, Optional
 
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import NoResultFound
 from tornado.ioloop import IOLoop
 from tornado.iostream import StreamClosedError
 from tornado.process import Subprocess
@@ -106,6 +106,24 @@ class GitBaseHandler(GraderBaseHandler):
             raise HTTPError(403)
 
     def gitlookup(self, rpc: str) -> Optional[str]:
+        """Resolve and initialize a git repository path based on the request URL.
+
+        Parses the request path to extract lecture, assignment, and repository type,
+        validates permissions against the database, and returns the filesystem path
+        to the appropriate git repository. Creates the repository if it doesn't exist.
+
+        Args:
+            rpc: The RPC method name (e.g., "upload-pack", "receive-pack"),
+                 used for permission checking.
+
+        Returns:
+            The absolute filesystem path to the git repository, or None if the
+            repository type is invalid or initialization fails.
+
+        Raises:
+            HTTPError: If the lecture or assignment is not found, if the submission ID
+                is invalid/missing, or if git repository permissions are insufficient.
+        """
         pathlets = self.request.path.strip("/").split("/")
         # check if request is sent using jupyterhub as a proxy
         # if yes, remove services/grader path prefix
@@ -139,8 +157,6 @@ class GitBaseHandler(GraderBaseHandler):
             lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
             raise HTTPError(404, reason="Lecture was not found")
-        except MultipleResultsFound:
-            raise HTTPError(500, reason="Found more than one lecture")
 
         role = self.session.get(Role, (self.user.id, lecture.id))
         self._check_git_repo_permissions(rpc, role, pathlets)
@@ -176,7 +192,9 @@ class GitBaseHandler(GraderBaseHandler):
                     or pathlets_tail == ["git-receive-pack"]
                 ):
                     self.log.warning(
-                        "DEPRECATED: No username specified in path, but info/refs or git-upload-pack/git-receive-pack called. Assuming user is trying to access their own repo."
+                        "DEPRECATED: No username specified in path, but info/refs "
+                        "or git-upload-pack/git-receive-pack called. "
+                        "Assuming user is trying to access their own repo."
                     )
                 else:
                     username = pathlets_tail[0]
@@ -191,7 +209,7 @@ class GitBaseHandler(GraderBaseHandler):
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         is_git = self.is_base_git_dir(path)
-        # return git repo
+        # return git repo path
         if os.path.exists(path) and is_git:
             self.write_pre_receive_hook(path)
             return path

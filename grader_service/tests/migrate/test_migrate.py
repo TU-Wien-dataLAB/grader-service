@@ -197,6 +197,7 @@ def get_schema_snapshot(inspector, exclude_tables=("alembic_version",)):
 
 
 # --- Tests ---
+@pytest.mark.slow
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade(alembic_cfg, migration):
     """Upgrades to the n-th migration, adds a row to each table
@@ -245,6 +246,7 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
             engine2.dispose()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade_without_data(alembic_cfg, migration):
     """Upgrades to the n-th migration and then downgrades back to the previous revision."""
@@ -273,6 +275,7 @@ def test_migration_upgrade_downgrade_without_data(alembic_cfg, migration):
         engine.dispose()
 
 
+@pytest.mark.slow
 def test_migration_full_upgrade_and_downgrade_chain_without_data(alembic_cfg):
     """Test the full upgrade and downgrade chain without data."""
     cfg, db_url = alembic_cfg
@@ -296,6 +299,7 @@ def test_migration_full_upgrade_and_downgrade_chain_without_data(alembic_cfg):
         engine.dispose()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, migration):
     """Checks for data integrity during migration upgrade and downgrade.
@@ -406,6 +410,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
             engine3.dispose()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("migration", get_migration_scripts())
 def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg, migration):
     """Checks that data insertion works between migration upgrades and downgrades.

@@ -18,7 +18,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.handlers.submissions import (
-    INSTRUCTOR_SUBMISSION_COMMIT_CASH,
+    INSTRUCTOR_SUBMISSION_COMMIT_HASH,
     SubmissionEditHandler,
     SubmissionHandler,
 )
@@ -924,7 +924,7 @@ async def test_delete_own_submission_by_student(
     assert e.code == HTTPStatus.NOT_FOUND
 
     session = sessionmaker(sql_alchemy_engine)()
-    submission = session.query(SubmissionORM).get(1)
+    submission = session.get(SubmissionORM, 1)
     assert submission.deleted == DeleteState.deleted
 
 
@@ -1121,7 +1121,7 @@ async def test_delete_submission_after_deadline(
     s_id = 1
 
     session = sessionmaker(sql_alchemy_engine)()
-    assign = session.query(AssignmentORM).get(1)
+    assign = session.get(AssignmentORM, 1)
     assign.settings = {"deadline": datetime(1999, 6, 6, tzinfo=timezone.utc)}
     session.commit()
     session.flush()
@@ -1344,7 +1344,7 @@ async def test_post_submission_by_instructor(
             method="POST",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(
-                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_HASH, "username": student_username}
             ),
         )
 
@@ -1899,7 +1899,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
             method="POST",
             headers={"Authorization": f"Token {default_token}"},
             body=json.dumps(
-                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_CASH, "username": student_username}
+                {"commit_hash": INSTRUCTOR_SUBMISSION_COMMIT_HASH, "username": student_username}
             ),
         )
     assert response.code == HTTPStatus.CREATED

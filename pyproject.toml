@@ -163,8 +163,11 @@ testpaths = [
     "grader_service/tests",
 ]
 addopts = "--cov=grader_service --cov-report html --cov-report term"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.coverage.run]
 omit = [
-    "grader_service/migrate/*",
+    "grader_service/tests/*",
 ]

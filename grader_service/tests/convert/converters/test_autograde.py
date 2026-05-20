@@ -13,6 +13,7 @@ from grader_service.tests.convert.converters import (
 )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("notebook_name", ["simple.ipynb", "with space.ipynb"])
 def test_autograde(tmp_path, notebook_name):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, [notebook_name])
@@ -43,6 +44,7 @@ def test_autograde(tmp_path, notebook_name):
     assert (output_dir2 / "gradebook.json").exists()
 
 
+@pytest.mark.slow
 def test_autograde_copy_with_all_files(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
@@ -71,6 +73,7 @@ def test_autograde_copy_with_all_files(tmp_path):
     assert (output_dir2 / "test.txt").exists()
 
 
+@pytest.mark.slow
 def test_autograde_copy_with_dirs(tmp_path):
     input_dir, output_dir = _create_input_output_dirs(tmp_path, ["simple.ipynb"])
 
@@ -111,6 +114,7 @@ def test_autograde_copy_with_dirs(tmp_path):
     assert (output_dir2 / "dir_1/dir_2/dir_3/test.txt").exists()
 
 
+@pytest.mark.slow
 def test_autograde_with_student_notebooks_copied_over(tmp_path):
     """Regression test: When assignment's allowed_files contain '*.ipynb', then notebooks created
     by the student should also be copied over."""

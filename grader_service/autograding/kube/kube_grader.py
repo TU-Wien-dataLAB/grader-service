@@ -5,11 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
-import inspect
 import json
 import re
 import time
-from asyncio import Task, run
+from asyncio import Task
 
 from kubernetes import config
 from kubernetes.client import ApiException, CoreV1Api, V1EnvVar, V1ObjectMeta, V1Pod
@@ -19,7 +18,7 @@ from urllib3.exceptions import MaxRetryError
 
 from grader_service.autograding.kube.util import get_current_namespace, make_pod
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.orm import Submission
 from grader_service.orm.assignment import json_serial
 
 
@@ -100,19 +99,6 @@ class GraderPod(LoggingConfigurable):
             time.sleep(interval)
 
 
-def _get_image_name(lecture: Lecture, assignment: Assignment = None) -> str:
-    """
-    Default implementation of the resolve_image_name method
-    which return the lecture code followed by '_image'.
-    All the functions have the lecture and assignment available as parameters.
-    The function can either be sync or async.
-    :param lecture: Lecture to build the image name.
-    :param assignment: Assignment to build the image name.
-    :return: The image name as a string.
-    """
-    return f"{lecture.code}_image"
-
-
 class KubeAutogradeExecutor(LocalAutogradeExecutor):
     """
     Runs an autograde job in a kubernetes cluster as a pod.
@@ -150,13 +136,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         default_value=[],
         allow_none=False,
         help="List of extra volume mounts for the container. Defaults to an empty list.",
-    ).tag(config=True)
-
-    # Configuration for the image name, with a callable for resolution
-    image_config_path = Unicode(
-        default_value=None,
-        allow_none=True,
-        help="Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically change the autograding pod image.",
     ).tag(config=True)
 
     # Image pull policy for the Kubernetes pod
@@ -223,20 +202,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         """,
     ).tag(config=True)
 
-    # Callable to resolve the image name
-    resolve_image_name = Callable(
-        default_value=_get_image_name,
-        allow_none=False,
-        help="Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically change the autograding pod image.",
-    ).tag(config=True)
-
-    # Callable for resolving node selector for a lecture
-    resolve_node_selector = Callable(
-        default_value=lambda _: None,
-        allow_none=False,
-        help="""Deprecated in v0.7, will be removed in v0.8, use pre_spawn_hook to dynamically set the node selectors of autograding pods.""",
-    ).tag(config=True)
-
     # Tolerations for the autograding pod
     tolerations = Dict(
         default_value=None,
@@ -280,36 +245,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.log.info(f"Setting Namespace for submission {self.submission.id}")
             self.namespace = get_current_namespace()
 
-    def _get_image(self) -> str:
-        """
-        Returns the image name based on the lecture and assignment.
-        If an image config file exists and has
-        been specified it will first be queried for an image name.
-        If the image name cannot be found in the
-        config file or none has been specified
-        the image name will be determined by the resolve_image_name function
-        which takes the lecture
-        and assignment as parameters and is specified in the config.
-        The default implementation of this function is to
-         return the lecture code followed by '_image'.
-        :return: The image name as determined by this method.
-        """
-        cfg = {}
-        if self.image_config_path is not None:
-            with open(self.image_config_path, "r") as f:
-                cfg = json.load(f)
-        try:
-            lecture_cfg = cfg[self.lecture.code]
-            if isinstance(lecture_cfg, str):
-                return lecture_cfg
-            else:
-                return lecture_cfg[self.assignment.name]
-        except KeyError:
-            if inspect.iscoroutinefunction(self.resolve_image_name):
-                return run(self.resolve_image_name(self.lecture, self.assignment))
-            else:
-                return self.resolve_image_name(self.lecture, self.assignment)
-
     def _get_autograde_pod_name(self) -> str:
         # sanitize username by converting to lowercase and replacing non-alphanumeric chars
         sanitized_username = re.sub(r"[^a-zA-Z0-9]+", "-", self.submission.user.name.lower())
@@ -334,10 +269,10 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
     def _start_pod(self) -> GraderPod:
         """
-        Starts a pod in the namespace
-        with the commit hash as the name of the pod.
-        The image is determined by the get_image method.
-        :return:
+        Starts a namespaced autograding pod.
+
+        The image is determined based on the lecture code.
+        :return: a `GraderPod` instance wrapping the k8s pod.
         """
         # set standard config
         command = [
@@ -374,7 +309,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             name=self._get_autograde_pod_name(),
             cmd=command,
             env=env,
-            image=self._get_image(),
+            image=f"{self.lecture.code}_image",
             image_pull_policy=self.image_pull_policy,
             image_pull_secrets=self.image_pull_secrets,
             working_dir="/",
@@ -382,7 +317,6 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             volume_mounts=volume_mounts,
             labels=self.labels,
             annotations=self.annotations,
-            node_selector=self.resolve_node_selector(self.lecture),
             tolerations=self.tolerations,
             run_as_user=self.uid,
         )
