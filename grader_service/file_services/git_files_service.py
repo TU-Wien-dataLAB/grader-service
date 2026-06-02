@@ -83,8 +83,8 @@ class GitFileService(FileService):
         self.gitbase = Path(path) / "git"
         self.tmpbase = Path(path) / "tmp"
 
-    def __init__(self, grader_service_dir: Path | str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, grader_service_dir: Path | str, **kwargs):
+        super().__init__(**kwargs)
         self.grader_service_dir: Path = Path(grader_service_dir)
         self.tmpbase: Path = self.grader_service_dir / "tmp"
         self.gitbase: Path = self.grader_service_dir / "git"

@@ -4,6 +4,7 @@ from grader_service.auth.auth import Authenticator
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.file_services import GitFileService
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm import User, Lecture
 from grader_service.orm.base import DeleteState

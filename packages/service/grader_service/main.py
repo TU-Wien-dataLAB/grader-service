@@ -217,6 +217,10 @@ class GraderService(config.Application):
     def _authenticator_default(self):
         return self.authenticator_class(parent=self)
 
+    @default("file_service")
+    def _file_service_default(self):
+        return self.file_service_class(grader_service_dir=self.grader_service_dir, parent=self)
+
     @validate("config_file")
     def _validate_config_file(self, proposal):
         if not os.path.isfile(proposal.value) and not self.generate_config:
@@ -440,8 +444,6 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        self._setup_environment()
-
         self.init_oauth()
 
         # pass config
@@ -460,11 +462,6 @@ class GraderService(config.Application):
         oauth_provider_handlers = oauth_handlers.get_oauth_default_handlers(self.base_url_path)
         handlers.extend(oauth_provider_handlers)
         self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
-
-        # init the file service
-        self.file_service: FileService = self.file_service_class(
-            grader_service_dir=Path(self.grader_service_dir)
-        )
 
         # start the webserver
         self.http_server: HTTPServer = HTTPServer(

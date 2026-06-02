@@ -209,8 +209,8 @@ class GitBaseHandler(GraderBaseHandler):
         if repo_type == GitRepoType.USER:
             if (
                 pathlets_tail == ["info", "refs"]
-                or pathlets_tail == [GitRpcCmd.UPLOAD_PACK]
-                or pathlets_tail == [GitRpcCmd.RECEIVE_PACK]
+                or pathlets_tail == ["git-upload-pack"]
+                or pathlets_tail == ["git-receive-pack"]
             ):
                 self.log.warning(
                     "DEPRECATED: No username specified in path, but info/refs "
