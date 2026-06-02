@@ -139,6 +139,39 @@ def test_celery_generate_feedback_task_success(sql_alchemy_sessionmaker, celery_
     generate_feedback_task._sessions["test-task-id"].close()
 
 
+def test_celery_generate_feedback_task_invalid_submission_id(sql_alchemy_sessionmaker, celery_app):
+    """Test that generate_feedback_task raises error for non-existent submission."""
+    session = sql_alchemy_sessionmaker()
+    generate_feedback_task.request.id = "test-task-id"
+    generate_feedback_task._sessions = {"test-task-id": session}
+
+    with pytest.raises(ValueError, match="Submission not found"):
+        generate_feedback_task.run(
+            lecture_id=1,
+            assignment_id=1,
+            sub_id=99999,  # Non-existent submission
+        )
+
+    generate_feedback_task._sessions["test-task-id"].close()
+
+
+def test_celery_generate_feedback_task_mismatched_ids(sql_alchemy_sessionmaker, celery_app):
+    """Test that generate_feedback_task raises error when IDs of lecture and submission don't match."""
+    session = sql_alchemy_sessionmaker()
+    submission = insert_submission(session.get_bind())
+    generate_feedback_task.request.id = "test-task-id"
+    generate_feedback_task._sessions = {"test-task-id": session}
+
+    with pytest.raises(ValueError, match="invalid submission"):
+        generate_feedback_task.run(
+            lecture_id=999,  # Wrong lecture ID
+            assignment_id=submission.assignid,
+            sub_id=submission.id,
+        )
+
+    generate_feedback_task._sessions["test-task-id"].close()
+
+
 def test_celery_lti_sync_task_success(sql_alchemy_sessionmaker, celery_app):
     """Test successful LTI grade sync"""
     lti_sync_task.request.id = "test-task-id"
