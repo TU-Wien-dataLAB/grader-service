@@ -31,7 +31,7 @@ _lti_sync_result = {
 
 @pytest.fixture(scope="function")
 def celery_app(app, sql_alchemy_sessionmaker):
-    """Mocks CeleryApp instance with test db session, initializes GraderService with temp dir"""
+    """Mocks CeleryApp instance's plugin manager, initializes GraderService with temp dir"""
     # The following line is necessary for the generate_feedback_task:
     GraderService.grader_service_dir = app.grader_service_dir
     # ...and these two - for the autograde_task:
@@ -43,13 +43,9 @@ def celery_app(app, sql_alchemy_sessionmaker):
     mock_plugin.start.return_value = _lti_sync_result
     plugin_manager = MagicMock()
     plugin_manager.get.return_value = mock_plugin
-    celery_instance_mock = MagicMock(
-        config=Config(grader_service_dir=app.grader_service_dir),
-        log=MagicMock(),
-        sessionmaker=sql_alchemy_sessionmaker,
-        plugin_manager=plugin_manager,
-    )
-    with patch.object(CeleryApp, "instance", return_value=celery_instance_mock):
+    celery_instance = CeleryApp(config=Config(grader_service_dir=app.grader_service_dir))
+    celery_instance._plugin_manager = plugin_manager
+    with patch.object(CeleryApp, "instance", return_value=celery_instance):
         yield
 
 
@@ -61,10 +57,13 @@ def test_celery_autograde_task_runs_successfully(sql_alchemy_sessionmaker, celer
     autograde_task._sessions = {"test-task-id": session}
 
     # Mock the actual autograding executor call - this is tested elsewhere
-    with patch.object(
-        RequestHandlerConfig.instance().autograde_executor_class, "start", return_value=None
-    ) as autograding_mock:
-        autograde_task(
+    with (
+        patch.object(
+            RequestHandlerConfig.instance().autograde_executor_class, "start", return_value=None
+        ) as autograding_mock,
+        patch.object(autograde_task.log, "info", return_value=MagicMock()),
+    ):
+        autograde_task.run(
             lecture_id=submission.assignment.lectid,
             assignment_id=submission.assignid,
             sub_id=submission.id,
@@ -84,7 +83,7 @@ def test_celery_autograde_task_invalid_submission_id(sql_alchemy_sessionmaker, c
     autograde_task._sessions = {"test-task-id": session}
 
     with pytest.raises(ValueError, match="Submission not found"):
-        autograde_task(
+        autograde_task.run(
             lecture_id=1,
             assignment_id=1,
             sub_id=99999,  # Non-existent submission
@@ -101,7 +100,7 @@ def test_celery_autograde_task_mismatched_ids(sql_alchemy_sessionmaker, celery_a
     autograde_task._sessions = {"test-task-id": session}
 
     with pytest.raises(ValueError, match="invalid submission"):
-        autograde_task(
+        autograde_task.run(
             lecture_id=999,  # Wrong lecture ID
             assignment_id=submission.assignid,
             sub_id=submission.id,
@@ -122,7 +121,10 @@ def test_celery_generate_feedback_task_success(sql_alchemy_sessionmaker, celery_
         sub.feedback_status = FeedbackStatus.GENERATED
         session.commit()
 
-    with patch.object(LocalFeedbackExecutor, "start", side_effect=mock_start) as feedback_mock:
+    with (
+        patch.object(LocalFeedbackExecutor, "start", side_effect=mock_start) as feedback_mock,
+        patch.object(autograde_task.log, "info", return_value=MagicMock()),
+    ):
         generate_feedback_task.run(
             lecture_id=submission.assignment.lectid,
             assignment_id=submission.assignid,
