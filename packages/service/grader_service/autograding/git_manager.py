@@ -64,7 +64,7 @@ class GitSubmissionManager(LoggingConfigurable):
         self.log.info(f"Pulling repo {input_repo_path} into input directory")
         commands = [
             [self.git_executable, "init"],
-            [self.git_executable, "pull", input_repo_path, self.input_branch],
+            [self.git_executable, "pull", str(input_repo_path), self.input_branch],
         ]
 
         # When autograding a user's submission, check out to the commit of submission
@@ -83,7 +83,9 @@ class GitSubmissionManager(LoggingConfigurable):
 
         if not os.path.exists(output_repo_path):
             os.makedirs(output_repo_path)
-            self._run_git([self.git_executable, "init", "--bare", output_repo_path], output_path)
+            self._run_git(
+                [self.git_executable, "init", "--bare", str(output_repo_path)], output_path
+            )
 
         self.log.info(f"Initialising repo at {output_path}")
         self._run_git([self.git_executable, "init"], output_path)
@@ -92,7 +94,7 @@ class GitSubmissionManager(LoggingConfigurable):
         self._run_git(command, output_path)
         self.log.info(f"Now at branch {self.output_branch}")
 
-    def _commit_files(self, filenames: list[str], output_path: str) -> None:
+    def _commit_files(self, filenames: list[str], output_path: str | Path) -> None:
         """
         Commits the provided files in the repo at `output_path`.
         """
@@ -110,7 +112,7 @@ class GitSubmissionManager(LoggingConfigurable):
             [self.git_executable, "commit", "-m", self.submission.commit_hash], output_path
         )
 
-    def push_results(self, filenames: list[str], output_path: str) -> None:
+    def push_results(self, filenames: list[str], output_path: str | Path) -> None:
         """Creates the output repository, commits and pushes the changes."""
         self._set_up_output_repo(output_path)
         self._commit_files(filenames, output_path)
@@ -135,7 +137,7 @@ class GitSubmissionManager(LoggingConfigurable):
             Any other exception thrown while running the subprocess is logged and also re-raised.
         """
         assert command[0] == self.git_executable, f"Not a git command: {command}"
-        self.log.debug('Running "%s"', " ".join(command))
+        self.log.debug('Running "%s"', " ".join(map(str, command)))
         try:
             subprocess.run(
                 command,
