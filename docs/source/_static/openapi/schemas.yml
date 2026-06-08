@@ -116,7 +116,7 @@ components:
         submissions:
           type: array
           items:
-            $ref: "#/components/schemas/Submission"
+            $ref: "#/components/schemas/SubmissionDetailDto"
     AssignmentCreateDto:
       type: "object"
       properties:
@@ -203,59 +203,13 @@ components:
       example:
           period: "P1W1D"
           scaling: 0.5
-    Submission:
+    SubmissionCreateDto:
       type: "object"
       properties:
-        id:
-          type: "integer"
-          format: "int64"
-        submitted_at:
-          type: "string"
-          format: "date-time"
-          example: "2023-07-21T11:53:07Z"
-        auto_status:
-          $ref: "#/components/schemas/AutoStatus"
-        manual_status:
-          $ref: "#/components/schemas/ManualStatus"
-        user_id:
-          type: "integer"
-          format: "int64"
-        user_display_name:
-          type: string
-        grading_score:
-          type: number
-          format: float
-        score_scaling:
-          type: number
-          format: float
-          minimum: 0.0
-          maximum: 1.0
-        score:
-          type: number
-          format: float
-        assignid:
-          type: "integer"
-          format: "int64"
         commit_hash:
-          type: string
-        feedback_status:
-          $ref: "#/components/schemas/FeedbackStatus"
-        edited:
-          type: boolean
-      example:
-        id: 2
-        submitted_at: "2023-07-21T11:53:07Z"
-        auto_status: "automatically_graded"
-        manual_status: "manually_graded"
-        user_id: 1
-        user_display_name: "emmy-noether"
-        grading_score: 10.0
-        score_scaling: 1
-        score: 10.0
-        assignid: 2
-        commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
-        feedback_status: "generated"
-        edited: false
+          type: "string"
+        username:
+          type: "string"
     SubmissionDetailDto:
       type: "object"
       properties:
@@ -321,7 +275,7 @@ components:
           submissions:
             type: "array"
             items:
-              $ref: "#/components/schemas/Submission"
+              $ref: "#/components/schemas/SubmissionDetailDto"
     RemoteFileStatus:
       type: "object"
       required: ["status"]
