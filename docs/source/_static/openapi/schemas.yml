@@ -66,6 +66,23 @@ components:
         name: "Informationsvisualisierung"
         code: "ivs21"
         complete: false
+    LectureListItemDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          example: 1
+        name:
+          type: "string"
+          example: "Informationsvisualisierung"
+        code:
+          type: "string"
+          example: "ivs21"
+        assignment_count:
+          type: "integer"
+        user_count:
+          type: "integer"
     LectureDetailDto:
       type: "object"
       properties:
@@ -154,7 +171,7 @@ components:
           type: "string"
           format: "date-time"
         submissions_count:
-          type: integer
+          type: "integer"
     AssignmentDeleteDto:
       type: "object"
       properties:
