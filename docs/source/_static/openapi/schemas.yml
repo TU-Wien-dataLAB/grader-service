@@ -66,6 +66,118 @@ components:
         name: "Informationsvisualisierung"
         code: "ivs21"
         complete: false
+    LectureListItemDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          example: 1
+        name:
+          type: "string"
+          example: "Informationsvisualisierung"
+        code:
+          type: "string"
+          example: "ivs21"
+        assignment_count:
+          type: "integer"
+        user_count:
+          type: "integer"
+    LectureDetailDto:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Informationsvisualisierung"
+        code:
+          type: "string"
+          example: "ivs21"
+        complete:
+          type: "boolean"
+          default: false
+      example:
+        name: "Informationsvisualisierung"
+        code: "ivs21"
+        complete: false
+    LectureUpdateDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          example: 1
+        name:
+          type: "string"
+          example: "Informationsvisualisierung"
+        complete:
+          type: "boolean"
+          default: false
+      example:
+        id: 1
+        name: "Informationsvisualisierung"
+        complete: false
+    AssignmentDetailDto:
+      type: "object"
+      required: ["name", "status", "points", "grading_method"]
+      properties:
+        name:
+          type: "string"
+          example: "assignment_1"
+        status:
+          $ref: "#/components/schemas/AssignmentStatus"
+        points:
+          type: number
+          format: float
+        grading_method:
+          $ref: "#/components/schemas/GradingMethod"
+        submissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubmissionDetailDto"
+    AssignmentCreateDto:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "assignment_1"
+        settings:
+          $ref: "#/components/schemas/AssignmentSettings"
+    AssignmentUpdateDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+          example: "assignment_1"
+        settings:
+          $ref: "#/components/schemas/AssignmentSettings"
+    AssignmentListItemDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+          example: "assignment_1"
+        status:
+          $ref: "#/components/schemas/AssignmentStatus"
+        points:
+          type: number
+          format: float
+        deadline:
+          type: "string"
+          format: "date-time"
+        submissions_count:
+          type: "integer"
+    AssignmentDeleteDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
     AssignmentSettings:
       type: "object"
       properties:
@@ -83,20 +195,15 @@ components:
           type: "array"
           items:
             $ref: '#/components/schemas/SubmissionPeriod'
-        autograde_type:
-          type: "string"
-          enum:
-            - "auto"
-            - "full_auto"
-            - "unassisted"
-          default: "auto"
+        grading_method:
+          $ref: "#/components/schemas/GradingMethod"
         group:
           type: "string"
           example: "Chapter 1: Data Types"
         cell_timeout:
           type: "integer"
           example: "300"
-      example:  
+      example:
         late_submission:
           - period: "P1W1D"
             scaling: 0.5
@@ -112,29 +219,15 @@ components:
           format: "float"
       example:
           period: "P1W1D"
-          scaling: 0.5  
-    Assignment:
+          scaling: 0.5
+    SubmissionCreateDto:
       type: "object"
       properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
+        commit_hash:
           type: "string"
-          example: "assignment_1"
-        status:
-          type: string
-          enum:
-            - created # another state of an assignment (instructor only)
-            - pushed
-            - released
-            - complete # final state -> final grade is calculated
-        points:
-          type: number
-          format: float
-        settings:
-          $ref: "#/components/schemas/AssignmentSettings"
-    Submission:
+        username:
+          type: "string"
+    SubmissionDetailDto:
       type: "object"
       properties:
         id:
@@ -148,9 +241,6 @@ components:
           $ref: "#/components/schemas/AutoStatus"
         manual_status:
           $ref: "#/components/schemas/ManualStatus"
-        user_id:
-          type: "integer"
-          format: "int64"
         user_display_name:
           type: string
         grading_score:
@@ -164,54 +254,20 @@ components:
         score:
           type: number
           format: float
-        assignid:
-          type: "integer"
-          format: "int64"
-        commit_hash:
-          type: string
         feedback_status:
           $ref: "#/components/schemas/FeedbackStatus"
         edited:
           type: boolean
       example:
-        id: 2
         submitted_at: "2023-07-21T11:53:07Z"
         auto_status: "automatically_graded"
         manual_status: "manually_graded"
-        user_id: 1
         user_display_name: "emmy-noether"
         grading_score: 10.0
         score_scaling: 1
         score: 10.0
-        assignid: 2
-        commit_hash: "d2c2372811f226f61f106e5c3d42e5892fd25ee8"
         feedback_status: "generated"
         edited: false
-    AssignmentDetail:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
-          type: "string"
-          example: "assignment_1"
-        settings:
-          $ref: "#/components/schemas/AssignmentSettings"
-        status:
-          type: string
-          enum:
-            - created # another state of an assignment (instructor only)
-            - pushed
-            - released
-            - complete # final state -> final grade is calculated
-        points:
-          type: number
-          format: float
-        submissions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Submission'
     ErrorMessage:
       type: "object"
       required: [ "code", "error", "path" ]
@@ -236,7 +292,7 @@ components:
           submissions:
             type: "array"
             items:
-              $ref: "#/components/schemas/Submission"
+              $ref: "#/components/schemas/SubmissionDetailDto"
     RemoteFileStatus:
       type: "object"
       required: ["status"]
@@ -265,3 +321,17 @@ components:
         - "generated"
         - "generation_failed"
         - "feedback_outdated"
+    GradingMethod:
+      type: "string"
+      enum:
+        - "auto"
+        - "full_auto"
+        - "unassisted"
+      default: "auto"
+    AssignmentStatus:
+      type: string
+      enum:
+        - "created"
+        - "pushed"
+        - "released"
+        - "complete"
