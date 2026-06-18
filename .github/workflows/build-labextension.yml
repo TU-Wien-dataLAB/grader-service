@@ -15,17 +15,20 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        run: uv python install
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
 
-      - name: Sync dependencies
-        run: uv sync --package grader-labextension
+      - name: Install the project
+        run: uv sync --locked --dev
+
+      - name: Install jupyterlab for jlpm
+        run: uv pip install jupyterlab
 
       - name: Install npm dependencies
         working-directory: packages/labextension
@@ -36,7 +39,7 @@ jobs:
         run: jlpm build:prod
 
       - name: Run ruff check
-        run: uv run --package grader-labextension ruff check packages/labextension
+        run: uv run ruff check packages/labextension
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

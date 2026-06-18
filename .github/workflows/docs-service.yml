@@ -15,19 +15,17 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        run: uv python install
 
-      - name: Sync docs dependencies
-        run: uv sync --group docs
+      - name: Install the project
+        run: uv sync --locked --dev
 
       - name: Build documentation
-        run: |
-          cd docs
-          make html
+        run: uv run --package grader-service sphinx-build -b html docs/docs docs/build/html
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

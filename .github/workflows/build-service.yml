@@ -15,23 +15,23 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        run: uv python install
 
-      - name: Sync dependencies
-        run: uv sync --package grader-service --group dev
+      - name: Install the project
+        run: uv sync --locked --dev
 
       - name: Build package
-        run: uv build --package grader-service
+        run: uv build
 
       - name: Run ruff check
-        run: uv run --package grader-service ruff check packages/service
+        run: uv run ruff check packages/service
 
       - name: Run ruff format
-        run: uv run --package grader-service ruff format --check packages/service
+        run: uv run ruff format --check packages/service
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
