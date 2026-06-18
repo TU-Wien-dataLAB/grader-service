@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
 
       - name: Sync dependencies
-        run: uv sync --package grader-service
+        run: uv sync --package grader-service --group dev
 
       - name: Build package
         run: uv build --package grader-service

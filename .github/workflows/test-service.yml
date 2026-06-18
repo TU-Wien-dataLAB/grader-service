@@ -24,7 +24,10 @@ jobs:
           python-version: '3.12'
 
       - name: Sync dependencies
-        run: uv sync --package grader-service
+        run: uv sync --package grader-service --group test --group dev
+
+      - name: Lint with ruff
+        run: uv run --package grader-service ruff check packages/service/grader_service
 
       - name: Create Docker network
         run: docker network create ${{ env.TESTCONTAINER_DOCKER_NETWORK }}

@@ -23,15 +23,19 @@ jobs:
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Sync dependencies
-        run: uv sync --package grader-labextension
+        run: uv sync --package grader-labextension --group dev
+
+      - name: Install jupyterlab
+        run: uv pip install jupyterlab
 
       - name: Install npm dependencies
         working-directory: packages/labextension
         run: jlpm
+
+      - name: Lint Python code
+        run: uv run --package grader-labextension ruff check packages/labextension/grader_labextension
 
       - name: Run Python tests
         run: uv run --package grader-labextension pytest packages/labextension/grader_labextension/tests

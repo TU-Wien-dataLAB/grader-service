@@ -20,10 +20,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Build package
-        run: uv build --package grader-service
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
 
       - name: Publish to PyPI
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: uv publish packages/service
+        run: uv publish packages/service/dist/*

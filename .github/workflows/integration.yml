@@ -22,8 +22,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Sync dependencies
-        run: uv sync
+      - name: Download service build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
+
+      - name: Download labextension build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-labextension
+          path: packages/labextension/dist/
+
+      - name: Check artifacts exist
+        run: |
+          ls packages/service/dist/*.whl || exit 1
+          ls packages/labextension/dist/*.whl || exit 1
+
+      - name: Install packages from artifacts
+        run: |
+          uv pip install packages/service/dist/*.whl
+          uv pip install packages/labextension/dist/*.whl
 
       - name: Start docker-compose environment
         run: |
@@ -41,5 +60,5 @@ jobs:
       - name: Stop docker-compose
         if: always()
         run: |
-          cd docker-compose/dev
+          cd dev/docker-compose
           docker-compose down
