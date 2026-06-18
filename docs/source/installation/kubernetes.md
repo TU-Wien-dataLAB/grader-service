@@ -21,6 +21,9 @@ helm upgrade --install <your-release-name> grader-service/grader-service \
     --values <your-values.yaml>
 ```
 
+To configure the Grader Service to connect to your existing JupyterHub, you need to set the appropriate values in your `values.yaml` file, such as the JupyterHub API URL and authentication credentials.
+You can find the necessary configuration options in our [configuration documentation](../configuration/index.md).
+
 ## Test Installation (All-in-One)
 To test the system, we provide an all-in-one Helm chart that includes both the Grader Service and a configured JupyterHub instance. It is suitable **for development and testing purposes only**.
 
@@ -33,4 +36,3 @@ helm upgrade --install <your-release-name> <path-to-chart> \
     --create-namespace \
     --values <your-values.yaml>
 ```
-

@@ -1,0 +1,114 @@
+.assignment {
+  margin-top: 25px;
+}
+
+.assignment-dir-listing {
+  border: 1px solid #cacaca;
+  border-radius: 4px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  margin-left: 25px;
+}
+
+.assignment-content,
+.assignment-create {
+  margin-left: 10pt;
+}
+
+.assignment-content {
+  padding-bottom: 10pt;
+}
+
+.assignment-list {
+  margin: 10px;
+}
+
+.list-element,
+.submission-element {
+  margin-left: 16pt;
+  padding-top: 3pt;
+  cursor: pointer;
+}
+
+.list-element:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+.list-element:hover .flavor-icon {
+  color: var(--accent-color);
+}
+
+.collapse-icon-small {
+  color: var(--text-color);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 1, 0.75, 0.9),
+    -webkit-transform 0.2s cubic-bezier(0.4, 1, 0.75, 0.9);
+}
+
+.collapse-icon-small-open {
+  -webkit-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+.assignment-button,
+.assignment-tag {
+  min-height: 18px;
+  margin-right: 6pt;
+  padding: 2pt;
+  background-color: white;
+}
+
+.assignment-button span,
+.assignment-tag span {
+  font-size: 9pt;
+}
+
+.assignment-button span svg,
+.assignment-tag span svg {
+  width: 9pt;
+  height: 9pt;
+}
+
+.sub-button {
+  font-size: 9pt;
+}
+
+.assignment-header-container {
+  display: flex;
+  -webkit-flex-flow: row wrap;
+  -ms-flex-flow: row wrap;
+  flex-flow: row wrap;
+  -webkit-place-content: stretch flex-start;
+  -ms-flex-pack: start;
+  place-content: stretch flex-start;
+  -ms-flex-line-pack: stretch;
+  -webkit-align-items: flex-start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+}
+
+.assignment-header-title:nth-child(1) {
+  -webkit-order: 0;
+  -ms-flex-order: 0;
+  order: 0;
+  -webkit-flex: 0 1 auto;
+  -ms-flex: 0 1 auto;
+  flex: 0 1 auto;
+  -webkit-align-self: auto;
+  -ms-flex-item-align: auto;
+  align-self: auto;
+  width: 600px;
+}
+
+.assignment-header-button:nth-child(2) {
+  -webkit-order: 0;
+  -ms-flex-order: 0;
+  order: 0;
+  -webkit-flex: 0 1 auto;
+  -ms-flex: 0 1 auto;
+  flex: 0 1 auto;
+  -webkit-align-self: auto;
+  -ms-flex-item-align: auto;
+  align-self: auto;
+}

@@ -1,0 +1,5 @@
+FROM busybox
+
+COPY ./init-service-dir.sh /scripts/init-service-dir.sh
+
+CMD ["sh", "-c", "/scripts/init-service-dir.sh"]

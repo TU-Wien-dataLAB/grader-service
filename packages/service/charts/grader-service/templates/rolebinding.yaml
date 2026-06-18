@@ -1,0 +1,14 @@
+{{- if .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: grader-service
+subjects:
+- namespace: {{ .Release.Namespace }}
+  kind: ServiceAccount
+  name: grader-service
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "grader-service.serviceAccountName" . }}
+{{- end }}

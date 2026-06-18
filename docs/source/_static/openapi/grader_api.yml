@@ -39,13 +39,13 @@ paths:
 
   /lectures/{lect_id}/assignments/{a_id}:
     $ref: './paths_shared.yml#/assignmentsById'
-  
+
   /lectures/{lect_id}/assignments/{a_id}/properties:
     $ref: './paths_grader.yml#/propertiesAssignment'
 
   /lectures/{lect_id}/assignments/{a_id}/submissions:
     $ref: './paths_grader.yml#/submissions'
-  
+
   /lectures/{lect_id}/assignments/{a_id}/submissions/{s_id}:
     $ref: './paths_shared.yml#/submissionsById'
 
@@ -57,7 +57,7 @@ paths:
 
   /lectures/{lect_id}/assignments/{a_id}/grading/{s_id}/feedback:
     $ref: './paths_shared.yml#/feedback'
-  
+
   /permissions:
     $ref: './paths_shared.yml#/permissions'
 

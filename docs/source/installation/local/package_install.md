@@ -2,7 +2,7 @@
 
 
 ```{note}
-This setup is intended for **local development and testing purposes only**.  
+This setup is intended for **local development and testing purposes only**.
 It is **not suitable for production use**. Use the [Kubernetes installation](../kubernetes) for production deployments.
 ```
 
@@ -70,14 +70,19 @@ pip install grader-labextension
 
 ## 3. Configuration of Grader Service
 
-As the base, you can use the provided configuration files in the `examples/dev_environment` directory of the Grader Service repository.
+Generate a default configuration file:
 
-Run the following command using the provided configuration file:
+```bash
+grader-service --generate-config
+```
+
+Or use the example configuration files from `dev/local/` directory in the repository.
+
+Run the migration to create the database:
 
 ```bash
 grader-service-migrate -f <config-file-path>/grader_service_config.py
 ```
-This command creates the database.
 
 
 ## 4. Start Grader Service and JupyterHub

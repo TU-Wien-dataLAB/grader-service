@@ -1,0 +1,95 @@
+name: Main CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release-*
+  push:
+    branches:
+      - main
+      - release-*
+  release:
+    types: [published]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      service: ${{ steps.changes.outputs.service }}
+      labextension: ${{ steps.changes.outputs.labextension }}
+      docs: ${{ steps.changes.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            service:
+              - 'packages/service/**'
+              - '.github/workflows/**-service.yml'
+            labextension:
+              - 'packages/labextension/**'
+              - '.github/workflows/**-labextension.yml'
+            docs:
+              - 'docs/**'
+
+  build-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.service == 'true'
+    uses: ./.github/workflows/build-service.yml
+
+  test-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.service == 'true'
+    uses: ./.github/workflows/test-service.yml
+
+  build-labextension:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.labextension == 'true'
+    uses: ./.github/workflows/build-labextension.yml
+
+  test-labextension:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.labextension == 'true'
+    uses: ./.github/workflows/test-labextension.yml
+
+  docs:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs == 'true'
+    uses: ./.github/workflows/docs-service.yml
+
+  integration:
+    needs: [build-service, build-labextension]
+    if: always()
+    uses: ./.github/workflows/integration.yml
+
+  docker-service:
+    needs: [test-service, build-service]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docker-service.yml
+
+  docker-labextension:
+    needs: [test-labextension, build-labextension]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docker-labextension.yml
+
+  publish-service:
+    needs: docker-service
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
+    uses: ./.github/workflows/publish-service.yml
+    secrets: inherit
+
+  publish-labextension:
+    needs: docker-labextension
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
+    uses: ./.github/workflows/publish-labextension.yml
+    secrets: inherit
+
+  publish-helm:
+    needs: publish-service
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
+    uses: ./.github/workflows/publish-helm.yml
+    secrets: inherit

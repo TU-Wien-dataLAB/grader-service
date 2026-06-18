@@ -1,7 +1,7 @@
 # Docker
 
 ## Prerequisites
-- Docker engine 
+- Docker engine
     - [Install Docker Engine](https://docs.docker.com/engine/install/)
 
 ```{note}
@@ -10,14 +10,18 @@ It is not suitable for production use. Use the [Kubernetes installation](./kuber
 ```
 ## Docker compose
 
-Navigate to `examples/docker_compose` directory. From there you can use the predefined `docker-compose.yml` file to start 
-the containers together with their services.
+For local development, use the docker-compose configuration in the `dev/docker-compose` directory:
 
 ### Using docker compose with `SQLite` database
 
-Run the following command:
+Run the following command from the repository root:
 ```bash
-docker compose up --build -d
+make dev-up
+```
+
+Or directly with docker-compose:
+```bash
+docker-compose -f dev/docker-compose/docker-compose.yml up -d --build
 ```
 
 This command builds the images and starts the containers in detached mode. It sets SQLite as its database that is integrated in `Grader Service`.
@@ -26,20 +30,11 @@ JupyterHub service will be running on `http://127.0.0.1:8080`
 
 To stop and remove the containers, run:
 ```bash
-docker compose down -v
+make dev-down
+```
+
+Or directly:
+```bash
+docker-compose -f dev/docker-compose/docker-compose.yml down -v
 ```
 This command makes sure that both named and anonymous volumes are removed.
-### Using docker compose with `PostgreSQL` database
-
-There is an option to use an externalized and containerized `PostgreSQL` database. Necessary setup for this database is 
-defined in a separate `docker-compose-postgres.yml` file.
-
-Run the following command:
-```bash
-DATABASE_TYPE=postgres docker compose -f docker-compose.yml -f docker-compose-postgres.yml up -d
-```
-
-To stop and remove the containers, run:
-```bash
-docker compose -f docker-compose.yml -f docker-compose-postgres.yml down -v
-```

@@ -1,6 +1,6 @@
 # What is Grader Service?
 
-<!-- TODO: what is grader service? when should it be used? (what are the use cases -> to what can it scale) 
+<!-- TODO: what is grader service? when should it be used? (what are the use cases -> to what can it scale)
     what does it replace? what does it not replace? -->
 
 
@@ -23,9 +23,8 @@ Dive into the Grader Service guide to get the most out of your lecture experienc
 
 ## Grader Service at TU Wien
 
-The Grader Service is an important component of the 🔎 [TU Wien dataLAB](https://colab.tuwien.ac.at/display/DLJAAS/dataLAB+Jupyter+as+a+Service) project. The dataLAB team offers lecturers at TU Wien the opportunity to seamlessly integrate a JupyterHub instance into their TUWEL spaces. 
+The Grader Service is an important component of the 🔎 [TU Wien dataLAB](https://colab.tuwien.ac.at/display/DLJAAS/dataLAB+Jupyter+as+a+Service) project. The dataLAB team offers lecturers at TU Wien the opportunity to seamlessly integrate a JupyterHub instance into their TUWEL spaces.
 
 This service simplifies the process for instructors, eliminating the need for complex TUWEL configurations. Students can access their assignments directly through a link provided in TUWEL, allowing them to start working immediately—completely online and without the need to install resource-intensive software. dataLAB ensures that students have access to the necessary computational resources to complete their tasks effectively.
 
 If you are a lecturer at TU Wien and would like to request a JupyterHub instance, please do so 📌 [here](https://colab.tuwien.ac.at/display/DLJAAS/Request+a+JupyterHub).
-

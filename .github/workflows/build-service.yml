@@ -1,0 +1,40 @@
+name: Build Service
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'packages/service/**'
+      - '.github/workflows/build-service.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sync dependencies
+        run: uv sync --package grader-service
+
+      - name: Build package
+        run: uv build --package grader-service
+
+      - name: Run ruff check
+        run: uv run --package grader-service ruff check packages/service
+
+      - name: Run ruff format
+        run: uv run --package grader-service ruff format --check packages/service
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/

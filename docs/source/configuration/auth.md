@@ -13,8 +13,8 @@ These roles determine access permissions within the app and are stored in the in
 
 ## Mode 1: JupyterHub Provides API Token
 
-In this simpler mode, **JupyterHub handles the user management**, and provides the user's API token to 
-the Grader Service at server startup. 
+In this simpler mode, **JupyterHub handles the user management**, and provides the user's API token to
+the Grader Service at server startup.
 The Grader Service then queries the JupyterHub API to obtain information about the current user (e.g., `username`, `groups`)
 and stores this in its own database.
 
@@ -98,7 +98,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
         user_model.display_name = username
         session.add(user_model)
         session.commit()
-    
+
     for group in groups:
         if (":" in group):
             split_group = group.split(":")
@@ -127,7 +127,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 role.role = scope
                 session.commit()
         else:
-            log.info("Found group that doesn't match schema. Ignoring %s", group)        
+            log.info("Found group that doesn't match schema. Ignoring %s", group)
 
     return authentication
 
