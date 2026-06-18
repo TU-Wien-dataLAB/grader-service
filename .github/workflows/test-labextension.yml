@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: Sync dependencies
-        run: uv sync --package grader-labextension --group dev
+        run: uv sync --package grader-labextension
 
       - name: Install jupyterlab
         run: uv pip install jupyterlab

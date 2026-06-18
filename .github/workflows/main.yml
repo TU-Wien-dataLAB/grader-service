@@ -63,7 +63,7 @@ jobs:
 
   integration:
     needs: [build-service, build-labextension]
-    if: always()
+    if: needs.build-service.result == 'success' && needs.build-labextension.result == 'success'
     uses: ./.github/workflows/integration.yml
 
   docker-service:
