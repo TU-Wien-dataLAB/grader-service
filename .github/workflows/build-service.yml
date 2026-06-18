@@ -25,7 +25,7 @@ jobs:
         run: uv sync --locked --dev
 
       - name: Build package
-        run: uv build
+        run: uv build --package grader-service
 
       - name: Run ruff check
         run: uv run ruff check packages/service
