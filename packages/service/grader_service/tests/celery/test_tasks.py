@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from traitlets.config import Config
 
-from grader_service import GraderService
+from grader_service.main import GraderService
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.celery.tasks import (
     autograde_task,
