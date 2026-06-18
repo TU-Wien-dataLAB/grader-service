@@ -35,13 +35,6 @@ class GraderTask(Task):
 
 
 @app.task(bind=True, base=GraderTask)
-def add(self: GraderTask, x, y):
-    print(type(self.session))
-    print("Adding {} and {}".format(x, y))
-    return x + y
-
-
-@app.task(bind=True, base=GraderTask)
 def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
 
