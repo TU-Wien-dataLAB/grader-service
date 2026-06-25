@@ -29,7 +29,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: packages/labextension
-        run: jlpm
+        run: uv run jlpm
 
       - name: Lint Python code
         run: uv run ruff check packages/labextension/grader_labextension
@@ -39,4 +39,4 @@ jobs:
 
       - name: Run JavaScript tests
         working-directory: packages/labextension
-        run: jlpm test
+        run: uv run jlpm test

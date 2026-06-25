@@ -29,11 +29,11 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: packages/labextension
-        run: jlpm
+        run: uv run jlpm
 
       - name: Build extension
         working-directory: packages/labextension
-        run: jlpm build:prod
+        run: uv run jlpm build:prod
 
       - name: Run ruff check
         run: uv run ruff check packages/labextension
