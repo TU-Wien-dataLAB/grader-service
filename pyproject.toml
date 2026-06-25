@@ -16,6 +16,8 @@ default-groups = ["dev", "docs"]
 dev = [
     "pre-commit>=4.3.0",
     "ruff>=0.14.2",
+    "jupyterlab",
+    "jupyter-builder",
 ]
 docs = [
     "sphinx",

@@ -27,9 +27,6 @@ jobs:
       - name: Install the project
         run: uv sync --locked --dev
 
-      - name: Install jupyterlab for jlpm
-        run: uv pip install jupyterlab
-
       - name: Install npm dependencies
         working-directory: packages/labextension
         run: jlpm
