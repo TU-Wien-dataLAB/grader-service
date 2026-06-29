@@ -41,8 +41,10 @@ jobs:
 
       - name: Install packages from artifacts
         run: |
+          uv venv
           uv pip install packages/service/dist/*.whl
           uv pip install packages/labextension/dist/*.whl
+          uv pip install pytest requests
 
       - name: Start docker-compose environment
         run: |
@@ -55,7 +57,7 @@ jobs:
           curl -f http://localhost:8080 || exit 1
 
       - name: Run integration tests
-        run: uv run pytest tests/integration/
+        run: .venv/bin/pytest tests/integration/
 
       - name: Stop docker-compose
         if: always()
