@@ -18,6 +18,22 @@ from grader_labextension.services.git import GitError, GitService
 from grader_labextension.services.request import RequestService, RequestServiceError
 
 
+def _sanitize_filename(name: str) -> str:
+    """Replace characters that are invalid in file names with underscores.
+
+    Slashes in an assignment name would otherwise be interpreted as path
+    separators, causing file creation to fail (see FileNotFoundError when
+    exporting submissions of an assignment whose name contains a ``/``).
+
+    :param name: the raw name to use in a file name
+    :return: a name safe to use as a file name component
+    """
+    sanitized = name.replace(os.sep, "_")
+    if os.altsep:
+        sanitized = sanitized.replace(os.altsep, "_")
+    return sanitized
+
+
 @register_handler(
     path=r"api\/lectures\/(?P<lecture_id>\d*)\/assignments\/(?P<assignment_id>\d*)\/submissions\/save?"
 )
@@ -61,7 +77,9 @@ class ExportGradesHandler(ExtensionBaseHandler):
         csv_content = response.body.decode("utf-8")
         parsed_query_params = urllib.parse.parse_qs(query_params.lstrip("?"))
         filter_value = parsed_query_params.get("filter", ["none"])[0]
-        file_path = os.path.join(dir_path, f"{assignment['name']}_{filter_value}_submissions.csv")
+        file_path = os.path.join(
+            dir_path, f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
+        )
         with open(file_path, "w") as f:
             f.write(csv_content)
 
