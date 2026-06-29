@@ -2,8 +2,6 @@ name: Publish Labextension
 
 on:
   workflow_call:
-  release:
-    types: [published]
 
 jobs:
   publish:

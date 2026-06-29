@@ -2,10 +2,6 @@ name: Test Service
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'packages/service/**'
-      - '.github/workflows/test-service.yml'
 
 jobs:
   test:

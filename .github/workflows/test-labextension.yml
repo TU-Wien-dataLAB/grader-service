@@ -2,10 +2,6 @@ name: Test Labextension
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'packages/labextension/**'
-      - '.github/workflows/test-labextension.yml'
 
 jobs:
   test:

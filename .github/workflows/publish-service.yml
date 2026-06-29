@@ -2,8 +2,6 @@ name: Publish Service
 
 on:
   workflow_call:
-  release:
-    types: [published]
 
 jobs:
   publish:

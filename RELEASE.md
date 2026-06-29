@@ -40,6 +40,7 @@ cd packages/service
 # Update CHANGELOG.md with release notes
 git add pyproject.toml CHANGELOG.md
 git commit -m "Release grader-service-X.Y.Z"
+git push origin main
 ```
 
 **For Labextension:**
@@ -49,37 +50,41 @@ cd packages/labextension
 # Update CHANGELOG.md with release notes
 git add pyproject.toml package.json CHANGELOG.md
 git commit -m "Release grader-labextension-X.Y.Z"
+git push origin main
 ```
 
-### 2. Create and Push Tag
+### 2. Create a GitHub Release
+
+The release workflow is triggered by the `release` `published` event.
 
 **Service Release:**
 ```bash
-git tag grader-service-X.Y.Z
-git push origin grader-service-X.Y.Z
+gh release create grader-service-X.Y.Z --title "grader-service-X.Y.Z" --notes-file packages/service/CHANGELOG.md
 ```
 
 **Labextension Release:**
 ```bash
-git tag grader-labextension-X.Y.Z
-git push origin grader-labextension-X.Y.Z
+gh release create grader-labextension-X.Y.Z --title "grader-labextension-X.Y.Z" --notes-file packages/labextension/CHANGELOG.md
 ```
+
+Publishing the release creates the tag and starts the automated workflow.
 
 ### 3. Automated Release Workflow
 
-Once the tag is pushed, GitHub Actions automatically:
+Once the GitHub Release is published, the `Main CI` workflow runs. Publishing is gated on the build **and** test jobs passing.
 
-**For Service:**
-1. Runs `build-service` workflow (build, lint)
-2. Runs `test-service` workflow (tests)
-3. Creates Docker image (`docker-service`)
-4. Publishes to PyPI (`publish-service`)
-5. Publishes Helm chart (`publish-helm`)
+**For Service** (tag `grader-service-X.Y.Z`):
+1. `build-service` — builds the wheel, runs ruff check & format check
+2. `test-service` — runs ruff + pytest with coverage
+3. `publish-service` — publishes the wheel to PyPI (runs only after `build-service` and `test-service` succeed)
+4. `publish-helm` — packages and pushes the Helm chart (runs after `publish-service`)
 
-**For Labextension:**
-1. Runs `build-labextension` workflow (build Python + TypeScript)
-2. Runs `test-labextension` workflow (Python + JS tests)
-3. Publishes to PyPI (`publish-labextension`)
+**For Labextension** (tag `grader-labextension-X.Y.Z`):
+1. `build-labextension` — builds TypeScript + Python wheel, runs ruff
+2. `test-labextension` — runs Python and JavaScript tests
+3. `publish-labextension` — publishes the wheel to PyPI (runs only after `build-labextension` and `test-labextension` succeed)
+
+> Docker images are **not** built by the release workflow. They are built on pushes to `main` and on pull requests (`docker-service`, `docker-labextension`).
 
 ### 4. Verify Release
 
@@ -96,27 +101,10 @@ pip install grader-service==X.Y.Z
 pip install grader-labextension==X.Y.Z
 ```
 
-**Verify Docker Image (Service only):**
-```bash
-docker pull <registry>/<org>/grader-service:<tag>
-```
-
 **Verify Helm Chart (Service only):**
 ```bash
 helm search repo grader-service --versions
 ```
-
-## Creating a GitHub Release
-
-After the tag is pushed and workflows complete:
-
-1. Go to GitHub Releases page
-2. Click "Draft a new release"
-3. Select the tag you just pushed
-4. Copy changelog entries for this version
-5. Click "Publish release"
-
-This triggers the `release` event that runs the publish workflows.
 
 ## Release Checklist
 
@@ -130,10 +118,10 @@ This triggers the `release` event that runs the publish workflows.
 
 ### Release
 - [ ] Commit version changes
-- [ ] Create and push git tag
+- [ ] Push commit to `main`
+- [ ] Create GitHub Release for the version tag (triggers the workflow)
 - [ ] Monitor GitHub Actions workflows
 - [ ] Verify PyPI package is available
-- [ ] Create GitHub release with changelog
 
 ### Post-Release
 - [ ] Verify Docker image is available (service)

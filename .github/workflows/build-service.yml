@@ -2,10 +2,6 @@ name: Build Service
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'packages/service/**'
-      - '.github/workflows/build-service.yml'
 
 jobs:
   build:
