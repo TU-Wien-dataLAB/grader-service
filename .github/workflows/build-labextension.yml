@@ -35,6 +35,9 @@ jobs:
         working-directory: packages/labextension
         run: uv run jlpm build:prod
 
+      - name: Build package
+        run: uv build --package grader-labextension --out-dir packages/labextension/dist
+
       - name: Run ruff check
         run: uv run ruff check packages/labextension
 

@@ -38,7 +38,7 @@ jobs:
 
   build-service:
     needs: detect-changes
-    if: needs.detect-changes.outputs.service == 'true'
+    if: needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true'
     uses: ./.github/workflows/build-service.yml
 
   test-service:
@@ -48,7 +48,7 @@ jobs:
 
   build-labextension:
     needs: detect-changes
-    if: needs.detect-changes.outputs.labextension == 'true'
+    if: needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true'
     uses: ./.github/workflows/build-labextension.yml
 
   test-labextension:

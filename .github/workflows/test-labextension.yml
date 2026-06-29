@@ -27,6 +27,10 @@ jobs:
       - name: Install the project
         run: uv sync --locked --dev
 
+      - name: Install test dependencies
+        working-directory: packages/labextension
+        run: uv sync --locked --extra test
+
       - name: Install npm dependencies
         working-directory: packages/labextension
         run: uv run jlpm

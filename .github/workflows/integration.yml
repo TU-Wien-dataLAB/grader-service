@@ -2,11 +2,6 @@ name: Integration Tests
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'packages/**'
-      - 'tests/integration/**'
-      - '.github/workflows/integration.yml'
 
 jobs:
   integration:
