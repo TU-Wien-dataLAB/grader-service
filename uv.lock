@@ -1893,7 +1893,7 @@ dependencies = [
     { name = "jupyter-server", version = "2.19.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 test = [
     { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "coverage", version = "7.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -1908,15 +1908,18 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "coverage", marker = "extra == 'test'" },
     { name = "grader-service", editable = "packages/service" },
     { name = "jupyter-server", specifier = ">=2.4.0,<3" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-asyncio", marker = "extra == 'test'" },
-    { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "pytest-jupyter", extras = ["server"], marker = "extra == 'test'", specifier = ">=0.6.0" },
 ]
-provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "coverage" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-jupyter", extras = ["server"], specifier = ">=0.6.0" },
+]
 
 [[package]]
 name = "grader-monorepo"

@@ -31,7 +31,7 @@ dynamic = ["version", "description", "authors", "urls", "keywords"]
 [tool.uv.sources]
 grader-service = { workspace = true }
 
-[project.optional-dependencies]
+[dependency-groups]
 test = [
     "coverage",
     "pytest",
