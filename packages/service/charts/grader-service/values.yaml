@@ -5,7 +5,7 @@
 # -- Container image configuration
 image:
   # -- Image repository
-  repository: ghcr.io/tu-wien-datalab/grader-service
+  repository: ghcr.io/tu-wien-datalab/grader-service/grader-service
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Overrides the image tag whose default is the chart appVersion
@@ -160,7 +160,7 @@ kubeAutogradeExecutor:
   # -- Annotations for autograde pods
   annotations: {}
   # -- Image to use for autograde pods
-  image: ghcr.io/tu-wien-datalab/grader-labextension
+  image: ghcr.io/tu-wien-datalab/grader-service/grader-labextension
   # -- Image tag for autograde pods
   tag: latest
   # -- Image pull policy for autograde pods

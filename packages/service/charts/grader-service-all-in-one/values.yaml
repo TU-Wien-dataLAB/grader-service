@@ -46,7 +46,7 @@ jupyterhub:
     defaultUrl: /lab
     image:
       # the image to use for the singleuser pods
-      name: "ghcr.io/tu-wien-datalab/grader-labextension"
+      name: "ghcr.io/tu-wien-datalab/grader-service/grader-labextension"
       tag: "main"
       pullPolicy: IfNotPresent
     extraEnv:

@@ -25,7 +25,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ env.OWNER }}
-          packages: grader-service,grader-labextension
+          packages: grader-service/grader-service,grader-service/grader-labextension
           delete-tags: pr-${{ github.event.pull_request.number }}
 
   cleanup-sweep:
@@ -38,5 +38,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ env.OWNER }}
-          packages: grader-service,grader-labextension
+          packages: grader-service/grader-service,grader-service/grader-labextension
           delete-tags: pr-*
