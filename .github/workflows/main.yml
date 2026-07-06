@@ -68,22 +68,22 @@ jobs:
 
   docker-service:
     needs: [test-service, build-service]
-    if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')))
     uses: ./.github/workflows/docker-service.yml
 
   docker-labextension:
     needs: [test-labextension, build-labextension]
-    if: always() && needs.test-labextension.result == 'success' && needs.build-labextension.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    if: always() && needs.test-labextension.result == 'success' && needs.build-labextension.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')))
     uses: ./.github/workflows/docker-labextension.yml
 
   publish-service:
-    needs: [build-service, test-service]
+    needs: [build-service, test-service, docker-service]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
     uses: ./.github/workflows/publish-service.yml
     secrets: inherit
 
   publish-labextension:
-    needs: [build-labextension, test-labextension]
+    needs: [build-labextension, test-labextension, docker-labextension]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
     uses: ./.github/workflows/publish-labextension.yml
     secrets: inherit

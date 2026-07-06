@@ -76,15 +76,17 @@ Once the GitHub Release is published, the `Main CI` workflow runs. Publishing is
 **For Service** (tag `grader-service-X.Y.Z`):
 1. `build-service` — builds the wheel, runs ruff check & format check
 2. `test-service` — runs ruff + pytest with coverage
-3. `publish-service` — publishes the wheel to PyPI (runs only after `build-service` and `test-service` succeed)
-4. `publish-helm` — packages and pushes the Helm chart (runs after `publish-service`)
+3. `docker-service` — builds and pushes the Docker image, tagged with the release version (runs after `build-service` and `test-service` succeed)
+4. `publish-service` — publishes the wheel to PyPI (runs after `docker-service` succeeds)
+5. `publish-helm` — packages and pushes the Helm chart (runs after `publish-service`)
 
 **For Labextension** (tag `grader-labextension-X.Y.Z`):
 1. `build-labextension` — builds TypeScript + Python wheel, runs ruff
 2. `test-labextension` — runs Python and JavaScript tests
-3. `publish-labextension` — publishes the wheel to PyPI (runs only after `build-labextension` and `test-labextension` succeed)
+3. `docker-labextension` — builds and pushes the Docker image, tagged with the release version (runs after `build-labextension` and `test-labextension` succeed)
+4. `publish-labextension` — publishes the wheel to PyPI (runs after `docker-labextension` succeeds)
 
-> Docker images are **not** built by the release workflow. They are built on pushes to `main` and on pull requests (`docker-service`, `docker-labextension`).
+> Docker images are built on pushes to `main`, on pull requests, and on releases (tagged with the release version) via the `docker-service` and `docker-labextension` jobs. The publish jobs run only after the matching docker job succeeds.
 
 ### 4. Verify Release
 
