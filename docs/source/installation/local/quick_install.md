@@ -2,7 +2,7 @@
 
 ## Installation Scripts
 
-For a quick installation you can use installation scripts which you can find in `examples/dev_environment` directory. 
+For a quick installation you can use installation scripts which you can find in `examples/dev_environment` directory.
 This directory provides you with local development environment and serves as a guide for more complex setups.
 Ensure that you cloned the [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) and it is located in the same directory as the grader
 service repository.

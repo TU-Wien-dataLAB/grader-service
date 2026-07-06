@@ -2,10 +2,10 @@
 
 The grader labextension provides two launchers within JupyterLab:
 
-- **Assignment Launcher**:  
+- **Assignment Launcher**:
   Opens a window where students can access and work on assignments you have published. Instructors can also open this view to preview how assignments appear to students.
 
-- **Course Management Launcher**:  
+- **Course Management Launcher**:
   Opens a dashboard for instructors to manage assignments. You can add, edit, or delete assignments. This launcher is only visible if the current user has at least tutor-level access in one of the lectures.
 
 ![Launcher Window](../_static/assets/images/instructor_guide/launcher.png)

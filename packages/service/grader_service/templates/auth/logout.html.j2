@@ -1,0 +1,14 @@
+{% extends "auth/page.html.j2" %}
+{% if announcement_logout is string %}
+  {% set announcement = announcement_logout %}
+{% endif %}
+
+{% block main %}
+
+<div id="logout-main" class="container">
+  <p style='text-align: center; font-size: 16px;'>
+    Successfully logged out.
+  </p>
+</div>
+
+{% endblock %}

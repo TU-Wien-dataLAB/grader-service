@@ -78,9 +78,9 @@ html_css_files = ["css/custom.css"]
 nb_execution_mode = "cache"
 
 html_theme_options = {
-    "path_to_docs": "docs",
-    "repository_url": "https://github.com/TU-Wien-dataLAB/Grader-Service",
-    "repository_branch": "master",
+    "path_to_docs": "docs/source",
+    "repository_url": "https://github.com/TU-Wien-dataLAB/grader",
+    "repository_branch": "main",
     "launch_buttons": {
         "binderhub_url": "https://mybinder.org",
         "colab_url": "https://colab.research.google.com/",
@@ -97,8 +97,8 @@ html_theme_options = {
     "logo": {"image_dark": "_static/assets/images/logo_name.png"},
     "icon_links": [
         {
-            "name": "GitHub Grader Service",
-            "url": "https://github.com/TU-Wien-dataLAB/Grader-Service",
+            "name": "GitHub Grader",
+            "url": "https://github.com/TU-Wien-dataLAB/grader",
             "icon": "fa-brands fa-github",
         },
         {
@@ -116,4 +116,8 @@ html_theme_options = {
     ],
 }
 
-ogp_social_cards = {"image": "_static/assets/images/logo_name.png"}
+ogp_social_cards = {
+    "image": "docs/source/_static/assets/images/logo_name.png",
+    "line_width": 2,
+    "font": "Source Sans Pro",
+}

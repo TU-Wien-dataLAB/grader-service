@@ -1,0 +1,23 @@
+FROM quay.io/jupyterhub/jupyterhub
+
+# Install git and libcurl for tornado curl_httpclient
+RUN apt-get update && \
+    apt-get install -y git libcurl4-openssl-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.3 /uv /uvx /bin/
+
+# Install pycurl for tornado curl_httpclient
+RUN pip install pycurl
+
+WORKDIR /app
+
+ENV JUPYTERHUB_CRYPT_KEY=e3f92a0d5e37446c7e894a2ef6c6ec3bcb4aa3c38d2a442eb567adf780597aa0
+
+# Install dockerspawner and oauthenticator
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install dockerspawner oauthenticator
+
+CMD ["jupyterhub", "-f", "/app/jupyterhub_config.py"]

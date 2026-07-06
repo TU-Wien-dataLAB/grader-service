@@ -1,0 +1,44 @@
+name: Build Labextension
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install the project
+        run: uv sync --locked --dev
+
+      - name: Install npm dependencies
+        working-directory: packages/labextension
+        run: uv run jlpm
+
+      - name: Build extension
+        working-directory: packages/labextension
+        run: uv run jlpm build:prod
+
+      - name: Build package
+        run: uv build --package grader-labextension --out-dir packages/labextension/dist
+
+      - name: Run ruff check
+        run: uv run ruff check packages/labextension
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-labextension
+          path: packages/labextension/dist/

@@ -1,0 +1,167 @@
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grader-service"
+description = "Grader service"
+version = "0.12.0"
+requires-python = ">=3.9"
+authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
+license = "BSD-3-Clause"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "alembic>=1.13",
+    "async_generator>=1.10",
+    "celery>=5.4",
+    "cryptography>=43",
+    "isodate>=0.7",
+    "json5>=0.9",
+    "jsonschema>=4",
+    "jupyter-client>=8.6",
+    "jupyter_core>=5.7",
+    "jupyterhub>=5",
+    "kubernetes>=31",
+    "nbconvert>=7.16",
+    "nbformat>=5.4.0",
+    "pandas>=2.2.3",
+    "psycopg2-binary>= 2.9",
+    "PyJWT>=2.9",
+    "python-dateutil>=2.9",
+    "SQLAlchemy>=2.0.35",
+    "tornado>=6.4",
+    "traitlets>=5.14",
+    "typing-extensions>=4.12",
+    "urllib3>=2.2",
+    "uvloop>=0.21.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+packages = ["grader_service", "grader_service.api", "grader_service.auth", "grader_service.auth.lti13", "grader_service.autograding", "grader_service.autograding.celery", "grader_service.convert", "grader_service.handlers", "grader_service.migrate", "grader_service.oauth2", "grader_service.orm", "grader_service.plugins"]
+
+[project.scripts]
+grader-service = "grader_service:main"
+grader-service-migrate = "grader_service.migrate.migrate:main"
+grader-convert = "grader_service.convert.main:main"
+grader-worker = "grader_service.autograding.celery.worker:main"
+
+[project.urls]
+Homepage = "https://github.com/TU-Wien-dataLAB/grader-service"
+Repository = "https://github.com/TU-Wien-dataLAB/grader-service"
+Documentation = "https://grader-service.readthedocs.io/en/latest/index.html"
+
+[tool.tbump]
+# Uncomment this if your project is hosted on GitHub:
+github_url = "https://github.com/TU-Wien-dataLAB/grader-service"
+
+[tool.tbump.version]
+current = "0.12.0"
+
+# Example of a semver regexp.
+# Make sure this matches current_version before
+# using tbump
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  \-?
+  (?P<pre>((a|b|rc|dev|nightly)\d+)?)
+  '''
+
+[tool.tbump.git]
+message_template = "Bump service to {new_version}"
+tag_template = "grader-service-{new_version}"
+
+# For each file to patch, add a [[tool.tbump.file]] config
+# section containing the path of the file, relative to the
+# pyproject.toml location.
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+search = "version = \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "grader_service/_version.py"
+search = "__version__ = \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "charts/grader-service/Chart.yaml"
+search = "appVersion: \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "charts/grader-service/Chart.yaml"
+search = "version: {current_version}"
+
+[[tool.tbump.file]]
+src = "charts/grader-service-all-in-one/Chart.yaml"
+search = "appVersion: \"{current_version}\""
+
+[[tool.tbump.file]]
+src = "charts/grader-service-all-in-one/Chart.yaml"
+search = "version: {current_version}"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "oauthenticator>=17.3.0",
+    "pre-commit>=4.3.0",
+    "ruff>=0.14.2",
+    "tbump>=6.11.0",
+]
+test = [
+    "faker>=37.11.0",
+    "jupyterlab>=4.0.0,<5",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "pytest-httpserver>=1.1.3",
+    "pytest-jupyter>=0.10.1",
+    "pytest-mock>=3.15.1",
+    "pytest-tornasync>=0.6.0.post2",
+    "testcontainers>=4.13.0",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "**/*.ipynb",
+    "grader_service/api/*",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+exclude = [
+    "examples/*",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "grader_service/tests",
+]
+addopts = "--cov=grader_service --cov-report html --cov-report term"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.coverage.run]
+omit = [
+    "grader_service/tests/*",
+]

@@ -1,0 +1,123 @@
+@import url('base.css');
+
+.jp-CellPlayButtonCreation {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  top: 65px;
+  height: 100%;
+  padding: 9px 10px 0 0;
+  display: block;
+  z-index: 600;
+  overflow: unset;
+}
+
+.jp-CellPlayButton {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  height: 100%;
+  padding: 9px 10px 0 0;
+  display: block;
+  z-index: 600;
+  overflow: unset;
+}
+
+.cellPlayButton {
+  position: sticky;
+  top: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cellPlayButton-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border-radius: 50%;
+  box-shadow: 0 7.5px 20px rgb(51 51 51 / 10%);
+  transition: 0.2s ease-in-out all;
+  background-color: #ccc;
+}
+
+.cellPlayButton:hover .cellPlayButton-icon {
+  box-shadow: 0 7.5px 20px rgb(51 51 51 / 50%);
+}
+
+.elementToFadeInAndOut {
+  width: 200px;
+  height: 200px;
+  background: red;
+  -webkit-animation: fadeinout 4s linear forwards;
+  animation: fadeinout 4s linear forwards;
+}
+
+.hide {
+  -webkit-animation: fadeinout 0.7s linear forwards;
+  animation: fadeinout 0.7s linear forwards;
+}
+
+@keyframes fadeinout {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeinout {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.show {
+  -webkit-animation: display 0.7s linear forwards;
+  animation: display 0.7s linear forwards;
+}
+
+@keyframes display {
+  0% {
+    opacity: 0.2;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes display {
+  0% {
+    opacity: 0.2;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}

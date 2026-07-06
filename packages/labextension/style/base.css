@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
+@import url('components/assignment-list.css');
+@import url('components/assignment.css');
+@import url('components/courses.css');
+@import url('components/createassignment.css');
+@import url('components/manual-grade.css');
+@import url('components/lecturecard.css');
+@import url('components/file-view.css');
+@import url('components/grading.css');
+@import url('components/stats.css');
+
+:root {
+  color-scheme: light dark;
+
+  --text-color: #2e373d;
+  --accent-color: rgb(243 114 0);
+  --submit-color: #0d8050;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}

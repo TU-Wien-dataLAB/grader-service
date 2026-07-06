@@ -1,0 +1,30 @@
+name: Publish Service
+
+on:
+  workflow_call:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name, 'grader-service-')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
+
+      - name: Publish to PyPI
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish packages/service/dist/*

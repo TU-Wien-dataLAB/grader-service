@@ -1,0 +1,133 @@
+name: 'grader-dev'
+services:
+
+  service:
+    build:
+      context: ../..
+      dockerfile: dev/docker-compose/Dockerfile-service
+    command: bash -c "
+        grader-service-migrate -f /app/grader_service_config.py
+        && uv run watchmedo auto-restart --directory=/app/grader_service --pattern='*.py' --recursive -- grader-service -f /app/grader_service_config.py
+      "
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - service_dir:/app/service_dir
+      - ../../packages/service/grader_service:/app/grader_service
+    environment:
+      DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
+      RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
+      RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
+      GRADER_LOG_LEVEL: DEBUG
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8000:4010"
+    networks:
+      - grader-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:4010/services/grader/api/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  hub:
+    build:
+      context: ../..
+      dockerfile: dev/docker-compose/Dockerfile-hub
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - ./jupyterhub_config.py:/app/jupyterhub_config.py
+      - hub_data:/data
+    restart: unless-stopped
+    depends_on:
+      service:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - GRADER_SERVICE_URL=http://service:4010
+      - GRADER_API_TOKEN=${GRADER_API_TOKEN:-7572f93a2e7640999427d9289c8318c0}
+    networks:
+      - grader-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/hub/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:latest
+    environment:
+      RABBITMQ_DEFAULT_VHOST: grader
+      RABBITMQ_DEFAULT_USER: grader_user
+      RABBITMQ_DEFAULT_PASS: grader_password
+    expose:
+      - "5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - grader-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  celery-worker:
+    build:
+      context: ../..
+      dockerfile: dev/docker-compose/Dockerfile-service
+    command: bash -c "
+        uv run watchmedo auto-restart --directory=/app/grader_service --pattern='*.py' --recursive -- grader-worker -f /app/grader_service_config.py
+      "
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - service_dir:/app/service_dir
+      - ../../packages/service/grader_service:/app/grader_service
+    depends_on:
+      - rabbitmq
+      - service
+    environment:
+      RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
+      RABBITMQ_GRADER_SERVICE_PASSWORD: grader_password
+      DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
+      GRADER_LOG_LEVEL: DEBUG
+    restart: unless-stopped
+    networks:
+      - grader-network
+
+  test-runner:
+    build:
+      context: ../..
+      dockerfile: dev/docker-compose/Dockerfile-test
+    volumes:
+      - ./grader_service_config.py:/app/grader_service_config.py
+      - ../../tests:/app/tests
+      - ../../pyproject.toml:/app/pyproject.toml
+    environment:
+      - GRADER_API_TOKEN=${GRADER_API_TOKEN:-7572f93a2e7640999427d9289c8318c0}
+      - BASE_URL=http://hub:8080
+      - SERVICE_URL=http://service:4010/services/grader
+    depends_on:
+      service:
+        condition: service_healthy
+      hub:
+        condition: service_healthy
+    networks:
+      - grader-network
+    command: ["pytest", "tests/integration", "-v"]
+    profiles:
+      - test
+
+volumes:
+  service_dir:
+  hub_data:
+  rabbitmq_data:
+
+networks:
+  grader-network:
+    driver: bridge

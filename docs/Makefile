@@ -8,6 +8,9 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
 
+# Set PYTHONPATH to include parent directory for grader_service module
+export PYTHONPATH := ..:$(PYTHONPATH)
+
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

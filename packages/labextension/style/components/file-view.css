@@ -1,0 +1,23 @@
+.flexbox-panel {
+  display: flex;
+  flex-flow: row wrap;
+  place-content: center center;
+  align-items: flex-start;
+}
+
+.flexbox-item {
+  flex: 0 1 auto;
+  margin: 1em;
+}
+
+.flex-item:nth-child(1) {
+  flex: 0 1 auto;
+}
+
+.flex-item:nth-child(2) {
+  flex: 0 1 auto;
+}
+
+.flex-item:nth-child(3) {
+  flex: 0 1 auto;
+}

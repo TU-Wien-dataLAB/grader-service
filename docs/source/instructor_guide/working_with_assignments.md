@@ -70,33 +70,33 @@ Grader Cell Types:
   : This cell contains the test cases to test the auto-graded answer given by students.
     These may be `assert` statements that check the implemented code.
     Invalid solutions have to lead to an exception.
-  
+
   ![Autograded Test](../_static/assets/images/instructor_guide/autograded_test_cell.png)
 
     :::{note}
     Part or all of the tests can be hidden with `BEGIN HIDDEN TESTS` and `END HIDDEN TESTS` directives.
     :::
 
-    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives. 
-    This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios, 
-    where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake, 
+    Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives.
+    This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios,
+    where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake,
     but want to let them know how many points a submission granted  them, this a perfect option for you.
 
   ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
 
    The following image shows both an "always hidden" and a "hidden" test cell in the feedback view. For "always hidden" tests, only the points reached for the executed tests are shown, whereas for "hidden" tests, the run tests are also displayed.
-    
+
    ![Feedback when Always Hidden Tests are set](../_static/assets/images/instructor_guide/student_feedback_always_hidden.png)
 
   :::{warning}
-    The students can still see the error traceback which allows them to view the test cases that failed. If you want 
+    The students can still see the error traceback which allows them to view the test cases that failed. If you want
     to avoid that, you can add `%xmode minimal` at the beginning of the text section.
   :::
-   
+
 - Manual graded answer
   : This cell type supports free-form answers from students.
     They should not be tested with automatic tests but are intended to be manually graded.
-    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen. 
+    The cells can be configured to either be code or markdown cells, so students can either implement code or answer in text. You as instructor are responsible for granting them points for the task (cell) for which "manual graded answer" was chosen.
 
   ![Manual Answer Cell](../_static/assets/images/instructor_guide/manual_answer_cell.png)
 
@@ -143,23 +143,23 @@ An assignment can have 3 states that can be switched between and represent the l
 
 ### Groups
 
-You can assign assignments to a group you specify. This allows you to cluster assignments based on different criteria, e.g. the chapters of your lecture. Please note that each assignment can be assigned to only one group. 
+You can assign assignments to a group you specify. This allows you to cluster assignments based on different criteria, e.g. the chapters of your lecture. Please note that each assignment can be assigned to only one group.
 
 ### Deadlines
 
 As an instructor, you can set deadlines for assignments.
 
-**Deadline Enforcement**:  
+**Deadline Enforcement**:
 After the set deadline, students will no longer be able to submit assignments unless you extend the deadline. This ensures that no submissions are accepted beyond the initial due date.
 
-**Extending Deadlines**:  
+**Extending Deadlines**:
 While students cannot submit after the deadline by default, you have the option to extend the deadline for all students at any point. This can be done through the assignment settings, allowing flexibility if needed. Please note that deadlines cannot be extended for individual students.
 
 ### Limit Number of Submissions
 
 You can set a limit on the number of times students can submit an assignment.
 
-**Submission Limits**:  
+**Submission Limits**:
 You can define a maximum number of submissions for each assignment (e.g., students can submit up to 3 times). Once a student reaches this limit, they will no longer be able to make additional submissions unless you increase the limit for all students.
 
 ### Cell timeout
@@ -168,7 +168,7 @@ This field allows you to dynamically set the timeout of a cell per assignment in
 
 ### Whitelist File Patterns
 
-By using `glob patterns` you can define which additional files can be submitted by the students. This allows you to have a better control over students' submissions and avoid getting unnecessary files from their side. 
+By using `glob patterns` you can define which additional files can be submitted by the students. This allows you to have a better control over students' submissions and avoid getting unnecessary files from their side.
 
 ### Late Submissions
 
@@ -176,10 +176,10 @@ You can allow students to submit assignments after the deadline, with applied pe
 
 ![Late Submission Settings](../_static/assets/images/instructor_guide/late_submission_settings.png)
 
-**Penalty for Late Submissions**:  
+**Penalty for Late Submissions**:
 When students submit assignments after the initial deadline, a penalty multiplier can be applied to their score. This penalty increases with time, reducing their overall grade based on how late the submission is. You can customize the penalty system according to your course policies.
 
-**Late Submission Period**:  
+**Late Submission Period**:
 You can define a grace period for late submissions (e.g., allowing submissions up to a week after the deadline). Once this period expires, no further submissions are allowed unless you manually extend the deadline or late submission period. **Since the late submission period is relative to the deadline, extending the deadline automatically extends the late submission period.**
 
 ## Auto-Grading Behavior
@@ -219,27 +219,27 @@ The last step is feedback generation, at which point students will see their res
 
 You have the ability to manually add submissions for students, even after the deadline has passed.
 
-**Manual Submission Creation**:  
+**Manual Submission Creation**:
 In cases where a student is unable to submit their work on time due to technical issues or other circumstances, you can manually upload and submit files on their behalf. This option is available even after the deadline has expired, giving you flexibility in handling special cases.
 
-**Submission Process**:  
+**Submission Process**:
 To manually submit on behalf of a student, you will need to obtain the necessary files from the student. Once you have the files, you can upload them to the system, and the submission will be recorded as if the student had submitted it themselves. Afterward the submission is handled as any other and can be graded as usually.
 
 Following video illustrates the procedure:
 
 ![Manual Submission](../_static/assets/gifs/instructor_guide/manual_submission.gif)
-   
+
 ### How To Grade Manual Answer Cells?
-  - Once a student submits their work, it will appear in the "Submissions" list. 
+  - Once a student submits their work, it will appear in the "Submissions" list.
     If you selected "Automatic Grading" when creating the assignment, the submission has to be automatically graded and afterwards you may
-    immediately proceed with manual grading. If you chose "No Automatic Grading", you can just pull the submission right away and manually grade it. 
+    immediately proceed with manual grading. If you chose "No Automatic Grading", you can just pull the submission right away and manually grade it.
   - Click on submission in the Submission List and pull it. This will reveal files the student has submitted.
   - Click on notebook that you want to manually grade and when the notebook opens up enable "Grading Mode".
   - You can now assign points, leave comments or even give extra credits for the solution.
   - When you are done with grading, save the notebook.
   - In the "Detail Submission View" click on "Finish Manual Grading". This will save points you granted the student.
   - When you are ready, you can also generate feedback for the submission. If you left any comments for the student while grading, they will be included in the feedback as well.
-  
+
   Following video illustrates the procedure:
 
   ![Manual grading](../_static/assets/gifs/instructor_guide/manually_grade_submission.gif)
@@ -249,7 +249,7 @@ Following video illustrates the procedure:
 
   :::{note}
   If your assignment has cells that are automatically graded, you can always change points that the automated test granted for solution manually.
-  
+
   In following example, student had to implement a python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
   ![Manually Change points Granted From Auto Grading](../_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
   :::

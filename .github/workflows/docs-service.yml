@@ -1,0 +1,30 @@
+name: Documentation Service
+
+on:
+  workflow_call:
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --locked --dev
+
+      - name: Build documentation
+        run: uv run --package grader-service sphinx-build -b html docs/source docs/build/html
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/build/html/

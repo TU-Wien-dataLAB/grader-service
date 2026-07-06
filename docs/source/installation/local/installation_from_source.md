@@ -7,7 +7,7 @@ Before installing the Grader Service, make sure that following packages are inst
 
 - JuypterHub
 - JupyterLab
-- pip 
+- pip
 - Node.js
 - npm
 
@@ -23,14 +23,14 @@ Once you have your local copy of Grader Service repository navigate to `grader-s
 pip install -e .
 ```
 
-Running this command will make sure that all dependencies from `pyproject.toml` file are installed and 
+Running this command will make sure that all dependencies from `pyproject.toml` file are installed and
 that Grader Service is ready to run.
 
 ## Install Grader Labextension
 
 To locally install Grader Labextension, make sure to clone [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) or download the corresponding [zip file](https://github.com/TU-Wien-dataLAB/Grader-Labextension/archive/refs/heads/main.zip).
 
-Grader Labextension is composed of a Python package named `grader_labextension` for the server extension 
+Grader Labextension is composed of a Python package named `grader_labextension` for the server extension
 and an NPM package `grader-labextension` for the frontend extension.
 
 To install the extension in development mode, navigate to your local `grader-labextension` directory and run:
@@ -67,6 +67,3 @@ jlpm watch
 The `jlpm watch` command monitors changes in the extension's source code and automatically rebuilds the extension whenever a change is detected. With the watch command running, every saved change is immediately built and made available in your running JupyterLab. You only need to refresh JupyterLab to load the changes in your browser. Note that it may take several seconds for the extension to rebuild.
 
 Keep in mind that `jlpm watch` continues running until you stop it and can consume significant system resources. Therefore, it may sometimes be better to manually rebuild the TypeScript source using `jlpm build`.
-
-
-

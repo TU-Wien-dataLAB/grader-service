@@ -1,0 +1,51 @@
+name: Docker Service
+
+on:
+  workflow_call:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Compute image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/grader-service" >> "$GITHUB_ENV"
+
+      - name: Extract version
+        if: github.event_name == 'release'
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#grader-service-}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=main,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }},enable={{is_default_branch}}
+            type=ref,event=pr
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.event_name == 'release' }}
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/service
+          file: packages/service/Dockerfile
+          push: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}

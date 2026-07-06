@@ -1,0 +1,66 @@
+name: Integration Tests
+
+on:
+  workflow_call:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Download service build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
+
+      - name: Download labextension build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-labextension
+          path: packages/labextension/dist/
+
+      - name: Check artifacts exist
+        run: |
+          ls packages/service/dist/*.whl || exit 1
+          ls packages/labextension/dist/*.whl || exit 1
+
+      - name: Install packages from artifacts
+        run: |
+          uv venv
+          uv pip install packages/service/dist/*.whl
+          uv pip install packages/labextension/dist/*.whl
+          uv pip install pytest requests
+
+      - name: Start docker-compose environment
+        run: |
+          cd dev/docker-compose
+          docker-compose up -d
+
+      - name: Wait for services
+        run: |
+          sleep 30
+          curl -f http://localhost:8080 || exit 1
+
+      - name: Run integration tests
+        run: .venv/bin/pytest tests/integration/
+
+      - name: Stop docker-compose
+        if: always()
+        run: |
+          cd dev/docker-compose
+          docker-compose down
