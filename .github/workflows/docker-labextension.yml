@@ -45,7 +45,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: packages/labextension
           file: packages/labextension/Dockerfile
           push: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release' }}
           tags: ${{ steps.meta.outputs.tags }}
