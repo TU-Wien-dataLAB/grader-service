@@ -70,11 +70,17 @@ jobs:
     needs: [test-service, build-service]
     if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')))
     uses: ./.github/workflows/docker-service.yml
+    permissions:
+      contents: read
+      packages: write
 
   docker-labextension:
     needs: [test-labextension, build-labextension]
     if: always() && needs.test-labextension.result == 'success' && needs.build-labextension.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')))
     uses: ./.github/workflows/docker-labextension.yml
+    permissions:
+      contents: read
+      packages: write
 
   publish-service:
     needs: [build-service, test-service, docker-service]
@@ -92,4 +98,7 @@ jobs:
     needs: publish-service
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
     uses: ./.github/workflows/publish-helm.yml
+    permissions:
+      contents: read
+      packages: write
     secrets: inherit

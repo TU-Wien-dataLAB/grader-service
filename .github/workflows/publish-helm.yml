@@ -7,6 +7,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     if: startsWith(github.event.release.tag_name, 'grader-service-')
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -15,8 +18,15 @@ jobs:
         with:
           version: v3.12.0
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Package Helm chart
         run: helm package packages/service/charts/grader-service
 
       - name: Push to Helm Registry
-        run: helm push grader-service-*.tgz oci://${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_ORG }}/charts
+        run: helm push grader-service-*.tgz oci://ghcr.io/${GITHUB_REPOSITORY,,}/charts

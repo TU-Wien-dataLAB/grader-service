@@ -19,20 +19,24 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: Compute lowercase owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
       - uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          token: ${{ secrets.DOCKER_PASSWORD }}
-          owner: ${{ vars.DOCKER_ORG }}
-          packages: grader-service,grader-labextension
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ env.OWNER }}
+          packages: grader-service/grader-service,grader-service/grader-labextension
           delete-tags: pr-${{ github.event.pull_request.number }}
 
   cleanup-sweep:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: Compute lowercase owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
       - uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          token: ${{ secrets.DOCKER_PASSWORD }}
-          owner: ${{ vars.DOCKER_ORG }}
-          packages: grader-service,grader-labextension
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ env.OWNER }}
+          packages: grader-service/grader-service,grader-service/grader-labextension
           delete-tags: pr-*
