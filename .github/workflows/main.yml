@@ -89,22 +89,58 @@ jobs:
   publish-service:
     needs: [build-service, test-service, docker-service]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
-    uses: ./.github/workflows/publish-service.yml
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
       id-token: write
-    secrets: inherit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
+
+      - name: Publish to PyPI
+        run: uv publish packages/service/dist/*
 
   publish-labextension:
     needs: [build-labextension, test-labextension, docker-labextension]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
-    uses: ./.github/workflows/publish-labextension.yml
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
       id-token: write
-    secrets: inherit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-labextension
+          path: packages/labextension/dist/
+
+      - name: Publish to PyPI
+        run: uv publish packages/labextension/dist/*
 
   publish-helm:
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-chart-')
