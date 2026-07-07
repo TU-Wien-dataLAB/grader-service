@@ -1,6 +1,6 @@
 {
     "name": "grader-labextension",
-    "version": "0.12.3",
+    "version": "0.12.4",
     "description": "Grader Labextension is a JupyterLab extension to enable automatic grading of assignment notebooks.",
     "keywords": [
         "jupyter",
