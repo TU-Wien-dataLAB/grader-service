@@ -6,7 +6,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name, 'grader-service-')
+    if: startsWith(github.event.release.tag_name, 'grader-service-chart-')
     permissions:
       contents: read
       packages: write

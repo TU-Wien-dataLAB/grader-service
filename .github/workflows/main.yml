@@ -38,12 +38,16 @@ jobs:
 
   build-service:
     needs: detect-changes
-    if: needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-'))
+    if: |
+      (github.event_name != 'release' && (needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true'))
+      || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-'))
     uses: ./.github/workflows/build-service.yml
 
   test-service:
     needs: detect-changes
-    if: needs.detect-changes.outputs.service == 'true' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-'))
+    if: |
+      (github.event_name != 'release' && needs.detect-changes.outputs.service == 'true')
+      || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-'))
     uses: ./.github/workflows/test-service.yml
 
   build-labextension:
@@ -68,7 +72,7 @@ jobs:
 
   docker-service:
     needs: [test-service, build-service]
-    if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')))
+    if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')))
     uses: ./.github/workflows/docker-service.yml
     permissions:
       contents: read
@@ -84,7 +88,7 @@ jobs:
 
   publish-service:
     needs: [build-service, test-service, docker-service]
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
     uses: ./.github/workflows/publish-service.yml
     secrets: inherit
 
@@ -95,8 +99,7 @@ jobs:
     secrets: inherit
 
   publish-helm:
-    needs: publish-service
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-chart-')
     uses: ./.github/workflows/publish-helm.yml
     permissions:
       contents: read

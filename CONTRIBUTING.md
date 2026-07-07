@@ -91,33 +91,37 @@ Push your branch and create a PR on GitHub.
 
 - Update Sphinx documentation in `docs/`
 - Update README if adding new features
-- Add changelog entries
+- Add changelog entries to the relevant package changelog (`packages/service/CHANGELOG.md` or `packages/labextension/CHANGELOG.md`) under the `[Unreleased]` section
 
 ## Release Process
+
+Releases use [tbump](https://github.com/your-tools/tbump) to bump versions and create tags. Each package has its own `CHANGELOG.md`.
 
 ### Service Release
 
 ```bash
+# 1. Update packages/service/CHANGELOG.md, then:
+git commit -am "docs(service): changelog for X.Y.Z"
 cd packages/service
-tbump minor  # or patch/major
-git push origin main
-git push origin grader-service-X.Y.Z
+tbump X.Y.Z   # or: tbump minor | tbump patch | tbump major  (commits, tags, and pushes)
+cd ../..
+gh release create grader-service-X.Y.Z --title "grader-service-X.Y.Z" --notes-file packages/service/CHANGELOG.md
 ```
 
 ### Labextension Release
 
 ```bash
+# 1. Update packages/labextension/CHANGELOG.md, then:
+git commit -am "docs(labextension): changelog for X.Y.Z"
 cd packages/labextension
-tbump minor  # or patch/major
-git push origin main
-git push origin grader-labextension-X.Y.Z
+tbump X.Y.Z   # or: tbump minor | tbump patch | tbump major  (commits, tags, and pushes)
+cd ../..
+gh release create grader-labextension-X.Y.Z --title "grader-labextension-X.Y.Z" --notes-file packages/labextension/CHANGELOG.md
 ```
 
-GitHub Actions automatically:
-1. Builds the package
-2. Runs tests
-3. Publishes to PyPI
-4. Creates Docker image (for service)
+Publishing the GitHub Release triggers CI which builds, tests, and publishes to PyPI (and Docker / Helm for the service).
+
+See [RELEASE.md](RELEASE.md) for the full release guide.
 
 ## Questions?
 

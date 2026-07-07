@@ -6,7 +6,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name, 'grader-service-')
+    if: startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
     steps:
       - uses: actions/checkout@v4
 

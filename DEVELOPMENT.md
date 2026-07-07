@@ -184,23 +184,25 @@ pre-commit run --all-files
 
 ## Version Management
 
-Each package has independent versioning:
+Each package is versioned independently with [tbump](https://github.com/your-tools/tbump). tbump is a root dev dependency (`uv sync` installs it) and is configured in each package's `pyproject.toml`.
 
 ```bash
-# Bump service version
+# Bump service version (run from the package directory)
 cd packages/service
-tbump minor
+tbump minor  # or: tbump patch, tbump major, tbump 0.13.0
 
 # Bump labextension version
 cd packages/labextension
 tbump minor
 ```
 
+tbump patches the version files, creates a `Bump ... to <version>` commit, creates the package tag (`grader-service-X.Y.Z` or `grader-labextension-X.Y.Z`), and pushes both the branch and the tag by default.
+
 ## Release Process
 
-1. Bump version with tbump
-2. Create git tag: `git tag grader-service-X.Y.Z` or `git tag grader-labextension-X.Y.Z`
-3. Push tag: `git push origin grader-service-X.Y.Z`
-4. GitHub Actions automatically builds and publishes to PyPI
+1. Update the package's `CHANGELOG.md` (rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh `## [Unreleased]` above it) and commit.
+2. Run tbump from the package directory: `cd packages/service && tbump X.Y.Z` (bumps versions, commits, creates the tag, and pushes the branch + tag by default).
+3. Create a GitHub Release from the tag (triggers CI: build, test, publish to PyPI, Docker, and Helm).
+5. Verify on PyPI, Docker Hub/GHCR, and the Helm repo.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed release instructions.
+See [RELEASE.md](RELEASE.md) for the full release guide.
