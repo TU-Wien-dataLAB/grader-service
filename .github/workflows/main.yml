@@ -90,12 +90,20 @@ jobs:
     needs: [build-service, test-service, docker-service]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
     uses: ./.github/workflows/publish-service.yml
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     secrets: inherit
 
   publish-labextension:
     needs: [build-labextension, test-labextension, docker-labextension]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
     uses: ./.github/workflows/publish-labextension.yml
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
     secrets: inherit
 
   publish-helm:
