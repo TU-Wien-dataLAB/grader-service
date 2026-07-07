@@ -3,6 +3,9 @@ name: Documentation Service
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   docs:
     runs-on: ubuntu-latest

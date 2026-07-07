@@ -1,5 +1,8 @@
 name: Main CI
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
@@ -11,6 +14,9 @@ on:
       - release-*
   release:
     types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   detect-changes:
