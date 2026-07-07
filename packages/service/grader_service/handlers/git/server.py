@@ -169,6 +169,18 @@ class GitBaseHandler(GraderBaseHandler):
         # create directories once we know they exist in the database
         lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
         assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
+
+        def _contained(p: str, base: str) -> bool:
+            try:
+                return os.path.commonpath([p, base]) == base
+            except ValueError:
+                return False
+
+        if not _contained(lecture_path, self.gitbase) or not _contained(
+            assignment_path, self.gitbase
+        ):
+            raise HTTPError(400, reason="Invalid repository path")
+
         if not os.path.exists(lecture_path):
             os.mkdir(lecture_path)
         if not os.path.exists(assignment_path):

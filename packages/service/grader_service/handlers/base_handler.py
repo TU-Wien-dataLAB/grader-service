@@ -27,7 +27,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.session import Session
 from tornado import httputil, web
-from tornado.escape import json_decode
+from tornado.escape import json_decode, json_encode
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
 from traitlets import Integer, TraitType, Type, Unicode
@@ -1206,7 +1206,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
         chunk = GraderBaseHandler._serialize(obj)
-        self.write(json.dumps(chunk))
+        self.write(json_encode(chunk))
 
     @classmethod
     def _serialize(cls, obj: object):

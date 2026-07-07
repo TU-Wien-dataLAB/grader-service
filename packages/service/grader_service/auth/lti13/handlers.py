@@ -4,7 +4,7 @@ import json
 import re
 import uuid
 from typing import Any, Dict, Optional, cast
-from urllib.parse import quote, unquote
+from urllib.parse import unquote
 
 from oauthlib.common import generate_token
 from tornado.httputil import url_concat
@@ -227,9 +227,7 @@ class LTI13LoginInitHandler(BaseHandler):
             elif not target_link.endswith("/hub"):
                 next_url = target_link
         if next_url:
-            # Note: allow hostname-having urls
-            # avoid browsers treating \ as /
-            next_url = next_url.replace("\\", quote("\\"))
+            next_url = self._validate_next_url(next_url) or ""
             if next_url != original_next_url:
                 self.log.warning("Ignoring next_url %r, using %r", original_next_url, next_url)
         if self._state is None:
