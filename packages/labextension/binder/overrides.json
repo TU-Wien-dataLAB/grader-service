@@ -1,0 +1,70 @@
+{
+  "@jupyterlab/cell-toolbar-extension:plugin": {
+    "toolbar": [
+      {
+        "name": "duplicate-cell",
+        "args": {},
+        "command": "notebook:duplicate-below",
+        "disabled": true,
+        "rank": 50
+      },
+      {
+        "name": "move-cell-up",
+        "args": {},
+        "command": "notebook:move-cell-up",
+        "disabled": true,
+        "rank": 50
+      },
+      {
+        "name": "move-cell-down",
+        "args": {},
+        "command": "notebook:move-cell-down",
+        "disabled": true,
+        "rank": 50
+      },
+      {
+        "name": "insert-cell-above",
+        "args": {},
+        "command": "notebook:insert-cell-above",
+        "disabled": true,
+        "rank": 50
+      },
+      {
+        "name": "insert-cell-below",
+        "args": {},
+        "command": "notebook:insert-cell-below",
+        "disabled": true,
+        "rank": 50
+      },
+      {
+        "name": "delete-cell",
+        "args": {},
+        "command": "notebook:delete-cell",
+        "disabled": true,
+        "icon": "ui-components:delete",
+        "rank": 50
+      },
+      {
+        "args": {},
+        "command": "notebookplugin:run-cell",
+        "disabled": false,
+        "rank": 50,
+        "name": "run-cell"
+      },
+      {
+        "args": {},
+        "command": "notebookplugin:revert-cell",
+        "disabled": false,
+        "rank": 50,
+        "name": "revert-cell"
+      },
+      {
+        "args": {},
+        "command": "notebookplugin:show-hint",
+        "disabled": false,
+        "rank": 50,
+        "name": "show-hint"
+      }
+    ]
+  }
+}

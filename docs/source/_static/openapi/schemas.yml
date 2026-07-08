@@ -1,5 +1,5 @@
 ## Model generation:
-#  
+#
 # Typescript:
 # java -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g typescript-angular -o src --global-property models
 #
@@ -7,7 +7,7 @@
 # call in service root directory
 # java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py,__init__.py -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_service.api' ; rm -r grader_service/api/test grader_service/api/controllers grader_service/api/openapi
 
-# 
+#
 # Python (labextension):
 # call in labextension root directory
 # java -Dmodels -DsupportingFiles=util.py,base_model.py,typing_utils.py -jar ../openapi-generator-cli.jar generate -i ../grader/docs/source/_static/openapi/schemas.yml -g python-flask -o . --additional-properties=packageName='grader_labextension.api' ; rm -r grader_labextension/api/test grader_labextension/api/controllers grader_labextension/api/openapi .openapi-generator/
@@ -96,7 +96,7 @@ components:
         cell_timeout:
           type: "integer"
           example: "300"
-      example:  
+      example:
         late_submission:
           - period: "P1W1D"
             scaling: 0.5
@@ -112,7 +112,7 @@ components:
           format: "float"
       example:
           period: "P1W1D"
-          scaling: 0.5  
+          scaling: 0.5
     Assignment:
       type: "object"
       properties:

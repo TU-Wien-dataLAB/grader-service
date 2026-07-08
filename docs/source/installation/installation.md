@@ -7,6 +7,3 @@ local/local
 docker
 kubernetes
 ```
-
-
-

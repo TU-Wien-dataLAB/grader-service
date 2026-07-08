@@ -1,0 +1,39 @@
+name: Build Service
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --locked --dev
+
+      - name: Build package
+        run: uv build --package grader-service --out-dir packages/service/dist
+
+      - name: Run ruff check
+        run: uv run ruff check packages/service
+
+      - name: Run ruff format
+        run: uv run ruff format --check packages/service
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/

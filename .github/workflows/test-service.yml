@@ -1,0 +1,48 @@
+name: Test Service
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TESTCONTAINER_DOCKER_NETWORK: postgresql-testcontainers
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --locked --dev
+
+      - name: Install test dependencies
+        working-directory: packages/service
+        run: uv sync --locked --group test
+
+      - name: Lint with ruff
+        run: uv run ruff check packages/service/grader_service
+
+      - name: Create Docker network
+        run: docker network create ${{ env.TESTCONTAINER_DOCKER_NETWORK }}
+
+      - name: Run tests
+        run: |
+          git config --global user.name "Grader Test"
+          git config --global user.email "grader@example.com"
+          uv run pytest packages/service/grader_service/tests --cov
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-service
+          path: packages/service/htmlcov/

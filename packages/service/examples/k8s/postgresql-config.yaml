@@ -1,0 +1,4 @@
+auth:
+  username: grader-service
+  password: Starfish
+  database: grader-service

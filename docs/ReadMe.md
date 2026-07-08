@@ -10,6 +10,6 @@ Delete documentation files:
 
 ## Hosting documentation pages locally
 
-To locally host your documentation pages and watch changes firstly navigate to folder ``grader_service/docs``, then run following command line:
+To locally host your documentation pages and watch changes firstly navigate to folder ``docs``, then run following command line:
 
 ``(cd build/html/ && python3 -m http.server)``

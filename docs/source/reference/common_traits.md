@@ -8,4 +8,3 @@
 ```{eval-rst}
 .. autoconfigurable:: grader_service.server.GraderServer
 ```
-

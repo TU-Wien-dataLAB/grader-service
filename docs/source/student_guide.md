@@ -52,10 +52,10 @@ The system allows for late submissions, but with penalties applied based on the 
 
 ![Student view Late Submission](_static/assets/images/student_guide/student_late_submissions.png)
 
-**Penalty Multiplier**:  
+**Penalty Multiplier**:
 When an assignment allows for late submission and a submission is made after the initial deadline, a penalty multiplier will be applied to the score. The later the submission, the higher the penalty. The exact penalty schedule and multipliers are determined by the course settings (e.g., 10% deduction per day late).
 
-**Late Submission Period**:  
+**Late Submission Period**:
 After the late submission period(s), no further submissions are allowed. This means once this period has passed, submitting assignments will no longer be possible, and it will be treated as if the regular deadline has expired. The specific duration of the late submission period (e.g., 2 days, 1 week) depends on the course setup.
 
 
@@ -63,7 +63,7 @@ After the late submission period(s), no further submissions are allowed. This me
 
 You have the option to delete your submissions, but this action has certain limitations. When you delete a submission, it will no longer appear in the instructor's grading view. This means that the instructor can't view or grade it. However, it must be noted that the deletion only affects the grading process and not the underlying submission record.
 
-**Impact on Submission Limit**:  
+**Impact on Submission Limit**:
 If there is a submission limit set for the assignment (e.g., students can only submit up to 3 times), deleting a submission does not restore a submission opportunity. Each deleted submission will still count toward the total submission limit. For example, if you submit twice and delete both submissions, you will still only have one remaining submission attempt.
 
 Example of how deleting your submission, does not affect the remaining number of submissions if the limit was set by instructor:
@@ -82,10 +82,10 @@ You have the ability to restore a previous submission, which reverts the assignm
 
 ![Restore Submission](_static/assets/images/student_guide/restore_submission.png)
 
-**Restore Submission Functionality**:  
+**Restore Submission Functionality**:
 At any point, you can choose to restore the files associated with any of your previous submissions. When you select this option, the system will reset the current state of your assignment to match the files and conditions of the selected submission. This can be useful if you want to revert changes you’ve made since the last submission or review and edit based on a prior version.
 
-**Current State Is Not Saved**:  
+**Current State Is Not Saved**:
 Restoring a submission will overwrite the current state of your assignment. The files in your workspace will be replaced with those from the restored submission, and any unsaved progress will be lost. You can restore any of your previous submissions, whether it’s the most recent one or an earlier version. There’s no limit to how many times you can restore a submission.
 
 ## Extra and Missing Files
@@ -106,5 +106,3 @@ Once your submissions have been graded and feedback is available, you will see _
 To access your feedback, click on "Open Feedback" badge in the submission list. You will first have to pull the feedback which is going to present you with `html` files generated from your assignment files. The detailed feedback is an HTML file and shows your answers along with the score and comments from instructors.
 
 ![Feedback HTML](_static/assets/gifs/student_guide/viewing_feedback.gif)
-
-

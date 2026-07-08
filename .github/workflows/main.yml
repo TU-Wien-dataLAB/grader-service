@@ -1,0 +1,154 @@
+name: Main CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release-*
+  push:
+    branches:
+      - main
+      - release-*
+  release:
+    types: [published]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      service: ${{ steps.changes.outputs.service }}
+      labextension: ${{ steps.changes.outputs.labextension }}
+      docs: ${{ steps.changes.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            service:
+              - 'packages/service/**'
+              - '.github/workflows/**-service.yml'
+            labextension:
+              - 'packages/labextension/**'
+              - '.github/workflows/**-labextension.yml'
+            docs:
+              - 'docs/**'
+
+  build-service:
+    needs: detect-changes
+    if: |
+      (github.event_name != 'release' && (needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true'))
+      || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-'))
+    uses: ./.github/workflows/build-service.yml
+
+  test-service:
+    needs: detect-changes
+    if: |
+      (github.event_name != 'release' && needs.detect-changes.outputs.service == 'true')
+      || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-'))
+    uses: ./.github/workflows/test-service.yml
+
+  build-labextension:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.service == 'true' || needs.detect-changes.outputs.labextension == 'true' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-'))
+    uses: ./.github/workflows/build-labextension.yml
+
+  test-labextension:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.labextension == 'true' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-'))
+    uses: ./.github/workflows/test-labextension.yml
+
+  docs:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs == 'true'
+    uses: ./.github/workflows/docs-service.yml
+
+  integration:
+    needs: [build-service, build-labextension]
+    if: needs.build-service.result == 'success' && needs.build-labextension.result == 'success'
+    uses: ./.github/workflows/integration.yml
+
+  docker-service:
+    needs: [test-service, build-service]
+    if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')))
+    uses: ./.github/workflows/docker-service.yml
+    permissions:
+      contents: read
+      packages: write
+
+  docker-labextension:
+    needs: [test-labextension, build-labextension]
+    if: always() && needs.test-labextension.result == 'success' && needs.build-labextension.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')))
+    uses: ./.github/workflows/docker-labextension.yml
+    permissions:
+      contents: read
+      packages: write
+
+  publish-service:
+    needs: [build-service, test-service, docker-service]
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-service
+          path: packages/service/dist/
+
+      - name: Publish to PyPI
+        run: uv publish packages/service/dist/*
+
+  publish-labextension:
+    needs: [build-labextension, test-labextension, docker-labextension]
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-labextension
+          path: packages/labextension/dist/
+
+      - name: Publish to PyPI
+        run: uv publish packages/labextension/dist/*
+
+  publish-helm:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-chart-')
+    uses: ./.github/workflows/publish-helm.yml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit

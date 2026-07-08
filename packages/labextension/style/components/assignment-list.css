@@ -1,0 +1,45 @@
+.assignmentComponent {
+  color: var(--text-color);
+}
+
+.collapse-header {
+  color: var(--text-color);
+  font-size: 12pt;
+  margin: 8pt;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+
+  /* border-top: 1px solid var(--text-color); */
+}
+
+.flavor-icon {
+  color: var(--text-color);
+  padding-right: 6pt;
+  transition: 0.2s;
+}
+
+.collapse-header:hover .flavor-icon {
+  color: var(--accent-color);
+}
+
+.collapse-body {
+  margin-left: 10pt;
+}
+
+.collapse-body ul {
+  list-style-type: none;
+}
+
+.collapse-icon {
+  float: right;
+  color: var(--text-color);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 1, 0.75, 0.9),
+    -webkit-transform 0.2s cubic-bezier(0.4, 1, 0.75, 0.9);
+}
+
+.collapse-icon-open {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+}

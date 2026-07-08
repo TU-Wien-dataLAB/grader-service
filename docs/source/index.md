@@ -22,6 +22,7 @@ student_guide
 admin/administrator
 contribution
 reference/index
+changelog
 ```
 
 ## Structure

@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grader-service.fullname" . }}
+  labels:
+    {{- include "grader-service.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "grader-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "grader-service.selectorLabels" . | nindent 8 }}
+        hub.jupyter.org/network-access-hub: "true"
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "grader-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['grader-service', '-f', '/etc/grader-service/grader_service_config.py']
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
+            {{- include "grader-service.dbEnv" . | nindent 12 }}
+            {{- include "grader-service.rabbitmqEnv" . | nindent 12 }}
+            - name: JUPYTERHUB_API_URL
+              value: {{ .Values.jupyterhub.apiUrl }}
+            - name: GRADER_PORT
+              value: {{ .Values.port | quote }}
+            - name: JUPYTERHUB_BASE_URL
+              value: {{ .Values.jupyterhub.baseUrl }}
+            - name: GRADER_SERVICE_DIRECTORY
+              value: /var/lib/grader-service
+            - name: GRADER_DB_DIALECT
+              value: {{ .Values.db.dialect }}
+            - name: GRADER_DB_HOST
+              value: {{ .Values.db.host }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
+            - name: config
+              mountPath: /etc/grader-service/grader_service_config.py
+              subPath: grader_service_config.py
+            - name: config
+              mountPath: /var/lib/grader-service/.gitconfig
+              subPath: .gitconfig
+            {{- include "grader-service.extraFiles.volumeMounts" . | nindent 12 }}
+
+      initContainers:
+{{- if .Values.volumePermissions.enabled }}
+        - name: volume-permissions
+          image: busybox
+          command: ["/bin/sh","-c"]
+          args: ["chown -R 1000:1000 /var/lib/grader-service;"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
+{{- end }}
+
+        - name: db-migration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["grader-service-migrate", "-f", "/etc/grader-service/grader_service_config.py"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "grader-service.extraEnv" .Values.extraEnv | nindent 12 }}
+            {{- include "grader-service.dbEnv" . | nindent 12 }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/grader-service/grader_service_config.py
+              subPath: grader_service_config.py
+            - name: data
+              mountPath: /var/lib/grader-service
+{{- if .Values.subPath }}
+              subPath: {{ .Values.subPath }}
+{{- end }}
+
+      volumes:
+        - name: data
+{{- if .Values.hostpath }}
+          hostPath:
+            path: {{ .Values.hostpath }}
+            type: DirectoryOrCreate
+{{- else }}
+          persistentVolumeClaim:
+            claimName: grader-service
+            readOnly: false
+{{- end }}
+        - name: config
+          configMap:
+            defaultMode: 444
+            name: grader-service
+        {{- include "grader-service.extraFiles.volumes" . | nindent 8 }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

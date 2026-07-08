@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+mkdir "./grader_service_dir"
+export GRADER_SERVICE_DIRECTORY="$(pwd)/grader_service_dir"
+export JUPYTERHUB_API_TOKEN="1234"
+export JUPYTERHUB_API_URL="http://127.0.0.1:4010"
+export GRADER_API_TOKEN="EFljC6HTHSB1EzWzBNNFLaZ5lmLb9k"
+
+cd grader_service_dir
+# grader-service-migrate
+
+sqlite3 grader.db < db.sql
+
+cd ..
+grader-service -f binder/grader_service_config.py &
+
+sleep 2
+
+echo "$@"
+exec "$@"
