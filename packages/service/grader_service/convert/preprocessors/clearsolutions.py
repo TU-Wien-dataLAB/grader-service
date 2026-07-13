@@ -1,10 +1,11 @@
 import re
+import warnings
 from textwrap import dedent
 from typing import Any, Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
-from traitlets import Bool, Dict, Unicode
+from traitlets import Bool, Dict, Unicode, observe
 from traitlets.config.loader import Config
 
 from grader_service.convert import utils
@@ -33,13 +34,39 @@ class ClearSolutions(NbGraderPreprocessor):
         "YOUR ANSWER HERE", help="The text snippet that will replace written solutions"
     ).tag(config=True)
 
-    begin_solution_delimeter = Unicode(
+    begin_solution_delimiter = Unicode(
         "BEGIN SOLUTION", help="The delimiter marking the beginning of a solution"
     ).tag(config=True)
 
-    end_solution_delimeter = Unicode(
+    end_solution_delimiter = Unicode(
         "END SOLUTION", help="The delimiter marking the end of a solution"
     ).tag(config=True)
+
+    # Deprecated aliases (removed in a future release)
+    begin_solution_delimeter = Unicode(help="Deprecated alias for begin_solution_delimiter.").tag(
+        config=True
+    )
+    end_solution_delimeter = Unicode(help="Deprecated alias for end_solution_delimiter.").tag(
+        config=True
+    )
+
+    @observe("begin_solution_delimeter")
+    def _begin_solution_delimeter_changed(self, change):
+        warnings.warn(
+            "begin_solution_delimeter is deprecated; use begin_solution_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.begin_solution_delimiter = change.new
+
+    @observe("end_solution_delimeter")
+    def _end_solution_delimeter_changed(self, change):
+        warnings.warn(
+            "end_solution_delimeter is deprecated; use end_solution_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.end_solution_delimiter = change.new
 
     enforce_metadata = Bool(
         True,
@@ -69,8 +96,8 @@ class ClearSolutions(NbGraderPreprocessor):
         if "comment_mark" in cfg.ClearSolutions:
             self.log.warning(
                 "The ClearSolutions.comment_mark config option is deprecated. "
-                "Please include the comment mark in ClearSolutions.begin_solution_delimeter "
-                "and ClearSolutions.end_solution_delimeter instead."
+                "Please include the comment mark in ClearSolutions.begin_solution_delimiter "
+                "and ClearSolutions.end_solution_delimiter instead."
             )
             del cfg.ClearSolutions.comment_mark
 
@@ -78,7 +105,7 @@ class ClearSolutions(NbGraderPreprocessor):
 
     def _replace_solution_region(self, cell: NotebookNode, language: str) -> bool:
         """Find a region in the cell that is delimeted by
-        `self.begin_solution_delimeter` and `self.end_solution_delimeter` (e.g.
+        `self.begin_solution_delimiter` and `self.end_solution_delimiter` (e.g.
         ### BEGIN SOLUTION and ### END SOLUTION). Replace that region either
         with the code stub or text stub, depending the cell type.
 
@@ -99,7 +126,7 @@ class ClearSolutions(NbGraderPreprocessor):
 
         for line in lines:
             # begin the solution area
-            if self.begin_solution_delimeter in line:
+            if self.begin_solution_delimiter in line:
                 # check to make sure this isn't a nested BEGIN
                 # SOLUTION region
                 if in_solution:
@@ -114,7 +141,7 @@ class ClearSolutions(NbGraderPreprocessor):
                     new_lines.append(indent + stub_line)
 
             # end the solution area
-            elif self.end_solution_delimeter in line:
+            elif self.end_solution_delimiter in line:
                 in_solution = False
 
             # add lines as long as it's not in the solution area

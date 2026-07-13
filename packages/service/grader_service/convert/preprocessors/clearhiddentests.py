@@ -1,22 +1,47 @@
+import warnings
 from textwrap import dedent
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
-from traitlets import Bool, Unicode
+from traitlets import Bool, Unicode, observe
 
 from grader_service.convert import utils
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearHiddenTests(NbGraderPreprocessor):
-    begin_test_delimeter = Unicode(
+    begin_test_delimiter = Unicode(
         "BEGIN HIDDEN TESTS", help="The delimiter marking the beginning of hidden tests cases"
     ).tag(config=True)
 
-    end_test_delimeter = Unicode(
+    end_test_delimiter = Unicode(
         "END HIDDEN TESTS", help="The delimiter marking the end of hidden tests cases"
     ).tag(config=True)
+
+    # Deprecated aliases (removed in a future release)
+    begin_test_delimeter = Unicode(help="Deprecated alias for begin_test_delimiter.").tag(
+        config=True
+    )
+    end_test_delimeter = Unicode(help="Deprecated alias for end_test_delimiter.").tag(config=True)
+
+    @observe("begin_test_delimeter")
+    def _begin_test_delimeter_changed(self, change):
+        warnings.warn(
+            "begin_test_delimeter is deprecated; use begin_test_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.begin_test_delimiter = change.new
+
+    @observe("end_test_delimeter")
+    def _end_test_delimeter_changed(self, change):
+        warnings.warn(
+            "end_test_delimeter is deprecated; use end_test_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.end_test_delimiter = change.new
 
     enforce_metadata = Bool(
         True,
@@ -33,7 +58,7 @@ class ClearHiddenTests(NbGraderPreprocessor):
 
     def _remove_hidden_test_region(self, cell: NotebookNode) -> bool:
         """Find a region in the cell that is delimeted by
-        `self.begin_test_delimeter` and `self.end_test_delimeter` (e.g.  ###
+        `self.begin_test_delimiter` and `self.end_test_delimiter` (e.g.  ###
         BEGIN HIDDEN TESTS and ### END HIDDEN TESTS). Remove that region
         depending the cell type.
 
@@ -49,7 +74,7 @@ class ClearHiddenTests(NbGraderPreprocessor):
 
         for line in lines:
             # begin the test area
-            if self.begin_test_delimeter in line:
+            if self.begin_test_delimiter in line:
                 # check to make sure this isn't a nested BEGIN HIDDEN TESTS
                 # region
                 if in_test:
@@ -58,7 +83,7 @@ class ClearHiddenTests(NbGraderPreprocessor):
                 removed_test = True
 
             # end the solution area
-            elif self.end_test_delimeter in line:
+            elif self.end_test_delimiter in line:
                 in_test = False
 
             # add lines as long as it's not in the hidden tests region

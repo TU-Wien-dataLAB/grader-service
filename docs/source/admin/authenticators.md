@@ -1,5 +1,23 @@
 # Authenticators
 
+## Users and roles
+
+Grader Service authorizes actions through per-lecture roles. A role links a user to a lecture with a scope. The scope is the `Scope` enum (`grader_service.orm.takepart.Scope`):
+
+| Value | Scope        |
+|-------|--------------|
+| 0     | `student`    |
+| 1     | `tutor`      |
+| 2     | `instructor` |
+| 3     | `admin`      |
+
+Grader Service does not ship a dedicated admin command for creating users or assigning roles. Users and roles are populated from the configured authenticator instead, in one or both of these ways:
+
+- **`post_auth_hook`**: the authenticator's post-authentication hook receives the authenticated user's groups and interprets any group of the form `lecture_code:scope` (for example `intro:instructor`) as a role assignment, creating the lecture and the role if they do not yet exist and updating the role otherwise. This is how group-based identity providers (e.g. an LMS or institutional IdP) drive enrollment. Because the hook looks up the scope by name, any `Scope` value (`student`, `tutor`, `instructor`, `admin`) can be assigned this way.
+- **`c.GraderService.load_roles`**: a static mapping of lecture code to role definitions that is loaded into the database at service startup. Each role definition lists its `members` (usernames or user dicts) and the `role` (`student`, `tutor` or `instructor`).
+
+A reference implementation of both mechanisms, including a full `post_auth_hook`, is in the development configuration at `dev/local/token/grader_service_config.py`. Use it as a template for your own deployment config.
+
 ## DummyAuthenticator
 
 ```python

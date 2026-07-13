@@ -1,6 +1,6 @@
 # Get Started
 
-The grader labextension provides two launchers within JupyterLab:
+The Grader Labextension provides two launchers within JupyterLab:
 
 - **Assignment Launcher**:
   Opens a window where students can access and work on assignments you have published. Instructors can also open this view to preview how assignments appear to students.
@@ -19,9 +19,9 @@ If you do not see the launcher items, it could be due to one of the following re
 
 ---
 
-# Renaming a Lecture
+## Renaming a Lecture
 
-When a lecture environment is first provisioned via JupyterHub, it is typically named using the lecture code followed by the semester (unless configured otherwise). To make it more recognizable for students (and yourself), you are encouraged to rename it to the natural course title.
+When a lecture environment is first provisioned via JupyterHub, it is typically named using the lecture code followed by the semester (unless configured otherwise). To make it more recognizable for students (and yourself), you are encouraged to rename it to the natural lecture title.
 
 If the current lecture name still matches the default code, the system will automatically prompt you to rename it.
 

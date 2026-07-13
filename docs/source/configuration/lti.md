@@ -4,7 +4,7 @@ The Grader Service includes an **LTI 1.3 Advantage** grade sync plugin that can 
 
 ## Overview
 
-When a grade sync is triggered — either manually via the REST API or automatically after feedback generation — the plugin:
+When a grade sync is triggered - either manually via the REST API or automatically after feedback generation - the plugin:
 
 1. Selects which configured LTI platforms to sync to.
 2. For each platform, requests a **bearer token** via OAuth 2.0 client credentials with a signed JWT assertion.
@@ -61,10 +61,10 @@ c.LTISyncGrades.systems = [
 
 | Field                  | Required | Default | Description                                                |
 |------------------------|----------|---------|------------------------------------------------------------|
-| `name`                 | Yes      | —       | Unique identifier for this platform.                       |
-| `url_pattern`          | Yes      | —       | Base URL of the LTI platform, used for matching.           |
-| `client_id`            | Yes      | —       | OAuth 2.0 client ID registered with the platform.          |
-| `token_url`            | Yes      | —       | OAuth 2.0 token endpoint of the platform.                  |
+| `name`                 | Yes      | -       | Unique identifier for this platform.                       |
+| `url_pattern`          | Yes      | -       | Base URL of the LTI platform, used for matching.           |
+| `client_id`            | Yes      | -       | OAuth 2.0 client ID registered with the platform.          |
+| `token_url`            | Yes      | -       | OAuth 2.0 token endpoint of the platform.                  |
 | `private_key_path`     | Yes      | `""`    | Path to the PEM-encoded RSA private key file.              |
 | `platform_url`         | No       | `""`    | Base URL of the platform.                                  |
 | `deployment_id`        | No       | `""`    | LTI deployment ID.                                         |
@@ -77,7 +77,7 @@ Three hooks can be overridden to customize the sync behaviour:
 ### `resolve_lti_urls`
 
 Resolves the LTI membership and lineitem URLs for a given platform, lecture and assignment.
-**This hook must be configured** — the default raises `NotImplementedError`.
+**This hook must be configured** - the default raises `NotImplementedError`.
 
 ```python
 def my_resolve_lti_urls(platform, lecture, assignment, submissions):
@@ -102,7 +102,7 @@ c.LTISyncGrades.resolve_lti_urls = my_resolve_lti_urls
 ### `username_match`
 
 Matches an LTI member to a grader submission.
-**This hook must be configured** — the default always returns `False`.
+**This hook must be configured** - the default always returns `False`.
 
 ```python
 def my_username_match(member, submission, platform, log):
@@ -162,7 +162,7 @@ This allows the receiving LTI platform to look up the correct public key from th
 
 ## JWKS Endpoint
 
-The grader service exposes a **public** JWKS (JSON Web Key Set) endpoint at:
+The Grader Service exposes a **public** JWKS (JSON Web Key Set) endpoint at:
 
 ```
 GET /api/lti/jwks
@@ -186,7 +186,7 @@ Example response:
 }
 ```
 
-Register this URL in your LTI platform's tool configuration so the platform can verify the grader service's JWT assertions.
+Register this URL in your LTI platform's tool configuration so the platform can verify the Grader Service's JWT assertions.
 
 
 ## Helm Chart Configuration
@@ -213,7 +213,7 @@ ltiSyncGrades:
 Trigger a grade sync via the REST API:
 
 ```
-PUT /api/lectures/{lecture_id}/assignments/{assignment_id}/lti
+PUT /api/lectures/{lecture_id}/assignments/{assignment_id}/submissions/lti
 ```
 
 The response contains results for each platform:

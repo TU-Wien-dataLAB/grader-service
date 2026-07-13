@@ -4,8 +4,8 @@
 
 This documentation provides an overview of the architecture and the various components of the system.
 
-First off: the JupyterLab extension (browser) and the extension (backend) are part of the Grader-Labextension repository.
-However, they are tightly integrated, and it makes sense to show them alongside the Grader-Service architecture.
+First off: the Grader Labextension (the JupyterLab browser extension and the notebook server extension) and the Grader Service are developed together in a single repository, under `packages/labextension` and `packages/service` respectively.
+They are tightly integrated, so it makes sense to show them alongside each other in the architecture overview below.
 
 Grader Service is deployed using Helm. The repository also contains the chart definition.
 All components that are deployed as part of the Grader Service Helm chart are indicated by a red dot 🔴 in the architecture overview.
@@ -25,7 +25,7 @@ automatically handled by the Jupyter environment.
 ## Notebook Server and Extension (Backend)
 
 The backend extension runs on the notebook server as a JupyterLab plugin. It provides API endpoints for the JupyterLab extension (browser)
-and acts as a bridge/relay to the grader services. The backend extension facilitates communication between
+and acts as a bridge/relay to the Grader Service. The backend extension facilitates communication between
 the Grader Service and Jupyter services via API calls. It is responsible for relaying user requests to the Grader Service,
 handling authentication tokens, and managing the connection between the user's environment and the grading infrastructure.
 
@@ -112,12 +112,12 @@ Auto-grading jobs are individual tasks responsible for executing grading process
 and handle the evaluation of user submissions, such as running notebooks for grading and transforming `.ipynb` files to HTML to generate feedback.
 
 Auto-grading is accomplished using the `grader_service.convert` submodule, which can be executed as a command-line interface (CLI).
-Different executors are available to manage this:
-- **LocalAutogradeExecutor**: Executes the module directly within the current Python process on the worker by importing the package and invoking the converters.
-- **LocalAutogradeProcessExecutor**: Runs the submodule in a separate process.
-- **KubeAutogradeExecutor**: Spawns a Kubernetes pod to run the submodule. This is the only approach that allows different images for lectures, as the grading code must be executed in the same environment as the lecture.
+Different executors are available to manage this.
 
+```{warning}
+**Security:** Only the **`KubeAutogradeExecutor`** isolates student code from the service. The two local executors run student notebooks **inside the worker process** (or as a child process with the same user, environment, and filesystem access). A malicious submission can therefore read or modify the grader database, read other students' submissions from the service data directory, and exfiltrate any secrets present in the worker environment. **The local executors are not safe for production use with untrusted submissions.** Use the [Kubernetes installation](../installation/kubernetes.md) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
+```
 
-# How To Scale
-
-[//]: # (TODO: what is the minimal setup? what is the most sophisticated setup)
+- **LocalAutogradeExecutor**: Executes the module directly within the current Python process on the worker by importing the package and invoking the converters. **Not isolated** - student code has full access to the worker's memory, filesystem, and open database session. Development/testing only.
+- **LocalAutogradeProcessExecutor**: Runs the submodule in a separate process. Slightly better than `LocalAutogradeExecutor` because the conversion child only writes results to `gradebook.json` and does not touch the database directly, but it still inherits the worker's environment (including the database URL) and runs as the same user with the same filesystem access. **Not isolated** - development/testing only.
+- **KubeAutogradeExecutor**: Spawns a Kubernetes pod to run the submodule. This is the only approach that allows different images for lectures, as the grading code must be executed in the same environment as the lecture. It is also the only executor that isolates untrusted student code: the pod receives no database credentials and runs with restricted permissions. **This is the only executor recommended for production deployments.**

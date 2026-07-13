@@ -13,7 +13,6 @@ master_doc = "index"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "ablog",
     "myst_nb",
     "autodoc_traits",
     "sphinx.ext.autodoc",
@@ -27,9 +26,6 @@ extensions = [
     "sphinx.ext.todo",
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
-
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
@@ -40,7 +36,7 @@ nitpick_ignore = [
     ("py:class", "docutils.parsers.rst.directives.body.Sidebar"),
 ]
 
-suppress_warnings = ["myst.domains", "ref.ref"]
+suppress_warnings = ["myst.domains"]
 
 numfig = True
 
@@ -53,23 +49,11 @@ myst_enable_extensions = ["dollarmath", "amsmath", "deflist", "colon_fence"]
 #
 html_theme = "sphinx_book_theme"
 html_logo = "_static/assets/images/logo_name.png"
-html_title = "Sphinx Book Theme"
+html_title = "Grader Service"
 html_copy_source = True
 html_favicon = "_static/assets/images/logo_name.png"
 html_last_updated_fmt = ""
 
-html_sidebars = {
-    "reference/blog/*": [
-        "navbar-logo.html",
-        "search-field.html",
-        "ablog/postcard.html",
-        "ablog/recentposts.html",
-        "ablog/tagcloud.html",
-        "ablog/categories.html",
-        "ablog/archives.html",
-        "sbt-sidebar-nav.html",
-    ]
-}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -114,10 +98,4 @@ html_theme_options = {
             "type": "url",
         },
     ],
-}
-
-ogp_social_cards = {
-    "image": "docs/source/_static/assets/images/logo_name.png",
-    "line_width": 2,
-    "font": "Source Sans Pro",
 }

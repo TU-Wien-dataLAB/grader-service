@@ -2,7 +2,7 @@
 
 ## Lectures and Assignments
 
-When JuypterHub is launched you see the Assignments card in the launcher:
+When JupyterHub is launched you see the Assignments card in the launcher:
 
 
 ![Student Launcher](_static/assets/images/student_guide/student_launcher_page.png)
@@ -11,9 +11,9 @@ You can also access the assignments through the 'Assignments' menu bar item.
 
 ![Menu Bar Assignments](_static/assets/images/student_guide/assignment_menu.png)
 
-When clicking on the assignment panel, you are presented with a list of courses you are enrolled in. You can also see completed lectures from previous semesters and take a look at your old assignments.
+When clicking on the assignment panel, you are presented with a list of lectures you are enrolled in. You can also see completed lectures from previous semesters and take a look at your old assignments.
 
-![Student lecture List](_static/assets/images/student_guide/student_list_of_lectures.png)
+![Student Lecture List](_static/assets/images/student_guide/student_list_of_lectures.png)
 
 Each lecture has its dedicated assignment table, with each table cell representing an assignment along with a brief overview.
 

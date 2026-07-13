@@ -1,4 +1,5 @@
 import os
+import warnings
 from textwrap import dedent
 
 import pytest
@@ -246,3 +247,24 @@ class TestClearSolutions(BaseTestPreprocessor):
 
         preprocessor.code_stub = dict(javascript="foo")
         preprocessor.preprocess(nb, {})
+
+    def test_deprecated_delimeter_config(self):
+        """Does the deprecated delimeter config key still work and warn?"""
+        c = Config()
+        c.ClearSolutions.begin_solution_delimeter = "MY BEGIN"
+        c.ClearSolutions.end_solution_delimeter = "MY END"
+        with pytest.warns(DeprecationWarning):
+            pp = ClearSolutions(config=c)
+        assert pp.begin_solution_delimiter == "MY BEGIN"
+        assert pp.end_solution_delimiter == "MY END"
+
+    def test_new_delimiter_config_no_warning(self):
+        """Does the new delimiter config key work without warning?"""
+        c = Config()
+        c.ClearSolutions.begin_solution_delimiter = "MY BEGIN"
+        c.ClearSolutions.end_solution_delimiter = "MY END"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            pp = ClearSolutions(config=c)
+        assert pp.begin_solution_delimiter == "MY BEGIN"
+        assert pp.end_solution_delimiter == "MY END"

@@ -4,20 +4,19 @@
 
 - Kubernetes cluster
 - kubectl installed and configured
-- Helm installed and repsitory added:
+- Helm installed (>= 3.8 for OCI support):
     - [Install Helm](https://helm.sh/docs/intro/install/)
-    - [Add the Helm repository](https://helm.sh/docs/intro/quickstart/#add-a-helm-repository)
-    ```bash
-    helm repo add grader-service https://tu-wien-datalab.github.io/grader-service/
-    ```
+    - The chart is distributed as an OCI artifact from the GitHub Container Registry at `oci://ghcr.io/tu-wien-datalab/grader/charts`.
 - [RabbitMQ operator](https://www.rabbitmq.com/kubernetes/operator/install-operator#installation) installed
 
 ## Install Grader Service
 If you already have a JupyterHub installation, you can also install only the Grader Service using Helm:
 ```bash
-helm upgrade --install <your-release-name> grader-service/grader-service \
+helm upgrade --install <your-release-name> \
+    oci://ghcr.io/tu-wien-datalab/grader-service/charts/grader-service \
     --namespace <your-namespace> \
     --create-namespace \
+    --version <chart-version> \
     --values <your-values.yaml>
 ```
 

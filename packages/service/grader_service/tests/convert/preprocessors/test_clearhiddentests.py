@@ -1,7 +1,9 @@
 import os
+import warnings
 from textwrap import dedent
 
 import pytest
+from traitlets.config import Config
 
 from grader_service.convert.preprocessors import ClearHiddenTests
 
@@ -204,3 +206,24 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         nb.metadata["celltoolbar"] = "Create Assignment"
         nb = preprocessor.preprocess(nb, {})[0]
         assert "celltoolbar" not in nb.metadata
+
+    def test_deprecated_delimeter_config(self):
+        """Does the deprecated delimeter config key still work and warn?"""
+        c = Config()
+        c.ClearHiddenTests.begin_test_delimeter = "MY BEGIN"
+        c.ClearHiddenTests.end_test_delimeter = "MY END"
+        with pytest.warns(DeprecationWarning):
+            pp = ClearHiddenTests(config=c)
+        assert pp.begin_test_delimiter == "MY BEGIN"
+        assert pp.end_test_delimiter == "MY END"
+
+    def test_new_delimiter_config_no_warning(self):
+        """Does the new delimiter config key work without warning?"""
+        c = Config()
+        c.ClearHiddenTests.begin_test_delimiter = "MY BEGIN"
+        c.ClearHiddenTests.end_test_delimiter = "MY END"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            pp = ClearHiddenTests(config=c)
+        assert pp.begin_test_delimiter == "MY BEGIN"
+        assert pp.end_test_delimiter == "MY END"

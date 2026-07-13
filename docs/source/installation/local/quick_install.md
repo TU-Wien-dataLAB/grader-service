@@ -1,46 +1,84 @@
 # Quick installation
 
-## Installation Scripts
+This is the fastest way to get the Grader platform running locally from source. It uses the repository's `Makefile` targets, which wrap [uv](https://docs.astral.sh/uv/) and the workspace packages so you don't have to run commands manually in each package.
 
-For a quick installation you can use installation scripts which you can find in `examples/dev_environment` directory.
-This directory provides you with local development environment and serves as a guide for more complex setups.
-Ensure that you cloned the [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) and it is located in the same directory as the grader
-service repository.
-
-The `dev_enviroment` directory contains following files:
-
-- `install.sh`: Sets up a virtual environment in the directory and installs the necessary dependencies. Also creates the directories for the grader service.
-- `run_hub.sh`: Start a JupyterHub instance with the config provided in `jupyter_hub_config.py`.
-- `run_service.sh`: Start a grader service instance with the config provided in `grader_service_config.py`.
-- `clean.sh`: Cleans up the directories created in `install.sh` and other auxiliary files. Does not delete the virtual environment.
-
-## Installation
-
-To install Grader Service and Grader Labextension navigate to directory `example/dev_environment`. Start installation script by running command:
-
-```bash
-bash ./install.sh
+```{warning}
+This setup is intended for **local development and testing purposes only**.
+It is **not suitable for production use**. The local autograding executors run student code with full access to the service database and filesystem, so a malicious submission could read or alter grades and other students' work. Use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
 ```
 
-Installation script creates a virtual environment and adds all needed packages to it.
+## Prerequisites
 
-## Start Grader Service and JupyterHub
-To start Grader Service run following command line:
+- Python 3.9+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
+- Node.js 20+ (only needed when rebuilding the labextension frontend)
+- Git
+
+## 1. Clone the repository
 
 ```bash
-bash ./run_service.sh
+git clone https://github.com/TU-Wien-dataLAB/grader.git
+cd grader
+```
+
+The repository is a monorepo containing both the `grader-service` backend (`packages/service`) and the `grader-labextension` frontend (`packages/labextension`). You no longer need to clone them separately.
+
+## 2. Install dependencies
+
+```bash
+make sync
+```
+
+This runs `uv sync --all-packages --all-groups`, which creates a single virtual environment with both packages installed in editable mode plus all development, test, and documentation dependencies.
+
+## 3. Create the database
+
+The repository ships example configuration files in `dev/local/token/`. Create the database schema by running the migration against the service config:
+
+```bash
+uv run grader-service-migrate -f dev/local/token/grader_service_config.py
+```
+
+The default config uses an embedded SQLite database and runs autograding tasks eagerly, so no external database or message broker is required for local testing.
+
+## 4. Start Grader Service and JupyterHub
+
+Start the Grader Service:
+
+```bash
+make run-service
 ```
 
 Grader Service runs at `http://127.0.0.1:4010`.
 
-To start JupyterHub and connect it to Grader Service, run:
+In a separate terminal, start JupyterHub:
 
 ```bash
-bash ./run_hub.sh
+make run-hub
 ```
 
-JupyterHub instance will be running at `http://127.0.0.1:8080`.
+JupyterHub will be running at `http://127.0.0.1:8080`.
 
 ```{note}
-First the Grader Service must be started, then the JupyterHub.
+Start the Grader Service **before** JupyterHub.
 ```
+
+## Full stack with Docker Compose
+
+If you prefer a fully containerized environment (including RabbitMQ, a Celery worker, and hot-reload), use:
+
+```bash
+make dev-up
+```
+
+See the [Docker installation guide](../docker) for details.
+
+## Cleanup
+
+To remove build artifacts and caches:
+
+```bash
+make clean
+```
+
+This does not delete the virtual environment. To recreate it from scratch, run `make sync` again.

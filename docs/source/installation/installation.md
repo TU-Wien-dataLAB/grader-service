@@ -3,7 +3,7 @@
 ```{toctree}
 :maxdepth: 5
 
-local/local
-docker
 kubernetes
+docker
+local/local
 ```
