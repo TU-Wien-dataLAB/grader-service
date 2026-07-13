@@ -2,6 +2,10 @@
 
 This guide installs both packages from the repository in editable (development) mode. The repository is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) monorepo, so a single `make sync` installs the `grader-service` and `grader-labextension` packages together with all development, test, and documentation dependencies.
 
+```{warning}
+This setup runs student code with the local autograding executors, which have full access to the service database and filesystem. A malicious submission could read or alter grades and other students' work. It is for **local development and testing only** - use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
+```
+
 ## Prerequisites
 
 - Python 3.9+
@@ -18,8 +22,8 @@ cd grader
 
 The monorepo contains both packages, so you no longer need to clone the service and labextension repositories separately:
 
-- `packages/service/` — `grader-service` backend
-- `packages/labextension/` — `grader-labextension` JupyterLab extension
+- `packages/service/` - `grader-service` backend
+- `packages/labextension/` - `grader-labextension` JupyterLab extension
 
 ## 2. Install dependencies
 

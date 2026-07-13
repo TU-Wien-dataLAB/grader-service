@@ -78,7 +78,15 @@ Grader Service only needs JupyterHub's user information endpoint to fetch user d
 After the user is authenticated, the Grader Service can be configured to create or update the user and their roles in its own database using the `post_auth_hook` function.
 ```python
 # grader_service_config.py
+from typing import Optional
+
+from grader_service.auth.auth import Authenticator
 from grader_service.auth.token import JupyterHubTokenAuthenticator
+from grader_service.handlers.base_handler import BaseHandler
+from grader_service.orm import User, Lecture
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import LectureState
+from grader_service.orm.takepart import Scope, Role
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 c.Authenticator.allow_all = True
@@ -91,7 +99,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: User = session.query(User).filter(User.name == username).one_or_none()
+    user_model: Optional[User] = session.query(User).filter(User.name == username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username
@@ -116,10 +124,10 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 session.add(lecture)
                 session.commit()
 
-            role = session.query(Role).filter(Role.user_id == user.id, Role.lectid == lecture.id).one_or_none()
+            role = session.query(Role).filter(Role.user_id == user_model.id, Role.lectid == lecture.id).one_or_none()
             if role is None:
                 log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
-                role = Role(user_id=user.id, lectid=lecture.id, role=scope)
+                role = Role(user_id=user_model.id, lectid=lecture.id, role=scope)
                 session.add(role)
                 session.commit()
             else:
@@ -139,7 +147,7 @@ c.Authenticator.post_auth_hook = post_auth_hook
 In this configuration, the Grader Service acts as the **primary authentication gateway**, handling authentication via  its own authenticator. It acts as a OAuth2 provider for JupyterHub instances and authenticates to them using **OAuth2**.
 
 **Architecture Overview:**
-![grader token auth architecture](../_static/assets/images/oauth-setup.svg "Token Authentication Architecture")
+![grader oauth setup](../_static/assets/images/oauth-setup.svg "OAuth Setup")
 
 **Advantages:**
 
@@ -178,6 +186,9 @@ c.GraderService.oauth_clients = [{
 }]
 ```
 
+Lastly, we will configure the JupyterHub to use the Grader Service as an OAuth2 provider.
+After the user is authenticated, the Grader Service will provide an API token that can be used to authenticate with the Grader Service.
+
 :::{warning}
 The following configuration is an example and should be adapted to your specific needs.
 Make sure to replace the URLs and client credentials with your own values.
@@ -185,8 +196,6 @@ Also, ensure that encryption is enabled by the presence of the `JUPYTERHUB_CRYPT
 Otherwise, the `enable_auth_state` option will not work as expected.
 :::
 
-Lastly, we will configure the JupyterHub to use the Grader Service as an OAuth2 provider.
-After the user is authenticated, the Grader Service will provide an API token that can be used to authenticate with the Grader Service.
 ```python
 # jupyterhub_config.py
 

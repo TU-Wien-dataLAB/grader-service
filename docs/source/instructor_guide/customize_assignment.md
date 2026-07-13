@@ -29,7 +29,7 @@ Instructors have the ability to customize the grading process using a configurat
 3. **Save the Configuration**
    : After setting your configurations, save the `grader_config.py` file.
 
-This way the grader service would generate following assignment:
+This way the Grader Service would generate following assignment:
 
 ![Grader Convert Example](../_static/assets/images/instructor_guide/grader_convert_ex.png)
 
@@ -40,7 +40,7 @@ From following assignment notebook:
 
 ## Applying Custom Configurations
 
-Once the `grader_config.py` file is saved in the appropriate directory, the grader service will automatically use these configurations during the creation process.
+Once the `grader_config.py` file is saved in the appropriate directory, the Grader Service will automatically use these configurations during the creation process.
 
 ## Sample `grader_config.py`
 
@@ -56,7 +56,7 @@ Here is a sample `grader_config.py` template for reference:
 # `code_stub` replaces the content of solution cells with a language-specific code snippet.
 # Instructors can override these placeholders with the code snippets of their choice.
 c.ClearSolutions.code_stub = {
-    'python': "# YEEETE\nraise NotImplementedError()",  # Placeholder for Python solution cells
+    'python': "# YOUR CODE HERE\nraise NotImplementedError()",  # Placeholder for Python solution cells
     'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
     'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
     # ... (More languages)
@@ -68,8 +68,8 @@ c.ClearSolutions.code_stub = {
 
 # Delimiters for always hidden utilities.
 # Blocks of code between these delimiters will always be hidden in the notebook.
-c.ClearAlwaysHiddenTests.begin_util_delimeter = "BEGIN ALWAYS HIDDEN UTILS"  # Start delimiter
-c.ClearAlwaysHiddenTests.end_util_delimeter = "END ALWAYS HIDDEN UTILS"  # End delimiter
+c.ClearAlwaysHiddenTests.begin_util_delimiter = "BEGIN ALWAYS HIDDEN UTILS"  # Start delimiter
+c.ClearAlwaysHiddenTests.end_util_delimiter = "END ALWAYS HIDDEN UTILS"  # End delimiter
 
 # -------------------------------------------------
 # ClearHiddenTests Configuration
@@ -77,8 +77,8 @@ c.ClearAlwaysHiddenTests.end_util_delimeter = "END ALWAYS HIDDEN UTILS"  # End d
 
 # Delimiters for hidden tests.
 # Blocks of code between these delimiters will be hidden in the notebook.
-c.ClearHiddenTests.begin_test_delimeter = "BEGIN HIDDEN TESTS"  # Start delimiter
-c.ClearHiddenTests.end_test_delimeter = "END HIDDEN TESTS"  # End delimiter
+c.ClearHiddenTests.begin_test_delimiter = "BEGIN HIDDEN TESTS"  # Start delimiter
+c.ClearHiddenTests.end_test_delimiter = "END HIDDEN TESTS"  # End delimiter
 
 # -------------------------------------------------
 # ClearMarkScheme Configuration
@@ -86,8 +86,8 @@ c.ClearHiddenTests.end_test_delimeter = "END HIDDEN TESTS"  # End delimiter
 
 # Delimiters for the mark scheme.
 # Blocks of text between these delimiters describe the marking scheme.
-c.ClearMarkScheme.begin_mark_scheme_delimeter = "BEGIN MARK SCHEME"  # Start delimiter
-c.ClearMarkScheme.end_mark_scheme_delimeter = "END MARK SCHEME"  # End delimiter
+c.ClearMarkScheme.begin_mark_scheme_delimiter = "BEGIN MARK SCHEME"  # Start delimiter
+c.ClearMarkScheme.end_mark_scheme_delimiter = "END MARK SCHEME"  # End delimiter
 
 # -------------------------------------------------
 # IncludeHeaderFooter Configuration

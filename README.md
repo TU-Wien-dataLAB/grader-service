@@ -22,7 +22,7 @@ cd grader
 make sync
 
 # Run tests
-make test-all
+make test
 
 # Start development environment
 make dev-up
@@ -44,9 +44,8 @@ grader/
 ├── packages/
 │   ├── service/          # Grader Service backend
 │   └── labextension/     # JupyterLab extension
-├── docker-compose/
-│   ├── dev/              # Development environment
-│   └── demo/             # Demo environment with fake data
+├── dev/
+│   └── docker-compose/   # Development environment
 ├── tests/
 │   └── integration/      # Integration tests
 └── ...

@@ -19,8 +19,8 @@
 
 # Delimiters for always hidden utilities.
 # Blocks of code between these delimiters will always be hidden in the notebook.
-# c.ClearAlwaysHiddenTests.begin_util_delimeter = "BEGIN ALWAYS HIDDEN TESTS"  # Start delimiter
-# c.ClearAlwaysHiddenTests.end_util_delimeter = "END ALWAYS HIDDEN TESTS"  # End delimiter
+# c.ClearAlwaysHiddenTests.begin_util_delimiter = "BEGIN ALWAYS HIDDEN TESTS"  # Start delimiter
+# c.ClearAlwaysHiddenTests.end_util_delimiter = "END ALWAYS HIDDEN TESTS"  # End delimiter
 
 # -------------------------------------------------
 # ClearHiddenTests Configuration
@@ -28,8 +28,8 @@
 
 # Delimiters for hidden tests.
 # Blocks of code between these delimiters will be hidden in the notebook.
-# c.ClearHiddenTests.begin_test_delimeter = "BEGIN HIDDEN TESTS"  # Start delimiter
-# c.ClearHiddenTests.end_test_delimeter = "END HIDDEN TESTS"  # End delimiter
+# c.ClearHiddenTests.begin_test_delimiter = "BEGIN HIDDEN TESTS"  # Start delimiter
+# c.ClearHiddenTests.end_test_delimiter = "END HIDDEN TESTS"  # End delimiter
 
 # -------------------------------------------------
 # ClearMarkScheme Configuration
@@ -37,8 +37,8 @@
 
 # Delimiters for the mark scheme.
 # Blocks of text between these delimiters describe the marking scheme.
-# c.ClearMarkScheme.begin_mark_scheme_delimeter = "BEGIN MARK SCHEME"  # Start delimiter
-# c.ClearMarkScheme.end_mark_scheme_delimeter = "END MARK SCHEME"  # End delimiter
+# c.ClearMarkScheme.begin_mark_scheme_delimiter = "BEGIN MARK SCHEME"  # Start delimiter
+# c.ClearMarkScheme.end_mark_scheme_delimiter = "END MARK SCHEME"  # End delimiter
 
 # -------------------------------------------------
 # IncludeHeaderFooter Configuration

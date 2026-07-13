@@ -1,7 +1,9 @@
 import os
+import warnings
 from textwrap import dedent
 
 import pytest
+from traitlets.config import Config
 
 from grader_service.convert.preprocessors import ClearMarkScheme
 
@@ -107,3 +109,24 @@ class TestClearMarkScheme(BaseTestPreprocessor):
         """Is the test notebook processed without error?"""
         nb = self._read_nb(os.path.join("files", "test_taskcell.ipynb"))
         preprocessor.preprocess(nb, {})
+
+    def test_deprecated_delimeter_config(self):
+        """Does the deprecated delimeter config key still work and warn?"""
+        c = Config()
+        c.ClearMarkScheme.begin_mark_scheme_delimeter = "MY BEGIN"
+        c.ClearMarkScheme.end_mark_scheme_delimeter = "MY END"
+        with pytest.warns(DeprecationWarning):
+            pp = ClearMarkScheme(config=c)
+        assert pp.begin_mark_scheme_delimiter == "MY BEGIN"
+        assert pp.end_mark_scheme_delimiter == "MY END"
+
+    def test_new_delimiter_config_no_warning(self):
+        """Does the new delimiter config key work without warning?"""
+        c = Config()
+        c.ClearMarkScheme.begin_mark_scheme_delimiter = "MY BEGIN"
+        c.ClearMarkScheme.end_mark_scheme_delimiter = "MY END"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            pp = ClearMarkScheme(config=c)
+        assert pp.begin_mark_scheme_delimiter == "MY BEGIN"
+        assert pp.end_mark_scheme_delimiter == "MY END"

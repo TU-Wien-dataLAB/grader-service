@@ -4,9 +4,9 @@
 - Docker engine
     - [Install Docker Engine](https://docs.docker.com/engine/install/)
 
-```{note}
+```{warning}
 This setup is intended for local development and testing purposes only.
-It is not suitable for production use. Use the [Kubernetes installation](./kubernetes) for production deployments.
+It is **not suitable for production use**, in particular because the default local autograding executors run student code with full access to the service database and filesystem - a malicious submission could read or alter grades and other students' work. Use the [Kubernetes installation](./kubernetes) with `KubeAutogradeExecutor`, which isolates each grading job in its own pod, for any deployment that grades untrusted student code.
 ```
 ## Docker compose
 

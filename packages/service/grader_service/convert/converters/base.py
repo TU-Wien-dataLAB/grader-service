@@ -122,7 +122,7 @@ class BaseConverter(LoggingConfigurable):
     # def _allowed_override_keys(self):
     #     return {
     #         'ClearSolutions': ['code_stub'],
-    #         'ClearHiddenTests': ['begin_test_delimeter', 'end_test_delimeter'],
+    #         'ClearHiddenTests': ['begin_test_delimiter', 'end_test_delimiter'],
     #     }
 
     # Sanitize config to only allow certain keys to be overridden

@@ -15,7 +15,7 @@ By pressing on the "+ NEW" button on top of the assignment list, you can add new
 
 ![Add Assignment Dialog](../_static/assets/images/instructor_guide/add_assignment.png)
 
-After you initially created an assignment, you can allways change its properties in the "SETTINGS" panel:
+After you initially created an assignment, you can always change its properties in the "SETTINGS" panel:
 
 ![Change Assignment Settings](../_static/assets/gifs/instructor_guide/assignments_settings.gif)
 
@@ -34,7 +34,7 @@ By switching between source and release file viewer, the extension will convert 
 Just the source notebooks and files should be edited! Changes to files in the release directory will be lost when generating the files again.
 :::
 
-The grader service and labextension use git to support the collaborative creation of assignments. Also, it provides a simple way to distribute the files to the students.
+The Grader Service and Labextension use git to support the collaborative creation of assignments. Also, it provides a simple way to distribute the files to the students.
 Notebooks can be added by either using the "Create a new notebook" button or by copying files directly into the correct source directory via the file browser on left-hand side.
 
 The source directory can also be revealed in the JupyterLab file browser or be opened in a terminal window.
@@ -79,8 +79,7 @@ Grader Cell Types:
 
     Tests can also always be hidden with the use of `BEGIN ALWAYS HIDDEN TESTS` and `END ALWAYS HIDDEN TESTS` directives.
     This means that students won't see tests which were executed in the feedback they receive. This behavior might be desired for **fully automatic** grading scenarios,
-    where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to allow them where they exactly made a mistake,
-    but want to let them know how many points a submission granted  them, this a perfect option for you.
+    where students receive feedback as soon as they submit their work and can continue working on their assignments. So if you don't want to reveal exactly where students made mistakes, but still want to let them know how many points their submission earned, this is a perfect option for you.
 
   ![Always Hidden tests](../_static/assets/images/instructor_guide/always_hidden.png)
 
@@ -102,12 +101,12 @@ Grader Cell Types:
 
 ## Pushing only Selected Files from the Source Repository
 
-As an instructor, you also have the option **not to push all files** you edited in your source repository. If you made changes to assignment files but only want to push specific files, you can do so by clicking the "PUSH" button, then expanding the dropdown list and selecting the files you want to push. The default behavior is to push all files from the source repository. This feature is helpful if you're working on multiple assignment files, have finished one but not another, and need the changes in one file to be available to students—or if you want to push it for yourself before releasing the assignment to students.
+As an instructor, you also have the option **not to push all files** you edited in your source repository. If you made changes to assignment files but only want to push specific files, you can do so by clicking the "PUSH" button, then expanding the dropdown list and selecting the files you want to push. The default behavior is to push all files from the source repository. This feature is helpful if you're working on multiple assignment files, have finished one but not another, and need the changes in one file to be available to students-or if you want to push it for yourself before releasing the assignment to students.
 
 In the following example, the instructor has edited both assignment files, *Arrays.ipynb* and *Functions.ipynb*, but has only finished editing *Functions.ipynb*. Therefore, they select only this file to push. If the assignment is released, students will see the changes the instructor made only in the file that was pushed.
 ![Selecting Files to push](../_static/assets/gifs/instructor_guide/pushing_only_selected_files.gif)
 
-# Working With Assignments
+## Working With Assignments
 
 Once an assignment has been created it can be opened, which will display the overview window.
 In the overview window of the assignment, you will find many ways to monitor, grade and extend the current assignment.
@@ -116,7 +115,7 @@ In the overview window of the assignment, you will find many ways to monitor, gr
 
 ## Assignment Lifecycle
 
-![Assingment Status](../_static/assets/images/instructor_guide/assignment_lifecycle.png)
+![Assignment Status](../_static/assets/images/instructor_guide/assignment_lifecycle.png)
 
 An assignment can have 3 states that can be switched between and represent the lifecycle of the assignment.
 
@@ -127,7 +126,7 @@ An assignment can have 3 states that can be switched between and represent the l
   : The assignment is released to students and the students can work on it.
     The released files are identical to the files in the release directory at the time of the release.
     It is possible to undo the release and publish a new release. However, some students may have already pulled the old release.
-    In this case the students might have to reset their files and might loose progress, which has to be communicated.
+    In this case the students might have to reset their files and might lose progress, which has to be communicated.
     In general, a re-release should be avoided.
 
     :::{warning}
@@ -187,7 +186,7 @@ You can define a grace period for late submissions (e.g., allowing submissions u
 In the settings and creation menu of an assignment, it is possible to select the auto-grading behavior for the assignment.
 It specifies the action taken when a user submits an assignment.
 
-![Autograding behaviour](../_static/assets/images/instructor_guide/grading_behavior.png)
+![Autograding behavior](../_static/assets/images/instructor_guide/grading_behavior.png)
 
 - No Automatic Grading
   : No action is taken when users submit the assignment.
@@ -250,7 +249,7 @@ Following video illustrates the procedure:
   :::{note}
   If your assignment has cells that are automatically graded, you can always change points that the automated test granted for solution manually.
 
-  In following example, student had to implement a python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
+  In following example, student had to implement a Python function that reverses a string, but they have used a _for loop_ for doing so. Since instructor thinks that a more elegant solution would be without _for loop_, instructor decides to reduce points auto grading has granted:
   ![Manually Change points Granted From Auto Grading](../_static/assets/gifs/instructor_guide/manually_change_auto_points.gif)
   :::
 

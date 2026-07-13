@@ -1,8 +1,8 @@
 # Package Installation
 
-```{note}
+```{warning}
 This setup is intended for **local development and testing purposes only**.
-It is **not suitable for production use**. Use the [Kubernetes installation](../kubernetes) for production deployments.
+It is **not suitable for production use**. The local autograding executors run student code with full access to the service database and filesystem, so a malicious submission could read or alter grades and other students' work. Use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
 ```
 
 This guide explains how to install the published `grader-service` backend and `grader-labextension` frontend packages from [PyPI](https://pypi.org) into your own environment. If you want to run from source instead, see the [Quick installation](quick_install) or [Installation from source](installation_from_source) guides.
@@ -34,7 +34,7 @@ source grader/bin/activate
 ### Using `conda`:
 
 ```bash
-conda create -n grader python=3.1x
+conda create -n grader python
 conda activate grader
 ```
 

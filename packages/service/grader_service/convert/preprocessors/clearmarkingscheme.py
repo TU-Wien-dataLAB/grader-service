@@ -1,22 +1,49 @@
+import warnings
 from textwrap import dedent
 from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
-from traitlets import Bool, Unicode
+from traitlets import Bool, Unicode, observe
 
 from grader_service.convert import utils
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
 class ClearMarkScheme(NbGraderPreprocessor):
-    begin_mark_scheme_delimeter = Unicode(
+    begin_mark_scheme_delimiter = Unicode(
         "BEGIN MARK SCHEME", help="The delimiter marking the beginning of hidden tests cases"
     ).tag(config=True)
 
-    end_mark_scheme_delimeter = Unicode(
+    end_mark_scheme_delimiter = Unicode(
         "END MARK SCHEME", help="The delimiter marking the end of hidden tests cases"
     ).tag(config=True)
+
+    # Deprecated aliases (removed in a future release)
+    begin_mark_scheme_delimeter = Unicode(
+        help="Deprecated alias for begin_mark_scheme_delimiter."
+    ).tag(config=True)
+    end_mark_scheme_delimeter = Unicode(help="Deprecated alias for end_mark_scheme_delimiter.").tag(
+        config=True
+    )
+
+    @observe("begin_mark_scheme_delimeter")
+    def _begin_mark_scheme_delimeter_changed(self, change):
+        warnings.warn(
+            "begin_mark_scheme_delimeter is deprecated; use begin_mark_scheme_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.begin_mark_scheme_delimiter = change.new
+
+    @observe("end_mark_scheme_delimeter")
+    def _end_mark_scheme_delimeter_changed(self, change):
+        warnings.warn(
+            "end_mark_scheme_delimeter is deprecated; use end_mark_scheme_delimiter",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.end_mark_scheme_delimiter = change.new
 
     enforce_metadata = Bool(
         True,
@@ -33,7 +60,7 @@ class ClearMarkScheme(NbGraderPreprocessor):
 
     def _remove_mark_scheme_region(self, cell: NotebookNode) -> bool:
         """Find a region in the cell that is delimeted by
-        `self.begin_mark_scheme_delimeter` and `self.end_mark_scheme_delimeter` (e.g.  ###
+        `self.begin_mark_scheme_delimiter` and `self.end_mark_scheme_delimiter` (e.g.  ###
         BEGIN MARK SCHEME and ### END MARK SCHEME). Remove that region
         depending the cell type.
 
@@ -49,7 +76,7 @@ class ClearMarkScheme(NbGraderPreprocessor):
 
         for line in lines:
             # begin the test area
-            if self.begin_mark_scheme_delimeter in line:
+            if self.begin_mark_scheme_delimiter in line:
                 # check to make sure this isn't a nested BEGIN HIDDEN TESTS
                 # region
                 if in_ms:
@@ -58,7 +85,7 @@ class ClearMarkScheme(NbGraderPreprocessor):
                 removed_ms = True
 
             # end the solution area
-            elif self.end_mark_scheme_delimeter in line:
+            elif self.end_mark_scheme_delimiter in line:
                 in_ms = False
 
             # add lines as long as it's not in the hidden tests region

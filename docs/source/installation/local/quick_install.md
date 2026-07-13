@@ -2,9 +2,9 @@
 
 This is the fastest way to get the Grader platform running locally from source. It uses the repository's `Makefile` targets, which wrap [uv](https://docs.astral.sh/uv/) and the workspace packages so you don't have to run commands manually in each package.
 
-```{note}
+```{warning}
 This setup is intended for **local development and testing purposes only**.
-It is **not suitable for production use**. Use the [Kubernetes installation](../kubernetes) for production deployments.
+It is **not suitable for production use**. The local autograding executors run student code with full access to the service database and filesystem, so a malicious submission could read or alter grades and other students' work. Use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
 ```
 
 ## Prerequisites
@@ -65,7 +65,7 @@ Start the Grader Service **before** JupyterHub.
 
 ## Full stack with Docker Compose
 
-If you prefer a fully containerized environment (including PostgreSQL, RabbitMQ, a Celery worker, and hot-reload), use:
+If you prefer a fully containerized environment (including RabbitMQ, a Celery worker, and hot-reload), use:
 
 ```bash
 make dev-up
