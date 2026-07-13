@@ -1,69 +1,85 @@
 # Installation from Source
 
+This guide installs both packages from the repository in editable (development) mode. The repository is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) monorepo, so a single `make sync` installs the `grader-service` and `grader-labextension` packages together with all development, test, and documentation dependencies.
 
-## Installation Requirements
+## Prerequisites
 
-Before installing the Grader Service, make sure that following packages are installed on your machine:
+- Python 3.9+
+- [uv](https://docs.astral.sh/uv/) - Python package manager
+- Node.js 20+ (required to build the labextension frontend)
+- Git
 
-- JuypterHub
-- JupyterLab
-- pip
-- Node.js
-- npm
-
-along with `Python` >= 3.10 version.
-
-## Install Grader Service
-
-To locally install Grader Service, make sure to clone [this project](https://github.com/TU-Wien-dataLAB/Grader-Service) on your machine or download the corresponding [zip file](https://github.com/TU-Wien-dataLAB/Grader-Service/archive/refs/heads/main.zip).
-
-Once you have your local copy of Grader Service repository navigate to `grader-service` directory and run:
-
-```
-pip install -e .
-```
-
-Running this command will make sure that all dependencies from `pyproject.toml` file are installed and
-that Grader Service is ready to run.
-
-## Install Grader Labextension
-
-To locally install Grader Labextension, make sure to clone [Grader Labextension project](https://github.com/TU-Wien-dataLAB/grader-labextension) or download the corresponding [zip file](https://github.com/TU-Wien-dataLAB/Grader-Labextension/archive/refs/heads/main.zip).
-
-Grader Labextension is composed of a Python package named `grader_labextension` for the server extension
-and an NPM package `grader-labextension` for the frontend extension.
-
-To install the extension in development mode, navigate to your local `grader-labextension` directory and run:
+## 1. Clone the repository
 
 ```bash
-pip install -e .
+git clone https://github.com/TU-Wien-dataLAB/grader.git
+cd grader
 ```
 
-Link your development version of the extension with JupyterLab:
+The monorepo contains both packages, so you no longer need to clone the service and labextension repositories separately:
+
+- `packages/service/` — `grader-service` backend
+- `packages/labextension/` — `grader-labextension` JupyterLab extension
+
+## 2. Install dependencies
 
 ```bash
-jupyter labextension develop . --overwrite
+make sync
 ```
 
-Python server extension (`grader_labextension`) must be manually installed in development mode:
+This runs `uv sync --all-packages --all-groups` and creates a single virtual environment with both packages installed in editable mode. Because the repository is configured as a uv workspace, the labextension's dependency on `grader-service` is resolved from the local package (see `tool.uv.sources` in `packages/labextension/pyproject.toml`).
+
+## 3. Create the database
+
+The repository ships example configuration files in `dev/local/token/`. Create the database schema by running the migration against the service config:
 
 ```bash
-jupyter server extension enable grader_labextension
+uv run grader-service-migrate -f dev/local/token/grader_service_config.py
 ```
 
-After making changes in Labextension, extension's Typescript source has to be rebuilt in order for you to see the changes. This can be done using the `jlpm` command, which is JupyterLab's pinned version of [yarn](https://yarnpkg.com/) and is installed alongside JupyterLab. To rebuild extension you may use `yarn` or `npm` instead of `jlpm` which is shown in the example below.
+The default config uses an embedded SQLite database and runs autograding tasks eagerly, so no external database or message broker is required for local testing.
+
+## 4. Start Grader Service and JupyterHub
+
+Start the Grader Service:
+
+```bash
+make run-service
+```
+
+Grader Service runs at `http://127.0.0.1:4010`.
+
+In a separate terminal, start JupyterHub:
+
+```bash
+make run-hub
+```
+
+JupyterHub will be running at `http://127.0.0.1:8080`.
+
+```{note}
+Start the Grader Service **before** JupyterHub.
+```
+
+## 5. Developing the labextension
+
+The labextension is installed in editable mode, so Python server-extension changes are picked up automatically. The TypeScript frontend, however, must be rebuilt to be visible in JupyterLab.
+
+To rebuild the frontend once:
 
 ```bash
 jlpm build
 ```
 
-To observe changes immediately, without a need to manually rebuild the TypeScript source files, you can open a separate terminal alongside terminal in which Grader Labextension is running and there you can run:
+To watch the source directory and rebuild automatically on every change:
 
 ```bash
-# Watch the source directory and automatically rebuild the extension
-jlpm watch
+make watch-labextension
 ```
 
-The `jlpm watch` command monitors changes in the extension's source code and automatically rebuilds the extension whenever a change is detected. With the watch command running, every saved change is immediately built and made available in your running JupyterLab. You only need to refresh JupyterLab to load the changes in your browser. Note that it may take several seconds for the extension to rebuild.
+With the watch command running, every saved change is rebuilt and made available in your running JupyterLab after a browser refresh. Note that it may take several seconds for the extension to rebuild. Keep in mind that `make watch-labextension` continues running until you stop it and can consume significant system resources, so `jlpm build` is preferable for one-off changes.
 
-Keep in mind that `jlpm watch` continues running until you stop it and can consume significant system resources. Therefore, it may sometimes be better to manually rebuild the TypeScript source using `jlpm build`.
+## Next steps
+
+- For the full list of development commands (tests, linting, building, docs, Docker Compose), see the [Development Guide](https://github.com/TU-Wien-dataLAB/grader/blob/main/DEVELOPMENT.md).
+- For a fully containerized local stack, see the [Docker installation guide](../docker).
