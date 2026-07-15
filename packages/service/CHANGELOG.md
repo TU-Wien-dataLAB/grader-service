@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.5] - 2026-07-15
+
+### Fixed
+- The 0.12.4 wheel omitted `grader_service.api.models` and eight other runtime subpackages (`autograding.kube`, `convert.converters`, `convert.gradebook`, `convert.nbgraderformat`, `convert.preprocessors`, `handlers.git`, `migrate.versions`, `scripts`), causing the `db-migration` init container to fail with `ModuleNotFoundError: No module named 'grader_service.api.models'`; restored setuptools auto-discovery (equivalent to the previous `find_packages`) which the `setup.py` -> `pyproject.toml` migration had replaced with a stale explicit package list (#381)
+
 ## [0.12.4] - 2026-07-07
 
 ### Added
