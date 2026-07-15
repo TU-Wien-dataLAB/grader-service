@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.5] - 2026-07-15
+
+### Changed
+- Bumped minimum required `grader-service` version to `0.12.5` (includes the wheel packaging fix that restores the `grader_service.api.models` module and other missing subpackages)
+
 ## [0.12.4] - 2026-07-07
 
 ### Added
