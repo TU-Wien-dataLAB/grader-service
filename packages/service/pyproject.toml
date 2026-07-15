@@ -47,7 +47,11 @@ dependencies = [
 
 [tool.setuptools]
 include-package-data = true
-packages = ["grader_service", "grader_service.api", "grader_service.auth", "grader_service.auth.lti13", "grader_service.autograding", "grader_service.autograding.celery", "grader_service.convert", "grader_service.handlers", "grader_service.migrate", "grader_service.oauth2", "grader_service.orm", "grader_service.plugins"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["grader_service*"]
+exclude = ["grader_service.tests*"]
 
 [project.scripts]
 grader-service = "grader_service:main"
