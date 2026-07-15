@@ -17,7 +17,7 @@
 github_url = "https://github.com/TU-Wien-dataLAB/grader-service"
 
 [version]
-current = "0.12.4"
+current = "0.12.5"
 regex = '''
   (?P<major>\d+)
   \.
