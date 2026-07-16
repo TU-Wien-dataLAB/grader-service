@@ -19,14 +19,14 @@ This directory contains a Docker Compose setup for local development with hot-re
 ### 1. Start the Development Environment
 
 ```bash
-cd docker-compose/dev
-docker-compose up -d
+cd dev/docker-compose
+docker compose up -d
 ```
 
 ### 2. Check Service Status
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 All services should show "Up" status.
@@ -40,7 +40,7 @@ http://localhost:8080
 
 ### 4. Login Credentials
 
-You can login with any of the following users:
+You can log in with any of the following users:
 - `admin` (administrator)
 - `instructor` (instructor role)
 - `tutor` (tutor role)
@@ -52,15 +52,15 @@ No password is required (using DummyAuthenticator).
 
 ### View all logs
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### View specific service logs
 ```bash
-docker-compose logs -f service
-docker-compose logs -f labextension
-docker-compose logs -f hub
-docker-compose logs -f celery-worker
+docker compose logs -f service
+docker compose logs -f hub
+docker compose logs -f hub
+docker compose logs -f celery-worker
 ```
 
 ## Development Workflow
@@ -71,13 +71,13 @@ docker-compose logs -f celery-worker
 2. The service container will automatically detect changes
 3. Restart the service container if needed:
    ```bash
-   docker-compose restart service
+   docker compose restart service
    ```
 
 ### Editing Labextension Code
 
 1. Edit TypeScript files in `packages/labextension/src/`
-2. The labextension container will rebuild on changes
+2. The `hub` container will rebuild on changes
 3. Refresh your browser to see changes
 
 ### Editing Configuration
@@ -87,18 +87,18 @@ docker-compose logs -f celery-worker
 
 After editing configuration files, restart the affected containers:
 ```bash
-docker-compose restart service hub
+docker compose restart service hub
 ```
 
 ## Stopping the Environment
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 To also remove volumes (database, etc.):
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Troubleshooting
@@ -115,7 +115,7 @@ ports:
 
 Check the logs for errors:
 ```bash
-docker-compose logs service
+docker compose logs service
 ```
 
 Common issues:
@@ -124,13 +124,18 @@ Common issues:
 
 ### Labextension not loading
 
-1. Check labextension build logs:
+1. If you run the project for the first time, you may just have to wait a while.
+   The `grader-labextension` Docker image has to be pulled from the registry, but this
+   is only done on `docker compose up`. Try refreshing the start page and relaunching
+   the server if it has failed to start.
+
+2. Check `hub` service build logs:
    ```bash
-   docker-compose logs labextension
+   docker compose logs hub
    ```
-2. Rebuild the labextension container:
+3. Rebuild the `hub` container:
    ```bash
-   docker-compose up -d --build labextension
+   docker compose up -d --build hub
    ```
 
 ## Architecture
@@ -163,7 +168,6 @@ All containers are connected via the `grader-network` bridge network.
 - `service_dir`: Persistent storage for Grader Service data
 - `hub_data`: JupyterHub data storage
 - `rabbitmq_data`: RabbitMQ message queue data
-- `labextension_node_modules`: Node modules cache for faster builds
 
 ## Next Steps
 
