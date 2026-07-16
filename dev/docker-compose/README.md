@@ -59,8 +59,8 @@ docker compose logs -f
 ```bash
 docker compose logs -f service
 docker compose logs -f hub
-docker compose logs -f hub
 docker compose logs -f celery-worker
+docker compose logs -f rabbitmq
 ```
 
 ## Development Workflow
