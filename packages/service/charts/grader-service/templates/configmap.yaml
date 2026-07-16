@@ -25,7 +25,9 @@ data:
     c.KubeAutogradeExecutor.extra_volumes = {{ .Values.kubeAutogradeExecutor.extraVolumes | default "[]" }}
     c.KubeAutogradeExecutor.extra_volume_mounts = {{ .Values.kubeAutogradeExecutor.extraVolumeMounts | default "[]" }}
     c.KubeAutogradeExecutor.labels = {{ .Values.kubeAutogradeExecutor.labels | toJson }}
+    c.KubeAutogradeExecutor.annotations = {{ .Values.kubeAutogradeExecutor.annotations | toJson }}
     c.KubeAutogradeExecutor.image_pull_secrets = {{ .Values.kubeAutogradeExecutor.imagePullSecrets | toJson }}
+    c.KubeAutogradeExecutor.image_pull_policy = {{ .Values.kubeAutogradeExecutor.imagePullPolicy | quote }}
 
 {{- else }}
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
@@ -33,8 +35,8 @@ data:
 {{- end }}
 
 {{- if .Values.requestHandlerConfig }}
-{{- if .Values.requestHandlerConfig.git_max_file_mb }}
-    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_mb }}
+{{- if .Values.requestHandlerConfig.git_max_file_size_mb }}
+    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_size_mb }}
 {{- end }}
 {{- end }}
 
