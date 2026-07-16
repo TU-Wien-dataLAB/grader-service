@@ -59,7 +59,7 @@ services:
       start_period: 30s
 
   rabbitmq:
-    image: rabbitmq:latest
+    image: rabbitmq:4.2
     environment:
       RABBITMQ_DEFAULT_VHOST: grader
       RABBITMQ_DEFAULT_USER: grader_user
