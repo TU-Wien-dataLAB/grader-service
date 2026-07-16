@@ -39,7 +39,7 @@ def celery_app(app, sql_alchemy_sessionmaker):
     grader_service.grader_service_dir = app.grader_service_dir
 
     mock_plugin = AsyncMock()
-    mock_plugin.check_if_lti_enabled.return_value = True
+    mock_plugin.check_if_lti_enabled = MagicMock(return_value=True)
     mock_plugin.start.return_value = _lti_sync_result
     plugin_manager = MagicMock()
     plugin_manager.get.return_value = mock_plugin
