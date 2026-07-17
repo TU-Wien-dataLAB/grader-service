@@ -19,7 +19,7 @@ from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
 from grader_service.file_services import GitFileService
-from grader_service.file_services.git_files_service import construct_git_dir
+from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Lecture, Role, Submission

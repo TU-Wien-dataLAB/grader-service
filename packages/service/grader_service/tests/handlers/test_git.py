@@ -13,7 +13,7 @@ from unittest.mock import Mock
 import pytest
 from tornado.web import HTTPError
 
-from grader_service.file_services.git_files_service import construct_git_dir
+from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import User

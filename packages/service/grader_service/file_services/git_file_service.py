@@ -5,7 +5,7 @@ from pathlib import Path
 
 from traitlets import observe
 
-from grader_service.file_services.base_files_service import FileService, FileServiceError
+from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
 

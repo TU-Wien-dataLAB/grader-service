@@ -9,7 +9,7 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PrefixLoader
 from tornado import web
 from traitlets import Dict, Float, List, Unicode, config, default
 
-from grader_service.file_services.base_files_service import FileService
+from grader_service.file_services.base_file_service import FileService
 from grader_service.plugins.base import PluginManager
 
 GRADER_COOKIE_NAME = "grader_service_login"
