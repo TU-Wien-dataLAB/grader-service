@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.file_services.git_files_service import construct_git_dir
+from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers import GitRepoType
 from grader_service.orm import Assignment, Lecture, Role, Submission, SubmissionLogs, User
 from grader_service.orm.base import DeleteState
