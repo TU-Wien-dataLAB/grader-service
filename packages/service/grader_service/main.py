@@ -223,11 +223,8 @@ class GraderService(config.Application):
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
-        if not os.path.isfile(proposal.value) and not self.generate_config:
-            print(
-                "ERROR: Failed to find specified config file: {}".format(proposal.value),
-                file=sys.stderr,
-            )
+        if not Path(proposal.value).is_file() and not self.generate_config:
+            self.log.critical("ERROR: Failed to find specified config file: %s", proposal.value)
             sys.exit(1)
         return proposal.value
 
@@ -278,8 +275,7 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     def setup_loggers(self, log_level: str):  # pragma: no cover
-        """Handles application, Tornado, and
-        SQLAlchemy logging configuration."""
+        """Handles application, Tornado, and SQLAlchemy logging configuration."""
         stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
@@ -333,15 +329,15 @@ class GraderService(config.Application):
         config_text = self.generate_config_file(classes=config_classes)
         if isinstance(config_text, bytes):
             config_text = config_text.decode("utf8")
-        print("Generating config: %s" % self.config_file)
+        self.log.info("Generating config: %s", self.config_file)
         with open(self.config_file, mode="w") as f:
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
         self.log.info("Starting Initialization...")
-        self.log.info("Loading config file...")
         super().initialize(*args, **kwargs)
         self.parse_command_line(argv)
+        self.log.info("Loading config file...")
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
