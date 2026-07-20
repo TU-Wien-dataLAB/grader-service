@@ -1,6 +1,7 @@
 import os
+from jupyterhub.auth import DummyAuthenticator
+from tornado.escape import json_decode, json_encode
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
-from tornado.escape import json_encode, json_decode
 
 ## generic
 c.JupyterHub.admin_access = True
@@ -8,8 +9,6 @@ c.Spawner.default_url = "/lab"
 c.Spawner.cmd = ["jupyter-labhub"]
 
 ## authenticator
-from jupyterhub.auth import DummyAuthenticator
-
 c.JupyterHub.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {"admin", "instructor", "tutor", "student"}
 c.Authenticator.admin_users = {"admin"}

@@ -1,9 +1,8 @@
 """Conftest for integration tests with user server spawning."""
+
 import pytest
 import requests
 import time
-import subprocess
-from pathlib import Path
 import os
 import uuid
 
@@ -50,7 +49,7 @@ def admin_auth_token(wait_for_services, hub_service_token):
             f"{HUB_API_URL}/users/admin/tokens",
             headers=headers,
             json={"note": "integration test"},
-            timeout=5
+            timeout=5,
         )
         if response.status_code == 201:
             hub_token = response.json()["token"]
@@ -67,11 +66,7 @@ def admin_auth_token(wait_for_services, hub_service_token):
         return None
 
     try:
-        response = requests.post(
-            f"{SERVICE_BASE_URL}/login",
-            json={"token": hub_token},
-            timeout=5
-        )
+        response = requests.post(f"{SERVICE_BASE_URL}/login", json={"token": hub_token}, timeout=5)
         if response.status_code == 200:
             return response.json()["api_token"]
     except requests.exceptions.RequestException as e:
@@ -93,10 +88,7 @@ def test_user(wait_for_services, hub_service_token):
 
     try:
         response = requests.post(
-            f"{HUB_API_URL}/users/{username}",
-            headers=headers,
-            json={},
-            timeout=5
+            f"{HUB_API_URL}/users/{username}", headers=headers, json={}, timeout=5
         )
         if response.status_code in [201, 409]:
             return {"username": username}
@@ -119,17 +111,13 @@ def user_server(test_user, hub_service_token, wait_for_services):
     server_spawned = False
     try:
         response = requests.post(
-            f"{HUB_API_URL}/users/{username}/server",
-            headers=headers,
-            timeout=10
+            f"{HUB_API_URL}/users/{username}/server", headers=headers, timeout=10
         )
         if response.status_code == 202:
             max_wait = 30
             for _ in range(max_wait):
                 status_response = requests.get(
-                    f"{HUB_API_URL}/users/{username}",
-                    headers=headers,
-                    timeout=5
+                    f"{HUB_API_URL}/users/{username}", headers=headers, timeout=5
                 )
                 if status_response.status_code == 200:
                     user_data = status_response.json()
@@ -140,7 +128,7 @@ def user_server(test_user, hub_service_token, wait_for_services):
                         yield {
                             "username": username,
                             "server_url": server_url,
-                            "test_user": test_user
+                            "test_user": test_user,
                         }
                         break
                 time.sleep(2)
@@ -155,11 +143,9 @@ def user_server(test_user, hub_service_token, wait_for_services):
         if server_spawned:
             try:
                 requests.delete(
-                    f"{HUB_API_URL}/users/{username}/server",
-                    headers=headers,
-                    timeout=10
+                    f"{HUB_API_URL}/users/{username}/server", headers=headers, timeout=10
                 )
-            except:
+            except Exception:
                 pass
 
 
@@ -177,15 +163,11 @@ def user_service_token(user_server, hub_service_token):
             f"{HUB_API_URL}/users/{username}/tokens",
             headers=headers,
             json={"note": "user server token"},
-            timeout=5
+            timeout=5,
         )
         if response.status_code == 201:
             hub_token = response.json()["token"]
-        response = requests.post(
-            f"{SERVICE_BASE_URL}/login",
-            json={"token": hub_token},
-            timeout=5
-        )
+        response = requests.post(f"{SERVICE_BASE_URL}/login", json={"token": hub_token}, timeout=5)
         if response.status_code == 200:
             return response.json()["api_token"]
     except requests.exceptions.RequestException:
@@ -196,11 +178,7 @@ def user_service_token(user_server, hub_service_token):
 @pytest.fixture
 def lecture_data():
     """Sample lecture data."""
-    return {
-        "name": "Test Lecture",
-        "code": "TEST101",
-        "description": "Integration Test Lecture"
-    }
+    return {"name": "Test Lecture", "code": "TEST101", "description": "Integration Test Lecture"}
 
 
 @pytest.fixture
@@ -209,5 +187,5 @@ def assignment_data():
     return {
         "name": "Test Assignment 1",
         "description": "Integration Test Assignment",
-        "due_date": "2026-12-31T23:59:59Z"
+        "due_date": "2026-12-31T23:59:59Z",
     }

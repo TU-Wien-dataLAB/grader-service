@@ -45,8 +45,8 @@ lint-labextension: ## Lint labextension code
 	uv run --package grader-labextension ruff format --check packages/labextension
 
 lint: ## Lint all code
-	uv run ruff check packages/
-	uv run ruff format --check packages/
+	uv run ruff check .
+	uv run ruff format --check .
 
 build-service: ## Build service package
 	uv build --package grader-service

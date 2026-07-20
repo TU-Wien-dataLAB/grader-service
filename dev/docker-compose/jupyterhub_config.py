@@ -1,5 +1,6 @@
 import os
 
+from jupyterhub.auth import DummyAuthenticator
 from tornado.escape import json_decode, json_encode
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
@@ -9,8 +10,6 @@ c.Spawner.default_url = "/lab"
 c.Spawner.cmd = ["jupyter-labhub"]
 
 ## authenticator
-from jupyterhub.auth import DummyAuthenticator
-
 c.JupyterHub.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {"admin", "instructor", "tutor", "student"}
 c.Authenticator.admin_users = {"admin"}
@@ -59,8 +58,6 @@ c.JupyterHub.bind_url = "http://0.0.0.0:8080"
 c.JupyterHub.proxy_check_ip = False
 
 
-import os
-
 # Use environment variable if set, otherwise let JupyterHub auto-generate one
 if os.environ.get("GRADER_API_TOKEN"):
     c.JupyterHub.services.append(
@@ -72,12 +69,7 @@ if os.environ.get("GRADER_API_TOKEN"):
     )
 else:
     # Let JupyterHub auto-generate the token
-    c.JupyterHub.services.append(
-        {
-            "name": "grader",
-            "url": "http://service:4010",
-        }
-    )
+    c.JupyterHub.services.append({"name": "grader", "url": "http://service:4010"})
 
 c.JupyterHub.load_roles = [
     {

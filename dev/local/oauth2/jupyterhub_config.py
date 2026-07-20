@@ -1,4 +1,5 @@
 import os
+from oauthenticator.generic import GenericOAuthenticator
 
 ## generic
 c.JupyterHub.admin_access = True
@@ -6,8 +7,6 @@ c.Spawner.default_url = "/lab"
 c.Spawner.cmd = ["jupyter-labhub"]
 
 ## authenticator
-from oauthenticator.generic import GenericOAuthenticator
-
 c.JupyterHub.authenticator_class = GenericOAuthenticator
 c.GenericOAuthenticator.oauth_callback_url = "http://localhost:8080/hub/oauth_callback"
 

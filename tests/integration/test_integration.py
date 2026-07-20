@@ -1,7 +1,7 @@
 """Integration tests for the Grader Platform with user server spawning."""
+
 import pytest
 import requests
-import time
 
 BASE_URL = "http://localhost:8080"
 SERVICE_URL = "http://localhost:8000/services/grader/api"
@@ -21,7 +21,6 @@ class TestServiceHealth:
         assert response.status_code == 200
 
 
-
 class TestUserManagement:
     """Test user creation and authentication."""
 
@@ -29,11 +28,7 @@ class TestUserManagement:
         """Test admin can authenticate with the service."""
         assert admin_auth_token is not None
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/user",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/user", headers=headers, timeout=5)
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "admin"
@@ -71,11 +66,7 @@ class TestLectureManagement:
     def test_list_lectures_admin(self, admin_auth_token):
         """Test admin can list lectures."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         assert response.status_code == 200
         lectures = response.json()
         assert isinstance(lectures, list)
@@ -84,10 +75,7 @@ class TestLectureManagement:
         """Test creating a new lecture."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
         response = requests.post(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            json=lecture_data,
-            timeout=5
+            f"{SERVICE_URL}/lectures", headers=headers, json=lecture_data, timeout=5
         )
         assert response.status_code in [201, 409]
 
@@ -99,16 +87,11 @@ class TestLectureManagement:
     def test_get_lecture(self, admin_auth_token, lecture_data):
         """Test retrieving a specific lecture."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         if response.status_code == 200:
             lectures = response.json()
             test_lecture = next(
-                (l for l in lectures if l["name"] == lecture_data["name"]),
-                None
+                (lec for lec in lectures if lec["name"] == lecture_data["name"]), None
             )
             if test_lecture:
                 assert test_lecture["code"] == lecture_data["code"]
@@ -120,21 +103,13 @@ class TestAssignmentWorkflow:
     def test_list_assignments(self, admin_auth_token):
         """Test listing assignments for a lecture."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures/1/assignments",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures/1/assignments", headers=headers, timeout=5)
         assert response.status_code == 200
 
     def test_create_assignment(self, admin_auth_token, assignment_data):
         """Test creating an assignment."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         if response.status_code == 200:
             lectures = response.json()
             if lectures:
@@ -143,7 +118,7 @@ class TestAssignmentWorkflow:
                     f"{SERVICE_URL}/lectures/{lecture_id}/assignments",
                     headers=headers,
                     json=assignment_data,
-                    timeout=5
+                    timeout=5,
                 )
                 assert response.status_code in [201, 400, 409]
 
@@ -157,11 +132,7 @@ class TestStudentWorkflow:
             pytest.skip("User service token not available")
 
         headers = {"Authorization": f"Bearer {user_service_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         assert response.status_code == 200
 
     def test_student_list_assignments(self, user_service_token):
@@ -170,11 +141,7 @@ class TestStudentWorkflow:
             pytest.skip("User service token not available")
 
         headers = {"Authorization": f"Bearer {user_service_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures/1/assignments",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures/1/assignments", headers=headers, timeout=5)
         assert response.status_code == 200
 
 
@@ -185,11 +152,7 @@ class TestCeleryWorker:
         """Test checking worker status."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
         try:
-            response = requests.get(
-                f"{SERVICE_URL}/admin/workers",
-                headers=headers,
-                timeout=5
-            )
+            response = requests.get(f"{SERVICE_URL}/admin/workers", headers=headers, timeout=5)
             if response.status_code == 404:
                 pytest.skip("Worker status endpoint not available")
             assert response.status_code == 200
@@ -200,11 +163,7 @@ class TestCeleryWorker:
         """Test submitting an autograde task."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
         try:
-            response = requests.get(
-                f"{SERVICE_URL}/lectures",
-                headers=headers,
-                timeout=5
-            )
+            response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
             if response.status_code == 200:
                 lectures = response.json()
                 if lectures:
@@ -212,7 +171,7 @@ class TestCeleryWorker:
                     response = requests.get(
                         f"{SERVICE_URL}/lectures/{lecture_id}/assignments",
                         headers=headers,
-                        timeout=5
+                        timeout=5,
                     )
                     if response.status_code == 200:
                         assignments = response.json()
@@ -221,7 +180,7 @@ class TestCeleryWorker:
                             response = requests.post(
                                 f"{SERVICE_URL}/lectures/{lecture_id}/assignments/{assignment_id}/autograde",
                                 headers=headers,
-                                timeout=5
+                                timeout=5,
                             )
                             assert response.status_code in [200, 202, 400]
         except requests.exceptions.ConnectionError:
@@ -234,11 +193,7 @@ class TestDatabaseOperations:
     def test_database_connectivity(self, admin_auth_token):
         """Test database is accessible."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/health",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/health", headers=headers, timeout=5)
         assert response.status_code == 200
         data = response.json()
         assert "database" in data or data.get("status") == "healthy" or data.get("health") == "OK"
@@ -247,23 +202,16 @@ class TestDatabaseOperations:
         """Test that created data persists."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
 
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         if response.status_code == 200:
             lectures = response.json()
             test_lecture = next(
-                (l for l in lectures if l["name"] == lecture_data["name"]),
-                None
+                (lec for lec in lectures if lec["name"] == lecture_data["name"]), None
             )
             if test_lecture:
                 lecture_id = test_lecture["id"]
                 response = requests.get(
-                    f"{SERVICE_URL}/lectures/{lecture_id}",
-                    headers=headers,
-                    timeout=5
+                    f"{SERVICE_URL}/lectures/{lecture_id}", headers=headers, timeout=5
                 )
                 assert response.status_code == 200
 
@@ -274,31 +222,20 @@ class TestErrorHandling:
     def test_invalid_token(self, wait_for_services):
         """Test that invalid tokens are rejected."""
         headers = {"Authorization": "Bearer invalid_token_12345"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         assert response.status_code == 401
 
     def test_nonexistent_lecture(self, admin_auth_token):
         """Test accessing nonexistent lecture."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        response = requests.get(
-            f"{SERVICE_URL}/lectures/99999",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/lectures/99999", headers=headers, timeout=5)
         assert response.status_code == 404
 
     def test_malformed_request(self, admin_auth_token):
         """Test handling malformed requests."""
         headers = {"Authorization": f"Bearer {admin_auth_token}"}
         response = requests.post(
-            f"{SERVICE_URL}/lectures",
-            headers=headers,
-            data="invalid json",
-            timeout=5
+            f"{SERVICE_URL}/lectures", headers=headers, data="invalid json", timeout=5
         )
         # TODO should be 400 code
         assert response.status_code == 500

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Write the grader service token to a file that can be read by tests."""
+
 import os
 import sqlite3
 import time
 
 DB_PATH = "/app/jupyterhub.sqlite"
 TOKEN_FILE = "/app/grader_api_token.txt"
+
 
 def get_service_token():
     """Extract the service token from JupyterHub's database."""
@@ -20,7 +22,9 @@ def get_service_token():
             cursor = conn.cursor()
 
             # Check if api_tokens table exists and has the grader token
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='api_tokens'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='api_tokens'"
+            )
             if not cursor.fetchone():
                 conn.close()
                 time.sleep(1)
@@ -43,6 +47,7 @@ def get_service_token():
             time.sleep(1)
 
     return None
+
 
 if __name__ == "__main__":
     token = get_service_token()
