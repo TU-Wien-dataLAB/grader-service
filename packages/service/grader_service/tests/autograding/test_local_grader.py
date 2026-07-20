@@ -102,10 +102,12 @@ def test_local_autograde_start_outcome_on_autograde_failure(
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
 def test_local_autograde_start_outcome_on_git_cmd_failure(
-    mock_session_class, tmp_path, submission_123
+    mock_session_class, grader_service, submission_123
 ):
     mock_session_class.object_session.return_value = Mock()
-    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalAutogradeExecutor(
+        grader_service_dir=grader_service.grader_service_dir, submission=submission_123
+    )
 
     with patch.object(executor.git_manager, "pull_submission") as git_pull:
         git_pull.side_effect = Exception("Git error")
@@ -268,11 +270,13 @@ def test_timeout_function_custom(mock_git, mock_session_class, tmp_path, submiss
     assert timeout == 720
 
 
-def test_invalid_custom_default_timeout(tmp_path, submission_123):
+def test_invalid_custom_default_timeout(grader_service, submission_123):
     invalid_timeout = -1
 
     executor = LocalAutogradeExecutor(
-        grader_service_dir=str(tmp_path), submission=submission_123, close_session=False
+        grader_service_dir=grader_service.grader_service_dir,
+        submission=submission_123,
+        close_session=False,
     )
     with pytest.raises(traitlets.traitlets.TraitError) as exc_info:
         executor.default_cell_timeout = invalid_timeout
