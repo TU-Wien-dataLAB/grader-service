@@ -19,7 +19,8 @@ from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
 
 from grader_service.autograding.git_manager import GitSubmissionManager
-from grader_service.autograding.utils import collect_logs, executable_validator, rmtree
+from grader_service.autograding.utils import collect_logs, rmtree
+from grader_service.utils import executable_validator
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.orm.assignment import Assignment
