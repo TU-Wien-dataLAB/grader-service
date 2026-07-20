@@ -6,7 +6,7 @@
 - kubectl installed and configured
 - Helm installed (>= 3.8 for OCI support):
     - [Install Helm](https://helm.sh/docs/intro/install/)
-    - The chart is distributed as an OCI artifact from the GitHub Container Registry at `oci://ghcr.io/tu-wien-datalab/grader/charts`.
+    - The chart is distributed as an OCI artifact from the GitHub Container Registry at `oci://ghcr.io/tu-wien-datalab/grader-service/charts`.
 - [RabbitMQ operator](https://www.rabbitmq.com/kubernetes/operator/install-operator#installation) installed
 
 ## Install Grader Service

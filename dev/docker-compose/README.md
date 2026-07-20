@@ -5,8 +5,7 @@ This directory contains a Docker Compose setup for local development with hot-re
 ## Features
 
 - **Hot-reload for Service**: Python code changes in `packages/service/grader_service/` are automatically picked up
-- **Hot-reload for Labextension**: TypeScript changes in `packages/labextension/` trigger rebuilds
-- **Full stack environment**: Includes Grader Service, Labextension, JupyterHub, RabbitMQ, and Celery worker
+- **Full stack environment**: Includes Grader Service, JupyterHub, RabbitMQ, and Celery worker
 - **Pre-configured users**: admin, instructor, tutor, student
 
 ## Prerequisites
@@ -19,14 +18,14 @@ This directory contains a Docker Compose setup for local development with hot-re
 ### 1. Start the Development Environment
 
 ```bash
-cd docker-compose/dev
-docker-compose up -d
+cd dev/docker-compose
+docker compose up -d
 ```
 
 ### 2. Check Service Status
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 All services should show "Up" status.
@@ -52,15 +51,14 @@ No password is required (using DummyAuthenticator).
 
 ### View all logs
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### View specific service logs
 ```bash
-docker-compose logs -f service
-docker-compose logs -f labextension
-docker-compose logs -f hub
-docker-compose logs -f celery-worker
+docker compose logs -f service
+docker compose logs -f hub
+docker compose logs -f celery-worker
 ```
 
 ## Development Workflow
@@ -71,14 +69,8 @@ docker-compose logs -f celery-worker
 2. The service container will automatically detect changes
 3. Restart the service container if needed:
    ```bash
-   docker-compose restart service
+   docker compose restart service
    ```
-
-### Editing Labextension Code
-
-1. Edit TypeScript files in `packages/labextension/src/`
-2. The labextension container will rebuild on changes
-3. Refresh your browser to see changes
 
 ### Editing Configuration
 
@@ -87,18 +79,18 @@ docker-compose logs -f celery-worker
 
 After editing configuration files, restart the affected containers:
 ```bash
-docker-compose restart service hub
+docker compose restart service hub
 ```
 
 ## Stopping the Environment
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 To also remove volumes (database, etc.):
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Troubleshooting
@@ -115,23 +107,12 @@ ports:
 
 Check the logs for errors:
 ```bash
-docker-compose logs service
+docker compose logs service
 ```
 
 Common issues:
 - Database migration errors: Check `grader_service_config.py`
 - RabbitMQ connection: Ensure rabbitmq container is running
-
-### Labextension not loading
-
-1. Check labextension build logs:
-   ```bash
-   docker-compose logs labextension
-   ```
-2. Rebuild the labextension container:
-   ```bash
-   docker-compose up -d --build labextension
-   ```
 
 ## Architecture
 
@@ -141,12 +122,12 @@ Common issues:
 │   (hub)         │
 └────────┬────────┘
          │
-    ┌────┴────┐
-    │         │
-┌───▼──┐  ┌───▼──────────┐
-│Service│  │Labextension  │
-│:4010  │  │              │
-└───┬──┘  └────────────────┘
+    ┌────┴
+    │
+┌───▼──┐
+│Service│
+│:4010  │
+└───┬──┘
     │
 ┌───▼──────┐
 │RabbitMQ  │
@@ -163,7 +144,6 @@ All containers are connected via the `grader-network` bridge network.
 - `service_dir`: Persistent storage for Grader Service data
 - `hub_data`: JupyterHub data storage
 - `rabbitmq_data`: RabbitMQ message queue data
-- `labextension_node_modules`: Node modules cache for faster builds
 
 ## Next Steps
 

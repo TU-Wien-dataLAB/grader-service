@@ -5,7 +5,7 @@ Thank you for contributing to Grader Platform! This document provides guidelines
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/grader.git`
+2. Clone your fork: `git clone https://github.com/your-username/grader-service.git`
 3. Create a branch: `git checkout -b feature/your-feature`
 4. Set up development environment:
 
@@ -26,7 +26,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions.
 
 ```bash
 # Run all tests
-make test-all
+make test
 
 # Run specific test file
 pytest packages/service/grader_service/tests/test_example.py
@@ -35,7 +35,7 @@ pytest packages/service/grader_service/tests/test_example.py
 ### 3. Lint Code
 
 ```bash
-make lint-all
+make lint
 ```
 
 ### 4. Commit Changes

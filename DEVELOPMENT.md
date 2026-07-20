@@ -15,7 +15,7 @@ This guide covers setting up a development environment for the Grader Platform m
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/TU-Wien-dataLAB/grader.git
+git clone https://github.com/TU-Wien-dataLAB/grader-service.git
 cd grader
 
 # Install all development and test dependencies
@@ -32,10 +32,12 @@ make dev-up
 
 This starts:
 - Grader Service (with hot-reload)
-- Grader Labextension (with hot-reload)
-- PostgreSQL database
-- RabbitMQ
 - JupyterHub
+- RabbitMQ
+- Celery worker
+- SQLite database (default)
+
+The Grader Labextension is loaded inside the JupyterHub-spawned user servers.
 
 Access JupyterHub at `http://localhost:8080`
 
@@ -55,18 +57,18 @@ make sync
 # Run tests
 make test-service      # Service tests only
 make test-labextension # Labextension tests only
-make test-all          # All tests
+make test             # All tests
 make test-integration  # Integration tests (requires dev environment running)
 
 # Linting
 make lint-service
 make lint-labextension
-make lint-all
+make lint
 
 # Building
 make build-service
 make build-labextension
-make build-all
+make build
 
 # Documentation
 make docs        # Build Sphinx docs
@@ -94,7 +96,7 @@ uv run --package grader-service pytest packages/service/grader_service/tests
 uv run --package grader-labextension pytest packages/labextension/grader_labextension/tests
 
 # With coverage
-make test-all
+make test
 ```
 
 ### Integration Tests
@@ -131,14 +133,13 @@ To view logs for a specific service:
 
 ```bash
 docker-compose -f dev/docker-compose/docker-compose.yml logs -f service
-docker-compose -f dev/docker-compose/docker-compose.yml logs -f labextension
 docker-compose -f dev/docker-compose/docker-compose.yml logs -f hub
 ```
 
 ### Database Access
 
 ```bash
-docker-compose -f dev/docker-compose/docker-compose.yml exec postgres psql -U grader -d grader
+docker compose -f dev/docker-compose/docker-compose.yml exec service sqlite3 /var/lib/grader-service/grader.db
 ```
 
 ## Common Issues

@@ -1,6 +1,6 @@
 # Sphinx documentation
 ## Requirements
-``pip install -r docs-requirements.txt``
+``uv sync --group docs``
 ## Usage
 Generate documentation:
 ``make html``

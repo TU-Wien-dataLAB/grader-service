@@ -294,8 +294,8 @@ Keep a Changelog categories:
 ## Release Checklist
 
 ### Pre-Release
-- [ ] All tests pass (`make test-all`)
-- [ ] All linters pass (`make lint-all`)
+- [ ] All tests pass (`make test`)
+- [ ] All linters pass (`make lint`)
 - [ ] Documentation is up to date
 - [ ] The package's `CHANGELOG.md` is updated (rename `[Unreleased]` to
       `[X.Y.Z] - YYYY-MM-DD`, add a fresh `[Unreleased]`)
@@ -343,7 +343,7 @@ For urgent bug fixes:
 ### Workflow Fails
 
 1. Check the workflow logs for specific errors
-2. Verify all tests pass locally (`make test-all`)
+2. Verify all tests pass locally (`make test`)
 3. Check that `PYPI_API_TOKEN` and Docker registry credentials are set in GitHub
    Secrets
 4. Re-run failed jobs if it was a transient error
@@ -366,7 +366,7 @@ For urgent bug fixes:
 2. Verify Dockerfile paths are correct
 3. Test the build locally:
    ```bash
-   docker build -f packages/service/Dockerfile .
+   docker build packages/service
    ```
 
 ### Tag Already Exists

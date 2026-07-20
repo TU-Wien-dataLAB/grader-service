@@ -1,7 +1,7 @@
 # grader_labextension
 
-[![Github Actions Status](https://github.com/TU-Wien-dataLAB/grader-labextension/workflows/Build/badge.svg)](https://github.com/TU-Wien-dataLAB/grader-labextension/actions/workflows/build.yml)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-labextension/main?urlpath=lab)
+[![Github Actions Status](https://github.com/TU-Wien-dataLAB/grader-service/workflows/build-labextension/badge.svg)](https://github.com/TU-Wien-dataLAB/grader-service/actions/workflows/build-labextension.yml)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TU-Wien-dataLAB/grader-service/main?urlpath=lab)
 
 
 Grader Labextension is a JupyterLab extension to enable automatic grading of assignment notebooks.
@@ -60,7 +60,7 @@ The `jlpm` command is JupyterLab's pinned version of
 # Clone the repo to your local environment
 # Change directory to the grader_labextension directory
 # Install package in development mode
-pip install -e ".[test]"
+uv sync --package grader-labextension --group test
 # Link your development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
 # Server extension must be manually installed in develop mode
@@ -107,7 +107,7 @@ This extension is using [Pytest](https://docs.pytest.org/) for Python code testi
 Install test dependencies (needed only once):
 
 ```sh
-pip install -e ".[test]"
+uv sync --package grader-labextension --group test
 # Each time you install the Python package, you need to restore the front-end extension link
 jupyter labextension develop . --overwrite
 ```

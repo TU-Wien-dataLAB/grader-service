@@ -15,7 +15,7 @@ This monorepo contains two main packages:
 
 ```bash
 # Clone the repository
-git clone https://github.com/TU-Wien-dataLAB/grader.git
+git clone https://github.com/TU-Wien-dataLAB/grader-service.git
 cd grader
 
 # Install all dependencies including dev and docs requirements
@@ -54,7 +54,7 @@ grader/
 ## Badges
 
 [![Documentation Status](https://readthedocs.org/projects/grader-service/badge/?version=latest)](https://grader-service.readthedocs.io/en/latest/)
-[![License](https://img.shields.io/github/license/TU-Wien-dataLAB/grader)](LICENSE)
+[![License](https://img.shields.io/github/license/TU-Wien-dataLAB/grader-service)](LICENSE)
 
 ## License
 
