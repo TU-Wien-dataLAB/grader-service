@@ -82,6 +82,43 @@ After editing configuration files, restart the affected containers:
 docker compose restart service hub
 ```
 
+### Labextension not loading
+
+1. If you run the project for the first time, you may just have to wait a while.
+   The `grader-labextension` Docker image has to be pulled from the registry, but this
+   is only done on `docker compose up`. Try refreshing the start page and relaunching
+   the server if it has failed to start.
+
+2. Check `hub` service build logs:
+   ```bash
+   docker compose logs hub
+   ```
+3. Rebuild the `hub` container:
+   ```bash
+   docker compose up -d --build hub
+   ```
+
+## Architecture
+
+```
+┌─────────────────┐
+│   JupyterHub    │ :8080
+│   (hub)         │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+┌───▼──┐  ┌───▼──────────┐
+│Service│  │Labextension  │
+│:4010  │  │              │
+└───┬──┘  └────────────────┘
+    │
+┌───▼──────┐
+│RabbitMQ  │
+│:5672     │
+└──────────┘
+```
+
 ## Stopping the Environment
 
 ```bash
