@@ -42,17 +42,17 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services import GitFileService
 from grader_service.file_services.base_file_service import FileService
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
-from grader_service.oauth2.provider import make_provider
+from grader_service.oauth2.provider import make_provider, GraderOAuthServer
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
-from grader_service.plugins import create_plugin_manager
+from grader_service.plugins import create_plugin_manager, PluginManager
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
@@ -101,7 +101,11 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False, help="The URL of the database to use").tag(config=True)
 
-    oauth_provider = None
+    oauth_provider: GraderOAuthServer
+
+    plugin_manager: PluginManager
+
+    session_maker: scoped_session
 
     @default("db_url")
     def _default_db_url(self):
@@ -137,6 +141,13 @@ class GraderService(config.Application):
         """,
     )
     file_service = Instance(klass=FileService)
+
+    autograde_executor_class = Type(
+        default_value=LocalAutogradeExecutor,
+        klass=LocalAutogradeExecutor,
+        allow_none=False,
+        config=True,
+    )
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -223,11 +234,8 @@ class GraderService(config.Application):
 
     @validate("config_file")
     def _validate_config_file(self, proposal):
-        if not os.path.isfile(proposal.value) and not self.generate_config:
-            print(
-                "ERROR: Failed to find specified config file: {}".format(proposal.value),
-                file=sys.stderr,
-            )
+        if not Path(proposal.value).is_file() and not self.generate_config:
+            self.log.critical("ERROR: Failed to find specified config file: %s", proposal.value)
             sys.exit(1)
         return proposal.value
 
@@ -278,8 +286,7 @@ class GraderService(config.Application):
     ).tag(config=True)
 
     def setup_loggers(self, log_level: str):  # pragma: no cover
-        """Handles application, Tornado, and
-        SQLAlchemy logging configuration."""
+        """Handles application, Tornado, and SQLAlchemy logging configuration."""
         stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
@@ -333,15 +340,15 @@ class GraderService(config.Application):
         config_text = self.generate_config_file(classes=config_classes)
         if isinstance(config_text, bytes):
             config_text = config_text.decode("utf8")
-        print("Generating config: %s" % self.config_file)
+        self.log.info("Generating config: %s", self.config_file)
         with open(self.config_file, mode="w") as f:
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
         self.log.info("Starting Initialization...")
-        self.log.info("Loading config file...")
         super().initialize(*args, **kwargs)
         self.parse_command_line(argv)
+        self.log.info("Loading config file...")
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
@@ -357,7 +364,6 @@ class GraderService(config.Application):
 
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
-        RequestHandlerConfig.config = self.config
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
@@ -464,7 +470,7 @@ class GraderService(config.Application):
         self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
-        self.http_server: HTTPServer = HTTPServer(
+        http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 file_service=self.file_service,
@@ -489,9 +495,7 @@ class GraderService(config.Application):
             xheaders=True,
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.listen(
-            self.service_port, address=self.service_host, reuse_port=self.reuse_port
-        )
+        http_server.listen(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(

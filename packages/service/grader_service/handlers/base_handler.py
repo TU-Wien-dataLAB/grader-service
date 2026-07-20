@@ -12,7 +12,7 @@ import time
 import uuid
 from _decimal import Decimal
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, List, Optional, Union
+from typing import Any, Awaitable, List, Optional, Union
 from urllib.parse import parse_qsl, urljoin, urlparse
 
 from sqlalchemy import func
@@ -24,13 +24,9 @@ from tornado import httputil, web
 from tornado.escape import json_decode, json_encode
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
-from traitlets import Integer, TraitType, Type, Unicode
-from traitlets import List as ListTrait
-from traitlets.config import SingletonConfigurable
 
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -179,6 +175,7 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback"),
             ]:
+                # TODO(Natalia): This is only relevant if Git is used for file operations.
                 # require git to authenticate with token -> otherwise return 401 code
                 # by default, git sends the request unauthenticated, first
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
@@ -1021,24 +1018,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         return None
 
 
-def authenticated(
-    method: Callable[..., Optional[Awaitable[None]]],
-) -> Callable[..., Optional[Awaitable[None]]]:
-    """Decorate methods with this to require that the user be logged in.
-
-    If the user is not logged in `tornado.web.HTTPError`
-    with code 401 will be raised.
-    """
-
-    @functools.wraps(method)
-    def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
-        if not self.current_user:
-            raise HTTPError(401, reason="User not authenticated")
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
 @register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
@@ -1049,28 +1028,3 @@ class VersionHandler(GraderBaseHandler):
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
         self.write("Version 1.0")
-
-
-class RequestHandlerConfig(SingletonConfigurable):
-    """This class exists to not avoid all request handlers to inherit
-    from traitlets.config.Configurable and making all requests super
-    slow. If a request handler needs configurable values, they can be
-    accessed from this object."""
-
-    autograde_executor_class = Type(
-        default_value=LocalAutogradeExecutor,
-        # TODO: why does using
-        # LocalAutogradeExecutor give
-        # subclass error?
-        klass=object,
-        allow_none=False,
-        config=True,
-    )
-
-    # Git server file policy defaults
-    git_max_file_size_mb = Integer(80, allow_none=False, config=True)
-    git_max_file_count = Integer(512, allow_none=False, config=True)
-    # empty list allows everything
-    git_allowed_file_extensions = ListTrait(
-        TraitType(Unicode), default_value=[], allow_none=False, config=True
-    )

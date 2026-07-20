@@ -222,16 +222,18 @@ def test_process_executor_run_subprocess_error(mock_run, process_executor):
         process_executor._run()
 
 
-def test_feedback_executor_inheritance(tmp_path, submission_123):
+def test_feedback_executor_inheritance(grader_service, submission_123):
     """Test that LocalFeedbackExecutor properly inherits from LocalAutogradeExecutor
     and uses the FeedbackGitSubmissionManager for git operations"""
     assert issubclass(LocalFeedbackExecutor, LocalAutogradeExecutor)
 
-    gfe = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    lfe = LocalFeedbackExecutor(
+        grader_service_dir=grader_service.grader_service_dir, submission=submission_123
+    )
 
-    assert isinstance(gfe.git_manager, FeedbackGitSubmissionManager)
-    assert gfe.git_manager.input_repo_type == GitRepoType.AUTOGRADE
-    assert gfe.git_manager.output_repo_type == GitRepoType.FEEDBACK
+    assert isinstance(lfe.git_manager, FeedbackGitSubmissionManager)
+    assert lfe.git_manager.input_repo_type == GitRepoType.AUTOGRADE
+    assert lfe.git_manager.output_repo_type == GitRepoType.FEEDBACK
 
 
 def test_process_executor_inheritance():
