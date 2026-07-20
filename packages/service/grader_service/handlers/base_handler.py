@@ -12,7 +12,7 @@ import time
 import uuid
 from _decimal import Decimal
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, List, Optional, Union
+from typing import Any, Awaitable, List, Optional, Union
 from urllib.parse import parse_qsl, urljoin, urlparse
 
 from sqlalchemy import func
@@ -179,6 +179,7 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback"),
             ]:
+                # TODO(Natalia): This is only relevant if Git is used for file operations.
                 # require git to authenticate with token -> otherwise return 401 code
                 # by default, git sends the request unauthenticated, first
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
@@ -1021,24 +1022,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         return None
 
 
-def authenticated(
-    method: Callable[..., Optional[Awaitable[None]]],
-) -> Callable[..., Optional[Awaitable[None]]]:
-    """Decorate methods with this to require that the user be logged in.
-
-    If the user is not logged in `tornado.web.HTTPError`
-    with code 401 will be raised.
-    """
-
-    @functools.wraps(method)
-    def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
-        if not self.current_user:
-            raise HTTPError(401, reason="User not authenticated")
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
 @register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
@@ -1059,14 +1042,12 @@ class RequestHandlerConfig(SingletonConfigurable):
 
     autograde_executor_class = Type(
         default_value=LocalAutogradeExecutor,
-        # TODO: why does using
-        # LocalAutogradeExecutor give
-        # subclass error?
-        klass=object,
+        klass=LocalAutogradeExecutor,
         allow_none=False,
         config=True,
     )
 
+    # TODO(Natalia): These settings are only used in GitBaseHandler.
     # Git server file policy defaults
     git_max_file_size_mb = Integer(80, allow_none=False, config=True)
     git_max_file_count = Integer(512, allow_none=False, config=True)
