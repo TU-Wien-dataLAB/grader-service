@@ -74,6 +74,25 @@ def default_roles_dict():
     }
 
 
+@pytest.fixture(autouse=True)
+def reset_my_service_singleton():
+    """Ensure GraderService singleton instance is reset before and after every test."""
+    GraderService.clear_instance()
+    yield
+    GraderService.clear_instance()
+
+
+@pytest.fixture()
+def grader_service(tmpdir):
+    """Set `grader_service_dir` to `grader_service/` in a tmp directory."""
+    service_dir = tmpdir.mkdir("grader_service")
+    service = GraderService().instance()
+    service.grader_service_dir = str(service_dir)
+    yield service
+    # Reset the instance so that using this fixture doesn't affect other tests
+    GraderService.clear_instance()
+
+
 @pytest.fixture(scope="function")
 def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
     service_mock = MagicMock()

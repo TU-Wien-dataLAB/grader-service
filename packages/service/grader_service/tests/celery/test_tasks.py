@@ -32,11 +32,7 @@ _lti_sync_result = {
 @pytest.fixture(scope="function")
 def celery_app(app, sql_alchemy_sessionmaker):
     """Mocks CeleryApp instance's plugin manager, initializes GraderService with temp dir"""
-    # The following line is necessary for the generate_feedback_task:
     GraderService.grader_service_dir = app.grader_service_dir
-    # ...and these two - for the autograde_task:
-    grader_service = GraderService.instance()
-    grader_service.grader_service_dir = app.grader_service_dir
 
     mock_plugin = AsyncMock()
     mock_plugin.check_if_lti_enabled = MagicMock(return_value=True)
