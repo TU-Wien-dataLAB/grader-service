@@ -1,8 +1,7 @@
-.PHONY: help sync test-service test-labextension test-all test-integration lint-service lint-labextension lint-all build-service build-labextension build-all docs docs-clean docs-live dev-up dev-down dev-logs dev-local clean run-service run-hub watch-labextension
+.PHONY: help sync test-service test-labextension test test-integration lint-service lint-labextension lint build-service build-labextension build docs docs-clean docs-live dev-up dev-down dev-logs clean run-service run-hub watch-labextension
 
 SHELL := /bin/bash
 GRADER_API_TOKEN ?= $(shell openssl rand -hex 16)
-COMPOSE_PROJECT = grader-dev
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -32,10 +31,10 @@ test: ## Run all tests
 test-integration: ## Create dev env, run integration tests, then down dev env
 	@export GRADER_API_TOKEN=$(GRADER_API_TOKEN) && \
 	echo "Using GRADER_API_TOKEN: $$GRADER_API_TOKEN" && \
-	docker-compose -f dev/docker-compose/docker-compose.yml up -d && \
+	docker compose -f dev/docker-compose/docker-compose.yml up -d && \
 	sleep 5 && \
 	uv run pytest tests/integration -vvv && \
-	docker-compose -f dev/docker-compose/docker-compose.yml down
+	docker compose -f dev/docker-compose/docker-compose.yml down
 
 lint-service: ## Lint service code
 	uv run --package grader-service ruff check packages/service
@@ -46,8 +45,8 @@ lint-labextension: ## Lint labextension code
 	uv run --package grader-labextension ruff format --check packages/labextension
 
 lint: ## Lint all code
-	uv run ruff check packages/
-	uv run ruff format --check packages/
+	uv run ruff check .
+	uv run ruff format --check .
 
 build-service: ## Build service package
 	uv build --package grader-service
@@ -69,13 +68,13 @@ docs-live: ## Build and serve Sphinx documentation with live reload
 	uv run --no-sync sphinx-autobuild docs/source docs/_build
 
 dev-up: ## Start development docker-compose environment
-	docker-compose -f dev/docker-compose/docker-compose.yml up -d --build
+	docker compose -f dev/docker-compose/docker-compose.yml up -d --build
 
 dev-down: ## Stop development docker-compose environment
-	docker-compose -f dev/docker-compose/docker-compose.yml down -v
+	docker compose -f dev/docker-compose/docker-compose.yml down -v
 
 dev-logs: ## Show development environment logs
-	docker-compose -f dev/docker-compose/docker-compose.yml logs -f
+	docker compose -f dev/docker-compose/docker-compose.yml logs -f
 
 clean: ## Remove build artifacts
 	rm -rf packages/service/dist/

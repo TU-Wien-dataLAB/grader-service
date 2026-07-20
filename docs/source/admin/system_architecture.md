@@ -86,8 +86,9 @@ Celery and delegates them to workers for processing.
 Grader Service workers are processes that execute auto-grading jobs. They handle tasks delegated by the RabbitMQ broker,
 perform grading, and report the results back to the Grader Service by updating the database and pushing results to the relevant repositories.
 The workers enable parallel processing of multiple grading tasks, thereby improving system throughput.
-These workers are created using Celery with the `worker` argument, which configures them to
-perform the tasks described above. The workers have a separate CLI entry point and use the same configuration file as the actual Grader Service.
+These workers are started by the separate `grader-worker` CLI entry point, which instantiates and starts Celery's
+`Worker`. Worker behavior is configured via `c.CeleryApp.worker_kwargs`, and the worker uses the same configuration
+file as the Grader Service.
 
 ## Database
 

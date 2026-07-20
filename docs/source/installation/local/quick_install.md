@@ -17,7 +17,7 @@ It is **not suitable for production use**. The local autograding executors run s
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/TU-Wien-dataLAB/grader.git
+git clone https://github.com/TU-Wien-dataLAB/grader-service.git
 cd grader
 ```
 

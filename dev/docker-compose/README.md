@@ -5,8 +5,7 @@ This directory contains a Docker Compose setup for local development with hot-re
 ## Features
 
 - **Hot-reload for Service**: Python code changes in `packages/service/grader_service/` are automatically picked up
-- **Hot-reload for Labextension**: TypeScript changes in `packages/labextension/` trigger rebuilds
-- **Full stack environment**: Includes Grader Service, Labextension, JupyterHub, RabbitMQ, and Celery worker
+- **Full stack environment**: Includes Grader Service, JupyterHub, RabbitMQ, and Celery worker
 - **Pre-configured users**: admin, instructor, tutor, student
 
 ## Prerequisites
@@ -60,7 +59,6 @@ docker compose logs -f
 docker compose logs -f service
 docker compose logs -f hub
 docker compose logs -f celery-worker
-docker compose logs -f rabbitmq
 ```
 
 ## Development Workflow
@@ -73,12 +71,6 @@ docker compose logs -f rabbitmq
    ```bash
    docker compose restart service
    ```
-
-### Editing Labextension Code
-
-1. Edit TypeScript files in `packages/labextension/src/`
-2. The `hub` container will rebuild on changes
-3. Refresh your browser to see changes
 
 ### Editing Configuration
 
@@ -121,43 +113,6 @@ docker compose logs service
 Common issues:
 - Database migration errors: Check `grader_service_config.py`
 - RabbitMQ connection: Ensure rabbitmq container is running
-
-### Labextension not loading
-
-1. If you run the project for the first time, you may just have to wait a while.
-   The `grader-labextension` Docker image has to be pulled from the registry, but this
-   is only done on `docker compose up`. Try refreshing the start page and relaunching
-   the server if it has failed to start.
-
-2. Check `hub` service build logs:
-   ```bash
-   docker compose logs hub
-   ```
-3. Rebuild the `hub` container:
-   ```bash
-   docker compose up -d --build hub
-   ```
-
-## Architecture
-
-```
-┌─────────────────┐
-│   JupyterHub    │ :8080
-│   (hub)         │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼──┐  ┌───▼──────────┐
-│Service│  │Labextension  │
-│:4010  │  │              │
-└───┬──┘  └────────────────┘
-    │
-┌───▼──────┐
-│RabbitMQ  │
-│:5672     │
-└──────────┘
-```
 
 ## Network
 

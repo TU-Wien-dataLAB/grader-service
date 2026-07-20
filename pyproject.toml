@@ -37,3 +37,17 @@ docs = [
     "sphinx-autobuild",
 
 ]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [
+    "**/*.ipynb",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `F821` ("Undefined name `c`") in config files with lines like `c.GraderService.db_url = ...`
+"*_config.py" = ["F821"]

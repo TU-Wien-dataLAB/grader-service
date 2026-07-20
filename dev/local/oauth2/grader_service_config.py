@@ -1,13 +1,7 @@
 import os
 
-from grader_service.auth.auth import Authenticator
-from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
+from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.handlers.base_handler import BaseHandler
-from grader_service.orm import User, Lecture
-from grader_service.orm.base import DeleteState
-from grader_service.orm.lecture import LectureState
-from grader_service.orm.takepart import Scope, Role
 
 # TODO: Only use DummyAuthenticator
 
@@ -46,8 +40,6 @@ c.GraderService.oauth_clients = [
         "redirect_uri": "http://localhost:8080/hub/oauth_callback",
     }
 ]
-
-from grader_service.auth.dummy import DummyAuthenticator
 
 c.GraderService.authenticator_class = DummyAuthenticator
 c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}

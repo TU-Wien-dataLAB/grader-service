@@ -16,7 +16,7 @@ This setup runs student code with the local autograding executors, which have fu
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/TU-Wien-dataLAB/grader.git
+git clone https://github.com/TU-Wien-dataLAB/grader-service.git
 cd grader
 ```
 
@@ -85,5 +85,5 @@ With the watch command running, every saved change is rebuilt and made available
 
 ## Next steps
 
-- For the full list of development commands (tests, linting, building, docs, Docker Compose), see the [Development Guide](https://github.com/TU-Wien-dataLAB/grader/blob/main/DEVELOPMENT.md).
+- For the full list of development commands (tests, linting, building, docs, Docker Compose), see the [Development Guide](https://github.com/TU-Wien-dataLAB/grader-service/blob/main/DEVELOPMENT.md).
 - For a fully containerized local stack, see the [Docker installation guide](../docker).

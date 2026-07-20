@@ -5,6 +5,7 @@ The Grader Service supports two distinct modes for handling authentication and a
 
 In the Grader Service, users are associated with lectures and can hold one of the following roles:
 
+- `admin`
 - `instructor`
 - `tutor`
 - `student`

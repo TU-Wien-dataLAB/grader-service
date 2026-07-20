@@ -76,5 +76,4 @@ services:
       - service_dir:/volume_service_dir
 
 volumes:
-  jupyterhub-data:
   service_dir:

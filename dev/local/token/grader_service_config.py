@@ -2,6 +2,7 @@ import os
 from typing import Optional
 
 from grader_service.auth.auth import Authenticator
+from grader_service.auth.token import JupyterHubTokenAuthenticator
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import BaseHandler
 from grader_service.orm import User, Lecture
@@ -42,8 +43,6 @@ c.GraderService.oauth_clients = [
         "redirect_uri": "http://localhost:8080/hub/oauth_callback",
     }
 ]
-
-from grader_service.auth.token import JupyterHubTokenAuthenticator
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
 
