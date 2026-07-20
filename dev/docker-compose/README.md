@@ -39,7 +39,7 @@ http://localhost:8080
 
 ### 4. Login Credentials
 
-You can login with any of the following users:
+You can log in with any of the following users:
 - `admin` (administrator)
 - `instructor` (instructor role)
 - `tutor` (tutor role)
@@ -113,27 +113,6 @@ docker compose logs service
 Common issues:
 - Database migration errors: Check `grader_service_config.py`
 - RabbitMQ connection: Ensure rabbitmq container is running
-
-## Architecture
-
-```
-┌─────────────────┐
-│   JupyterHub    │ :8080
-│   (hub)         │
-└────────┬────────┘
-         │
-    ┌────┴
-    │
-┌───▼──┐
-│Service│
-│:4010  │
-└───┬──┘
-    │
-┌───▼──────┐
-│RabbitMQ  │
-│:5672     │
-└──────────┘
-```
 
 ## Network
 
