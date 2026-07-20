@@ -3,7 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import observe
+from traitlets import observe, Unicode
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
@@ -33,14 +33,15 @@ def construct_git_dir(
     username: str | None = None,
 ) -> Path | None:
     """Returns the path of the repository based on the inputs,
-     or None if the repo_type is not recognized.
+     or None if the repo_type is not recognised.
+
+     Note: This method does not check permissions to access the given repo type
+     or submission; it only constructs the directory path.
 
     Raises ValueError if the normalised path does not start with
     `gitbase`, to make it robust against fabricated lecture codes
     or usernames containing substrings like "../..".
     """
-    # TODO: Permissions check should be performed somewhere else. This method shouldn't
-    #  have to touch the database.
     repo_type_path = gitbase / lect_code / str(assignment_id) / repo_type
     if repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}:
         if repo_type == GitRepoType.EDIT:
@@ -77,6 +78,8 @@ class GitFileService(FileService):
     #     "", allow_none=False, help="Git email used by the service for commits"
     # ).tag(config=True)
 
+    git_executable = Unicode("git", allow_none=False).tag(config=True)
+
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
@@ -92,7 +95,7 @@ class GitFileService(FileService):
         self._check_environment()
 
     def _check_environment(self):
-        if shutil.which("git") is None:
+        if shutil.which(self.git_executable) is None:
             msg = (
                 "No git executable found! Git is necessary to run Grader Service "
                 "with GitFileService!"
@@ -105,7 +108,9 @@ class GitFileService(FileService):
         # check if git is configured so that git commits don't fail
         if (
             subprocess.run(
-                ["git", "config", "init.defaultBranch"], check=False, capture_output=True
+                [self.git_executable, "config", "init.defaultBranch"],
+                check=False,
+                capture_output=True,
             )
             .stdout.decode()
             .strip()
@@ -113,14 +118,18 @@ class GitFileService(FileService):
         ):
             raise RuntimeError("Git default branch has to be set to 'main'!")
         if (
-            subprocess.run(["git", "config", "user.name"], check=False, capture_output=True)
+            subprocess.run(
+                [self.git_executable, "config", "user.name"], check=False, capture_output=True
+            )
             .stdout.decode()
             .strip()
             == ""
         ):
             raise RuntimeError("Git user.name has to be set!")
         if (
-            subprocess.run(["git", "config", "user.email"], check=False, capture_output=True)
+            subprocess.run(
+                [self.git_executable, "config", "user.email"], check=False, capture_output=True
+            )
             .stdout.decode()
             .strip()
             == ""
@@ -145,12 +154,12 @@ class GitFileService(FileService):
             raise FileServiceError("User git repository not found")
         try:
             subprocess.run(
-                ["git", "branch", "main", "--contains", submission_hash],
+                [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
                 capture_output=True,
             )
         except subprocess.CalledProcessError:
-            raise FileServiceError("Commit not found")
+            raise FileServiceError("Submission commit not found")
 
     def init_submission_files(self, assignment: Assignment, username: str, message: str) -> None:
         """Creates a new user repository from release files.
@@ -172,6 +181,7 @@ class GitFileService(FileService):
 
         tmp_path_release = tmp_path_base / "release"
         tmp_path_user = tmp_path_base / username
+        validate_path_relative_to(tmp_path_user, tmp_path_base)
 
         remote_path_release = construct_git_dir(
             self.gitbase, GitRepoType.RELEASE, assignment.lecture.code, assignment.id
@@ -188,17 +198,19 @@ class GitFileService(FileService):
         self.log.debug("Temporary path used for copying: %s", tmp_path_base)
 
         try:
-            self._run_command(["git", "clone", remote_path_release], cwd=tmp_path_base)
-            self._run_command(["git", "clone", remote_path_user], cwd=tmp_path_base)
+            self._run_git([self.git_executable, "clone", remote_path_release], cwd=tmp_path_base)
+            self._run_git([self.git_executable, "clone", remote_path_user], cwd=tmp_path_base)
             # Ensure the user repo is on `main`
-            self._run_command(["git", "checkout", "-B", "main"], cwd=tmp_path_user)
+            self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_user)
 
             self.log.debug("Copying repo from %s to %s", tmp_path_release, tmp_path_user)
             ignore = shutil.ignore_patterns(".git", "__pycache__")
             shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            self._run_command(["git", "add", "-A"], cwd=tmp_path_user)
-            self._run_command(["git", "commit", "--allow-empty", "-m", message], cwd=tmp_path_user)
-            self._run_command(["git", "push", "-u", "origin", "main"], cwd=tmp_path_user)
+            self._run_git([self.git_executable, "add", "-A"], cwd=tmp_path_user)
+            self._run_git(
+                [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=tmp_path_user
+            )
+            self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=tmp_path_user)
         finally:
             shutil.rmtree(tmp_path_base)
 
@@ -231,8 +243,8 @@ class GitFileService(FileService):
             shutil.rmtree(edit_repo_path)
         edit_repo_path.mkdir(parents=True, exist_ok=True)
 
-        await self._run_command_async(
-            ["git", "init", "--bare", "--initial-branch=main"], edit_repo_path
+        await self._run_git_async(
+            [self.git_executable, "init", "--bare", "--initial-branch=main"], edit_repo_path
         )
 
         # Create temporary paths to copy the submission files in the edit repository
@@ -248,86 +260,109 @@ class GitFileService(FileService):
         tmp_input_path.mkdir(parents=True, exist_ok=True)
 
         # Init local repository
-        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_input_path)
+        await self._run_git_async(
+            [self.git_executable, "init", "--initial-branch=main"], tmp_input_path
+        )
 
         # Pull user repository
-        await self._run_command_async(
-            ["git", "pull", str(submission_repo_path), "main"], tmp_input_path
+        await self._run_git_async(
+            [self.git_executable, "pull", str(submission_repo_path), "main"], tmp_input_path
         )
         self.log.debug("Successfully cloned repo")
 
         # Checkout to correct submission commit
-        await self._run_command_async(["git", "checkout", submission.commit_hash], tmp_input_path)
+        await self._run_git_async(
+            [self.git_executable, "checkout", submission.commit_hash], tmp_input_path
+        )
         self.log.debug(f"Now at commit {submission.commit_hash}")
 
         # Copy files to output directory
         shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
 
         # Init local repository
-        await self._run_command_async(["git", "init", "--initial-branch=main"], tmp_output_path)
+        await self._run_git_async(
+            [self.git_executable, "init", "--initial-branch=main"], tmp_output_path
+        )
 
         # Add edit remote
-        await self._run_command_async(
-            ["git", "remote", "add", "edit", str(edit_repo_path)], tmp_output_path
+        await self._run_git_async(
+            [self.git_executable, "remote", "add", "edit", str(edit_repo_path)], tmp_output_path
         )
         self.log.debug("Successfully added edit remote")
 
         # Switch to main
-        await self._run_command_async(["git", "switch", "-c", "main"], tmp_output_path)
+        await self._run_git_async([self.git_executable, "switch", "-c", "main"], tmp_output_path)
         self.log.debug("Successfully switched to branch main")
 
         # Add files to staging
-        await self._run_command_async(["git", "add", "-A"], tmp_output_path)
+        await self._run_git_async([self.git_executable, "add", "-A"], tmp_output_path)
         self.log.debug("Successfully added files to staging")
 
         # Commit Files
-        await self._run_command_async(["git", "commit", "-m", "Initial commit"], tmp_output_path)
+        await self._run_git_async(
+            [self.git_executable, "commit", "-m", "Initial commit"], tmp_output_path
+        )
         self.log.debug("Successfully commited files")
 
         # Push copied files
-        await self._run_command_async(["git", "push", "edit", "main"], tmp_output_path)
+        await self._run_git_async([self.git_executable, "push", "edit", "main"], tmp_output_path)
         self.log.info("Successfully created a repository for edited submission.")
 
-    def _run_command(
-        self, command: list[str], cwd: Path, capture_output: bool = False
-    ) -> str | None:
-        # TODO: There's also an async version, used for everything else.
-        # TODO: Figure out error handling.
-        # TODO: It only is used for running `git` commands, isn't it?
-        self.log.info("Running: %r", command)
-        try:
-            ret = subprocess.run(command, check=True, cwd=cwd, capture_output=True)
-        except subprocess.CalledProcessError as e:
-            self.log.error(e.stderr)
-            raise
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise
-        if capture_output:
-            return str(ret.stdout, "utf-8")
-        return None
+    def _run_git(self, command: list[str], cwd: Path) -> None:
+        """
+        Execute a git command as a subprocess.
 
-    async def _run_command_async(self, command_args: list[str], cwd: Path):
-        """Runs a command asynchronously in a subprocess.
+        Note that the command must start with the `git_executable`.
 
         Args:
-            command_args list[str]: List of command arguments to execute.
-            cwd (Path): states where the command is getting run.
+            command: The git command to execute, as a list of strings.
+            cwd: The working directory the subprocess should run in.
+        Raises:
+            `subprocess.CalledProcessError`: if `subprocess.run` fails.
+            Any other exception thrown while running the subprocess is logged and also re-raised.
 
+        """
+        # TODO: Figure out error handling.
+        if command[0] != self.git_executable:
+            raise ValueError(f"Not a git command: {command}")
+        self.log.debug('Running "%s"', " ".join(map(str, command)))
+        try:
+            subprocess.run(command, cwd=cwd, check=True)
+        except subprocess.CalledProcessError as e:
+            self.log.error(e.stderr)
+            raise FileServiceError("Subprocess Error")
+        except Exception as e:
+            self.log.error(e)
+            raise
+        return None
+
+    async def _run_git_async(self, command: list[str], cwd: Path) -> None:
+        """Run a git command asynchronously in a subprocess.
+
+        Note that the command must start with the `git_executable`.
+
+        Args:
+            command: The git command to execute, as a list of strings.
+            cwd: The working directory the subprocess should run in
+        Returns:
+            The command's stdout as str.
         Raises:
             FileServiceError: if the subprocess running the git command failed.
         """
-        # TODO: It only is used for running `git` commands, isn't it?
-        self.log.debug("Running: %s", " ".join(command_args))
-        ret = await asyncio.create_subprocess_exec(
-            *command_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
-        )
-
+        if command[0] != self.git_executable:
+            raise ValueError(f"Not a git command: {command}")
+        self.log.debug("Running: %s", " ".join(map(str, command)))
+        try:
+            ret = await asyncio.create_subprocess_exec(
+                *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
+            )
+        except Exception as e:
+            self.log.error(e)
+            raise
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
-        return stdout.decode()
 
     def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
