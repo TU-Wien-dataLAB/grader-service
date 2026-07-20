@@ -15,7 +15,7 @@ Integration tests for the Grader Platform that test the complete system with spa
 The easiest way to run integration tests is to use the provided Makefile target:
 
 ```bash
-make test-integration-docker-up
+make test-integration
 ```
 
 This command will:
@@ -26,18 +26,20 @@ This command will:
 
 ### Run Tests Against Existing Environment
 
-If you already have the docker-compose environment running:
+To run tests against an environment you have already started, invoke pytest directly:
 
 ```bash
 # Start the environment
-GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f docker-compose/dev/docker-compose.yml up -d
+GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f dev/docker-compose/docker-compose.yml up -d
 
-# Run tests
-make test-integration
+# Run tests against the existing environment
+uv run pytest tests/integration -vvv
 
 # Stop the environment when done
 make dev-down
 ```
+
+Note: `make test-integration` creates the env, runs tests, then tears it down. To run tests against an already-running env instead, use `uv run pytest tests/integration -vvv` directly as shown above.
 
 ## Test Structure
 
@@ -86,14 +88,10 @@ The dev docker-compose file includes:
 ## Makefile Targets
 
 ```bash
-make test-integration              # Run tests against existing environment
-make test-integration-docker-up    # Start environment and run tests
-make test-integration-docker-down  # Stop environment
-make test-integration-docker-clean # Stop and clean environment with volumes
-make test-integration-logs         # Show all service logs
-make test-integration-service      # Show service logs only
-make test-integration-hub          # Show hub logs only
-make test-integration-worker       # Show worker logs only
+make test-integration   # Create env, run tests, then tear it down
+make dev-up             # Start the dev environment
+make dev-down           # Stop the dev environment
+make dev-logs           # Tail logs from all services
 ```
 
 ## Running Specific Tests
@@ -111,28 +109,18 @@ uv run pytest tests/integration/test_integration.py::TestUserManagement -v
 uv run pytest tests/integration/test_integration.py::TestStudentWorkflow -v
 ```
 
-Run tests with markers:
-
-```bash
-# Run only smoke tests
-uv run pytest tests/integration -m smoke -v
-
-# Run only tests that require user server
-uv run pytest tests/integration -m user_server -v
-```
-
 ## Debugging
 
 ### View Service Logs
 
 ```bash
 # View all logs
-make test-integration-logs
+make dev-logs
 
 # View specific service logs
-make test-integration-service
-make test-integration-hub
-make test-integration-worker
+docker compose -f dev/docker-compose/docker-compose.yml logs service
+docker compose -f dev/docker-compose/docker-compose.yml logs hub
+docker compose -f dev/docker-compose/docker-compose.yml logs celery-worker
 ```
 
 ### Run Tests with Verbose Output
@@ -151,7 +139,7 @@ curl http://localhost:8080/hub/health
 curl http://localhost:8000/services/grader/health
 
 # Check RabbitMQ health
-docker-compose -f docker-compose/dev/docker-compose.yml exec rabbitmq rabbitmq-diagnostics -q ping
+docker-compose -f dev/docker-compose/docker-compose.yml exec rabbitmq rabbitmq-diagnostics -q ping
 ```
 
 ## Common Issues
@@ -162,8 +150,8 @@ If services don't start properly:
 
 ```bash
 # Clean and restart
-make test-integration-docker-clean
-make test-integration-docker-up
+make dev-down
+make test-integration
 ```
 
 ### Tests Timeout
@@ -171,7 +159,7 @@ make test-integration-docker-up
 If tests timeout waiting for services:
 
 1. Increase the wait time in `conftest.py`
-2. Check service logs: `make test-integration-logs`
+2. Check service logs: `make dev-logs`
 3. Verify Docker has enough resources
 
 ### Token Issues
@@ -180,8 +168,8 @@ If authentication fails:
 
 ```bash
 # Generate a new token and restart
-GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f docker-compose/dev/docker-compose.yml down -v
-GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f docker-compose/dev/docker-compose.yml up -d
+GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f dev/docker-compose/docker-compose.yml down -v
+GRADER_API_TOKEN=$(openssl rand -hex 16) docker-compose -f dev/docker-compose/docker-compose.yml up -d
 ```
 
 ## Adding New Tests
@@ -219,7 +207,7 @@ For CI/CD pipelines:
 # Example GitHub Actions step
 - name: Run Integration Tests
   run: |
-    make test-integration-docker-up
+    make test-integration
   env:
     GRADER_API_TOKEN: ${{ secrets.GRADER_API_TOKEN }}
 ```
