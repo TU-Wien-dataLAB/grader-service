@@ -16,13 +16,3 @@ If you do not see the launcher items, it could be due to one of the following re
 - Extensions may be disabled in JupyterLab. Refer to the [JupyterLab extension management guide](https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#managing-extensions-using-the-extension-manager) to enable them.
 - The `grader-service` backend may not be running. In this case, a warning should appear in the interface.
 ```
-
----
-
-## Renaming a Lecture
-
-When a lecture environment is first provisioned via JupyterHub, it is typically named using the lecture code followed by the semester (unless configured otherwise). To make it more recognizable for students (and yourself), you are encouraged to rename it to the natural lecture title.
-
-If the current lecture name still matches the default code, the system will automatically prompt you to rename it.
-
-![Rename Lecture](../_static/assets/gifs/instructor_guide/rename_lecture.gif)

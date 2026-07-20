@@ -73,7 +73,7 @@ The integration tests use several pytest fixtures:
 
 - `GRADER_API_TOKEN`: Service token for authentication (auto-generated if not set)
 - `BASE_URL`: JupyterHub URL (default: http://localhost:8080)
-- `SERVICE_URL`: Grader service URL (default: http://localhost:8000/services/grader)
+- `SERVICE_URL`: Grader service URL (default: http://localhost:8000/services/grader/api)
 - `DATABASE_TYPE`: Database type (sqlite or postgres, default: sqlite)
 
 ### Docker Compose Configuration
@@ -136,7 +136,7 @@ GRADER_API_TOKEN=$(openssl rand -hex 16) uv run pytest tests/integration -v -s
 curl http://localhost:8080/hub/health
 
 # Check grader service health
-curl http://localhost:8000/services/grader/health
+curl http://localhost:8000/services/grader/api/health
 
 # Check RabbitMQ health
 docker-compose -f dev/docker-compose/docker-compose.yml exec rabbitmq rabbitmq-diagnostics -q ping

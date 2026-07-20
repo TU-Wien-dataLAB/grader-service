@@ -19,9 +19,9 @@ Run the following command from the repository root:
 make dev-up
 ```
 
-Or directly with docker-compose:
+Or directly with docker compose:
 ```bash
-docker-compose -f dev/docker-compose/docker-compose.yml up -d --build
+docker compose -f dev/docker-compose/docker-compose.yml up -d --build
 ```
 
 This command builds the images and starts the containers in detached mode. It sets SQLite as its database that is integrated in `Grader Service`.
@@ -35,6 +35,6 @@ make dev-down
 
 Or directly:
 ```bash
-docker-compose -f dev/docker-compose/docker-compose.yml down -v
+docker compose -f dev/docker-compose/docker-compose.yml down -v
 ```
 This command makes sure that both named and anonymous volumes are removed.
