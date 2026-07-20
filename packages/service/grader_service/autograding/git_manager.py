@@ -6,7 +6,7 @@ from typing import Any
 from traitlets import Unicode, validate
 from traitlets.config import LoggingConfigurable
 
-from grader_service.autograding.utils import executable_validator
+from grader_service.utils import executable_validator
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Assignment, Submission

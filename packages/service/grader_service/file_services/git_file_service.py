@@ -3,11 +3,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import observe, Unicode
+from traitlets import observe, Unicode, validate
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.utils import executable_validator
 
 
 def validate_path_relative_to(path: Path, base: Path) -> None:
@@ -80,6 +81,10 @@ class GitFileService(FileService):
 
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
+    @validate("git_executable")
+    def _validate_executable(self, proposal):
+        return executable_validator(proposal)
+
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
@@ -95,13 +100,6 @@ class GitFileService(FileService):
         self._check_environment()
 
     def _check_environment(self):
-        if shutil.which(self.git_executable) is None:
-            msg = (
-                "No git executable found! Git is necessary to run Grader Service "
-                "with GitFileService!"
-            )
-            raise RuntimeError(msg)
-
         if not self.gitbase.exists():
             self.gitbase.mkdir()
 
