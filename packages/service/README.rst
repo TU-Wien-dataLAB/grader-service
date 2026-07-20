@@ -66,29 +66,21 @@ Read the `official documentation <https://grader-service.readthedocs.io/en/lates
 .. image:: ./docs/source/_static/assets/gifs/labextension_update.gif
 
 Requirements
-===========
+============
 
-.. TODO: is this still correct?
+* Python >= 3.9
+* `JupyterHub <https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html>`_ >= 5.x
+* `JupyterLab <https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html>`_ >= 4.x
+* pip
 
-..
-
-   JupyterHub,
-   JupyterLab,
-   Python >= 3.9,
-   pip,
-   Node.js>=12,
-   npm
+Building the labextension frontend from source additionally requires Node.js >= 20 and ``npm``.
 
 Installation
 ============
 
 .. installation-start
 
-This repository contains the packages for the jupyter extensions and the grader service itself.
-
 The grader service has only been tested on Unix/macOS operating systems.
-
-This repository contains all the necessary packages for a full installation of the grader service.
 
 
 * ``grader-service``\ : Manages students and instructors, files, grading and multiple lectures. It can be run as a standalone containerized service and can utilize a kubernetes cluster for grading assignments. This package also contains ``grader-convert``, a tool for converting notebooks to different formats (e.g. removing solution code, executing, etc.). It can be used as a command line tool but will mainly be called by the service. The conversion logic is based on `nbgrader <https://github.com/jupyter/nbgrader>`_.
@@ -97,7 +89,7 @@ This repository contains all the necessary packages for a full installation of t
 
     pip install grader-service
 
-* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments and so on. The package is located in its `own repo <https://github.com/TU-Wien-dataLAB/Grader-Labextension>`_.
+* ``grader-labextension``\ : The JupyterLab plugin for interacting with the service. Provides the UI for instructors and students and manages the local git repositories for the assignments and so on. The source is part of this repository under ``packages/labextension``.
 
 .. code-block::
 
@@ -109,37 +101,62 @@ This repository contains all the necessary packages for a full installation of t
 .. installation-from-soruce-start
 
 Installation from Source
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-To install this package from source, clone into the repository or download the `zip file <https://github.com/TU-Wien-dataLAB/Grader-Service/archive/refs/heads/main.zip/>`_.
+The repository is a `uv workspace <https://docs.astral.sh/uv/concepts/projects/workspaces/>`_ monorepo, so a single command installs both ``grader-service`` and ``grader-labextension`` in editable mode together with all development, test, and documentation dependencies.
 
-Local installation
-^^^^^^^^^^^^^^^^^^^^
+Prerequisites: Python >= 3.9, `uv <https://docs.astral.sh/uv/>`_, Node.js >= 20, Git.
 
-In the ``grader`` directory run:
+Clone the repository:
 
 .. code-block:: bash
 
-   pip install -r ./grader_labextension/requirements.txt
-   pip install ./grader_labextension
+   git clone https://github.com/TU-Wien-dataLAB/grader-service.git
+   cd packages/grader-service
 
-   pip install -r ./grader_service/requirements.txt
-   pip install ./grader_service
+Install all packages:
 
+.. code-block:: bash
 
-Then, navigate to the ``grader_labextension``\ -directory and follow the instructions in the README file.
+   make sync
+
+This runs ``uv sync --all-packages --all-groups`` and creates a single virtual environment with both packages installed. Because the repository is configured as a uv workspace, the labextension's dependency on ``grader-service`` is resolved from the local package.
+
+Create the database schema by running the migration against a service config (example configs are provided in ``dev/local/token/``):
+
+.. code-block:: bash
+
+   uv run grader-service-migrate -f dev/local/token/grader_service_config.py
+
+Start the grader service, then JupyterHub:
+
+.. code-block:: bash
+
+   make run-service
+   make run-hub
+
+The labextension frontend is installed in editable mode; rebuild it after TypeScript changes with ``jlpm build`` (run from ``packages/labextension``) or use ``make watch-labextension`` to rebuild on every change.
+
+For the full list of development commands, see ``DEVELOPMENT.md``.
+
+.. installation-from-soruce-end
 
 Development Environment
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Alternatively you can run the installation scripts in ``examples/dev_environment``.
-Follow the documentation there. The directory also contains the config files for a local installation.
+A fully containerized development stack (Grader Service, JupyterHub, RabbitMQ, Celery worker, and SQLite database) is provided in ``dev/docker-compose``:
 
-.. installation-from-soruce-end
+.. code-block:: bash
+
+   make dev-up
+
+JupyterHub will be running at ``http://127.0.0.1:8080``. Stop the stack with ``make dev-down``.
+
+A standalone Docker Compose example (without the monorepo build tooling) is available under ``examples/docker_compose``.
 
 Configuration
 ===============
-Check out the ``examples/dev_environment`` directory which contains configuration details or the `Administrator Guide <https://grader-service.readthedocs.io/en/latest/admin/administrator.html>`_.
+Check out the ``dev/docker-compose`` directory (or the example config files in ``dev/local/token``) or the `Administrator Guide <https://grader-service.readthedocs.io/en/latest/admin/administrator.html>`_.
 
 In order to use the grader service with an LMS like Moodle, the groups first have to be added to the JupyterHub so the Grader Service gets the necessary information from the hub.
 
