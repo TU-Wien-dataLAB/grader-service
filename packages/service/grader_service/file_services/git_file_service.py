@@ -3,11 +3,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import observe, Unicode, validate
+from traitlets import Unicode, observe, validate
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.orm.submission import AutoStatus, ManualStatus
 from grader_service.utils import executable_validator
 
 
@@ -134,178 +135,6 @@ class GitFileService(FileService):
         ):
             raise RuntimeError("Git user.email has to be set!")
 
-    def validate_submission_exists(
-        self, submission_hash: str, assignment: Assignment, username: str
-    ) -> None:
-        """Checks that user repo exists and `main` branch contains the commit with `submission_hash`."""
-        git_repo_path = construct_git_dir(
-            gitbase=self.gitbase,
-            repo_type=GitRepoType.USER,
-            lect_code=assignment.lecture.code,
-            assignment_id=assignment.id,
-            username=username,
-        )
-
-        # If no submissions for the student exists, we cannot reference a non-existing
-        # commit_hash.
-        if not git_repo_path.exists():
-            raise FileServiceError("User git repository not found")
-        try:
-            subprocess.run(
-                [self.git_executable, "branch", "main", "--contains", submission_hash],
-                cwd=git_repo_path,
-                capture_output=True,
-            )
-        except subprocess.CalledProcessError:
-            raise FileServiceError("Submission commit not found")
-
-    def init_submission_files(self, assignment: Assignment, username: str, message: str) -> None:
-        """Creates a new user repository from release files.
-
-        This method can also be used to "reset" one's own repo. Note that it does
-        *not* reset its git history, but rather overwrites the submission files
-        and creates a new commit.
-        Release repository, as well as the remote dir for the user repository,
-        have to exist already.
-        """
-
-        tmp_path_base = self.tmpbase / assignment.lecture.code / str(assignment.id) / username
-        validate_path_relative_to(tmp_path_base, self.tmpbase)
-
-        # Recreate temporary base Git dir for the user:
-        if tmp_path_base.exists():
-            shutil.rmtree(tmp_path_base)
-        tmp_path_base.mkdir(parents=True, exist_ok=True)
-
-        tmp_path_release = tmp_path_base / "release"
-        tmp_path_user = tmp_path_base / username
-        validate_path_relative_to(tmp_path_user, tmp_path_base)
-
-        remote_path_release = construct_git_dir(
-            self.gitbase, GitRepoType.RELEASE, assignment.lecture.code, assignment.id
-        )
-        remote_path_user = construct_git_dir(
-            self.gitbase,
-            GitRepoType.USER,
-            assignment.lecture.code,
-            assignment.id,
-            username=username,
-        )
-
-        self.log.info("Creating user repository from the release repo; %s", remote_path_release)
-        self.log.debug("Temporary path used for copying: %s", tmp_path_base)
-
-        try:
-            self._run_git([self.git_executable, "clone", remote_path_release], cwd=tmp_path_base)
-            self._run_git([self.git_executable, "clone", remote_path_user], cwd=tmp_path_base)
-            # Ensure the user repo is on `main`
-            self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_user)
-
-            self.log.debug("Copying repo from %s to %s", tmp_path_release, tmp_path_user)
-            ignore = shutil.ignore_patterns(".git", "__pycache__")
-            shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            self._run_git([self.git_executable, "add", "-A"], cwd=tmp_path_user)
-            self._run_git(
-                [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=tmp_path_user
-            )
-            self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=tmp_path_user)
-        finally:
-            shutil.rmtree(tmp_path_base)
-
-    async def edit_submission(self, submission: Submission) -> None:
-        """Creates or overwrites (resets) the repo which stores instructor's changes to submissions files."""
-        assignment = submission.assignment
-        lecture = assignment.lecture
-
-        # Path to the (bare!) repository which will store edited submission files
-        edit_repo_path = construct_git_dir(
-            gitbase=self.gitbase,
-            repo_type=GitRepoType.EDIT,
-            lect_code=lecture.code,
-            assignment_id=assignment.id,
-            submission_id=submission.id,
-        )
-        # Path to repository of student which contains the submitted files
-        submission_repo_path = construct_git_dir(
-            gitbase=self.gitbase,
-            repo_type=GitRepoType.USER,
-            lect_code=lecture.code,
-            assignment_id=assignment.id,
-            username=submission.user.name,
-        )
-        if not submission_repo_path.exists():
-            raise FileNotFoundError("The user submission repository does not exist")
-
-        # (Re-)Creating bare repository
-        if edit_repo_path.exists():
-            shutil.rmtree(edit_repo_path)
-        edit_repo_path.mkdir(parents=True, exist_ok=True)
-
-        await self._run_git_async(
-            [self.git_executable, "init", "--bare", "--initial-branch=main"], edit_repo_path
-        )
-
-        # Create temporary paths to copy the submission files in the edit repository
-        tmp_path = self.tmpbase / lecture.code / str(assignment.id) / "edit" / str(submission.id)
-        validate_path_relative_to(tmp_path, self.tmpbase)
-
-        tmp_input_path = tmp_path / "input"
-        tmp_output_path = tmp_path / "output"
-
-        if tmp_path.exists():
-            shutil.rmtree(tmp_path, ignore_errors=True)
-
-        tmp_input_path.mkdir(parents=True, exist_ok=True)
-
-        # Init local repository
-        await self._run_git_async(
-            [self.git_executable, "init", "--initial-branch=main"], tmp_input_path
-        )
-
-        # Pull user repository
-        await self._run_git_async(
-            [self.git_executable, "pull", str(submission_repo_path), "main"], tmp_input_path
-        )
-        self.log.debug("Successfully cloned repo")
-
-        # Checkout to correct submission commit
-        await self._run_git_async(
-            [self.git_executable, "checkout", submission.commit_hash], tmp_input_path
-        )
-        self.log.debug(f"Now at commit {submission.commit_hash}")
-
-        # Copy files to output directory
-        shutil.copytree(tmp_input_path, tmp_output_path, ignore=shutil.ignore_patterns(".git"))
-
-        # Init local repository
-        await self._run_git_async(
-            [self.git_executable, "init", "--initial-branch=main"], tmp_output_path
-        )
-
-        # Add edit remote
-        await self._run_git_async(
-            [self.git_executable, "remote", "add", "edit", str(edit_repo_path)], tmp_output_path
-        )
-        self.log.debug("Successfully added edit remote")
-
-        # Switch to main
-        await self._run_git_async([self.git_executable, "switch", "-c", "main"], tmp_output_path)
-        self.log.debug("Successfully switched to branch main")
-
-        # Add files to staging
-        await self._run_git_async([self.git_executable, "add", "-A"], tmp_output_path)
-        self.log.debug("Successfully added files to staging")
-
-        # Commit Files
-        await self._run_git_async(
-            [self.git_executable, "commit", "-m", "Initial commit"], tmp_output_path
-        )
-        self.log.debug("Successfully commited files")
-
-        # Push copied files
-        await self._run_git_async([self.git_executable, "push", "edit", "main"], tmp_output_path)
-        self.log.info("Successfully created a repository for edited submission.")
-
     def _run_git(self, command: list[str], cwd: Path) -> None:
         """
         Execute a git command as a subprocess.
@@ -356,11 +185,184 @@ class GitFileService(FileService):
             )
         except Exception as e:
             self.log.error(e)
+            print(e)
             raise
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
+
+    def validate_submission_exists(
+        self, submission_hash: str, assignment: Assignment, username: str
+    ) -> None:
+        """Checks that user repo exists and `main` branch contains the commit with `submission_hash`."""
+        git_repo_path = construct_git_dir(
+            gitbase=self.gitbase,
+            repo_type=GitRepoType.USER,
+            lect_code=assignment.lecture.code,
+            assignment_id=assignment.id,
+            username=username,
+        )
+
+        # If no submissions for the student exists, we cannot reference a non-existing
+        # commit_hash.
+        if not git_repo_path.exists():
+            raise FileServiceError("User git repository not found")
+        try:
+            subprocess.run(
+                [self.git_executable, "branch", "main", "--contains", submission_hash],
+                cwd=git_repo_path,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError:
+            raise FileServiceError("Submission commit not found")
+
+    def _prepare_tmp_dirs(
+        self, base: Path, input_dir: str | Path = "input", output_dir: str | Path = "output"
+    ) -> tuple[Path, Path]:
+        """
+        Recreate the base dir and create input and output subdirs in it.
+
+        Base has to be relative to the `tmpbase`.
+        """
+        validate_path_relative_to(base, self.tmpbase)
+        if base.exists():
+            shutil.rmtree(base)
+        base.mkdir(parents=True)
+
+        tmp_path_input = base / input_dir
+        tmp_path_output = base / output_dir
+        validate_path_relative_to(tmp_path_input, base)
+        validate_path_relative_to(tmp_path_output, base)
+        tmp_path_input.mkdir()
+        tmp_path_output.mkdir()
+
+        return tmp_path_input, tmp_path_output
+
+    def _copy_files_and_commit(
+        self, input_path: Path, output_path: Path, message: str = "Initial commit"
+    ) -> None:
+        """Copy submission files from one repo to another, commit and push them."""
+        self.log.debug("Copying submission files from %s to %s", input_path, output_path)
+        ignore = shutil.ignore_patterns(".git", "__pycache__")
+        shutil.copytree(input_path, output_path, ignore=ignore, dirs_exist_ok=True)
+
+        self._run_git([self.git_executable, "add", "-A"], cwd=output_path)
+        self._run_git(
+            [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=output_path
+        )
+        self.log.debug("Successfully commited files. Commit message: '%s'", message)
+        self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
+        self.log.debug("Successfully pushed the commit")
+
+    def init_user_files(self, assignment: Assignment, username: str, message: str) -> None:
+        """Copy submission files from release to user repo.
+
+        This method can also be used to "reset" one's own repo. Note that it does
+        *not* reset its git history, but rather overwrites the submission files
+        and creates a new commit.
+        Remote directories for the release and user repositories have to exist already.
+        """
+        l_code = assignment.lecture.code
+
+        remote_path_release = construct_git_dir(
+            self.gitbase, GitRepoType.RELEASE, l_code, assignment.id
+        )
+        if not remote_path_release.exists():
+            raise FileNotFoundError("The release repository does not exist")
+        remote_path_user = construct_git_dir(
+            self.gitbase, GitRepoType.USER, l_code, assignment.id, username=username
+        )
+        if not remote_path_user.exists():
+            raise FileNotFoundError("The user submission repository does not exist")
+
+        tmp_base = self.tmpbase / l_code / str(assignment.id) / username
+        tmp_path_input, tmp_path_output = self._prepare_tmp_dirs(
+            tmp_base, "release", remote_path_user.name
+        )
+
+        self.log.info("Copying the release files from %s", remote_path_release)
+        self.log.debug("Temporary path used for copying: %s", tmp_base)
+
+        try:
+            # Get the release files (no need to clone the whole repo)
+            self._run_git(
+                [self.git_executable, "init", "--initial-branch=main"], cwd=tmp_path_input
+            )
+            self._run_git(
+                [self.git_executable, "pull", remote_path_release, "main"], cwd=tmp_path_input
+            )
+
+            # Clone the user repo (we need the whole clone, because we will be committing to it)
+            self._run_git(
+                [self.git_executable, "clone", remote_path_user, tmp_path_output], cwd=tmp_base
+            )
+            # Ensure the user repo is on `main`
+            self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output)
+
+            # Copy files to the edit repo, commit and push the changes
+            self._copy_files_and_commit(tmp_path_input, tmp_path_output, message)
+            self.log.info("Successfully copied release files to user repository.")
+        finally:
+            shutil.rmtree(tmp_base)
+
+    # TODO: differences between `edit...` and `init_user_files`:
+    #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
+    #  - this checkouts the submission hash; `init_...` just checkouts main
+    async def edit_submission(self, submission: Submission) -> None:
+        """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
+        assignment = submission.assignment
+        lecture = assignment.lecture
+
+        # Create temporary paths to copy the submission files into the edit repository
+        tmp_base = self.tmpbase / lecture.code / str(assignment.id) / "edit" / str(submission.id)
+        tmp_path_input, tmp_path_output = self._prepare_tmp_dirs(tmp_base)
+
+        # Path to repository of student which contains the submitted files
+        remote_path_user = construct_git_dir(
+            gitbase=self.gitbase,
+            repo_type=GitRepoType.USER,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
+            username=submission.user.name,
+        )
+        if not remote_path_user.exists():
+            raise FileNotFoundError("The user submission repository does not exist")
+        # Path to the repository which will store edited submission files (may not exist yet)
+        remote_path_edit = construct_git_dir(
+            gitbase=self.gitbase,
+            repo_type=GitRepoType.EDIT,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
+            submission_id=submission.id,
+        )
+
+        try:
+            # Get user submission files (no need to clone the whole repo)
+            self.fetch_files(tmp_path_input, GitRepoType.USER, submission)
+
+            # (Re-)Create bare edit repository
+            if remote_path_edit.exists():
+                shutil.rmtree(remote_path_edit)
+            remote_path_edit.mkdir(parents=True, exist_ok=True)
+            await self._run_git_async(
+                [self.git_executable, "init", "--bare", "--initial-branch=main"], remote_path_edit
+            )
+
+            # Clone the (still empty) edit repository
+            await self._run_git_async(
+                [self.git_executable, "clone", remote_path_edit, tmp_path_output], tmp_path_output
+            )
+            await self._run_git_async(
+                [self.git_executable, "checkout", "-B", "main"], tmp_path_output
+            )
+            self.log.debug("Successfully set up edit repo")
+
+            # Copy files to the edit repo, commit and push the changes
+            self._copy_files_and_commit(tmp_path_input, tmp_path_output)
+            self.log.info("Successfully created a repository for edited submission.")
+        finally:
+            shutil.rmtree(tmp_base)
 
     def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
@@ -382,12 +384,12 @@ class GitFileService(FileService):
 
     def delete_submission_files(self, submission: Submission) -> None:
         """Delete all associated directories of the submission."""
-        lect_code = submission.assignment.lecture.code
+        l_code = submission.assignment.lecture.code
         a_id = str(submission.assignment.id)
 
-        assignment_path = (self.gitbase / lect_code / a_id).resolve()
+        assignment_path = (self.gitbase / l_code / a_id).resolve()
         validate_path_relative_to(assignment_path, self.gitbase)
-        tmp_assignment_path = (self.tmpbase / lect_code / a_id).resolve()
+        tmp_assignment_path = (self.tmpbase / l_code / a_id).resolve()
         validate_path_relative_to(tmp_assignment_path, self.tmpbase)
 
         target_names = {submission.user.name, str(submission.id)}
@@ -395,3 +397,122 @@ class GitFileService(FileService):
             for dir_path in base_path.rglob("*"):
                 if dir_path.is_dir() and dir_path.name in target_names:
                     shutil.rmtree(dir_path, ignore_errors=True)
+
+    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
+        """Init and pull the files from the repository of type `repo_type` into `dir`.
+
+        Note that this method does not clone the entire repository, but only pulls
+        the specified branch into the `dir`, so that the fetched files can be further
+        processed (e.g. autograded, or copied over to initialize a different repo type).
+
+        Args:
+            dir: The directory where the input repo will be created
+            repo_type: Repo type from which the files are to be fetched
+            submission: Submission whose files are to be fetched
+        Raises:
+            ValueError if repo_type is not one of the allowed values.
+        """
+        # TODO: does this logic belong here?
+        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
+            input_branch = "main"
+        elif repo_type == GitRepoType.AUTOGRADE:
+            if (
+                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
+                and submission.manual_status == ManualStatus.MANUALLY_GRADED
+            ):
+                # When submission hasn't been autograded or autograding failed,
+                # pull from user repo to generate feedback
+                repo_type = GitRepoType.USER
+                input_branch = "main"
+            else:
+                input_branch = f"submission_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+        )
+
+        self.log.info("Pulling repo %s into input directory", remote_repo_path)
+        commands = [
+            [self.git_executable, "init"],
+            [self.git_executable, "pull", remote_repo_path, input_branch],
+        ]
+        # When autograding a user's submission, check out to the commit of submission
+        if repo_type == GitRepoType.USER:
+            commands.append([self.git_executable, "checkout", submission.commit_hash])
+
+        for cmd in commands:
+            self._run_git(cmd, dir)
+
+        self.log.info("Successfully pulled files from the %s repo.", repo_type)
+
+    def push_files(  # TODO: think of a better name
+        self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
+    ) -> None:
+        """Create the repository of type `repo_type` at `dir`, commit and push the changes.
+
+        This method is to be used on files produced by the autograder/feedback executor.
+        When the submission if autograded/the feedback is generated for the first time,
+        the bare repository is also initialized.
+
+        Args:
+            filenames: List of filenames to commit
+            dir: The directory where the input repo will be created
+            repo_type: Repo type to which the files are to be pushed
+            submission: Submission whose files are updated
+        Raises:
+            ValueError if repo_type is not one of the allowed values.
+        """
+        if repo_type == GitRepoType.AUTOGRADE:
+            output_branch = f"submission_{submission.commit_hash}"
+        elif repo_type == GitRepoType.FEEDBACK:
+            output_branch = f"feedback_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Cannot fetch submission with repo type {repo_type}")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+        )
+        if not remote_repo_path.exists():
+            remote_repo_path.mkdir(parents=True)
+            self._run_git([self.git_executable, "init", "--bare", str(remote_repo_path)], dir)
+
+        self._set_up_output_repo(Path(dir), output_branch)
+        self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
+
+        self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
+        self._run_git([self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir)
+        self.log.info("Pushing complete")
+
+    def _set_up_output_repo(self, dir: Path, branch: str) -> None:
+        """Initialize the output repo and switch to a separate branch named
+        after the commit hash of the submission."""
+        self.log.info(f"Initialising repo at {dir}")
+        self._run_git([self.git_executable, "init"], dir)
+        self.log.info(f"Creating the new branch {branch} and switching to it")
+        self._run_git([self.git_executable, "switch", "-c", branch], dir)
+        self.log.info(f"Now at branch {branch}")
+
+    def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
+        """
+        Commit the provided files in the repo at `dir` with the provided commit message.
+        """
+        self.log.info(f"Committing files in {dir}")
+        if not filenames:
+            self.log.info("No files to commit.")
+            return
+
+        # Make sure we do not commit the gradebook.json
+        filenames = [f for f in filenames if f != "gradebook.json"]
+
+        self._run_git([self.git_executable, "add", "--", *filenames], dir)
+        self._run_git([self.git_executable, "commit", "-m", msg], dir)

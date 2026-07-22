@@ -88,7 +88,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         self.grading_logs: Optional[str] = None
         # Git manager performs the git operations when creating a new repo for the grading results
-        self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
+        self.git_manager = self.git_manager_class(self.submission)
 
         self.cell_timeout = self._determine_cell_timeout()
 
@@ -104,15 +104,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         try:
             self._clean_up_input_and_output_dirs()
-            self.git_manager.pull_submission(self.input_path)
+            self.git_manager.retrieve_submission(self.input_path)
 
             autograding_start = datetime.now()
             self._write_gradebook(self._put_grades_in_assignment_properties())
             self._run()
             autograding_finished = datetime.now()
 
-            files_to_commit = self._get_whitelisted_files()
-            self.git_manager.push_results(files_to_commit, self.output_path)
+            whitelisted_files = self._get_whitelisted_files()
+            self.git_manager.push_results(whitelisted_files, self.output_path)
             self._set_properties()
             self._set_db_state()
         except Exception as e:
@@ -245,7 +245,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             # No filtering needed
             return ["."]
 
-        files_to_commit = []
+        whitelisted_files = []
 
         # get all files in the directory
         for root, dirs, files in os.walk(self.output_path):
@@ -256,9 +256,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             for file in files:
                 file_path = os.path.join(rel_root, file) if rel_root != "." else file
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
-                    files_to_commit.append(file_path)
+                    whitelisted_files.append(file_path)
 
-        return files_to_commit
+        return whitelisted_files
 
     def _set_properties(self) -> None:
         """
