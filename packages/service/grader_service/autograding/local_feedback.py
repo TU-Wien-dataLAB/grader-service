@@ -22,8 +22,8 @@ class FeedbackGitSubmissionManager(GitSubmissionManager):
     input_repo_type = GitRepoType.AUTOGRADE
     output_repo_type = GitRepoType.FEEDBACK
 
-    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
-        super().__init__(grader_service_dir, submission, **kwargs)
+    def __init__(self, submission: Submission, **kwargs: Any):
+        super().__init__(submission, **kwargs)
         # When submission hasn't been autograded or autograding failed,
         # pull from user repo to generate feedback
         if (

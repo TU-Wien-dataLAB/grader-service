@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
+from traitlets import observe
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
@@ -37,8 +38,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
-    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
+    relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
+    relative_output_path = Unicode("convert_out", allow_none=False).tag(config=True)
     git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
     cell_timeout = Int(
@@ -88,7 +89,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         self.grading_logs: Optional[str] = None
         # Git manager performs the git operations when creating a new repo for the grading results
-        self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
+        self.git_manager = self.git_manager_class(self.submission)
 
         self.cell_timeout = self._determine_cell_timeout()
 
@@ -104,15 +105,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         )
         try:
             self._clean_up_input_and_output_dirs()
-            self.git_manager.pull_submission(self.input_path)
+            self.git_manager.retrieve_submission(self.input_path)
 
             autograding_start = datetime.now()
             self._write_gradebook(self._put_grades_in_assignment_properties())
             self._run()
             autograding_finished = datetime.now()
 
-            files_to_commit = self._get_whitelisted_files()
-            self.git_manager.push_results(files_to_commit, self.output_path)
+            whitelisted_files = self._get_whitelisted_files()
+            self.git_manager.push_results(whitelisted_files, self.output_path)
             self._set_properties()
             self._set_db_state()
         except Exception as e:
@@ -236,7 +237,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
 
-        The list can be directly passed to the `git commit` command.
+        The list can be directly passed to the `push_files` command of the file service.
 
         :return: list of shell-escaped filenames matching the whitelist patterns of the assignment
         """
@@ -245,7 +246,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             # No filtering needed
             return ["."]
 
-        files_to_commit = []
+        whitelisted_files = []
 
         # get all files in the directory
         for root, dirs, files in os.walk(self.output_path):
@@ -256,9 +257,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             for file in files:
                 file_path = os.path.join(rel_root, file) if rel_root != "." else file
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
-                    files_to_commit.append(file_path)
+                    whitelisted_files.append(file_path)
 
-        return files_to_commit
+        return whitelisted_files
 
     def _set_properties(self) -> None:
         """
@@ -358,15 +359,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return value
 
-    @validate("relative_input_path", "relative_output_path")
-    def _validate_service_dir(self, proposal):
-        path: str = proposal["value"]
-        if not os.path.exists(self.grader_service_dir + "/" + path):
-            self.log.info(f"Path {path} not found, creating new directories.")
-            Path(path).mkdir(parents=True, exist_ok=True, mode=0o700)
-        if not os.path.isdir(self.grader_service_dir + "/" + path):
-            raise TraitError("The path has to be an existing directory")
-        return path
+    @observe("relative_input_path", "relative_output_path")
+    def _ensure_service_dir(self, change):
+        path = change["new"]
+        full_path = Path(self.grader_service_dir) / path
+        if not full_path.exists():
+            self.log.info("Path %s not found, creating new directories.", full_path)
+            full_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        elif not full_path.is_dir():
+            raise TraitError(f"The path {full_path} has to be an existing directory")
 
     @validate("convert_executable")
     def _validate_executable(self, proposal):

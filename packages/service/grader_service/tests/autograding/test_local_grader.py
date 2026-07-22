@@ -109,7 +109,7 @@ def test_local_autograde_start_outcome_on_git_cmd_failure(
         grader_service_dir=grader_service.grader_service_dir, submission=submission_123
     )
 
-    with patch.object(executor.git_manager, "pull_submission") as git_pull:
+    with patch.object(executor.git_manager, "retrieve_submission") as git_pull:
         git_pull.side_effect = Exception("Git error")
 
         executor.start()

@@ -195,7 +195,7 @@ def test_get_gitdir_not_found():
 def test_get_gitdir():
     handler_mock = Mock()
     handler_mock.gitlookup = mock_git_lookup
-    path = GitBaseHandler.get_gitdir(handler_mock, "/abc")
+    path = GitBaseHandler.get_gitdir(handler_mock, GitRpcCmd.UPLOAD_PACK)
     assert path == "/path/to"
 
 

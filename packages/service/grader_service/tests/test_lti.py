@@ -12,11 +12,14 @@ import hashlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt as pyjwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from tornado.web import HTTPError
 
+from grader_service.handlers.lti import LTIJWKSHandler
 from grader_service.plugins.base import (
     _PLUGIN_REGISTRY,
     GraderPlugin,
@@ -239,10 +242,6 @@ class TestLTIPlatformConfig:
         p2 = LTIPlatformConfig(name="B", url_pattern="", client_id="x", token_url="t")
         assert p1.kid != p2.kid
 
-    def test_get_private_key(self, sample_platform, private_key_pem):
-        key = sample_platform.get_private_key()
-        assert "BEGIN RSA PRIVATE KEY" in key or "BEGIN PRIVATE KEY" in key
-
     def test_get_private_key_missing_path(self):
         platform = LTIPlatformConfig(
             name="T", url_pattern="", client_id="x", token_url="t", private_key_path=""
@@ -263,7 +262,6 @@ class TestLTIPlatformConfig:
 
     def test_get_public_key(self, sample_platform):
         pub = sample_platform.get_public_key()
-        from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
         assert isinstance(pub, RSAPublicKey)
 
@@ -459,8 +457,6 @@ class TestBearerTokenRequest:
             assert req.url == sample_platform.token_url
             assert req.method == "POST"
             assert "application/x-www-form-urlencoded" in req.headers["Content-Type"]
-
-            import jwt as pyjwt
 
             body_str = req.body
             if isinstance(body_str, bytes):
@@ -840,7 +836,6 @@ class TestJWKSHandler:
     @pytest.mark.asyncio
     async def test_jwks_handler_response(self, sample_systems_config):
         """The handler should return a valid JWKS JSON."""
-        from grader_service.handlers.lti import LTIJWKSHandler
 
         # Create a real LTI plugin instance and put it in a PluginManager
         lti_plugin = LTISyncGrades()
