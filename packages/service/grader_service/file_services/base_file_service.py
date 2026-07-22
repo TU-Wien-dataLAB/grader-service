@@ -1,9 +1,13 @@
+import typing
 from pathlib import Path
 
 from traitlets import Instance, Unicode, Union
 from traitlets.config import LoggingConfigurable
 
 from grader_service.orm import Assignment, Lecture, Submission
+
+if typing.TYPE_CHECKING:
+    from grader_service.handlers import GitRepoType
 
 
 class FileService(LoggingConfigurable):
@@ -16,11 +20,6 @@ class FileService(LoggingConfigurable):
     # TODO: Maybe only allow Path?
     grader_service_dir = Union([Unicode(), Instance(Path)], allow_none=False).tag(config=True)
 
-    def init_submission_files(self, assignment: Assignment, username: str, message: str) -> None:
-        """Initialize a new user's submission from the assignment files."""
-        # TODO: "message" is git-specific!
-        raise NotImplementedError()
-
     def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
     ) -> None:
@@ -30,8 +29,28 @@ class FileService(LoggingConfigurable):
         """
         raise NotImplementedError()
 
+    def init_user_files(self, assignment: Assignment, username: str, message: str) -> None:
+        """Initialize a new user's submission from the assignment files."""
+        # TODO: "message" is git-specific!
+        raise NotImplementedError()
+
     def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the instructor's changes to submission files."""
+        raise NotImplementedError()
+
+    def fetch_files(self, dir: Path, repo_type: "GitRepoType", submission: Submission):
+        """Fetch the files of the `repo_type` for the `submission` into the `dir`."""
+        # TODO: rename `repo_type` and `GitRepoType` to something more generic
+        raise NotImplementedError()
+
+    def push_files(  # TODO: think of a better name?
+        self,
+        filenames: list[str],
+        dir: str | Path,
+        repo_type: "GitRepoType",
+        submission: Submission,
+    ) -> None:
+        """Save new/updated files of the `repo_type` for the `submission`."""
         raise NotImplementedError()
 
     def delete_lecture_files(self, lecture: Lecture) -> None:
