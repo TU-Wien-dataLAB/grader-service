@@ -54,6 +54,17 @@ SESSION_COOKIE_NAME = "grader-session-id"
 auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNORECASE)
 
 
+def ensure_path_within_base(path: str, base: str) -> None:
+    path = os.path.normpath(path)
+    base = os.path.normpath(base)
+    try:
+        contained = os.path.commonpath([path, base]) == base
+    except ValueError:
+        contained = False
+    if not contained:
+        raise APIError(HTTPStatus.BAD_REQUEST, message="Invalid repository path")
+
+
 def check_authorization(
     self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]
 ) -> bool:
@@ -1099,8 +1110,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 
         path = os.path.normpath(path)
-        if not path.startswith(self.gitbase):
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
+        ensure_path_within_base(path, self.gitbase)
 
         return path
 
