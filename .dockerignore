@@ -1,0 +1,39 @@
+# Version control
+.git
+.gitignore
+
+# Python caches and virtualenvs
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.ipynb_checkpoints
+**/.venv
+**/htmlcov
+**/.coverage*
+**/*.egg-info
+**/.eggs
+
+# Python build output
+**/build
+**/dist
+
+# Node
+**/node_modules
+**/.yarn/cache
+**/.yarn/unplugged
+**/.yarn/install-state.gz
+**/.yarn/build-state.yml
+
+# Labextension build artifacts (regenerated in-image by the editable build hook)
+packages/labextension/lib
+packages/labextension/tsconfig.tsbuildinfo
+packages/labextension/grader_labextension/labextension
+packages/labextension/junit.xml
+
+# Docs build
+docs/_build
+
+# Editor / OS
+**/.DS_Store
+**/.idea
+**/.vscode
