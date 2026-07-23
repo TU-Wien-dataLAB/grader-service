@@ -63,9 +63,8 @@ The integration tests use several pytest fixtures:
 3. **TestLectureManagement**: CRUD operations for lectures
 4. **TestAssignmentWorkflow**: Assignment creation and management
 5. **TestStudentWorkflow**: Student-specific operations
-6. **TestCeleryWorker**: Celery worker and autograding tests
-7. **TestDatabaseOperations**: Database connectivity and persistence
-8. **TestErrorHandling**: Error cases and edge cases
+6. **TestDatabaseOperations**: Database connectivity and persistence
+7. **TestErrorHandling**: Error cases and edge cases
 
 ## Configuration
 

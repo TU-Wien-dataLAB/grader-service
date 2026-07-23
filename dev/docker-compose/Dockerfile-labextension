@@ -1,0 +1,65 @@
+ARG REGISTRY=quay.io
+ARG OWNER=jupyter
+ARG BASE_CONTAINER=$REGISTRY/$OWNER/minimal-notebook:latest
+
+FROM $BASE_CONTAINER
+
+USER root
+
+# Build dependencies
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends \
+        git \
+        build-essential && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mamba install -y nodejs && \
+    mamba clean -a -y
+
+COPY --from=ghcr.io/astral-sh/uv:0.9.3 /uv /uvx /bin/
+ENV UV_SYSTEM_PYTHON=true
+
+# grader-service (editable): the labextension server extension imports it
+COPY ./packages/service/pyproject.toml ./packages/service/
+COPY ./packages/service/grader_service ./packages/service/grader_service
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --link-mode=copy -e ./packages/service
+
+# grader-labextension (editable) installed at /opt/grader-labextension. The
+# editable build hook (install:extension -> jlpm build) populates lib/ and
+# grader_labextension/labextension/. JupyterLab reads assets straight from the
+# source tree via _jupyter_labextension_paths(), so the in-pod watcher's
+# rebuilds are picked up on browser refresh.
+#
+# Installed with plain pip (not uv): the labextension's tool.uv.sources maps
+# grader-service to a workspace member, which uv cannot resolve outside the
+# workspace. pip ignores tool.uv.sources and grader-service is already
+# installed above, so --no-deps skips re-resolving it.
+COPY ./packages/labextension /opt/grader-labextension
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-deps -e /opt/grader-labextension
+
+# Make the source tree writable by jovyan so the in-pod watcher can rebuild
+# lib/ and grader_labextension/labextension/.
+RUN chown -R "${NB_USER:-jovyan}:${NB_GID:-users}" /opt/grader-labextension
+
+# Ensure JupyterLab resolves the labextension to the source tree (single source
+# of truth). Replace any shared-data copy with a symlink to the source dir so
+# the watcher's rebuilds are always visible.
+RUN data_dir="$(python -c 'import sysconfig; print(sysconfig.get_path("data"))')" && \
+    labext_dir="$data_dir/share/jupyter/labextensions/grader-labextension" && \
+    mkdir -p "$(dirname "$labext_dir")" && \
+    if [ -e "$labext_dir" ] && [ ! -L "$labext_dir" ]; then \
+        rm -rf "$labext_dir"; \
+    fi && \
+    if [ ! -e "$labext_dir" ]; then \
+        ln -s /opt/grader-labextension/grader_labextension/labextension "$labext_dir"; \
+    fi
+
+# Watcher entrypoint: starts `jlpm watch` alongside the JupyterHub spawn cmd.
+COPY dev/docker-compose/entrypoint-labextension.sh /usr/local/bin/entrypoint-labextension.sh
+RUN chmod +x /usr/local/bin/entrypoint-labextension.sh
+
+USER "${NB_USER:-jovyan}"
+WORKDIR /home/${NB_USER:-jovyan}

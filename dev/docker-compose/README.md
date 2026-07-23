@@ -72,6 +72,44 @@ docker compose logs -f celery-worker
    docker compose restart service
    ```
 
+### Editing the Labextension
+
+TypeScript changes in `packages/labextension/src/`, `schema/`, or `style/` are
+hot-reloaded into spawned user pods. Spawned pods run a local
+`grader-labextension:dev` image that installs the extension in editable mode and
+bind-mounts those source directories, with an in-pod watcher
+(`tsc -w` + `jupyter labextension watch`) that recompiles on save.
+
+1. Start the dev environment from the repo root (not from this directory) so the
+   host path is picked up:
+   ```bash
+   make dev-up
+   ```
+   `make dev-up` builds the `grader-labextension:dev` image and sets
+   `GRADER_REPO_ROOT`, which `jupyterhub_config.py` uses to bind-mount the
+   source. Starting via `docker compose up` directly skips the image build and
+   leaves `GRADER_REPO_ROOT` unset (no hot reload).
+
+2. Log in at `http://localhost:8080` and start a server. The pod will have the
+   watcher running.
+
+3. Edit a file under `packages/labextension/src/` (or `schema/`, `style/`) and
+   save. The in-pod watcher recompiles within a second or two.
+
+4. Refresh the browser tab. The rebuilt labextension bundle is served on the
+   next page load.
+
+To watch the watcher output in a running pod:
+```bash
+docker exec -it jupyter-<username> tail -f /tmp/grader-labextension-watch.log
+```
+
+Rebuild the labextension image after changing package dependencies, Python code, or the
+build setup in `packages/labextension/`:
+```bash
+make rebuild-labextension
+```
+
 ### Editing Configuration
 
 - `grader_service_config.py`: Grader Service configuration
@@ -85,17 +123,22 @@ docker compose restart service hub
 ### Labextension not loading
 
 1. If you run the project for the first time, you may just have to wait a while.
-   The `grader-labextension` Docker image has to be pulled from the registry, but this
-   is only done on `docker compose up`. Try refreshing the start page and relaunching
-   the server if it has failed to start.
+   The `grader-labextension:dev` image is built by `make dev-up`; try refreshing
+   the start page and relaunching the server if it has failed to start.
 
-2. Check `hub` service build logs:
+2. Check `hub` service logs:
    ```bash
    docker compose logs hub
    ```
-3. Rebuild the `hub` container:
+
+3. Check the watcher log inside the spawned pod:
    ```bash
-   docker compose up -d --build hub
+   docker exec -it jupyter-<username> tail -50 /tmp/grader-labextension-watch.log
+   ```
+
+4. Rebuild the `grader-labextension:dev` image and restart:
+   ```bash
+   make rebuild-labextension
    ```
 
 ## Architecture

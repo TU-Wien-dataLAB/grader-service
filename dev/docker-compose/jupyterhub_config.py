@@ -7,7 +7,10 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 ## generic
 c.JupyterHub.admin_access = True
 c.Spawner.default_url = "/lab"
-c.Spawner.cmd = ["jupyter-labhub"]
+# The watcher entrypoint starts `jlpm watch` (tsc -w + jupyter labextension
+# watch) in the background, then hands off to jupyter-labhub so labextension TS
+# changes are hot-reloaded in spawned user pods.
+c.Spawner.cmd = ["/usr/local/bin/entrypoint-labextension.sh", "jupyter-labhub"]
 
 ## authenticator
 c.JupyterHub.authenticator_class = DummyAuthenticator
@@ -29,12 +32,34 @@ c.DockerSpawner.network_name = "grader-dev_grader-network"
 
 c.DockerSpawner.remove = True
 
-# Todo: make sensible image choice like local version of labextension
-c.DockerSpawner.image = "ghcr.io/tu-wien-datalab/grader-labextension:latest"
+# Local dev image with the labextension installed in editable mode (built by the
+# `labextension` compose service / `make dev-up`).
+c.DockerSpawner.image = "grader-labextension:dev"
 notebook_dir = os.environ.get("DOCKER_NOTEBOOK_DIR", "/home/jovyan/work")
 c.DockerSpawner.notebook_dir = notebook_dir
 
+# Bind-mount labextension source inputs into the pod so the in-pod watcher
+# rebuilds on save. GRADER_REPO_ROOT is the absolute host path to the repo root
+# (set by `make dev-up`). Only the read-only source inputs (src/, schema/,
+# style/) are mounted: the watcher writes lib/ and grader_labextension/
+# labextension/ into the image's jovyan-owned tree (served via the symlink
+# created in the image), which avoids host-UID mismatch on the build output.
+_repo_root = os.environ.get("GRADER_REPO_ROOT", "")
+_labext_src = os.path.join(_repo_root, "packages", "labextension") if _repo_root else ""
 c.DockerSpawner.volumes = {"jupyterhub-data-{username}": notebook_dir}
+if _labext_src:
+    c.DockerSpawner.volumes.update(
+        {
+            f"{_labext_src}/src": "/opt/grader-labextension/src",
+            f"{_labext_src}/schema": "/opt/grader-labextension/schema",
+            f"{_labext_src}/style": "/opt/grader-labextension/style",
+        }
+    )
+else:
+    print(
+        "WARNING: GRADER_REPO_ROOT is not set; labextension source is not "
+        "bind-mounted into spawned pods (no hot reload). Run via `make dev-up`."
+    )
 
 
 async def pre_spawn_hook(spawner):
@@ -74,7 +99,7 @@ else:
 c.JupyterHub.load_roles = [
     {
         "name": "grader-service",
-        "scopes": ["admin:users", "read:users", "tokens"],
+        "scopes": ["admin:users", "read:users", "tokens", "admin:servers", "groups"],
         "services": ["grader"],
     }
 ]

@@ -7,12 +7,12 @@ services:
       dockerfile: dev/docker-compose/Dockerfile-service
     command: bash -c "
         grader-service-migrate -f /app/grader_service_config.py
-        && uv run watchmedo auto-restart --directory=/app/grader_service --pattern='*.py' --recursive -- grader-service -f /app/grader_service_config.py
+        && uv run watchmedo auto-restart --directory=/app/packages/service/grader_service --pattern='*.py' --recursive -- grader-service -f /app/grader_service_config.py
       "
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - service_dir:/app/service_dir
-      - ../../packages/service/grader_service:/app/grader_service
+      - ../../packages/service/grader_service:/app/packages/service/grader_service
     environment:
       DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       RABBITMQ_GRADER_SERVICE_USERNAME: grader_user
@@ -22,7 +22,7 @@ services:
     depends_on:
       - rabbitmq
     ports:
-      - "8000:4010"
+      - "4010:4010"
     networks:
       - grader-network
     healthcheck:
@@ -49,6 +49,11 @@ services:
     environment:
       - GRADER_SERVICE_URL=http://service:4010
       - GRADER_API_TOKEN=${GRADER_API_TOKEN:-7572f93a2e7640999427d9289c8318c0}
+      # Absolute host path to the repo root. Used by jupyterhub_config.py to
+      # bind-mount labextension source into spawned user pods for hot reload.
+      # Set automatically by `make dev-up`; required for direct `docker compose`
+      # usage.
+      - GRADER_REPO_ROOT=${GRADER_REPO_ROOT:-}
     networks:
       - grader-network
     healthcheck:
@@ -82,12 +87,12 @@ services:
       context: ../..
       dockerfile: dev/docker-compose/Dockerfile-service
     command: bash -c "
-        uv run watchmedo auto-restart --directory=/app/grader_service --pattern='*.py' --recursive -- grader-worker -f /app/grader_service_config.py
+        uv run watchmedo auto-restart --directory=/app/packages/service/grader_service --pattern='*.py' --recursive -- grader-worker -f /app/grader_service_config.py
       "
     volumes:
       - ./grader_service_config.py:/app/grader_service_config.py
       - service_dir:/app/service_dir
-      - ../../packages/service/grader_service:/app/grader_service
+      - ../../packages/service/grader_service:/app/packages/service/grader_service
     depends_on:
       - rabbitmq
       - service
@@ -122,6 +127,18 @@ services:
     command: ["pytest", "tests/integration", "-v"]
     profiles:
       - test
+
+  # Local labextension dev image used by DockerSpawner. Build-only (profile
+  # gated) — not started as a service. Build with:
+  #   docker compose -f dev/docker-compose/docker-compose.yml build labextension
+  # or via `make dev-up` (which builds it before bringing the stack up).
+  labextension:
+    build:
+      context: ../..
+      dockerfile: dev/docker-compose/Dockerfile-labextension
+    image: grader-labextension:dev
+    profiles:
+      - build
 
 volumes:
   service_dir:
