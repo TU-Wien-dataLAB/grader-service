@@ -6,7 +6,6 @@
 
 # import handlers
 from grader_service.handlers import (
-    admin,
     assignment,
     base_handler,
     config,
@@ -23,7 +22,6 @@ from grader_service.handlers import (
 from grader_service.handlers.handler_utils import GitRepoType
 
 __all__ = [
-    "admin",
     "assignment",
     "grading",
     "lectures",
