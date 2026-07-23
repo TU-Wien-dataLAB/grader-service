@@ -398,14 +398,15 @@ class BaseHandler(web.RequestHandler):
         else:
             return match.group(2)
 
-    @functools.lru_cache
     def get_token(self) -> Optional[APIToken]:
         """get token from authorization header"""
-        token = self.get_auth_token()
-        if token is None:
-            return None
-        orm_token = APIToken.find(self.session, token)
-        return orm_token
+        if not hasattr(self, "_cached_token"):
+            token = self.get_auth_token()
+            if token is None:
+                self._cached_token = None
+            else:
+                self._cached_token = APIToken.find(self.session, token)
+        return self._cached_token
 
     def get_current_user_token(self) -> Optional[User]:
         """get_current_user from Authorization header token"""
