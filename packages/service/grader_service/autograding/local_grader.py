@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
+from traitlets import observe
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
@@ -37,8 +38,8 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
-    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
+    relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
+    relative_output_path = Unicode("convert_out", allow_none=False).tag(config=True)
     git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
     cell_timeout = Int(
@@ -358,15 +359,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return value
 
-    @validate("relative_input_path", "relative_output_path")
-    def _validate_service_dir(self, proposal):
-        path: str = proposal["value"]
-        if not os.path.exists(self.grader_service_dir + "/" + path):
-            self.log.info(f"Path {path} not found, creating new directories.")
-            Path(path).mkdir(parents=True, exist_ok=True, mode=0o700)
-        if not os.path.isdir(self.grader_service_dir + "/" + path):
-            raise TraitError("The path has to be an existing directory")
-        return path
+    @observe("relative_input_path", "relative_output_path")
+    def _ensure_service_dir(self, change):
+        path = change["new"]
+        full_path = Path(self.grader_service_dir) / path
+        if not full_path.exists():
+            self.log.info("Path %s not found, creating new directories.", full_path)
+            full_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        elif not full_path.is_dir():
+            raise TraitError(f"The path {full_path} has to be an existing directory")
 
     @validate("convert_executable")
     def _validate_executable(self, proposal):

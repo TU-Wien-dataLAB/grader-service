@@ -149,7 +149,7 @@ class BaseHandler(web.RequestHandler):
         self._accept_cookie_auth = True
         self._accept_token_auth = True
 
-        self.application: GraderServer = self.application
+        self.application: GraderServer = application
         self.authenticator = self.application.authenticator
         self.log = self.application.log
 
