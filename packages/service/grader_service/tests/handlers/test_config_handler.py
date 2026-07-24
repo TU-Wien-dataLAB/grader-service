@@ -9,6 +9,7 @@ import pathlib
 from http import HTTPStatus
 
 import pytest
+from tornado.httpclient import HTTPError
 from traitlets.config import Config
 
 from grader_service.server import GraderServer
@@ -127,7 +128,7 @@ class TestConfigHandler:
         url = service_base_url + "config"
 
         # Try without token - should fail
-        with pytest.raises(Exception):  # HTTPClientError or similar
+        with pytest.raises(HTTPError):
             await http_server_client.fetch(url, method="GET")
 
     async def test_get_config_response_structure(

@@ -18,6 +18,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.file_services import GitFileService
+from grader_service.handlers import GitRepoType
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role, SubmissionLogs, SubmissionProperties
@@ -1842,7 +1843,9 @@ async def test_submission_create_edit_repo(
     assert submission_dict["edited"] is True
     assert submission_dict["commit_hash"] == commit_hash
     assert submission_dict["user_display_name"] == student_username
-    assert (gitbase_dir / l_code / str(a_id) / "edit" / str(submission_dict["id"])).exists()
+    assert (
+        gitbase_dir / l_code / str(a_id) / str(GitRepoType.EDIT) / str(submission_dict["id"])
+    ).exists()
 
 
 async def test_submission_cannot_edit_submission_created_by_instructor(

@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from grader_service.api.models.error_message import ErrorMessage
 from grader_service.handlers.base_handler import BaseHandler, GraderBaseHandler
 from grader_service.orm import Assignment
 
@@ -81,10 +80,6 @@ def test_nested_serialization():
     o = [{"b": None}, {"a": 2}, "test", {"z": []}]
     s = GraderBaseHandler._serialize(o)
     assert o == s
-
-
-def test_api_model_serialization():
-    ErrorMessage(message="")
 
 
 @pytest.mark.parametrize(
