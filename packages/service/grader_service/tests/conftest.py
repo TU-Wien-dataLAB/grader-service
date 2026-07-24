@@ -17,7 +17,7 @@ from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.file_services import GitFileService
 from grader_service.main import get_session_maker
-from grader_service.orm import User
+from grader_service.orm import User, Submission, Assignment, Lecture, SubmissionProperties
 from grader_service.orm.base import set_sqlite_pragma
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -178,3 +178,25 @@ def default_admin():
 def default_token():
     token = "token"
     yield token
+
+
+@pytest.fixture
+def assignment_123():
+    a = Assignment(id=123, properties='{"notebooks": {}}')
+    a.lecture = Lecture(code="LEC_01")
+    a.settings.allowed_files = []
+
+    yield a
+
+
+@pytest.fixture
+def submission_123(assignment_123):
+    submission = Submission()
+    submission.id = 123
+    submission.assignment = assignment_123
+    submission.user = User(name="test_user")
+    submission.properties = SubmissionProperties(properties='{"notebooks": {}}')
+    submission.score_scaling = 1
+    submission.commit_hash = "9ce33a20c72e406f3d9fa0c7b574a4c4591daf33"
+
+    yield submission

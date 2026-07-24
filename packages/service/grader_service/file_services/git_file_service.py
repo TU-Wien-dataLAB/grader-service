@@ -47,12 +47,14 @@ def construct_git_dir(
     repo_type_path = gitbase / lect_code / str(assignment_id) / repo_type
     if repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}:
         if repo_type == GitRepoType.EDIT:
-            assert submission_id is not None, f"Missing submission_id for repo type {repo_type}"
+            if submission_id is None:
+                raise ValueError(f"Missing submission_id for repo type {repo_type}")
             path = repo_type_path / str(submission_id)
         else:
             path = repo_type_path
     else:
-        assert username is not None, f"Missing username for repo type {repo_type}"
+        if username is None:
+            raise ValueError(f"Missing username for repo type {repo_type}")
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             # Note: username should be that of the submission's user!
             path = repo_type_path / "user" / username
@@ -154,10 +156,10 @@ class GitFileService(FileService):
             raise ValueError(f"Not a git command: {command}")
         self.log.debug('Running "%s"', " ".join(map(str, command)))
         try:
-            subprocess.run(command, cwd=cwd, check=True)
+            subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
-            raise FileServiceError("Subprocess Error")
+            raise FileServiceError("Subprocess Error") from None
         except Exception as e:
             self.log.error(e)
             raise
@@ -185,12 +187,43 @@ class GitFileService(FileService):
             )
         except Exception as e:
             self.log.error(e)
-            print(e)
             raise
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
+
+    def is_bare_git_dir(self, path: Path) -> bool:
+        """Check if the `path` is a directory with a bare git repo."""
+        try:
+            out = subprocess.run(
+                [self.git_executable, "rev-parse", "--is-bare-repository"],
+                cwd=path,
+                capture_output=True,
+            )
+            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
+        except FileNotFoundError:
+            is_git = False
+        return is_git
+
+    def _create_bare_repo(
+        self, path: Path, recreate_dir: bool = False, initial_branch: str = "main"
+    ) -> None:
+        """Create and initialize a bare repo in the directory `path`.
+
+        Args:
+            path: the directory where the repo will be initialized
+            recreate_dir: whether to remove and recreate the `path` dir first
+            initial_branch: branch created on repo initialization
+        """
+        if recreate_dir and path.exists():
+            self.log.info("Recreating the bare repo directory: %s", path)
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+        self.log.debug("Running: git init --bare")
+        self._run_git(
+            [self.git_executable, "init", "--bare", f"--initial-branch={initial_branch}"], cwd=path
+        )
 
     def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
@@ -212,7 +245,7 @@ class GitFileService(FileService):
             subprocess.run(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
-                capture_output=True,
+                check=True,
             )
         except subprocess.CalledProcessError:
             raise FileServiceError("Submission commit not found")
@@ -223,7 +256,7 @@ class GitFileService(FileService):
         """
         Recreate the base dir and create input and output subdirs in it.
 
-        Base has to be relative to the `tmpbase`.
+        Base has to be relative to the ``self.tmpbase``.
         """
         validate_path_relative_to(base, self.tmpbase)
         if base.exists():
@@ -255,13 +288,15 @@ class GitFileService(FileService):
         self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
         self.log.debug("Successfully pushed the commit")
 
-    def init_user_files(self, assignment: Assignment, username: str, message: str) -> None:
+    def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
         """Copy submission files from release to user repo.
 
         This method can also be used to "reset" one's own repo. Note that it does
         *not* reset its git history, but rather overwrites the submission files
         and creates a new commit.
-        Remote directories for the release and user repositories have to exist already.
+
+        Raises:
+            FileNotFoundError if any of the release or user repositories do not exist.
         """
         l_code = assignment.lecture.code
 
@@ -301,14 +336,68 @@ class GitFileService(FileService):
             self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output)
 
             # Copy files to the edit repo, commit and push the changes
-            self._copy_files_and_commit(tmp_path_input, tmp_path_output, message)
+            self._copy_files_and_commit(tmp_path_input, tmp_path_output, comment)
             self.log.info("Successfully copied release files to user repository.")
         finally:
             shutil.rmtree(tmp_base)
 
+    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
+        """Init and pull submission files from the repository of type ``repo_type`` into ``dir``.
+
+        Note that this method does not clone the entire repository, but only pulls
+        the specified branch into the ``dir``, so that the fetched files can be further
+        processed (e.g. autograded, or copied over to initialize a different repo type).
+
+        Args:
+            dir: The directory where the input repo will be created; has to already exist.
+            repo_type: Repo type from which the files are to be fetched
+            submission: Submission whose files are to be fetched
+        Raises:
+            ValueError if repo_type is not one of the allowed values.
+        """
+        # TODO: does this logic belong here?
+        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
+            input_branch = "main"
+        elif repo_type == GitRepoType.AUTOGRADE:
+            if (
+                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
+                and submission.manual_status == ManualStatus.MANUALLY_GRADED
+            ):
+                # When submission hasn't been autograded or autograding failed,
+                # pull from user repo to generate feedback
+                repo_type = GitRepoType.USER
+                input_branch = "main"
+            else:
+                input_branch = f"submission_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+        )
+
+        self.log.info("Pulling repo %s into input directory", remote_repo_path)
+        commands = [
+            [self.git_executable, "init", "--initial-branch=main"],
+            [self.git_executable, "pull", remote_repo_path, input_branch],
+        ]
+        # When autograding a user's submission, check out to the commit of submission
+        if repo_type == GitRepoType.USER:
+            commands.append([self.git_executable, "checkout", submission.commit_hash])
+
+        for cmd in commands:
+            self._run_git(cmd, dir)
+
+        self.log.info("Successfully pulled files from the %s repo.", repo_type)
+
     # TODO: differences between `edit...` and `init_user_files`:
     #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
     #  - this checkouts the submission hash; `init_...` just checkouts main
+    #  - edit one is async! (why only this one???) => some code has two variants, sync and async
     async def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
         assignment = submission.assignment
@@ -342,12 +431,7 @@ class GitFileService(FileService):
             self.fetch_files(tmp_path_input, GitRepoType.USER, submission)
 
             # (Re-)Create bare edit repository
-            if remote_path_edit.exists():
-                shutil.rmtree(remote_path_edit)
-            remote_path_edit.mkdir(parents=True, exist_ok=True)
-            await self._run_git_async(
-                [self.git_executable, "init", "--bare", "--initial-branch=main"], remote_path_edit
-            )
+            self._create_bare_repo(remote_path_edit, recreate_dir=True)
 
             # Clone the (still empty) edit repository
             await self._run_git_async(
@@ -363,6 +447,78 @@ class GitFileService(FileService):
             self.log.info("Successfully created a repository for edited submission.")
         finally:
             shutil.rmtree(tmp_base)
+
+    def push_files(  # TODO: think of a better name
+        self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
+    ) -> None:
+        """Create the repository of type `repo_type` at `dir`, commit and push the changes.
+
+        This method is to be used on files produced by the autograder/feedback executor.
+        When the submission if autograded/the feedback is generated for the first time,
+        the bare repository is also initialized.
+
+        Args:
+            filenames: List of filenames in ``dir`` to commit
+            dir: The directory where the input repo will be initialized. Should already
+              exist and contain the ``filenames``
+            repo_type: Repo type to which the files are to be pushed
+            submission: Submission whose files are updated
+        Raises:
+            ValueError if repo_type is not one of the allowed values.
+        """
+        if repo_type == GitRepoType.AUTOGRADE:
+            output_branch = f"submission_{submission.commit_hash}"
+        elif repo_type == GitRepoType.FEEDBACK:
+            output_branch = f"feedback_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Invalid repo type {repo_type}")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+        )
+        if not remote_repo_path.exists():
+            self._create_bare_repo(remote_repo_path)
+
+        self._set_up_output_repo(Path(dir), output_branch)
+        self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
+
+        self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
+        self._run_git([self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir)
+        self.log.info("Pushing complete")
+
+    def _set_up_output_repo(self, dir: Path, branch: str) -> None:
+        """Initialize the repo at ``dir`` and switch to ``branch``."""
+        if not dir.exists():
+            self.log.debug("Creating directory %s", dir)
+            dir.mkdir(parents=True)
+        self.log.info("Initialising repo at %s", dir)
+        self._run_git([self.git_executable, "init"], dir)
+        try:
+            self.log.debug("Switching to branch %r", branch)
+            self._run_git([self.git_executable, "switch", branch], dir)
+        except FileServiceError:
+            self.log.debug("Creating the new branch %r and switching to it", branch)
+            self._run_git([self.git_executable, "switch", "-c", branch], dir)
+        self.log.debug("Now at branch %r", branch)
+
+    def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
+        """
+        Commit the provided files in the repo at `dir` with the provided commit message.
+        """
+        self.log.info(f"Committing files in {dir}")
+        if not filenames:
+            self.log.info("No files to commit.")
+            return
+
+        # Make sure we do not commit the gradebook.json
+        filenames = [f for f in filenames if f != "gradebook.json"]
+
+        self._run_git([self.git_executable, "add", "--", *filenames], dir)
+        self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
 
     def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
@@ -397,122 +553,3 @@ class GitFileService(FileService):
             for dir_path in base_path.rglob("*"):
                 if dir_path.is_dir() and dir_path.name in target_names:
                     shutil.rmtree(dir_path, ignore_errors=True)
-
-    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
-        """Init and pull the files from the repository of type `repo_type` into `dir`.
-
-        Note that this method does not clone the entire repository, but only pulls
-        the specified branch into the `dir`, so that the fetched files can be further
-        processed (e.g. autograded, or copied over to initialize a different repo type).
-
-        Args:
-            dir: The directory where the input repo will be created
-            repo_type: Repo type from which the files are to be fetched
-            submission: Submission whose files are to be fetched
-        Raises:
-            ValueError if repo_type is not one of the allowed values.
-        """
-        # TODO: does this logic belong here?
-        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
-            input_branch = "main"
-        elif repo_type == GitRepoType.AUTOGRADE:
-            if (
-                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
-                and submission.manual_status == ManualStatus.MANUALLY_GRADED
-            ):
-                # When submission hasn't been autograded or autograding failed,
-                # pull from user repo to generate feedback
-                repo_type = GitRepoType.USER
-                input_branch = "main"
-            else:
-                input_branch = f"submission_{submission.commit_hash}"
-        else:
-            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
-
-        assignment: Assignment = submission.assignment
-        l_code: str = assignment.lecture.code
-        username: str = submission.user.name
-
-        remote_repo_path = construct_git_dir(
-            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
-        )
-
-        self.log.info("Pulling repo %s into input directory", remote_repo_path)
-        commands = [
-            [self.git_executable, "init"],
-            [self.git_executable, "pull", remote_repo_path, input_branch],
-        ]
-        # When autograding a user's submission, check out to the commit of submission
-        if repo_type == GitRepoType.USER:
-            commands.append([self.git_executable, "checkout", submission.commit_hash])
-
-        for cmd in commands:
-            self._run_git(cmd, dir)
-
-        self.log.info("Successfully pulled files from the %s repo.", repo_type)
-
-    def push_files(  # TODO: think of a better name
-        self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
-    ) -> None:
-        """Create the repository of type `repo_type` at `dir`, commit and push the changes.
-
-        This method is to be used on files produced by the autograder/feedback executor.
-        When the submission if autograded/the feedback is generated for the first time,
-        the bare repository is also initialized.
-
-        Args:
-            filenames: List of filenames to commit
-            dir: The directory where the input repo will be created
-            repo_type: Repo type to which the files are to be pushed
-            submission: Submission whose files are updated
-        Raises:
-            ValueError if repo_type is not one of the allowed values.
-        """
-        if repo_type == GitRepoType.AUTOGRADE:
-            output_branch = f"submission_{submission.commit_hash}"
-        elif repo_type == GitRepoType.FEEDBACK:
-            output_branch = f"feedback_{submission.commit_hash}"
-        else:
-            raise ValueError(f"Cannot fetch submission with repo type {repo_type}")
-
-        assignment: Assignment = submission.assignment
-        l_code: str = assignment.lecture.code
-        username: str = submission.user.name
-
-        remote_repo_path = construct_git_dir(
-            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
-        )
-        if not remote_repo_path.exists():
-            remote_repo_path.mkdir(parents=True)
-            self._run_git([self.git_executable, "init", "--bare", str(remote_repo_path)], dir)
-
-        self._set_up_output_repo(Path(dir), output_branch)
-        self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
-
-        self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
-        self._run_git([self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir)
-        self.log.info("Pushing complete")
-
-    def _set_up_output_repo(self, dir: Path, branch: str) -> None:
-        """Initialize the output repo and switch to a separate branch named
-        after the commit hash of the submission."""
-        self.log.info(f"Initialising repo at {dir}")
-        self._run_git([self.git_executable, "init"], dir)
-        self.log.info(f"Creating the new branch {branch} and switching to it")
-        self._run_git([self.git_executable, "switch", "-c", branch], dir)
-        self.log.info(f"Now at branch {branch}")
-
-    def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
-        """
-        Commit the provided files in the repo at `dir` with the provided commit message.
-        """
-        self.log.info(f"Committing files in {dir}")
-        if not filenames:
-            self.log.info("No files to commit.")
-            return
-
-        # Make sure we do not commit the gradebook.json
-        filenames = [f for f in filenames if f != "gradebook.json"]
-
-        self._run_git([self.git_executable, "add", "--", *filenames], dir)
-        self._run_git([self.git_executable, "commit", "-m", msg], dir)

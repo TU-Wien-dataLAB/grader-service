@@ -162,5 +162,5 @@ markers = [
 
 [tool.coverage.run]
 omit = [
-    "grader_service/tests/*",
+    "**/grader_service/tests/*",
 ]
