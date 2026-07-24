@@ -42,7 +42,7 @@ data:
 
 {{- if .Values.fileServiceConfig }}
 {{- if .Values.fileServiceConfig.max_file_size_mb }}
-    c.FileService.max_file_size_mb = {{ .Values.fileServiceConfig.max_file_size_mb }}
+    c.{{ .Values.fileServiceClass }}.max_file_size_mb = {{ .Values.fileServiceConfig.max_file_size_mb }}
 {{- end }}
 {{- end }}
 

@@ -34,6 +34,9 @@ class GitRpcCmd(enum.StrEnum):
 
 
 class GitBaseHandler(GraderBaseHandler):
+    process: Subprocess
+    rpc: GitRpcCmd
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # TODO: This handler requires file_service to be a git one. Where to best assert that?
@@ -42,6 +45,7 @@ class GitBaseHandler(GraderBaseHandler):
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, log_message=msg)
 
         self.gitbase = self.file_service.gitbase
+        self.git_executable = self.file_service.git_executable
 
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
@@ -239,7 +243,7 @@ class GitBaseHandler(GraderBaseHandler):
             path.mkdir(parents=True, exist_ok=True)
             self.log.info("Running: git init --bare")
             try:
-                subprocess.run(["git", "init", "--bare", path], check=True)
+                subprocess.run([self.git_executable, "init", "--bare", path], check=True)
             except subprocess.CalledProcessError:
                 return None
 
@@ -256,11 +260,12 @@ class GitBaseHandler(GraderBaseHandler):
         self.write_pre_receive_hook(path)
         return path
 
-    @staticmethod
-    def is_bare_git_dir(path: Path) -> bool:
+    def is_bare_git_dir(self, path: Path) -> bool:
         try:
             out = subprocess.run(
-                ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
+                [self.git_executable, "rev-parse", "--is-bare-repository"],
+                cwd=path,
+                capture_output=True,
             )
             is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
         except FileNotFoundError:
@@ -339,11 +344,11 @@ class RPCHandler(GitBaseHandler):
             self.rpc = GitRpcCmd(rpc)
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
-        self.gitdir = self.get_gitdir(rpc=self.rpc)
-        self.cmd = ["git", self.rpc, "--stateless-rpc", str(self.gitdir)]
-        self.log.info(f"Running command: {' '.join(self.cmd)}")
+        gitdir = self.get_gitdir(rpc=self.rpc)
+        cmd = [self.git_executable, self.rpc, "--stateless-rpc", str(gitdir)]
+        self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
-            self.cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
+            cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
         )
 
     async def data_received(self, chunk: bytes):
@@ -387,16 +392,16 @@ class InfoRefsHandler(GitBaseHandler):
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
 
-        self.cmd = [
-            "git",
+        cmd = [
+            self.git_executable,
             self.rpc,
             "--stateless-rpc",
             "--advertise-refs",
             str(self.get_gitdir(self.rpc)),
         ]
-        self.log.info(f"Running command: {' '.join(self.cmd)}")
+        self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
-            self.cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
+            cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
         )
 
     async def get(self):

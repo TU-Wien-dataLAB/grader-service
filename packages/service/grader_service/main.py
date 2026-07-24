@@ -47,12 +47,12 @@ from grader_service.file_services.base_file_service import FileService
 from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
-from grader_service.oauth2.provider import make_provider
+from grader_service.oauth2.provider import make_provider, GraderOAuthServer
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
-from grader_service.plugins import create_plugin_manager
+from grader_service.plugins import create_plugin_manager, PluginManager
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
@@ -101,7 +101,11 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False, help="The URL of the database to use").tag(config=True)
 
-    oauth_provider = None
+    oauth_provider: GraderOAuthServer
+
+    plugin_manager: PluginManager
+
+    session_maker: scoped_session
 
     @default("db_url")
     def _default_db_url(self):
@@ -460,7 +464,7 @@ class GraderService(config.Application):
         self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
-        self.http_server: HTTPServer = HTTPServer(
+        http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 file_service=self.file_service,
@@ -485,9 +489,7 @@ class GraderService(config.Application):
             xheaders=True,
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.listen(
-            self.service_port, address=self.service_host, reuse_port=self.reuse_port
-        )
+        http_server.listen(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
