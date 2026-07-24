@@ -18,7 +18,7 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.file_services import GitFileService
+from grader_service.file_services import GitFileService, FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
@@ -238,39 +238,25 @@ class GitBaseHandler(GraderBaseHandler):
         if path is None:
             return None
 
-        is_git = self.is_bare_git_dir(path)
+        is_git = self.file_service.is_bare_git_dir(path)
         if not is_git:
-            path.mkdir(parents=True, exist_ok=True)
-            self.log.info("Running: git init --bare")
             try:
-                subprocess.run([self.git_executable, "init", "--bare", path], check=True)
-            except subprocess.CalledProcessError:
+                self.file_service.create_bare_repo(path)
+            except FileServiceError:
+                self.log.error("Failed to create bare repo at %s!", path)
                 return None
 
             if repo_type == GitRepoType.USER:
-                repo_path_release = construct_git_dir(
-                    self.gitbase, GitRepoType.RELEASE, lect_code, assign_id
-                )
-                if not repo_path_release.exists():
+                try:
+                    self.file_service.init_user_files(
+                        assignment=assignment, username=username, message="Initialize from Release"
+                    )
+                except FileNotFoundError as err:
+                    self.log.error(err)
                     return None
-                self.file_service.init_user_files(
-                    assignment=assignment, username=username, message="Initialize from Release"
-                )
 
         self.write_pre_receive_hook(path)
         return path
-
-    def is_bare_git_dir(self, path: Path) -> bool:
-        try:
-            out = subprocess.run(
-                [self.git_executable, "rev-parse", "--is-bare-repository"],
-                cwd=path,
-                capture_output=True,
-            )
-            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
-        except FileNotFoundError:
-            is_git = False
-        return is_git
 
     def write_pre_receive_hook(self, path: Path):
         hook_dir = path / "hooks"

@@ -192,6 +192,38 @@ class GitFileService(FileService):
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
 
+    def is_bare_git_dir(self, path: Path) -> bool:
+        """Check if the `path` is a directory with a bare git repo."""
+        try:
+            out = subprocess.run(
+                [self.git_executable, "rev-parse", "--is-bare-repository"],
+                cwd=path,
+                capture_output=True,
+            )
+            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
+        except FileNotFoundError:
+            is_git = False
+        return is_git
+
+    def create_bare_repo(
+        self, path: Path, recreate_dir: bool = False, initial_branch: str = "main"
+    ) -> None:
+        """Create and initialize a bare repo in the directory `path`.
+
+        Args:
+            path: the directory where the repo will be initialized
+            recreate_dir: whether to remove and recreate the `path` dir first
+            initial_branch: branch created on repo initialization
+        """
+        if recreate_dir and path.exists():
+            self.log.info("Recreating the bare repo directory: %s", path)
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+        self.log.debug("Running: git init --bare")
+        self._run_git(
+            [self.git_executable, "init", "--bare", f"--initial-branch={initial_branch}"], cwd=path
+        )
+
     def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
     ) -> None:
@@ -261,7 +293,9 @@ class GitFileService(FileService):
         This method can also be used to "reset" one's own repo. Note that it does
         *not* reset its git history, but rather overwrites the submission files
         and creates a new commit.
-        Remote directories for the release and user repositories have to exist already.
+
+        Raises:
+            FileNotFoundError if any of the release or user repositories do not exist.
         """
         l_code = assignment.lecture.code
 
@@ -309,6 +343,7 @@ class GitFileService(FileService):
     # TODO: differences between `edit...` and `init_user_files`:
     #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
     #  - this checkouts the submission hash; `init_...` just checkouts main
+    #  - edit one is async! (why only this one???) => some code has two variants, sync and async
     async def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
         assignment = submission.assignment
@@ -483,8 +518,7 @@ class GitFileService(FileService):
             self.gitbase, repo_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
-            remote_repo_path.mkdir(parents=True)
-            self._run_git([self.git_executable, "init", "--bare", str(remote_repo_path)], dir)
+            self.create_bare_repo(remote_repo_path)
 
         self._set_up_output_repo(Path(dir), output_branch)
         self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
