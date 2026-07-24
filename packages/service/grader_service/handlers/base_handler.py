@@ -24,12 +24,9 @@ from tornado import httputil, web
 from tornado.escape import json_decode, json_encode
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
-from traitlets import Type
-from traitlets.config import SingletonConfigurable
 
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -1031,17 +1028,3 @@ class VersionHandler(GraderBaseHandler):
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
         self.write("Version 1.0")
-
-
-class RequestHandlerConfig(SingletonConfigurable):
-    """This class exists to not avoid all request handlers to inherit
-    from traitlets.config.Configurable and making all requests super
-    slow. If a request handler needs configurable values, they can be
-    accessed from this object."""
-
-    autograde_executor_class = Type(
-        default_value=LocalAutogradeExecutor,
-        klass=LocalAutogradeExecutor,
-        allow_none=False,
-        config=True,
-    )

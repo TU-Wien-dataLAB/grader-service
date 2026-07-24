@@ -8,7 +8,7 @@ when different timeout values are configured.
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 
 # Test configuration with custom cell timeout values
-c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 
 # Custom timeout values that differ from defaults
 c.LocalAutogradeExecutor.default_cell_timeout = 200

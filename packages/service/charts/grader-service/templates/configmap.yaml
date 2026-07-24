@@ -16,7 +16,7 @@ data:
     ### Autograde Executor
 {{- if eq .Values.autogradeExecutorClass "KubeAutogradeExecutor" }}
     from grader_service.autograding.kube.kube_grader import KubeAutogradeExecutor
-    c.RequestHandlerConfig.autograde_executor_class = KubeAutogradeExecutor
+    c.GraderService.autograde_executor_class = KubeAutogradeExecutor
     c.KubeAutogradeExecutor.kube_context = None
 {{- if .Values.kubeAutogradeExecutor.namespace }}
     c.KubeAutogradeExecutor.namespace = {{ .Values.kubeAutogradeExecutor.namespace | quote }}
@@ -31,7 +31,7 @@ data:
 
 {{- else }}
     from grader_service.autograding.local_grader import LocalAutogradeExecutor
-    c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+    c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 {{- end }}
 
     ## File Service: at the moment, it can only be GitFileService

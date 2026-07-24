@@ -42,9 +42,9 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services import GitFileService
 from grader_service.file_services.base_file_service import FileService
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.oauth2.provider import make_provider, GraderOAuthServer
@@ -141,6 +141,13 @@ class GraderService(config.Application):
         """,
     )
     file_service = Instance(klass=FileService)
+
+    autograde_executor_class = Type(
+        default_value=LocalAutogradeExecutor,
+        klass=LocalAutogradeExecutor,
+        allow_none=False,
+        config=True,
+    )
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -357,7 +364,6 @@ class GraderService(config.Application):
 
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
-        RequestHandlerConfig.config = self.config
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)

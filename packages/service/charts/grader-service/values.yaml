@@ -216,7 +216,7 @@ extraConfig: ""
 #         {"debug": false}
 extraFiles: {}
 
-# -- Request handler configuration
+# -- HTTP request handler configuration
 requestHandlerConfig:
   # -- Max buffer size in bytes (default 100MB)
   max_buffer_size: 104857600

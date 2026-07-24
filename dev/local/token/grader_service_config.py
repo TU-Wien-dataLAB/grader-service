@@ -11,7 +11,6 @@ from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope, Role
 from traitlets import log as traitlets_log
 
-
 logger = traitlets_log.get_logger()
 
 logger.info("### loading service config")
@@ -21,7 +20,7 @@ c.GraderService.service_host = "127.0.0.1"
 service_dir = os.path.join(os.getcwd(), "service_dir")
 c.GraderService.grader_service_dir = service_dir
 
-c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 
 c.CeleryApp.conf = dict(
     broker_url="amqp://localhost",

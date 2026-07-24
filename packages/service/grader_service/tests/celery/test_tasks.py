@@ -17,7 +17,6 @@ from grader_service.autograding.celery.tasks import (
     lti_sync_task,
 )
 from grader_service.autograding.local_feedback import LocalFeedbackExecutor
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.orm import Submission
 from grader_service.orm.submission import FeedbackStatus
 from grader_service.tests.handlers.db_util import insert_submission
@@ -55,7 +54,7 @@ def test_celery_autograde_task_runs_successfully(sql_alchemy_sessionmaker, celer
     # Mock the actual autograding executor call - this is tested elsewhere
     with (
         patch.object(
-            RequestHandlerConfig.instance().autograde_executor_class, "start", return_value=None
+            GraderService.instance().autograde_executor_class, "start", return_value=None
         ) as autograding_mock,
         patch.object(autograde_task.log, "info", return_value=MagicMock()),
     ):

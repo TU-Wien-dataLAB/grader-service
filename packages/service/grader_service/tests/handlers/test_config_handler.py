@@ -22,12 +22,12 @@ class TestConfigHandler:
         # minimal fixture to ensure app.config and required fields are set for the handler logic
         app.application = app
         # Ensure the required executor class is set for the handler logic
-        if not hasattr(app.config, "RequestHandlerConfig"):
-            app.config.RequestHandlerConfig = Config()
-        if app.config.RequestHandlerConfig.get("autograde_executor_class") is None:
+        if not hasattr(app.config, "GraderService"):
+            app.config.GraderService = Config()
+        if app.config.GraderService.get("autograde_executor_class") is None:
             from grader_service.autograding.local_grader import LocalAutogradeExecutor
 
-            app.config.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+            app.config.GraderService.autograde_executor_class = LocalAutogradeExecutor
 
     def load_fake_config(self, path):
         c = Config()

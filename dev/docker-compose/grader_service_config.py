@@ -13,7 +13,6 @@ from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope, Role
 
-
 logger = traitlets_log.get_logger()
 
 c.GraderService.service_host = "0.0.0.0"
@@ -32,7 +31,7 @@ else:
 
 c.GraderService.db_url = db_url
 
-c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
+c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 c.LocalAutogradeExecutor.default_cell_timeout = 200
 
 # get rabbitmq username and password

@@ -34,7 +34,7 @@ class ConfigHandler(GraderBaseHandler):
     @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self):
         app_cfg = self.application.config
-        executor_class = app_cfg.RequestHandlerConfig.autograde_executor_class
+        executor_class = app_cfg.GraderService.autograde_executor_class
 
         def resolve(name):
             return _get_effective_executor_value(app_cfg, executor_class, name)
