@@ -24,8 +24,7 @@ from tornado import httputil, web
 from tornado.escape import json_decode, json_encode
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
-from traitlets import Integer, TraitType, Type, Unicode
-from traitlets import List as ListTrait
+from traitlets import Type
 from traitlets.config import SingletonConfigurable
 
 from grader_service import __version__
@@ -1045,13 +1044,4 @@ class RequestHandlerConfig(SingletonConfigurable):
         klass=LocalAutogradeExecutor,
         allow_none=False,
         config=True,
-    )
-
-    # TODO(Natalia): These settings are only used in GitBaseHandler.
-    # Git server file policy defaults
-    git_max_file_size_mb = Integer(80, allow_none=False, config=True)
-    git_max_file_count = Integer(512, allow_none=False, config=True)
-    # empty list allows everything
-    git_allowed_file_extensions = ListTrait(
-        TraitType(Unicode), default_value=[], allow_none=False, config=True
     )

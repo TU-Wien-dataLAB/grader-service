@@ -20,7 +20,7 @@ from tornado.web import HTTPError, stream_request_body
 from grader_service.errors import APIError
 from grader_service.file_services import GitFileService
 from grader_service.file_services.git_file_service import construct_git_dir
-from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
+from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm import Lecture, Role, Submission
 from grader_service.orm.takepart import Scope
@@ -285,24 +285,20 @@ class GitBaseHandler(GraderBaseHandler):
                 hook_file.chmod(0o755)
                 f.write(hook)
 
-    @staticmethod
-    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:
+    def _get_hook_file_allow_pattern(self, extensions: Optional[List[str]] = None) -> str:
         pattern = ""
         if extensions is None:
-            req_handler_conf = RequestHandlerConfig.instance()
-            extensions = req_handler_conf.git_allowed_file_extensions
-        if len(extensions) > 0:
+            extensions = self.file_service.allowed_file_extensions
+        if extensions:
             allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]
             pattern = "|".join(allow_patterns)
         return pattern
 
-    @staticmethod
-    def _get_hook_max_file_size():
-        return RequestHandlerConfig.instance().git_max_file_size_mb
+    def _get_hook_max_file_size(self):
+        return self.file_service.max_file_size_mb
 
-    @staticmethod
-    def _get_hook_max_file_count():
-        return RequestHandlerConfig.instance().git_max_file_count
+    def _get_hook_max_file_count(self):
+        return self.file_service.max_file_count
 
     @staticmethod
     def _read_hook_template() -> str:

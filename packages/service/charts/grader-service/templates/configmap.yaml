@@ -34,9 +34,15 @@ data:
     c.RequestHandlerConfig.autograde_executor_class = LocalAutogradeExecutor
 {{- end }}
 
-{{- if .Values.requestHandlerConfig }}
-{{- if .Values.requestHandlerConfig.git_max_file_size_mb }}
-    c.RequestHandlerConfig.git_max_file_size_mb = {{ .Values.requestHandlerConfig.git_max_file_size_mb }}
+    ## File Service: at the moment, it can only be GitFileService
+{{- if .Values.fileServiceClass }}
+  from grader_service.file_services import {{ .Values.fileServiceClass }}
+  c.GraderService.file_service_class = {{ .Values.fileServiceClass }}
+{{- end }}
+
+{{- if .Values.fileServiceConfig }}
+{{- if .Values.fileServiceConfig.max_file_size_mb }}
+    c.FileService.max_file_size_mb = {{ .Values.fileServiceConfig.max_file_size_mb }}
 {{- end }}
 {{- end }}
 

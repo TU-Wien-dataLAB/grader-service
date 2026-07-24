@@ -130,14 +130,22 @@ db:
     value: "sqlite:///grader.db"
 
 # ---------------------------------------------------------------------------
-# Git configuration
+# File service configuration
 # ---------------------------------------------------------------------------
 
-gitConfig:
+gitConfig: # TODO: Move this to fileService
   # -- Git user name used for commits
   gitUser: "grader-service"
   # -- Git user email used for commits
   gitEmail: "grader-service@mail.com"
+
+# -- File service class that handles assignment and submission files
+fileServiceClass: GitFileService
+
+fileServiceConfig:
+  # -- Max [git] file size in MB
+  max_file_size_mb: 500
+
 
 # ---------------------------------------------------------------------------
 # Volume permissions init container
@@ -210,8 +218,6 @@ extraFiles: {}
 
 # -- Request handler configuration
 requestHandlerConfig:
-  # -- Max git file size in MB
-  git_max_file_size_mb: 500
   # -- Max buffer size in bytes (default 100MB)
   max_buffer_size: 104857600
   # -- Max body size in bytes (default 100MB)

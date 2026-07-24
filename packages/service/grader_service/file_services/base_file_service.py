@@ -1,7 +1,7 @@
 import typing
 from pathlib import Path
 
-from traitlets import Instance, Unicode, Union
+from traitlets import Instance, Integer, List, TraitType, Unicode, Union
 from traitlets.config import LoggingConfigurable
 
 from grader_service.orm import Assignment, Lecture, Submission
@@ -19,6 +19,14 @@ class FileService(LoggingConfigurable):
 
     # TODO: Maybe only allow Path?
     grader_service_dir = Union([Unicode(), Instance(Path)], allow_none=False).tag(config=True)
+
+    # Git server file policy defaults (used in pre-receive hooks)
+    max_file_size_mb = Integer(80, allow_none=False).tag(config=True)
+    max_file_count = Integer(512, allow_none=False).tag(config=True)
+    # empty list allows everything
+    allowed_file_extensions = List(TraitType(Unicode), default_value=[], allow_none=False).tag(
+        config=True
+    )
 
     def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
