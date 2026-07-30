@@ -67,6 +67,7 @@ packages/*/.pytest_cache/
 # JupyterLab extension build artifacts
 packages/labextension/grader_labextension/labextension/
 packages/labextension/lib/
+packages/labextension/junit.xml
 
 # Chart files
 packages/*/Chart.lock
