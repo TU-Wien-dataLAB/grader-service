@@ -505,7 +505,6 @@ function SidebarMenuButton({
     isActive?: boolean;
     tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar();
   const comp = useRender({
     defaultTagName: 'button',
     props: mergeProps<'button'>(
