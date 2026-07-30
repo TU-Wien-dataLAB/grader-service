@@ -6,34 +6,14 @@
 
 import * as React from 'react';
 import moment from 'moment';
-import {
-  Chip,
-  Collapse,
-  createTheme,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  ListSubheader,
-  Typography
-} from '@mui/material';
-import AccessAlarmRoundedIcon from '@mui/icons-material/AccessAlarmRounded';
-import { SxProps, ThemeProvider } from '@mui/system';
-import { Theme } from '@mui/material/styles';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import AlarmIcon from '@mui/icons-material/Alarm';
-import AlarmAddIcon from '@mui/icons-material/AlarmAdd';
-import { SubmissionPeriod } from '../../model/submissionPeriod';
-import { utcToLocalFormat } from '../../services/datetime.service';
-import { GlobalObjects } from '../../index';
-import { useQuery } from '@tanstack/react-query';
+import { Clock } from 'lucide-react';
+import { Badge } from '../../app/shadcn-components/ui/badge';
 
 export interface IDeadlineProps {
   deadline: string | null;
   compact: boolean;
   component: 'chip' | 'card';
-  sx?: SxProps<Theme>;
+  className?: string;
 }
 
 interface ITimeSpec {
@@ -134,6 +114,16 @@ const deadlineColor = (date: Date): 'default' | 'warning' | 'error' => {
   return c;
 };
 
+const colorClass = (color: 'default' | 'warning' | 'error') => {
+  if (color === 'error') {
+    return 'bg-destructive text-white';
+  }
+  if (color === 'warning') {
+    return 'bg-yellow-500 text-white';
+  }
+  return 'bg-secondary text-foreground';
+};
+
 export const DeadlineComponent = (props: IDeadlineProps) => {
   const [date, setDate] = React.useState(
     props.deadline !== null
@@ -172,188 +162,10 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
     setNewInterval(newInterval);
   };
 
-  const theme = createTheme({
-    palette: {
-      mode: GlobalObjects.themeManager.isLight(GlobalObjects.themeManager.theme)
-        ? 'light'
-        : 'dark',
-      warning: {
-        main: '#ffa726',
-        contrastText: '#fff'
-      },
-      error: {
-        main: '#ef5350',
-        contrastText: '#fff'
-      }
-    }
-  });
-
   return (
-    <ThemeProvider theme={theme}>
-      <Chip
-        sx={props.sx}
-        size="small"
-        icon={<AccessAlarmRoundedIcon />}
-        label={displayDate}
-        color={color}
-      />
-    </ThemeProvider>
+    <Badge className={colorClass(color)}>
+      <Clock className="size-3" />
+      {displayDate}
+    </Badge>
   );
 };
-
-interface IDeadlineDetailProps {
-  deadline: string | null;
-  late_submissions: SubmissionPeriod[];
-}
-
-export function DeadlineDetail(props: IDeadlineDetailProps) {
-  if (props.deadline === null) {
-    return null;
-  }
-  const [open, setOpen] = React.useState(true);
-
-  const { data: date = undefined } = useQuery({
-    queryKey: ['date'],
-    queryFn: () => {
-      props.deadline != null
-        ? moment.utc(props.deadline).local().toDate()
-        : undefined;
-    }
-  });
-
-  const [displayDuration, setDisplayDuration] = React.useState(
-    getDisplayDate(date, false)
-  );
-  const [interval, setNewInterval] = React.useState(null);
-  const [color, setColor] = React.useState(
-    'default' as 'default' | 'warning' | 'error'
-  );
-
-  const updateTimeoutInterval = (date: Date) => {
-    if (interval) {
-      clearInterval(interval);
-    }
-    const time: ITimeSpec = calculateTimeLeft(date);
-    const timeout = time.weeks === 0 && time.days === 0 ? 1000 : 10000;
-    const newInterval = setInterval(() => {
-      setDisplayDuration(getDisplayDate(date, false));
-    }, timeout);
-    setNewInterval(newInterval);
-  };
-
-  React.useEffect(() => {
-    const d =
-      props.deadline !== null
-        ? moment.utc(props.deadline).local().toDate()
-        : undefined;
-    setDisplayDuration(getDisplayDate(d, false));
-    updateTimeoutInterval(d);
-    const c = deadlineColor(d);
-    setColor(c);
-  }, [props]);
-
-  const handleClick = () => {
-    setOpen(!open);
-  };
-
-  if (props.late_submissions.length === 0) {
-    return (
-      <List
-        component="nav"
-        subheader={
-          <ListSubheader
-            sx={{ lineHeight: 1 }}
-            component="div"
-            id="late-submission-list-subheader"
-          >
-            Deadline
-          </ListSubheader>
-        }
-      >
-        <ListItem onClick={handleClick}>
-          <ListItemIcon>
-            <AlarmIcon color={color === 'default' ? 'action' : color} />
-          </ListItemIcon>
-          <ListItemText primary={utcToLocalFormat(props.deadline)} />
-          <ListItemText
-            primary={
-              <Typography color={'text.secondary'}>
-                {displayDuration}
-              </Typography>
-            }
-          />
-        </ListItem>
-      </List>
-    );
-  } else {
-    return (
-      <List
-        component="nav"
-        subheader={
-          <ListSubheader
-            sx={{ lineHeight: 1 }}
-            component="div"
-            id="late-submission-list-subheader"
-          >
-            Deadline
-          </ListSubheader>
-        }
-      >
-        <ListItemButton onClick={handleClick}>
-          <ListItemIcon>
-            <AlarmIcon color={color === 'default' ? 'action' : color} />
-          </ListItemIcon>
-          <ListItemText primary={utcToLocalFormat(props.deadline)} />
-          <ListItemText
-            primary={
-              <Typography color={'text.secondary'}>
-                {displayDuration}
-              </Typography>
-            }
-          />
-          <Typography color={'text.secondary'}>{`${
-            props.late_submissions.length
-          } Extension${
-            props.late_submissions.length !== 1 ? 's' : ''
-          }`}</Typography>
-          {open ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={open} timeout="auto">
-          <List
-            dense
-            component="div"
-            disablePadding
-            subheader={
-              <ListSubheader
-                sx={{ lineHeight: 1 }}
-                component="div"
-                id="late-submission-list-subheader"
-              >
-                Extensions
-              </ListSubheader>
-            }
-          >
-            {props.late_submissions.map(l => {
-              const p = moment.duration(l.period);
-              const outputDays = p.days() > 1 ? 'Days' : 'Day';
-              const outputHours = p.hours() == 1 ? 'Hour' : 'Hours';
-              return (
-                <ListItem sx={{ pl: 4 }}>
-                  <ListItemIcon>
-                    <AlarmAddIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${p.days()} ${outputDays} ${p.hours()} ${outputHours}`}
-                  />
-                  <ListItemText
-                    primary={`Penalty: ${((1 - l.scaling) * 100).toFixed(1)}%`}
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
-        </Collapse>
-      </List>
-    );
-  }
-}

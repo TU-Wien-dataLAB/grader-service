@@ -1,8 +1,4 @@
 import * as React from 'react';
-import { Alert, Collapse, createTheme } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/system';
-import { GlobalObjects } from '../../../index';
 
 export interface IHintComponentProps {
   hint: string;
@@ -10,35 +6,13 @@ export interface IHintComponentProps {
 }
 
 export const HintComponent = (props: IHintComponentProps) => {
-  const [theme, setTheme] = React.useState(
-    createTheme({
-      palette: {
-        mode: GlobalObjects.themeManager.isLight(
-          GlobalObjects.themeManager.theme
-        )
-          ? 'light'
-          : 'dark'
-      }
-    })
-  );
-
-  GlobalObjects.themeManager.themeChanged.connect(() => {
-    const palette = GlobalObjects.themeManager.isLight(
-      GlobalObjects.themeManager.theme
-    )
-      ? 'light'
-      : 'dark';
-    setTheme(createTheme({ palette: { mode: palette } }));
-  }, this);
+  if (!props.show) {
+    return null;
+  }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Collapse in={props.show}>
-        <Alert sx={{ mt: 1, mb: 1 }} severity="info">
-          {props.hint}
-        </Alert>
-      </Collapse>
-    </ThemeProvider>
+    <div className="mt-1 mb-1 rounded-md border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-sm text-foreground">
+      {props.hint}
+    </div>
   );
 };

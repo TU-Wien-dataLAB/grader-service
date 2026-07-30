@@ -10,21 +10,14 @@ import * as React from 'react';
 import { CellModel, NbgraderData, ToolData } from '../model';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { ErrorWidget } from './error-widget';
+import { Button } from '../../../app/shadcn-components/ui/button';
 import {
-  Button as MuiButton,
-  Alert,
-  AlertTitle,
-  Box,
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogHeader,
   DialogTitle,
-  Stack,
-  createTheme
-} from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import { GlobalObjects } from '../../../index';
-import { ThemeProvider } from '@mui/system';
+  DialogFooter
+} from '../../../app/shadcn-components/ui/dialog';
 
 export interface ValidatorProps {
   notebook: Notebook;
@@ -35,6 +28,16 @@ export interface ReportItem {
   type: 'error' | 'warning';
   msg: string;
 }
+
+const alertClass = (type: 'error' | 'warning' | 'success') => {
+  if (type === 'error') {
+    return 'rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive';
+  }
+  if (type === 'warning') {
+    return 'rounded-md border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400';
+  }
+  return 'rounded-md border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400';
+};
 
 export const Validator = (props: ValidatorProps) => {
   const [dialogOpen, setDialog] = React.useState(false);
@@ -176,76 +179,44 @@ export const Validator = (props: ValidatorProps) => {
     setDialog(false);
   };
 
-  const [theme, setTheme] = React.useState(
-    createTheme({
-      palette: {
-        mode: GlobalObjects.themeManager.isLight(
-          GlobalObjects.themeManager.theme
-        )
-          ? 'light'
-          : 'dark'
-      }
-    })
-  );
-
-  GlobalObjects.themeManager.themeChanged.connect(() => {
-    const palette = GlobalObjects.themeManager.isLight(
-      GlobalObjects.themeManager.theme
-    )
-      ? 'light'
-      : 'dark';
-    setTheme(createTheme({ palette: { mode: palette } }));
-  }, this);
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box>
-        <MuiButton
-          className="grader-toolbar-button"
-          onClick={validateNotebook}
-          variant="outlined"
-          color="success"
-          size="small"
-          sx={{ fontSize: '0.1rem' }}
-        >
-          Validate
-        </MuiButton>
-        <Dialog
-          open={dialogOpen}
-          onClose={handleClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {'Validation Report'}
-          </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2}>
-              {results.length === 0 && (
-                <Box sx={{ width: '450px' }}>
-                  <Alert severity="success">
-                    <AlertTitle>No errors found</AlertTitle>
-                  </Alert>
-                </Box>
-              )}
-              {results.map((e: ReportItem) => (
-                <Box sx={{ width: '450px' }}>
-                  <Alert severity={e.type}>
-                    <AlertTitle>{e.id}</AlertTitle>
-                    {e.msg}
-                  </Alert>
-                </Box>
-              ))}
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <MuiButton onClick={handleClose} autoFocus>
-              Ok
-            </MuiButton>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </ThemeProvider>
+    <div>
+      <Button
+        className="grader-toolbar-button"
+        onClick={validateNotebook}
+        variant="outline"
+        size="sm"
+      >
+        Validate
+      </Button>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={open => {
+          if (!open) handleClose();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Validation Report</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 px-6">
+            {results.length === 0 && (
+              <div className={alertClass('success')}>
+                <p className="font-medium">No errors found</p>
+              </div>
+            )}
+            {results.map((e: ReportItem, i: number) => (
+              <div key={i} className={alertClass(e.type)}>
+                <p className="font-medium">{e.id}</p>
+                <p>{e.msg}</p>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleClose}>Ok</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };

@@ -15,8 +15,8 @@ export function getAllLectures(
   let url = 'api/lectures';
   const params = new URLSearchParams();
 
-  for (let key in filters) {
-    if (filters[key] != null) {
+  for (const key in filters) {
+    if (filters[key] !== null) {
       params.append(key, String(filters[key]));
     }
   }
@@ -59,7 +59,7 @@ export function getUsers(
   }>(HTTPMethod.GET, `/api/lectures/${lectureId}/users`, null, reload);
 }
 
-export async function getAllLectureSubmissions(
+export async function exportGrades(
   lectureId: number,
   filter: 'latest' | 'best' = 'best',
   format: 'json' | 'csv' = 'csv'

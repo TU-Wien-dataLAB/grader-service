@@ -6,18 +6,14 @@
 
 import * as React from 'react';
 
-import { Alert } from '@mui/material';
-
 export interface IErrorComponentProps {
   err: string;
 }
 
 export const ErrorComponent = (props: IErrorComponentProps) => {
-  //const alertStyle = { width: 250 };
-
   return (
-    <Alert sx={{ mt: 1 }} variant="filled" severity="error">
+    <div className="mt-1 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
       {props.err}
-    </Alert>
+    </div>
   );
 };

@@ -46,7 +46,7 @@ export namespace CellModel {
    * Removes the "cell_type" property from the nbgrader data.
    */
   export function clearCellType(cellMetadata: Partial<ICellMetadata>): void {
-    const data = cellMetadata[NBGRADER_KEY];
+    const data = cellMetadata[NBGRADER_KEY] as JSONObject | undefined;
     if (data == null) {
       return;
     }

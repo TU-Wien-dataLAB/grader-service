@@ -7,7 +7,6 @@
 import * as React from 'react';
 import { Cell } from '@jupyterlab/cells';
 import { CellModel, CellType } from '../model';
-import { Alert } from '@mui/material';
 
 export interface ICreationComponentProps {
   cell: Cell;
@@ -64,7 +63,6 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     updateMetadata();
   });
 
-  const alertStyle = { width: '100%', mt: 2 };
   const gradableCell =
     type !== ('readonly' as CellType) &&
     type !== ('solution' as CellType) &&
@@ -111,11 +109,6 @@ export const CreationComponent = (props: ICreationComponentProps) => {
             value={id}
             onChange={e => setId(e.target.value)}
             required
-            // onInput={(event) => {
-            //   const input = event.currentTarget;
-            //   input.setCustomValidity(input.value === '' ? 'Cell ID is required' : '');
-            //   input.reportValidity();
-            // }}
           ></input>
         </span>
       )}
@@ -159,18 +152,18 @@ export const CreationComponent = (props: ICreationComponentProps) => {
       )}
 
       {type === '' && (
-        <span>
-          <Alert variant="outlined" sx={alertStyle} severity="warning">
+        <span className="block w-full mt-2">
+          <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
             Type not set
-          </Alert>
+          </div>
         </span>
       )}
 
       {points === 0 && (
-        <span>
-          <Alert variant="outlined" sx={alertStyle} severity="warning">
+        <span className="block w-full mt-2">
+          <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
             Gradable cell with zero points
-          </Alert>
+          </div>
         </span>
       )}
     </div>

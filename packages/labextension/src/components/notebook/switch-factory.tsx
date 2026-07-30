@@ -7,7 +7,6 @@
 import React from 'react';
 import { Scope, UserPermissions } from '../../services/permission.service';
 import { CreationModeSwitch } from './create-assignment/creation-switch';
-import { GradingModeSwitch } from './manual-grading/grading-switch';
 import { IModeSwitchProps } from './slider';
 import { lectureSubPaths } from '../../services/file.service';
 
@@ -27,15 +26,6 @@ export class SwitchModeFactory {
     }
 
     switch (path) {
-      case 'manualgrade':
-        return (
-          <GradingModeSwitch
-            notebook={props.notebook}
-            notebookpanel={props.notebookpanel}
-            mode={props.mode}
-            onChange={props.onChange}
-          />
-        );
       case 'source':
         return (
           <CreationModeSwitch

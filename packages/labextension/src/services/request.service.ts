@@ -36,10 +36,9 @@ export function request<T, B = any | null>(
   }
 
   const settings = ServerConnection.makeSettings();
-  let requestUrl = '';
 
   // ServerConnection only allows requests to notebook baseUrl
-  requestUrl = URLExt.join(
+  const requestUrl = URLExt.join(
     settings.baseUrl,
     '/grader_labextension', // API Namespace
     endPoint
@@ -57,32 +56,31 @@ export function request<T, B = any | null>(
       const method = options.method || 'GET'; // assuming `method` is part of options.
 
       // handle non-OK responses
+      let responseData: T | string = await response.text();
       if (!response.ok) {
-        const errorText = await response.text();
         // default error message
         let errorMessage = 'Unknown error';
 
         try {
-          const errorData = JSON.parse(errorText);
+          const errorData = JSON.parse(responseData);
           errorMessage =
-            errorData['reason'] ||
             errorData['message'] ||
+            errorData['reason'] ||
             errorData['error'] ||
             errorMessage;
         } catch (e) {
-          errorMessage = errorText; // fallback to raw error text if not JSON
+          errorMessage = responseData; // fallback to raw error text if not JSON
         }
 
         // throw custom HTTPError with status code and message
         throw new HTTPError(response.status, errorMessage);
       }
 
-      let data: any = await response.text();
       // validate response body
-      if (data.length > 0) {
+      if (responseData.length > 0) {
         try {
-          data = JSON.parse(data);
-        } catch (error) {
+          responseData = JSON.parse(responseData);
+        } catch (e) {
           console.log(
             'Not a JSON response body, handling as plain text.',
             response
@@ -91,8 +89,8 @@ export function request<T, B = any | null>(
       }
 
       console.log(`Request ${method} URL: ${requestUrl}`);
-      console.log(data);
-      return data;
+      console.log(responseData);
+      return responseData as T;
     }
   );
 }

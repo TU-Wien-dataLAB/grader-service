@@ -2,7 +2,6 @@ import * as React from 'react';
 import { DeadlineComponent } from '../../util/deadline';
 import { getAllLectures } from '../../../services/lectures.service';
 import { getAssignment } from '../../../services/assignments.service';
-import { Box } from '@mui/material';
 import { lectureSubPaths } from '../../../services/file.service';
 import { Assignment } from '../../../model/assignment';
 import { Lecture } from '../../../model/lecture';
@@ -45,7 +44,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
   }, [props]);
 
   return (
-    <Box>
+    <div>
       {assignment !== null && assignment.settings.deadline !== null ? (
         <DeadlineComponent
           deadline={assignment.settings.deadline}
@@ -53,6 +52,6 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
           component={'chip'}
         />
       ) : null}
-    </Box>
+    </div>
   );
 };
