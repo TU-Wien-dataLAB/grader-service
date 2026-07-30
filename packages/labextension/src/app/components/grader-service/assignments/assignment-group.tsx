@@ -58,11 +58,8 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       return;
     }
     const oldGroup = assignment.settings.group;
-    // check if the assignment had no group and got reassigned to the "assignments without group"
-    if (
-      oldGroup === '' &&
-      props.assignmentGroup === 'assignments without group'
-    ) {
+    // check if the assignment had no group and got reassigned to the "ungrouped assignments"
+    if (oldGroup === '' && props.assignmentGroup === 'ungrouped assignments') {
       return;
     }
     // check if the group has changed; if not, don't update the assignment
@@ -70,7 +67,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       return;
     }
     // update assignment with the new group
-    if (props.assignmentGroup === 'assignments without group') {
+    if (props.assignmentGroup === 'ungrouped assignments') {
       assignment.settings.group = '';
     } else {
       assignment.settings.group = props.assignmentGroup;
@@ -119,7 +116,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
   const determineIfAssignmentBelongsToGroup = (assignmentGroup: string) => {
     return assignmentGroup !== '' && assignmentGroup !== null
       ? assignmentGroup === props.assignmentGroup
-      : props.assignmentGroup === 'assignments without group';
+      : props.assignmentGroup === 'ungrouped assignments';
   };
   return (
     <div

@@ -143,13 +143,16 @@ export const Lecture = () => {
     const dynamicGroups = [...new Set(assignments.map(a => a.settings.group))]
       .filter(Boolean)
       .map(value => ({ key: 'Group', value, label: value }));
-
+    // check if there are assignments with no group assigned
+    const ungroupedAssignmentsExist = assignments.some(
+      a => a.settings.group === '' || !a.settings.group
+    );
     return [
       ...STATIC_FILTERS,
-      {
+      ungroupedAssignmentsExist && {
         key: 'Group',
-        value: 'Assignments without group',
-        label: 'Assignments without group'
+        value: 'Ungrouped assignments',
+        label: 'Ungrouped assignments'
       },
       ...(dynamicGroups ?? [])
     ];
@@ -234,7 +237,7 @@ export const Lecture = () => {
         result = result.filter(
           a =>
             activeGroups['Group'].includes(a.settings.group) ||
-            (activeGroups['Group'].includes('Assignments without group') &&
+            (activeGroups['Group'].includes('Ungrouped assignments') &&
               !a.settings.group)
         );
       }
@@ -264,25 +267,25 @@ export const Lecture = () => {
 
   // split assignments based on their group
   const groupsDict = useMemo(() => {
-    const dict: Record<string, IAssignmentChecked[]> = {
-      'assignments without group': []
-    };
+    const dict: Record<string, IAssignmentChecked[]> = {};
     if (!isPendingAssignments) {
       filteredAssignments.forEach(assignment => {
         const group = assignment.settings.group;
-        if (group !== null && group !== '') {
-          if (!dict[group]) {
-            dict[group] = [];
-          }
-          dict[group].push({ assignment: assignment, checked: false });
-        } else {
-          dict['assignments without group'].push({
-            assignment: assignment,
-            checked: false
-          });
+        const key =
+          group !== null && group !== '' ? group : 'ungrouped assignments';
+        if (!dict[key]) {
+          dict[key] = [];
         }
+        dict[key].push({ assignment, checked: false });
       });
     }
+
+    // ensure "ungrouped assignments" appears first, if present
+    if (dict['ungrouped assignments']) {
+      const { 'ungrouped assignments': ungrouped, ...rest } = dict;
+      return { 'ungrouped assignments': ungrouped, ...rest };
+    }
+
     return dict;
   }, [filteredAssignments]);
   // assignments checkboxes
