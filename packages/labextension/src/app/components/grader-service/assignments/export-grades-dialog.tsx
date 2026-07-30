@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -21,7 +20,6 @@ import { lectureBasePath, openFile } from '../../../../services/file.service';
 import { Lecture } from '../../../../model/lecture';
 import { enqueueSnackbar } from 'notistack';
 import { goToPath } from '../../../../services/file-browser.service';
-import { Separator } from '../../../shadcn-components/ui/separator';
 
 interface IExportGradesDialogProps {
   lecture: Lecture;

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -13,7 +11,6 @@ import { Field, FieldGroup } from '../../../shadcn-components/ui/field';
 import { Label } from '../../../shadcn-components/ui/label';
 import { Input } from '../../../shadcn-components/ui/input';
 import { Button } from '../../../shadcn-components/ui/button';
-import { Separator } from '../../../shadcn-components/ui/separator';
 import {
   Select,
   SelectContent,

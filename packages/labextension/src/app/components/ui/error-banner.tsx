@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleCheck, OctagonAlert } from 'lucide-react';
+import { OctagonAlert } from 'lucide-react';
 
 interface IErrorBannerProps {
   message: string;

@@ -1,8 +1,6 @@
 import React from 'react';
-import { useRouteError } from 'react-router';
 
 export const Error = () => {
-  const error: unknown = useRouteError();
   return (
     <div>
       Oops!

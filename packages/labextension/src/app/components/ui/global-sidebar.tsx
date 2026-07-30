@@ -27,11 +27,6 @@ import {
   CollapsibleTrigger
 } from '../../shadcn-components/ui/collapsible';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '../../shadcn-components/ui/tooltip';
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -56,7 +51,7 @@ export const GlobalSidebar = () => {
     }));
   }, [fetchedLectures, location.pathname]);
 
-  const { state, open, setOpen, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
 
   const languages = [
     {
