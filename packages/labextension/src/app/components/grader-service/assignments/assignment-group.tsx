@@ -132,7 +132,9 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
             a => a.assignment.status !== 'created'
           )}
         ></Checkbox>
-        <div className={'text-xl font-bold'}>{props.assignmentGroup}</div>
+        <h2 className={'text-xl font-bold'}>
+          {props.assignmentGroup} ({props.groupAssignments.length})
+        </h2>
       </div>
       {isOver && (
         <div
