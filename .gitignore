@@ -68,6 +68,7 @@ packages/*/.pytest_cache/
 packages/labextension/grader_labextension/labextension/
 packages/labextension/lib/
 packages/labextension/junit.xml
+!packages/labextension/src/app/lib/
 
 # Chart files
 packages/*/Chart.lock
