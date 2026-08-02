@@ -2,7 +2,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -288,13 +287,6 @@ export const Lecture = () => {
 
     return dict;
   }, [filteredAssignments]);
-  // assignments checkboxes
-  const [assignmentsChecked, setAssignmentsChecked] =
-    useState<IAssignmentChecked[]>(null);
-  // NOTE: maybe not the best way to do this, but is a workaround for now
-  useEffect(() => {
-    setAssignmentsChecked(Object.values(groupsDict).flat());
-  }, [groupsDict]);
   const [openAssignmentSettings, setOpenAssignmentSettings] = useState(false);
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
 
@@ -405,7 +397,7 @@ export const Lecture = () => {
             </Button>
           </div>
         )}
-        {assignmentsChecked && assignmentsChecked.length > 0 ? (
+        {filteredAssignments && filteredAssignments.length > 0 ? (
           <DndProvider backend={HTML5Backend}>
             <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
               {Object.entries(groupsDict).map(
@@ -416,8 +408,6 @@ export const Lecture = () => {
                     assignmentGroup={groupKey}
                     groupAssignments={groupAssignments}
                     allAssignments={filteredAssignments}
-                    checkedAssignments={assignmentsChecked}
-                    setCheckedAssignments={setAssignmentsChecked}
                   />
                 )
               )}

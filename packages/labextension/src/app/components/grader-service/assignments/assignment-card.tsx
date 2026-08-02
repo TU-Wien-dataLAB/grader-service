@@ -90,7 +90,7 @@ export const AssignmentCard = (props: IAssignment) => {
       className={'cursor-grab'}
     >
       <Card
-        className={`flex gap-4 self-stretch row-span-1 col-span-1 p-0 ${
+        className={`flex self-stretch gap-0 row-span-1 col-span-1 p-0 ${
           props.checked && 'border border-primary'
         }`}
       >
@@ -100,7 +100,6 @@ export const AssignmentCard = (props: IAssignment) => {
           }`}
         >
           <Checkbox
-            className={'size-4'}
             checked={props.checked}
             disabled={props.assignment.status !== 'created'}
             onCheckedChange={() => props.handleChange(!props.checked)}

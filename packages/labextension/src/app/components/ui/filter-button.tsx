@@ -65,7 +65,7 @@ export const FilterAssignmentsButton = (
           Filter
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent align={'end'}>
         {props.filterGroups &&
           Object.entries(props.filterGroups)?.map(([groupKey, filters]) => (
             <DropdownMenuGroup key={groupKey}>
