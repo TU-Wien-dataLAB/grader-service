@@ -78,7 +78,7 @@ export function useAssignmentStatus() {
       'created',
       assignment,
       lectureId,
-      'This assignment is no longer marked as released.',
+      'This assignment is no longer available to students.',
       'Error unreleasing assignment'
     );
   };
