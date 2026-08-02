@@ -35,6 +35,7 @@ import { useMutationStatus } from '../../../widget';
 import { SuccessBanner } from '../../components/ui/success-banner';
 import { ErrorBanner } from '../../components/ui/error-banner';
 import { Badge } from '../../shadcn-components/ui/badge';
+import { EmptyIcon } from '../../../assets/empty-icon';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -309,63 +310,53 @@ export const Lecture = () => {
               <h3 className={'text-base font-bold'}>{lecture.code}</h3>
             </div>
           )}
-          <div className={'ml-auto flex items-start'}>
-            <Button
-              onClick={() => setOpenAssignmentSettings(true)}
-              variant={'outline'}
-            >
-              New assignment
-            </Button>
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger>
-                <Button variant={'link'} className={'p-2'}>
-                  <EllipsisVertical className={'size-5'}></EllipsisVertical>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => setOpenExportGradesDialog(true)}
-                >
-                  Export grades
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {assignments.length > 0 && (
+            <div className={'ml-auto flex items-start'}>
+              <Button
+                onClick={() => setOpenAssignmentSettings(true)}
+                variant={'outline'}
+              >
+                New assignment
+              </Button>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger>
+                  <Button variant={'link'} className={'p-2'}>
+                    <EllipsisVertical className={'size-5'}></EllipsisVertical>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => setOpenExportGradesDialog(true)}
+                  >
+                    Export grades
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
         {status.status === 'success' && (
           <SuccessBanner message={status.message} />
         )}
         {status.status === 'error' && <ErrorBanner message={status.message} />}
-        <div className={'flex justify-between items-center self-stretch'}>
-          <SearchField
-            placeholder={'Search for assignment'}
-            recentSearchesKey={'assignment-search-history'}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-          <div className={'flex flex-row ml-auto gap-3'}>
-            <FilterAssignmentsButton
-              filterGroups={filterGroups}
-              activeFilters={activeFilters}
-              toggle={toggle}
+        {assignments.length > 0 && (
+          <div className={'flex justify-between items-center self-stretch'}>
+            <SearchField
+              placeholder={'Search for assignment'}
+              recentSearchesKey={'assignment-search-history'}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
             />
-            <SortButton sortBy={sortBy} setSortBy={setSortBy} />
+            <div className={'flex flex-row ml-auto gap-3'}>
+              <FilterAssignmentsButton
+                filterGroups={filterGroups}
+                activeFilters={activeFilters}
+                toggle={toggle}
+              />
+              <SortButton sortBy={sortBy} setSortBy={setSortBy} />
+            </div>
           </div>
-          {openAssignmentSettings && (
-            <AssignmentSettingsDialog
-              lectureId={lectureId}
-              openDialog={openAssignmentSettings}
-              setOpenDialog={setOpenAssignmentSettings}
-            />
-          )}
-          {openExportGradesDialog && (
-            <ExportGradesDialog
-              lecture={lecture}
-              isOpen={openExportGradesDialog}
-              setIsOpen={setOpenExportGradesDialog}
-            />
-          )}
-        </div>
+        )}
         {activeFilters.size > 0 && (
           <div className={'flex flex-row gap-4 items-start'}>
             {Array.from(activeFilters).map(id => {
@@ -414,14 +405,38 @@ export const Lecture = () => {
             </ScrollingComponent>
           </DndProvider>
         ) : (
-          <div className={'flex flex-col items-center justify-center h-full'}>
-            <p className={'text-3xl'}>No assignments yet...</p>
+          <div
+            className={
+              'flex flex-col p-6 gap-4 items-center justify-center self-stretch'
+            }
+          >
+            <EmptyIcon />
+            <div className={'flex flex-col items-center gap-2'}>
+              <h2 className={'text-xl font-bold'}>No assignments yet</h2>
+              <p>
+                Create a new assignment to distribute tasks and enable feedback.
+              </p>
+            </div>
             <Button onClick={() => setOpenAssignmentSettings(true)}>
-              Create first assignment
+              New assignment
             </Button>
           </div>
         )}
       </div>
+      {openExportGradesDialog && (
+        <ExportGradesDialog
+          lecture={lecture}
+          isOpen={openExportGradesDialog}
+          setIsOpen={setOpenExportGradesDialog}
+        />
+      )}
+      {openAssignmentSettings && (
+        <AssignmentSettingsDialog
+          lectureId={lectureId}
+          openDialog={openAssignmentSettings}
+          setOpenDialog={setOpenAssignmentSettings}
+        />
+      )}
     </GroupsProvider>
   );
 };
