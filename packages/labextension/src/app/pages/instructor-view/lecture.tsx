@@ -42,6 +42,15 @@ export interface IAssignmentChecked {
   checked: boolean;
 }
 
+interface IFilterOption<V extends string = string> {
+  value: V;
+  label: string;
+}
+
+export interface IFilterGroup {
+  [category: string]: IFilterOption[];
+}
+
 interface IGroupsContextValue {
   groups: string[];
   customGroups: string[];
@@ -90,28 +99,31 @@ export const useGroups = () => {
   return ctx;
 };
 
-const STATIC_FILTERS = [
+const STATIC_FILTERS: IFilterGroup[] = [
   {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.Auto,
-    label: 'Automatic'
-  },
-  {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.Unassisted,
-    label: 'Manual'
-  },
-  {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.FullAuto,
-    label: 'Fully automatic'
-  },
-  { key: 'Deadline', value: 'Overdue', label: 'Overdue' },
-  { key: 'Deadline', value: 'Upcoming', label: 'Upcoming' },
-  { key: 'Deadline', value: 'No Deadline', label: 'No Deadline' },
-  { key: 'Status', value: StatusEnum.Created, label: 'Not Released' },
-  { key: 'Status', value: StatusEnum.Released, label: 'Released' },
-  { key: 'Status', value: StatusEnum.Complete, label: 'Completed' }
+    'Grading Method': [
+      {
+        value: AutogradeTypeEnum.Auto,
+        label: 'Automatic'
+      },
+      { value: AutogradeTypeEnum.Unassisted, label: 'Manual' },
+      {
+        value: AutogradeTypeEnum.FullAuto,
+        label: 'Fully automatic'
+      }
+    ],
+    Deadline: [
+      { value: 'Overdue', label: 'Overdue' },
+      { value: 'Upcoming', label: 'Upcoming' },
+      { value: 'No Deadline', label: 'No Deadline' }
+    ],
+
+    Status: [
+      { value: StatusEnum.Created, label: 'Not Released' },
+      { value: StatusEnum.Released, label: 'Released' },
+      { value: StatusEnum.Complete, label: 'Completed' }
+    ]
+  }
 ];
 
 const ScrollingComponent = withScrolling('div');
@@ -134,44 +146,40 @@ export const Lecture = () => {
   const [sortBy, setSortBy] = useState({ key: '', dir: '' });
   const [searchQuery, setSearchQuery] = useState('');
 
-  // TODO: refactor
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
       return;
     }
     // extract all groups from assignments
-    const dynamicGroups = [...new Set(assignments.map(a => a.settings.group))]
-      .filter(Boolean)
-      .map(value => ({ key: 'Group', value, label: value }));
+    const uniqueGroups = [
+      ...new Set(
+        assignments
+          .map(a => a.settings.group)
+          .filter((value): value is string => Boolean(value))
+      )
+    ];
+
+    const groupList: IFilterOption[] = uniqueGroups.map(value => ({
+      value,
+      label: value
+    }));
     // check if there are assignments with no group assigned
     const ungroupedAssignmentsExist = assignments.some(
       a => a.settings.group === '' || !a.settings.group
     );
-    return [
-      ...STATIC_FILTERS,
-      ungroupedAssignmentsExist && {
-        key: 'Group',
-        value: 'Ungrouped assignments',
-        label: 'Ungrouped assignments'
-      },
-      ...(dynamicGroups ?? [])
-    ];
+    const groupFilter: IFilterGroup | null = ungroupedAssignmentsExist
+      ? {
+          Group: [
+            { value: 'Ungrouped assignments', label: 'Ungrouped assignments' },
+            ...groupList
+          ]
+        }
+      : null;
+
+    return [...STATIC_FILTERS, ...(groupFilter ? [groupFilter] : [])];
   }, [assignments, isPendingAssignments]);
 
-  // Group filters by key for rendering
-  const filterGroups = useMemo(() => {
-    if (allFilters) {
-      return allFilters.reduce<Record<string, typeof STATIC_FILTERS>>(
-        (acc, filter) => {
-          (acc[filter.key] ??= []).push(filter);
-          return acc;
-        },
-        {}
-      );
-    }
-  }, [allFilters]);
-
-  // active filters are set as key:value
+  // active filters are set as key:value:label
   const [activeFilters, setActiveFilters] = useState(new Set<string>());
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {
@@ -211,9 +219,9 @@ export const Lecture = () => {
         result = result.filter(a => activeGroups['Status'].includes(a.status));
       }
 
-      if (activeGroups['Grading Mode']) {
+      if (activeGroups['Grading Method']) {
         result = result.filter(a =>
-          activeGroups['Grading Mode'].includes(a.settings.autograde_type)
+          activeGroups['Grading Method'].includes(a.settings.autograde_type)
         );
       }
 
@@ -349,7 +357,7 @@ export const Lecture = () => {
             />
             <div className={'flex flex-row ml-auto gap-3'}>
               <FilterAssignmentsButton
-                filterGroups={filterGroups}
+                allFilters={allFilters}
                 activeFilters={activeFilters}
                 toggle={toggle}
               />
