@@ -194,7 +194,95 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {lectures.length === 0 && (
+      {lectures.length > 0 ? (
+        filteredLectures.length === 0 ? (
+          <EmptyState
+            title={'No results found'}
+            icon={<NoResultsFoundIcon />}
+            description={
+              'Try adjusting your search or ' +
+              "filter to find what \n you're looking for."
+            }
+          />
+        ) : (
+          <div
+            className={
+              'flex flex-col gap-6 m-6 mt-0 overflow-y-auto min-h-0 flex-1 h-full'
+            }
+          >
+            {view === 'grid' && (
+              <div
+                className={
+                  'grid gap-6 grid-cols-1 @3xl:grid-cols-2 @6xl:grid-cols-3' //defining grid like this is necessary to have responsive window from both sides
+                }
+              >
+                {filteredLectures?.map(lecture => (
+                  <LectureCard lecture={lecture} searchQuery={searchQuery} />
+                ))}
+              </div>
+            )}
+            {view === 'list' && (
+              <div className={'w-full overflow-x-auto'}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Assignments</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead></TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLectures.map(lecture => (
+                      <LectureRow lecture={lecture} searchQuery={searchQuery} />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationFirst />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationPrevious />
+                  </PaginationItem>
+                  <PaginationItem>
+                    {Array.from(
+                      { length: Math.ceil(lectures.length / 6) },
+                      (_, i) => (
+                        <PaginationLink>{i + 1}</PaginationLink>
+                      )
+                    )}
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLast />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+              <Select defaultValue="6">
+                <SelectTrigger id="select-rows-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectItem value="4">4 / Page</SelectItem>
+                    <SelectItem value="6">6 / Page</SelectItem>
+                    <SelectItem value="8">8 / Page</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )
+      ) : (
         <EmptyState
           title={'No courses yet'}
           icon={<EmptyIcon />}
@@ -203,93 +291,6 @@ export const Dashboard = () => {
             'again later.'
           }
         />
-      )}
-      {lectures.length > 0 && filteredLectures.length === 0 ? (
-        <EmptyState
-          title={'No results found'}
-          icon={<NoResultsFoundIcon />}
-          description={
-            'Try adjusting your search or ' +
-            "filter to find what \n you're looking for."
-          }
-        />
-      ) : (
-        <div
-          className={
-            'flex flex-col gap-6 m-6 mt-0 overflow-y-auto min-h-0 flex-1 h-full'
-          }
-        >
-          {view === 'grid' && (
-            <div
-              className={
-                'grid gap-6 grid-cols-1 @3xl:grid-cols-2 @6xl:grid-cols-3' //defining grid like this is necessary to have responsive window from both sides
-              }
-            >
-              {filteredLectures?.map(lecture => (
-                <LectureCard lecture={lecture} searchQuery={searchQuery} />
-              ))}
-            </div>
-          )}
-          {view === 'list' && (
-            <div className={'w-full overflow-x-auto'}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Assignments</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead></TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLectures.map(lecture => (
-                    <LectureRow lecture={lecture} searchQuery={searchQuery} />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <div className="flex items-center justify-between gap-4">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationFirst />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationPrevious />
-                </PaginationItem>
-                <PaginationItem>
-                  {Array.from(
-                    { length: Math.ceil(lectures.length / 6) },
-                    (_, i) => (
-                      <PaginationLink>{i + 1}</PaginationLink>
-                    )
-                  )}
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLast />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-            <Select defaultValue="6">
-              <SelectTrigger id="select-rows-per-page">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectGroup>
-                  <SelectItem value="4">4 / Page</SelectItem>
-                  <SelectItem value="6">6 / Page</SelectItem>
-                  <SelectItem value="8">8 / Page</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -36,6 +36,8 @@ import { SuccessBanner } from '../../components/ui/success-banner';
 import { ErrorBanner } from '../../components/ui/error-banner';
 import { Badge } from '../../shadcn-components/ui/badge';
 import { EmptyIcon } from '../../../assets/empty-icon';
+import { EmptyState } from '../../components/utils/empty-state';
+import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -396,39 +398,41 @@ export const Lecture = () => {
             </Button>
           </div>
         )}
-        {filteredAssignments && filteredAssignments.length > 0 ? (
-          <DndProvider backend={HTML5Backend}>
-            <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
-              {Object.entries(groupsDict).map(
-                ([groupKey, groupAssignments]) => (
-                  <AssignmentGroup
-                    key={groupKey}
-                    lectureId={lectureId}
-                    assignmentGroup={groupKey}
-                    groupAssignments={groupAssignments}
-                    allAssignments={filteredAssignments}
-                  />
-                )
-              )}
-            </ScrollingComponent>
-          </DndProvider>
+        {assignments.length > 0 ? (
+          filteredAssignments.length > 0 ? (
+            <DndProvider backend={HTML5Backend}>
+              <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
+                {Object.entries(groupsDict).map(
+                  ([groupKey, groupAssignments]) => (
+                    <AssignmentGroup
+                      key={groupKey}
+                      lectureId={lectureId}
+                      assignmentGroup={groupKey}
+                      groupAssignments={groupAssignments}
+                      allAssignments={filteredAssignments}
+                    />
+                  )
+                )}
+              </ScrollingComponent>
+            </DndProvider>
+          ) : (
+            <EmptyState
+              title={'No results found'}
+              icon={<NoResultsFoundIcon />}
+              description={
+                'Try adjusting your search or ' +
+                "filter to find what \n you're looking for."
+              }
+            />
+          )
         ) : (
-          <div
-            className={
-              'flex flex-col p-6 gap-4 items-center justify-center self-stretch'
+          <EmptyState
+            title={'No assignments yet'}
+            icon={<EmptyIcon />}
+            description={
+              'Create a new assignment to distribute tasks and enable feedback.'
             }
-          >
-            <EmptyIcon />
-            <div className={'flex flex-col items-center gap-2'}>
-              <h2 className={'text-xl font-bold'}>No assignments yet</h2>
-              <p>
-                Create a new assignment to distribute tasks and enable feedback.
-              </p>
-            </div>
-            <Button onClick={() => setOpenAssignmentSettings(true)}>
-              New assignment
-            </Button>
-          </div>
+          />
         )}
       </div>
       {openExportGradesDialog && (
