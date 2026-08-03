@@ -41,18 +41,11 @@ export function useAssignmentUpdate() {
     updatedValues: Assignment,
     lectureId: number
   ) => {
-    try {
-      await updateAssignmentMutate.mutateAsync({
-        assignment,
-        updatedValues,
-        lectureId
-      });
-    } catch (error) {
-      setStatus({
-        message: 'Error updating assignment: ' + error,
-        status: 'error'
-      });
-    }
+    updateAssignmentMutate.mutate({
+      assignment,
+      updatedValues,
+      lectureId
+    });
   };
 
   return { handleUpdateAssignment };

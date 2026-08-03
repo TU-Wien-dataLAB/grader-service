@@ -35,14 +35,7 @@ export function useAssignmentCreate() {
     assignment: Assignment,
     lectureId: number
   ) => {
-    try {
-      await createAssignmentMutation.mutateAsync({ assignment, lectureId });
-    } catch (error) {
-      setStatus({
-        message: 'Error creating assignment: ' + error,
-        status: 'error'
-      });
-    }
+    createAssignmentMutation.mutate({ assignment, lectureId });
   };
   return { handleCreateAssignment };
 }
