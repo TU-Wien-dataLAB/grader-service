@@ -120,7 +120,9 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
         }
       };
 
-      props.setOpenDialog(false);
+      if (!createAnother) {
+        props.setOpenDialog(false);
+      }
       if (props.assignment) {
         await handleUpdateAssignment(
           props.assignment,
@@ -139,6 +141,7 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
   );
 
   const [deadlineOpen, setDeadlineOpen] = React.useState<boolean>(false);
+  const [createAnother, setCreateAnother] = useState(false);
   const [whitelistPatternsInput, setWhitelistPatternsInput] = useState('');
   const handleAddAllowedFilePattern = (field: AnyFieldApi) => {
     if (
@@ -153,7 +156,6 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
   };
   const anchor = useComboboxAnchor();
 
-  //TODO: add "create another" option
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent className={'overflow-y-auto'}>
@@ -199,7 +201,7 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
                     <Input
                       id={field.name}
                       name={field.name}
-                      value={field.state.value ?? undefined}
+                      value={field.state.value ?? null}
                       onChange={e => field.handleChange(e.target.value)}
                       required
                     ></Input>
@@ -630,6 +632,12 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
             {props.assignment ? 'Update' : 'Create'} assignment
           </Button>
           <DialogClose render={<Button variant={'outline'}>Cancel</Button>} />
+          {!props.assignment && (
+            <Field orientation={'horizontal'}>
+              <Checkbox onCheckedChange={() => setCreateAnother(true)} />
+              <FieldLabel>Create another</FieldLabel>
+            </Field>
+          )}
         </DialogFooter>
       </DialogContent>
       {confirmOpen && (
