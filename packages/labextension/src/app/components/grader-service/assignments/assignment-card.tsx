@@ -10,7 +10,6 @@ import {
   CardTitle,
   ItemTypes
 } from '../../../shadcn-components/ui/card';
-import { Badge } from '../../../shadcn-components/ui/badge';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { Button } from '../../../shadcn-components/ui/button';
 import { OctagonAlert } from 'lucide-react';
@@ -25,6 +24,7 @@ import {
 } from '../../../shadcn-components/ui/tooltip';
 import {
   AutomaticGradingBadge,
+  CompletedAssignmentBadge,
   CreatedAssignmentBadge,
   FullyAutomaticGradingBadge,
   ManualGradingBadge,
@@ -53,11 +53,23 @@ export const AssignmentCard = (props: IAssignment) => {
   const gradingType = () => {
     const gradingType = props.assignment.settings.autograde_type;
     if (gradingType === AutogradeTypeEnum.FullAuto) {
-      return <FullyAutomaticGradingBadge />;
+      return (
+        <FullyAutomaticGradingBadge
+          className={props.assignment.status === 'complete' && 'opacity-80'}
+        />
+      );
     } else if (gradingType === AutogradeTypeEnum.Auto) {
-      return <AutomaticGradingBadge />;
+      return (
+        <AutomaticGradingBadge
+          className={props.assignment.status === 'complete' && 'opacity-80'}
+        />
+      );
     } else {
-      return <ManualGradingBadge />;
+      return (
+        <ManualGradingBadge
+          className={props.assignment.status === 'complete' && 'opacity-80'}
+        />
+      );
     }
   };
 
@@ -67,11 +79,11 @@ export const AssignmentCard = (props: IAssignment) => {
       case 'created':
         return <CreatedAssignmentBadge />;
       case 'pushed':
-        return <Badge>Pushed</Badge>;
+        return <CreatedAssignmentBadge />;
       case 'released':
         return <ReleasedAssignmentBadge />;
       case 'complete':
-        return <Badge>Completed</Badge>;
+        return <CompletedAssignmentBadge />;
     }
   };
 
@@ -97,7 +109,7 @@ export const AssignmentCard = (props: IAssignment) => {
         <CardHeader
           className={`p-4 flex gap-4 items-center ${
             props.checked && 'bg-[#E0E7EB]'
-          }`}
+          } ${props.assignment.status === 'complete' && 'text-border'}`}
         >
           <Checkbox
             checked={props.checked}
@@ -120,13 +132,17 @@ export const AssignmentCard = (props: IAssignment) => {
             {assignmentStatus()}
             {gradingType()}
           </div>
-          <div className={'grid grid-cols-3'}>
+          <div
+            className={`grid grid-cols-3 ${
+              props.assignment.status === 'complete' && 'text-border'
+            }`}
+          >
             <div className={'flex flex-col items-start gap-2'}>
               <h6 className={'text-sm font-medium'}>Deadline</h6>
               <div className={'flex flex-row gap-2 items-center'}>
                 {props.assignment.settings?.deadline
                   ? getDate(new Date(props.assignment.settings?.deadline))
-                  : 'No deadline :)'}
+                  : '-'}
                 {props.assignment.settings?.deadline &&
                   new Date(props.assignment.settings?.deadline) <
                     new Date() && (
