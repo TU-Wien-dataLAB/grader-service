@@ -44,13 +44,20 @@ export function useAssignmentStatus() {
     success: string,
     error: string
   ) => {
-    await updateStatusMutation.mutateAsync({
-      status,
-      assignment,
-      lectureId,
-      successMessage: success,
-      errorMessage: error
-    });
+    try {
+      await updateStatusMutation.mutateAsync({
+        status,
+        assignment,
+        lectureId,
+        successMessage: success,
+        errorMessage: error
+      });
+    } catch (error) {
+      setStatus({
+        message: 'Error updating assignment status: ' + error,
+        status: 'error'
+      });
+    }
   };
 
   const handleRelease = async (assignment: Assignment, lectureId: number) => {

@@ -33,7 +33,14 @@ export function useAssignmentDelete() {
     assignmentId: number,
     lectureId: number
   ) => {
-    await deleteAssignmentMutation.mutateAsync({ assignmentId, lectureId });
+    try {
+      await deleteAssignmentMutation.mutateAsync({ assignmentId, lectureId });
+    } catch (error) {
+      setStatus({
+        message: 'Error deleting assignment: ' + error,
+        status: 'error'
+      });
+    }
   };
   return { handleDeleteAssignment };
 }

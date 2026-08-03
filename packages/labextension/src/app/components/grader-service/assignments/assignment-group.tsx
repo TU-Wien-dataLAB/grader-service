@@ -2,9 +2,7 @@ import { AssignmentDetail } from '../../../../model/assignmentDetail';
 import { ItemTypes } from '../../../shadcn-components/ui/card';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
-import { updateAssignment } from '../../../../services/assignments.service';
 import { ArrowRightFromLine } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { IAssignmentChecked } from '../../../pages/instructor-view/lecture';
 import { AssignmentCard } from './assignment-card';
@@ -15,6 +13,7 @@ import {
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from './release-dialog';
+import { useAssignmentUpdate } from '../../../hooks/assignment/assignment-update-hook';
 
 export interface IAssignmentGroup {
   key: React.Key;
@@ -25,7 +24,7 @@ export interface IAssignmentGroup {
 }
 
 export const AssignmentGroup = (props: IAssignmentGroup) => {
-  const queryClient = useQueryClient();
+  const { handleUpdateAssignment } = useAssignmentUpdate();
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
   const [checkedAssignments, setCheckedAssignments] =
     useState<IAssignmentChecked[]>(null);
@@ -68,17 +67,18 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     if (oldGroup === props.assignmentGroup) {
       return;
     }
+    let group;
     // update assignment with the new group
     if (props.assignmentGroup === 'ungrouped assignments') {
-      assignment.settings.group = '';
+      group = '';
     } else {
-      assignment.settings.group = props.assignmentGroup;
+      group = props.assignmentGroup;
     }
-    // TODO: use mutation function
-    await updateAssignment(props.lectureId, assignment, false);
-    await queryClient.invalidateQueries({
-      queryKey: ['assignments', props.lectureId]
-    });
+    await handleUpdateAssignment(
+      assignment,
+      { ...assignment, settings: { ...assignment.settings, group: group } },
+      props.lectureId
+    );
   }
 
   /* checkbox logic */

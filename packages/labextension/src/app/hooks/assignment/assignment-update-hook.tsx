@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Assignment } from '../../../model/assignment';
 import { updateAssignment } from '../../../services/assignments.service';
 import { useMutationStatus } from '../../../widget';
+import { HTTPError } from '../../../services/request.service';
 
 export function useAssignmentUpdate() {
   const queryClient = useQueryClient();
@@ -28,11 +29,10 @@ export function useAssignmentUpdate() {
         message: 'Your changes have been saved successfully.'
       });
     },
-    onError: (error: any) =>
+    onError: (error: HTTPError) =>
       setStatus({
         status: 'error',
-        message:
-          error.message || error.error.message || 'Error updating assignment.'
+        message: error?.message || 'Error updating assignment.'
       })
   });
 
@@ -41,11 +41,18 @@ export function useAssignmentUpdate() {
     updatedValues: Assignment,
     lectureId: number
   ) => {
-    await updateAssignmentMutate.mutateAsync({
-      assignment,
-      updatedValues,
-      lectureId
-    });
+    try {
+      await updateAssignmentMutate.mutateAsync({
+        assignment,
+        updatedValues,
+        lectureId
+      });
+    } catch (error) {
+      setStatus({
+        message: 'Error updating assignment: ' + error,
+        status: 'error'
+      });
+    }
   };
 
   return { handleUpdateAssignment };
