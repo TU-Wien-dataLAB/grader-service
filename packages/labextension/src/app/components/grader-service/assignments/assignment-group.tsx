@@ -24,8 +24,6 @@ export interface IAssignmentGroup {
   assignmentGroup: string;
 }
 
-type CheckedState = boolean | 'indeterminate';
-
 export const AssignmentGroup = (props: IAssignmentGroup) => {
   const queryClient = useQueryClient();
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
@@ -101,7 +99,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     );
   };
 
-  const checkGroupSymbol = (): CheckedState => {
+  const checkGroupSymbol = () => {
     const checkedCount = checkedAssignments.filter(a => a.checked).length;
     if (checkedCount === 0) {
       return false;
