@@ -55,13 +55,7 @@ auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNO
 
 
 def ensure_path_within_base(path: str, base: str) -> None:
-    path = os.path.normpath(path)
-    base = os.path.normpath(base)
-    try:
-        contained = os.path.commonpath([path, base]) == base
-    except ValueError:
-        contained = False
-    if not contained:
+    if not Path(path).resolve().is_relative_to(Path(base).resolve()):
         raise APIError(HTTPStatus.BAD_REQUEST, message="Invalid repository path")
 
 
