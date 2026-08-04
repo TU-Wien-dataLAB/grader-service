@@ -89,7 +89,7 @@ const GRADING_METHODS = [
   { label: 'Manual Grading', value: AutogradeTypeEnum.Unassisted }
 ];
 
-export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
+export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [recalcScoresConfirmed, setRecalcScoresConfirmed] = useState(false);
   const { handleUpdateAssignment } = useAssignmentUpdate();

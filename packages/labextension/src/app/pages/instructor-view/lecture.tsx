@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
-import { AssignmentSettingsDialog } from '../../components/grader-service/assignments/assignment-settings-dialog';
+import { AssignmentCreateEditDialog } from '../../components/grader-service/assignments/assignment-create-edit-dialog';
 import { ExportGradesDialog } from '../../components/grader-service/assignments/export-grades-dialog';
 import { lectureQuery } from '../../../services/queries/lectures.queries';
 import { assignmentsQuery } from '../../../services/queries/assignments.queries';
@@ -298,7 +298,8 @@ export const Lecture = () => {
 
     return dict;
   }, [filteredAssignments]);
-  const [openAssignmentSettings, setOpenAssignmentSettings] = useState(false);
+  const [openCreateAssignmentDialog, setOpenCreateAssignmentDialog] =
+    useState(false);
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
 
   const { status } = useMutationStatus();
@@ -323,7 +324,7 @@ export const Lecture = () => {
           {assignments.length > 0 && (
             <div className={'ml-auto flex items-start'}>
               <Button
-                onClick={() => setOpenAssignmentSettings(true)}
+                onClick={() => setOpenCreateAssignmentDialog(true)}
                 variant={'outline'}
               >
                 New assignment
@@ -426,13 +427,18 @@ export const Lecture = () => {
             />
           )
         ) : (
-          <EmptyState
-            title={'No assignments yet'}
-            icon={<EmptyIcon />}
-            description={
-              'Create a new assignment to distribute tasks and enable feedback.'
-            }
-          />
+          <>
+            <EmptyState
+              title={'No assignments yet'}
+              icon={<EmptyIcon />}
+              description={
+                'Create a new assignment to distribute tasks and enable feedback.'
+              }
+            />
+            <Button onClick={() => setOpenCreateAssignmentDialog(true)}>
+              New assignment
+            </Button>
+          </>
         )}
       </div>
       {openExportGradesDialog && (
@@ -442,11 +448,11 @@ export const Lecture = () => {
           setIsOpen={setOpenExportGradesDialog}
         />
       )}
-      {openAssignmentSettings && (
-        <AssignmentSettingsDialog
+      {openCreateAssignmentDialog && (
+        <AssignmentCreateEditDialog
           lectureId={lectureId}
-          openDialog={openAssignmentSettings}
-          setOpenDialog={setOpenAssignmentSettings}
+          openDialog={openCreateAssignmentDialog}
+          setOpenDialog={setOpenCreateAssignmentDialog}
         />
       )}
     </GroupsProvider>

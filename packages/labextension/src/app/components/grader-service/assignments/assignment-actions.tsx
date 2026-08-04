@@ -11,7 +11,7 @@ import { ReleaseDialog } from './release-dialog';
 import { useParams } from 'react-router';
 import { DeleteDialog } from './delete-dialog';
 import { useAssignmentStatus } from '../../../hooks/assignment/assignment-status-hook';
-import { AssignmentSettingsDialog } from './assignment-settings-dialog';
+import { AssignmentCreateEditDialog } from './assignment-create-edit-dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -98,7 +98,7 @@ export const AssignmentActions = (props: IAssignmentActions) => {
         />
       )}
       {openSettingsDialog && (
-        <AssignmentSettingsDialog
+        <AssignmentCreateEditDialog
           assignment={props.assignment}
           lectureId={lectureId}
           openDialog={openSettingsDialog}
