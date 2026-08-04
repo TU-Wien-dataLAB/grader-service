@@ -643,39 +643,30 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
       {confirmOpen && (
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogContent className={'sm:max-w-1/4'}>
-            <div className={'space-y-4'}>
-              <FieldGroup className={'flex flex-row gap-2 items-center'}>
-                <Checkbox
-                  id={'recalc-scores'}
-                  name={'recalc-scores'}
-                  checked={recalcScoresConfirmed}
-                  onCheckedChange={() =>
-                    setRecalcScoresConfirmed(!recalcScoresConfirmed)
-                  }
-                ></Checkbox>
-                <FieldLabel htmlFor={'recalc-scores'}>
-                  Recalculate scores
-                </FieldLabel>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className={'size-4 fill-primary text-background'} />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Using this action will result in the <br />
-                    recalculation of all submission scores based <br />
-                    on the deadline/late submission settings.
-                  </TooltipContent>
-                </Tooltip>
-              </FieldGroup>
-            </div>
+            <FieldGroup className={'flex flex-row gap-2 p-6 items-center'}>
+              <Checkbox
+                id={'recalc-scores'}
+                name={'recalc-scores'}
+                checked={recalcScoresConfirmed}
+                onCheckedChange={() =>
+                  setRecalcScoresConfirmed(!recalcScoresConfirmed)
+                }
+              ></Checkbox>
+              <FieldLabel htmlFor={'recalc-scores'}>
+                Recalculate scores
+              </FieldLabel>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className={'size-4 fill-primary text-background'} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Using this action will result in the <br />
+                  recalculation of all submission scores based <br />
+                  on the deadline/late submission settings.
+                </TooltipContent>
+              </Tooltip>
+            </FieldGroup>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
               <Button
                 type="submit"
                 onClick={() => {
@@ -685,6 +676,9 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
               >
                 Confirm
               </Button>
+              <DialogClose
+                render={<Button variant={'outline'}>Cancel</Button>}
+              />
             </DialogFooter>
           </DialogContent>
         </Dialog>
