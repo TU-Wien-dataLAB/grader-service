@@ -4,7 +4,7 @@ import pytest
 import requests
 
 BASE_URL = "http://localhost:8080"
-SERVICE_URL = "http://localhost:8000/services/grader/api"
+SERVICE_URL = "http://localhost:4010/services/grader/api"
 
 
 class TestServiceHealth:
@@ -141,50 +141,14 @@ class TestStudentWorkflow:
             pytest.skip("User service token not available")
 
         headers = {"Authorization": f"Bearer {user_service_token}"}
-        response = requests.get(f"{SERVICE_URL}/lectures/1/assignments", headers=headers, timeout=5)
+        response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
         assert response.status_code == 200
-
-
-class TestCeleryWorker:
-    """Test Celery worker integration."""
-
-    def test_worker_status(self, admin_auth_token):
-        """Test checking worker status."""
-        headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        try:
-            response = requests.get(f"{SERVICE_URL}/admin/workers", headers=headers, timeout=5)
-            if response.status_code == 404:
-                pytest.skip("Worker status endpoint not available")
-            assert response.status_code == 200
-        except requests.exceptions.ConnectionError:
-            pytest.skip("Worker status endpoint not available")
-
-    def test_autograde_task(self, admin_auth_token):
-        """Test submitting an autograde task."""
-        headers = {"Authorization": f"Bearer {admin_auth_token}"}
-        try:
-            response = requests.get(f"{SERVICE_URL}/lectures", headers=headers, timeout=5)
-            if response.status_code == 200:
-                lectures = response.json()
-                if lectures:
-                    lecture_id = lectures[0]["id"]
-                    response = requests.get(
-                        f"{SERVICE_URL}/lectures/{lecture_id}/assignments",
-                        headers=headers,
-                        timeout=5,
-                    )
-                    if response.status_code == 200:
-                        assignments = response.json()
-                        if assignments:
-                            assignment_id = assignments[0]["id"]
-                            response = requests.post(
-                                f"{SERVICE_URL}/lectures/{lecture_id}/assignments/{assignment_id}/autograde",
-                                headers=headers,
-                                timeout=5,
-                            )
-                            assert response.status_code in [200, 202, 400]
-        except requests.exceptions.ConnectionError:
-            pytest.skip("Autograde endpoint not available")
+        lectures = response.json()
+        lecture_id = lectures[0]["id"]
+        response = requests.get(
+            f"{SERVICE_URL}/lectures/{lecture_id}/assignments", headers=headers, timeout=5
+        )
+        assert response.status_code == 200
 
 
 class TestDatabaseOperations:

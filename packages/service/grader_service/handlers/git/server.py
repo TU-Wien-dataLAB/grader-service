@@ -18,7 +18,11 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.handlers.base_handler import GraderBaseHandler, RequestHandlerConfig
+from grader_service.handlers.base_handler import (
+    GraderBaseHandler,
+    RequestHandlerConfig,
+    ensure_path_within_base,
+)
 from grader_service.handlers.handler_utils import GitRepoType
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
@@ -170,16 +174,8 @@ class GitBaseHandler(GraderBaseHandler):
         lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
         assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
 
-        def _contained(p: str, base: str) -> bool:
-            try:
-                return os.path.commonpath([p, base]) == base
-            except ValueError:
-                return False
-
-        if not _contained(lecture_path, self.gitbase) or not _contained(
-            assignment_path, self.gitbase
-        ):
-            raise HTTPError(400, reason="Invalid repository path")
+        ensure_path_within_base(lecture_path, self.gitbase)
+        ensure_path_within_base(assignment_path, self.gitbase)
 
         if not os.path.exists(lecture_path):
             os.mkdir(lecture_path)

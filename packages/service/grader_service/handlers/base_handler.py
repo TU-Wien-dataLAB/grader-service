@@ -54,6 +54,17 @@ SESSION_COOKIE_NAME = "grader-session-id"
 auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNORECASE)
 
 
+def ensure_path_within_base(path: str, base: str) -> None:
+    path = os.path.normpath(path)
+    base = os.path.normpath(base)
+    try:
+        contained = os.path.commonpath([path, base]) == base
+    except ValueError:
+        contained = False
+    if not contained:
+        raise APIError(HTTPStatus.BAD_REQUEST, message="Invalid repository path")
+
+
 def check_authorization(
     self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]
 ) -> bool:
@@ -387,14 +398,15 @@ class BaseHandler(web.RequestHandler):
         else:
             return match.group(2)
 
-    @functools.lru_cache
     def get_token(self) -> Optional[APIToken]:
         """get token from authorization header"""
-        token = self.get_auth_token()
-        if token is None:
-            return None
-        orm_token = APIToken.find(self.session, token)
-        return orm_token
+        if not hasattr(self, "_cached_token"):
+            token = self.get_auth_token()
+            if token is None:
+                self._cached_token = None
+            else:
+                self._cached_token = APIToken.find(self.session, token)
+        return self._cached_token
 
     def get_current_user_token(self) -> Optional[User]:
         """get_current_user from Authorization header token"""
@@ -1099,8 +1111,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
             raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
 
         path = os.path.normpath(path)
-        if not path.startswith(self.gitbase):
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repository path.")
+        ensure_path_within_base(path, self.gitbase)
 
         return path
 
