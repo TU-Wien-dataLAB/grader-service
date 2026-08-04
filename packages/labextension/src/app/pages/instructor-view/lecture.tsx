@@ -427,7 +427,7 @@ export const Lecture = () => {
             />
           )
         ) : (
-          <>
+          <div className={'flex flex-col items-center py-6 self-stretch'}>
             <EmptyState
               title={'No assignments yet'}
               icon={<EmptyIcon />}
@@ -438,7 +438,7 @@ export const Lecture = () => {
             <Button onClick={() => setOpenCreateAssignmentDialog(true)}>
               New assignment
             </Button>
-          </>
+          </div>
         )}
       </div>
       {openExportGradesDialog && (
