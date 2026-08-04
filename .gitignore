@@ -139,3 +139,6 @@ packages/service/api-tests/.bru/
 
 # Docker compose environment files
 docker-compose/*/.env
+
+# Graphify
+graphify-out/

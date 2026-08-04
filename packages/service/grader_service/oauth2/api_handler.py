@@ -4,7 +4,7 @@
 # Distributed under the terms of the Modified BSD License.
 import json
 import warnings
-from functools import lru_cache
+from functools import cached_property
 from http.client import responses
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -37,8 +37,7 @@ class APIHandler(BaseHandler):
     def get_content_type(self):
         return "application/json"
 
-    @property
-    @lru_cache()
+    @cached_property
     def accepts_pagination(self):
         """Return whether the client accepts the pagination preview media type"""
         accept_header = self.request.headers.get("Accept", "")

@@ -39,7 +39,7 @@ def wait_for_services():
     pytest.skip("Services did not start in time (skipping integration tests)")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def admin_auth_token(wait_for_services, hub_service_token):
     """Get authentication token for admin user."""
     headers = {"Authorization": f"token {hub_service_token}"}
@@ -75,12 +75,14 @@ def admin_auth_token(wait_for_services, hub_service_token):
     return None
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_user(wait_for_services, hub_service_token):
     """Create a test user and return credentials.
 
     Note: With DummyAuthenticator, passwords are not required.
     Users are created without passwords and can authenticate via token.
+    The user is added to the lect1:student group so the service's
+    post_auth_hook enrolls them in the lect1 lecture as a student.
     """
     username = f"testuser_{uuid.uuid4().hex[:8]}"
 
@@ -90,8 +92,18 @@ def test_user(wait_for_services, hub_service_token):
         response = requests.post(
             f"{HUB_API_URL}/users/{username}", headers=headers, json={}, timeout=5
         )
-        if response.status_code in [201, 409]:
-            return {"username": username}
+        if response.status_code not in [201, 409]:
+            return None
+
+        # Enroll the user in the lect1:student group so the service creates
+        # a student role for them in the lect1 lecture on login.
+        requests.post(
+            f"{HUB_API_URL}/groups/lect1:student/users",
+            headers=headers,
+            json={"users": [username]},
+            timeout=5,
+        )
+        return {"username": username}
     except requests.exceptions.RequestException as e:
         print(f"Failed to create user: {e}")
         pass
@@ -99,7 +111,7 @@ def test_user(wait_for_services, hub_service_token):
     return None
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def user_server(test_user, hub_service_token, wait_for_services):
     """Spawn a user server and yield server info."""
     if not test_user:
@@ -111,31 +123,28 @@ def user_server(test_user, hub_service_token, wait_for_services):
     server_spawned = False
     try:
         response = requests.post(
-            f"{HUB_API_URL}/users/{username}/server", headers=headers, timeout=10
+            f"{HUB_API_URL}/users/{username}/server", headers=headers, timeout=30
         )
-        if response.status_code == 202:
-            max_wait = 30
-            for _ in range(max_wait):
-                status_response = requests.get(
-                    f"{HUB_API_URL}/users/{username}", headers=headers, timeout=5
-                )
-                if status_response.status_code == 200:
-                    user_data = status_response.json()
-                    if user_data.get("servers", {}).get("", {}).get("ready"):
-                        server_url = user_data["servers"][""]["url"]
-                        print(f"Server ready for {username} at {server_url}")
-                        server_spawned = True
-                        yield {
-                            "username": username,
-                            "server_url": server_url,
-                            "test_user": test_user,
-                        }
-                        break
-                time.sleep(2)
-            else:
-                pytest.skip("Server did not start in time")
-        else:
+        # 201: server created synchronously, 202: server spawn requested (async)
+        if response.status_code not in (201, 202):
             pytest.skip(f"Failed to spawn server: {response.status_code}")
+
+        max_wait = 60
+        for _ in range(max_wait):
+            status_response = requests.get(
+                f"{HUB_API_URL}/users/{username}", headers=headers, timeout=5
+            )
+            if status_response.status_code == 200:
+                user_data = status_response.json()
+                if user_data.get("servers", {}).get("", {}).get("ready"):
+                    server_url = user_data["servers"][""]["url"]
+                    print(f"Server ready for {username} at {server_url}")
+                    server_spawned = True
+                    yield {"username": username, "server_url": server_url, "test_user": test_user}
+                    break
+            time.sleep(1)
+        else:
+            pytest.skip("Server did not start in time")
     except requests.exceptions.RequestException as e:
         print(f"Failed to spawn server: {e}")
         pytest.skip("Could not spawn user server")
@@ -149,7 +158,7 @@ def user_server(test_user, hub_service_token, wait_for_services):
                 pass
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def user_service_token(user_server, hub_service_token):
     """Get service token for the spawned user server."""
     if not user_server:
@@ -165,8 +174,9 @@ def user_service_token(user_server, hub_service_token):
             json={"note": "user server token"},
             timeout=5,
         )
-        if response.status_code == 201:
-            hub_token = response.json()["token"]
+        if response.status_code != 201:
+            return None
+        hub_token = response.json()["token"]
         response = requests.post(f"{SERVICE_BASE_URL}/login", json={"token": hub_token}, timeout=5)
         if response.status_code == 200:
             return response.json()["api_token"]

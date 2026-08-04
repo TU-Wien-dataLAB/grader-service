@@ -7,7 +7,7 @@ name = "grader-service"
 description = "Grader service"
 version = "0.12.5"
 requires-python = ">=3.9"
-authors = [{name='Florian Jäger'}, {name='Matthias Matt'}]
+authors = [{ name = 'Florian Jäger' }, { name = 'Matthias Matt' }]
 license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -24,6 +24,7 @@ dependencies = [
     "async_generator>=1.10",
     "celery>=5.4",
     "cryptography>=43",
+    "ipykernel>=6.31.0",
     "isodate>=0.7",
     "json5>=0.9",
     "jsonschema>=4",
