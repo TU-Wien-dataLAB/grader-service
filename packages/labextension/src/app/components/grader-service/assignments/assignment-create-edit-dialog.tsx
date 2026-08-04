@@ -127,7 +127,8 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
         await handleUpdateAssignment(
           props.assignment,
           newAssignment,
-          props.lectureId
+          props.lectureId,
+          recalcScoresConfirmed
         );
       } else {
         await handleCreateAssignment(newAssignment, props.lectureId);

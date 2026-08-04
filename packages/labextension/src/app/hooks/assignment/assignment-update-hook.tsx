@@ -13,12 +13,17 @@ export function useAssignmentUpdate() {
       assignment: Assignment;
       updatedValues: Assignment;
       lectureId: number;
+      recalcScores?: boolean;
     }) => {
       const updatedAssignment = {
         ...variables.assignment,
         ...variables.updatedValues
       };
-      await updateAssignment(variables.lectureId, updatedAssignment);
+      await updateAssignment(
+        variables.lectureId,
+        updatedAssignment,
+        variables.recalcScores
+      );
     },
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({
@@ -39,12 +44,14 @@ export function useAssignmentUpdate() {
   const handleUpdateAssignment = async (
     assignment: Assignment,
     updatedValues: Assignment,
-    lectureId: number
+    lectureId: number,
+    recalcScores?: boolean
   ) => {
     updateAssignmentMutate.mutate({
       assignment,
       updatedValues,
-      lectureId
+      lectureId,
+      recalcScores
     });
   };
 
