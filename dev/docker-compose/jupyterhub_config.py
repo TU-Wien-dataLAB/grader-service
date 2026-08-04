@@ -9,7 +9,7 @@ c.JupyterHub.admin_access = True
 c.Spawner.default_url = "/lab"
 # The watcher entrypoint starts `jlpm watch` (tsc -w + jupyter labextension
 # watch) in the background, then hands off to jupyter-labhub so labextension TS
-# changes are hot-reloaded in spawned user pods.
+# changes are hot-reloaded in spawned user containers.
 c.Spawner.cmd = ["/usr/local/bin/entrypoint-labextension.sh", "jupyter-labhub"]
 
 ## authenticator
@@ -38,7 +38,7 @@ c.DockerSpawner.image = "grader-labextension:dev"
 notebook_dir = os.environ.get("DOCKER_NOTEBOOK_DIR", "/home/jovyan/work")
 c.DockerSpawner.notebook_dir = notebook_dir
 
-# Bind-mount labextension source inputs into the pod so the in-pod watcher
+# Bind-mount labextension source inputs into the container so the in-container watcher
 # rebuilds on save. GRADER_REPO_ROOT is the absolute host path to the repo root
 # (set by `make dev-up`). Only the read-only source inputs (src/, schema/,
 # style/) are mounted: the watcher writes lib/ and grader_labextension/
@@ -58,7 +58,7 @@ if _labext_src:
 else:
     print(
         "WARNING: GRADER_REPO_ROOT is not set; labextension source is not "
-        "bind-mounted into spawned pods (no hot reload). Run via `make dev-up`."
+        "bind-mounted into spawned containers (no hot reload). Run via `make dev-up`."
     )
 
 

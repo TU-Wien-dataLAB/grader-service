@@ -75,9 +75,9 @@ docker compose logs -f celery-worker
 ### Editing the Labextension
 
 TypeScript changes in `packages/labextension/src/`, `schema/`, or `style/` are
-hot-reloaded into spawned user pods. Spawned pods run a local
+hot-reloaded into spawned user containers. Spawned containers run a local
 `grader-labextension:dev` image that installs the extension in editable mode and
-bind-mounts those source directories, with an in-pod watcher
+bind-mounts those source directories, with an in-container watcher
 (`tsc -w` + `jupyter labextension watch`) that recompiles on save.
 
 1. Start the dev environment from the repo root (not from this directory) so the
@@ -90,16 +90,16 @@ bind-mounts those source directories, with an in-pod watcher
    source. Starting via `docker compose up` directly skips the image build and
    leaves `GRADER_REPO_ROOT` unset (no hot reload).
 
-2. Log in at `http://localhost:8080` and start a server. The pod will have the
+2. Log in at `http://localhost:8080` and start a server. The container will have the
    watcher running.
 
 3. Edit a file under `packages/labextension/src/` (or `schema/`, `style/`) and
-   save. The in-pod watcher recompiles within a second or two.
+   save. The in-container watcher recompiles within a second or two.
 
 4. Refresh the browser tab. The rebuilt labextension bundle is served on the
    next page load.
 
-To watch the watcher output in a running pod:
+To watch the watcher output in a running container:
 ```bash
 docker exec -it jupyter-<username> tail -f /tmp/grader-labextension-watch.log
 ```
@@ -131,7 +131,7 @@ docker compose restart service hub
    docker compose logs hub
    ```
 
-3. Check the watcher log inside the spawned pod:
+3. Check the watcher log inside the spawned container:
    ```bash
    docker exec -it jupyter-<username> tail -50 /tmp/grader-labextension-watch.log
    ```

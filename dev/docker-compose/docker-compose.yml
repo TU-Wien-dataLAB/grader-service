@@ -50,7 +50,7 @@ services:
       - GRADER_SERVICE_URL=http://service:4010
       - GRADER_API_TOKEN=${GRADER_API_TOKEN:-7572f93a2e7640999427d9289c8318c0}
       # Absolute host path to the repo root. Used by jupyterhub_config.py to
-      # bind-mount labextension source into spawned user pods for hot reload.
+      # bind-mount labextension source into spawned user containers for hot reload.
       # Set automatically by `make dev-up`; required for direct `docker compose`
       # usage.
       - GRADER_REPO_ROOT=${GRADER_REPO_ROOT:-}

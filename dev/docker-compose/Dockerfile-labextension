@@ -29,7 +29,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # grader-labextension (editable) installed at /opt/grader-labextension. The
 # editable build hook (install:extension -> jlpm build) populates lib/ and
 # grader_labextension/labextension/. JupyterLab reads assets straight from the
-# source tree via _jupyter_labextension_paths(), so the in-pod watcher's
+# source tree via _jupyter_labextension_paths(), so the in-container watcher's
 # rebuilds are picked up on browser refresh.
 #
 # Installed with plain pip (not uv): the labextension's tool.uv.sources maps
@@ -40,7 +40,7 @@ COPY ./packages/labextension /opt/grader-labextension
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-deps -e /opt/grader-labextension
 
-# Make the source tree writable by jovyan so the in-pod watcher can rebuild
+# Make the source tree writable by jovyan so the in-container watcher can rebuild
 # lib/ and grader_labextension/labextension/.
 RUN chown -R "${NB_USER:-jovyan}:${NB_GID:-users}" /opt/grader-labextension
 
