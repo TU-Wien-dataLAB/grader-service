@@ -147,8 +147,7 @@ def insert_submission(
 ) -> Submission:
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id
-    own_session = session is None
-    if own_session:
+    if session is None:
         session = sessionmaker(ex)()
     submission = _get_submission(
         assignment_id, username, user_id, feedback=feedback, score=score, commit_hash=commit_hash
