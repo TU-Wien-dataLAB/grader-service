@@ -255,7 +255,7 @@ export const Dashboard = () => {
                     {Array.from(
                       { length: Math.ceil(lectures.length / 6) },
                       (_, i) => (
-                        <PaginationLink>{i + 1}</PaginationLink>
+                        <PaginationLink key={i}>{i + 1}</PaginationLink>
                       )
                     )}
                   </PaginationItem>
