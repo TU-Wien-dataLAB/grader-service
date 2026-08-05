@@ -91,14 +91,17 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
                   className={'inline-flex min-h-8 items-start rounded-xs gap-2'}
                 >
                   <Checkbox
-                    checked={props.checkGroupSymbol()}
+                    checked={props.checkGroupSymbol?.() ?? false}
                     onCheckedChange={props.handleGroupChecked}
                   />
                   <Label>{props.groupName}</Label>
                 </div>
                 <ul className={'w-full overflow-y-auto'}>
                   {props.assignments.map(a => (
-                    <li className={'flex min-h-8 items-center gap-2'}>
+                    <li
+                      key={a.assignment.id}
+                      className={'flex min-h-8 items-center gap-2'}
+                    >
                       <CornerDownRight
                         className={'size-4 text-border shrink-0'}
                       />
@@ -106,7 +109,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
                         checked={a.checked}
                         disabled={a.assignment.status !== 'created'}
                         onCheckedChange={() =>
-                          props.handleAssignmentChecked(
+                          props.handleAssignmentChecked?.(
                             a.assignment.id,
                             !a.checked
                           )
