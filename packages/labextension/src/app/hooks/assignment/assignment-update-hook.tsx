@@ -41,7 +41,7 @@ export function useAssignmentUpdate() {
       })
   });
 
-  const handleUpdateAssignment = async (
+  const handleUpdateAssignment = (
     assignment: Assignment,
     updatedValues: Assignment,
     lectureId: number,

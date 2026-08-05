@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Assignment } from '../../../model/assignment';
 import { createAssignment } from '../../../services/assignments.service';
 import { useMutationStatus } from '../../../widget';
+import { HTTPError } from '../../../services/request.service';
 
 export function useAssignmentCreate() {
   const queryClient = useQueryClient();
@@ -23,15 +24,14 @@ export function useAssignmentCreate() {
         message: 'The assignment has been created successfully.'
       });
     },
-    onError: (error: any) =>
+    onError: (error: HTTPError) =>
       setStatus({
         status: 'error',
-        message:
-          error.message || error.error.message || 'Error creating assignment.'
+        message: error?.message || 'Error creating assignment.'
       })
   });
 
-  const handleCreateAssignment = async (
+  const handleCreateAssignment = (
     assignment: Assignment,
     lectureId: number
   ) => {

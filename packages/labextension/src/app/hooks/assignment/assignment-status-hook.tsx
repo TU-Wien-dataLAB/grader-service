@@ -3,6 +3,7 @@ import { Assignment } from '../../../model/assignment';
 import { updateAssignment } from '../../../services/assignments.service';
 import { IAssignmentChecked } from '../../pages/instructor-view/lecture';
 import { useMutationStatus } from '../../../widget';
+import { HTTPError } from '../../../services/request.service';
 
 export function useAssignmentStatus() {
   const queryClient = useQueryClient();
@@ -30,14 +31,14 @@ export function useAssignmentStatus() {
         message: variables.successMessage
       });
     },
-    onError: (error: any, variables) =>
+    onError: (error: HTTPError, variables) =>
       setStatus({
         status: 'error',
-        message: error.message || error.error.message || variables.errorMessage
+        message: error?.message || variables.errorMessage
       })
   });
 
-  const updateAssignmentStatus = async (
+  const updateAssignmentStatus = (
     status: 'created' | 'released' | 'complete',
     assignment: Assignment,
     lectureId: number,
@@ -53,8 +54,8 @@ export function useAssignmentStatus() {
     });
   };
 
-  const handleRelease = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleRelease = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'released',
       assignment,
       lectureId,
@@ -65,16 +66,16 @@ export function useAssignmentStatus() {
     );
   };
 
-  const handleAssignmentsRelease = async (
+  const handleAssignmentsRelease = (
     assignmentsChecked: IAssignmentChecked[],
     lectureId: number
   ) => {
     assignmentsChecked.map(
-      async a => a.checked && (await handleRelease(a.assignment, lectureId))
+      a => a.checked && handleRelease(a.assignment, lectureId)
     );
   };
-  const handleUnrelease = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleUnrelease = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'created',
       assignment,
       lectureId,
@@ -83,8 +84,8 @@ export function useAssignmentStatus() {
     );
   };
 
-  const handleComplete = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleComplete = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'complete',
       assignment,
       lectureId,

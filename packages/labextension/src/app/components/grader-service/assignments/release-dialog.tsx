@@ -40,11 +40,11 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
     defaultValues: {
       comment: 'Release'
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       if (Array.isArray(props.assignments)) {
-        await handleAssignmentsRelease(props.assignments, props.lectureId);
+        handleAssignmentsRelease(props.assignments, props.lectureId);
       } else {
-        await handleRelease(props.assignments, props.lectureId);
+        handleRelease(props.assignments, props.lectureId);
       }
       props.setOpenDialog(false);
     }

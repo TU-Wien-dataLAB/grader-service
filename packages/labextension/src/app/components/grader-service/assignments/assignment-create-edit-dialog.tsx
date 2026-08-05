@@ -120,18 +120,18 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
         }
       };
 
-      if (!createAnother) {
-        props.setOpenDialog(false);
-      }
       if (props.assignment) {
-        await handleUpdateAssignment(
+        handleUpdateAssignment(
           props.assignment,
           newAssignment,
           props.lectureId,
           recalcScoresConfirmed
         );
       } else {
-        await handleCreateAssignment(newAssignment, props.lectureId);
+        handleCreateAssignment(newAssignment, props.lectureId);
+      }
+      if (!createAnother) {
+        props.setOpenDialog(false);
       }
     }
   });
