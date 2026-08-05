@@ -4,7 +4,7 @@ import React from 'react';
 const commonStyle = 'text-foreground';
 
 export const FullyAutomaticGradingBadge = ({
-  className
+  className = ''
 }: {
   className?: string;
 }) => {
@@ -18,7 +18,7 @@ export const FullyAutomaticGradingBadge = ({
 };
 
 export const AutomaticGradingBadge = ({
-  className
+  className = ''
 }: {
   className?: string;
 }) => {
@@ -31,7 +31,11 @@ export const AutomaticGradingBadge = ({
   );
 };
 
-export const ManualGradingBadge = ({ className }: { className?: string }) => {
+export const ManualGradingBadge = ({
+  className = ''
+}: {
+  className?: string;
+}) => {
   return (
     <Badge
       className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8]`}
@@ -42,7 +46,7 @@ export const ManualGradingBadge = ({ className }: { className?: string }) => {
 };
 
 export const CreatedAssignmentBadge = ({
-  className
+  className = ''
 }: {
   className?: string;
 }) => {
@@ -56,7 +60,7 @@ export const CreatedAssignmentBadge = ({
 };
 
 export const ReleasedAssignmentBadge = ({
-  className
+  className = ''
 }: {
   className?: string;
 }) => {
@@ -70,7 +74,7 @@ export const ReleasedAssignmentBadge = ({
 };
 
 export const CompletedAssignmentBadge = ({
-  className
+  className = ''
 }: {
   className?: string;
 }) => {
