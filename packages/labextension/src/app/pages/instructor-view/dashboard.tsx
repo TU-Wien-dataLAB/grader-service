@@ -194,7 +194,7 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {lectures.length > 0 ? (
+      {(lectures?.length ?? 0) > 0 ? (
         filteredLectures.length === 0 ? (
           <EmptyState
             title={'No results found'}
