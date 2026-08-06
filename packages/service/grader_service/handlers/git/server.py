@@ -249,7 +249,7 @@ class GitBaseHandler(GraderBaseHandler):
             if repo_type == GitRepoType.USER:
                 try:
                     self.file_service.init_user_files(
-                        assignment=assignment, username=username, message="Initialize from Release"
+                        assignment=assignment, username=username, comment="Initialize from Release"
                     )
                 except FileNotFoundError as err:
                     self.log.error(err)

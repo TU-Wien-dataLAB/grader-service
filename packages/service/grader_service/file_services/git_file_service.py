@@ -288,7 +288,7 @@ class GitFileService(FileService):
         self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
         self.log.debug("Successfully pushed the commit")
 
-    def init_user_files(self, assignment: Assignment, username: str, message: str) -> None:
+    def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
         """Copy submission files from release to user repo.
 
         This method can also be used to "reset" one's own repo. Note that it does
@@ -336,7 +336,7 @@ class GitFileService(FileService):
             self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output)
 
             # Copy files to the edit repo, commit and push the changes
-            self._copy_files_and_commit(tmp_path_input, tmp_path_output, message)
+            self._copy_files_and_commit(tmp_path_input, tmp_path_output, comment)
             self.log.info("Successfully copied release files to user repository.")
         finally:
             shutil.rmtree(tmp_base)
