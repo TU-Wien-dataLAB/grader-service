@@ -28,7 +28,7 @@ def setup_repos(git_file_service, submission_123):
     release_path = construct_git_dir(
         git_file_service.gitbase, GitRepoType.RELEASE, lecture_code, assignment.id
     )
-    git_file_service.create_bare_repo(release_path)
+    git_file_service._create_bare_repo(release_path)
 
     # Create user repo
     user_path = construct_git_dir(
@@ -38,7 +38,7 @@ def setup_repos(git_file_service, submission_123):
         assignment.id,
         username=submission_123.user.name,
     )
-    git_file_service.create_bare_repo(user_path)
+    git_file_service._create_bare_repo(user_path)
 
     yield {"release": release_path, "user": user_path}
 
@@ -214,7 +214,7 @@ def test_create_bare_repo_creates_directory_and_initializes(git_file_service, tm
     """Test bare repo creation."""
     repo_path = tmp_path / "test_repo"
 
-    git_file_service.create_bare_repo(repo_path)
+    git_file_service._create_bare_repo(repo_path)
 
     assert repo_path.exists()
     assert git_file_service.is_bare_git_dir(repo_path)
@@ -223,7 +223,7 @@ def test_create_bare_repo_creates_directory_and_initializes(git_file_service, tm
 def test_create_bare_repo_recreates_existing_when_flag_set(git_file_service, tmp_path):
     """Test that existing repo is recreated when recreate_dir=True."""
     repo_path = tmp_path / "test_repo"
-    git_file_service.create_bare_repo(repo_path)
+    git_file_service._create_bare_repo(repo_path)
 
     # Create a file in the repo
     marker_file = repo_path / "marker.txt"
@@ -231,7 +231,7 @@ def test_create_bare_repo_recreates_existing_when_flag_set(git_file_service, tmp
     assert marker_file.exists()
 
     # Recreate should remove the file
-    git_file_service.create_bare_repo(repo_path, recreate_dir=True)
+    git_file_service._create_bare_repo(repo_path, recreate_dir=True)
 
     assert not marker_file.exists()
     assert git_file_service.is_bare_git_dir(repo_path)
@@ -242,7 +242,7 @@ def test_create_bare_repo_custom_branch(git_file_service, tmp_path):
     repo_path = tmp_path / "test_repo"
     custom_branch = "develop"
 
-    git_file_service.create_bare_repo(repo_path, initial_branch=custom_branch)
+    git_file_service._create_bare_repo(repo_path, initial_branch=custom_branch)
 
     # Verify the branch was created
     result = subprocess.run(
@@ -362,10 +362,10 @@ def test_fetch_files_autograde_uses_submission_branch_when_graded(
     assert f"submission_{submission_123.commit_hash}" in pull_calls[0].args[0]
 
 
-def test_fetch_files_autograde_falls_back_to_user_when_not_graded(
+def test_fetch_files_autograde_falls_back_to_user_when_manually_graded(
     git_file_service, submission_123, setup_repos, tmp_path
 ):
-    """Test that autograde falls back to USER repo when not yet graded."""
+    """Test that fetching AUTOGRADE files falls back to USER repo when not autograded."""
     submission_123.auto_status = AutoStatus.NOT_GRADED
     submission_123.manual_status = ManualStatus.MANUALLY_GRADED
     input_dir = tmp_path / "input"
@@ -411,22 +411,18 @@ def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, defaul
     git_file_service.fetch_files(input_dir, GitRepoType.USER, sub)
 
     assert (input_dir / "submission.ipynb").exists()
-    is_inside_work_tree = subprocess.run(
+    is_git_repo = subprocess.run(
         [git_file_service.git_executable, "rev-parse", "--is-inside-work-tree"],
         cwd=input_dir,
         capture_output=True,
     ).stdout.decode("utf-8")
-    assert "true" in is_inside_work_tree
+    assert "true" in is_git_repo
 
 
 # =============== edit_submission tests ===============
 
 
-@patch("grader_service.file_services.git_file_service.GitFileService.fetch_files")
-@patch("grader_service.file_services.git_file_service.GitFileService._run_git_async")
-async def test_edit_submission_raises_when_user_repo_not_exists(
-    mock_run_async, mock_fetch, git_file_service, submission_123
-):
+async def test_edit_submission_raises_when_user_repo_not_exists(git_file_service, submission_123):
     """Test error when user repository doesn't exist for edit."""
     with pytest.raises(FileNotFoundError, match="user submission repository"):
         await git_file_service.edit_submission(submission_123)
@@ -539,19 +535,19 @@ def test_delete_submission_files_removes_user_and_submission_dirs(git_file_servi
     submission_dirs = []
     assignment_dirs = []
     for repo_type in GitRepoType:
-        repo_path = construct_git_dir(
+        repo_dir = construct_git_dir(
             git_file_service.gitbase, repo_type, l_code, a_id, submission_id=s_id, username=username
         )
-        repo_path.mkdir(parents=True)
+        repo_dir.mkdir(parents=True)
         if repo_type in [GitRepoType.SOURCE, GitRepoType.RELEASE]:
-            assignment_dirs.append(repo_path)
-            tmp_path = git_file_service.tmpbase / l_code / a_id / repo_type
-            assignment_dirs.append(tmp_path)
+            assignment_dirs.append(repo_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / repo_type
+            assignment_dirs.append(tmp_dir)
         else:
-            submission_dirs.append(repo_path)
-            tmp_path = git_file_service.tmpbase / l_code / a_id / repo_type / username
-            submission_dirs.append(tmp_path)
-        tmp_path.mkdir(parents=True)
+            submission_dirs.append(repo_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / repo_type / username
+            submission_dirs.append(tmp_dir)
+        tmp_dir.mkdir(parents=True)
 
     git_file_service.delete_submission_files(submission_123)
 
@@ -573,8 +569,76 @@ def test_delete_submission_files_only_removes_target_submission(
     other_user_path = construct_git_dir(
         git_file_service.gitbase, GitRepoType.USER, l_code, a_id, username=other_username
     )
-    git_file_service.create_bare_repo(other_user_path)
+    git_file_service._create_bare_repo(other_user_path)
 
     git_file_service.delete_submission_files(submission_123)
 
     assert other_user_path.exists()
+
+
+# =============== push_files tests ===============
+
+
+@pytest.mark.parametrize(
+    "repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.USER, GitRepoType.EDIT]
+)
+def test_push_files_raises_for_invalid_repo_types(
+    git_file_service, submission_123, tmp_path, repo_type
+):
+    """Test that push_files raises if the repo type is not AUTOGRADE or FEEDBACK"""
+    dir = tmp_path / "convert_out"
+    with pytest.raises(ValueError, match="Invalid repo type"):
+        git_file_service.push_files(
+            filenames=[], dir=dir, repo_type=repo_type, submission=submission_123
+        )
+
+
+def test_push_files_autograde(git_file_service, submission_123, tmp_path):
+    """Test pushing files after autograding a submission."""
+    repo_type = GitRepoType.AUTOGRADE
+
+    l_code = submission_123.assignment.lecture.code
+    a_id = str(submission_123.assignment.id)
+    username = submission_123.user.name
+    remote_repo_path = construct_git_dir(
+        git_file_service.gitbase, repo_type, l_code, a_id, username=username
+    )
+    assert not remote_repo_path.exists()
+
+    # Create a fake "autograded" file; note that ``repo_path`` is not a repo
+    repo_path = tmp_path / "convert_out" / "submission_123"
+    repo_path.mkdir(parents=True)
+    s_file = repo_path / "autograded.ipynb"
+    s_file.touch()
+
+    git_file_service.push_files(
+        [s_file.name, "gradebook.json"], repo_path, repo_type, submission_123
+    )
+
+    # Remote repo should have been created
+    assert remote_repo_path.exists()
+    assert git_file_service.is_bare_git_dir(remote_repo_path)
+
+    # The `repo_path` directory should now be a Git repository
+    is_git_repo = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path, capture_output=True
+    ).stdout.decode("utf-8")
+    assert "true" in is_git_repo
+
+    # Current branch of the repo should be named after the submission's commit hash
+    current_branch = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo_path, capture_output=True
+    ).stdout.decode("utf-8")
+    assert f"submission_{submission_123.commit_hash}" in current_branch
+
+    # The commit message should be the submission's hash, the autograded file should be committed,
+    # but gradebook.json - not
+    last_commit = subprocess.run(
+        ["git", "show", "--oneline", "--name-only"], cwd=repo_path, capture_output=True
+    ).stdout.decode("utf-8")
+    assert submission_123.commit_hash in last_commit
+    assert s_file.name in last_commit
+    assert "gradebook.json" not in last_commit
+
+    # Autograding the same submission again should work, even if there are no changes.
+    git_file_service.push_files([s_file.name], repo_path, repo_type, submission_123)
