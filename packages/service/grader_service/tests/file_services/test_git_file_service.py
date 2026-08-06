@@ -207,7 +207,7 @@ def test_is_bare_git_dir_returns_false_for_nonexistent_path(git_file_service):
     assert result is False
 
 
-# =============== create_bare_repo tests ===============
+# =============== _create_bare_repo tests ===============
 
 
 def test_create_bare_repo_creates_directory_and_initializes(git_file_service, tmp_path):
@@ -411,11 +411,9 @@ def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, defaul
     git_file_service.fetch_files(input_dir, GitRepoType.USER, sub)
 
     assert (input_dir / "submission.ipynb").exists()
-    is_git_repo = subprocess.run(
-        [git_file_service.git_executable, "rev-parse", "--is-inside-work-tree"],
-        cwd=input_dir,
-        capture_output=True,
-    ).stdout.decode("utf-8")
+    is_git_repo = git_file_service._run_git(
+        [git_file_service.git_executable, "rev-parse", "--is-inside-work-tree"], cwd=input_dir
+    ).stdout
     assert "true" in is_git_repo
 
 
@@ -620,22 +618,22 @@ def test_push_files_autograde(git_file_service, submission_123, tmp_path):
     assert git_file_service.is_bare_git_dir(remote_repo_path)
 
     # The `repo_path` directory should now be a Git repository
-    is_git_repo = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path, capture_output=True
-    ).stdout.decode("utf-8")
+    is_git_repo = git_file_service._run_git(
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path, may_fail=True
+    ).stdout
     assert "true" in is_git_repo
 
     # Current branch of the repo should be named after the submission's commit hash
-    current_branch = subprocess.run(
-        ["git", "branch", "--show-current"], cwd=repo_path, capture_output=True
-    ).stdout.decode("utf-8")
+    current_branch = git_file_service._run_git(
+        ["git", "branch", "--show-current"], cwd=repo_path
+    ).stdout
     assert f"submission_{submission_123.commit_hash}" in current_branch
 
     # The commit message should be the submission's hash, the autograded file should be committed,
     # but gradebook.json - not
-    last_commit = subprocess.run(
-        ["git", "show", "--oneline", "--name-only"], cwd=repo_path, capture_output=True
-    ).stdout.decode("utf-8")
+    last_commit = git_file_service._run_git(
+        ["git", "show", "--oneline", "--name-only"], cwd=repo_path
+    ).stdout
     assert submission_123.commit_hash in last_commit
     assert s_file.name in last_commit
     assert "gradebook.json" not in last_commit

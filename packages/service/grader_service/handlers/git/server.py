@@ -241,7 +241,7 @@ class GitBaseHandler(GraderBaseHandler):
         is_git = self.file_service.is_bare_git_dir(path)
         if not is_git:
             try:
-                self.file_service.create_bare_repo(path)
+                self.file_service._create_bare_repo(path)
             except FileServiceError:
                 self.log.error("Failed to create bare repo at %s!", path)
                 return None

@@ -1,6 +1,7 @@
 import asyncio
 import shutil
 import subprocess
+from asyncio.subprocess import Process
 from pathlib import Path
 
 from traitlets import Unicode, observe, validate
@@ -107,76 +108,89 @@ class GitFileService(FileService):
             self.gitbase.mkdir()
 
         # check if git is configured so that git commits don't fail
-        if (
-            subprocess.run(
-                [self.git_executable, "config", "init.defaultBranch"],
-                check=False,
-                capture_output=True,
-            )
-            .stdout.decode()
-            .strip()
-            != "main"
-        ):
+        default_branch = self._run_git(
+            [self.git_executable, "config", "init.defaultBranch"], self.grader_service_dir
+        ).stdout.strip()
+        if default_branch != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
-        if (
-            subprocess.run(
-                [self.git_executable, "config", "user.name"], check=False, capture_output=True
-            )
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
+
+        user_name = self._run_git(
+            [self.git_executable, "config", "user.name"], self.grader_service_dir
+        ).stdout.strip()
+        if user_name == "":
             raise RuntimeError("Git user.name has to be set!")
-        if (
-            subprocess.run(
-                [self.git_executable, "config", "user.email"], check=False, capture_output=True
-            )
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
+
+        user_mail = self._run_git(
+            [self.git_executable, "config", "user.email"], self.grader_service_dir
+        ).stdout.strip()
+        if user_mail == "":
             raise RuntimeError("Git user.email has to be set!")
 
-    def _run_git(self, command: list[str], cwd: Path) -> None:
+    def _run_git(
+        self, command: list[str], cwd: Path, may_fail: bool = False
+    ) -> subprocess.CompletedProcess[str]:
         """
         Execute a git command as a subprocess.
 
-        Note that the command must start with the `git_executable`.
+        Note that the command must start with the ``git_executable``.
 
         Args:
             command: The git command to execute, as a list of strings.
             cwd: The working directory the subprocess should run in.
+            may_fail: Whether we expect that the command might fail (e.g. because
+              we want to do something depending on its success/failure).
+        Returns:
+            The completed process, with stdout/stderr as text.
         Raises:
-            `subprocess.CalledProcessError`: if `subprocess.run` fails.
+            ``FileServiceError`` if the command fails when it should not. This indicates
+              an issue with the files or repositories - something that was not supposed
+              to happen, and will be logged as an error.
+            ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
+              fails; in other words, the command checks something, and this error just
+              indicates one of the possible outcomes. It is not logged, and has to be
+              handled by the caller.
             Any other exception thrown while running the subprocess is logged and also re-raised.
 
         """
-        # TODO: Figure out error handling.
         if command[0] != self.git_executable:
             raise ValueError(f"Not a git command: {command}")
         self.log.debug('Running "%s"', " ".join(map(str, command)))
         try:
-            subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+            ret = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
+            if may_fail:
+                # This error is an expected possibility and will be handled. No need to log it.
+                raise
             self.log.error(e.stderr)
             raise FileServiceError("Subprocess Error") from None
         except Exception as e:
             self.log.error(e)
             raise
-        return None
+        return ret
 
-    async def _run_git_async(self, command: list[str], cwd: Path) -> None:
+    async def _run_git_async(
+        self, command: list[str], cwd: Path, may_fail: bool = False
+    ) -> Process:
         """Run a git command asynchronously in a subprocess.
 
         Note that the command must start with the `git_executable`.
 
         Args:
             command: The git command to execute, as a list of strings.
-            cwd: The working directory the subprocess should run in
+            cwd: The working directory the subprocess should run in.
+            may_fail: Whether we expect that the command might fail (e.g. because
+              we want to do something depending on its success/failure).
         Returns:
-            The command's stdout as str.
+            The created process.
         Raises:
-            FileServiceError: if the subprocess running the git command failed.
+            ``FileServiceError`` if the command fails when it should not. This indicates
+              an issue with the files or repositories - something that was not supposed
+              to happen, and will be logged as an error.
+            ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
+              fails; in other words, the command checks something, and this error just
+              indicates one of the possible outcomes. It is not logged, and has to be
+              handled by the caller.
+            Any other exception thrown while running the subprocess is logged and also re-raised.
         """
         if command[0] != self.git_executable:
             raise ValueError(f"Not a git command: {command}")
@@ -190,20 +204,23 @@ class GitFileService(FileService):
             raise
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
+            if may_fail:
+                # This error is an expected possibility and will be handled. No need to log it.
+                raise subprocess.CalledProcessError(ret.returncode, command, stdout, stderr)
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
+        return ret
 
     def is_bare_git_dir(self, path: Path) -> bool:
         """Check if the `path` is a directory with a bare git repo."""
         try:
-            out = subprocess.run(
-                [self.git_executable, "rev-parse", "--is-bare-repository"],
-                cwd=path,
-                capture_output=True,
+            out = self._run_git(
+                [self.git_executable, "rev-parse", "--is-bare-repository"], cwd=path, may_fail=True
             )
-            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
-        except FileNotFoundError:
+        except (FileNotFoundError, subprocess.CalledProcessError):
             is_git = False
+        else:
+            is_git = (out.returncode == 0) and ("true" in out.stdout)
         return is_git
 
     def _create_bare_repo(
@@ -242,10 +259,10 @@ class GitFileService(FileService):
         if not git_repo_path.exists():
             raise FileServiceError("User git repository not found")
         try:
-            subprocess.run(
+            self._run_git(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
-                check=True,
+                may_fail=True,
             )
         except subprocess.CalledProcessError:
             raise FileServiceError("Submission commit not found")
@@ -497,12 +514,12 @@ class GitFileService(FileService):
             dir.mkdir(parents=True)
         self.log.info("Initialising repo at %s", dir)
         self._run_git([self.git_executable, "init"], dir)
+        self.log.debug("Switching to branch %r", branch)
         try:
-            self.log.debug("Switching to branch %r", branch)
-            self._run_git([self.git_executable, "switch", branch], dir)
-        except FileServiceError:
-            self.log.debug("Creating the new branch %r and switching to it", branch)
+            self._run_git([self.git_executable, "switch", branch], dir, may_fail=True)
+        except subprocess.CalledProcessError:  # branch does not exist: create it
             self._run_git([self.git_executable, "switch", "-c", branch], dir)
+            self.log.debug("Creating the new branch %r", branch)
         self.log.debug("Now at branch %r", branch)
 
     def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
