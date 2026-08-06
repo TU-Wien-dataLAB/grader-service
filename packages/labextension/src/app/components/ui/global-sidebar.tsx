@@ -94,7 +94,11 @@ export const GlobalSidebar = () => {
                   <CollapsibleTrigger
                     render={
                       <SidebarMenuButton
-                        className="h-full"
+                        className={`${
+                          state === 'collapsed'
+                            ? 'justify-center'
+                            : 'justify-start'
+                        } h-full`}
                         tooltip={lecture.name}
                       />
                     }
