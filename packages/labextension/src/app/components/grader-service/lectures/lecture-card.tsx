@@ -80,7 +80,7 @@ export const LectureCard = (props: ILectureCard) => {
           <IconTextInfo
             icon={
               <FileText
-                className={'fill-foreground size-5 text-white! self-center'}
+                className={'fill-foreground size-5 text-card! self-center'}
               />
             }
             text={`${assignments.length.toString()} ${pluralize({
@@ -92,7 +92,7 @@ export const LectureCard = (props: ILectureCard) => {
         <IconTextInfo
           icon={
             <UserIcon
-              className={'fill-foreground text-foreground! size-5 self-center'}
+              className={'fill-foreground text-card! size-5 self-center'}
             />
           }
           text={`${students.length.toString()} ${pluralize({

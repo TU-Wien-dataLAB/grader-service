@@ -67,7 +67,7 @@ export const EditLectureDialog = (props: IEditLectureDialog) => {
     <Dialog open={openDialog} onOpenChange={setOpenDialog}>
       <Tooltip>
         <DialogTrigger render={<TooltipTrigger />}>
-          <Pencil className={'size-4 fill-primary text-primary!'} />
+          <Pencil className={'size-5 fill-primary text-card!'} />
         </DialogTrigger>
         <TooltipContent>
           <p>Edit course</p>

@@ -1587,6 +1587,12 @@
   .text-border {
     color: var(--border);
   }
+  .text-card {
+    color: var(--card);
+  }
+  .text-card\! {
+    color: var(--card) !important;
+  }
   .text-card-foreground {
     color: var(--card-foreground);
   }
@@ -3639,6 +3645,9 @@
   }
   .dark\:border-input:is(.dark *) {
     border-color: var(--input);
+  }
+  .dark\:bg-\[\#2B2B2B\]:is(.dark *) {
+    background-color: #2b2b2b;
   }
   .dark\:bg-\[\#E46E2E\]:is(.dark *) {
     background-color: #e46e2e;

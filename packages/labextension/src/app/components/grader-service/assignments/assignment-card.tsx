@@ -169,7 +169,7 @@ export const AssignmentCard = (props: IAssignment) => {
         </CardContent>
         <CardFooter
           className={
-            'items-start flex-col justify-end gap-4 self-stretch bg-[#EBEBEB] p-4'
+            'items-start flex-col justify-end gap-4 self-stretch bg-[#EBEBEB] dark:bg-[#2B2B2B] p-4'
           }
         >
           <Button className={'w-full'}>Go to notebooks & files</Button>
