@@ -14,7 +14,7 @@ import {
 } from '../../shadcn-components/ui/table';
 import { LectureCard } from '../../components/grader-service/lectures/lecture-card';
 import { LectureRow } from '../../components/grader-service/lectures/lecture-row';
-import { determineDisplayText } from '../../components/utils/utils';
+import { pluralize } from '../../components/utils/utils';
 import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
 import { Header } from '../../components/ui/header';
 import {
@@ -186,7 +186,7 @@ export const Dashboard = () => {
         {searchQuery && (
           <p className={'w-fit'}>
             <span className={'font-bold'}>{filteredLectures.length}</span>{' '}
-            {determineDisplayText({
+            {pluralize({
               text: 'result',
               data: filteredLectures
             })}{' '}

@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getUsers } from '../../../../services/lectures.service';
 import { getAllAssignments } from '../../../../services/assignments.service';
 import { IconTextInfo } from '../../ui/icon-text-info';
-import { determineDisplayText, highlightText } from '../../utils/utils';
+import { pluralize, highlightText } from '../../utils/utils';
 import { User } from '../../../../model/user';
 import { EditLectureDialog } from './edit-lecture-dialog';
 import {
@@ -83,7 +83,7 @@ export const LectureCard = (props: ILectureCard) => {
                 className={'fill-foreground size-5 text-white! self-center'}
               />
             }
-            text={`${assignments.length.toString()} ${determineDisplayText({
+            text={`${assignments.length.toString()} ${pluralize({
               text: 'Assignment',
               data: assignments
             })}`}
@@ -95,7 +95,7 @@ export const LectureCard = (props: ILectureCard) => {
               className={'fill-foreground text-foreground! size-5 self-center'}
             />
           }
-          text={`${students.length.toString()} ${determineDisplayText({
+          text={`${students.length.toString()} ${pluralize({
             text: 'Student',
             data: students
           })}`}

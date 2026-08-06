@@ -60,11 +60,7 @@ import {
   LATE_SUBMISSIONS,
   WHITELIST_FILE_PATTERNS
 } from './static/assignment-metadata-explainations';
-import {
-  calculateDaysDifference,
-  determineDisplayText,
-  buildPeriod
-} from '../../utils/utils';
+import { pluralize, buildPeriod } from '../../utils/utils';
 import moment from 'moment';
 import { useGroups } from '../../../pages/instructor-view/lecture';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
@@ -144,6 +140,9 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   const [deadlineOpen, setDeadlineOpen] = React.useState<boolean>(false);
   const [createAnother, setCreateAnother] = useState(false);
   const [whitelistPatternsInput, setWhitelistPatternsInput] = useState('');
+  const [timeDiff, setTimeDiff] = useState<Record<string, number> | undefined>(
+    undefined
+  );
   const handleAddAllowedFilePattern = (field: AnyFieldApi) => {
     if (
       whitelistPatternsInput.trim().length > 0 &&
@@ -156,6 +155,35 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
     }
   };
   const anchor = useComboboxAnchor();
+
+  const timeDiffText = () => {
+    if (!timeDiff) {
+      return '';
+    }
+    const daysDiff = timeDiff.daysDiff;
+    const hoursDiff = timeDiff.hoursDiff;
+    const minutesDiff = timeDiff.minutesDiff;
+    let timeDiffText = '';
+    if (daysDiff > 0) {
+      timeDiffText += `${daysDiff} ${pluralize({
+        text: 'day',
+        data: daysDiff
+      })}, `;
+    }
+    if (hoursDiff > 0) {
+      timeDiffText += `${hoursDiff} ${pluralize({
+        text: 'hour',
+        data: hoursDiff
+      })} and `;
+    }
+    if (minutesDiff > 0) {
+      timeDiffText += `${minutesDiff} ${pluralize({
+        text: 'minute',
+        data: minutesDiff
+      })}`;
+    }
+    return timeDiffText;
+  };
 
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
@@ -309,26 +337,19 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                 }
               }}
               children={field => {
-                let dayDiff;
                 return (
                   <div className={'flex flex-col w-full'}>
                     <DatePickerTime
                       open={deadlineOpen}
                       setOpen={setDeadlineOpen}
                       field={field}
+                      setTimeDiff={setTimeDiff}
                     />
                     {field.state.value &&
                       field.state.meta.isTouched &&
                       field.state.meta.isValid && (
                         <p className={'text-base text-green-700 italic'}>
-                          Deadline is in{' '}
-                          {
-                            (dayDiff = calculateDaysDifference({
-                              startDate: new Date(field.state.value),
-                              endDate: new Date()
-                            }))
-                          }{' '}
-                          {determineDisplayText({ text: 'day', data: dayDiff })}
+                          Deadline is in {timeDiffText()}.
                         </p>
                       )}
                     {!field.state.meta.isValid && (

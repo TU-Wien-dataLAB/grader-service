@@ -1,7 +1,7 @@
 import moment from 'moment/moment';
 import React from 'react';
 
-export const determineDisplayText = (props: { text: string; data: any }) => {
+export const pluralize = (props: { text: string; data: any }) => {
   return props.data.length === 1 || props.data === 1
     ? props.text
     : `${props.text}s`;
@@ -11,10 +11,14 @@ export const calculateDaysDifference = (props: {
   startDate: Date;
   endDate: Date;
 }) => {
-  const diffTime = Math.abs(
-    props.endDate.getTime() - props.startDate.getTime()
+  const diffMs = Math.abs(props.endDate.getTime() - props.startDate.getTime());
+
+  const daysDiff = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hoursDiff = Math.floor(
+    (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
   );
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const minutesDiff = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return { daysDiff, hoursDiff, minutesDiff };
 };
 
 export const buildPeriod = (days: number, hours: number) => {
