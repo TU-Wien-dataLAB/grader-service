@@ -190,9 +190,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
       <DialogContent className={'overflow-y-auto'}>
         <DialogHeader>
           <DialogTitle>
-            {props.assignment
-              ? `Edit ${props.assignment.name}`
-              : 'New Assignment'}
+            {props.assignment ? `Edit assignment` : 'New assignment'}
           </DialogTitle>
         </DialogHeader>
         <Separator />

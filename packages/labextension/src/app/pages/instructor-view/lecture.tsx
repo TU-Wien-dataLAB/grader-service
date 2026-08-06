@@ -307,12 +307,14 @@ export const Lecture = () => {
       >
         <div
           className={
-            'flex flex-row sticky justify-between items-center self-stretch'
+            'flex flex-row sticky justify-between items-center self-stretch gap-2'
           }
         >
           {!isPendingLecture && (
-            <div className={'flex flex-col gap-1 items-start'}>
-              <h1 className={'text-2xl font-bold'}>{lecture.name}</h1>
+            <div className={'flex flex-col gap-1 items-start min-w-0'}>
+              <h1 className={'text-2xl w-full font-bold truncate'}>
+                {lecture.name}
+              </h1>
               <h3 className={'text-base font-bold'}>{lecture.code}</h3>
             </div>
           )}
