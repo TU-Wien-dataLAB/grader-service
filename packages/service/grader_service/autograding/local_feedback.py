@@ -5,40 +5,39 @@
 # LICENSE file in the root directory of this source tree.
 import os
 import subprocess
-from typing import Any, Set
 
 from traitlets.traitlets import Unicode
 
-from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
-from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission
+from grader_service.repo_types import GitRepoType
+from grader_service.orm.submission import FeedbackStatus
 
 
-class FeedbackGitSubmissionManager(GitSubmissionManager):
-    """Git manager for generating submission feedback."""
-
-    input_repo_type = GitRepoType.AUTOGRADE
-    output_repo_type = GitRepoType.FEEDBACK
-
-    def __init__(self, submission: Submission, **kwargs: Any):
-        super().__init__(submission, **kwargs)
-        # When submission hasn't been autograded or autograding failed,
-        # pull from user repo to generate feedback
-        if (
-            submission.auto_status == AutoStatus.NOT_GRADED
-            or submission.auto_status == AutoStatus.GRADING_FAILED
-        ) and submission.manual_status == ManualStatus.MANUALLY_GRADED:
-            self.input_repo_type = GitRepoType.USER
-        else:
-            self.input_branch = f"submission_{self.submission.commit_hash}"
-
-        self.output_branch = f"feedback_{self.submission.commit_hash}"
+# class FeedbackGitSubmissionManager(GitSubmissionManager):
+#     """Git manager for generating submission feedback."""
+#
+#     input_repo_type = GitRepoType.AUTOGRADE
+#     output_repo_type = GitRepoType.FEEDBACK
+#
+#     def __init__(self, submission: Submission, **kwargs: Any):
+#         super().__init__(submission, **kwargs)
+#         # When submission hasn't been autograded or autograding failed,
+#         # pull from user repo to generate feedback
+#         if (
+#             submission.auto_status == AutoStatus.NOT_GRADED
+#             or submission.auto_status == AutoStatus.GRADING_FAILED
+#         ) and submission.manual_status == ManualStatus.MANUALLY_GRADED:
+#             self.input_repo_type = GitRepoType.USER
+#         else:
+#             self.input_branch = f"submission_{self.submission.commit_hash}"
+#
+#         self.output_branch = f"feedback_{self.submission.commit_hash}"
 
 
 class LocalFeedbackExecutor(LocalAutogradeExecutor):
-    git_manager_class = FeedbackGitSubmissionManager
+    input_repo_type = GitRepoType.AUTOGRADE
+    output_repo_type = GitRepoType.FEEDBACK
 
     @property
     def input_path(self):
@@ -65,7 +64,7 @@ class LocalFeedbackExecutor(LocalAutogradeExecutor):
         # No need to calculate the properties again when generating feedback.
         return self.submission.properties.properties
 
-    def _get_whitelist_patterns(self) -> Set[str]:
+    def _get_whitelist_patterns(self) -> set[str]:
         # We only want to commit html files when generating feedback.
         return {"*.html"}
 

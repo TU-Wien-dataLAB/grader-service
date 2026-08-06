@@ -7,7 +7,7 @@ from traitlets.config import LoggingConfigurable
 from grader_service.orm import Assignment, Lecture, Submission
 
 if typing.TYPE_CHECKING:
-    from grader_service.handlers import GitRepoType
+    from grader_service.repo_types import GitRepoType
 
 
 class FileService(LoggingConfigurable):
@@ -28,12 +28,7 @@ class FileService(LoggingConfigurable):
         config=True
     )
 
-    def init_submission_files(self, assignment: Assignment, username: str, message: str) -> None:
-        """Initialize a new user's submission from the assignment files."""
-        # TODO: "message" is git-specific!
-        raise NotImplementedError()
-
-    def validate_submission_exists(
+    async def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
     ) -> None:
         """Validate that the submission identified by the `submission_hash` exists.
@@ -42,11 +37,11 @@ class FileService(LoggingConfigurable):
         """
         raise NotImplementedError()
 
-    def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
+    async def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
         """Initialize a new user's submission from the assignment files."""
         raise NotImplementedError()
 
-    def edit_submission(self, submission: Submission) -> None:
+    async def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the instructor's changes to submission files."""
         raise NotImplementedError()
 

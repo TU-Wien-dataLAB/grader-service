@@ -12,6 +12,7 @@ from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
     LocalAutogradeProcessExecutor,
 )
+from grader_service.file_services import FileServiceError
 from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
 
@@ -24,7 +25,7 @@ def local_autograde_executor(tmp_path, submission_123):
         ) as mock_session_class,
         patch("grader_service.autograding.local_grader.Autograde", autospec=True),
         patch(
-            "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
+            "grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service",
             autospec=True,
         ),
     ):
@@ -41,7 +42,7 @@ def process_executor(tmp_path, submission_123):
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
         patch(
-            "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
+            "grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service",
             autospec=True,
         ),
     ):
@@ -101,7 +102,7 @@ def test_local_autograde_start_outcome_on_autograde_failure(
 
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
-def test_local_autograde_start_outcome_on_git_cmd_failure(
+def test_local_autograde_start_outcome_on_file_service_failure(
     mock_session_class, grader_service, submission_123
 ):
     mock_session_class.object_session.return_value = Mock()
@@ -109,13 +110,13 @@ def test_local_autograde_start_outcome_on_git_cmd_failure(
         grader_service_dir=grader_service.grader_service_dir, submission=submission_123
     )
 
-    with patch.object(executor.git_manager, "retrieve_submission") as git_pull:
-        git_pull.side_effect = Exception("Git error")
+    with patch.object(executor.file_service, "fetch_files") as fetch_mock:
+        fetch_mock.side_effect = FileServiceError("Error fetching files")
 
         executor.start()
 
     assert executor.submission.auto_status == AutoStatus.GRADING_FAILED
-    assert executor.grading_logs == "Git error"
+    assert executor.grading_logs == "Error fetching files"
 
 
 def test_whitelist_pattern_combination(local_autograde_executor, submission_123):
@@ -131,11 +132,8 @@ def test_whitelist_pattern_combination(local_autograde_executor, submission_123)
     assert patterns == expected_patterns
 
 
-@patch(
-    "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
-    autospec=True,
-)
-def test_file_matching_with_patterns(mock_git, tmp_path, submission_123):
+@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+def test_file_matching_with_patterns(mock_file_svc, tmp_path, submission_123):
     """Test that files are correctly matched against assignment whitelist patterns"""
     assignment = Assignment(id=1)
     assignment.properties = json.dumps({"extra_files": ["*/config"]})
@@ -185,11 +183,8 @@ def test_file_matching_with_patterns(mock_git, tmp_path, submission_123):
     assert set(files_to_commit) == expected_files
 
 
-@patch(
-    "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
-    autospec=True,
-)
-def test_input_output_path_properties(mock_git, tmp_path, submission_123):
+@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+def test_input_output_path_properties(mock_file_svc, tmp_path, submission_123):
     """Test that input and output paths are correctly constructed"""
     expected_input = os.path.join(tmp_path, "convert_in", "submission_123")
     expected_output = os.path.join(tmp_path, "convert_out", "submission_123")
@@ -250,11 +245,8 @@ def test_timeout_function_default(local_autograde_executor):
 
 
 @patch("grader_service.autograding.local_grader.Session")
-@patch(
-    "grader_service.autograding.local_grader.LocalAutogradeExecutor.git_manager_class",
-    autospec=True,
-)
-def test_timeout_function_custom(mock_git, mock_session_class, tmp_path, submission_123):
+@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+def test_timeout_function_custom(mock_file_svc, mock_session_cls, tmp_path, submission_123):
     """Test custom timeout function"""
 
     custom_timeout = 720

@@ -8,7 +8,7 @@ import shutil
 import urllib.parse
 
 from grader_service.errors import APIError
-from grader_service.handlers import GitRepoType
+from grader_service.repo_types import GitRepoType
 from tornado.httpclient import HTTPResponse
 from tornado.web import HTTPError, authenticated
 
