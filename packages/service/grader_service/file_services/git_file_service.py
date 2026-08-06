@@ -47,12 +47,14 @@ def construct_git_dir(
     repo_type_path = gitbase / lect_code / str(assignment_id) / repo_type
     if repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}:
         if repo_type == GitRepoType.EDIT:
-            assert submission_id is not None, f"Missing submission_id for repo type {repo_type}"
+            if submission_id is None:
+                raise ValueError(f"Missing submission_id for repo type {repo_type}")
             path = repo_type_path / str(submission_id)
         else:
             path = repo_type_path
     else:
-        assert username is not None, f"Missing username for repo type {repo_type}"
+        if username is None:
+            raise ValueError(f"Missing username for repo type {repo_type}")
         if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
             # Note: username should be that of the submission's user!
             path = repo_type_path / "user" / username
@@ -154,7 +156,7 @@ class GitFileService(FileService):
             raise ValueError(f"Not a git command: {command}")
         self.log.debug('Running "%s"', " ".join(map(str, command)))
         try:
-            subprocess.run(command, cwd=cwd, check=True)
+            subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             self.log.error(e.stderr)
             raise FileServiceError("Subprocess Error")
@@ -185,7 +187,6 @@ class GitFileService(FileService):
             )
         except Exception as e:
             self.log.error(e)
-            print(e)
             raise
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
@@ -244,7 +245,7 @@ class GitFileService(FileService):
             subprocess.run(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
-                capture_output=True,
+                check=True,
             )
         except subprocess.CalledProcessError:
             raise FileServiceError("Submission commit not found")
@@ -255,7 +256,7 @@ class GitFileService(FileService):
         """
         Recreate the base dir and create input and output subdirs in it.
 
-        Base has to be relative to the `tmpbase`.
+        Base has to be relative to the ``self.tmpbase``.
         """
         validate_path_relative_to(base, self.tmpbase)
         if base.exists():
@@ -340,6 +341,59 @@ class GitFileService(FileService):
         finally:
             shutil.rmtree(tmp_base)
 
+    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
+        """Init and pull the files from the repository of type `repo_type` into `dir`.
+
+        Note that this method does not clone the entire repository, but only pulls
+        the specified branch into the `dir`, so that the fetched files can be further
+        processed (e.g. autograded, or copied over to initialize a different repo type).
+
+        Args:
+            dir: The directory where the input repo will be created; has to already exist.
+            repo_type: Repo type from which the files are to be fetched
+            submission: Submission whose files are to be fetched
+        Raises:
+            ValueError if repo_type is not one of the allowed values.
+        """
+        # TODO: does this logic belong here?
+        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
+            input_branch = "main"
+        elif repo_type == GitRepoType.AUTOGRADE:
+            if (
+                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
+                and submission.manual_status == ManualStatus.MANUALLY_GRADED
+            ):
+                # When submission hasn't been autograded or autograding failed,
+                # pull from user repo to generate feedback
+                repo_type = GitRepoType.USER
+                input_branch = "main"
+            else:
+                input_branch = f"submission_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+        )
+
+        self.log.info("Pulling repo %s into input directory", remote_repo_path)
+        commands = [
+            [self.git_executable, "init", "--initial-branch=main"],
+            [self.git_executable, "pull", remote_repo_path, input_branch],
+        ]
+        # When autograding a user's submission, check out to the commit of submission
+        if repo_type == GitRepoType.USER:
+            commands.append([self.git_executable, "checkout", submission.commit_hash])
+
+        for cmd in commands:
+            self._run_git(cmd, dir)
+
+        self.log.info("Successfully pulled files from the %s repo.", repo_type)
+
     # TODO: differences between `edit...` and `init_user_files`:
     #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
     #  - this checkouts the submission hash; `init_...` just checkouts main
@@ -377,12 +431,7 @@ class GitFileService(FileService):
             self.fetch_files(tmp_path_input, GitRepoType.USER, submission)
 
             # (Re-)Create bare edit repository
-            if remote_path_edit.exists():
-                shutil.rmtree(remote_path_edit)
-            remote_path_edit.mkdir(parents=True, exist_ok=True)
-            await self._run_git_async(
-                [self.git_executable, "init", "--bare", "--initial-branch=main"], remote_path_edit
-            )
+            self.create_bare_repo(remote_path_edit, recreate_dir=True)
 
             # Clone the (still empty) edit repository
             await self._run_git_async(
@@ -433,59 +482,6 @@ class GitFileService(FileService):
                 if dir_path.is_dir() and dir_path.name in target_names:
                     shutil.rmtree(dir_path, ignore_errors=True)
 
-    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
-        """Init and pull the files from the repository of type `repo_type` into `dir`.
-
-        Note that this method does not clone the entire repository, but only pulls
-        the specified branch into the `dir`, so that the fetched files can be further
-        processed (e.g. autograded, or copied over to initialize a different repo type).
-
-        Args:
-            dir: The directory where the input repo will be created
-            repo_type: Repo type from which the files are to be fetched
-            submission: Submission whose files are to be fetched
-        Raises:
-            ValueError if repo_type is not one of the allowed values.
-        """
-        # TODO: does this logic belong here?
-        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
-            input_branch = "main"
-        elif repo_type == GitRepoType.AUTOGRADE:
-            if (
-                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
-                and submission.manual_status == ManualStatus.MANUALLY_GRADED
-            ):
-                # When submission hasn't been autograded or autograding failed,
-                # pull from user repo to generate feedback
-                repo_type = GitRepoType.USER
-                input_branch = "main"
-            else:
-                input_branch = f"submission_{submission.commit_hash}"
-        else:
-            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
-
-        assignment: Assignment = submission.assignment
-        l_code: str = assignment.lecture.code
-        username: str = submission.user.name
-
-        remote_repo_path = construct_git_dir(
-            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
-        )
-
-        self.log.info("Pulling repo %s into input directory", remote_repo_path)
-        commands = [
-            [self.git_executable, "init"],
-            [self.git_executable, "pull", remote_repo_path, input_branch],
-        ]
-        # When autograding a user's submission, check out to the commit of submission
-        if repo_type == GitRepoType.USER:
-            commands.append([self.git_executable, "checkout", submission.commit_hash])
-
-        for cmd in commands:
-            self._run_git(cmd, dir)
-
-        self.log.info("Successfully pulled files from the %s repo.", repo_type)
-
     def push_files(  # TODO: think of a better name
         self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
     ) -> None:
@@ -528,7 +524,7 @@ class GitFileService(FileService):
         self.log.info("Pushing complete")
 
     def _set_up_output_repo(self, dir: Path, branch: str) -> None:
-        """Initialize the output repo and switch to a separate branch named
+        """Initialize the repo at ``dir`` and switch to a separate branch named
         after the commit hash of the submission."""
         self.log.info(f"Initialising repo at {dir}")
         self._run_git([self.git_executable, "init"], dir)
