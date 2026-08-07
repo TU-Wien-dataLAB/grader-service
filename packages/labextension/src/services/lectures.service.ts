@@ -8,11 +8,13 @@ import { Lecture } from '../model/lecture';
 import { request, HTTPMethod } from './request.service';
 import { User } from '../model/user';
 
-export function getAllLectures(
+const baseUrl = '/api/lectures';
+
+export function getLectures(
   filters: { [key: string]: boolean },
   reload = false
 ): Promise<Lecture[]> {
-  let url = 'api/lectures';
+  let url = baseUrl;
   const params = new URLSearchParams();
 
   for (const key in filters) {
@@ -24,31 +26,31 @@ export function getAllLectures(
   return request<Lecture[]>(HTTPMethod.GET, url, null, reload);
 }
 
-export function updateLecture(lecture: Lecture): Promise<Lecture> {
-  return request<Lecture, Lecture>(
-    HTTPMethod.PUT,
-    `/api/lectures/${lecture.id}`,
-    lecture
-  );
-}
-
 export function getLecture(
   lectureId: number,
   reload = false
 ): Promise<Lecture> {
   return request<Lecture>(
     HTTPMethod.GET,
-    `/api/lectures/${lectureId}`,
+    `${baseUrl}/${lectureId}`,
     null,
     reload
   );
 }
 
-export function deleteLecture(lectureId: number): Promise<void> {
-  return request<void>(HTTPMethod.DELETE, `/api/lectures/${lectureId}`, null);
+export function updateLecture(lecture: Lecture): Promise<Lecture> {
+  return request<Lecture, Lecture>(
+    HTTPMethod.PUT,
+    `${baseUrl}/${lecture.id}`,
+    lecture
+  );
 }
 
-export function getUsers(
+export function deleteLecture(lectureId: number): Promise<void> {
+  return request<void>(HTTPMethod.DELETE, `${baseUrl}/${lectureId}`, null);
+}
+
+export function getLectureUsers(
   lectureId: number,
   reload: boolean = false
 ): Promise<{ instructors: User[]; tutors: User[]; students: User[] }> {
@@ -56,14 +58,5 @@ export function getUsers(
     instructors: User[];
     tutors: User[];
     students: User[];
-  }>(HTTPMethod.GET, `/api/lectures/${lectureId}/users`, null, reload);
-}
-
-export async function exportGrades(
-  lectureId: number,
-  filter: 'latest' | 'best' = 'best',
-  format: 'json' | 'csv' = 'csv'
-): Promise<any> {
-  const url = `/api/lectures/${lectureId}/submissions?filter=${filter}&format=${format}`;
-  return request<any>(HTTPMethod.GET, url, null);
+  }>(HTTPMethod.GET, `${baseUrl}/${lectureId}/users`, null, reload);
 }

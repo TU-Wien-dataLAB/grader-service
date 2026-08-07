@@ -3,7 +3,7 @@ import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllLectures } from '../../../services/lectures.service';
+import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
 import {
   Table,
@@ -66,7 +66,7 @@ export const Dashboard = () => {
   } = useQuery({
     queryKey: ['completedLectures'],
     queryFn: async () =>
-      getAllLectures({ instructor: true, complete: true }, false),
+      getLectures({ instructor: true, complete: true }, false),
     // only fetch completed lectures if the "completed" filter option has been chosen
     enabled: filterBy === 'completed'
   });

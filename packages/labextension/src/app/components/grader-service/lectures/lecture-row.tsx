@@ -5,7 +5,7 @@ import { FileText, UserIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getUsers } from '../../../../services/lectures.service';
+import { getLectureUsers } from '../../../../services/lectures.service';
 import { getAllAssignments } from '../../../../services/assignments.service';
 import { IconTextInfo } from '../../ui/icon-text-info';
 import { User } from '../../../../model/user';
@@ -27,7 +27,7 @@ export const LectureRow = (props: ILectureRow) => {
 
   const { data: users, isPending: isPendingUsers } = useQuery({
     queryKey: ['users', lecture.id],
-    queryFn: async () => getUsers(lecture.id, false)
+    queryFn: async () => getLectureUsers(lecture.id, false)
   });
 
   const { data: assignments, isPending: isPendingAssignments } = useQuery({

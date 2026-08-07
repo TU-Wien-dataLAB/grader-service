@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DeadlineComponent } from '../../util/deadline';
-import { getAllLectures } from '../../../services/lectures.service';
+import { getLectures } from '../../../services/lectures.service';
 import { getAssignment } from '../../../services/assignments.service';
 import { lectureSubPaths } from '../../../services/file.service';
 import { Assignment } from '../../../model/assignment';
@@ -22,7 +22,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
 
   React.useEffect(() => {
     if (lecture === null) {
-      getAllLectures({ complete: false }).then(response => {
+      getLectures({ complete: false }).then(response => {
         const l = response.find(
           l => l.code === props.notebookPaths[lectureSubPaths]
         );
