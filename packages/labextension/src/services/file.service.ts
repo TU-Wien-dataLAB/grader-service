@@ -1,5 +1,4 @@
 import { GlobalObjects } from '../index';
-import { enqueueSnackbar } from 'notistack';
 import { PageConfig } from '@jupyterlab/coreutils';
 
 const raw = PageConfig.getOption('lectures_base_path').replace(
@@ -8,21 +7,15 @@ const raw = PageConfig.getOption('lectures_base_path').replace(
 );
 export const lectureBasePath = raw && `${raw}/`;
 
-export const lectureSubPaths: number = (lectureBasePath as string)
+export const lectureSubPaths = (lectureBasePath as string)
   .split('/')
   .reduce((acc, v) => (v.length > 0 ? acc + 1 : acc), 0);
 
 export const openFile = async (path: string) => {
-  GlobalObjects.commands
-    .execute('docmanager:open', {
-      path: path,
-      options: {
-        mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
-      }
-    })
-    .catch(error => {
-      enqueueSnackbar(error.message, {
-        variant: 'error'
-      });
-    });
+  await GlobalObjects.commands.execute('docmanager:open', {
+    path: path,
+    options: {
+      mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
+    }
+  });
 };
