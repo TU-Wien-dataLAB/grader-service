@@ -6,7 +6,8 @@
 
 import { Assignment } from '../model/assignment';
 import { AssignmentDetail } from '../model/assignmentDetail';
-import { HTTPMethod, request } from './request.service';
+import { request } from './request.service';
+import { HTTPMethod } from './enums/http-methods.enum';
 
 export const buildBaseUrl = (lectureId: number) => {
   return `/api/lectures/${lectureId}/assignments`;

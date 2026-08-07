@@ -1,8 +1,9 @@
 import { RepoType } from '../app/components/utils/repo-type';
-import { HTTPMethod, request } from './request.service';
+import { request } from './request.service';
 import { Lecture } from '../model/lecture';
 import { Assignment } from '../model/assignment';
 import { buildBaseUrl } from './assignments.service';
+import { HTTPMethod } from './enums/http-methods.enum';
 
 export function pushAssignment(
   lectureId: number,

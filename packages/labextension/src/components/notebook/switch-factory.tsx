@@ -5,10 +5,11 @@
 // LICENSE file in the root directory of this source tree.
 
 import React from 'react';
-import { Scope, UserPermissions } from '../../services/permission.service';
+import { UserPermissions } from '../../services/permission.service';
 import { CreationModeSwitch } from './create-assignment/creation-switch';
 import { IModeSwitchProps } from './slider';
 import { lectureSubPaths } from '../../services/file.service';
+import { Scope } from '../../services/enums/permissions-scope.enum';
 
 export class SwitchModeFactory {
   public static getSwitch(props: IModeSwitchProps): JSX.Element {

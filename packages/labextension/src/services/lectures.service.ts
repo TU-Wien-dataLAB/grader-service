@@ -5,8 +5,9 @@
 // LICENSE file in the root directory of this source tree.
 
 import { Lecture } from '../model/lecture';
-import { request, HTTPMethod } from './request.service';
+import { request } from './request.service';
 import { User } from '../model/user';
+import { HTTPMethod } from './enums/http-methods.enum';
 
 const baseUrl = '/api/lectures';
 

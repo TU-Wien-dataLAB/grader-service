@@ -1,4 +1,5 @@
-import { HTTPMethod, request } from './request.service';
+import { HTTPMethod } from './enums/http-methods.enum';
+import { request } from './request.service';
 
 export async function exportGrades(
   lectureId: number,

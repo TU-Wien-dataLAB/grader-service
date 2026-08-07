@@ -7,21 +7,16 @@
 // token: 0b79bab50daca910b000d4f1a2b675d604257e42
 
 import { Lecture } from '../model/lecture';
-import { HTTPMethod, request } from './request.service';
+import { HTTPMethod } from './enums/http-methods.enum';
+import { Scope } from './enums/permissions-scope.enum';
+import { request } from './request.service';
 
-export enum Scope {
-  student = 0,
-  tutor = 1,
-  instructor = 2,
-  admin = 3
-}
-
-interface PermissionScopes {
+interface IPermissionScopes {
   [lecture_code: string]: Scope;
 }
 
 export namespace UserPermissions {
-  let permissions: PermissionScopes;
+  let permissions: IPermissionScopes;
 
   export async function loadPermissions(): Promise<void> {
     permissions = {};
@@ -35,14 +30,11 @@ export namespace UserPermissions {
     });
   }
 
-  export function getPermissions(): PermissionScopes {
+  export function getPermissions(): IPermissionScopes {
     return permissions;
   }
 
   export function getScope(lecture: Lecture) {
-    if (permissions === null) {
-      return null;
-    }
-    return permissions[lecture.code];
+    return permissions?.[lecture.code] ?? null;
   }
 }
