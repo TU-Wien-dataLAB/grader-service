@@ -22,8 +22,8 @@ export function useAssignmentStatus() {
       };
       return updateAssignment(variables.lectureId, updatedAssignment);
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
