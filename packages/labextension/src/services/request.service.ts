@@ -6,13 +6,7 @@
 
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
-
-export enum HTTPMethod {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  DELETE = 'DELETE'
-}
+import { HTTPMethod } from './enums/http-methods.enum';
 
 export class HTTPError extends Error {
   statusCode: number;
@@ -23,7 +17,7 @@ export class HTTPError extends Error {
   }
 }
 
-export function request<T, B = any | null>(
+export async function request<T, B = any | null>(
   method: HTTPMethod,
   endPoint: string,
   body: B,
@@ -53,23 +47,19 @@ export function request<T, B = any | null>(
 
   return ServerConnection.makeRequest(requestUrl, options, settings).then(
     async response => {
-      const method = options.method || 'GET'; // assuming `method` is part of options.
-
       // handle non-OK responses
-      let responseData: T | string = await response.text();
       if (!response.ok) {
         // default error message
         let errorMessage = 'Unknown error';
-
         try {
-          const errorData = JSON.parse(responseData);
+          const errorData = await response.json();
           errorMessage =
             errorData['message'] ||
             errorData['reason'] ||
             errorData['error'] ||
             errorMessage;
         } catch (e) {
-          errorMessage = responseData; // fallback to raw error text if not JSON
+          errorMessage = await response.text(); // fallback to raw error text if not JSON
         }
 
         // throw custom HTTPError with status code and message
@@ -77,19 +67,15 @@ export function request<T, B = any | null>(
       }
 
       // validate response body
-      if (responseData.length > 0) {
-        try {
-          responseData = JSON.parse(responseData);
-        } catch (e) {
-          console.log(
-            'Not a JSON response body, handling as plain text.',
-            response
-          );
-        }
+      let responseData: T | string = null;
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.log(
+          'Not a JSON response body, handling as plain text.',
+          responseData
+        );
       }
-
-      console.log(`Request ${method} URL: ${requestUrl}`);
-      console.log(responseData);
       return responseData as T;
     }
   );
