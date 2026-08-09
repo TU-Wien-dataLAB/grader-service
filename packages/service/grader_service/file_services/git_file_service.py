@@ -1,10 +1,10 @@
 import asyncio
 import shutil
 import subprocess
-from asyncio.subprocess import Process
 from pathlib import Path
 
 from traitlets import Unicode, observe, validate
+from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.handlers.handler_utils import GitRepoType
@@ -110,25 +110,23 @@ class GitFileService(FileService):
         # check if git is configured so that git commits don't fail
         default_branch = self._run_git(
             [self.git_executable, "config", "init.defaultBranch"], self.grader_service_dir
-        ).stdout.strip()
+        ).strip()
         if default_branch != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
 
         user_name = self._run_git(
             [self.git_executable, "config", "user.name"], self.grader_service_dir
-        ).stdout.strip()
+        ).strip()
         if user_name == "":
             raise RuntimeError("Git user.name has to be set!")
 
         user_mail = self._run_git(
             [self.git_executable, "config", "user.email"], self.grader_service_dir
-        ).stdout.strip()
+        ).strip()
         if user_mail == "":
             raise RuntimeError("Git user.email has to be set!")
 
-    def _run_git(
-        self, command: list[str], cwd: Path, may_fail: bool = False
-    ) -> subprocess.CompletedProcess[str]:
+    def _run_git(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
         """
         Execute a git command as a subprocess.
 
@@ -140,7 +138,7 @@ class GitFileService(FileService):
             may_fail: Whether we expect that the command might fail (e.g. because
               we want to do something depending on its success/failure).
         Returns:
-            The completed process, with stdout/stderr as text.
+            The stdout of the process as text.
         Raises:
             ``FileServiceError`` if the command fails when it should not. This indicates
               an issue with the files or repositories - something that was not supposed
@@ -166,11 +164,9 @@ class GitFileService(FileService):
         except Exception as e:
             self.log.error(e)
             raise
-        return ret
+        return ret.stdout
 
-    async def _run_git_async(
-        self, command: list[str], cwd: Path, may_fail: bool = False
-    ) -> Process:
+    async def _run_git_async(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
         """Run a git command asynchronously in a subprocess.
 
         Note that the command must start with the `git_executable`.
@@ -181,7 +177,7 @@ class GitFileService(FileService):
             may_fail: Whether we expect that the command might fail (e.g. because
               we want to do something depending on its success/failure).
         Returns:
-            The created process.
+            The stdout of the process as text.
         Raises:
             ``FileServiceError`` if the command fails when it should not. This indicates
               an issue with the files or repositories - something that was not supposed
@@ -209,21 +205,21 @@ class GitFileService(FileService):
                 raise subprocess.CalledProcessError(ret.returncode, command, stdout, stderr)
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
-        return ret
+        return stdout.decode("utf-8")
 
-    def is_bare_git_dir(self, path: Path) -> bool:
+    async def is_bare_git_dir(self, path: Path) -> bool:
         """Check if the `path` is a directory with a bare git repo."""
         try:
-            out = self._run_git(
+            stdout = await self._run_git_async(
                 [self.git_executable, "rev-parse", "--is-bare-repository"], cwd=path, may_fail=True
             )
         except (FileNotFoundError, subprocess.CalledProcessError):
             is_git = False
         else:
-            is_git = (out.returncode == 0) and ("true" in out.stdout)
+            is_git = "true" in stdout
         return is_git
 
-    def _create_bare_repo(
+    async def create_bare_repo(
         self, path: Path, recreate_dir: bool = False, initial_branch: str = "main"
     ) -> None:
         """Create and initialize a bare repo in the directory `path`.
@@ -238,11 +234,11 @@ class GitFileService(FileService):
             shutil.rmtree(path)
         path.mkdir(parents=True, exist_ok=True)
         self.log.debug("Running: git init --bare")
-        self._run_git(
+        await self._run_git_async(
             [self.git_executable, "init", "--bare", f"--initial-branch={initial_branch}"], cwd=path
         )
 
-    def validate_submission_exists(
+    async def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
     ) -> None:
         """Checks that user repo exists and `main` branch contains the commit with `submission_hash`."""
@@ -259,7 +255,7 @@ class GitFileService(FileService):
         if not git_repo_path.exists():
             raise FileServiceError("User git repository not found")
         try:
-            self._run_git(
+            await self._run_git_async(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=git_repo_path,
                 may_fail=True,
@@ -289,7 +285,7 @@ class GitFileService(FileService):
 
         return tmp_path_input, tmp_path_output
 
-    def _copy_files_and_commit(
+    async def _copy_files_and_commit(
         self, input_path: Path, output_path: Path, message: str = "Initial commit"
     ) -> None:
         """Copy submission files from one repo to another, commit and push them."""
@@ -297,15 +293,17 @@ class GitFileService(FileService):
         ignore = shutil.ignore_patterns(".git", "__pycache__")
         shutil.copytree(input_path, output_path, ignore=ignore, dirs_exist_ok=True)
 
-        self._run_git([self.git_executable, "add", "-A"], cwd=output_path)
-        self._run_git(
+        await self._run_git_async([self.git_executable, "add", "-A"], cwd=output_path)
+        await self._run_git_async(
             [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=output_path
         )
         self.log.debug("Successfully commited files. Commit message: '%s'", message)
-        self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
+        await self._run_git_async(
+            [self.git_executable, "push", "-u", "origin", "main"], cwd=output_path
+        )
         self.log.debug("Successfully pushed the commit")
 
-    def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
+    async def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
         """Copy submission files from release to user repo.
 
         This method can also be used to "reset" one's own repo. Note that it does
@@ -338,22 +336,24 @@ class GitFileService(FileService):
 
         try:
             # Get the release files (no need to clone the whole repo)
-            self._run_git(
+            await self._run_git_async(
                 [self.git_executable, "init", "--initial-branch=main"], cwd=tmp_path_input
             )
-            self._run_git(
+            await self._run_git_async(
                 [self.git_executable, "pull", remote_path_release, "main"], cwd=tmp_path_input
             )
 
             # Clone the user repo (we need the whole clone, because we will be committing to it)
-            self._run_git(
+            await self._run_git_async(
                 [self.git_executable, "clone", remote_path_user, tmp_path_output], cwd=tmp_base
             )
             # Ensure the user repo is on `main`
-            self._run_git([self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output)
+            await self._run_git_async(
+                [self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output
+            )
 
             # Copy files to the edit repo, commit and push the changes
-            self._copy_files_and_commit(tmp_path_input, tmp_path_output, comment)
+            await self._copy_files_and_commit(tmp_path_input, tmp_path_output, comment)
             self.log.info("Successfully copied release files to user repository.")
         finally:
             shutil.rmtree(tmp_base)
@@ -448,7 +448,7 @@ class GitFileService(FileService):
             self.fetch_files(tmp_path_input, GitRepoType.USER, submission)
 
             # (Re-)Create bare edit repository
-            self._create_bare_repo(remote_path_edit, recreate_dir=True)
+            await self.create_bare_repo(remote_path_edit, recreate_dir=True)
 
             # Clone the (still empty) edit repository
             await self._run_git_async(
@@ -460,12 +460,12 @@ class GitFileService(FileService):
             self.log.debug("Successfully set up edit repo")
 
             # Copy files to the edit repo, commit and push the changes
-            self._copy_files_and_commit(tmp_path_input, tmp_path_output)
+            await self._copy_files_and_commit(tmp_path_input, tmp_path_output)
             self.log.info("Successfully created a repository for edited submission.")
         finally:
             shutil.rmtree(tmp_base)
 
-    def push_files(  # TODO: think of a better name
+    def push_files(
         self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
     ) -> None:
         """Create the repository of type `repo_type` at `dir`, commit and push the changes.
@@ -498,7 +498,7 @@ class GitFileService(FileService):
             self.gitbase, repo_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
-            self._create_bare_repo(remote_repo_path)
+            async_to_sync(self.create_bare_repo)(remote_repo_path)
 
         self._set_up_output_repo(Path(dir), output_branch)
         self._commit_files(filenames, Path(dir), msg=submission.commit_hash)

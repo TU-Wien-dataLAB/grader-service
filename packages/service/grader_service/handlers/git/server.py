@@ -147,13 +147,13 @@ class GitBaseHandler(GraderBaseHandler):
         ]:
             raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action for the repo type")
 
-    def gitlookup(self, rpc: GitRpcCmd) -> Path | None:
+    async def gitlookup(self, rpc: GitRpcCmd) -> Path | None:
         """Resolve and initialize a git repository path based on the request URL.
 
         Parses the request path to extract lecture, assignment, and repository type,
         validates permissions against the database, and returns the filesystem path
         to the appropriate git repository. Creates the directory and initializes
-        the repository if they don't exist.
+        the repository if they don't exist. Also writes the pre-recive hook.
 
         Args:
             rpc: The Git RPC method name - used for permission checking.
@@ -238,17 +238,17 @@ class GitBaseHandler(GraderBaseHandler):
         if path is None:
             return None
 
-        is_git = self.file_service.is_bare_git_dir(path)
+        is_git = await self.file_service.is_bare_git_dir(path)
         if not is_git:
             try:
-                self.file_service._create_bare_repo(path)
+                await self.file_service.create_bare_repo(path)
             except FileServiceError:
                 self.log.error("Failed to create bare repo at %s!", path)
                 return None
 
             if repo_type == GitRepoType.USER:
                 try:
-                    self.file_service.init_user_files(
+                    await self.file_service.init_user_files(
                         assignment=assignment, username=username, comment="Initialize from Release"
                     )
                 except FileNotFoundError as err:
@@ -297,9 +297,9 @@ class GitBaseHandler(GraderBaseHandler):
         with open(file_path, mode="rt") as f:
             return f.read()
 
-    def get_gitdir(self, rpc: GitRpcCmd) -> Path:
+    async def get_gitdir(self, rpc: GitRpcCmd) -> Path:
         """Determine the git repository for this request and create it if it does not exist yet."""
-        gitdir = self.gitlookup(rpc)
+        gitdir = await self.gitlookup(rpc)
         if gitdir is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="unable to find repository")
         self.log.info("Accessing git at: %s", gitdir)
@@ -330,7 +330,7 @@ class RPCHandler(GitBaseHandler):
             self.rpc = GitRpcCmd(rpc)
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
-        gitdir = self.get_gitdir(rpc=self.rpc)
+        gitdir = await self.get_gitdir(rpc=self.rpc)
         cmd = [self.git_executable, self.rpc, "--stateless-rpc", str(gitdir)]
         self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
@@ -378,13 +378,8 @@ class InfoRefsHandler(GitBaseHandler):
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
 
-        cmd = [
-            self.git_executable,
-            self.rpc,
-            "--stateless-rpc",
-            "--advertise-refs",
-            str(self.get_gitdir(self.rpc)),
-        ]
+        gitdir = await self.get_gitdir(self.rpc)
+        cmd = [self.git_executable, self.rpc, "--stateless-rpc", "--advertise-refs", str(gitdir)]
         self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
             cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM

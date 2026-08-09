@@ -177,25 +177,25 @@ def _create_release_repo(handler: GitBaseHandler):
         shutil.rmtree(tmp_repo_dir)
 
 
-def mock_git_lookup(rpc: str):
+async def mock_git_lookup(rpc: str):
     if rpc == "bad":
         return None
     else:
         return "/path/to"
 
 
-def test_get_gitdir_not_found():
+async def test_get_gitdir_not_found():
     handler_mock = Mock()
     handler_mock.gitlookup = mock_git_lookup
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.get_gitdir(handler_mock, "bad")
+        await GitBaseHandler.get_gitdir(handler_mock, "bad")
     assert e.value.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_get_gitdir():
+async def test_get_gitdir():
     handler_mock = Mock()
     handler_mock.gitlookup = mock_git_lookup
-    path = GitBaseHandler.get_gitdir(handler_mock, GitRpcCmd.UPLOAD_PACK)
+    path = await GitBaseHandler.get_gitdir(handler_mock, GitRpcCmd.UPLOAD_PACK)
     assert path == "/path/to"
 
 
@@ -203,9 +203,9 @@ def test_get_gitdir():
 
 
 @pytest.mark.parametrize("repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE])
-def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
+async def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
     git_handler = git_handler_factory(repo_type=repo_type, query_kw={"scope": Scope.instructor})
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+    lookup_dir = await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -224,7 +224,7 @@ def test_git_lookup_pull_instructor(git_handler_factory, repo_type):
         (GitRepoType.FEEDBACK, 1, "user/student-name"),
     ],
 )
-def test_git_lookup_pull_with_submission_instructor(
+async def test_git_lookup_pull_with_submission_instructor(
     git_handler_factory, repo_type, req_path_tail, expected_subdir
 ):
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
@@ -240,7 +240,7 @@ def test_git_lookup_pull_with_submission_instructor(
         },
     )
 
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+    lookup_dir = await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -255,12 +255,12 @@ def test_git_lookup_pull_with_submission_instructor(
 
 
 @pytest.mark.parametrize("rpc_cmd", GitRpcCmd)
-def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
+async def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
     repo_type = GitRepoType.USER
     git_handler = git_handler_factory(repo_type=repo_type)
     _create_release_repo(git_handler)
 
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, rpc_cmd)
+    lookup_dir = await GitBaseHandler.gitlookup(git_handler, rpc_cmd)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -271,13 +271,13 @@ def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
 
 
 @pytest.mark.parametrize("req_path_tail", ["1", "1/info/refs&service=git-upload-pack"])
-def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req_path_tail):
+async def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req_path_tail):
     repo_type = GitRepoType.FEEDBACK
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
     logged_user = User(id=137, name="test_user")  # matches mocked db queries
     git_handler = git_handler_factory(req_path=req_path, user=logged_user)
 
-    lookup_dir = GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+    lookup_dir = await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     lookup_path = Path(lookup_dir)
 
     assert lookup_path.exists()
@@ -292,7 +292,9 @@ def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factory, req
 
 @pytest.mark.parametrize("rpc_cmd", GitRpcCmd.UPLOAD_PACK)
 @pytest.mark.parametrize("repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT])
-def test_git_lookup_forbidden_repo_types_student_error(git_handler_factory, repo_type, rpc_cmd):
+async def test_git_lookup_forbidden_repo_types_student_error(
+    git_handler_factory, repo_type, rpc_cmd
+):
     req_path_tail = ""
     if repo_type == GitRepoType.EDIT:
         # Submission id has to be provided in the url for the "edit" repo
@@ -301,18 +303,18 @@ def test_git_lookup_forbidden_repo_types_student_error(git_handler_factory, repo
     git_handler = git_handler_factory(req_path=req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, rpc_cmd)
+        await GitBaseHandler.gitlookup(git_handler, rpc_cmd)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "forbidden action"
 
 
-def test_git_lookup_pull_autograde_student_error(git_handler_factory):
+async def test_git_lookup_pull_autograde_student_error(git_handler_factory):
     repo_type = GitRepoType.AUTOGRADE
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="1")
     git_handler = git_handler_factory(req_path=req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+        await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "forbidden action"
 
@@ -320,19 +322,19 @@ def test_git_lookup_pull_autograde_student_error(git_handler_factory):
 @pytest.mark.parametrize("scope", [Scope.instructor, Scope.student])
 @pytest.mark.parametrize("rpc_cmd", [GitRpcCmd.SEND_PACK, GitRpcCmd.RECEIVE_PACK])
 @pytest.mark.parametrize("repo_type", [GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK])
-def test_git_lookup_forbidden_actions_for_repo_types_error(
+async def test_git_lookup_forbidden_actions_for_repo_types_error(
     git_handler_factory, repo_type, rpc_cmd, scope
 ):
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="1")
     git_handler = git_handler_factory(req_path=req_path, query_kw={"scope": scope})
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, rpc_cmd)
+        await GitBaseHandler.gitlookup(git_handler, rpc_cmd)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "forbidden action for the repo type"
 
 
-def test_git_lookup_pull_feedback_student_other_user_submission_error(git_handler_factory):
+async def test_git_lookup_pull_feedback_student_other_user_submission_error(git_handler_factory):
     repo_type = GitRepoType.FEEDBACK
     sub_id = 1
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=f"{sub_id}")
@@ -342,28 +344,30 @@ def test_git_lookup_pull_feedback_student_other_user_submission_error(git_handle
         req_path, query_kw={"s_username": "other_user", "s_user_id": 999}
     )
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+        await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.NOT_FOUND
     assert e.value.log_message == "Submission not found"
 
 
-def test_git_lookup_pull_user_repo_student_username_error(git_handler_factory):
+async def test_git_lookup_pull_user_repo_student_username_error(git_handler_factory):
     repo_type = GitRepoType.USER
     req_path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail="other_user")
     git_handler = git_handler_factory(req_path)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
+        await GitBaseHandler.gitlookup(git_handler, GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.FORBIDDEN
     assert e.value.log_message == "Students cannot access other users' repositories"
 
 
 @pytest.mark.parametrize("req_path_tail", ["", "info/refs&service=git-upload-pack", "invalid-id"])
-def test_git_lookup_pull_feedback_student_invalid_sub_id_error(git_handler_factory, req_path_tail):
+async def test_git_lookup_pull_feedback_student_invalid_sub_id_error(
+    git_handler_factory, req_path_tail
+):
     repo_type = GitRepoType.FEEDBACK
     path = _REQUEST_PATH_TEMPLATE.format(repo_type=repo_type, tail=req_path_tail)
 
     with pytest.raises(HTTPError) as e:
-        GitBaseHandler.gitlookup(git_handler_factory(req_path=path), GitRpcCmd.UPLOAD_PACK)
+        await GitBaseHandler.gitlookup(git_handler_factory(req_path=path), GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.BAD_REQUEST
     assert e.value.log_message == "Invalid or missing submission id"

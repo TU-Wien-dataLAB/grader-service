@@ -364,7 +364,7 @@ class AssignmentResetHandler(GraderBaseHandler):
         if assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was not found")
 
-        self.file_service.init_user_files(
+        await self.file_service.init_user_files(
             assignment, username=self.user.name, comment="Reset Assignment"
         )
 
