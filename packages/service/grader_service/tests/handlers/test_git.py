@@ -15,7 +15,7 @@ from tornado.web import HTTPError
 
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture

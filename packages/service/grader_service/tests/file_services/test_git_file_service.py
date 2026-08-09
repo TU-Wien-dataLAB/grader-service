@@ -6,7 +6,7 @@ from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileServiceError
 from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm.submission import AutoStatus, ManualStatus
 from grader_service.tests.handlers.db_util import create_user_submission_with_repo
 

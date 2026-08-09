@@ -15,7 +15,7 @@ from grader_service import orm
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
-from grader_service.handlers import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope

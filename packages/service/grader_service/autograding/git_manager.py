@@ -4,7 +4,7 @@ from typing import Any
 from traitlets.config import LoggingConfigurable
 
 from grader_service.file_services import GitFileService
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm import Submission
 
 

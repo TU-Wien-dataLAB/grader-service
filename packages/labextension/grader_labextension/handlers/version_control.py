@@ -14,7 +14,7 @@ from urllib.parse import quote, unquote
 from grader_service.convert.converters.base import GraderConvertException
 from grader_service.convert.converters.generate_assignment import GenerateAssignment
 from grader_service.errors import APIError
-from grader_service.handlers import GitRepoType
+from grader_service.repo_types import GitRepoType
 from tornado.web import HTTPError, authenticated
 
 from grader_labextension.api.models.assignment_settings import AssignmentSettings

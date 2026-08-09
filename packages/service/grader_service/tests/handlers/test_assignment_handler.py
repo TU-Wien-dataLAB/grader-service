@@ -14,7 +14,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.handlers import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Submission as SubmissionORM
 from grader_service.server import GraderServer

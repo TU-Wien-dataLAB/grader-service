@@ -7,7 +7,7 @@ from traitlets.config import LoggingConfigurable
 from grader_service.orm import Assignment, Lecture, Submission
 
 if typing.TYPE_CHECKING:
-    from grader_service.handlers import GitRepoType
+    from grader_service.repo_types import GitRepoType
 
 
 class FileService(LoggingConfigurable):

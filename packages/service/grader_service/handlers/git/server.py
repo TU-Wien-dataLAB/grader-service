@@ -21,7 +21,7 @@ from grader_service.errors import APIError
 from grader_service.file_services import GitFileService, FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm import Lecture, Role, Submission
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler

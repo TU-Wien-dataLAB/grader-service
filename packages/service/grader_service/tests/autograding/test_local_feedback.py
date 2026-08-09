@@ -6,12 +6,12 @@ from unittest.mock import Mock, patch
 import pytest
 
 from grader_service.autograding.local_feedback import (
-    FeedbackGitSubmissionManager,
     LocalFeedbackExecutor,
     LocalFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.handlers import GitRepoType
+from grader_service.file_services.base_file_service import FileService
+from grader_service.repo_types import GitRepoType
 from grader_service.orm.submission import FeedbackStatus
 
 
@@ -23,7 +23,7 @@ def local_feedback_executor(tmp_path, submission_123):
         ) as mock_session_class,
         patch("grader_service.autograding.local_feedback.GenerateFeedback", autospec=True),
         patch(
-            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.git_manager_class",
+            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service",
             autospec=True,
         ),
     ):
@@ -40,7 +40,7 @@ def process_executor(tmp_path, submission_123):
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
         patch(
-            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.git_manager_class",
+            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service",
             autospec=True,
         ),
     ):
@@ -56,10 +56,9 @@ def process_executor(tmp_path, submission_123):
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
 @patch(
-    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.git_manager_class",
-    autospec=True,
+    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
 )
-def test_input_output_path_properties(mock_git, mock_session_class, tmp_path, submission_123):
+def test_input_output_path_properties(mock_file_svc, mock_session_cls, tmp_path, submission_123):
     """Test that input and output paths are correctly constructed for feedback generation"""
     expected_input = os.path.join(tmp_path, "convert_in", f"feedback_{submission_123.id}")
     expected_output = os.path.join(tmp_path, "convert_out", f"feedback_{submission_123.id}")
@@ -224,16 +223,16 @@ def test_process_executor_run_subprocess_error(mock_run, process_executor):
 
 def test_feedback_executor_inheritance(grader_service, submission_123):
     """Test that LocalFeedbackExecutor properly inherits from LocalAutogradeExecutor
-    and uses the FeedbackGitSubmissionManager for git operations"""
+    and has the correct input- and output-repo types set."""  # TODO: rename "repo"
     assert issubclass(LocalFeedbackExecutor, LocalAutogradeExecutor)
 
     lfe = LocalFeedbackExecutor(
         grader_service_dir=grader_service.grader_service_dir, submission=submission_123
     )
 
-    assert isinstance(lfe.git_manager, FeedbackGitSubmissionManager)
-    assert lfe.git_manager.input_repo_type == GitRepoType.AUTOGRADE
-    assert lfe.git_manager.output_repo_type == GitRepoType.FEEDBACK
+    assert isinstance(lfe.file_service, FileService)
+    assert lfe.input_repo_type == GitRepoType.AUTOGRADE
+    assert lfe.output_repo_type == GitRepoType.FEEDBACK
 
 
 def test_process_executor_inheritance():

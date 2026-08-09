@@ -7,7 +7,7 @@ from traitlets import Unicode, observe, validate
 from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.repo_types import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
 from grader_service.orm.submission import AutoStatus, ManualStatus
 from grader_service.utils import executable_validator

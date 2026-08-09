@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
-from grader_service.handlers import GitRepoType
+from grader_service.repo_types import GitRepoType
 from traitlets.config.configurable import Configurable
 from traitlets.traitlets import Unicode
 

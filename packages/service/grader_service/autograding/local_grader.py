@@ -17,17 +17,18 @@ from sqlalchemy.orm import Session
 from traitlets import observe
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
+from traitlets.traitlets import Int, TraitError, Unicode, validate
 
-from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.utils import collect_logs, rmtree
-from grader_service.utils import executable_validator
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
+from grader_service.file_services.base_file_service import FileService
+from grader_service.repo_types import GitRepoType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
+from grader_service.utils import executable_validator
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
@@ -38,9 +39,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
+    input_repo_type = GitRepoType.USER
+    output_repo_type = GitRepoType.AUTOGRADE
+
     relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
     relative_output_path = Unicode("convert_out", allow_none=False).tag(config=True)
-    git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
 
     cell_timeout = Int(
         allow_none=False,
@@ -80,7 +83,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :type close_session: bool
         """
         super().__init__(**kwargs)
-        self.grader_service_dir = grader_service_dir
+
+        from grader_service import GraderService
+
+        grader_service = GraderService.instance()
+        self.file_service: FileService = grader_service.file_service
+
+        self.grader_service_dir = grader_service.grader_service_dir
         self.submission = submission
         self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
@@ -88,9 +97,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.close_session = close_session
 
         self.grading_logs: Optional[str] = None
-        # Git manager performs the git operations when creating a new repo for the grading results
-        self.git_manager = self.git_manager_class(self.submission)
-
         self.cell_timeout = self._determine_cell_timeout()
 
     def start(self):
@@ -103,9 +109,16 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.submission.id,
             self.__class__.__name__,
         )
+
+        if self.input_repo_type == GitRepoType.USER and self.submission.edited:
+            # User's submission was edited by the instructor - repo type has to be adjusted
+            self.input_repo_type = GitRepoType.EDIT
+
         try:
             self._clean_up_input_and_output_dirs()
-            self.git_manager.retrieve_submission(self.input_path)
+            self.file_service.fetch_files(
+                Path(self.input_path), self.input_repo_type, self.submission
+            )
 
             autograding_start = datetime.now()
             self._write_gradebook(self._put_grades_in_assignment_properties())
@@ -113,7 +126,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             autograding_finished = datetime.now()
 
             whitelisted_files = self._get_whitelisted_files()
-            self.git_manager.push_results(whitelisted_files, self.output_path)
+            self.file_service.push_files(
+                whitelisted_files, Path(self.output_path), self.output_repo_type, self.submission
+            )
             self._set_properties()
             self._set_db_state()
         except Exception as e:
