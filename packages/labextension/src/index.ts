@@ -79,8 +79,6 @@ namespace ShowHintIDs {
   export const show = 'notebookplugin:show-hint';
 }
 
-export const hasElevatedPermissions = false;
-
 export class GlobalObjects {
   static commands: CommandRegistry;
   static docRegistry: DocumentRegistry;
@@ -366,15 +364,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     // If the user has no instructor roles in any lecture we do not display the course management
     UserPermissions.loadPermissions()
       .then(() => {
-        const permissions = UserPermissions.getPermissions();
-        let sum = 0;
-        for (const el in permissions) {
-          if (permissions.hasOwnProperty(el)) {
-            sum += permissions[el];
-          }
-        }
-
-        if (sum !== 0) {
+        if (UserPermissions.hasElevatedPermissions) {
           connectTrackerSignals(tracker);
         }
         createGraderServiceCommands(app, launcher, graderServiceTracker);
