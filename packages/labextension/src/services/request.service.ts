@@ -47,19 +47,20 @@ export async function request<T, B = any | null>(
 
   return ServerConnection.makeRequest(requestUrl, options, settings).then(
     async response => {
+      const bodyText = await response.text();
       // handle non-OK responses
       if (!response.ok) {
         // default error message
         let errorMessage = 'Unknown error';
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(bodyText);
           errorMessage =
             errorData['message'] ||
             errorData['reason'] ||
             errorData['error'] ||
             errorMessage;
         } catch (e) {
-          errorMessage = await response.text(); // fallback to raw error text if not JSON
+          errorMessage = bodyText || errorMessage; // fallback to raw error text if not JSON
         }
 
         // throw custom HTTPError with status code and message
@@ -67,9 +68,9 @@ export async function request<T, B = any | null>(
       }
 
       // validate response body
-      let responseData: T | string = null;
+      let responseData: T | string = bodyText;
       try {
-        responseData = await response.json();
+        responseData = JSON.parse(bodyText);
       } catch (e) {
         console.log(
           'Not a JSON response body, handling as plain text.',
