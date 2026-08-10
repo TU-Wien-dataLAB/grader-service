@@ -12,7 +12,8 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 10 * 60 * 1000,
-      cacheTime: 15 * 60 * 1000
+      cacheTime: 15 * 60 * 1000,
+      refetchOnReconnect: true
     } as any
   }
 });
@@ -27,7 +28,6 @@ type MutationStatusContextType = {
   setStatus: (status: StatusState) => void;
 };
 
-const defaultStatus: StatusState = { status: null, message: null };
 const MutationContext = React.createContext<MutationStatusContextType | null>(
   null
 );
@@ -51,7 +51,10 @@ function GraderServiceViewComponent({
   router: DataRouter;
   parentNode: HTMLElement | null;
 }) {
-  const [status, setStatus] = useState<StatusState>(defaultStatus);
+  const [status, setStatus] = useState<StatusState>({
+    status: null,
+    message: null
+  });
 
   useEffect(() => {
     if (status.status !== null) {
@@ -75,26 +78,23 @@ function GraderServiceViewComponent({
   );
 }
 
-export class GraderServiceView extends ReactWidget {
+export class GraderServiceWidget extends ReactWidget {
   theme: 'dark' | 'light';
   router: DataRouter;
 
-  constructor(options: CourseManageView.IOptions = {}) {
+  constructor(options: GraderServiceView.IOptions = {}) {
     super();
-    this.id = options.id || 'course-manage-view';
+    this.id = options.id || 'grader-service-view';
     this.addClass('GradingWidget');
     this.router = createMemoryRouter(getRoutes(), { initialEntries: ['/'] });
 
     const themeManager = GlobalObjects.themeManager;
-    this.theme = themeManager.isLight(themeManager.theme ?? 'light')
-      ? 'light'
-      : 'dark';
 
     themeManager.themeChanged.connect(() => {
       this.theme = themeManager.isLight(themeManager.theme ?? 'light')
         ? 'light'
         : 'dark';
-      this.update(); // <- tells Lumino to re-invoke render()
+      this.update(); // tells Lumino to re-invoke render()
     }, this);
   }
 
@@ -109,7 +109,7 @@ export class GraderServiceView extends ReactWidget {
   }
 }
 
-export namespace CourseManageView {
+export namespace GraderServiceView {
   export interface IOptions {
     id?: string;
   }
