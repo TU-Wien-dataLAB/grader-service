@@ -343,17 +343,6 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.tracker = tracker;
     GlobalObjects.themeManager = themeManager;
 
-    // this connects the color-scheme CSS of base.css to the Jupyterlab themeManager
-    // the MUI theme provider is set in the corresponding widgets
-    // the CSS color-scheme property only applies to native input elements automatically so this does only apply to those (i.e. notebook grading mode and creation mode)
-    themeManager.themeChanged.connect(() => {
-      document.documentElement.dataset.theme = themeManager.isLight(
-        themeManager.theme ?? 'light'
-      )
-        ? 'light'
-        : 'dark';
-    }, this);
-
     const courseManageTracker = new WidgetTracker<
       MainAreaWidget<GraderServiceView>
     >({
