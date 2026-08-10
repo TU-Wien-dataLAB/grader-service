@@ -2,7 +2,7 @@ import { AssignmentDetail } from '../../../../model/assignmentDetail';
 import { ItemTypes } from '../../../shadcn-components/ui/card';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
-import { ArrowRightFromLine } from 'lucide-react';
+import { ArrowRightFromLine, ChevronsUpDown } from 'lucide-react';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { IAssignmentChecked } from '../../../pages/instructor-view/lecture';
 import { AssignmentCard } from './assignment-card';
@@ -14,6 +14,7 @@ import {
 } from '../../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from './release-dialog';
 import { useAssignmentUpdate } from '../../../hooks/assignment/assignment-update-hook';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../../shadcn-components/ui/collapsible';
 
 export interface IAssignmentGroup {
   key: React.Key;
@@ -28,6 +29,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
   const [checkedAssignments, setCheckedAssignments] =
     useState<IAssignmentChecked[]>(null);
+  const [isOpenCollapsible, setIsOpenCollapsible] = useState<boolean>(true)
   // NOTE: maybe not the best way to do this, but is a workaround for now
   useEffect(() => {
     setCheckedAssignments(props.groupAssignments);
@@ -67,6 +69,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     if (oldGroup === props.assignmentGroup) {
       return;
     }
+    if(!isOpenCollapsible) return 
     let group;
     // update assignment with the new group
     if (props.assignmentGroup === 'ungrouped assignments') {
@@ -123,8 +126,13 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       className={'flex flex-col gap-2 items-start self-stretch mb-8'}
       ref={ref}
     >
-      <div className={'flex flex-row items-center gap-4 self-stretch'}>
-        {checkedAssignments && (
+      <Collapsible
+      open={isOpenCollapsible}
+      onOpenChange={setIsOpenCollapsible}
+      className="flex w-full flex-col gap-2"
+    >
+       <div className='flex justify-between w-full'>
+      <div className='flex items-center gap-2'>{checkedAssignments && (
           <Checkbox
             checked={checkGroupSymbol()}
             onCheckedChange={handleGroupChecked}
@@ -135,8 +143,9 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
         )}
         <h2 className={'text-xl font-bold'}>
           {props.assignmentGroup} ({props.groupAssignments.length})
-        </h2>
-      </div>
+        </h2></div>
+        <CollapsibleTrigger render={<Button variant="ghost" size="icon" className="size-8"><ChevronsUpDown /><span className="sr-only">Toggle details</span></Button>} />
+      </div> <CollapsibleContent className="flex flex-col gap-2">
       {isOver && (
         <div
           className={`flex p-10 self-stretch ${
@@ -164,6 +173,10 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
             />
           ))}
       </div>
+      </CollapsibleContent>
+      </Collapsible>
+     
+      
       {checkedAssignments && (
         <Tooltip open={!checkedAssignments.some(a => a.checked) ? null : false}>
           <TooltipTrigger
