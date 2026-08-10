@@ -39,7 +39,14 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    input_repo_type = GitRepoType.USER
+    # TODO: rename *repo* type to something else
+    @property
+    def input_repo_type(self):
+        if self.submission.edited:
+            # User's submission was edited by the instructor
+            return GitRepoType.EDIT
+        return GitRepoType.USER
+
     output_repo_type = GitRepoType.AUTOGRADE
 
     relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
@@ -109,10 +116,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.submission.id,
             self.__class__.__name__,
         )
-
-        if self.input_repo_type == GitRepoType.USER and self.submission.edited:
-            # User's submission was edited by the instructor - repo type has to be adjusted
-            self.input_repo_type = GitRepoType.EDIT
 
         try:
             self._clean_up_input_and_output_dirs()

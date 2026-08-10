@@ -200,3 +200,11 @@ def submission_123(assignment_123):
     submission.commit_hash = "9ce33a20c72e406f3d9fa0c7b574a4c4591daf33"
 
     yield submission
+
+
+@pytest.fixture
+def git_file_service_no_git(grader_service):
+    """Mock GitFileService which doesn't actually execute any git commands"""
+    service = GitFileService(grader_service_dir=grader_service.grader_service_dir)
+    with patch.object(service, "_run_git"), patch.object(service, "_run_git_async"):
+        yield service

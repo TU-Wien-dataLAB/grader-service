@@ -12,7 +12,7 @@ from grader_service.autograding.local_feedback import (
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services.base_file_service import FileService
 from grader_service.repo_types import GitRepoType
-from grader_service.orm.submission import FeedbackStatus
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 
 
 @pytest.fixture
@@ -52,6 +52,37 @@ def process_executor(tmp_path, submission_123):
 
 
 # =============== LocalFeedbackExecutor tests ===============
+
+
+@patch(
+    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
+)
+def test_input_output_repo_types(mock_file_svc, grader_service, submission_123):
+    """Test that input- and output-repo types are correctly set."""
+
+    submission_123.auto_status = AutoStatus.NOT_GRADED
+    submission_123.manual_status = ManualStatus.MANUALLY_GRADED
+
+    executor = LocalFeedbackExecutor(submission=submission_123)
+
+    assert executor.input_repo_type == GitRepoType.USER
+    assert executor.output_repo_type == GitRepoType.FEEDBACK
+
+
+@patch(
+    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
+)
+def test_input_output_repo_types_for_manually_graded_submission(
+    mock_file_svc, grader_service, submission_123
+):
+    """Test that input repo type falls back to USER for a manually graded submission."""
+
+    submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
+
+    executor = LocalFeedbackExecutor(submission=submission_123)
+
+    assert executor.input_repo_type == GitRepoType.AUTOGRADE
+    assert executor.output_repo_type == GitRepoType.FEEDBACK
 
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)

@@ -15,36 +15,31 @@ from grader_service.autograding.local_grader import (
 from grader_service.file_services import FileServiceError
 from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
+from grader_service.repo_types import GitRepoType
 
 
 @pytest.fixture
-def local_autograde_executor(tmp_path, submission_123):
+def local_autograde_executor(git_file_service_no_git, submission_123, tmp_path):
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
         patch("grader_service.autograding.local_grader.Autograde", autospec=True),
-        patch(
-            "grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service",
-            autospec=True,
-        ),
+        patch("grader_service.main.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
         yield LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
 
 @pytest.fixture
-def process_executor(tmp_path, submission_123):
+def process_executor(git_file_service_no_git, submission_123, tmp_path):
     # Note: No need to patch `grader_service.autograding.local_grader.Autograde`,
     # as it is *not* directly called in the process executor's `_run` method.
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
-        patch(
-            "grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service",
-            autospec=True,
-        ),
+        patch("grader_service.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
         executor = LocalAutogradeProcessExecutor(
@@ -181,6 +176,30 @@ def test_file_matching_with_patterns(mock_file_svc, tmp_path, submission_123):
         "Ex1.2.ipynb",
     }
     assert set(files_to_commit) == expected_files
+
+
+@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+def test_input_output_repo_types(mock_file_svc, tmp_path, submission_123):
+    """Test that input- and output-repo types are correctly set."""
+
+    submission_123.edited = False
+    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+
+    assert executor.input_repo_type == GitRepoType.USER
+    assert executor.output_repo_type == GitRepoType.AUTOGRADE
+
+
+@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+def test_input_output_repo_types_for_edited_submission(
+    mock_file_svc, tmp_path, submission_123
+):
+    """Test that input- and output-repo types are correctly set for an edited submission."""
+
+    submission_123.edited = True
+    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+
+    assert executor.input_repo_type == GitRepoType.EDIT
+    assert executor.output_repo_type == GitRepoType.AUTOGRADE
 
 
 @patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
