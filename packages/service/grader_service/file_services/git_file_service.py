@@ -7,9 +7,8 @@ from traitlets import Unicode, observe, validate
 from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
-from grader_service.repo_types import GitRepoType
 from grader_service.orm import Assignment, Lecture, Submission
-from grader_service.orm.submission import AutoStatus, ManualStatus
+from grader_service.repo_types import GitRepoType
 from grader_service.utils import executable_validator
 
 
@@ -372,22 +371,12 @@ class GitFileService(FileService):
         Raises:
             ValueError if repo_type is not one of the allowed values.
         """
-        # TODO: does this logic belong here?
         if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
             input_branch = "main"
         elif repo_type == GitRepoType.AUTOGRADE:
-            if (
-                submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
-                and submission.manual_status == ManualStatus.MANUALLY_GRADED
-            ):
-                # When submission hasn't been autograded or autograding failed,
-                # pull from user repo to generate feedback
-                repo_type = GitRepoType.USER
-                input_branch = "main"
-            else:
-                input_branch = f"submission_{submission.commit_hash}"
+            input_branch = f"submission_{submission.commit_hash}"
         else:
-            raise ValueError(f"Cannot fetch submission files with repo type {repo_type}")
+            raise ValueError(f"Fetching submission files of type {repo_type} is not supported")
 
         assignment: Assignment = submission.assignment
         l_code: str = assignment.lecture.code
@@ -488,7 +477,7 @@ class GitFileService(FileService):
         elif repo_type == GitRepoType.FEEDBACK:
             output_branch = f"feedback_{submission.commit_hash}"
         else:
-            raise ValueError(f"Invalid repo type {repo_type}")
+            raise ValueError(f"Pushing submission files of type {repo_type} is not supported")
 
         assignment: Assignment = submission.assignment
         l_code: str = assignment.lecture.code

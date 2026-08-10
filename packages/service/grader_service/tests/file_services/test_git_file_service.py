@@ -6,8 +6,8 @@ from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileServiceError
 from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
+from grader_service.orm.submission import AutoStatus
 from grader_service.repo_types import GitRepoType
-from grader_service.orm.submission import AutoStatus, ManualStatus
 from grader_service.tests.handlers.db_util import create_user_submission_with_repo
 
 
@@ -324,7 +324,9 @@ def test_fetch_files_raises_for_invalid_repo_type(
     git_file_service, submission_123, tmp_path, repo_type
 ):
     """Test error when invalid repo type is provided."""
-    with pytest.raises(ValueError, match="Cannot fetch submission files"):
+    with pytest.raises(
+        ValueError, match=f"Fetching submission files of type {repo_type} is not supported"
+    ):
         git_file_service.fetch_files(tmp_path, repo_type, submission_123)
 
 
@@ -338,16 +340,22 @@ def test_fetch_files_user_repo_checks_out_commit(
     with patch.object(git_file_service, "_run_git") as mock_run_git:
         git_file_service.fetch_files(input_dir, GitRepoType.USER, submission_123)
 
+    # Should have pulled the main branch
+    pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
+    assert len(pull_calls) == 1
+    git_cmd: list[str] = pull_calls[0].args[0]
+    assert git_cmd[-1] == "main"
+
     # Verify checkout command was called with commit hash
     checkout_calls = [call for call in mock_run_git.call_args_list if "checkout" in str(call)]
     assert len(checkout_calls) == 1
     assert submission_123.commit_hash in checkout_calls[0].args[0]
 
 
-def test_fetch_files_autograde_uses_submission_branch_when_graded(
+def test_fetch_files_autograde_uses_submission_branch(
     git_file_service, submission_123, setup_repos, tmp_path
 ):
-    """Test that autograde repo uses submission-specific branch when already graded."""
+    """Test that fetching AUTOGRADE files uses submission-specific branch."""
     submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
     input_dir = tmp_path / "input"
     input_dir.mkdir()
@@ -358,39 +366,8 @@ def test_fetch_files_autograde_uses_submission_branch_when_graded(
     # Verify pull command uses submission-specific branch
     pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
     assert len(pull_calls) == 1
-    assert f"submission_{submission_123.commit_hash}" in pull_calls[0].args[0]
-
-
-def test_fetch_files_autograde_falls_back_to_user_when_manually_graded(
-    git_file_service, submission_123, setup_repos, tmp_path
-):
-    """Test that fetching AUTOGRADE files falls back to USER repo when not autograded."""
-    submission_123.auto_status = AutoStatus.NOT_GRADED
-    submission_123.manual_status = ManualStatus.MANUALLY_GRADED
-    input_dir = tmp_path / "input"
-    input_dir.mkdir()
-
-    with patch.object(git_file_service, "_run_git") as mock_run_git:
-        git_file_service.fetch_files(input_dir, GitRepoType.AUTOGRADE, submission_123)
-
-    # Should have pulled from USER repo, main branch instead
-    pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
-    assert len(pull_calls) == 1
-
-    a_id = submission_123.assignment.id
-    l_code = submission_123.assignment.lecture.code
-    username = submission_123.user.name
-    user_repo_path = construct_git_dir(
-        git_file_service.gitbase, GitRepoType.USER, l_code, a_id, username=username
-    )
-    assert user_repo_path in pull_calls[0].args[0]  # git command as a list
-    assert "main" in pull_calls[0].args[0]
-    assert pull_calls[0].args[1] == input_dir  # path where the command was executed
-
-    # Verify checkout command was called with commit hash
-    checkout_calls = [call for call in mock_run_git.call_args_list if "checkout" in str(call)]
-    assert len(checkout_calls) == 1
-    assert submission_123.commit_hash in checkout_calls[0].args[0]
+    git_cmd: list[str] = pull_calls[0].args[0]
+    assert git_cmd[-1] == f"submission_{submission_123.commit_hash}"
 
 
 def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, default_user, tmp_path):
@@ -466,7 +443,9 @@ def test_push_files_raises_for_invalid_repo_types(
 ):
     """Test that push_files raises if the repo type is not AUTOGRADE or FEEDBACK"""
     dir = tmp_path / "convert_out"
-    with pytest.raises(ValueError, match="Invalid repo type"):
+    with pytest.raises(
+        ValueError, match=f"Pushing submission files of type {repo_type} is not supported"
+    ):
         git_file_service.push_files(
             filenames=[], dir=dir, repo_type=repo_type, submission=submission_123
         )
