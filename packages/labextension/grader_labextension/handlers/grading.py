@@ -8,7 +8,7 @@ import shutil
 import urllib.parse
 
 from grader_service.errors import APIError
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from tornado.httpclient import HTTPResponse
 from tornado.web import HTTPError, authenticated
 
@@ -153,29 +153,29 @@ class GradingManualHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
 
-        repo_type = None
         submission_user = None
-        # only pull from user repo if the submission hasn't been autograded (happens when autograde_type is unassisted)
-        # or when autograding has failed (we still want to allow manual grading in that case)
+        # only retrieve user artifact if the submission hasn't been autograded (happens when
+        # autograde_type is unassisted) or when autograding has failed (we still want to allow
+        # manual grading in that case)
         if (
             submission["auto_status"] == "not_graded"
             or submission["auto_status"] == "grading_failed"
         ):
-            repo_type = GitRepoType.USER
-            # retrieve user whose repo we want to pull from
+            artifact_type = ArtifactType.USER
+            # retrieve user whose artifact we want to get
             submission_user = await self.request_service.request(
                 "GET",
                 f"{self.service_base_url}api/users/{submission['user_id']}{query_params}",
                 header=self.grader_authentication_header,
             )
         else:
-            repo_type = GitRepoType.AUTOGRADE
+            artifact_type = ArtifactType.AUTOGRADE
 
         git_service = GitService(
             server_root_dir=self.root_dir,
             lecture_code=lecture["code"],
             assignment_id=assignment["id"],
-            repo_type=repo_type,
+            artifact_type=artifact_type,
             config=self.config,
         )
         git_service.path = os.path.join(
@@ -193,15 +193,15 @@ class GradingManualHandler(ExtensionBaseHandler):
         try:
             if not git_service.is_git():
                 git_service.init()
-            if repo_type == GitRepoType.AUTOGRADE:
-                git_service.set_remote(GitRepoType.AUTOGRADE, additional_path=str(sub_id))
+            if artifact_type == ArtifactType.AUTOGRADE:
+                git_service.set_remote(ArtifactType.AUTOGRADE, additional_path=str(sub_id))
                 git_service.pull(
-                    GitRepoType.AUTOGRADE, branch=f"submission_{submission['commit_hash']}"
+                    ArtifactType.AUTOGRADE, branch=f"submission_{submission['commit_hash']}"
                 )
                 self.log.info(f"Pulled AUTOGRADE repo for submission {submission['id']}")
-            elif repo_type == GitRepoType.USER:
-                git_service.set_remote(GitRepoType.USER, additional_path=submission_user["name"])
-                git_service.pull(GitRepoType.USER)
+            elif artifact_type == ArtifactType.USER:
+                git_service.set_remote(ArtifactType.USER, additional_path=submission_user["name"])
+                git_service.pull(ArtifactType.USER)
                 git_service.go_to_commit(submission["commit_hash"])
                 self.log.info(f"Pulled USER repo for submission {submission['id']}")
         except GitError as e:
@@ -280,7 +280,7 @@ class PullFeedbackHandler(ExtensionBaseHandler):
             server_root_dir=self.root_dir,
             lecture_code=lecture["code"],
             assignment_id=assignment["id"],
-            repo_type=GitRepoType.FEEDBACK,
+            artifact_type=ArtifactType.FEEDBACK,
             config=self.config,
         )
         git_service.path = os.path.join(
@@ -296,8 +296,8 @@ class PullFeedbackHandler(ExtensionBaseHandler):
 
         if not git_service.is_git():
             git_service.init()
-        git_service.set_remote(GitRepoType.FEEDBACK, additional_path=str(sub_id))
+        git_service.set_remote(ArtifactType.FEEDBACK, additional_path=str(sub_id))
         git_service.pull(
-            GitRepoType.FEEDBACK, branch=f"feedback_{submission['commit_hash']}", force=True
+            ArtifactType.FEEDBACK, branch=f"feedback_{submission['commit_hash']}", force=True
         )
         self.write({"status": "Pulled Feedback"})

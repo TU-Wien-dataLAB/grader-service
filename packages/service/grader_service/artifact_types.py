@@ -1,8 +1,8 @@
 import enum
 
 
-class GitRepoType(enum.StrEnum):
-    """Allowed repository types.
+class ArtifactType(enum.StrEnum):
+    """Allowed types of submission file collections.
 
     SOURCE: The source files created by the instructor.
     RELEASE: The "student" version of the source files.

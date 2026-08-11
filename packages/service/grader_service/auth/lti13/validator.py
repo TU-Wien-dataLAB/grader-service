@@ -64,7 +64,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
 
     def validate_auth_response(self, args: Dict[str, Any]) -> None:
         """
-        Validate the reponse from the authorization server and ensures that the required
+        Validates the response from the authorization server and ensures that the required
         parameters are present.
 
         Args:

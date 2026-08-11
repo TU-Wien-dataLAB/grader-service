@@ -15,7 +15,7 @@ from grader_service import orm
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
@@ -900,7 +900,7 @@ async def test_delete_lecture_hard_assignments_roles(
         app=app,
         l_code=l_code,
         a_id=a_id,
-        repo_type=GitRepoType.SOURCE,
+        artifact_type=ArtifactType.SOURCE,
         s_id=1,
         username=default_admin.name,
     )

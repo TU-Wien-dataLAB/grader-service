@@ -7,7 +7,7 @@ from traitlets.config import LoggingConfigurable
 from grader_service.orm import Assignment, Lecture, Submission
 
 if typing.TYPE_CHECKING:
-    from grader_service.repo_types import GitRepoType
+    from grader_service.artifact_types import ArtifactType
 
 
 class FileService(LoggingConfigurable):
@@ -20,7 +20,7 @@ class FileService(LoggingConfigurable):
     # TODO: Maybe only allow Path?
     grader_service_dir = Union([Unicode(), Instance(Path)], allow_none=False).tag(config=True)
 
-    # Git server file policy defaults (used in pre-receive hooks)
+    # Server file policy defaults (used in pre-receive hooks)
     max_file_size_mb = Integer(80, allow_none=False).tag(config=True)
     max_file_count = Integer(512, allow_none=False).tag(config=True)
     # empty list allows everything
@@ -45,19 +45,18 @@ class FileService(LoggingConfigurable):
         """Create or overwrite (reset) the instructor's changes to submission files."""
         raise NotImplementedError()
 
-    def fetch_files(self, dir: Path, repo_type: "GitRepoType", submission: Submission):
-        """Fetch the files of the `repo_type` for the `submission` into the `dir`."""
-        # TODO: rename `repo_type` and `GitRepoType` to something more generic
+    def fetch_files(self, dir: Path, artifact_type: "ArtifactType", submission: Submission):
+        """Fetch the files of the ``artifact_type`` for the submission into the dir."""
         raise NotImplementedError()
 
     def push_files(  # TODO: think of a better name?
         self,
         filenames: list[str],
         dir: str | Path,
-        repo_type: "GitRepoType",
+        artifact_type: "ArtifactType",
         submission: Submission,
     ) -> None:
-        """Save new/updated files of the `repo_type` for the `submission`."""
+        """Save new/updated files of the ``artifact_type`` for the submission."""
         raise NotImplementedError()
 
     def delete_lecture_files(self, lecture: Lecture) -> None:

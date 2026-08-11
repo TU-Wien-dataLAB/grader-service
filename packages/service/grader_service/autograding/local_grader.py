@@ -23,7 +23,7 @@ from grader_service.autograding.utils import collect_logs, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.file_services.base_file_service import FileService
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
@@ -39,15 +39,14 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    # TODO: rename *repo* type to something else
     @property
-    def input_repo_type(self):
+    def input_artifact_type(self):
         if self.submission.edited:
             # User's submission was edited by the instructor
-            return GitRepoType.EDIT
-        return GitRepoType.USER
+            return ArtifactType.EDIT
+        return ArtifactType.USER
 
-    output_repo_type = GitRepoType.AUTOGRADE
+    output_artifact_type = ArtifactType.AUTOGRADE
 
     relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
     relative_output_path = Unicode("convert_out", allow_none=False).tag(config=True)
@@ -75,7 +74,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         and output directories that are specified
         by :attr:`base_input_path` and :attr:`base_output_path`.
         The grader service directory is used for accessing
-        the git repositories to push the grading results.
+        the submission files and saving the grading results.
         The database session is retrieved from the submission object.
         The associated session of the submission has to be available
         and must not be closed beforehand.
@@ -120,7 +119,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         try:
             self._clean_up_input_and_output_dirs()
             self.file_service.fetch_files(
-                Path(self.input_path), self.input_repo_type, self.submission
+                Path(self.input_path), self.input_artifact_type, self.submission
             )
 
             autograding_start = datetime.now()
@@ -130,7 +129,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
             whitelisted_files = self._get_whitelisted_files()
             self.file_service.push_files(
-                whitelisted_files, Path(self.output_path), self.output_repo_type, self.submission
+                whitelisted_files,
+                Path(self.output_path),
+                self.output_artifact_type,
+                self.submission,
             )
             self._set_properties()
             self._set_db_state()

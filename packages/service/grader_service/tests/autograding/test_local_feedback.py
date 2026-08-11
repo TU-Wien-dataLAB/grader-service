@@ -11,7 +11,7 @@ from grader_service.autograding.local_feedback import (
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services.base_file_service import FileService
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 
 
@@ -57,32 +57,32 @@ def process_executor(tmp_path, submission_123):
 @patch(
     "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
 )
-def test_input_output_repo_types(mock_file_svc, grader_service, submission_123):
-    """Test that input- and output-repo types are correctly set."""
+def test_input_output_artifact_types(mock_file_svc, grader_service, submission_123):
+    """Test that input- and output-artifact types are correctly set."""
 
     submission_123.auto_status = AutoStatus.NOT_GRADED
     submission_123.manual_status = ManualStatus.MANUALLY_GRADED
 
     executor = LocalFeedbackExecutor(submission=submission_123)
 
-    assert executor.input_repo_type == GitRepoType.USER
-    assert executor.output_repo_type == GitRepoType.FEEDBACK
+    assert executor.input_artifact_type == ArtifactType.USER
+    assert executor.output_artifact_type == ArtifactType.FEEDBACK
 
 
 @patch(
     "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
 )
-def test_input_output_repo_types_for_manually_graded_submission(
+def test_input_output_artifact_types_for_manually_graded_submission(
     mock_file_svc, grader_service, submission_123
 ):
-    """Test that input repo type falls back to USER for a manually graded submission."""
+    """Test that input artifact type falls back to USER for a manually graded submission."""
 
     submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
 
     executor = LocalFeedbackExecutor(submission=submission_123)
 
-    assert executor.input_repo_type == GitRepoType.AUTOGRADE
-    assert executor.output_repo_type == GitRepoType.FEEDBACK
+    assert executor.input_artifact_type == ArtifactType.AUTOGRADE
+    assert executor.output_artifact_type == ArtifactType.FEEDBACK
 
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
@@ -254,7 +254,7 @@ def test_process_executor_run_subprocess_error(mock_run, process_executor):
 
 def test_feedback_executor_inheritance(grader_service, submission_123):
     """Test that LocalFeedbackExecutor properly inherits from LocalAutogradeExecutor
-    and has the correct input- and output-repo types set."""  # TODO: rename "repo"
+    and has the correct input- and output-artifact types set."""
     assert issubclass(LocalFeedbackExecutor, LocalAutogradeExecutor)
 
     lfe = LocalFeedbackExecutor(
@@ -262,8 +262,8 @@ def test_feedback_executor_inheritance(grader_service, submission_123):
     )
 
     assert isinstance(lfe.file_service, FileService)
-    assert lfe.input_repo_type == GitRepoType.AUTOGRADE
-    assert lfe.output_repo_type == GitRepoType.FEEDBACK
+    assert lfe.input_artifact_type == ArtifactType.AUTOGRADE
+    assert lfe.output_artifact_type == ArtifactType.FEEDBACK
 
 
 def test_process_executor_inheritance():

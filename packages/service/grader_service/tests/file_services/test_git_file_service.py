@@ -7,7 +7,7 @@ from wrapt import async_to_sync
 from grader_service.file_services.base_file_service import FileServiceError
 from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
 from grader_service.orm.submission import AutoStatus
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.tests.handlers.db_util import create_user_submission_with_repo
 
 
@@ -24,16 +24,16 @@ def setup_repos(git_file_service, submission_123):
     assignment = submission_123.assignment
     lecture_code = assignment.lecture.code
 
-    # Create release repo
+    # Create release artifact
     release_path = construct_git_dir(
-        git_file_service.gitbase, GitRepoType.RELEASE, lecture_code, assignment.id
+        git_file_service.gitbase, ArtifactType.RELEASE, lecture_code, assignment.id
     )
     async_to_sync(git_file_service.create_bare_repo)(release_path)
 
-    # Create user repo
+    # Create user artifact
     user_path = construct_git_dir(
         git_file_service.gitbase,
-        GitRepoType.USER,
+        ArtifactType.USER,
         lecture_code,
         assignment.id,
         username=submission_123.user.name,
@@ -43,9 +43,10 @@ def setup_repos(git_file_service, submission_123):
     yield {"release": release_path, "user": user_path}
 
 
+# TODO: read up on async fixtures? (but do we really need it?)
 @pytest.fixture
 def setup_repos_with_release_files(git_file_service, setup_repos):
-    """Add a commit with a file to the release repo."""
+    """Add a commit with a file to the release artifact."""
     remote_path = setup_repos["release"]
     clone_path = git_file_service.tmpbase / "release"
     clone_path.mkdir(parents=True, exist_ok=True)
@@ -65,94 +66,94 @@ def setup_repos_with_release_files(git_file_service, setup_repos):
 # =============== construct_git_dir tests ===============
 
 
-def test_construct_git_dir_source_repo(assignment_123, tmp_path):
-    """Test path construction for SOURCE repo type."""
+def test_construct_git_dir_source_artifact(assignment_123, tmp_path):
+    """Test path construction for SOURCE artifact type."""
     gitbase = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
-    path = construct_git_dir(gitbase, GitRepoType.SOURCE, lecture_code, assignment_123.id)
+    path = construct_git_dir(gitbase, ArtifactType.SOURCE, lecture_code, assignment_123.id)
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / GitRepoType.SOURCE
+    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.SOURCE
     assert path == expected
 
 
-def test_construct_git_dir_release_repo(assignment_123, tmp_path):
-    """Test path construction for RELEASE repo type."""
+def test_construct_git_dir_release_artifact(assignment_123, tmp_path):
+    """Test path construction for RELEASE artifact type."""
     gitbase = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
-    path = construct_git_dir(gitbase, GitRepoType.RELEASE, lecture_code, assignment_123.id)
+    path = construct_git_dir(gitbase, ArtifactType.RELEASE, lecture_code, assignment_123.id)
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / GitRepoType.RELEASE
+    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.RELEASE
     assert path == expected
 
 
-def test_construct_git_dir_user_repo(assignment_123, tmp_path):
-    """Test path construction for USER repo type."""
+def test_construct_git_dir_user_artifact(assignment_123, tmp_path):
+    """Test path construction for USER artifact type."""
     gitbase = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, GitRepoType.USER, lecture_code, assignment_123.id, username=username
+        gitbase, ArtifactType.USER, lecture_code, assignment_123.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / GitRepoType.USER / username
+    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.USER / username
     assert path == expected
 
 
-def test_construct_git_dir_edit_repo_requires_submission_id(assignment_123, tmp_path):
-    """Test that EDIT repo type requires submission_id."""
+def test_construct_git_dir_edit_artifact_requires_submission_id(assignment_123, tmp_path):
+    """Test that EDIT artifact type requires submission_id."""
     lecture_code = assignment_123.lecture.code
 
     with pytest.raises(ValueError, match="Missing submission_id"):
-        construct_git_dir(tmp_path / "git", GitRepoType.EDIT, lecture_code, assignment_123.id)
+        construct_git_dir(tmp_path / "git", ArtifactType.EDIT, lecture_code, assignment_123.id)
 
 
-def test_construct_git_dir_edit_repo(submission_123, tmp_path):
-    """Test path construction for EDIT repo type."""
+def test_construct_git_dir_edit_artifact(submission_123, tmp_path):
+    """Test path construction for EDIT artifact type."""
     gitbase = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
-    path = construct_git_dir(gitbase, GitRepoType.EDIT, lecture_code, assign.id, submission_123.id)
+    path = construct_git_dir(gitbase, ArtifactType.EDIT, lecture_code, assign.id, submission_123.id)
 
-    expected = gitbase / lecture_code / str(assign.id) / GitRepoType.EDIT / str(submission_123.id)
+    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.EDIT / str(submission_123.id)
     assert path == expected
 
 
 @pytest.mark.parametrize(
-    "repo_type", [GitRepoType.USER, GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK]
+    "artifact_type", [ArtifactType.USER, ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK]
 )
-def test_construct_git_dir_repo_types_require_username(assignment_123, tmp_path, repo_type):
-    """Test that certain repo types require submission_id."""
+def test_construct_git_dir_artifact_types_require_username(assignment_123, tmp_path, artifact_type):
+    """Test that certain artifact types require submission_id."""
     lecture_code = assignment_123.lecture.code
 
     with pytest.raises(ValueError, match="Missing username"):
-        construct_git_dir(tmp_path / "git", repo_type, lecture_code, assignment_123.id)
+        construct_git_dir(tmp_path / "git", artifact_type, lecture_code, assignment_123.id)
 
 
-def test_construct_git_dir_autograde_repo(submission_123, tmp_path):
-    """Test path construction for AUTOGRADE repo type."""
+def test_construct_git_dir_autograde_artifact(submission_123, tmp_path):
+    """Test path construction for AUTOGRADE artifact type."""
     gitbase = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, GitRepoType.AUTOGRADE, lecture_code, assign.id, username=username
+        gitbase, ArtifactType.AUTOGRADE, lecture_code, assign.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assign.id) / GitRepoType.AUTOGRADE / "user" / username
+    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.AUTOGRADE / "user" / username
     assert path == expected
 
 
-def test_construct_git_dir_feedback_repo(submission_123, tmp_path):
-    """Test path construction for FEEDBACK repo type."""
+def test_construct_git_dir_feedback_artifact(submission_123, tmp_path):
+    """Test path construction for FEEDBACK artifact type."""
     gitbase = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, GitRepoType.FEEDBACK, lecture_code, assign.id, username=username
+        gitbase, ArtifactType.FEEDBACK, lecture_code, assign.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assign.id) / GitRepoType.FEEDBACK / "user" / username
+    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.FEEDBACK / "user" / username
     assert path == expected
 
 
@@ -161,7 +162,7 @@ def test_construct_git_dir_path_validation_prevents_traversal(assignment_123, tm
     lecture_code = "../.."
 
     with pytest.raises(ValueError, match="Invalid path"):
-        construct_git_dir(tmp_path / "git", GitRepoType.SOURCE, lecture_code, assignment_123.id)
+        construct_git_dir(tmp_path / "git", ArtifactType.SOURCE, lecture_code, assignment_123.id)
 
 
 # =============== is_bare_git_dir tests ===============
@@ -253,11 +254,11 @@ async def test_create_bare_repo_custom_branch(git_file_service, tmp_path):
 # =============== validate_submission_exists tests ===============
 
 
-async def test_validate_submission_exists_raises_when_repo_not_found(
+async def test_validate_submission_exists_raises_when_artifact_not_found(
     git_file_service, submission_123
 ):
-    """Test error when user repository doesn't exist."""
-    with pytest.raises(FileServiceError, match="User git repository not found"):
+    """Test error when USER artifact doesn't exist."""
+    with pytest.raises(FileServiceError, match="User artifact not found"):
         await git_file_service.validate_submission_exists(
             submission_123.commit_hash, submission_123.assignment, submission_123.user.name
         )
@@ -266,7 +267,7 @@ async def test_validate_submission_exists_raises_when_repo_not_found(
 async def test_validate_submission_exists_raises_when_commit_not_found(
     git_file_service, submission_123, setup_repos
 ):
-    """Test error when user repo exists but submission commit is not in main branch."""
+    """Test error when user artifact exists but submission commit is not in main branch."""
 
     with pytest.raises(FileServiceError, match="Submission commit not found"):
         await git_file_service.validate_submission_exists(
@@ -278,27 +279,27 @@ async def test_validate_submission_exists_raises_when_commit_not_found(
 
 
 async def test_init_user_files_raises_when_release_not_exists(git_file_service, submission_123):
-    """Test error when release repository doesn't exist."""
-    with pytest.raises(FileNotFoundError, match="release repository does not exist"):
+    """Test error when release artifact doesn't exist."""
+    with pytest.raises(FileNotFoundError, match="release artifact does not exist"):
         await git_file_service.init_user_files(
             submission_123.assignment, submission_123.user.name, "Initial commit"
         )
 
 
-async def test_init_user_files_raises_when_user_repo_not_exists(
+async def test_init_user_files_raises_when_user_artifact_not_exists(
     git_file_service, submission_123, setup_repos
 ):
-    """Test error when user repository doesn't exist."""
+    """Test error when user artifact doesn't exist."""
     shutil.rmtree(setup_repos["user"])
 
-    with pytest.raises(FileNotFoundError, match="user submission repository"):
+    with pytest.raises(FileNotFoundError, match="user submission artifact"):
         await git_file_service.init_user_files(
             submission_123.assignment, submission_123.user.name, "Initial commit"
         )
 
 
 async def test_init_user_files(git_file_service, submission_123, setup_repos_with_release_files):
-    """Test successful copying of release files to a new user repo."""
+    """Test successful copying of release files to a new user artifact."""
     l_code = submission_123.assignment.lecture.code
     a_id = submission_123.assignment.id
     username = submission_123.user.name
@@ -318,27 +319,27 @@ async def test_init_user_files(git_file_service, submission_123, setup_repos_wit
 
 
 @pytest.mark.parametrize(
-    "repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.FEEDBACK]
+    "artifact_type", [ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.FEEDBACK]
 )
-def test_fetch_files_raises_for_invalid_repo_type(
-    git_file_service, submission_123, tmp_path, repo_type
+def test_fetch_files_raises_for_invalid_artifact_type(
+    git_file_service, submission_123, tmp_path, artifact_type
 ):
-    """Test error when invalid repo type is provided."""
+    """Test error when invalid artifact type is provided."""
     with pytest.raises(
-        ValueError, match=f"Fetching submission files of type {repo_type} is not supported"
+        ValueError, match=f"Fetching submission files of type {artifact_type} is not supported"
     ):
-        git_file_service.fetch_files(tmp_path, repo_type, submission_123)
+        git_file_service.fetch_files(tmp_path, artifact_type, submission_123)
 
 
-def test_fetch_files_user_repo_checks_out_commit(
+def test_fetch_files_user_artifact_checks_out_commit(
     git_file_service, submission_123, setup_repos, tmp_path
 ):
-    """Test that fetching from USER repo checks out the submission commit."""
+    """Test that fetching from USER artifact checks out the submission commit."""
     input_dir = tmp_path / "input"
     input_dir.mkdir()
 
     with patch.object(git_file_service, "_run_git") as mock_run_git:
-        git_file_service.fetch_files(input_dir, GitRepoType.USER, submission_123)
+        git_file_service.fetch_files(input_dir, ArtifactType.USER, submission_123)
 
     # Should have pulled the main branch
     pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
@@ -361,7 +362,7 @@ def test_fetch_files_autograde_uses_submission_branch(
     input_dir.mkdir()
 
     with patch.object(git_file_service, "_run_git") as mock_run_git:
-        git_file_service.fetch_files(input_dir, GitRepoType.AUTOGRADE, submission_123)
+        git_file_service.fetch_files(input_dir, ArtifactType.AUTOGRADE, submission_123)
 
     # Verify pull command uses submission-specific branch
     pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
@@ -370,7 +371,9 @@ def test_fetch_files_autograde_uses_submission_branch(
     assert git_cmd[-1] == f"submission_{submission_123.commit_hash}"
 
 
-def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, default_user, tmp_path):
+def test_fetch_files_from_user_artifact(
+    git_file_service, sql_alchemy_engine, default_user, tmp_path
+):
     """Test successful fetching of files."""
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
     sub = create_user_submission_with_repo(
@@ -384,7 +387,7 @@ def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, defaul
     input_dir = tmp_path / "input"
     input_dir.mkdir()
 
-    git_file_service.fetch_files(input_dir, GitRepoType.USER, sub)
+    git_file_service.fetch_files(input_dir, ArtifactType.USER, sub)
 
     assert (input_dir / "submission.ipynb").exists()
     is_git_repo = git_file_service._run_git(
@@ -396,14 +399,16 @@ def test_fetch_files_from_user_repo(git_file_service, sql_alchemy_engine, defaul
 # =============== edit_submission tests ===============
 
 
-async def test_edit_submission_raises_when_user_repo_not_exists(git_file_service, submission_123):
-    """Test error when user repository doesn't exist for edit."""
-    with pytest.raises(FileNotFoundError, match="user submission repository"):
+async def test_edit_submission_raises_when_user_artifact_not_exists(
+    git_file_service, submission_123
+):
+    """Test error when user artifact doesn't exist for edit."""
+    with pytest.raises(FileNotFoundError, match="user submission artifact"):
         await git_file_service.edit_submission(submission_123)
 
 
 async def test_edit_submission(git_file_service, sql_alchemy_engine, default_user):
-    """Test creating an EDIT repository."""
+    """Test creating an EDIT artifact."""
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
     sub = create_user_submission_with_repo(
         sql_alchemy_engine,
@@ -418,7 +423,7 @@ async def test_edit_submission(git_file_service, sql_alchemy_engine, default_use
     tmp_base = git_file_service.tmpbase / l_code / str(a_id) / "edit" / str(sub.id)
 
     remote_path_edit = construct_git_dir(
-        git_file_service.gitbase, GitRepoType.EDIT, l_code, a_id, submission_id=sub.id
+        git_file_service.gitbase, ArtifactType.EDIT, l_code, a_id, submission_id=sub.id
     )
     assert not remote_path_edit.exists()
 
@@ -436,68 +441,71 @@ async def test_edit_submission(git_file_service, sql_alchemy_engine, default_use
 
 
 @pytest.mark.parametrize(
-    "repo_type", [GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.USER, GitRepoType.EDIT]
+    "artifact_type",
+    [ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.USER, ArtifactType.EDIT],
 )
-def test_push_files_raises_for_invalid_repo_types(
-    git_file_service, submission_123, tmp_path, repo_type
+def test_push_files_raises_for_invalid_artifact_types(
+    git_file_service, submission_123, tmp_path, artifact_type
 ):
-    """Test that push_files raises if the repo type is not AUTOGRADE or FEEDBACK"""
+    """Test that push_files raises if the artifact type is not AUTOGRADE or FEEDBACK"""
     dir = tmp_path / "convert_out"
     with pytest.raises(
-        ValueError, match=f"Pushing submission files of type {repo_type} is not supported"
+        ValueError, match=f"Pushing submission files of type {artifact_type} is not supported"
     ):
         git_file_service.push_files(
-            filenames=[], dir=dir, repo_type=repo_type, submission=submission_123
+            filenames=[], dir=dir, artifact_type=artifact_type, submission=submission_123
         )
 
 
 def test_push_files_autograde(git_file_service, submission_123, tmp_path):
     """Test pushing files after autograding a submission."""
-    repo_type = GitRepoType.AUTOGRADE
+    artifact_type = ArtifactType.AUTOGRADE
 
     l_code = submission_123.assignment.lecture.code
     a_id = str(submission_123.assignment.id)
     username = submission_123.user.name
     remote_repo_path = construct_git_dir(
-        git_file_service.gitbase, repo_type, l_code, a_id, username=username
+        git_file_service.gitbase, artifact_type, l_code, a_id, username=username
     )
     assert not remote_repo_path.exists()
 
-    # Create a fake "autograded" file; note that ``repo_path`` is not a repo
-    repo_path = tmp_path / "convert_out" / "submission_123"
-    repo_path.mkdir(parents=True)
-    s_file = repo_path / "autograded.ipynb"
+    # Create a fake "autograded" file; note that ``artifact_path`` is not a repo
+    artifact_path = tmp_path / "convert_out" / "submission_123"
+    artifact_path.mkdir(parents=True)
+    s_file = artifact_path / "autograded.ipynb"
     s_file.touch()
 
     git_file_service.push_files(
-        [s_file.name, "gradebook.json"], repo_path, repo_type, submission_123
+        [s_file.name, "gradebook.json"], artifact_path, artifact_type, submission_123
     )
 
     # Remote repo should have been created
     assert remote_repo_path.exists()
     assert git_file_service.is_bare_git_dir(remote_repo_path)
 
-    # The `repo_path` directory should now be a Git repository
+    # The `artifact_path` directory should now be a Git repository
     is_git_repo = git_file_service._run_git(
-        ["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path, may_fail=True
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=artifact_path, may_fail=True
     )
     assert "true" in is_git_repo
 
     # Current branch of the repo should be named after the submission's commit hash
-    current_branch = git_file_service._run_git(["git", "branch", "--show-current"], cwd=repo_path)
+    current_branch = git_file_service._run_git(
+        ["git", "branch", "--show-current"], cwd=artifact_path
+    )
     assert f"submission_{submission_123.commit_hash}" in current_branch
 
     # The commit message should be the submission's hash, the autograded file should be committed,
     # but gradebook.json - not
     last_commit = git_file_service._run_git(
-        ["git", "show", "--oneline", "--name-only"], cwd=repo_path
+        ["git", "show", "--oneline", "--name-only"], cwd=artifact_path
     )
     assert submission_123.commit_hash in last_commit
     assert s_file.name in last_commit
     assert "gradebook.json" not in last_commit
 
     # Autograding the same submission again should work, even if there are no changes.
-    git_file_service.push_files([s_file.name], repo_path, repo_type, submission_123)
+    git_file_service.push_files([s_file.name], artifact_path, artifact_type, submission_123)
 
 
 # =============== delete_lecture_files tests ===============
@@ -574,18 +582,23 @@ def test_delete_submission_files_removes_user_and_submission_dirs(git_file_servi
     # Create submission-specific directories in gitbase and tmpbase
     submission_dirs = []
     assignment_dirs = []
-    for repo_type in GitRepoType:
-        repo_dir = construct_git_dir(
-            git_file_service.gitbase, repo_type, l_code, a_id, submission_id=s_id, username=username
+    for artifact_type in ArtifactType:
+        artifact_dir = construct_git_dir(
+            git_file_service.gitbase,
+            artifact_type,
+            l_code,
+            a_id,
+            submission_id=s_id,
+            username=username,
         )
-        repo_dir.mkdir(parents=True)
-        if repo_type in [GitRepoType.SOURCE, GitRepoType.RELEASE]:
-            assignment_dirs.append(repo_dir)
-            tmp_dir = git_file_service.tmpbase / l_code / a_id / repo_type
+        artifact_dir.mkdir(parents=True)
+        if artifact_type in [ArtifactType.SOURCE, ArtifactType.RELEASE]:
+            assignment_dirs.append(artifact_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / artifact_type
             assignment_dirs.append(tmp_dir)
         else:
-            submission_dirs.append(repo_dir)
-            tmp_dir = git_file_service.tmpbase / l_code / a_id / repo_type / username
+            submission_dirs.append(artifact_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / artifact_type / username
             submission_dirs.append(tmp_dir)
         tmp_dir.mkdir(parents=True)
 
@@ -604,10 +617,10 @@ async def test_delete_submission_files_only_removes_target_submission(
     l_code = submission_123.assignment.lecture.code
     a_id = str(submission_123.assignment.id)
 
-    # Create another user's repo
+    # Create another user's artifact
     other_username = "other_user"
     other_user_path = construct_git_dir(
-        git_file_service.gitbase, GitRepoType.USER, l_code, a_id, username=other_username
+        git_file_service.gitbase, ArtifactType.USER, l_code, a_id, username=other_username
     )
     await git_file_service.create_bare_repo(other_user_path)
 

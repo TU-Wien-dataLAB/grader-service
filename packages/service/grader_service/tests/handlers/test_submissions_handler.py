@@ -18,7 +18,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.file_services import GitFileService
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Role, SubmissionLogs, SubmissionProperties
@@ -1352,7 +1352,7 @@ async def test_post_submission_by_instructor(
     assert submission.auto_status == AutoStatus.NOT_GRADED
 
 
-async def test_post_submission_git_repo_not_found(
+async def test_post_submission_artifact_not_found(
     service_base_url,
     http_server_client,
     default_user,
@@ -1375,7 +1375,7 @@ async def test_post_submission_git_repo_not_found(
         )
     e = exc_info.value
     assert e.code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert e.message == "User git repository not found"
+    assert e.message == "User artifact not found"
 
 
 async def test_post_submission_commit_hash_not_found(
@@ -1807,7 +1807,7 @@ async def test_submission_properties_not_found(
     assert e.message == "Properties of submission were not found"
 
 
-async def test_submission_create_edit_repo(
+async def test_submission_create_edit_artifact(
     app,
     service_base_url,
     http_server_client,
@@ -1817,7 +1817,7 @@ async def test_submission_create_edit_repo(
     default_roles,
     default_user_login,
 ):
-    """Create or reset an edit repository (there is no difference) - SubmissionEditHandler.put()"""
+    """Create or reset an edit artifact (there is no difference) - SubmissionEditHandler.put()"""
     l_id = 3  # default user has to be instructor
     l_code = "22wle1"  # the code of the lecture with id=3
     a_id = 3
@@ -1828,7 +1828,7 @@ async def test_submission_create_edit_repo(
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     student = insert_student(engine, student_username, l_id)
-    # Create a student submission and a user repo
+    # Create a student submission and a user artifact
     submission = create_user_submission_with_repo(engine, gitbase_dir, student, a_id, l_code)
     commit_hash = submission.commit_hash
 
@@ -1844,7 +1844,7 @@ async def test_submission_create_edit_repo(
     assert submission_dict["commit_hash"] == commit_hash
     assert submission_dict["user_display_name"] == student_username
     assert (
-        gitbase_dir / l_code / str(a_id) / str(GitRepoType.EDIT) / str(submission_dict["id"])
+        gitbase_dir / l_code / str(a_id) / str(ArtifactType.EDIT) / str(submission_dict["id"])
     ).exists()
 
 
@@ -1889,7 +1889,7 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
 
     with pytest.raises(
         HTTPClientError,
-        match="This repo cannot be edited or reset, because it was created by instructor",
+        match="This artifact cannot be edited or reset, because it was created by instructor",
     ) as exc_info:
         await http_server_client.fetch(
             url,

@@ -8,7 +8,7 @@ from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.orm import Assignment, Lecture, Submission
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.utils import executable_validator
 
 
@@ -28,43 +28,43 @@ def validate_path_relative_to(path: Path, base: Path) -> None:
 
 def construct_git_dir(
     gitbase: Path,
-    repo_type: GitRepoType,
+    artifact_type: ArtifactType,
     lect_code: str,
     assignment_id: int | str,
     submission_id: int | str | None = None,
     username: str | None = None,
 ) -> Path | None:
     """Returns the path of the repository based on the inputs,
-     or None if the repo_type is not recognised.
+     or None if the artifact_type is not recognised.
 
-     Note: This method does not check permissions to access the given repo type
-     or submission; it only constructs the directory path.
+     Note: This method does not check permissions to access the given artifact
+     type or submission; it only constructs the directory path.
 
     Raises ValueError if the normalised path does not start with
     `gitbase`, to make it robust against fabricated lecture codes
     or usernames containing substrings like "../..".
     """
-    repo_type_path = gitbase / lect_code / str(assignment_id) / repo_type
-    if repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}:
-        if repo_type == GitRepoType.EDIT:
+    base_path = gitbase / lect_code / str(assignment_id) / artifact_type
+    if artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}:
+        if artifact_type == ArtifactType.EDIT:
             if submission_id is None:
-                raise ValueError(f"Missing submission_id for repo type {repo_type}")
-            path = repo_type_path / str(submission_id)
+                raise ValueError(f"Missing submission_id for artifact type {artifact_type}")
+            path = base_path / str(submission_id)
         else:
-            path = repo_type_path
+            path = base_path
     else:
         if username is None:
-            raise ValueError(f"Missing username for repo type {repo_type}")
-        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
+            raise ValueError(f"Missing username for artifact type {artifact_type}")
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK}:
             # Note: username should be that of the submission's user!
-            path = repo_type_path / "user" / username
-        elif repo_type == GitRepoType.USER:
-            # we allow two different paths for user repos:
-            #  - the logged-in user is trying to access their own repo,
-            #  - the tutor/instructor accesses the repo of the user with the specified username.
-            path = repo_type_path / username
+            path = base_path / "user" / username
+        elif artifact_type == ArtifactType.USER:
+            # we allow two different paths for user artifacts:
+            #  - the logged-in user is trying to access their own artifact,
+            #  - the tutor/instructor accesses the artifact of the user with the specified username.
+            path = base_path / username
         else:
-            raise ValueError(f"Unknown repo type: {repo_type}")
+            raise ValueError(f"Unknown artifact type: {artifact_type}")
 
     validate_path_relative_to(path, gitbase)
     return path
@@ -240,10 +240,10 @@ class GitFileService(FileService):
     async def validate_submission_exists(
         self, submission_hash: str, assignment: Assignment, username: str
     ) -> None:
-        """Checks that user repo exists and `main` branch contains the commit with `submission_hash`."""
-        git_repo_path = construct_git_dir(
+        """Checks that user artifact exists and `main` branch contains the commit with `submission_hash`."""
+        artifact_path = construct_git_dir(
             gitbase=self.gitbase,
-            repo_type=GitRepoType.USER,
+            artifact_type=ArtifactType.USER,
             lect_code=assignment.lecture.code,
             assignment_id=assignment.id,
             username=username,
@@ -251,12 +251,12 @@ class GitFileService(FileService):
 
         # If no submissions for the student exists, we cannot reference a non-existing
         # commit_hash.
-        if not git_repo_path.exists():
-            raise FileServiceError("User git repository not found")
+        if not artifact_path.exists():
+            raise FileServiceError("User artifact not found")
         try:
             await self._run_git_async(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
-                cwd=git_repo_path,
+                cwd=artifact_path,
                 may_fail=True,
             )
         except subprocess.CalledProcessError:
@@ -315,15 +315,15 @@ class GitFileService(FileService):
         l_code = assignment.lecture.code
 
         remote_path_release = construct_git_dir(
-            self.gitbase, GitRepoType.RELEASE, l_code, assignment.id
+            self.gitbase, ArtifactType.RELEASE, l_code, assignment.id
         )
         if not remote_path_release.exists():
-            raise FileNotFoundError("The release repository does not exist")
+            raise FileNotFoundError("The release artifact does not exist")
         remote_path_user = construct_git_dir(
-            self.gitbase, GitRepoType.USER, l_code, assignment.id, username=username
+            self.gitbase, ArtifactType.USER, l_code, assignment.id, username=username
         )
         if not remote_path_user.exists():
-            raise FileNotFoundError("The user submission repository does not exist")
+            raise FileNotFoundError("The user submission artifact does not exist")
 
         tmp_base = self.tmpbase / l_code / str(assignment.id) / username
         tmp_path_input, tmp_path_output = self._prepare_tmp_dirs(
@@ -357,33 +357,33 @@ class GitFileService(FileService):
         finally:
             shutil.rmtree(tmp_base)
 
-    def fetch_files(self, dir: Path, repo_type: GitRepoType, submission: Submission):
-        """Init and pull submission files from the repository of type ``repo_type`` into ``dir``.
+    def fetch_files(self, dir: Path, artifact_type: ArtifactType, submission: Submission):
+        """Init and pull submission files from the repository of type ``artifact_type`` into ``dir``.
 
         Note that this method does not clone the entire repository, but only pulls
         the specified branch into the ``dir``, so that the fetched files can be further
-        processed (e.g. autograded, or copied over to initialize a different repo type).
+        processed (e.g. autograded, or copied over to initialize a different artifact type).
 
         Args:
             dir: The directory where the input repo will be created; has to already exist.
-            repo_type: Repo type from which the files are to be fetched
+            artifact_type: Artifact type from which the files are to be fetched
             submission: Submission whose files are to be fetched
         Raises:
-            ValueError if repo_type is not one of the allowed values.
+            ValueError if artifact_type is not one of the allowed values.
         """
-        if repo_type in [GitRepoType.USER, GitRepoType.EDIT]:
+        if artifact_type in [ArtifactType.USER, ArtifactType.EDIT]:
             input_branch = "main"
-        elif repo_type == GitRepoType.AUTOGRADE:
+        elif artifact_type == ArtifactType.AUTOGRADE:
             input_branch = f"submission_{submission.commit_hash}"
         else:
-            raise ValueError(f"Fetching submission files of type {repo_type} is not supported")
+            raise ValueError(f"Fetching submission files of type {artifact_type} is not supported")
 
         assignment: Assignment = submission.assignment
         l_code: str = assignment.lecture.code
         username: str = submission.user.name
 
         remote_repo_path = construct_git_dir(
-            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+            self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
         )
 
         self.log.info("Pulling repo %s into input directory", remote_repo_path)
@@ -392,13 +392,13 @@ class GitFileService(FileService):
             [self.git_executable, "pull", remote_repo_path, input_branch],
         ]
         # When autograding a user's submission, check out to the commit of submission
-        if repo_type == GitRepoType.USER:
+        if artifact_type == ArtifactType.USER:
             commands.append([self.git_executable, "checkout", submission.commit_hash])
 
         for cmd in commands:
             self._run_git(cmd, dir)
 
-        self.log.info("Successfully pulled files from the %s repo.", repo_type)
+        self.log.info("Successfully pulled files from the %s artifact.", artifact_type)
 
     # TODO: differences between `edit...` and `init_user_files`:
     #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
@@ -416,17 +416,17 @@ class GitFileService(FileService):
         # Path to repository of student which contains the submitted files
         remote_path_user = construct_git_dir(
             gitbase=self.gitbase,
-            repo_type=GitRepoType.USER,
+            artifact_type=ArtifactType.USER,
             lect_code=lecture.code,
             assignment_id=assignment.id,
             username=submission.user.name,
         )
         if not remote_path_user.exists():
-            raise FileNotFoundError("The user submission repository does not exist")
+            raise FileNotFoundError("The user submission artifact does not exist")
         # Path to the repository which will store edited submission files (may not exist yet)
         remote_path_edit = construct_git_dir(
             gitbase=self.gitbase,
-            repo_type=GitRepoType.EDIT,
+            artifact_type=ArtifactType.EDIT,
             lect_code=lecture.code,
             assignment_id=assignment.id,
             submission_id=submission.id,
@@ -434,7 +434,7 @@ class GitFileService(FileService):
 
         try:
             # Get user submission files (no need to clone the whole repo)
-            self.fetch_files(tmp_path_input, GitRepoType.USER, submission)
+            self.fetch_files(tmp_path_input, ArtifactType.USER, submission)
 
             # (Re-)Create bare edit repository
             await self.create_bare_repo(remote_path_edit, recreate_dir=True)
@@ -455,9 +455,13 @@ class GitFileService(FileService):
             shutil.rmtree(tmp_base)
 
     def push_files(
-        self, filenames: list[str], dir: str | Path, repo_type: GitRepoType, submission: Submission
+        self,
+        filenames: list[str],
+        dir: str | Path,
+        artifact_type: ArtifactType,
+        submission: Submission,
     ) -> None:
-        """Create the repository of type `repo_type` at `dir`, commit and push the changes.
+        """Create the repository of type `artifact_type` at `dir`, commit and push the changes.
 
         This method is to be used on files produced by the autograder/feedback executor.
         When the submission if autograded/the feedback is generated for the first time,
@@ -467,24 +471,24 @@ class GitFileService(FileService):
             filenames: List of filenames in ``dir`` to commit
             dir: The directory where the input repo will be initialized. Should already
               exist and contain the ``filenames``
-            repo_type: Repo type to which the files are to be pushed
+            artifact_type: Artifact type to which the files are to be pushed
             submission: Submission whose files are updated
         Raises:
-            ValueError if repo_type is not one of the allowed values.
+            ValueError if artifact_type is not one of the allowed values.
         """
-        if repo_type == GitRepoType.AUTOGRADE:
+        if artifact_type == ArtifactType.AUTOGRADE:
             output_branch = f"submission_{submission.commit_hash}"
-        elif repo_type == GitRepoType.FEEDBACK:
+        elif artifact_type == ArtifactType.FEEDBACK:
             output_branch = f"feedback_{submission.commit_hash}"
         else:
-            raise ValueError(f"Pushing submission files of type {repo_type} is not supported")
+            raise ValueError(f"Pushing submission files of type {artifact_type} is not supported")
 
         assignment: Assignment = submission.assignment
         l_code: str = assignment.lecture.code
         username: str = submission.user.name
 
         remote_repo_path = construct_git_dir(
-            self.gitbase, repo_type, l_code, assignment.id, submission.id, username
+            self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
             async_to_sync(self.create_bare_repo)(remote_repo_path)
@@ -513,7 +517,7 @@ class GitFileService(FileService):
 
     def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
         """
-        Commit the provided files in the repo at `dir` with the provided commit message.
+        Commit the provided files in the repo at ``dir`` with the provided commit message.
         """
         self.log.info(f"Committing files in {dir}")
         if not filenames:

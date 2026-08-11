@@ -15,7 +15,7 @@ from grader_service.autograding.local_grader import (
 from grader_service.file_services import FileServiceError
 from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 
 
 @pytest.fixture
@@ -179,27 +179,27 @@ def test_file_matching_with_patterns(mock_file_svc, tmp_path, submission_123):
 
 
 @patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_input_output_repo_types(mock_file_svc, tmp_path, submission_123):
-    """Test that input- and output-repo types are correctly set."""
+def test_input_output_artifact_types(mock_file_svc, tmp_path, submission_123):
+    """Test that input- and output-artifact types are correctly set."""
 
     submission_123.edited = False
     executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
-    assert executor.input_repo_type == GitRepoType.USER
-    assert executor.output_repo_type == GitRepoType.AUTOGRADE
+    assert executor.input_artifact_type == ArtifactType.USER
+    assert executor.output_artifact_type == ArtifactType.AUTOGRADE
 
 
 @patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_input_output_repo_types_for_edited_submission(
+def test_input_output_artifact_types_for_edited_submission(
     mock_file_svc, tmp_path, submission_123
 ):
-    """Test that input- and output-repo types are correctly set for an edited submission."""
+    """Test that input- and output-artifact types are correctly set for an edited submission."""
 
     submission_123.edited = True
     executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
-    assert executor.input_repo_type == GitRepoType.EDIT
-    assert executor.output_repo_type == GitRepoType.AUTOGRADE
+    assert executor.input_artifact_type == ArtifactType.EDIT
+    assert executor.output_artifact_type == ArtifactType.AUTOGRADE
 
 
 @patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
