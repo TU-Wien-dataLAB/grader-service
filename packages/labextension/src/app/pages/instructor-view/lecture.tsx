@@ -2,7 +2,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -10,7 +9,11 @@ import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../shadcn-components/ui/button';
 import { SearchField } from '../../components/ui/search';
-import { FilterAssignmentsButton } from '../../components/ui/filter-button';
+import {
+  FilterAssignmentsButton,
+  IFilterGroup,
+  IFilterOption
+} from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
 import { AssignmentDetail } from '../../../model/assignmentDetail';
 import { AssignmentGroup } from '../../components/grader-service/assignments/assignment-group';
@@ -28,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
-import { AssignmentSettingsDialog } from '../../components/grader-service/assignments/assignment-settings-dialog';
+import { AssignmentCreateEditDialog } from '../../components/grader-service/assignments/assignment-create-edit-dialog';
 import { ExportGradesDialog } from '../../components/grader-service/assignments/export-grades-dialog';
 import { lectureQuery } from '../../../services/queries/lectures.queries';
 import { assignmentsQuery } from '../../../services/queries/assignments.queries';
@@ -36,6 +39,9 @@ import { useMutationStatus } from '../../../widget';
 import { SuccessBanner } from '../../components/ui/success-banner';
 import { ErrorBanner } from '../../components/ui/error-banner';
 import { Badge } from '../../shadcn-components/ui/badge';
+import { EmptyIcon } from '../../../assets/empty-icon';
+import { EmptyState } from '../../components/utils/empty-state';
+import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -90,28 +96,31 @@ export const useGroups = () => {
   return ctx;
 };
 
-const STATIC_FILTERS = [
+const STATIC_FILTERS: IFilterGroup[] = [
   {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.Auto,
-    label: 'Automatic'
-  },
-  {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.Unassisted,
-    label: 'Manual'
-  },
-  {
-    key: 'Grading method',
-    value: AutogradeTypeEnum.FullAuto,
-    label: 'Fully automatic'
-  },
-  { key: 'Deadline', value: 'Overdue', label: 'Overdue' },
-  { key: 'Deadline', value: 'Upcoming', label: 'Upcoming' },
-  { key: 'Deadline', value: 'No Deadline', label: 'No Deadline' },
-  { key: 'Status', value: StatusEnum.Created, label: 'Not Released' },
-  { key: 'Status', value: StatusEnum.Released, label: 'Released' },
-  { key: 'Status', value: StatusEnum.Complete, label: 'Completed' }
+    'Grading Method': [
+      {
+        value: AutogradeTypeEnum.Auto,
+        label: 'Automatic'
+      },
+      { value: AutogradeTypeEnum.Unassisted, label: 'Manual' },
+      {
+        value: AutogradeTypeEnum.FullAuto,
+        label: 'Fully automatic'
+      }
+    ],
+    Deadline: [
+      { value: 'Overdue', label: 'Overdue' },
+      { value: 'Upcoming', label: 'Upcoming' },
+      { value: 'No Deadline', label: 'No Deadline' }
+    ],
+
+    Status: [
+      { value: StatusEnum.Created, label: 'Not Released' },
+      { value: StatusEnum.Released, label: 'Released' },
+      { value: StatusEnum.Complete, label: 'Completed' }
+    ]
+  }
 ];
 
 const ScrollingComponent = withScrolling('div');
@@ -134,41 +143,40 @@ export const Lecture = () => {
   const [sortBy, setSortBy] = useState({ key: '', dir: '' });
   const [searchQuery, setSearchQuery] = useState('');
 
-  // TODO: refactor
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
-      return;
+      return [];
     }
     // extract all groups from assignments
-    const dynamicGroups = [...new Set(assignments.map(a => a.settings.group))]
-      .filter(Boolean)
-      .map(value => ({ key: 'Group', value, label: value }));
-
-    return [
-      ...STATIC_FILTERS,
-      {
-        key: 'Group',
-        value: 'Assignments without group',
-        label: 'Assignments without group'
-      },
-      ...(dynamicGroups ?? [])
+    const uniqueGroups = [
+      ...new Set(
+        assignments
+          .map(a => a.settings.group)
+          .filter((value): value is string => Boolean(value))
+      )
     ];
+
+    const groupList: IFilterOption[] = uniqueGroups.map(value => ({
+      value,
+      label: value
+    }));
+    // check if there are assignments with no group assigned
+    const ungroupedAssignmentsExist = assignments.some(
+      a => a.settings.group === '' || !a.settings.group
+    );
+    const groupFilter: IFilterGroup | null = ungroupedAssignmentsExist
+      ? {
+          Group: [
+            { value: 'Ungrouped assignments', label: 'Ungrouped assignments' },
+            ...groupList
+          ]
+        }
+      : null;
+
+    return [...STATIC_FILTERS, ...(groupFilter ? [groupFilter] : [])];
   }, [assignments, isPendingAssignments]);
 
-  // Group filters by key for rendering
-  const filterGroups = useMemo(() => {
-    if (allFilters) {
-      return allFilters.reduce<Record<string, typeof STATIC_FILTERS>>(
-        (acc, filter) => {
-          (acc[filter.key] ??= []).push(filter);
-          return acc;
-        },
-        {}
-      );
-    }
-  }, [allFilters]);
-
-  // active filters are set as key:value
+  // active filters are set as key:value:label
   const [activeFilters, setActiveFilters] = useState(new Set<string>());
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {
@@ -208,9 +216,9 @@ export const Lecture = () => {
         result = result.filter(a => activeGroups['Status'].includes(a.status));
       }
 
-      if (activeGroups['Grading Mode']) {
+      if (activeGroups['Grading Method']) {
         result = result.filter(a =>
-          activeGroups['Grading Mode'].includes(a.settings.autograde_type)
+          activeGroups['Grading Method'].includes(a.settings.autograde_type)
         );
       }
 
@@ -234,7 +242,7 @@ export const Lecture = () => {
         result = result.filter(
           a =>
             activeGroups['Group'].includes(a.settings.group) ||
-            (activeGroups['Group'].includes('Assignments without group') &&
+            (activeGroups['Group'].includes('Ungrouped assignments') &&
               !a.settings.group)
         );
       }
@@ -264,35 +272,29 @@ export const Lecture = () => {
 
   // split assignments based on their group
   const groupsDict = useMemo(() => {
-    const dict: Record<string, IAssignmentChecked[]> = {
-      'assignments without group': []
-    };
+    const dict: Record<string, IAssignmentChecked[]> = {};
     if (!isPendingAssignments) {
       filteredAssignments.forEach(assignment => {
         const group = assignment.settings.group;
-        if (group !== null && group !== '') {
-          if (!dict[group]) {
-            dict[group] = [];
-          }
-          dict[group].push({ assignment: assignment, checked: false });
-        } else {
-          dict['assignments without group'].push({
-            assignment: assignment,
-            checked: false
-          });
+        const key =
+          group !== null && group !== '' ? group : 'ungrouped assignments';
+        if (!dict[key]) {
+          dict[key] = [];
         }
+        dict[key].push({ assignment, checked: false });
       });
     }
+
+    // ensure "ungrouped assignments" appears first, if present
+    if (dict['ungrouped assignments']) {
+      const { 'ungrouped assignments': ungrouped, ...rest } = dict;
+      return { 'ungrouped assignments': ungrouped, ...rest };
+    }
+
     return dict;
   }, [filteredAssignments]);
-  // assignments checkboxes
-  const [assignmentsChecked, setAssignmentsChecked] =
-    useState<IAssignmentChecked[]>(null);
-  // NOTE: maybe not the best way to do this, but is a workaround for now
-  useEffect(() => {
-    setAssignmentsChecked(Object.values(groupsDict).flat());
-  }, [groupsDict]);
-  const [openAssignmentSettings, setOpenAssignmentSettings] = useState(false);
+  const [openCreateAssignmentDialog, setOpenCreateAssignmentDialog] =
+    useState(false);
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
 
   const { status } = useMutationStatus();
@@ -314,63 +316,53 @@ export const Lecture = () => {
               <h3 className={'text-base font-bold'}>{lecture.code}</h3>
             </div>
           )}
-          <div className={'ml-auto flex items-start'}>
-            <Button
-              onClick={() => setOpenAssignmentSettings(true)}
-              variant={'outline'}
-            >
-              New assignment
-            </Button>
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger>
-                <Button variant={'link'} className={'p-2'}>
-                  <EllipsisVertical className={'size-5'}></EllipsisVertical>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => setOpenExportGradesDialog(true)}
-                >
-                  Export grades
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {assignments.length > 0 && (
+            <div className={'ml-auto flex items-start'}>
+              <Button
+                onClick={() => setOpenCreateAssignmentDialog(true)}
+                variant={'outline'}
+              >
+                New assignment
+              </Button>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger>
+                  <Button variant={'link'} className={'p-2'}>
+                    <EllipsisVertical className={'size-5'}></EllipsisVertical>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => setOpenExportGradesDialog(true)}
+                  >
+                    Export grades
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
         {status.status === 'success' && (
           <SuccessBanner message={status.message} />
         )}
         {status.status === 'error' && <ErrorBanner message={status.message} />}
-        <div className={'flex justify-between items-center self-stretch'}>
-          <SearchField
-            placeholder={'Search for assignment'}
-            recentSearchesKey={'assignment-search-history'}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-          <div className={'flex flex-row ml-auto gap-3'}>
-            <FilterAssignmentsButton
-              filterGroups={filterGroups}
-              activeFilters={activeFilters}
-              toggle={toggle}
+        {assignments.length > 0 && (
+          <div className={'flex justify-between items-center self-stretch'}>
+            <SearchField
+              placeholder={'Search for assignment'}
+              recentSearchesKey={'assignment-search-history'}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
             />
-            <SortButton sortBy={sortBy} setSortBy={setSortBy} />
+            <div className={'flex flex-row ml-auto gap-3'}>
+              <FilterAssignmentsButton
+                allFilters={allFilters}
+                activeFilters={activeFilters}
+                toggle={toggle}
+              />
+              <SortButton sortBy={sortBy} setSortBy={setSortBy} />
+            </div>
           </div>
-          {openAssignmentSettings && (
-            <AssignmentSettingsDialog
-              lectureId={lectureId}
-              openDialog={openAssignmentSettings}
-              setOpenDialog={setOpenAssignmentSettings}
-            />
-          )}
-          {openExportGradesDialog && (
-            <ExportGradesDialog
-              lecture={lecture}
-              isOpen={openExportGradesDialog}
-              setIsOpen={setOpenExportGradesDialog}
-            />
-          )}
-        </div>
+        )}
         {activeFilters.size > 0 && (
           <div className={'flex flex-row gap-4 items-start'}>
             {Array.from(activeFilters).map(id => {
@@ -402,33 +394,62 @@ export const Lecture = () => {
             </Button>
           </div>
         )}
-        {assignmentsChecked && assignmentsChecked.length > 0 ? (
-          <DndProvider backend={HTML5Backend}>
-            <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
-              {Object.entries(groupsDict).map(
-                ([groupKey, groupAssignments]) => (
-                  <AssignmentGroup
-                    key={groupKey}
-                    lectureId={lectureId}
-                    assignmentGroup={groupKey}
-                    groupAssignments={groupAssignments}
-                    allAssignments={filteredAssignments}
-                    checkedAssignments={assignmentsChecked}
-                    setCheckedAssignments={setAssignmentsChecked}
-                  />
-                )
-              )}
-            </ScrollingComponent>
-          </DndProvider>
+        {assignments.length > 0 ? (
+          filteredAssignments.length > 0 ? (
+            <DndProvider backend={HTML5Backend}>
+              <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
+                {Object.entries(groupsDict).map(
+                  ([groupKey, groupAssignments]) => (
+                    <AssignmentGroup
+                      key={groupKey}
+                      lectureId={lectureId}
+                      assignmentGroup={groupKey}
+                      groupAssignments={groupAssignments}
+                      allAssignments={filteredAssignments}
+                    />
+                  )
+                )}
+              </ScrollingComponent>
+            </DndProvider>
+          ) : (
+            <EmptyState
+              title={'No results found'}
+              icon={<NoResultsFoundIcon />}
+              description={
+                'Try adjusting your search or ' +
+                "filter to find what \n you're looking for."
+              }
+            />
+          )
         ) : (
-          <div className={'flex flex-col items-center justify-center h-full'}>
-            <p className={'text-3xl'}>No assignments yet...</p>
-            <Button onClick={() => setOpenAssignmentSettings(true)}>
-              Create first assignment
+          <div className={'flex flex-col items-center py-6 self-stretch'}>
+            <EmptyState
+              title={'No assignments yet'}
+              icon={<EmptyIcon />}
+              description={
+                'Create a new assignment to distribute tasks and enable feedback.'
+              }
+            />
+            <Button onClick={() => setOpenCreateAssignmentDialog(true)}>
+              New assignment
             </Button>
           </div>
         )}
       </div>
+      {openExportGradesDialog && (
+        <ExportGradesDialog
+          lecture={lecture}
+          isOpen={openExportGradesDialog}
+          setIsOpen={setOpenExportGradesDialog}
+        />
+      )}
+      {openCreateAssignmentDialog && (
+        <AssignmentCreateEditDialog
+          lectureId={lectureId}
+          openDialog={openCreateAssignmentDialog}
+          setOpenDialog={setOpenCreateAssignmentDialog}
+        />
+      )}
     </GroupsProvider>
   );
 };

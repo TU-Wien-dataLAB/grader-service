@@ -9,7 +9,7 @@ import { ChevronRight, Info, SearchIcon, X } from 'lucide-react';
 import React from 'react';
 
 const inputVariants = cva(
-  'bg-input text-foreground placeholder:text-muted-foreground [[readonly]]:bg-muted/80 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:bg-input/30 flex max-w-[296px] min-w-0 rounded-xs text-sm transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 [[readonly]]:cursor-not-allowed',
+  'bg-input text-foreground placeholder:text-muted-foreground [[readonly]]:bg-muted/80 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:bg-input/30 flex max-w-[400px] min-w-0 rounded-xs text-sm transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 [[readonly]]:cursor-not-allowed',
   {
     variants: {
       size: {

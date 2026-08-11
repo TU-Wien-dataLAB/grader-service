@@ -122,6 +122,7 @@ function InputGroupInput({
   return (
     <Input
       data-slot="input-group-control"
+      interactive={false}
       className={cn(
         'flex-1 h-7 rounded-none border-0 shadow-none ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent',
         className

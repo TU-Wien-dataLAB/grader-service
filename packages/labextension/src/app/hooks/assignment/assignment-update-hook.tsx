@@ -13,15 +13,20 @@ export function useAssignmentUpdate() {
       assignment: Assignment;
       updatedValues: Assignment;
       lectureId: number;
+      recalcScores?: boolean;
     }) => {
       const updatedAssignment = {
         ...variables.assignment,
         ...variables.updatedValues
       };
-      await updateAssignment(variables.lectureId, updatedAssignment);
+      await updateAssignment(
+        variables.lectureId,
+        updatedAssignment,
+        variables.recalcScores
+      );
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
@@ -36,23 +41,18 @@ export function useAssignmentUpdate() {
       })
   });
 
-  const handleUpdateAssignment = async (
+  const handleUpdateAssignment = (
     assignment: Assignment,
     updatedValues: Assignment,
-    lectureId: number
+    lectureId: number,
+    recalcScores?: boolean
   ) => {
-    try {
-      await updateAssignmentMutate.mutateAsync({
-        assignment,
-        updatedValues,
-        lectureId
-      });
-    } catch (error) {
-      setStatus({
-        message: 'Error updating assignment: ' + error,
-        status: 'error'
-      });
-    }
+    updateAssignmentMutate.mutate({
+      assignment,
+      updatedValues,
+      lectureId,
+      recalcScores
+    });
   };
 
   return { handleUpdateAssignment };

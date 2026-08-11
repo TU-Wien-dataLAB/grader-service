@@ -11,6 +11,15 @@ import {
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
 
+export interface IFilterOption<V extends string = string> {
+  value: V;
+  label: string;
+}
+
+export interface IFilterGroup {
+  [category: string]: IFilterOption[];
+}
+
 interface IFilterLecturesButtonProps {
   className?: string;
   filterBy: string;
@@ -42,14 +51,7 @@ export const FilterLecturesButton = (props: IFilterLecturesButtonProps) => {
 };
 
 interface IFilterAssignmentsButtonProps {
-  filterGroups: Record<
-    string,
-    {
-      key: string;
-      value: string;
-      label: string;
-    }[]
-  >;
+  allFilters: IFilterGroup[];
   activeFilters: Set<string>;
   toggle: (key: string, value: string, label: string) => void;
 }
@@ -65,26 +67,28 @@ export const FilterAssignmentsButton = (
           Filter
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {props.filterGroups &&
-          Object.entries(props.filterGroups)?.map(([groupKey, filters]) => (
-            <DropdownMenuGroup key={groupKey}>
-              <DropdownMenuLabel>{groupKey}</DropdownMenuLabel>
-              {filters.map(filter => (
-                <DropdownMenuCheckboxItem
-                  key={`${filter.key}:${filter.value}`}
-                  checked={props.activeFilters.has(
-                    `${filter.key}:${filter.value}:${filter.label}`
-                  )}
-                  onCheckedChange={() =>
-                    props.toggle(filter.key, filter.value, filter.label)
-                  }
-                >
-                  {filter.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuGroup>
-          ))}
+      <DropdownMenuContent align={'end'}>
+        {props.allFilters &&
+          props.allFilters.map(group =>
+            Object.entries(group).map(([category, filterProperties]) => (
+              <DropdownMenuGroup key={category}>
+                <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                {filterProperties.map(filter => (
+                  <DropdownMenuCheckboxItem
+                    key={`${category}:${filter.value}`}
+                    checked={props.activeFilters.has(
+                      `${category}:${filter.value}:${filter.label}`
+                    )}
+                    onCheckedChange={() =>
+                      props.toggle(category, filter.value, filter.label)
+                    }
+                  >
+                    {filter.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+            ))
+          )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

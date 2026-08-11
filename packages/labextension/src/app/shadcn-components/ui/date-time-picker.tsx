@@ -93,7 +93,7 @@ export function DatePickerTime(props: IDatePickerTime) {
             type="time"
             id="time-picker-optional"
             step="1"
-            defaultValue={'00:00:00'}
+            value={date ? format(date, 'HH:mm:ss') : '00:00:00'}
             onChange={handleTimeChange}
             placeholder="HH:MM"
             className="appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"

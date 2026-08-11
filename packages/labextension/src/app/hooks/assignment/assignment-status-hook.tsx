@@ -3,6 +3,7 @@ import { Assignment } from '../../../model/assignment';
 import { updateAssignment } from '../../../services/assignments.service';
 import { IAssignmentChecked } from '../../pages/instructor-view/lecture';
 import { useMutationStatus } from '../../../widget';
+import { HTTPError } from '../../../services/request.service';
 
 export function useAssignmentStatus() {
   const queryClient = useQueryClient();
@@ -21,8 +22,8 @@ export function useAssignmentStatus() {
       };
       return updateAssignment(variables.lectureId, updatedAssignment);
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
@@ -30,38 +31,31 @@ export function useAssignmentStatus() {
         message: variables.successMessage
       });
     },
-    onError: (error: any, variables) =>
+    onError: (error: HTTPError, variables) =>
       setStatus({
         status: 'error',
-        message: error.message || error.error.message || variables.errorMessage
+        message: error?.message || variables.errorMessage
       })
   });
 
-  const updateAssignmentStatus = async (
+  const updateAssignmentStatus = (
     status: 'created' | 'released' | 'complete',
     assignment: Assignment,
     lectureId: number,
     success: string,
     error: string
   ) => {
-    try {
-      await updateStatusMutation.mutateAsync({
-        status,
-        assignment,
-        lectureId,
-        successMessage: success,
-        errorMessage: error
-      });
-    } catch (error) {
-      setStatus({
-        message: 'Error updating assignment status: ' + error,
-        status: 'error'
-      });
-    }
+    updateStatusMutation.mutate({
+      status,
+      assignment,
+      lectureId,
+      successMessage: success,
+      errorMessage: error
+    });
   };
 
-  const handleRelease = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleRelease = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'released',
       assignment,
       lectureId,
@@ -72,26 +66,26 @@ export function useAssignmentStatus() {
     );
   };
 
-  const handleAssignmentsRelease = async (
+  const handleAssignmentsRelease = (
     assignmentsChecked: IAssignmentChecked[],
     lectureId: number
   ) => {
     assignmentsChecked.map(
-      async a => a.checked && (await handleRelease(a.assignment, lectureId))
+      a => a.checked && handleRelease(a.assignment, lectureId)
     );
   };
-  const handleUnrelease = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleUnrelease = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'created',
       assignment,
       lectureId,
-      'This assignment is no longer marked as released.',
+      'This assignment is no longer available to students.',
       'Error unreleasing assignment'
     );
   };
 
-  const handleComplete = async (assignment: Assignment, lectureId: number) => {
-    await updateAssignmentStatus(
+  const handleComplete = (assignment: Assignment, lectureId: number) => {
+    updateAssignmentStatus(
       'complete',
       assignment,
       lectureId,

@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -11,34 +10,59 @@ import {
 import { Assignment } from '../../../../model/assignment';
 import { Field, FieldGroup } from '../../../shadcn-components/ui/field';
 import { Label } from '../../../shadcn-components/ui/label';
-import { Input } from '../../../shadcn-components/ui/input';
 import { Button } from '../../../shadcn-components/ui/button';
 import { useForm } from '@tanstack/react-form';
 import { IAssignmentChecked } from '../../../pages/instructor-view/lecture';
 import { useAssignmentStatus } from '../../../hooks/assignment/assignment-status-hook';
+import { Checkbox } from '../../../shadcn-components/ui/checkbox';
+import { CornerDownRight } from 'lucide-react';
+import { Textarea } from '../../../shadcn-components/ui/textarea';
+import {
+  CreatedAssignmentBadge,
+  ReleasedAssignmentBadge
+} from '../../ui/badges';
+import { Badge } from '../../../shadcn-components/ui/badge';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[];
   lectureId: number;
   openDialog: boolean;
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  groupName?: string;
+  handleGroupChecked?: () => void;
+  handleAssignmentChecked?: (id: number, checked: boolean) => void;
+  checkGroupSymbol?: () => boolean | 'indeterminate';
 }
 
 export const ReleaseDialog = (props: IReleaseDialog) => {
   const { handleRelease, handleAssignmentsRelease } = useAssignmentStatus();
   const form = useForm({
     defaultValues: {
-      commitMessage: 'Release'
+      comment: 'Release'
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       if (Array.isArray(props.assignments)) {
-        await handleAssignmentsRelease(props.assignments, props.lectureId);
+        handleAssignmentsRelease(props.assignments, props.lectureId);
       } else {
-        await handleRelease(props.assignments, props.lectureId);
+        handleRelease(props.assignments, props.lectureId);
       }
       props.setOpenDialog(false);
     }
   });
+  const assignmentStatus = (assignment: Assignment) => {
+    const status = assignment.status;
+    switch (status) {
+      case 'created':
+        return <CreatedAssignmentBadge />;
+      case 'pushed':
+        return <Badge>Pushed</Badge>;
+      case 'released':
+        return <ReleasedAssignmentBadge />;
+      case 'complete':
+        return <Badge>Completed</Badge>;
+    }
+  };
+
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <form
@@ -51,16 +75,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
         <DialogContent>
           <DialogHeader>
             {Array.isArray(props.assignments) ? (
-              <>
-                <DialogTitle>Release following assignments:</DialogTitle>
-                <DialogDescription>
-                  <ul className={'list-disc ml-5'}>
-                    {props.assignments.map(
-                      a => a.checked && <li>{a.assignment.name}</li>
-                    )}
-                  </ul>
-                </DialogDescription>
-              </>
+              <DialogTitle>Release assignments</DialogTitle>
             ) : (
               <DialogTitle>Release {props.assignments.name}</DialogTitle>
             )}
@@ -70,14 +85,61 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
               'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border'
             }
           >
+            {Array.isArray(props.assignments) && (
+              <div className={'flex flex-col items-start w-full max-h-80'}>
+                <div
+                  className={'inline-flex min-h-8 items-start rounded-xs gap-2'}
+                >
+                  <Checkbox
+                    checked={props.checkGroupSymbol?.() ?? false}
+                    onCheckedChange={props.handleGroupChecked}
+                  />
+                  <Label>{props.groupName}</Label>
+                </div>
+                <ul className={'w-full overflow-y-auto'}>
+                  {props.assignments.map(a => (
+                    <li
+                      key={a.assignment.id}
+                      className={'flex min-h-8 items-center gap-2'}
+                    >
+                      <CornerDownRight
+                        className={'size-4 text-border shrink-0'}
+                      />
+                      <Checkbox
+                        checked={a.checked}
+                        disabled={a.assignment.status !== 'created'}
+                        onCheckedChange={() =>
+                          props.handleAssignmentChecked?.(
+                            a.assignment.id,
+                            !a.checked
+                          )
+                        }
+                      />
+                      <p
+                        className={`${
+                          a.assignment.status === 'created'
+                            ? 'text-secondary-background'
+                            : 'text-border'
+                        } truncate`}
+                      >
+                        {a.assignment.name}
+                      </p>
+                      <div className={'ml-auto'}>
+                        {assignmentStatus(a.assignment)}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <form.Field
-              name={'commitMessage'}
+              name={'comment'}
               validators={{
                 onChange: ({ value }) => {
                   if (value.trim().length > 255) {
-                    return 'Name is too long.';
+                    return 'Comment is too long.';
                   } else if (value.trim().length === 0) {
-                    return 'Name is empty.';
+                    return 'Comment is empty.';
                   }
                   return undefined;
                 }
@@ -85,12 +147,12 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
               children={field => {
                 return (
                   <Field data-invalid={!field.state.meta.isValid}>
-                    <Label htmlFor={'commit-message'}>Commit message</Label>
-                    <Input
-                      id={'commit-message'}
+                    <Label htmlFor={'comment'}>Comment</Label>
+                    <Textarea
+                      id={'comment'}
                       defaultValue={'Release'}
                       onChange={e => field.handleChange(e.target.value)}
-                    />
+                    ></Textarea>
                     {!field.state.meta.isValid && (
                       <em role={'alertdialog'} className={'text-red-700'}>
                         {field.state.meta.errors.join(', ')}
@@ -103,7 +165,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
           </FieldGroup>
           <DialogFooter>
             <Button type={'submit'} form={'release-dialog-form'}>
-              Confirm
+              Release
             </Button>
             <DialogClose>
               <Button

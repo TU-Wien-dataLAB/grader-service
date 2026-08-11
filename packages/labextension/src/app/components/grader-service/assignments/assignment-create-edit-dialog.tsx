@@ -89,7 +89,7 @@ const GRADING_METHODS = [
   { label: 'Manual Grading', value: AutogradeTypeEnum.Unassisted }
 ];
 
-export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
+export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [recalcScoresConfirmed, setRecalcScoresConfirmed] = useState(false);
   const { handleUpdateAssignment } = useAssignmentUpdate();
@@ -120,15 +120,18 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
         }
       };
 
-      props.setOpenDialog(false);
       if (props.assignment) {
-        await handleUpdateAssignment(
+        handleUpdateAssignment(
           props.assignment,
           newAssignment,
-          props.lectureId
+          props.lectureId,
+          recalcScoresConfirmed
         );
       } else {
-        await handleCreateAssignment(newAssignment, props.lectureId);
+        handleCreateAssignment(newAssignment, props.lectureId);
+      }
+      if (!createAnother) {
+        props.setOpenDialog(false);
       }
     }
   });
@@ -139,6 +142,7 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
   );
 
   const [deadlineOpen, setDeadlineOpen] = React.useState<boolean>(false);
+  const [createAnother, setCreateAnother] = useState(false);
   const [whitelistPatternsInput, setWhitelistPatternsInput] = useState('');
   const handleAddAllowedFilePattern = (field: AnyFieldApi) => {
     if (
@@ -153,7 +157,6 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
   };
   const anchor = useComboboxAnchor();
 
-  //TODO: add "create another" option
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent className={'overflow-y-auto'}>
@@ -199,7 +202,7 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
                     <Input
                       id={field.name}
                       name={field.name}
-                      value={field.state.value ?? undefined}
+                      value={field.state.value ?? null}
                       onChange={e => field.handleChange(e.target.value)}
                       required
                     ></Input>
@@ -630,44 +633,41 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
             {props.assignment ? 'Update' : 'Create'} assignment
           </Button>
           <DialogClose render={<Button variant={'outline'}>Cancel</Button>} />
+          {!props.assignment && (
+            <Field orientation={'horizontal'}>
+              <Checkbox onCheckedChange={() => setCreateAnother(true)} />
+              <FieldLabel>Create another</FieldLabel>
+            </Field>
+          )}
         </DialogFooter>
       </DialogContent>
       {confirmOpen && (
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogContent className={'sm:max-w-1/4'}>
-            <div className={'space-y-4'}>
-              <FieldGroup className={'flex flex-row gap-2 items-center'}>
-                <Checkbox
-                  id={'recalc-scores'}
-                  name={'recalc-scores'}
-                  checked={recalcScoresConfirmed}
-                  onCheckedChange={() =>
-                    setRecalcScoresConfirmed(!recalcScoresConfirmed)
-                  }
-                ></Checkbox>
-                <FieldLabel htmlFor={'recalc-scores'}>
-                  Recalculate scores
-                </FieldLabel>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className={'size-4 fill-primary text-background'} />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Using this action will result in the <br />
-                    recalculation of all submission scores based <br />
-                    on the deadline/late submission settings.
-                  </TooltipContent>
-                </Tooltip>
-              </FieldGroup>
-            </div>
+            <FieldGroup className={'flex flex-row gap-2 p-6 items-center'}>
+              <Checkbox
+                id={'recalc-scores'}
+                name={'recalc-scores'}
+                checked={recalcScoresConfirmed}
+                onCheckedChange={() =>
+                  setRecalcScoresConfirmed(!recalcScoresConfirmed)
+                }
+              ></Checkbox>
+              <FieldLabel htmlFor={'recalc-scores'}>
+                Recalculate scores
+              </FieldLabel>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className={'size-4 fill-primary text-background'} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Using this action will result in the <br />
+                  recalculation of all submission scores based <br />
+                  on the deadline/late submission settings.
+                </TooltipContent>
+              </Tooltip>
+            </FieldGroup>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
               <Button
                 type="submit"
                 onClick={() => {
@@ -677,6 +677,9 @@ export const AssignmentSettingsDialog = (props: IAssignmentSettingsForm) => {
               >
                 Confirm
               </Button>
+              <DialogClose
+                render={<Button variant={'outline'}>Cancel</Button>}
+              />
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -1,6 +1,6 @@
 import { AssignmentDetail } from '../../../../model/assignmentDetail';
 import { ItemTypes } from '../../../shadcn-components/ui/card';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { ArrowRightFromLine } from 'lucide-react';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
@@ -21,15 +21,17 @@ export interface IAssignmentGroup {
   allAssignments: AssignmentDetail[];
   groupAssignments: IAssignmentChecked[];
   assignmentGroup: string;
-  checkedAssignments: IAssignmentChecked[];
-  setCheckedAssignments: React.Dispatch<
-    React.SetStateAction<IAssignmentChecked[]>
-  >;
 }
 
 export const AssignmentGroup = (props: IAssignmentGroup) => {
   const { handleUpdateAssignment } = useAssignmentUpdate();
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
+  const [checkedAssignments, setCheckedAssignments] =
+    useState<IAssignmentChecked[]>(null);
+  // NOTE: maybe not the best way to do this, but is a workaround for now
+  useEffect(() => {
+    setCheckedAssignments(props.groupAssignments);
+  }, [props.groupAssignments]);
 
   /* drop logic */
   const ref = useRef<HTMLDivElement>(null);
@@ -57,11 +59,8 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       return;
     }
     const oldGroup = assignment.settings.group;
-    // check if the assignment had no group and got reassigned to the "assignments without group"
-    if (
-      oldGroup === '' &&
-      props.assignmentGroup === 'assignments without group'
-    ) {
+    // check if the assignment had no group and got reassigned to the "ungrouped assignments"
+    if (oldGroup === '' && props.assignmentGroup === 'ungrouped assignments') {
       return;
     }
     // check if the group has changed; if not, don't update the assignment
@@ -70,12 +69,12 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     }
     let group;
     // update assignment with the new group
-    if (props.assignmentGroup === 'assignments without group') {
+    if (props.assignmentGroup === 'ungrouped assignments') {
       group = '';
     } else {
       group = props.assignmentGroup;
     }
-    await handleUpdateAssignment(
+    handleUpdateAssignment(
       assignment,
       { ...assignment, settings: { ...assignment.settings, group: group } },
       props.lectureId
@@ -83,34 +82,32 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
   }
 
   /* checkbox logic */
-  const checkedGroups = props.checkedAssignments.filter(a =>
-    props.groupAssignments.some(g => g.assignment.id === a.assignment.id)
-  );
-
   const handleGroupChecked = () => {
-    const allChecked = checkedGroups.every(a => a.checked);
-    const groupIds = new Set(props.groupAssignments.map(a => a.assignment.id));
-    props.setCheckedAssignments(prev =>
+    const allChecked = checkedAssignments
+      .filter(a => a.assignment.status === 'created')
+      .every(a => a.checked);
+    setCheckedAssignments(prev =>
       prev.map(a =>
-        groupIds.has(a.assignment.id) && a.assignment.status === 'created'
-          ? { ...a, checked: !allChecked }
-          : a
+        a.assignment.status === 'created' ? { ...a, checked: !allChecked } : a
       )
     );
   };
 
   const handleAssignmentChecked = (id: number, checked: boolean) => {
-    props.setCheckedAssignments(prevState =>
+    setCheckedAssignments(prevState =>
       prevState.map(a => (a.assignment.id === id ? { ...a, checked } : a))
     );
   };
 
   const checkGroupSymbol = () => {
-    const checkedCount = checkedGroups.filter(a => a.checked).length;
+    const checkedCount = checkedAssignments.filter(a => a.checked).length;
     if (checkedCount === 0) {
       return false;
     }
-    if (checkedCount === checkedGroups.length) {
+    if (
+      checkedCount ===
+      checkedAssignments.filter(a => a.assignment.status === 'created').length
+    ) {
       return true;
     }
     return 'indeterminate';
@@ -119,7 +116,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
   const determineIfAssignmentBelongsToGroup = (assignmentGroup: string) => {
     return assignmentGroup !== '' && assignmentGroup !== null
       ? assignmentGroup === props.assignmentGroup
-      : props.assignmentGroup === 'assignments without group';
+      : props.assignmentGroup === 'ungrouped assignments';
   };
   return (
     <div
@@ -127,15 +124,18 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       ref={ref}
     >
       <div className={'flex flex-row items-center gap-4 self-stretch'}>
-        <Checkbox
-          className={'size-4 bg-white'}
-          checked={checkGroupSymbol()}
-          onCheckedChange={handleGroupChecked}
-          disabled={props.groupAssignments.every(
-            a => a.assignment.status !== 'created'
-          )}
-        ></Checkbox>
-        <div className={'text-xl font-bold'}>{props.assignmentGroup}</div>
+        {checkedAssignments && (
+          <Checkbox
+            checked={checkGroupSymbol()}
+            onCheckedChange={handleGroupChecked}
+            disabled={props.groupAssignments.every(
+              a => a.assignment.status !== 'created'
+            )}
+          ></Checkbox>
+        )}
+        <h2 className={'text-xl font-bold'}>
+          {props.assignmentGroup} ({props.groupAssignments.length})
+        </h2>
       </div>
       {isOver && (
         <div
@@ -152,43 +152,26 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
         </div>
       )}
       <div className={'grid grid-cols-1 @6xl:grid-cols-2 gap-2 self-stretch'}>
-        {checkedGroups.map(assignment => (
-          <AssignmentCard
-            assignment={assignment.assignment}
-            checked={assignment.checked}
-            handleChange={checked =>
-              handleAssignmentChecked(assignment.assignment.id, checked)
-            }
-            key={assignment.assignment.id}
-          />
-        ))}
+        {checkedAssignments &&
+          checkedAssignments.map(assignment => (
+            <AssignmentCard
+              assignment={assignment.assignment}
+              checked={assignment.checked}
+              handleChange={checked =>
+                handleAssignmentChecked(assignment.assignment.id, checked)
+              }
+              key={assignment.assignment.id}
+            />
+          ))}
       </div>
-      {props.checkedAssignments && (
-        <Tooltip
-          open={
-            !props.checkedAssignments.some(
-              a =>
-                a.checked &&
-                determineIfAssignmentBelongsToGroup(a.assignment.settings.group)
-            )
-              ? null
-              : false
-          }
-        >
+      {checkedAssignments && (
+        <Tooltip open={!checkedAssignments.some(a => a.checked) ? null : false}>
           <TooltipTrigger
             render={
               <span className="inline-block">
                 <Button
                   className={'ml-auto'}
-                  disabled={
-                    !props.checkedAssignments.some(
-                      a =>
-                        a.checked &&
-                        determineIfAssignmentBelongsToGroup(
-                          a.assignment.settings.group
-                        )
-                    )
-                  }
+                  disabled={!checkedAssignments.some(a => a.checked)}
                   onClick={() => setOpenReleaseDialog(true)}
                 >
                   Release
@@ -203,10 +186,14 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       )}
       {openReleaseDialog && (
         <ReleaseDialog
-          assignments={props.checkedAssignments}
+          assignments={checkedAssignments}
           lectureId={props.lectureId}
           openDialog={openReleaseDialog}
           setOpenDialog={setOpenReleaseDialog}
+          groupName={props.assignmentGroup}
+          handleGroupChecked={handleGroupChecked}
+          handleAssignmentChecked={handleAssignmentChecked}
+          checkGroupSymbol={checkGroupSymbol}
         />
       )}
     </div>
