@@ -10,23 +10,23 @@ from traitlets.traitlets import Unicode
 
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm.submission import FeedbackStatus, AutoStatus, ManualStatus
 
 
 class LocalFeedbackExecutor(LocalAutogradeExecutor):
-    output_repo_type = GitRepoType.FEEDBACK
+    output_artifact_type = ArtifactType.FEEDBACK
 
     @property
-    def input_repo_type(self):
+    def input_artifact_type(self):
         if (
             self.submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
             and self.submission.manual_status == ManualStatus.MANUALLY_GRADED
         ):
             # When submission hasn't been autograded or autograding failed,
-            # pull from user repo to generate feedback
-            return GitRepoType.USER
-        return GitRepoType.AUTOGRADE
+            # use the ungraded submission files version to generate feedback
+            return ArtifactType.USER
+        return ArtifactType.AUTOGRADE
 
     @property
     def input_path(self):

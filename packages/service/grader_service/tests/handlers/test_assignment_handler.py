@@ -14,7 +14,7 @@ from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Submission as SubmissionORM
 from grader_service.server import GraderServer
@@ -1223,11 +1223,11 @@ async def test_assignment_reset_student(
 
     engine = sql_alchemy_engine
     # Create a release repo
-    create_git_repository(app, l_code, a_id, repo_type=GitRepoType.RELEASE, init_repo=True)
+    create_git_repository(app, l_code, a_id, artifact_type=ArtifactType.RELEASE, init_repo=True)
     # Create a student submission and a user repo (remote and local)
     sub = create_user_submission_with_repo(engine, gitbase_dir, default_user, a_id, l_code)
 
-    user_repo_path = gitbase_dir / "21wle1" / str(a_id) / GitRepoType.USER / default_user.name
+    user_repo_path = gitbase_dir / "21wle1" / str(a_id) / ArtifactType.USER / default_user.name
     local_repo_path = gitbase_dir / "tmp" / l_code / str(a_id) / "user" / default_user.name
     assert user_repo_path.exists()
     assert (local_repo_path / "submission.ipynb").exists()
@@ -1261,7 +1261,7 @@ async def test_assignment_reset_student(
     res = subprocess.run(
         ["cat", "submission.ipynb"], cwd=local_repo_path, capture_output=True, text=True
     )
-    assert res.stdout == "Test content for release repo"
+    assert res.stdout == "Test content for release artifact"
 
 
 async def test_assignment_reset_wrong_lecture_id(

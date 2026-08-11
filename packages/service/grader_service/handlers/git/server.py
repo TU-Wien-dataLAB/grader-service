@@ -21,7 +21,7 @@ from grader_service.errors import APIError
 from grader_service.file_services import GitFileService, FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm import Lecture, Role, Submission
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -102,55 +102,55 @@ class GitBaseHandler(GraderBaseHandler):
         pathlets = path.strip("/").split("/")
 
         # pathlets should look like this:
-        #   pathlets = ['git', <lecture_code>, <assignment_id>, <repo_type>, ...]
+        #   pathlets = ['git', <lecture_code>, <assignment_id>, <artifact_type>, ...]
         # Note: The remaining tail can be empty, a sub_id, a username, or something else,
-        # depending on the repo type and action.
+        # depending on the artifact type and the action.
         if len(pathlets) < 4:
             raise ValueError("Invalid request path")
 
         # cut git prefix
-        _git, lect_code, assign_id, repo_type, *pathlets_tail = pathlets
-        return lect_code, assign_id, repo_type, pathlets_tail
+        _git, lect_code, assign_id, artifact_type, *pathlets_tail = pathlets
+        return lect_code, assign_id, artifact_type, pathlets_tail
 
-    def _check_git_repo_permissions(
+    def _check_artifact_permissions(
         self,
         rpc: GitRpcCmd,
         role: Role,
-        repo_type: GitRepoType,
+        artifact_type: ArtifactType,
         submission: Submission | None,
         username: str | None,
     ):
         if role.role == Scope.student and not self.user.is_admin:
-            # 1. no interaction with source, release, and edit repo for students
+            # 1. no interaction with source, release, and edit artifacts for students
             # 2. no pull allowed for autograde for students
-            if (repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}) or (
-                repo_type == GitRepoType.AUTOGRADE and rpc == GitRpcCmd.UPLOAD_PACK
-            ):
+            if (
+                artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}
+            ) or (artifact_type == ArtifactType.AUTOGRADE and rpc == GitRpcCmd.UPLOAD_PACK):
                 raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action")
 
             # 3. students should not be able to pull other submissions
-            if (repo_type == GitRepoType.FEEDBACK) and (rpc == GitRpcCmd.UPLOAD_PACK):
+            if (artifact_type == ArtifactType.FEEDBACK) and (rpc == GitRpcCmd.UPLOAD_PACK):
                 if submission is None or submission.user_id != self.user.id:
                     raise HTTPError(HTTPStatus.NOT_FOUND, "Submission not found")
 
-            # 4. students should not be able to access other user's repositories
-            if repo_type == GitRepoType.USER and username != self.user.name:
+            # 4. students should not be able to access other user's artifacts
+            if artifact_type == ArtifactType.USER and username != self.user.name:
                 raise HTTPError(
-                    HTTPStatus.FORBIDDEN, "Students cannot access other users' repositories"
+                    HTTPStatus.FORBIDDEN, "Students cannot access other users' artifacts"
                 )
 
         # 5. no push allowed for autograde and feedback
         #    -> the autograder executor can push locally (will bypass this)
-        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK} and rpc in [
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK} and rpc in [
             GitRpcCmd.SEND_PACK,
             GitRpcCmd.RECEIVE_PACK,
         ]:
-            raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action for the repo type")
+            raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action for the artifact type")
 
     async def gitlookup(self, rpc: GitRpcCmd) -> Path | None:
         """Resolve and initialize a git repository path based on the request URL.
 
-        Parses the request path to extract lecture, assignment, and repository type,
+        Parses the request path to extract lecture, assignment, and artifact type,
         validates permissions against the database, and returns the filesystem path
         to the appropriate git repository. Creates the directory and initializes
         the repository if they don't exist. Also writes the pre-recive hook.
@@ -165,25 +165,25 @@ class GitBaseHandler(GraderBaseHandler):
         Raises:
             HTTPError: If the lecture, assignment, or user's role is not found;
                 if the submission ID is invalid/missing; or if user's permissions
-                for the git repository/action are insufficient.
+                for the artifact/action are insufficient.
         """
         try:
             # pathlets_tail can be empty, a sub_id, a username, or something else, depending
-            # on the repo type and action.
-            lect_code, assign_id, repo_type, pathlets_tail = self._parse_request_path()
+            # on the artifact type and action.
+            lect_code, assign_id, artifact_type, pathlets_tail = self._parse_request_path()
         except ValueError:
             return None
 
-        # Repo type "assignment" has been replaced by "user", so this should not happen,
+        # Artifact type "assignment" has been replaced by "user", so this should not happen,
         # but we are leaving this check for the time being, just to be on the safe side:
-        if repo_type == "assignment":
-            self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
-            repo_type = GitRepoType.USER
+        if artifact_type == "assignment":
+            self.log.warning("Deprecated artifact_type: 'assignment'! Setting it to 'user'")
+            artifact_type = ArtifactType.USER
 
         try:
-            repo_type = GitRepoType(repo_type)
+            artifact_type = ArtifactType(artifact_type)
         except ValueError:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid repo type")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid artifact type")
 
         # get lecture, user's role in it, and assignment - if they exist
         try:
@@ -198,19 +198,19 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid assignment id")
 
-        #  For the following repo types, sub_id is required and has to be a number
+        #  For the following artifact types, sub_id is required and has to be a number
         submission = None
         sub_id = None
-        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK, ArtifactType.EDIT}:
             try:
                 sub_id = int(pathlets_tail[0])
             except (IndexError, TypeError, ValueError):
                 raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid or missing submission id")
             submission = self.get_submission(lecture.id, assignment.id, int(sub_id))
 
-        # if repo_type is user, get username from path, if given; otherwise take the logged-in user's name
+        # if artifact_type is user, get username from path, if given; otherwise take the logged-in user's name
         username = None
-        if repo_type == GitRepoType.USER:
+        if artifact_type == ArtifactType.USER:
             if (
                 pathlets_tail == ["info", "refs"]
                 or pathlets_tail == ["git-upload-pack"]
@@ -219,7 +219,7 @@ class GitBaseHandler(GraderBaseHandler):
                 self.log.warning(
                     "DEPRECATED: No username specified in path, but info/refs "
                     "or git-upload-pack/git-receive-pack called. "
-                    "Assuming user is trying to access their own repo."
+                    "Assuming user is trying to access their own artifact."
                 )
                 username = self.user.name
             else:
@@ -227,13 +227,18 @@ class GitBaseHandler(GraderBaseHandler):
                     username = pathlets_tail[0]
                 except IndexError:
                     username = self.user.name
-        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
+        elif artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK}:
             username = submission.user.name
 
-        self._check_git_repo_permissions(rpc, role, repo_type, submission, username)
+        self._check_artifact_permissions(rpc, role, artifact_type, submission, username)
 
         path = construct_git_dir(
-            self.gitbase, repo_type, lect_code, assign_id, submission_id=sub_id, username=username
+            self.gitbase,
+            artifact_type,
+            lect_code,
+            assign_id,
+            submission_id=sub_id,
+            username=username,
         )
         if path is None:
             return None
@@ -246,7 +251,7 @@ class GitBaseHandler(GraderBaseHandler):
                 self.log.error("Failed to create bare repo at %s!", path)
                 return None
 
-            if repo_type == GitRepoType.USER:
+            if artifact_type == ArtifactType.USER:
                 try:
                     await self.file_service.init_user_files(
                         assignment=assignment, username=username, comment="Initialize from Release"
@@ -301,7 +306,7 @@ class GitBaseHandler(GraderBaseHandler):
         """Determine the git repository for this request and create it if it does not exist yet."""
         gitdir = await self.gitlookup(rpc)
         if gitdir is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, reason="unable to find repository")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="unable to find artifact")
         self.log.info("Accessing git at: %s", gitdir)
 
         return gitdir

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
-from grader_service.repo_types import GitRepoType
+from grader_service.artifact_types import ArtifactType
 from traitlets.config.configurable import Configurable
 from traitlets.traitlets import Unicode
 
@@ -52,8 +52,8 @@ class GitService(Configurable):
         server_root_dir: str,
         lecture_code: str,
         assignment_id: int,
-        repo_type: GitRepoType,
-        force_user_repo: bool = False,
+        artifact_type: ArtifactType,
+        force_user_artifact: bool = False,
         sub_id: Optional[int] = None,
         username: Optional[str] = None,
         log=logging.getLogger("gitservice"),
@@ -65,23 +65,23 @@ class GitService(Configurable):
         self.git_root_dir = server_root_dir
         self.lecture_code = lecture_code
         self.assignment_id = assignment_id
-        self.repo_type = repo_type
+        self.artifact_type = artifact_type
 
-        self.path = self._determine_repo_path(force_user_repo, sub_id, username)
+        self.path = self._determine_repo_path(force_user_artifact, sub_id, username)
         os.makedirs(self.path, exist_ok=True)
 
         self._initialize_git_logging()
 
     def _determine_repo_path(
-        self, force_user_repo: bool, sub_id: Optional[int], username: Optional[str]
+        self, force_user_artifact: bool, sub_id: Optional[int], username: Optional[str]
     ) -> str:
         """Determine the path for the git repository based on the type."""
-        if self.repo_type == GitRepoType.USER or force_user_repo:
-            # For repo type USER, the subdirectory is called `assignments` (for historical reasons).
+        if self.artifact_type == ArtifactType.USER or force_user_artifact:
+            # For artifact type USER, the subdirectory is called `assignments` (for historical reasons).
             return os.path.join(
                 self.git_root_dir, self.lecture_code, "assignments", str(self.assignment_id)
             )
-        elif self.repo_type == GitRepoType.EDIT:
+        elif self.artifact_type == ArtifactType.EDIT:
             if username is not None:
                 return os.path.join(
                     self.git_root_dir,
@@ -94,12 +94,12 @@ class GitService(Configurable):
                 return os.path.join(
                     self.git_root_dir,
                     self.lecture_code,
-                    self.repo_type,
+                    self.artifact_type,
                     str(self.assignment_id),
                     str(sub_id),
                 )
         return os.path.join(
-            self.git_root_dir, self.lecture_code, self.repo_type, str(self.assignment_id)
+            self.git_root_dir, self.lecture_code, self.artifact_type, str(self.assignment_id)
         )
 
     def _initialize_git_logging(self):
@@ -131,7 +131,7 @@ class GitService(Configurable):
             additional_path (str): Optional additional path for the remote.
         """
         url_path = posixpath.join(
-            self.git_remote_url, self.lecture_code, str(self.assignment_id), self.repo_type
+            self.git_remote_url, self.lecture_code, str(self.assignment_id), self.artifact_type
         )
         url = (
             f"{self.git_http_scheme}://oauth:{self.git_access_token}@"

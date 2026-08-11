@@ -807,8 +807,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 class SubmissionEditHandler(GraderBaseHandler):
     @authorize([Scope.tutor, Scope.instructor])
     async def put(self, lecture_id: int, assignment_id: int, submission_id: int):
-        """Creates or overwrites (resets) the repository which stores changes of
-        submissions files
+        """Creates or overwrites (resets) the files with instructor's changes to a submission.
         :param lecture_id: lecture id
         :param assignment_id: assignment id
         :param submission_id: submission id
@@ -823,7 +822,7 @@ class SubmissionEditHandler(GraderBaseHandler):
         if submission.commit_hash == INSTRUCTOR_SUBMISSION_HASH:
             raise HTTPError(
                 HTTPStatus.BAD_REQUEST,
-                reason="This repo cannot be edited or reset, because it was created by instructor",
+                reason="This artifact cannot be edited or reset, because it was created by instructor",
             )
 
         try:
