@@ -257,7 +257,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
 
-        The list can be directly passed to the `git commit` command.
+        The list can be directly passed to the `push_files` command of the file service.
 
         :return: list of shell-escaped filenames matching the whitelist patterns of the assignment
         """
