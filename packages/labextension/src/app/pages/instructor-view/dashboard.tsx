@@ -194,7 +194,7 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {lectures.length > 0 ? (
+      {(lectures?.length ?? 0) > 0 ? (
         filteredLectures.length === 0 ? (
           <EmptyState
             title={'No results found'}
@@ -255,7 +255,7 @@ export const Dashboard = () => {
                     {Array.from(
                       { length: Math.ceil(lectures.length / 6) },
                       (_, i) => (
-                        <PaginationLink>{i + 1}</PaginationLink>
+                        <PaginationLink key={i}>{i + 1}</PaginationLink>
                       )
                     )}
                   </PaginationItem>

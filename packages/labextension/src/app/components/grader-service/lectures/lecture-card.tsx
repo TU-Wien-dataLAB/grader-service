@@ -46,7 +46,7 @@ export const LectureCard = (props: ILectureCard) => {
   }
   return (
     <Card
-      key={lecture.id}
+      key={lecture.code}
       className={`relative p-4 gap-0 ${lecture.complete && 'text-border'}`}
     >
       <div className={'flex flex-row gap-2 mb-2'}>

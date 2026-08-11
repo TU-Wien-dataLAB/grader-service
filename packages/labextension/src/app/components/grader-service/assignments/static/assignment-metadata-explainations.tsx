@@ -4,7 +4,7 @@ export const GRADING_METHOD = (
   <p>
     Specifies the behaviour when a students submits an assignment. <br />
     Manual Grading: No action is taken on submit. <br />
-    Automatic Grading: The assignment is being autograded as soon as students
+    Automatic Grading: The assignment is autograded as soon as students
     makes a submission. <br />
     Fully Automatic Grading: The assignment is autograded and feedback is
     generated as soon as the student <br /> makes a submission. (requires all

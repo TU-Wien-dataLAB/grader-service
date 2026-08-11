@@ -1061,6 +1061,9 @@
   .border-\[\#FF9D52\] {
     border-color: #ff9d52;
   }
+  .border-blue-500 {
+    border-color: var(--color-blue-500);
+  }
   .border-blue-500\/50 {
     border-color: color-mix(
       in srgb,
@@ -1082,6 +1085,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--destructive) 50%, transparent);
     }
+  }
+  .border-green-500 {
+    border-color: var(--color-green-500);
   }
   .border-green-500\/50 {
     border-color: color-mix(
@@ -1114,6 +1120,9 @@
   }
   .border-transparent {
     border-color: transparent;
+  }
+  .border-yellow-500 {
+    border-color: var(--color-yellow-500);
   }
   .border-yellow-500\/50 {
     border-color: color-mix(
@@ -1187,6 +1196,9 @@
       );
     }
   }
+  .bg-blue-500 {
+    background-color: var(--color-blue-500);
+  }
   .bg-blue-500\/10 {
     background-color: color-mix(
       in srgb,
@@ -1225,6 +1237,9 @@
   }
   .bg-dialog-background {
     background-color: var(--dialog-background);
+  }
+  .bg-green-500 {
+    background-color: var(--color-green-500);
   }
   .bg-green-500\/10 {
     background-color: color-mix(

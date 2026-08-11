@@ -9,7 +9,11 @@ import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../shadcn-components/ui/button';
 import { SearchField } from '../../components/ui/search';
-import { FilterAssignmentsButton } from '../../components/ui/filter-button';
+import {
+  FilterAssignmentsButton,
+  IFilterGroup,
+  IFilterOption
+} from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
 import { AssignmentDetail } from '../../../model/assignmentDetail';
 import { AssignmentGroup } from '../../components/grader-service/assignments/assignment-group';
@@ -150,7 +154,7 @@ export const Lecture = () => {
 
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
-      return;
+      return [];
     }
     // extract all groups from assignments
     const uniqueGroups = [

@@ -12,6 +12,15 @@ import {
 } from '../../shadcn-components/ui/dropdown-menu';
 import { IFilterGroup } from '../../pages/instructor-view/lecture';
 
+export interface IFilterOption<V extends string = string> {
+  value: V;
+  label: string;
+}
+
+export interface IFilterGroup {
+  [category: string]: IFilterOption[];
+}
+
 interface IFilterLecturesButtonProps {
   className?: string;
   filterBy: string;
