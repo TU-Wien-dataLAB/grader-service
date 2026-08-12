@@ -12,7 +12,7 @@ from grader_service.tests.handlers.db_util import create_user_submission_with_re
 
 
 @pytest.fixture
-def git_file_service(tmpdir, grader_service):
+def git_file_service(grader_service):
     """Create a GitFileService instance with proper directory structure."""
     service = GitFileService(grader_service_dir=grader_service.grader_service_dir)
     yield service
@@ -43,7 +43,6 @@ def setup_repos(git_file_service, submission_123):
     yield {"release": release_path, "user": user_path}
 
 
-# TODO: read up on async fixtures? (but do we really need it?)
 @pytest.fixture
 def setup_repos_with_release_files(git_file_service, setup_repos):
     """Add a commit with a file to the release artifact."""
@@ -481,7 +480,7 @@ def test_push_files_autograde(git_file_service, submission_123, tmp_path):
 
     # Remote repo should have been created
     assert remote_repo_path.exists()
-    assert git_file_service.is_bare_git_dir(remote_repo_path)
+    assert async_to_sync(git_file_service.is_bare_git_dir)(remote_repo_path)
 
     # The `artifact_path` directory should now be a Git repository
     is_git_repo = git_file_service._run_git(

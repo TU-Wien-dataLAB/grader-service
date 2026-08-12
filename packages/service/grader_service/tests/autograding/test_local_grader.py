@@ -127,8 +127,8 @@ def test_whitelist_pattern_combination(local_autograde_executor, submission_123)
     assert patterns == expected_patterns
 
 
-@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_file_matching_with_patterns(mock_file_svc, tmp_path, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_file_matching_with_patterns(mock_file_svc, grader_service, submission_123, tmp_path):
     """Test that files are correctly matched against assignment whitelist patterns"""
     assignment = Assignment(id=1)
     assignment.properties = json.dumps({"extra_files": ["*/config"]})
@@ -178,8 +178,8 @@ def test_file_matching_with_patterns(mock_file_svc, tmp_path, submission_123):
     assert set(files_to_commit) == expected_files
 
 
-@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_input_output_artifact_types(mock_file_svc, tmp_path, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_input_output_artifact_types(mock_file_svc, grader_service, submission_123, tmp_path):
     """Test that input- and output-artifact types are correctly set."""
 
     submission_123.edited = False
@@ -189,9 +189,9 @@ def test_input_output_artifact_types(mock_file_svc, tmp_path, submission_123):
     assert executor.output_artifact_type == ArtifactType.AUTOGRADE
 
 
-@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
+@patch("grader_service.GraderService.file_service", autospec=True)
 def test_input_output_artifact_types_for_edited_submission(
-    mock_file_svc, tmp_path, submission_123
+    mock_file_svc, grader_service, submission_123, tmp_path
 ):
     """Test that input- and output-artifact types are correctly set for an edited submission."""
 
@@ -202,8 +202,8 @@ def test_input_output_artifact_types_for_edited_submission(
     assert executor.output_artifact_type == ArtifactType.AUTOGRADE
 
 
-@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_input_output_path_properties(mock_file_svc, tmp_path, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_input_output_path_properties(mock_file_svc, tmp_path, grader_service, submission_123):
     """Test that input and output paths are correctly constructed"""
     expected_input = os.path.join(tmp_path, "convert_in", "submission_123")
     expected_output = os.path.join(tmp_path, "convert_out", "submission_123")
@@ -264,8 +264,10 @@ def test_timeout_function_default(local_autograde_executor):
 
 
 @patch("grader_service.autograding.local_grader.Session")
-@patch("grader_service.autograding.local_grader.LocalAutogradeExecutor.file_service", autospec=True)
-def test_timeout_function_custom(mock_file_svc, mock_session_cls, tmp_path, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_timeout_function_custom(
+    mock_file_svc, mock_session_cls, tmp_path, grader_service, submission_123
+):
     """Test custom timeout function"""
 
     custom_timeout = 720

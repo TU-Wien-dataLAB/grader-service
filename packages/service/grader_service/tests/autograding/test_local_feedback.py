@@ -16,33 +16,27 @@ from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStat
 
 
 @pytest.fixture
-def local_feedback_executor(tmp_path, submission_123):
+def local_feedback_executor(git_file_service_no_git, submission_123, tmp_path):
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
         patch("grader_service.autograding.local_feedback.GenerateFeedback", autospec=True),
-        patch(
-            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service",
-            autospec=True,
-        ),
+        patch("grader_service.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
         yield LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
 
 @pytest.fixture
-def process_executor(tmp_path, submission_123):
+def process_executor(git_file_service_no_git, submission_123, tmp_path):
     # Note: No need to patch `grader_service.autograding.local_feedback.GenerateFeedback`,
     # as it is not directly called in the process executor's `_run` method.
     with (
         patch(
             "grader_service.autograding.local_grader.Session", autospec=True
         ) as mock_session_class,
-        patch(
-            "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service",
-            autospec=True,
-        ),
+        patch("grader_service.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
         executor = LocalFeedbackProcessExecutor(
@@ -54,42 +48,38 @@ def process_executor(tmp_path, submission_123):
 # =============== LocalFeedbackExecutor tests ===============
 
 
-@patch(
-    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
-)
-def test_input_output_artifact_types(mock_file_svc, grader_service, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_input_output_artifact_types(mock_file_svc, grader_service, submission_123, tmp_path):
     """Test that input- and output-artifact types are correctly set."""
 
     submission_123.auto_status = AutoStatus.NOT_GRADED
     submission_123.manual_status = ManualStatus.MANUALLY_GRADED
 
-    executor = LocalFeedbackExecutor(submission=submission_123)
+    executor = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.USER
     assert executor.output_artifact_type == ArtifactType.FEEDBACK
 
 
-@patch(
-    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
-)
+@patch("grader_service.GraderService.file_service", autospec=True)
 def test_input_output_artifact_types_for_manually_graded_submission(
-    mock_file_svc, grader_service, submission_123
+    mock_file_svc, grader_service, submission_123, tmp_path
 ):
     """Test that input artifact type falls back to USER for a manually graded submission."""
 
     submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
 
-    executor = LocalFeedbackExecutor(submission=submission_123)
+    executor = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.AUTOGRADE
     assert executor.output_artifact_type == ArtifactType.FEEDBACK
 
 
 @patch("grader_service.autograding.local_grader.Session", autospec=True)
-@patch(
-    "grader_service.autograding.local_feedback.LocalFeedbackExecutor.file_service", autospec=True
-)
-def test_input_output_path_properties(mock_file_svc, mock_session_cls, tmp_path, submission_123):
+@patch("grader_service.GraderService.file_service", autospec=True)
+def test_input_output_path_properties(
+    mock_file_svc, mock_session_cls, grader_service, submission_123, tmp_path
+):
     """Test that input and output paths are correctly constructed for feedback generation"""
     expected_input = os.path.join(tmp_path, "convert_in", f"feedback_{submission_123.id}")
     expected_output = os.path.join(tmp_path, "convert_out", f"feedback_{submission_123.id}")
@@ -100,20 +90,20 @@ def test_input_output_path_properties(mock_file_svc, mock_session_cls, tmp_path,
     assert executor.output_path == expected_output
 
 
-def test_get_whitelisted_patterns(local_feedback_executor):
+def test_get_whitelisted_patterns(local_feedback_executor, grader_service):
     """Test that _get_whitelist_patterns returns only html files (ignoring other whitelist patterns)"""
     files = local_feedback_executor._get_whitelist_patterns()
     assert files == {"*.html"}
 
 
-def test_set_properties(local_feedback_executor):
+def test_set_properties(local_feedback_executor, grader_service):
     """Test that _set_properties does nothing (no-op for feedback generation)"""
     local_feedback_executor._set_properties()
 
     local_feedback_executor.session.merge.assert_not_called()
 
 
-def test_directory_cleanup_on_init(local_feedback_executor, tmp_path):
+def test_directory_cleanup_on_init(local_feedback_executor, grader_service, tmp_path):
     """Test that directories are cleaned up during initialization"""
     # Create pre-existing directories and some files in them
     input_dir = os.path.join(
@@ -135,7 +125,9 @@ def test_directory_cleanup_on_init(local_feedback_executor, tmp_path):
 
 
 @patch("grader_service.autograding.local_feedback.GenerateFeedback")
-def test_run_successful_feedback_generation(mock_gen_feedback, local_feedback_executor):
+def test_run_successful_feedback_generation(
+    mock_gen_feedback, local_feedback_executor, grader_service
+):
     """Test successful feedback generation process"""
     # Setup mock GenerateFeedback instance
     mock_feedback_instance = Mock()
@@ -157,7 +149,9 @@ def test_run_successful_feedback_generation(mock_gen_feedback, local_feedback_ex
 
 
 @patch("grader_service.autograding.local_feedback.GenerateFeedback")
-def test_run_feedback_generation_with_exception(mock_generate_feedback, local_feedback_executor):
+def test_run_feedback_generation_with_exception(
+    mock_generate_feedback, local_feedback_executor, grader_service
+):
     """Test feedback generation failing"""
     # Setup mock feedback generator that raises an exception
     mock_feedback_instance = Mock()
@@ -174,7 +168,7 @@ def test_run_feedback_generation_with_exception(mock_generate_feedback, local_fe
     assert local_feedback_executor.submission.feedback_status == FeedbackStatus.GENERATION_FAILED
 
 
-def test_gradebook_writing(local_feedback_executor):
+def test_gradebook_writing(local_feedback_executor, grader_service):
     """Test that gradebook is written correctly"""
     os.makedirs(local_feedback_executor.output_path, exist_ok=True)
 
@@ -201,7 +195,7 @@ def test_process_executor_start_success(process_executor):
     assert process_executor.submission.feedback_status == FeedbackStatus.GENERATED
 
 
-def test_process_executor_start_failure(process_executor):
+def test_process_executor_start_failure(process_executor, grader_service):
     """Test handling of errors in `start` method"""
     process_executor._write_gradebook = Mock()
     process_executor._write_gradebook.side_effect = PermissionError("Cannot write gradebook")
@@ -214,7 +208,7 @@ def test_process_executor_start_failure(process_executor):
 
 
 @patch("grader_service.autograding.local_feedback.subprocess.run", autospec=True)
-def test_process_executor_run_failure(mock_run, process_executor):
+def test_process_executor_run_failure(mock_run, process_executor, grader_service):
     """Test handling of process execution failure in _run method"""
     mock_process = Mock()
     mock_process.returncode = 1

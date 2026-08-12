@@ -92,10 +92,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         from grader_service import GraderService
 
-        grader_service = GraderService.instance()
-        self.file_service: FileService = grader_service.file_service
+        service = GraderService.instance()
+        self.file_service: FileService = service.file_service
 
-        self.grader_service_dir = grader_service.grader_service_dir
+        self._grader_service_dir = grader_service_dir
         self.submission = submission
         self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
@@ -165,13 +165,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     @property
     def input_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}"
+            self._grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}"
         )
 
     @property
     def output_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
+            self._grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
         )
 
     def _clean_up_input_and_output_dirs(self):
@@ -382,7 +382,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     @observe("relative_input_path", "relative_output_path")
     def _ensure_service_dir(self, change):
         path = change["new"]
-        full_path = Path(self.grader_service_dir) / path
+        full_path = Path(self._grader_service_dir) / path
         if not full_path.exists():
             self.log.info("Path %s not found, creating new directories.", full_path)
             full_path.mkdir(parents=True, exist_ok=True, mode=0o700)
