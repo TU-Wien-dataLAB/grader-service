@@ -60,6 +60,7 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
 def generate_feedback_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
 
+    # TODO: why do we need celery.config here, but nothing for autograde_task? Do we need it?
     grader_service_dir = GraderService(config=self.celery.config).grader_service_dir
 
     submission = self.session.get(Submission, sub_id)
