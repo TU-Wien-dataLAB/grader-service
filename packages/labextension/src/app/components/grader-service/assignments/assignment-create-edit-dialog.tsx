@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogClose,
@@ -16,16 +16,8 @@ import {
   FieldLabel
 } from '../../../shadcn-components/ui/field';
 import {
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxList,
-  ComboboxItem,
-  useComboboxAnchor
-} from '../../../shadcn-components/ui/combobox';
-import {
-  ComboboxItemCreatable,
-  CreatableCombobox,
-  isCreatableItem
+  Combobox,
+  ComboboxOptions
 } from '../../../shadcn-components/ui/creatable-combobox';
 import {
   Select,
@@ -90,8 +82,6 @@ const GRADING_METHODS = [
 ];
 
 export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [recalcScoresConfirmed, setRecalcScoresConfirmed] = useState(false);
   const { handleUpdateAssignment } = useAssignmentUpdate();
   const { handleCreateAssignment } = useAssignmentCreate();
   const { groups, addCustomGroup } = useGroups();
@@ -141,6 +131,8 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
     state => state.values.allowed_file_patterns
   );
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [recalcScoresConfirmed, setRecalcScoresConfirmed] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = React.useState<boolean>(false);
   const [createAnother, setCreateAnother] = useState(false);
   const [whitelistPatternsInput, setWhitelistPatternsInput] = useState('');
@@ -155,7 +147,28 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
       setWhitelistPatternsInput('');
     }
   };
-  const anchor = useComboboxAnchor();
+  /*group combobox logic*/
+  const groupOptions = useMemo(() => {
+    return groups.map(group => ({ value: group, label: group }));
+  }, [groups]);
+
+  const [selectedGroup, setSelectedGroup] = useState<ComboboxOptions>({
+    value: props.assignment?.settings?.group ?? null,
+    label: props.assignment?.settings?.group ?? null
+  });
+
+  function handleSelect(option: ComboboxOptions) {
+    setSelectedGroup(option);
+  }
+
+  function handleAppendGroup(label: ComboboxOptions['label']) {
+    const newGroup = {
+      value: label,
+      label
+    };
+    handleSelect(newGroup);
+    addCustomGroup(label);
+  }
 
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
@@ -261,36 +274,14 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                 return (
                   <Field>
                     <FieldLabel htmlFor={field.name}>Group</FieldLabel>
-                    <CreatableCombobox
-                      items={groups}
-                      onCreateValue={value => addCustomGroup(value)}
-                      onValueChange={value =>
-                        field.handleChange(value as string)
-                      }
-                    >
-                      <div ref={anchor}>
-                        <ComboboxInput
-                          placeholder="Select or create a group"
-                          value={field.state.value ?? null}
-                        />
-                      </div>
-                      <ComboboxContent anchor={anchor}>
-                        <ComboboxList>
-                          {item =>
-                            isCreatableItem(item) ? (
-                              <ComboboxItemCreatable
-                                value={item}
-                                key={'__create__'}
-                              />
-                            ) : (
-                              <ComboboxItem value={item} key={item}>
-                                {item}
-                              </ComboboxItem>
-                            )
-                          }
-                        </ComboboxList>
-                      </ComboboxContent>
-                    </CreatableCombobox>
+                    <Combobox
+                      options={groupOptions}
+                      placeholder={'Create new or select existing group'}
+                      selected={selectedGroup?.value ?? ''}
+                      onChange={handleSelect}
+                      onCreate={handleAppendGroup}
+                      field={field}
+                    />
                   </Field>
                 );
               }}

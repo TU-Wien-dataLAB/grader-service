@@ -150,9 +150,7 @@ export const AssignmentCard = (props: IAssignment) => {
                       <TooltipTrigger>
                         <OctagonAlert className={'text-red-500 size-4'} />
                       </TooltipTrigger>
-                      <TooltipContent side={'left'}>
-                        Deadline over
-                      </TooltipContent>
+                      <TooltipContent>Deadline over</TooltipContent>
                     </Tooltip>
                   )}
               </div>
