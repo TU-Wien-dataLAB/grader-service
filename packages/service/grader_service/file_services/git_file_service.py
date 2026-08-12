@@ -4,7 +4,6 @@ import subprocess
 from pathlib import Path
 
 from traitlets import Unicode, observe, validate
-from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.orm import Assignment, Lecture, Submission
@@ -159,10 +158,14 @@ class GitFileService(FileService):
                 # This error is an expected possibility and will be handled. No need to log it.
                 raise
             self.log.error(e.stderr)
-            raise FileServiceError("Subprocess Error") from None
+            raise FileServiceError("Subprocess Error")
         except Exception as e:
+            if may_fail:
+                # An exception is an expected possibility and will be handled. No need to log it.
+                raise
+            # Else: this exception was *not* supposed to happen. We should log the error.
             self.log.error(e)
-            raise
+            raise FileServiceError("Subprocess Error")
         return ret.stdout
 
     async def _run_git_async(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
@@ -185,18 +188,23 @@ class GitFileService(FileService):
               fails; in other words, the command checks something, and this error just
               indicates one of the possible outcomes. It is not logged, and has to be
               handled by the caller.
-            Any other exception thrown while running the subprocess is logged and also re-raised.
+            If ``may_fail=True``, any other exception thrown while running the subprocess
+            is also re-raised.
         """
         if command[0] != self.git_executable:
             raise ValueError(f"Not a git command: {command}")
-        self.log.debug("Running: %s", " ".join(map(str, command)))
+        self.log.debug("Running async: %s", " ".join(map(str, command)))
         try:
             ret = await asyncio.create_subprocess_exec(
                 *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
             )
         except Exception as e:
+            if may_fail:
+                # An exception is an expected possibility and will be handled. No need to log it.
+                raise
+            # Else: this exception was *not* supposed to happen. We should log the error.
             self.log.error(e)
-            raise
+            raise FileServiceError("Subprocess Error")
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             if may_fail:
@@ -491,7 +499,7 @@ class GitFileService(FileService):
             self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
-            async_to_sync(self.create_bare_repo)(remote_repo_path)
+            asyncio.run(self.create_bare_repo(remote_repo_path))
 
         self._set_up_output_repo(Path(dir), output_branch)
         self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
