@@ -25,7 +25,7 @@ def local_feedback_executor(git_file_service_no_git, submission_123, tmp_path):
         patch("grader_service.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
-        yield LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+        yield LocalFeedbackExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def process_executor(git_file_service_no_git, submission_123, tmp_path):
     ):
         mock_session_class.object_session.return_value = Mock()
         executor = LocalFeedbackProcessExecutor(
-            grader_service_dir=str(tmp_path), submission=submission_123
+            autograding_dir=str(tmp_path), submission=submission_123
         )
         yield executor
 
@@ -55,7 +55,7 @@ def test_input_output_artifact_types(mock_file_svc, grader_service, submission_1
     submission_123.auto_status = AutoStatus.NOT_GRADED
     submission_123.manual_status = ManualStatus.MANUALLY_GRADED
 
-    executor = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalFeedbackExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.USER
     assert executor.output_artifact_type == ArtifactType.FEEDBACK
@@ -69,7 +69,7 @@ def test_input_output_artifact_types_for_manually_graded_submission(
 
     submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
 
-    executor = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalFeedbackExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.AUTOGRADE
     assert executor.output_artifact_type == ArtifactType.FEEDBACK
@@ -84,7 +84,7 @@ def test_input_output_path_properties(
     expected_input = os.path.join(tmp_path, "convert_in", f"feedback_{submission_123.id}")
     expected_output = os.path.join(tmp_path, "convert_out", f"feedback_{submission_123.id}")
 
-    executor = LocalFeedbackExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalFeedbackExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_path == expected_input
     assert executor.output_path == expected_output
@@ -252,7 +252,7 @@ def test_feedback_executor_inheritance(grader_service, submission_123):
     assert issubclass(LocalFeedbackExecutor, LocalAutogradeExecutor)
 
     lfe = LocalFeedbackExecutor(
-        grader_service_dir=grader_service.grader_service_dir, submission=submission_123
+        autograding_dir=grader_service.grader_service_dir, submission=submission_123
     )
 
     assert isinstance(lfe.file_service, FileService)

@@ -28,7 +28,7 @@ def local_autograde_executor(git_file_service_no_git, submission_123, tmp_path):
         patch("grader_service.main.GraderService.file_service", new=git_file_service_no_git),
     ):
         mock_session_class.object_session.return_value = Mock()
-        yield LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+        yield LocalAutogradeExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def process_executor(git_file_service_no_git, submission_123, tmp_path):
     ):
         mock_session_class.object_session.return_value = Mock()
         executor = LocalAutogradeProcessExecutor(
-            grader_service_dir=str(tmp_path), submission=submission_123
+            autograding_dir=str(tmp_path), submission=submission_123
         )
         yield executor
 
@@ -102,7 +102,7 @@ def test_local_autograde_start_outcome_on_file_service_failure(
 ):
     mock_session_class.object_session.return_value = Mock()
     executor = LocalAutogradeExecutor(
-        grader_service_dir=grader_service.grader_service_dir, submission=submission_123
+        autograding_dir=grader_service.grader_service_dir, submission=submission_123
     )
 
     with patch.object(executor.file_service, "fetch_files") as fetch_mock:
@@ -137,7 +137,7 @@ def test_file_matching_with_patterns(mock_file_svc, grader_service, submission_1
     submission_123.assignment = assignment
 
     executor = LocalAutogradeExecutor(
-        grader_service_dir=str(tmp_path), submission=submission_123, close_session=False
+        autograding_dir=str(tmp_path), submission=submission_123, close_session=False
     )
     assert executor.assignment.get_whitelist_patterns() == {"*.ipynb", "*/config", "*.py"}
     # Create test files in output directory
@@ -183,7 +183,7 @@ def test_input_output_artifact_types(mock_file_svc, grader_service, submission_1
     """Test that input- and output-artifact types are correctly set."""
 
     submission_123.edited = False
-    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalAutogradeExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.USER
     assert executor.output_artifact_type == ArtifactType.AUTOGRADE
@@ -196,7 +196,7 @@ def test_input_output_artifact_types_for_edited_submission(
     """Test that input- and output-artifact types are correctly set for an edited submission."""
 
     submission_123.edited = True
-    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalAutogradeExecutor(autograding_dir=str(tmp_path), submission=submission_123)
 
     assert executor.input_artifact_type == ArtifactType.EDIT
     assert executor.output_artifact_type == ArtifactType.AUTOGRADE
@@ -204,14 +204,19 @@ def test_input_output_artifact_types_for_edited_submission(
 
 @patch("grader_service.GraderService.file_service", autospec=True)
 def test_input_output_path_properties(mock_file_svc, tmp_path, grader_service, submission_123):
-    """Test that input and output paths are correctly constructed"""
-    expected_input = os.path.join(tmp_path, "convert_in", "submission_123")
-    expected_output = os.path.join(tmp_path, "convert_out", "submission_123")
+    """Test that input and output paths are correctly constructed, and autograder_dir was created"""
+    autograder_dir = tmp_path / "test_autograde"
+    assert not autograder_dir.exists()
+    expected_input = os.path.join(autograder_dir, "convert_in", "submission_123")
+    expected_output = os.path.join(autograder_dir, "convert_out", "submission_123")
 
-    executor = LocalAutogradeExecutor(grader_service_dir=str(tmp_path), submission=submission_123)
+    executor = LocalAutogradeExecutor(
+        autograding_dir=str(autograder_dir), submission=submission_123
+    )
 
     assert executor.input_path == expected_input
     assert executor.output_path == expected_output
+    assert autograder_dir.exists()
 
 
 def test_directory_cleanup_on_init(local_autograde_executor, tmp_path):
@@ -273,7 +278,7 @@ def test_timeout_function_custom(
     custom_timeout = 720
 
     executor = LocalAutogradeExecutor(
-        grader_service_dir=str(tmp_path),
+        autograding_dir=str(tmp_path),
         submission=submission_123,
         close_session=False,
         default_cell_timeout=custom_timeout,
@@ -287,7 +292,7 @@ def test_invalid_custom_default_timeout(grader_service, submission_123):
     invalid_timeout = -1
 
     executor = LocalAutogradeExecutor(
-        grader_service_dir=grader_service.grader_service_dir,
+        autograding_dir=grader_service.grader_service_dir,
         submission=submission_123,
         close_session=False,
     )

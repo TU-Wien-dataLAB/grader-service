@@ -31,13 +31,13 @@ class LocalFeedbackExecutor(LocalAutogradeExecutor):
     @property
     def input_path(self):
         return os.path.join(
-            self._grader_service_dir, self.relative_input_path, f"feedback_{self.submission.id}"
+            self._autograding_dir, self.relative_input_path, f"feedback_{self.submission.id}"
         )
 
     @property
     def output_path(self):
         return os.path.join(
-            self._grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
+            self._autograding_dir, self.relative_output_path, f"feedback_{self.submission.id}"
         )
 
     def _run(self):

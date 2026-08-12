@@ -67,21 +67,21 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     ).tag(config=True)
 
     def __init__(
-        self, grader_service_dir: str, submission: Submission, close_session: bool = True, **kwargs
+        self, autograding_dir: str, submission: Submission, close_session: bool = True, **kwargs
     ):
         """
-        Creates the executor in the input
-        and output directories that are specified
-        by :attr:`base_input_path` and :attr:`base_output_path`.
-        The grader service directory is used for accessing
-        the submission files and saving the grading results.
+        Runs the executor in the input and output directories specified
+        by :attr:`input_path` and :attr:`output_path`. Both are
+        temporary subdirectories of autograding_dir, used respectively
+        for fetching the submission files, and saving the grading results
+        and the gradebook.json file.
         The database session is retrieved from the submission object.
         The associated session of the submission has to be available
         and must not be closed beforehand.
 
-        :param grader_service_dir: The base directory of the whole
-        grader service specified in the configuration.
-        :type grader_service_dir: str
+        :param autograding_dir: The base directory where the autograder
+          stores its working files; created if it doesn't exist.
+        :type autograding_dir: str
         :param submission: The submission object
         which should be graded by the executor.
         :type submission: Submission
@@ -95,7 +95,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         service = GraderService.instance()
         self.file_service: FileService = service.file_service
 
-        self._grader_service_dir = grader_service_dir
+        self._autograding_dir = Path(autograding_dir)
+        if not self._autograding_dir.exists():
+            self._autograding_dir.mkdir(parents=True)
+            self.log.debug("Created autograding dir at %s", self._autograding_dir)
+
         self.submission = submission
         self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
@@ -165,13 +169,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     @property
     def input_path(self):
         return os.path.join(
-            self._grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}"
+            self._autograding_dir, self.relative_input_path, f"submission_{self.submission.id}"
         )
 
     @property
     def output_path(self):
         return os.path.join(
-            self._grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
+            self._autograding_dir, self.relative_output_path, f"submission_{self.submission.id}"
         )
 
     def _clean_up_input_and_output_dirs(self):
@@ -380,9 +384,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         return value
 
     @observe("relative_input_path", "relative_output_path")
-    def _ensure_service_dir(self, change):
+    def _ensure_autograde_dir(self, change):
         path = change["new"]
-        full_path = Path(self._grader_service_dir) / path
+        full_path = self._autograding_dir / path
         if not full_path.exists():
             self.log.info("Path %s not found, creating new directories.", full_path)
             full_path.mkdir(parents=True, exist_ok=True, mode=0o700)

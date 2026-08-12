@@ -226,8 +226,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
         help="Dictionary for volume configuration. Defaults to an empty dictionary.",
     ).tag(config=True)
 
-    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs):
-        super().__init__(grader_service_dir, submission, **kwargs)
+    def __init__(self, autograding_dir: str, submission: Submission, **kwargs):
+        super().__init__(autograding_dir, submission, **kwargs)
         self.lecture = self.assignment.lecture
         if self.kube_context is None:
             self.log.info(
