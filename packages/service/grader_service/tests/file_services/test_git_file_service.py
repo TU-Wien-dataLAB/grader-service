@@ -1,8 +1,8 @@
+import asyncio
 import shutil
 from unittest.mock import patch
 
 import pytest
-from wrapt import async_to_sync
 
 from grader_service.file_services.base_file_service import FileServiceError
 from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
@@ -28,7 +28,7 @@ def setup_repos(git_file_service, submission_123):
     release_path = construct_git_dir(
         git_file_service.gitbase, ArtifactType.RELEASE, lecture_code, assignment.id
     )
-    async_to_sync(git_file_service.create_bare_repo)(release_path)
+    asyncio.run(git_file_service.create_bare_repo(release_path))
 
     # Create user artifact
     user_path = construct_git_dir(
@@ -38,7 +38,7 @@ def setup_repos(git_file_service, submission_123):
         assignment.id,
         username=submission_123.user.name,
     )
-    async_to_sync(git_file_service.create_bare_repo)(user_path)
+    asyncio.run(git_file_service.create_bare_repo(user_path))
 
     yield {"release": release_path, "user": user_path}
 
@@ -480,7 +480,7 @@ def test_push_files_autograde(git_file_service, submission_123, tmp_path):
 
     # Remote repo should have been created
     assert remote_repo_path.exists()
-    assert async_to_sync(git_file_service.is_bare_git_dir)(remote_repo_path)
+    assert asyncio.run(git_file_service.is_bare_git_dir(remote_repo_path))
 
     # The `artifact_path` directory should now be a Git repository
     is_git_repo = git_file_service._run_git(
