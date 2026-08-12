@@ -358,116 +358,115 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                     {field.state.value?.length > 0 &&
                       field.state.value.map((submissionPeriod, index) => {
                         const isDisabled = !form.state.values.deadline;
-
+                        console.log(JSON.stringify(field.state.value));
                         return (
-                          <>
-                            <div
-                              className={
-                                'flex flex-row items-end gap-4 self-stretch'
-                              }
-                              key={index}
+                          <div
+                            className={
+                              'flex flex-row items-end gap-4 self-stretch'
+                            }
+                            key={index}
+                          >
+                            <form.Field
+                              name={`late_submissions[${index}].period`}
                             >
-                              <form.Field
-                                name={`late_submissions[${index}].period`}
-                              >
-                                {subField => {
-                                  const period = subField.state.value
-                                    ? moment.duration(subField.state.value)
-                                    : null;
-                                  const days = period?.days() ?? undefined;
-                                  const hours = period?.hours() ?? undefined;
-                                  return (
-                                    <>
-                                      <InputGroup>
-                                        <InputGroupInput
-                                          id={`${subField.name}-days`}
-                                          name={`${subField.name}-days`}
-                                          type={'number'}
-                                          min={0}
-                                          placeholder={'Days'}
-                                          disabled={isDisabled}
-                                          value={days}
-                                          onChange={e =>
-                                            subField.handleChange(
-                                              buildPeriod(
-                                                Number(e.target.value),
-                                                hours ?? 0
-                                              )
+                              {subField => {
+                                const period = subField.state.value
+                                  ? moment.duration(subField.state.value)
+                                  : null;
+                                const days = period?.days();
+                                const hours = period?.hours();
+                                return (
+                                  <>
+                                    <InputGroup>
+                                      <InputGroupInput
+                                        id={`${subField.name}-days`}
+                                        name={`${subField.name}-days`}
+                                        type={'number'}
+                                        min={0}
+                                        placeholder={'Days'}
+                                        disabled={isDisabled}
+                                        value={days ?? ''}
+                                        onChange={e =>
+                                          subField.handleChange(
+                                            buildPeriod(
+                                              Number(e.target.value),
+                                              hours ?? 0
                                             )
-                                          }
-                                        />
-                                        <InputGroupAddon
-                                          align={'inline-end'}
-                                          className={'p-1.5'}
-                                        >
-                                          <CalendarIcon className="size-4 text-primary bg-sidebar-ring" />
-                                        </InputGroupAddon>
-                                      </InputGroup>
-                                      <InputGroup>
-                                        <InputGroupInput
-                                          id={`${subField.name}-hours`}
-                                          name={`${subField.name}-hours`}
-                                          type={'number'}
-                                          min={0}
-                                          placeholder={'Hours'}
-                                          disabled={isDisabled}
-                                          value={hours}
-                                          onChange={e =>
-                                            subField.handleChange(
-                                              buildPeriod(
-                                                days ?? 0,
-                                                Number(e.target.value)
-                                              )
+                                          )
+                                        }
+                                      />
+                                      <InputGroupAddon
+                                        align={'inline-end'}
+                                        className={'p-1.5'}
+                                      >
+                                        <CalendarIcon className="size-4 text-primary bg-sidebar-ring" />
+                                      </InputGroupAddon>
+                                    </InputGroup>
+                                    <InputGroup>
+                                      <InputGroupInput
+                                        id={`${subField.name}-hours`}
+                                        name={`${subField.name}-hours`}
+                                        type={'number'}
+                                        min={0}
+                                        placeholder={'Hours'}
+                                        disabled={isDisabled}
+                                        value={hours ?? ''}
+                                        onChange={e =>
+                                          subField.handleChange(
+                                            buildPeriod(
+                                              days ?? 0,
+                                              Number(e.target.value)
                                             )
-                                          }
-                                        />
-                                        <InputGroupAddon
-                                          align={'inline-end'}
-                                          className={'p-1.5'}
-                                        >
-                                          <ClockIcon className="size-4 text-primary bg-sidebar-ring" />
-                                        </InputGroupAddon>
-                                      </InputGroup>
-                                    </>
-                                  );
-                                }}
-                              </form.Field>
-                              <form.Field
-                                name={`late_submissions[${index}].scaling`}
-                              >
-                                {subField => {
-                                  return (
-                                    <Input
-                                      id={subField.name}
-                                      name={subField.name}
-                                      type={'number'}
-                                      min={0}
-                                      max={1}
-                                      step={0.01}
-                                      placeholder={'Scaling'}
-                                      disabled={isDisabled}
-                                      value={
-                                        (subField.state.value as number) ??
-                                        undefined
-                                      }
-                                      onChange={e =>
-                                        subField.handleChange(
-                                          Number(e.target.value)
-                                        )
-                                      }
-                                    />
-                                  );
-                                }}
-                              </form.Field>
-                              <Button
-                                type="button"
-                                variant="link"
-                                onClick={() => field.removeValue(index)}
-                              >
-                                <TrashIcon className="size-4" />
-                              </Button>
-                            </div>
-                          </>
+                                          )
+                                        }
+                                      />
+                                      <InputGroupAddon
+                                        align={'inline-end'}
+                                        className={'p-1.5'}
+                                      >
+                                        <ClockIcon className="size-4 text-primary bg-sidebar-ring" />
+                                      </InputGroupAddon>
+                                    </InputGroup>
+                                  </>
+                                );
+                              }}
+                            </form.Field>
+                            <form.Field
+                              name={`late_submissions[${index}].scaling`}
+                            >
+                              {subField => {
+                                return (
+                                  <Input
+                                    id={`${subField.name}-scaling`}
+                                    name={`${subField.name}-scaling`}
+                                    type={'number'}
+                                    min={0}
+                                    max={1}
+                                    step={0.01}
+                                    placeholder={'Scaling'}
+                                    disabled={isDisabled}
+                                    value={
+                                      (subField.state.value as number) ?? ''
+                                    }
+                                    onChange={e =>
+                                      subField.handleChange(
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                  />
+                                );
+                              }}
+                            </form.Field>
+                            <Button
+                              type="button"
+                              variant="link"
+                              onClick={() => {
+                                field.removeValue(index);
+                              }}
+                            >
+                              <TrashIcon className="size-4" />
+                            </Button>
+                          </div>
                         );
                       })}
                     <Tooltip open={!form.state.values?.deadline ? null : false}>

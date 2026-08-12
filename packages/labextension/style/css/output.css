@@ -776,6 +776,10 @@
     --tw-translate-y: calc(calc(1 / 2 * 100%) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
+  .translate-y-0\.5 {
+    --tw-translate-y: calc(var(--spacing) * 0.5);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
   .translate-y-\[calc\(-50\%-2px\)\] {
     --tw-translate-y: calc(-50% - 2px);
     translate: var(--tw-translate-x) var(--tw-translate-y);
@@ -912,15 +916,6 @@
   }
   .gap-\[--spacing\(var\(--gap\)\)\] {
     gap: calc(var(--spacing) * var(--gap));
-  }
-  :where(.space-y-4 > :not(:last-child)) {
-    --tw-space-y-reverse: 0;
-    margin-block-start: calc(
-      calc(var(--spacing) * 4) * var(--tw-space-y-reverse)
-    );
-    margin-block-end: calc(
-      calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse))
-    );
   }
   .self-center {
     align-self: center;
@@ -1422,6 +1417,9 @@
   .pb-2 {
     padding-bottom: calc(var(--spacing) * 2);
   }
+  .pb-4 {
+    padding-bottom: calc(var(--spacing) * 4);
+  }
   .pl-0 {
     padding-left: 0px;
   }
@@ -1509,8 +1507,8 @@
   .whitespace-nowrap {
     white-space: nowrap;
   }
-  .text-\[\#FCE8EA\] {
-    color: #fce8ea;
+  .text-\[\#DC182C\] {
+    color: #dc182c;
   }
   .text-background {
     color: var(--background);
@@ -1688,6 +1686,9 @@
   .outline {
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
+  }
+  .outline-\[\#FCE8EA\] {
+    outline-color: #fce8ea;
   }
   .filter {
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,)
@@ -2183,6 +2184,10 @@
   }
   .last\:mt-0:last-child {
     margin-top: 0px;
+  }
+  .last\:border-b-0:last-child {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 0px;
   }
   .empty\:m-0:empty {
     margin: 0px;
@@ -3353,6 +3358,13 @@
   .data-\[state\=checked\]\:active\:bg-primary-hover[data-state='checked']:active {
     background-color: var(--primary-hover);
   }
+  .data-\[state\=closed\]\:animate-accordion-up[data-state='closed'] {
+    animation: accordion-up
+      var(--tw-animation-duration, var(--tw-duration, 0.2s))
+      var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+      var(--tw-animation-iteration-count, 1)
+      var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  }
   .data-\[state\=delayed-open\]\:animate-in[data-state='delayed-open'] {
     animation: enter var(--tw-animation-duration, var(--tw-duration, 0.15s))
       var(--tw-ease, ease) var(--tw-animation-delay, 0s)
@@ -3380,6 +3392,13 @@
   }
   .data-\[state\=indeterminate\]\:active\:bg-primary-hover[data-state='indeterminate']:active {
     background-color: var(--primary-hover);
+  }
+  .data-\[state\=open\]\:animate-accordion-down[data-state='open'] {
+    animation: accordion-down
+      var(--tw-animation-duration, var(--tw-duration, 0.2s))
+      var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+      var(--tw-animation-iteration-count, 1)
+      var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
   }
   .data-\[state\=selected\]\:bg-muted[data-state='selected'] {
     background-color: var(--muted);
@@ -4048,6 +4067,9 @@
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 0px;
   }
+  .\[\&\[data-state\=open\]\>svg\]\:rotate-180[data-state='open'] > svg {
+    rotate: 180deg;
+  }
   .\[\&\~\[data-slot\=autocomplete-clear\]\]\:right-1\.5
     ~ [data-slot='autocomplete-clear'] {
     right: calc(var(--spacing) * 1.5);
@@ -4341,11 +4363,6 @@
   syntax: '*';
   inherits: false;
 }
-@property --tw-space-y-reverse {
-  syntax: '*';
-  inherits: false;
-  initial-value: 0;
-}
 @property --tw-border-style {
   syntax: '*';
   inherits: false;
@@ -4609,6 +4626,46 @@
     filter: blur(var(--tw-exit-blur, 0));
   }
 }
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(
+      --radix-accordion-content-height,
+      var(
+        --bits-accordion-content-height,
+        var(
+          --reka-accordion-content-height,
+          var(
+            --kb-accordion-content-height,
+            var(--ngp-accordion-content-height, auto)
+          )
+        )
+      )
+    );
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(
+      --radix-accordion-content-height,
+      var(
+        --bits-accordion-content-height,
+        var(
+          --reka-accordion-content-height,
+          var(
+            --kb-accordion-content-height,
+            var(--ngp-accordion-content-height, auto)
+          )
+        )
+      )
+    );
+  }
+  to {
+    height: 0;
+  }
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or
     ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
@@ -4624,7 +4681,6 @@
       --tw-rotate-z: initial;
       --tw-skew-x: initial;
       --tw-skew-y: initial;
-      --tw-space-y-reverse: 0;
       --tw-border-style: solid;
       --tw-leading: initial;
       --tw-font-weight: initial;

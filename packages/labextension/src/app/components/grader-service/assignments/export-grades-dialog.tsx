@@ -18,7 +18,6 @@ import { Button } from '../../../shadcn-components/ui/button';
 import { exportGrades } from '../../../../services/lectures.service';
 import { lectureBasePath, openFile } from '../../../../services/file.service';
 import { Lecture } from '../../../../model/lecture';
-import { enqueueSnackbar } from 'notistack';
 import { goToPath } from '../../../../services/file-browser.service';
 
 interface IExportGradesDialogProps {
@@ -42,9 +41,6 @@ export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
       await goToPath(`${lectureBasePath}${props.lecture.code}`);
     } catch (error: any) {
       console.error('Error exporting grades:', error);
-      enqueueSnackbar(error.message || 'Failed to export grades', {
-        variant: 'error'
-      });
     } finally {
       props.setIsOpen(false);
     }
