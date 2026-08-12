@@ -48,6 +48,15 @@ export interface IAssignmentChecked {
   checked: boolean;
 }
 
+interface IFilterOption<V extends string = string> {
+  value: V;
+  label: string;
+}
+
+export interface IFilterGroup {
+  [category: string]: IFilterOption[];
+}
+
 interface IGroupsContextValue {
   groups: string[];
   customGroups: string[];
