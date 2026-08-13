@@ -28,10 +28,13 @@ interface IReleaseDialog {
   lectureId: number;
   openDialog: boolean;
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
-  groupName?: string;
-  handleGroupChecked?: () => void;
-  handleAssignmentChecked?: (id: number, checked: boolean) => void;
-  checkGroupSymbol?: () => boolean | 'indeterminate';
+  handleGroupChecked?: (group: string) => void;
+  handleAssignmentChecked?: (
+    id: number,
+    checked: boolean,
+    group: string
+  ) => void;
+  checkGroupSymbol?: (group: string) => boolean | 'indeterminate';
 }
 
 export const ReleaseDialog = (props: IReleaseDialog) => {
@@ -94,7 +97,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
                     checked={props.checkGroupSymbol()}
                     onCheckedChange={props.handleGroupChecked}
                   />
-                  <Label>{props.groupName}</Label>
+                  {/*<Label>{props.groupName}</Label>*/}
                 </div>
                 <ul className={'w-full overflow-y-auto'}>
                   {props.assignments.map(a => (
