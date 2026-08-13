@@ -36,13 +36,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # grader-service to a workspace member, which uv cannot resolve outside the
 # workspace. pip ignores tool.uv.sources and grader-service is already
 # installed above, so --no-deps skips re-resolving it.
-COPY ./packages/labextension /opt/grader-labextension
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-deps -e /opt/grader-labextension
-
 # Make the source tree writable by jovyan so the in-container watcher can rebuild
 # lib/ and grader_labextension/labextension/.
-RUN chown -R "${NB_USER:-jovyan}:${NB_GID:-users}" /opt/grader-labextension
+COPY --chown="${NB_USER:-jovyan}:${NB_GID:-users}" ./packages/labextension /opt/grader-labextension
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-deps -e /opt/grader-labextension
 
 # Ensure JupyterLab resolves the labextension to the source tree (single source
 # of truth). Replace any shared-data copy with a symlink to the source dir so
@@ -58,8 +56,7 @@ RUN data_dir="$(python -c 'import sysconfig; print(sysconfig.get_path("data"))')
     fi
 
 # Watcher entrypoint: starts `jlpm watch` alongside the JupyterHub spawn cmd.
-COPY dev/docker-compose/entrypoint-labextension.sh /usr/local/bin/entrypoint-labextension.sh
-RUN chmod +x /usr/local/bin/entrypoint-labextension.sh
+COPY --chmod=+x dev/docker-compose/entrypoint-labextension.sh /usr/local/bin/entrypoint-labextension.sh
 
 USER "${NB_USER:-jovyan}"
 WORKDIR /home/${NB_USER:-jovyan}
