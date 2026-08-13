@@ -285,42 +285,30 @@ class GraderService(config.Application):
         help="Set the logging level for the application",
     ).tag(config=True)
 
-    def setup_loggers(self, log_level: str):  # pragma: no cover
+    def setup_loggers(self, log_level: str):
         """Handles application, Tornado, and SQLAlchemy logging configuration."""
-        stream_handler = logging.StreamHandler
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
-        formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
+        formatter = tornado.log.LogFormatter(fmt=fmt, color=True)
+
+        def create_handler(logger: logging.Logger, level: str = log_level):
+            if logger.handlers:
+                logger.handlers.clear()
+            logger.setLevel(level)
+            logger.propagate = False
+            handler = logging.StreamHandler(stream=sys.stdout)
+            handler.setFormatter(formatter)
+            handler.setLevel(level)
+            logger.addHandler(handler)
 
         for log in ("access", "application", "general"):
-            logger = logging.getLogger("tornado.{}".format(log))
-            if len(logger.handlers) > 0:
-                logger.removeHandler(logger.handlers[0])
-            logger.setLevel(log_level)
-            handler = stream_handler(stream=sys.stdout)
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-        sql_logger = logging.getLogger("sqlalchemy")
-        sql_logger.propagate = False
-        sql_logger.setLevel("WARN")
-        sql_handler = stream_handler(stream=sys.stdout)
-        sql_handler.setLevel("WARN")
-        sql_handler.setFormatter(formatter)
-        sql_logger.addHandler(sql_handler)
+            logger = logging.getLogger(f"tornado.{log}")
+            create_handler(logger)
 
-        oauth_log = logging.getLogger("oauthlib")
-        oauth_handler = stream_handler(stream=sys.stdout)
-        oauth_handler.setFormatter(formatter)
-        oauth_log.setLevel(log_level)
-        oauth_log.addHandler(oauth_handler)
-
-        traitlet_logger = traitlets_log.get_logger()
-        traitlet_logger.removeHandler(traitlet_logger.handlers[0])
-        traitlet_logger.setLevel(log_level)
-        traitlets_handler = stream_handler(stream=sys.stdout)
-        traitlets_handler.setFormatter(formatter)
-        traitlet_logger.addHandler(traitlets_handler)
+        create_handler(logging.getLogger("sqlalchemy"), level="WARNING")
+        create_handler(logging.getLogger("oauthlib"))
+        create_handler(traitlets_log.get_logger())
 
     def write_config_file(self):
         self.log.info(f"Writing config file {os.path.abspath(self.config_file)}")
