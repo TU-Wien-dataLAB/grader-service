@@ -7,7 +7,7 @@ FROM $BASE_CONTAINER
 USER root
 
 # Build dependencies
-RUN apt-get update && \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get install -yq --no-install-recommends \
         git \
         build-essential && \
@@ -40,7 +40,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # lib/ and grader_labextension/labextension/.
 COPY --chown="${NB_USER:-jovyan}:${NB_GID:-users}" ./packages/labextension /opt/grader-labextension
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-deps -e /opt/grader-labextension
+    pip install --root-user-action=ignore --no-deps -e /opt/grader-labextension
 
 # Ensure JupyterLab resolves the labextension to the source tree (single source
 # of truth). Replace any shared-data copy with a symlink to the source dir so
