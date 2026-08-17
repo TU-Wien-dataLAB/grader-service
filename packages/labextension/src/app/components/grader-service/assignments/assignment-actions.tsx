@@ -7,7 +7,7 @@ import {
 import { EllipsisVertical } from 'lucide-react';
 import React, { useState } from 'react';
 import { AssignmentDetail } from '../../../../model/assignmentDetail';
-import { ReleaseDialog } from './release-dialog';
+import { ReleaseDialog } from './release-dialog/release-dialog';
 import { useParams } from 'react-router';
 import { DeleteDialog } from './delete-dialog';
 import { useAssignmentStatus } from '../../../hooks/assignment/assignment-status-hook';

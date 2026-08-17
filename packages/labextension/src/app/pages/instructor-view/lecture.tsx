@@ -44,12 +44,14 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../shadcn-components/ui/tooltip';
-import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog';
+import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
   checked: boolean;
 }
+
+export type IGroupedAssignments = Record<string, IAssignmentChecked[]>;
 
 interface IFilterOption<V extends string = string> {
   value: V;
@@ -284,7 +286,7 @@ export const Lecture = () => {
 
   // split assignments based on their group
   const groupsDict = useMemo(() => {
-    const dict: Record<string, IAssignmentChecked[]> = {};
+    const dict: IGroupedAssignments = {};
     if (!isPendingAssignments) {
       filteredAssignments.forEach(assignment => {
         const group = assignment.settings.group;
@@ -311,7 +313,7 @@ export const Lecture = () => {
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
   const [checkedGroupAssignments, setCheckedGroupAssignments] =
-    useState<Record<string, IAssignmentChecked[]>>(null);
+    useState<IGroupedAssignments>(null);
 
   /* checkbox logic */
   const handleGroupChecked = (group: string) => {
@@ -320,12 +322,9 @@ export const Lecture = () => {
       .every(a => a.checked);
     setCheckedGroupAssignments(prev => ({
       ...prev,
-      [group]: {
-        ...prev[group],
-        checkedAssignments: prev[group].map(a =>
-          a.assignment.status === 'created' ? { ...a, checked: !allChecked } : a
-        )
-      }
+      [group]: prev[group].map(a =>
+        a.assignment.status === 'created' ? { ...a, checked: !allChecked } : a
+      )
     }));
   };
 
@@ -360,16 +359,19 @@ export const Lecture = () => {
     return 'indeterminate';
   };
 
+  const isAnyAssignmentsChecked =
+    checkedGroupAssignments &&
+    Object.entries(checkedGroupAssignments).some(([groupKey]) =>
+      checkGroupSymbol(groupKey)
+    );
+
   const { status } = useMutationStatus();
 
   useEffect(() => {
-    const initialCheckedState = Object.keys(groupsDict).reduce(
-      (acc, key) => {
-        acc[key] = groupsDict[key];
-        return acc;
-      },
-      {} as Record<string, IAssignmentChecked[]>
-    );
+    const initialCheckedState = Object.keys(groupsDict).reduce((acc, key) => {
+      acc[key] = groupsDict[key];
+      return acc;
+    }, {} as IGroupedAssignments);
 
     setCheckedGroupAssignments(initialCheckedState);
   }, [groupsDict]);
@@ -431,13 +433,13 @@ export const Lecture = () => {
             />
             <div className={'flex flex-row ml-auto gap-3'}>
               {checkedGroupAssignments && (
-                <Tooltip open={checkGroupSymbol ? null : false}>
+                <Tooltip open={isAnyAssignmentsChecked ? null : false}>
                   <TooltipTrigger
                     render={
                       <span className="inline-block">
                         <Button
                           className={'ml-auto'}
-                          disabled={!checkGroupSymbol}
+                          disabled={!isAnyAssignmentsChecked}
                           onClick={() => setOpenReleaseDialog(true)}
                         >
                           Release
@@ -558,6 +560,7 @@ export const Lecture = () => {
       {openReleaseDialog && (
         <ReleaseDialog
           assignments={checkedGroupAssignments}
+          isAssignmentsGrouped
           lectureId={lectureId}
           openDialog={openReleaseDialog}
           setOpenDialog={setOpenReleaseDialog}
