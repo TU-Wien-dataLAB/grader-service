@@ -34,6 +34,7 @@ interface IReleaseDialog {
     group: string
   ) => void;
   checkGroupSymbol?: (group: string) => boolean | 'indeterminate';
+  isAnyAssignmentChecked?: boolean;
 }
 
 export const ReleaseDialog = (props: IReleaseDialog) => {
@@ -96,16 +97,17 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
               'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border'
             }
           >
-            {renderGroups.map(([groupKey, assignments]) => (
-              <AssignmentGroupedCheckboxList
-                key={groupKey}
-                assignments={assignments}
-                groupName={groupKey}
-                checkGroupSymbol={props.checkGroupSymbol}
-                handleGroupChecked={props.handleGroupChecked}
-                handleAssignmentChecked={props.handleAssignmentChecked}
-              />
-            ))}
+            {(props.isAssignmentsGrouped || Array.isArray(props.assignments)) &&
+              renderGroups.map(([groupKey, assignments]) => (
+                <AssignmentGroupedCheckboxList
+                  key={groupKey}
+                  assignments={assignments}
+                  groupName={groupKey}
+                  checkGroupSymbol={props.checkGroupSymbol}
+                  handleGroupChecked={props.handleGroupChecked}
+                  handleAssignmentChecked={props.handleAssignmentChecked}
+                />
+              ))}
             <form.Field
               name={'comment'}
               validators={{
@@ -138,7 +140,14 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
             ></form.Field>
           </FieldGroup>
           <DialogFooter>
-            <Button type={'submit'} form={'release-dialog-form'}>
+            <Button
+              disabled={
+                (props.isAssignmentsGrouped && !props.isAnyAssignmentChecked) ||
+                (props.groupName && !!props.checkGroupSymbol(props.groupName))
+              }
+              type={'submit'}
+              form={'release-dialog-form'}
+            >
               Release
             </Button>
             <DialogClose>

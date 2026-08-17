@@ -359,7 +359,7 @@ export const Lecture = () => {
     return 'indeterminate';
   };
 
-  const isAnyAssignmentsChecked =
+  const isAnyAssignmentChecked =
     checkedGroupAssignments &&
     Object.entries(checkedGroupAssignments).some(([groupKey]) =>
       checkGroupSymbol(groupKey)
@@ -433,13 +433,13 @@ export const Lecture = () => {
             />
             <div className={'flex flex-row ml-auto gap-3'}>
               {checkedGroupAssignments && (
-                <Tooltip open={isAnyAssignmentsChecked ? null : false}>
+                <Tooltip open={isAnyAssignmentChecked ? null : false}>
                   <TooltipTrigger
                     render={
                       <span className="inline-block">
                         <Button
                           className={'ml-auto'}
-                          disabled={!isAnyAssignmentsChecked}
+                          disabled={!isAnyAssignmentChecked}
                           onClick={() => setOpenReleaseDialog(true)}
                         >
                           Release
@@ -567,6 +567,7 @@ export const Lecture = () => {
           handleGroupChecked={handleGroupChecked}
           handleAssignmentChecked={handleAssignmentChecked}
           checkGroupSymbol={checkGroupSymbol}
+          isAnyAssignmentChecked={isAnyAssignmentChecked}
         />
       )}
     </GroupsProvider>

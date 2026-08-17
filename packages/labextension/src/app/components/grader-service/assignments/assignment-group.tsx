@@ -110,7 +110,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
                 )}
               ></Checkbox>
             )}
-            <h2 className={'text-xl font-bold'}>
+            <h2 className={`font-bold text-xl ${isOver && 'text-primary'}`}>
               {props.assignmentGroup} ({props.groupAssignments.length})
             </h2>
           </div>
@@ -159,6 +159,20 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
           </div>
         </CollapsibleContent>
       </Collapsible>
+      {isOver && !isOpenCollapsible && (
+        <div
+          className={`flex p-10 self-stretch ${
+            determineIfAssignmentBelongsToGroup(item.group)
+              ? 'bg-[#E0E7EB]'
+              : 'bg-card'
+          } py-10 px-14 gap-1.5 border border-dashed border-primary justify-center items-center`}
+        >
+          <div className={'self-center justify-items-center'}>
+            <ArrowRightFromLine className={'text-primary'} />
+            <p className={'text-black'}>Drag assignment here</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
