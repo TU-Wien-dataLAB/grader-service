@@ -26,6 +26,7 @@ export const CompleteDialog = (props: IDeleteDialog) => {
           <DialogTitle>Complete assignment</DialogTitle>
         </DialogHeader>
         <div
+          style={{ wordBreak: 'break-all' }}
           className={
             'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border'
           }

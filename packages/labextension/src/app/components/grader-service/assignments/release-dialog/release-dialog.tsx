@@ -19,6 +19,7 @@ import {
 import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-status-hook';
 import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
+import { truncateText } from '../../../utils/utils';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[] | IGroupedAssignments;
@@ -90,7 +91,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{getDialogTitle()}</DialogTitle>
+            <DialogTitle>{truncateText(getDialogTitle(), 45)}</DialogTitle>
           </DialogHeader>
           <FieldGroup
             className={
