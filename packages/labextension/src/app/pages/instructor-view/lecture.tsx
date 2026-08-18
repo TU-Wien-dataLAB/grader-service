@@ -342,6 +342,7 @@ export const Lecture = () => {
   };
 
   const checkGroupSymbol = (group: string) => {
+    if (!checkedGroupAssignments || !checkedGroupAssignments[group]) return;
     const checkedCount = checkedGroupAssignments[group].filter(
       a => a.checked
     ).length;
