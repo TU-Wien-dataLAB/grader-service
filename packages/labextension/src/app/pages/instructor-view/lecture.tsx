@@ -434,12 +434,12 @@ export const Lecture = () => {
             />
             <div className={'flex flex-row ml-auto gap-3'}>
               {checkedGroupAssignments && (
-                <Tooltip open={isAnyAssignmentChecked ? null : false}>
+                <Tooltip open={!isAnyAssignmentChecked ? null : false}>
                   <TooltipTrigger
                     render={
                       <span className="inline-block">
                         <Button
-                          className={'ml-auto'}
+                          className={'ml-auto cursor-pointer'}
                           disabled={!isAnyAssignmentChecked}
                           onClick={() => setOpenReleaseDialog(true)}
                         >
