@@ -56,7 +56,7 @@ import {
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
 import { HintWidget } from './components/notebook/student-plugin/hint-widget';
 import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
-import { lectureSubPaths } from './services/file.service';
+import { lectureSubPathsCount } from './services/local-file.service';
 import { updateMenus } from './menu';
 import { loadString } from './services/storage.service';
 import IModel = Contents.IModel;
@@ -194,7 +194,7 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
     }
     const notebookPaths: string[] = contentsModel.path.split('/');
 
-    if (notebookPaths[lectureSubPaths + 1] === 'manualgrade') {
+    if (notebookPaths[lectureSubPathsCount + 1] === 'manualgrade') {
       return;
     }
 

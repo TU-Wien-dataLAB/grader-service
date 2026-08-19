@@ -16,9 +16,11 @@ import {
 } from '../../../shadcn-components/ui/select';
 import { Button } from '../../../shadcn-components/ui/button';
 import { exportGrades } from '../../../../services/submissions.service';
-import { lectureBasePath, openFile } from '../../../../services/file.service';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../../services/local-file.service';
 import { Lecture } from '../../../../model/lecture';
-import { goToPath } from '../../../../services/file-browser.service';
 import { useMutationStatus } from '../../../../widget';
 
 interface IExportGradesDialogProps {
@@ -36,11 +38,11 @@ export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
     try {
       await exportGrades(props.lecture.id, filter, format);
       // open file in new tab
-      await openFile(
+      await openInFileBrowser(
         `${lectureBasePath}${props.lecture.code}/${props.lecture.name}_${filter}_submissions.${format}`
       );
       // go into correct directory
-      await goToPath(`${lectureBasePath}${props.lecture.code}`);
+      await openInFileBrowser(`${lectureBasePath}${props.lecture.code}`);
     } catch (error: any) {
       setStatus({
         status: 'error',
