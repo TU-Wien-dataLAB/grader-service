@@ -713,9 +713,6 @@
   .max-w-80 {
     max-width: calc(var(--spacing) * 80);
   }
-  .max-w-156 {
-    max-width: calc(var(--spacing) * 156);
-  }
   .max-w-\[400px\] {
     max-width: 400px;
   }

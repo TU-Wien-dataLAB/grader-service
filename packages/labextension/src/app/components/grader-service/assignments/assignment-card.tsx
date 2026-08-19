@@ -170,8 +170,10 @@ export const AssignmentCard = (props: IAssignment) => {
             'items-start flex-col justify-end gap-4 self-stretch bg-[#EBEBEB] p-4'
           }
         >
-          <Button className={'w-full'}>Go to notebooks & files</Button>
-          <Button className={'w-full'} variant={'outline'}>
+          <Button className={'w-full cursor-pointer'}>
+            Go to notebooks & files
+          </Button>
+          <Button className={'w-full cursor-pointer'} variant={'outline'}>
             Go to submissions
           </Button>
         </CardFooter>
