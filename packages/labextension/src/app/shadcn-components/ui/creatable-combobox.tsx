@@ -26,7 +26,7 @@ interface IComboboxProps {
   selected: ComboboxOptions['value'];
   className?: string;
   placeholder?: string;
-  disalbed?: boolean;
+  disabled?: boolean;
   onChange: (option: ComboboxOptions) => void;
   onCreate?: (label: ComboboxOptions['label']) => void;
   field: AnyFieldApi;
@@ -67,7 +67,7 @@ export function Combobox({
   selected,
   className,
   placeholder,
-  disalbed,
+  disabled,
   onChange,
   onCreate,
   field
@@ -108,7 +108,7 @@ export function Combobox({
           type="button"
           variant="outline"
           role="combobox"
-          disabled={disalbed ?? false}
+          disabled={disabled ?? false}
           aria-expanded={open}
           className={cn(
             'w-full font-normal pr-0 border border-border',
