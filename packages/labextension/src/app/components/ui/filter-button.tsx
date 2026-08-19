@@ -10,7 +10,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
-import { IFilterGroup } from '../../pages/instructor-view/lecture';
 
 export interface IFilterOption<V extends string = string> {
   value: V;
