@@ -333,6 +333,10 @@ class GraderService(config.Application):
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
+        if sys.version_info.major < 3 or sys.version_info.minor < 9:
+            msg = "Grader Service needs Python version 3.9 or above to run!"
+            raise RuntimeError(msg)
+
         self.log.info("Starting Initialization...")
         super().initialize(*args, **kwargs)
         self.parse_command_line(argv)
@@ -345,10 +349,6 @@ class GraderService(config.Application):
         # use uvloop instead of default asyncio loop
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self._start_future = asyncio.Future()
-
-        if sys.version_info.major < 3 or sys.version_info.minor < 9:
-            msg = "Grader Service needs Python version 3.9 or above to run!"
-            raise RuntimeError(msg)
 
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
@@ -444,7 +444,7 @@ class GraderService(config.Application):
         self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
-        self.log.info(handlers)
+        self.log.debug("Registered handlers: %s", handlers)
         # Add the handlers of the authenticator
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
