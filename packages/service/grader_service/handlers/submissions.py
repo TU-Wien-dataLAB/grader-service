@@ -398,12 +398,13 @@ class SubmissionHandler(GraderBaseHandler):
             submission.user_id = self.user.id
             username = self.user.name
 
-        try:
-            await self.file_service.validate_submission_exists(
-                submission_hash, assignment, username
-            )
-        except FileServiceError as e:
-            raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
+            try:
+                await self.file_service.validate_submission_exists(
+                    submission_hash, assignment, username
+                )
+            except FileServiceError as e:
+                self.log.exception(e)
+                raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
 
         submission.assignid = assignment.id
         submission.date = submission_ts
