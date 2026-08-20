@@ -536,13 +536,12 @@ class GitFileService(FileService):
         """
         Commit the provided files in the repo at ``dir`` with the provided commit message.
         """
-        self.log.info(f"Committing files in {dir}")
-        if not filenames:
-            self.log.info("No files to commit.")
-            return
-
+        self.log.info("Committing files: %s in %s", filenames, dir)
         # Make sure we do not commit the gradebook.json
         filenames = [f for f in filenames if f != "gradebook.json"]
+
+        if not filenames:
+            self.log.warning("No files to commit! Repository: %s", dir)
 
         self._run_git([self.git_executable, "add", "--", *filenames], dir)
         self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
