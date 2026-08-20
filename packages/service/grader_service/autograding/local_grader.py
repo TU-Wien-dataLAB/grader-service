@@ -283,6 +283,9 @@ class LocalAutogradeExecutor(LoggingConfigurable):
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
                     whitelisted_files.append(file_path)
 
+        self.log.debug(
+            "In output path %s, found whitelisted files: %s", self.output_path, whitelisted_files
+        )
         return whitelisted_files
 
     def _set_properties(self) -> None:

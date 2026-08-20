@@ -143,25 +143,28 @@ class GitFileService(FileService):
               to happen, and will be logged as an error.
             ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
               fails; in other words, the command checks something, and this error just
-              indicates one of the possible outcomes. It is not logged, and has to be
-              handled by the caller.
-            Any other exception thrown while running the subprocess is logged and also re-raised.
-
+              indicates one of the possible outcomes. It has to be handled by the caller.
+            If ``may_fail=True``, any other exception thrown while running the subprocess
+            is also re-raised.
         """
         if command[0] != self.git_executable:
             raise ValueError(f"Not a git command: {command}")
-        self.log.debug('Running "%s"', " ".join(map(str, command)))
+        self.log.debug("Running %r in %s", " ".join(map(str, command)), cwd)
         try:
             ret = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             if may_fail:
-                # This error is an expected possibility and will be handled. No need to log it.
+                # This error is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e.stderr)
                 raise
             self.log.error(e.stderr)
             raise FileServiceError("Subprocess Error")
         except Exception as e:
             if may_fail:
-                # An exception is an expected possibility and will be handled. No need to log it.
+                # An exception is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e)
                 raise
             # Else: this exception was *not* supposed to happen. We should log the error.
             self.log.error(e)
@@ -169,7 +172,8 @@ class GitFileService(FileService):
         return ret.stdout
 
     async def _run_git_async(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
-        """Run a git command asynchronously in a subprocess.
+        """
+        Run a git command asynchronously in a subprocess.
 
         Note that the command must start with the `git_executable`.
 
@@ -186,21 +190,22 @@ class GitFileService(FileService):
               to happen, and will be logged as an error.
             ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
               fails; in other words, the command checks something, and this error just
-              indicates one of the possible outcomes. It is not logged, and has to be
-              handled by the caller.
+              indicates one of the possible outcomes. It has to be handled by the caller.
             If ``may_fail=True``, any other exception thrown while running the subprocess
             is also re-raised.
         """
         if command[0] != self.git_executable:
             raise ValueError(f"Not a git command: {command}")
-        self.log.debug("Running async: %s", " ".join(map(str, command)))
+        self.log.debug("Running async: %r in %s", " ".join(map(str, command)), cwd)
         try:
             ret = await asyncio.create_subprocess_exec(
                 *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
             )
         except Exception as e:
             if may_fail:
-                # An exception is an expected possibility and will be handled. No need to log it.
+                # An exception is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e)
                 raise
             # Else: this exception was *not* supposed to happen. We should log the error.
             self.log.error(e)
@@ -208,7 +213,9 @@ class GitFileService(FileService):
         stdout, stderr = await ret.communicate()
         if ret.returncode != 0:
             if may_fail:
-                # This error is an expected possibility and will be handled. No need to log it.
+                # This error is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(stderr.decode())
                 raise subprocess.CalledProcessError(ret.returncode, command, stdout, stderr)
             self.log.error(stderr.decode())
             raise FileServiceError("Subprocess Error")
@@ -260,6 +267,7 @@ class GitFileService(FileService):
         # If no submissions for the student exists, we cannot reference a non-existing
         # commit_hash.
         if not artifact_path.exists():
+            self.log.error("User artifact not found at %s!", artifact_path)
             raise FileServiceError("User artifact not found")
         try:
             await self._run_git_async(
@@ -267,7 +275,8 @@ class GitFileService(FileService):
                 cwd=artifact_path,
                 may_fail=True,
             )
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as err:
+            self.log.debug(err.stderr.decode())
             raise FileServiceError("Submission commit not found")
 
     def _prepare_tmp_dirs(
