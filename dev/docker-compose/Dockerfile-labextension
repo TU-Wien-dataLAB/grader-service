@@ -7,18 +7,23 @@ FROM $BASE_CONTAINER
 USER root
 
 # Build dependencies
-RUN apt-get update && \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get install -yq --no-install-recommends \
         git \
         build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mamba install -y nodejs && \
+# Set this for mamba (it uses pip internally) and pip
+ENV PIP_CACHE_DIR=/root/.cache/pip
+
+RUN --mount=type=cache,target=/opt/conda/pkgs \
+    mamba install -y nodejs && \
     mamba clean -a -y
 
 COPY --from=ghcr.io/astral-sh/uv:0.9.3 /uv /uvx /bin/
 ENV UV_SYSTEM_PYTHON=true
+ENV PIP_CACHE_DIR=/root/.cache/pip
 
 # grader-service (editable): the labextension server extension imports it
 COPY ./packages/service/pyproject.toml ./packages/service/
@@ -36,13 +41,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # grader-service to a workspace member, which uv cannot resolve outside the
 # workspace. pip ignores tool.uv.sources and grader-service is already
 # installed above, so --no-deps skips re-resolving it.
-COPY ./packages/labextension /opt/grader-labextension
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-deps -e /opt/grader-labextension
-
 # Make the source tree writable by jovyan so the in-container watcher can rebuild
 # lib/ and grader_labextension/labextension/.
-RUN chown -R "${NB_USER:-jovyan}:${NB_GID:-users}" /opt/grader-labextension
+COPY --chown="${NB_USER:-jovyan}:${NB_GID:-users}" ./packages/labextension /opt/grader-labextension
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --root-user-action=ignore --no-deps -e /opt/grader-labextension
 
 # Ensure JupyterLab resolves the labextension to the source tree (single source
 # of truth). Replace any shared-data copy with a symlink to the source dir so
@@ -58,8 +61,7 @@ RUN data_dir="$(python -c 'import sysconfig; print(sysconfig.get_path("data"))')
     fi
 
 # Watcher entrypoint: starts `jlpm watch` alongside the JupyterHub spawn cmd.
-COPY dev/docker-compose/entrypoint-labextension.sh /usr/local/bin/entrypoint-labextension.sh
-RUN chmod +x /usr/local/bin/entrypoint-labextension.sh
+COPY --chmod=+x dev/docker-compose/entrypoint-labextension.sh /usr/local/bin/entrypoint-labextension.sh
 
 USER "${NB_USER:-jovyan}"
 WORKDIR /home/${NB_USER:-jovyan}
