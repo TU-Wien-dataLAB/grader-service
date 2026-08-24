@@ -7,5 +7,8 @@
 export enum RepoType {
   SOURCE = 'source',
   RELEASE = 'release',
-  ASSIGNMENT = 'assignment'
+  USER = 'user',
+  AUTOGRADE = 'autograde',
+  EDIT = 'edit',
+  FEEDBACK = 'feedback'
 }
