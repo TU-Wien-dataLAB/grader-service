@@ -288,7 +288,7 @@ export const Dashboard = () => {
           icon={<EmptyIcon />}
           description={
             'There are no courses available for you right \n now. Please check' +
-            'again later.'
+            ' again later.'
           }
         />
       )}
