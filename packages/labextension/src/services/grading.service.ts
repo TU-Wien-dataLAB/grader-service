@@ -46,19 +46,18 @@ export function getGrade(
     null
   );
 }
-//response is not a schema => any
-//TODO: should prob be changed
+
 export function getStudentSubmissions(
-  lectureId: number,
-  assignmentId: number,
+  username: string,
+  format: 'json' | 'csv' = 'csv',
   reload = false
 ): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading`,
-    null,
-    reload
-  );
+  let url = `/api/users/${username}/submissions`;
+  const params = new URLSearchParams({
+    format: format
+  });
+  url += '?' + params.toString();
+  return request<any>(HTTPMethod.GET, url, null, reload);
 }
 
 export function getManualFeedback(
