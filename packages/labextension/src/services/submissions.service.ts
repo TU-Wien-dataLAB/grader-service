@@ -17,7 +17,7 @@ export function getSubmissions(
       'instructor-version': String(instructor),
       filter: filter
     });
-    url += '?' + searchParams;
+    url += '?' + searchParams.toString();
   }
   return request<Submission[]>(HTTPMethod.GET, url, null, reload);
 }
@@ -35,7 +35,7 @@ export function saveSubmissions(
     const searchParams = new URLSearchParams({
       filter: filter
     });
-    url += '?' + searchParams;
+    url += '?' + searchParams.toString();
   }
   return request<any>(HTTPMethod.PUT, url, null);
 }
@@ -90,7 +90,7 @@ export function getFeedback(
       'instructor-version': String(instructor),
       latest: String(latest)
     });
-    url += '?' + searchParams;
+    url += '?' + searchParams.toString();
   }
   return request<any>(HTTPMethod.GET, url, null);
 }
@@ -137,7 +137,7 @@ export function ltiSyncSubmissions(
   const searchParams = new URLSearchParams({
     option: option
   });
-  url += '?' + searchParams;
+  url += '?' + searchParams.toString();
   return request<{
     synced_platforms: Array<{
       platform: string;
@@ -165,6 +165,11 @@ export async function exportGrades(
   filter: 'latest' | 'best' = 'best',
   format: 'json' | 'csv' = 'csv'
 ): Promise<any> {
-  const url = `/api/lectures/${lectureId}/submissions?filter=${filter}&format=${format}`;
+  let url = `/api/lectures/${lectureId}/submissions`;
+  const searchParams = new URLSearchParams({
+    filter: filter,
+    format: format
+  });
+  url += '?' + searchParams.toString();
   return request<any>(HTTPMethod.GET, url, null);
 }
