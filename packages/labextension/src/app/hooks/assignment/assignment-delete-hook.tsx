@@ -13,8 +13,8 @@ export function useAssignmentDelete() {
     }) => {
       await deleteAssignment(variables.lectureId, variables.assignmentId);
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
@@ -25,7 +25,7 @@ export function useAssignmentDelete() {
     onError: (error: HTTPError) =>
       setStatus({
         status: 'error',
-        message: error.message || 'Error deleting assignment.'
+        message: error?.message || 'Error deleting assignment.'
       })
   });
 

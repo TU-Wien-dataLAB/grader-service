@@ -111,18 +111,18 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
         }
       };
 
-      if (!createAnother) {
-        props.setOpenDialog(false);
-      }
       if (props.assignment) {
-        await handleUpdateAssignment(
+        handleUpdateAssignment(
           props.assignment,
           newAssignment,
           props.lectureId,
           recalcScoresConfirmed
         );
       } else {
-        await handleCreateAssignment(newAssignment, props.lectureId);
+        handleCreateAssignment(newAssignment, props.lectureId);
+      }
+      if (!createAnother) {
+        props.setOpenDialog(false);
       }
     }
   });
@@ -350,7 +350,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                     {field.state.value?.length > 0 &&
                       field.state.value.map((submissionPeriod, index) => {
                         const isDisabled = !form.state.values.deadline;
-                        console.log(JSON.stringify(field.state.value));
+
                         return (
                           <div
                             className={

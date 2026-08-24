@@ -75,7 +75,7 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     } else {
       group = props.assignmentGroup;
     }
-    await handleUpdateAssignment(
+    handleUpdateAssignment(
       assignment,
       { ...assignment, settings: { ...assignment.settings, group: group } },
       props.lectureId

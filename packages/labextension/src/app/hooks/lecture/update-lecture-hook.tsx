@@ -20,8 +20,8 @@ export const useUpdateLecture = () => {
       };
       return updateLecture(updatedLecture);
     },
-    onSuccess: async () => {
-      await Promise.all([
+    onSuccess: () => {
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: ['activeLectures'] }),
         queryClient.invalidateQueries({ queryKey: ['completedLectures'] })
       ]);
