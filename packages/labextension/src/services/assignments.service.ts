@@ -9,7 +9,7 @@ import { AssignmentDetail } from '../model/assignmentDetail';
 import { request } from './request.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 
-export const buildBaseUrl = (lectureId: number) => {
+export const baseUrl = (lectureId: number) => {
   return `/api/lectures/${lectureId}/assignments`;
 };
 
@@ -18,7 +18,7 @@ export function getAllAssignments(
   reload = false,
   includeSubmissions = false
 ): Promise<AssignmentDetail[]> {
-  let url = buildBaseUrl(lectureId);
+  let url = baseUrl(lectureId);
   if (includeSubmissions) {
     const searchParams = new URLSearchParams({
       'include-submissions': String(includeSubmissions)
@@ -35,7 +35,7 @@ export function getAssignment(
 ): Promise<Assignment> {
   return request<Assignment>(
     HTTPMethod.GET,
-    `${buildBaseUrl(lectureId)}/${assignmentId}`,
+    `${baseUrl(lectureId)}/${assignmentId}`,
     null,
     reload
   );
@@ -47,7 +47,7 @@ export function createAssignment(
 ): Promise<Assignment> {
   return request<Assignment, Assignment>(
     HTTPMethod.POST,
-    buildBaseUrl(lectureId),
+    baseUrl(lectureId),
     assignment
   );
 }
@@ -60,7 +60,7 @@ export function updateAssignment(
   const searchParams = new URLSearchParams({
     'recalc-scores': String(recalcScores)
   });
-  let url = `${buildBaseUrl(lectureId)}/${assignment.id}`;
+  let url = `${baseUrl(lectureId)}/${assignment.id}`;
   url += '?' + searchParams;
 
   return request<Assignment, Assignment>(HTTPMethod.PUT, url, assignment);
@@ -73,7 +73,7 @@ export function getAssignmentProperties(
 ): Promise<any> {
   return request<any>(
     HTTPMethod.GET,
-    `${buildBaseUrl(lectureId)}/${assignmentId}/properties`,
+    `${baseUrl(lectureId)}/${assignmentId}/properties`,
     null,
     reload
   );
@@ -85,7 +85,7 @@ export function generateAssignment(
 ): Promise<any> {
   return request<any>(
     HTTPMethod.PUT,
-    `${buildBaseUrl(lectureId)}/${assignment.id}/generate`,
+    `${baseUrl(lectureId)}/${assignment.id}/generate`,
     null
   );
 }
@@ -97,7 +97,7 @@ export function fetchAssignment(
   metadataOnly: boolean = false,
   reload: boolean = false
 ): Promise<Assignment> {
-  let url = `${buildBaseUrl(lectureId)}/${assignmentId}`;
+  let url = `${baseUrl(lectureId)}/${assignmentId}`;
   if (instructor || metadataOnly) {
     const searchParams = new URLSearchParams({
       'instructor-version': String(instructor),
@@ -115,7 +115,7 @@ export function deleteAssignment(
 ): Promise<void> {
   return request<void>(
     HTTPMethod.DELETE,
-    `${buildBaseUrl(lectureId)}/${assignmentId}`,
+    `${baseUrl(lectureId)}/${assignmentId}`,
     null
   );
 }

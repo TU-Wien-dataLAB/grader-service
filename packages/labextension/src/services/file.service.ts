@@ -5,7 +5,7 @@ import { request } from './request.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 import { RemoteFileStatus } from '../model/remoteFileStatus';
 
-const baseUrl = (props: { lectureId: number; assignmentId: number }) => {
+export const baseUrl = (props: { lectureId: number; assignmentId: number }) => {
   return `/api/lectures/${props.lectureId}/assignments/${props.assignmentId}/`;
 };
 
