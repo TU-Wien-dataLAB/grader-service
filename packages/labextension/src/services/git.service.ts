@@ -1,8 +1,6 @@
 import { RepoType } from '../app/components/utils/repo-type';
 import { request } from './request.service';
-import { Lecture } from '../model/lecture';
-import { Assignment } from '../model/assignment';
-import { buildBaseUrl } from './assignments.service';
+import { baseUrl } from './file.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 
 export function pushAssignment(
@@ -12,7 +10,7 @@ export function pushAssignment(
   commitMessage?: string,
   selectedFiles?: string[]
 ): Promise<void> {
-  let url = `${buildBaseUrl(lectureId)}/${assignmentId}/push/${repoType}`;
+  let url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}`;
   if (commitMessage) {
     const searchParams = new URLSearchParams({
       'commit-message': commitMessage
@@ -36,18 +34,18 @@ export function pullAssignment(
 ): Promise<void> {
   return request<void>(
     HTTPMethod.GET,
-    `${buildBaseUrl(lectureId)}/${assignmentId}/pull/${repoType}`,
+    `${baseUrl({ lectureId, assignmentId })}pull/${repoType}`,
     null
   );
 }
 
 export function resetAssignment(
-  lecture: Lecture,
-  assignment: Assignment
+  lectureId: number,
+  assignmentId: number
 ): Promise<void> {
   return request<void>(
     HTTPMethod.GET,
-    `${buildBaseUrl(lecture.id)}/${assignment.id}/reset`,
+    `${baseUrl({ lectureId, assignmentId })}reset`,
     null
   );
 }
