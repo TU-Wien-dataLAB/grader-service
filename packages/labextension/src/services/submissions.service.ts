@@ -22,6 +22,24 @@ export function getSubmissions(
   return request<Submission[]>(HTTPMethod.GET, url, null, reload);
 }
 
+export function saveSubmissions(
+  lectureId: number,
+  assignmentId: number,
+  filter: 'none' | 'latest' | 'best' = 'none'
+): Promise<any> {
+  let url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/save`;
+  if (filter) {
+    const searchParams = new URLSearchParams({
+      filter: filter
+    });
+    url += '?' + searchParams;
+  }
+  return request<any>(HTTPMethod.PUT, url, null);
+}
+
 export function getSubmission(
   lectureId: number,
   assignmentId: number,
