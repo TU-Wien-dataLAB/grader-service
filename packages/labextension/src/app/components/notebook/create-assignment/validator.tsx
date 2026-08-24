@@ -10,14 +10,14 @@ import * as React from 'react';
 import { CellModel, NbgraderData, ToolData } from '../model';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { ErrorWidget } from './error-widget';
-import { Button } from '../../../app/shadcn-components/ui/button';
+import { Button } from '../../../shadcn-components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '../../../app/shadcn-components/ui/dialog';
+} from '../../../shadcn-components/ui/dialog';
 
 export interface ValidatorProps {
   notebook: Notebook;
@@ -199,7 +199,7 @@ export const Validator = (props: ValidatorProps) => {
           <DialogHeader>
             <DialogTitle>Validation Report</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2 px-6">
+          <div className="flex flex-col gap-2 px-6 pb-6">
             {results.length === 0 && (
               <div className={alertClass('success')}>
                 <p className="font-medium">No errors found</p>

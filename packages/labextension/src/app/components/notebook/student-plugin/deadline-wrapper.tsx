@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { DeadlineComponent } from '../../util/deadline';
-import { getLectures } from '../../../services/lectures.service';
-import { getAssignment } from '../../../services/assignments.service';
-import { lectureSubPathsCount } from '../../../services/local-file.service';
-import { Assignment } from '../../../model/assignment';
-import { Lecture } from '../../../model/lecture';
+import { DeadlineComponent } from '../../utils/deadline';
+import { getLectures } from '../../../../services/lectures.service';
+import { getAssignment } from '../../../../services/assignments.service';
+import { lectureSubPathsCount } from '../../../../services/local-file.service';
+import { Assignment } from '../../../../model/assignment';
+import { Lecture } from '../../../../model/lecture';
 
 export interface IDeadlineWrapperProps {
   notebookPaths: string[];

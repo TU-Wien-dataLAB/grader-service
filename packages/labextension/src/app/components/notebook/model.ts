@@ -66,7 +66,7 @@ export namespace CellModel {
       return null;
     }
     const nbgraderValue = cellMetadata[NBGRADER_KEY];
-    if (nbgraderValue === null) {
+    if (nbgraderValue === null || nbgraderValue === undefined) {
       return null;
     }
     return nbgraderValue.valueOf() as NbgraderData;
@@ -166,7 +166,7 @@ export namespace CellModel {
     }
     const currentDataJson = readOnlyMetadata[NBGRADER_KEY];
     const currentData =
-      currentDataJson === null
+      currentDataJson === null || currentDataJson === undefined
         ? null
         : (currentDataJson.valueOf() as NbgraderData);
     if (currentData !== data) {

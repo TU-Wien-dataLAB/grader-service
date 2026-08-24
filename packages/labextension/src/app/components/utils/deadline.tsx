@@ -7,7 +7,7 @@
 import * as React from 'react';
 import moment from 'moment';
 import { Clock } from 'lucide-react';
-import { Badge } from '../../app/shadcn-components/ui/badge';
+import { Badge } from '../../shadcn-components/ui/badge';
 
 export interface IDeadlineProps {
   deadline: string | null;

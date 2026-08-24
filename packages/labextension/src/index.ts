@@ -40,7 +40,7 @@ import { Cell } from '@jupyterlab/cells';
 
 import { Menu, PanelLayout } from '@lumino/widgets';
 
-import { NotebookModeSwitch } from './components/notebook/slider';
+import { NotebookModeSwitch } from './app/components/notebook/slider';
 
 import { homeIcon, runIcon } from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
@@ -49,13 +49,13 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
+import { CreationWidget } from './app/components/notebook/create-assignment/creation-widget';
 import {
   listIcon,
   undoIcon
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
-import { HintWidget } from './components/notebook/student-plugin/hint-widget';
-import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
+import { HintWidget } from './app/components/notebook/student-plugin/hint-widget';
+import { DeadlineWidget } from './app/components/notebook/student-plugin/deadline-widget';
 import { lectureSubPathsCount } from './services/local-file.service';
 import { updateMenus } from './menu';
 import { loadString } from './services/storage.service';
@@ -169,7 +169,6 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
         notebookPanel,
         notebook
       );
-
       tracker.currentWidget.toolbar.insertItem(10, 'Mode', switcher);
 
       //Creation of deadline widget
