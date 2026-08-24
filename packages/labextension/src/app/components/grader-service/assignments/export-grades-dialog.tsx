@@ -18,7 +18,8 @@ import { Button } from '../../../shadcn-components/ui/button';
 import { exportGrades } from '../../../../services/submissions.service';
 import {
   lectureBasePath,
-  openInFileBrowser
+  openInFileBrowser,
+  openInNewTab
 } from '../../../../services/local-file.service';
 import { Lecture } from '../../../../model/lecture';
 import { useMutationStatus } from '../../../../widget';
@@ -37,11 +38,9 @@ export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
   const handleExport = async () => {
     try {
       await exportGrades(props.lecture.id, filter, format);
-      // open file in new tab
-      await openInFileBrowser(
+      await openInNewTab(
         `${lectureBasePath}${props.lecture.code}/${props.lecture.name}_${filter}_submissions.${format}`
       );
-      // go into correct directory
       await openInFileBrowser(`${lectureBasePath}${props.lecture.code}`);
     } catch (error: any) {
       setStatus({

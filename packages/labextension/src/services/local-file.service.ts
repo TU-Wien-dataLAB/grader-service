@@ -42,12 +42,16 @@ export const openInFileBrowser = async (path: string) => {
  * Opens a file in a new tab
  *
  * @param path file path to open
+ * @param mode determines how to open a file. Default: tab-after
  */
-export const openInNewTab = async (path: string) => {
+export const openInNewTab = async (
+  path: string,
+  mode: string = 'tab-after'
+) => {
   await GlobalObjects.commands.execute('docmanager:open', {
     path: path,
     options: {
-      mode: 'tab-after' // tab-after tab-before split-bottom split-right split-left split-top
+      mode: mode // tab-after tab-before split-bottom split-right split-left split-top
     }
   });
 };
