@@ -26,21 +26,19 @@ export const DataComponent = (props: IDataComponentProps) => {
 
   return (
     <div style={{ margin: '16px 0px 8px 72px' }}>
-      <span style={{ marginRight: '16px' }}>Type: {toolData.type}</span>
+      <span className={'mr-4'}>Type: {toolData.type}</span>
 
-      <span style={{ marginRight: '16px' }}>ID: {toolData.id}</span>
+      <span className={'mr-4'}>ID: {toolData.id}</span>
 
       {toolData.type === 'tests' && (
-        <span style={{ marginRight: '16px' }}>
+        <span className={'mr-4'}>
           Autograded Points:{' '}
           {props.gradebook.getAutoGradeScore(props.nbname, toolData.id)}
         </span>
       )}
 
       {gradableCell && (
-        <span style={{ marginRight: '16px' }}>
-          Max Points: {toolData.points}
-        </span>
+        <span className={'mr-4'}>Max Points: {toolData.points}</span>
       )}
     </div>
   );

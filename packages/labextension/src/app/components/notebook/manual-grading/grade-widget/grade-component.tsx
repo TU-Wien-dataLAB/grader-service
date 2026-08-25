@@ -34,9 +34,9 @@ export const GradeComponent = (props: GradeComponentProps) => {
     props.toolData.type === 'solution';
 
   return (
-    <div style={{ marginLeft: '72px' }}>
+    <div className={'ml-18'}>
       {props.toolData.type !== 'readonly' && props.toolData.type !== '' && (
-        <div style={{ marginTop: 2, marginBottom: 1 }}>
+        <div className={'mt-0.5'} style={{ marginBottom: 1 }}>
           {showCommment && (
             <CommentComponent
               model={model}
