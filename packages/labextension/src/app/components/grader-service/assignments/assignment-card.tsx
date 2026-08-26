@@ -13,8 +13,6 @@ import {
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { Button } from '../../../shadcn-components/ui/button';
 import { OctagonAlert } from 'lucide-react';
-import { AssignmentSettings } from '../../../../model/assignmentSettings';
-import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
 import { getDate } from '../../utils/utils';
 import { AssignmentActions } from './assignment-actions';
 import {
@@ -22,14 +20,8 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
-import {
-  AutomaticGradingBadge,
-  CompletedAssignmentBadge,
-  CreatedAssignmentBadge,
-  FullyAutomaticGradingBadge,
-  ManualGradingBadge,
-  ReleasedAssignmentBadge
-} from '../../ui/badges';
+import { assignmentStatus, gradingType } from '../../utils/assignment-metadata';
+import { useNavigate, useParams } from 'react-router';
 
 export interface IAssignment {
   key: React.Key;
@@ -49,42 +41,15 @@ export const AssignmentCard = (props: IAssignment) => {
       isDragging: monitor.isDragging()
     })
   }));
+  const params = useParams();
 
-  const gradingType = () => {
-    const gradingType = props.assignment.settings.autograde_type;
-    if (gradingType === AutogradeTypeEnum.FullAuto) {
-      return (
-        <FullyAutomaticGradingBadge
-          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
-        />
-      );
-    } else if (gradingType === AutogradeTypeEnum.Auto) {
-      return (
-        <AutomaticGradingBadge
-          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
-        />
-      );
-    } else {
-      return (
-        <ManualGradingBadge
-          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
-        />
-      );
-    }
-  };
-
-  const assignmentStatus = () => {
-    const status = props.assignment.status;
-    switch (status) {
-      case 'created':
-        return <CreatedAssignmentBadge />;
-      case 'pushed':
-        return <CreatedAssignmentBadge />;
-      case 'released':
-        return <ReleasedAssignmentBadge />;
-      case 'complete':
-        return <CompletedAssignmentBadge />;
-    }
+  const lectureId = Number(params.id);
+  /* assignment tabs */
+  const navigate = useNavigate();
+  const goToAssignment = (tab: string) => {
+    navigate(`/lectures/${lectureId}/assignments/${props.assignment.id}`, {
+      state: { activeTab: tab }
+    });
   };
 
   return isDragging ? (
@@ -129,8 +94,11 @@ export const AssignmentCard = (props: IAssignment) => {
           }`}
         >
           <div className={'flex items-start gap-4'}>
-            {assignmentStatus()}
-            {gradingType()}
+            {assignmentStatus(props.assignment.status)}
+            {gradingType(
+              props.assignment.settings.autograde_type,
+              props.assignment.status === 'complete'
+            )}
           </div>
           <div
             className={`grid grid-cols-3 ${
@@ -172,8 +140,17 @@ export const AssignmentCard = (props: IAssignment) => {
             'items-start flex-col justify-end gap-4 self-stretch bg-[#EBEBEB] dark:bg-[#2B2B2B] p-4'
           }
         >
-          <Button className={'w-full'}>Go to notebooks & files</Button>
-          <Button className={'w-full'} variant={'outline'}>
+          <Button
+            className={'w-full'}
+            onClick={() => goToAssignment('notebooks-and-files')}
+          >
+            Go to notebooks & files
+          </Button>
+          <Button
+            className={'w-full'}
+            variant={'outline'}
+            onClick={() => goToAssignment('submissions')}
+          >
             Go to submissions
           </Button>
         </CardFooter>
