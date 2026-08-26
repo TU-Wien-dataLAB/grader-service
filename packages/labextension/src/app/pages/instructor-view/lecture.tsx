@@ -2,6 +2,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -42,6 +43,10 @@ import { Badge } from '../../shadcn-components/ui/badge';
 import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -296,6 +301,10 @@ export const Lecture = () => {
   const [openCreateAssignmentDialog, setOpenCreateAssignmentDialog] =
     useState(false);
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
+
+  useEffect(() => {
+    openInFileBrowser(`${lectureBasePath}${lecture.code}`);
+  }, []);
 
   const { status } = useMutationStatus();
   return (

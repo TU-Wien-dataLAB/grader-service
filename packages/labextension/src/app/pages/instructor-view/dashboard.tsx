@@ -1,7 +1,7 @@
 import { SearchField } from '../../components/ui/search';
 import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
@@ -50,6 +50,10 @@ import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { useMutationStatus } from '../../../widget';
 import { ErrorBanner } from '../../components/ui/error-banner';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
@@ -70,6 +74,11 @@ export const Dashboard = () => {
     // only fetch completed lectures if the "completed" filter option has been chosen
     enabled: filterBy === 'completed'
   });
+
+  useEffect(() => {
+    openInFileBrowser(`${lectureBasePath}`);
+  }, []);
+
   /* logic for searching/filtering/sorting */
   const filteredLectures = useMemo(() => {
     if (!lectures) {
