@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { selectedDirQuery } from '../../../services/queries/files.queries';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation, useNavigation, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { assignmentQuery } from '../../../services/queries/assignments.queries';
 import {
   lectureBasePath,
@@ -19,7 +19,7 @@ import {
   TabsList,
   TabsTrigger
 } from '../../shadcn-components/ui/tabs';
-import { FilesOverview } from '../../components/grader-service/notebooks-and-files/files-overview';
+import { FilesView } from '../../components/grader-service/notebooks-and-files/files-view';
 
 export const Assignment = () => {
   const params = useParams();
@@ -44,10 +44,7 @@ export const Assignment = () => {
     openInFileBrowser(
       `${lectureBasePath}${lecture?.code}/${selectedDir}/${assignmentId}`
     );
-  }, [assignmentId, lecture?.code]);
-  const navigation = useNavigation();
-
-  console.log('navigation state:', navigation.state, navigation.location);
+  }, [assignmentId, lecture?.code, selectedDir]);
 
   return (
     <div className={'flex p-6 flex-col items-start gap-6 w-full'}>
@@ -71,9 +68,9 @@ export const Assignment = () => {
       <Tabs
         value={currentTab}
         onValueChange={setCurrentTab}
-        className={'flex-col w-full'}
+        className={'flex-col w-full gap-6'}
       >
-        <TabsList variant="line" className={'border-b-border border-b'}>
+        <TabsList variant="line" className={'border-b-border border-b w-full'}>
           <TabsTrigger value="notebooks-and-files">
             Notebooks & files
           </TabsTrigger>
@@ -81,9 +78,8 @@ export const Assignment = () => {
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
         <TabsContent value="notebooks-and-files">
-          <FilesOverview />
+          <FilesView />
         </TabsContent>
-
         <TabsContent value="submissions">
           <div>Submissions</div>
         </TabsContent>
