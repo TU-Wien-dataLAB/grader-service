@@ -2,6 +2,7 @@ import os
 
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.file_services import GitFileService
 
 # TODO: Only use DummyAuthenticator
 
@@ -51,3 +52,7 @@ c.GraderService.load_roles = {
         {"members": ["instructor", "admin"], "role": "instructor"},
     ]
 }
+
+# TODO: This is not really necessary (GitFileService is default); it's here as an example
+c.GraderService.file_service_class = GitFileService
+# c.GitFileService.setting1 = ...  # a LoggingConfigurable - cf. auth.auth.Authenticator

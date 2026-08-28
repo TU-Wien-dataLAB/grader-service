@@ -45,11 +45,11 @@ class FileService(LoggingConfigurable):
         """Create or overwrite (reset) the instructor's changes to submission files."""
         raise NotImplementedError()
 
-    def fetch_files(self, dir: Path, artifact_type: "ArtifactType", submission: Submission):
+    async def fetch_files(self, dir: Path, artifact_type: "ArtifactType", submission: Submission):
         """Fetch the files of the ``artifact_type`` for the submission into the dir."""
         raise NotImplementedError()
 
-    def push_files(  # TODO: think of a better name?
+    async def push_files(  # TODO: think of a better name?
         self,
         filenames: list[str],
         dir: str | Path,
@@ -59,15 +59,15 @@ class FileService(LoggingConfigurable):
         """Save new/updated files of the ``artifact_type`` for the submission."""
         raise NotImplementedError()
 
-    def delete_lecture_files(self, lecture: Lecture) -> None:
+    async def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated files when a lecture is hard-deleted."""
         raise NotImplementedError()
 
-    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
+    async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
         """Delete all associated files when an assignment is hard-deleted."""
         raise NotImplementedError()
 
-    def delete_submission_files(self, submission: Submission) -> None:
+    async def delete_submission_files(self, submission: Submission) -> None:
         """Delete all associated files when a submission is hard-deleted."""
         raise NotImplementedError()
 

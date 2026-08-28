@@ -281,7 +281,7 @@ class GraderService(config.Application):
             "DEBUG",
             "NOTSET",
         ],
-        "INFO",
+        "DEBUG",
         help="Set the logging level for the application",
     ).tag(config=True)
 
@@ -355,6 +355,7 @@ class GraderService(config.Application):
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
+        # TODO: should file service also be a singleton, configured here?
 
     async def cleanup(self):
         pass
@@ -554,8 +555,9 @@ class GraderService(config.Application):
 
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
-        path = change["new"]
-        git_path = Path(path) / "git"
-        git_path.mkdir(exist_ok=True)
-        # TODO: Verify that this works everywhere
-        self.file_service.grader_service_dir = path
+        if self.file_service_class == GitFileService:
+            path = change["new"]
+            gitbase = Path(path) / "git"
+            gitbase.mkdir(exist_ok=True)
+            # TODO: Verify that this works everywhere
+            self.file_service.grader_service_dir = path

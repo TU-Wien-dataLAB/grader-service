@@ -206,5 +206,5 @@ def submission_123(assignment_123):
 def git_file_service_no_git(grader_service):
     """Mock GitFileService which doesn't actually execute any git commands"""
     service = GitFileService(grader_service_dir=grader_service.grader_service_dir)
-    with patch.object(service, "_run_git"), patch.object(service, "_run_git_async"):
+    with patch.object(service, "_run_git_sync"), patch.object(service, "_run_git"):
         yield service

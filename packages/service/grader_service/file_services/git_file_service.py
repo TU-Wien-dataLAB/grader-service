@@ -5,9 +5,9 @@ from pathlib import Path
 
 from traitlets import Unicode, observe, validate
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.file_services.base_file_service import FileService, FileServiceError
 from grader_service.orm import Assignment, Lecture, Submission
-from grader_service.artifact_types import ArtifactType
 from grader_service.utils import executable_validator
 
 
@@ -106,27 +106,27 @@ class GitFileService(FileService):
             self.gitbase.mkdir()
 
         # check if git is configured so that git commits don't fail
-        default_branch = self._run_git(
+        default_branch = self._run_git_sync(
             [self.git_executable, "config", "init.defaultBranch"], self.grader_service_dir
-        ).strip()
-        if default_branch != "main":
+        )
+        if default_branch.strip() != "main":
             raise RuntimeError("Git default branch has to be set to 'main'!")
 
-        user_name = self._run_git(
+        user_name = self._run_git_sync(
             [self.git_executable, "config", "user.name"], self.grader_service_dir
-        ).strip()
-        if user_name == "":
+        )
+        if user_name.strip() == "":
             raise RuntimeError("Git user.name has to be set!")
 
-        user_mail = self._run_git(
+        user_mail = self._run_git_sync(
             [self.git_executable, "config", "user.email"], self.grader_service_dir
-        ).strip()
-        if user_mail == "":
+        )
+        if user_mail.strip() == "":
             raise RuntimeError("Git user.email has to be set!")
 
-    def _run_git(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
+    def _run_git_sync(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
         """
-        Execute a git command as a subprocess.
+        Execute a git command synchronously in a subprocess.
 
         Note that the command must start with the ``git_executable``.
 
@@ -171,7 +171,7 @@ class GitFileService(FileService):
             raise FileServiceError("Subprocess Error")
         return ret.stdout
 
-    async def _run_git_async(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
+    async def _run_git(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
         """
         Run a git command asynchronously in a subprocess.
 
@@ -224,7 +224,7 @@ class GitFileService(FileService):
     async def is_bare_git_dir(self, path: Path) -> bool:
         """Check if the `path` is a directory with a bare git repo."""
         try:
-            stdout = await self._run_git_async(
+            stdout = await self._run_git(
                 [self.git_executable, "rev-parse", "--is-bare-repository"], cwd=path, may_fail=True
             )
         except (FileNotFoundError, subprocess.CalledProcessError):
@@ -248,7 +248,7 @@ class GitFileService(FileService):
             shutil.rmtree(path)
         path.mkdir(parents=True, exist_ok=True)
         self.log.debug("Running: git init --bare")
-        await self._run_git_async(
+        await self._run_git(
             [self.git_executable, "init", "--bare", f"--initial-branch={initial_branch}"], cwd=path
         )
 
@@ -270,7 +270,7 @@ class GitFileService(FileService):
             self.log.error("User artifact not found at %s!", artifact_path)
             raise FileServiceError("User artifact not found")
         try:
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "branch", "main", "--contains", submission_hash],
                 cwd=artifact_path,
                 may_fail=True,
@@ -309,14 +309,12 @@ class GitFileService(FileService):
         ignore = shutil.ignore_patterns(".git", "__pycache__")
         shutil.copytree(input_path, output_path, ignore=ignore, dirs_exist_ok=True)
 
-        await self._run_git_async([self.git_executable, "add", "-A"], cwd=output_path)
-        await self._run_git_async(
+        await self._run_git([self.git_executable, "add", "-A"], cwd=output_path)
+        await self._run_git(
             [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=output_path
         )
         self.log.debug("Successfully commited files. Commit message: '%s'", message)
-        await self._run_git_async(
-            [self.git_executable, "push", "-u", "origin", "main"], cwd=output_path
-        )
+        await self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
         self.log.debug("Successfully pushed the commit")
 
     async def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
@@ -352,19 +350,19 @@ class GitFileService(FileService):
 
         try:
             # Get the release files (no need to clone the whole repo)
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "init", "--initial-branch=main"], cwd=tmp_path_input
             )
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "pull", remote_path_release, "main"], cwd=tmp_path_input
             )
 
             # Clone the user repo (we need the whole clone, because we will be committing to it)
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "clone", remote_path_user, tmp_path_output], cwd=tmp_base
             )
             # Ensure the user repo is on `main`
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output
             )
 
@@ -374,7 +372,7 @@ class GitFileService(FileService):
         finally:
             shutil.rmtree(tmp_base)
 
-    def fetch_files(self, dir: Path, artifact_type: ArtifactType, submission: Submission):
+    async def fetch_files(self, dir: Path, artifact_type: ArtifactType, submission: Submission):
         """Init and pull submission files from the repository of type ``artifact_type`` into ``dir``.
 
         Note that this method does not clone the entire repository, but only pulls
@@ -413,7 +411,7 @@ class GitFileService(FileService):
             commands.append([self.git_executable, "checkout", submission.commit_hash])
 
         for cmd in commands:
-            self._run_git(cmd, dir)
+            await self._run_git(cmd, dir)
 
         self.log.info("Successfully pulled files from the %s artifact.", artifact_type)
 
@@ -451,18 +449,16 @@ class GitFileService(FileService):
 
         try:
             # Get user submission files (no need to clone the whole repo)
-            self.fetch_files(tmp_path_input, ArtifactType.USER, submission)
+            await self.fetch_files(tmp_path_input, ArtifactType.USER, submission)
 
             # (Re-)Create bare edit repository
             await self.create_bare_repo(remote_path_edit, recreate_dir=True)
 
             # Clone the (still empty) edit repository
-            await self._run_git_async(
+            await self._run_git(
                 [self.git_executable, "clone", remote_path_edit, tmp_path_output], tmp_path_output
             )
-            await self._run_git_async(
-                [self.git_executable, "checkout", "-B", "main"], tmp_path_output
-            )
+            await self._run_git([self.git_executable, "checkout", "-B", "main"], tmp_path_output)
             self.log.debug("Successfully set up edit repo")
 
             # Copy files to the edit repo, commit and push the changes
@@ -471,7 +467,7 @@ class GitFileService(FileService):
         finally:
             shutil.rmtree(tmp_base)
 
-    def push_files(
+    async def push_files(
         self,
         filenames: list[str],
         dir: str | Path,
@@ -508,31 +504,33 @@ class GitFileService(FileService):
             self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
-            asyncio.run(self.create_bare_repo(remote_repo_path))
+            await self.create_bare_repo(remote_repo_path)
 
-        self._set_up_output_repo(Path(dir), output_branch)
-        self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
+        await self._set_up_output_repo(Path(dir), output_branch)
+        await self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
 
         self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
-        self._run_git([self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir)
+        await self._run_git(
+            [self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir
+        )
         self.log.info("Pushing complete")
 
-    def _set_up_output_repo(self, dir: Path, branch: str) -> None:
+    async def _set_up_output_repo(self, dir: Path, branch: str) -> None:
         """Initialize the repo at ``dir`` and switch to ``branch``."""
         if not dir.exists():
             self.log.debug("Creating directory %s", dir)
             dir.mkdir(parents=True)
         self.log.info("Initialising repo at %s", dir)
-        self._run_git([self.git_executable, "init"], dir)
+        await self._run_git([self.git_executable, "init"], dir)
         self.log.debug("Switching to branch %r", branch)
         try:
-            self._run_git([self.git_executable, "switch", branch], dir, may_fail=True)
+            await self._run_git([self.git_executable, "switch", branch], dir, may_fail=True)
         except subprocess.CalledProcessError:  # branch does not exist: create it
-            self._run_git([self.git_executable, "switch", "-c", branch], dir)
+            await self._run_git([self.git_executable, "switch", "-c", branch], dir)
             self.log.debug("Creating the new branch %r", branch)
         self.log.debug("Now at branch %r", branch)
 
-    def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
+    async def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
         """
         Commit the provided files in the repo at ``dir`` with the provided commit message.
         """
@@ -543,28 +541,28 @@ class GitFileService(FileService):
         if not filenames:
             self.log.warning("No files to commit! Repository: %s", dir)
 
-        self._run_git([self.git_executable, "add", "--", *filenames], dir)
-        self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
+        await self._run_git([self.git_executable, "add", "--", *filenames], dir)
+        await self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
 
-    def delete_lecture_files(self, lecture: Lecture) -> None:
+    async def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
         lecture_path = (self.gitbase / lecture.code).resolve()
         validate_path_relative_to(lecture_path, self.gitbase)
         tmp_lecture_path = (self.tmpbase / lecture.code).resolve()
         validate_path_relative_to(tmp_lecture_path, self.tmpbase)
-        shutil.rmtree(lecture_path, ignore_errors=True)
-        shutil.rmtree(tmp_lecture_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, lecture_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, tmp_lecture_path, ignore_errors=True)
 
-    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
+    async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
         """Delete all associated directories of the assignment."""
         assignment_path = (self.gitbase / lecture.code / str(assignment.id)).resolve()
         validate_path_relative_to(assignment_path, self.gitbase)
         tmp_assignment_path = (self.tmpbase / lecture.code / str(assignment.id)).resolve()
         validate_path_relative_to(tmp_assignment_path, self.tmpbase)
-        shutil.rmtree(assignment_path, ignore_errors=True)
-        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, assignment_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, tmp_assignment_path, ignore_errors=True)
 
-    def delete_submission_files(self, submission: Submission) -> None:
+    async def delete_submission_files(self, submission: Submission) -> None:
         """Delete all associated directories of the submission."""
         l_code = submission.assignment.lecture.code
         a_id = str(submission.assignment.id)
@@ -578,4 +576,4 @@ class GitFileService(FileService):
         for base_path in [assignment_path, tmp_assignment_path]:
             for dir_path in base_path.rglob("*"):
                 if dir_path.is_dir() and dir_path.name in target_names:
-                    shutil.rmtree(dir_path, ignore_errors=True)
+                    await asyncio.to_thread(shutil.rmtree, dir_path, ignore_errors=True)

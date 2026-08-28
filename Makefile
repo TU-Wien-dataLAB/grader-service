@@ -69,14 +69,14 @@ docs-live: ## Build and serve Sphinx documentation with live reload
 
 dev-up: ## Start development docker-compose environment
 	docker compose -f dev/docker-compose/docker-compose.yml build labextension
-	GRADER_REPO_ROOT=$(CURDIR) docker compose -f dev/docker-compose/docker-compose.yml up -d --build
+	GRADER_REPO_ROOT=$(CURDIR) docker compose --progress plain -f dev/docker-compose/docker-compose.yml up --build
 
 rebuild-labextension: ## Rebuild the labextension dev image and restart the hub
 	docker compose -f dev/docker-compose/docker-compose.yml build labextension
 	docker compose -f dev/docker-compose/docker-compose.yml up -d --force-recreate hub
 
 dev-down: ## Stop development docker-compose environment
-	docker compose -f dev/docker-compose/docker-compose.yml down -v
+	docker compose -f dev/docker-compose/docker-compose.yml down
 
 dev-logs: ## Show development environment logs
 	docker compose -f dev/docker-compose/docker-compose.yml logs -f
