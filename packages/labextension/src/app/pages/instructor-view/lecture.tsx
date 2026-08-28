@@ -2,6 +2,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -42,11 +43,19 @@ import { Badge } from '../../shadcn-components/ui/badge';
 import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '../../shadcn-components/ui/tooltip';
+import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
   checked: boolean;
 }
+
+export type IGroupedAssignments = Record<string, IAssignmentChecked[]>;
 
 interface IGroupsContextValue {
   groups: string[];
@@ -272,7 +281,7 @@ export const Lecture = () => {
 
   // split assignments based on their group
   const groupsDict = useMemo(() => {
-    const dict: Record<string, IAssignmentChecked[]> = {};
+    const dict: IGroupedAssignments = {};
     if (!isPendingAssignments) {
       filteredAssignments.forEach(assignment => {
         const group = assignment.settings.group;
@@ -293,11 +302,78 @@ export const Lecture = () => {
 
     return dict;
   }, [filteredAssignments]);
+
   const [openCreateAssignmentDialog, setOpenCreateAssignmentDialog] =
     useState(false);
   const [openExportGradesDialog, setOpenExportGradesDialog] = useState(false);
+  const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
+  const [checkedGroupAssignments, setCheckedGroupAssignments] =
+    useState<IGroupedAssignments>(null);
+
+  /* checkbox logic */
+  const handleGroupChecked = (group: string) => {
+    const allChecked = checkedGroupAssignments[group]
+      .filter(a => a.assignment.status === 'created')
+      .every(a => a.checked);
+    setCheckedGroupAssignments(prev => ({
+      ...prev,
+      [group]: prev[group].map(a =>
+        a.assignment.status === 'created' ? { ...a, checked: !allChecked } : a
+      )
+    }));
+  };
+
+  const handleAssignmentChecked = (
+    id: number,
+    checked: boolean,
+    group: string
+  ) => {
+    setCheckedGroupAssignments(prevState => ({
+      ...prevState,
+      [group]: prevState[group].map(a =>
+        a.assignment.id === id ? { ...a, checked } : a
+      )
+    }));
+  };
+
+  const checkGroupSymbol = (group: string) => {
+    if (!checkedGroupAssignments || !checkedGroupAssignments[group]) {
+      return;
+    }
+    const checkedCount = checkedGroupAssignments[group].filter(
+      a => a.checked
+    ).length;
+    if (checkedCount === 0) {
+      return false;
+    }
+    if (
+      checkedCount ===
+      checkedGroupAssignments[group].filter(
+        a => a.assignment.status === 'created'
+      ).length
+    ) {
+      return true;
+    }
+    return 'indeterminate';
+  };
+
+  const isAnyAssignmentChecked =
+    checkedGroupAssignments &&
+    Object.entries(checkedGroupAssignments).some(([groupKey]) =>
+      checkGroupSymbol(groupKey)
+    );
 
   const { status } = useMutationStatus();
+
+  useEffect(() => {
+    const initialCheckedState = Object.keys(groupsDict).reduce((acc, key) => {
+      acc[key] = groupsDict[key];
+      return acc;
+    }, {} as IGroupedAssignments);
+
+    setCheckedGroupAssignments(initialCheckedState);
+  }, [groupsDict]);
+
   return (
     <GroupsProvider assignments={assignments}>
       <div
@@ -354,6 +430,26 @@ export const Lecture = () => {
               setSearchQuery={setSearchQuery}
             />
             <div className={'flex flex-row ml-auto gap-3'}>
+              {checkedGroupAssignments && (
+                <Tooltip open={!isAnyAssignmentChecked ? null : false}>
+                  <TooltipTrigger
+                    render={
+                      <span className="inline-block">
+                        <Button
+                          className={'ml-auto cursor-pointer'}
+                          disabled={!isAnyAssignmentChecked}
+                          onClick={() => setOpenReleaseDialog(true)}
+                        >
+                          Release
+                        </Button>
+                      </span>
+                    }
+                  ></TooltipTrigger>
+                  <TooltipContent>
+                    <p>No assignments are selected.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <FilterAssignmentsButton
                 allFilters={allFilters}
                 activeFilters={activeFilters}
@@ -398,17 +494,26 @@ export const Lecture = () => {
           filteredAssignments.length > 0 ? (
             <DndProvider backend={HTML5Backend}>
               <ScrollingComponent className={'overflow-y-auto h-full w-full'}>
-                {Object.entries(groupsDict).map(
-                  ([groupKey, groupAssignments]) => (
-                    <AssignmentGroup
-                      key={groupKey}
-                      lectureId={lectureId}
-                      assignmentGroup={groupKey}
-                      groupAssignments={groupAssignments}
-                      allAssignments={filteredAssignments}
-                    />
-                  )
-                )}
+                {checkedGroupAssignments !== null &&
+                  Object.entries(groupsDict).map(
+                    ([groupKey, groupAssignments]) => {
+                      return (
+                        <AssignmentGroup
+                          key={groupKey}
+                          lectureId={lectureId}
+                          assignmentGroup={groupKey}
+                          groupAssignments={groupAssignments}
+                          checkedGroupAssignments={
+                            checkedGroupAssignments[groupKey]
+                          }
+                          allAssignments={filteredAssignments}
+                          handleAssignmentChecked={handleAssignmentChecked}
+                          handleGroupChecked={handleGroupChecked}
+                          isGroupChecked={checkGroupSymbol(groupKey)}
+                        />
+                      );
+                    }
+                  )}
               </ScrollingComponent>
             </DndProvider>
           ) : (
@@ -448,6 +553,19 @@ export const Lecture = () => {
           lectureId={lectureId}
           openDialog={openCreateAssignmentDialog}
           setOpenDialog={setOpenCreateAssignmentDialog}
+        />
+      )}
+      {openReleaseDialog && (
+        <ReleaseDialog
+          assignments={checkedGroupAssignments}
+          isAssignmentsGrouped
+          lectureId={lectureId}
+          openDialog={openReleaseDialog}
+          setOpenDialog={setOpenReleaseDialog}
+          handleGroupChecked={handleGroupChecked}
+          handleAssignmentChecked={handleAssignmentChecked}
+          checkGroupSymbol={checkGroupSymbol}
+          isAnyAssignmentChecked={isAnyAssignmentChecked}
         />
       )}
     </GroupsProvider>

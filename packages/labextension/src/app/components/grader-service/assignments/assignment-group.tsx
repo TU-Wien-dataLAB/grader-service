@@ -1,37 +1,38 @@
 import { AssignmentDetail } from '../../../../model/assignmentDetail';
 import { ItemTypes } from '../../../shadcn-components/ui/card';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
-import { ArrowRightFromLine } from 'lucide-react';
+import { ArrowRightFromLine, ChevronsUpDown } from 'lucide-react';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { IAssignmentChecked } from '../../../pages/instructor-view/lecture';
 import { AssignmentCard } from './assignment-card';
 import { Button } from '../../../shadcn-components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '../../../shadcn-components/ui/tooltip';
-import { ReleaseDialog } from './release-dialog';
 import { useAssignmentUpdate } from '../../../hooks/assignment/assignment-update-hook';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '../../../shadcn-components/ui/collapsible';
 
 export interface IAssignmentGroup {
   key: React.Key;
   lectureId: number;
   allAssignments: AssignmentDetail[];
   groupAssignments: IAssignmentChecked[];
+  checkedGroupAssignments: IAssignmentChecked[];
   assignmentGroup: string;
+  handleGroupChecked: (group: string) => void;
+  handleAssignmentChecked: (
+    id: number,
+    checked: boolean,
+    group: string
+  ) => void;
+  isGroupChecked: boolean | 'indeterminate';
 }
 
 export const AssignmentGroup = (props: IAssignmentGroup) => {
   const { handleUpdateAssignment } = useAssignmentUpdate();
-  const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
-  const [checkedAssignments, setCheckedAssignments] =
-    useState<IAssignmentChecked[]>(null);
-  // NOTE: maybe not the best way to do this, but is a workaround for now
-  useEffect(() => {
-    setCheckedAssignments(props.groupAssignments);
-  }, [props.groupAssignments]);
+  const [isOpenCollapsible, setIsOpenCollapsible] = useState<boolean>(true);
 
   /* drop logic */
   const ref = useRef<HTMLDivElement>(null);
@@ -81,38 +82,6 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
     );
   }
 
-  /* checkbox logic */
-  const handleGroupChecked = () => {
-    const allChecked = checkedAssignments
-      .filter(a => a.assignment.status === 'created')
-      .every(a => a.checked);
-    setCheckedAssignments(prev =>
-      prev.map(a =>
-        a.assignment.status === 'created' ? { ...a, checked: !allChecked } : a
-      )
-    );
-  };
-
-  const handleAssignmentChecked = (id: number, checked: boolean) => {
-    setCheckedAssignments(prevState =>
-      prevState.map(a => (a.assignment.id === id ? { ...a, checked } : a))
-    );
-  };
-
-  const checkGroupSymbol = () => {
-    const checkedCount = checkedAssignments.filter(a => a.checked).length;
-    if (checkedCount === 0) {
-      return false;
-    }
-    if (
-      checkedCount ===
-      checkedAssignments.filter(a => a.assignment.status === 'created').length
-    ) {
-      return true;
-    }
-    return 'indeterminate';
-  };
-
   const determineIfAssignmentBelongsToGroup = (assignmentGroup: string) => {
     return assignmentGroup !== '' && assignmentGroup !== null
       ? assignmentGroup === props.assignmentGroup
@@ -123,21 +92,74 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
       className={'flex flex-col gap-2 items-start self-stretch mb-8'}
       ref={ref}
     >
-      <div className={'flex flex-row items-center gap-4 self-stretch'}>
-        {checkedAssignments && (
-          <Checkbox
-            checked={checkGroupSymbol()}
-            onCheckedChange={handleGroupChecked}
-            disabled={props.groupAssignments.every(
-              a => a.assignment.status !== 'created'
+      <Collapsible
+        open={isOpenCollapsible}
+        onOpenChange={setIsOpenCollapsible}
+        className="flex w-full flex-col gap-2"
+      >
+        <div className="flex justify-between w-full">
+          <div className="flex items-center gap-2">
+            {props.groupAssignments && (
+              <Checkbox
+                checked={props.isGroupChecked}
+                onCheckedChange={() =>
+                  props.handleGroupChecked(props.assignmentGroup)
+                }
+                disabled={props.groupAssignments.every(
+                  a => a.assignment.status !== 'created'
+                )}
+              ></Checkbox>
             )}
-          ></Checkbox>
-        )}
-        <h2 className={'text-xl font-bold'}>
-          {props.assignmentGroup} ({props.groupAssignments.length})
-        </h2>
-      </div>
-      {isOver && (
+            <h2 className={`font-bold text-xl ${isOver && 'text-primary'}`}>
+              {props.assignmentGroup} ({props.groupAssignments.length})
+            </h2>
+          </div>
+          <CollapsibleTrigger
+            render={
+              <Button variant="ghost" size="icon" className="size-8">
+                <ChevronsUpDown />
+                <span className="sr-only">Toggle details</span>
+              </Button>
+            }
+          />
+        </div>
+        <CollapsibleContent className="flex flex-col gap-2">
+          {isOver && (
+            <div
+              className={`flex p-10 self-stretch ${
+                determineIfAssignmentBelongsToGroup(item.group)
+                  ? 'bg-[#E0E7EB]'
+                  : 'bg-card'
+              } py-10 px-14 gap-1.5 border border-dashed border-primary justify-center items-center`}
+            >
+              <div className={'self-center justify-items-center'}>
+                <ArrowRightFromLine className={'text-primary'} />
+                <p className={'text-black'}>Drag assignment here</p>
+              </div>
+            </div>
+          )}
+          <div
+            className={'grid grid-cols-1 @6xl:grid-cols-2 gap-2 self-stretch'}
+          >
+            {props.checkedGroupAssignments &&
+              props.checkedGroupAssignments.map(assignment => (
+                <AssignmentCard
+                  assignment={assignment.assignment}
+                  checked={assignment.checked}
+                  handleChange={checked =>
+                    props.handleAssignmentChecked(
+                      assignment.assignment.id,
+                      checked,
+                      props.assignmentGroup
+                    )
+                  }
+                  key={assignment.assignment.id}
+                />
+              ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+      {isOver && !isOpenCollapsible && (
         <div
           className={`flex p-10 self-stretch ${
             determineIfAssignmentBelongsToGroup(item.group)
@@ -150,51 +172,6 @@ export const AssignmentGroup = (props: IAssignmentGroup) => {
             <p className={'text-black'}>Drag assignment here</p>
           </div>
         </div>
-      )}
-      <div className={'grid grid-cols-1 @6xl:grid-cols-2 gap-2 self-stretch'}>
-        {checkedAssignments &&
-          checkedAssignments.map(assignment => (
-            <AssignmentCard
-              assignment={assignment.assignment}
-              checked={assignment.checked}
-              handleChange={checked =>
-                handleAssignmentChecked(assignment.assignment.id, checked)
-              }
-              key={assignment.assignment.id}
-            />
-          ))}
-      </div>
-      {checkedAssignments && (
-        <Tooltip open={!checkedAssignments.some(a => a.checked) ? null : false}>
-          <TooltipTrigger
-            render={
-              <span className="inline-block">
-                <Button
-                  className={'ml-auto'}
-                  disabled={!checkedAssignments.some(a => a.checked)}
-                  onClick={() => setOpenReleaseDialog(true)}
-                >
-                  Release
-                </Button>
-              </span>
-            }
-          ></TooltipTrigger>
-          <TooltipContent>
-            <p>No assignments are selected.</p>
-          </TooltipContent>
-        </Tooltip>
-      )}
-      {openReleaseDialog && (
-        <ReleaseDialog
-          assignments={checkedAssignments}
-          lectureId={props.lectureId}
-          openDialog={openReleaseDialog}
-          setOpenDialog={setOpenReleaseDialog}
-          groupName={props.assignmentGroup}
-          handleGroupChecked={handleGroupChecked}
-          handleAssignmentChecked={handleAssignmentChecked}
-          checkGroupSymbol={checkGroupSymbol}
-        />
       )}
     </div>
   );
