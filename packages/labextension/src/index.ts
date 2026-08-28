@@ -34,7 +34,7 @@ import {
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
 
-import { CourseManageView } from './widgets/coursemanage';
+import { GraderServiceView } from './widget';
 
 import { Cell } from '@jupyterlab/cells';
 
@@ -42,14 +42,13 @@ import { Menu, PanelLayout } from '@lumino/widgets';
 
 import { NotebookModeSwitch } from './components/notebook/slider';
 
-import { checkIcon, editIcon, runIcon } from '@jupyterlab/ui-components';
+import { checkIcon, runIcon } from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { AssignmentManageView } from './widgets/assignmentmanage';
 import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
 import {
   listIcon,
@@ -101,7 +100,7 @@ export class GlobalObjects {
 const createCourseManagementOpenCommand = (
   app: JupyterFrontEnd,
   launcher: ILauncher,
-  courseManageTracker: WidgetTracker<MainAreaWidget<CourseManageView>>
+  courseManageTracker: WidgetTracker<MainAreaWidget<GraderServiceView>>
 ) => {
   const command = CourseManageCommandIDs.open;
   app.commands.addCommand(command, {
@@ -212,6 +211,96 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
   }, this);
 };
 
+const createNotebookCommands = (
+  app: JupyterFrontEnd,
+  tracker: INotebookTracker
+) => {
+  let command = NotebookExecuteIDs.run;
+  app.commands.addCommand(command, {
+    label: 'Run cell',
+    execute: async () => {
+      await app.commands.execute('notebook:run-cell');
+    },
+    icon: runIcon
+  });
+
+  command = RevertCellIDs.revert;
+  app.commands.addCommand(command, {
+    label: 'Revert cell',
+    isVisible: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('revert') !== null;
+    },
+    isEnabled: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('revert') !== null;
+    },
+    execute: () => {
+      showDialog({
+        title: "Do you want to revert the cell to it's original state?",
+        body: 'This will overwrite your current changes!',
+        buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
+      }).then(result => {
+        if (!result.button.accept) {
+          return;
+        }
+        tracker.activeCell.inputArea.model.sharedModel.setSource('');
+        tracker.activeCell.inputArea.model.sharedModel.setSource(
+          tracker.activeCell.model.getMetadata('revert').toString()
+        );
+      });
+    },
+    icon: undoIcon
+  });
+
+  command = ShowHintIDs.show;
+  app.commands.addCommand(command, {
+    label: 'Show hint',
+    isVisible: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('hint') !== null;
+    },
+    isEnabled: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('hint') !== null;
+    },
+    execute: () => {
+      // check if there is an active cell
+      if (!tracker.activeCell) return;
+
+      let hintWidget: HintWidget | undefined;
+
+      (tracker.activeCell.layout as PanelLayout).widgets.forEach(widget => {
+        if (widget instanceof HintWidget) {
+          hintWidget = widget;
+        }
+      });
+      if (hintWidget === undefined) {
+        (tracker.activeCell.layout as PanelLayout).addWidget(
+          new HintWidget(
+            tracker.activeCell.model.getMetadata('hint').toString()
+          )
+        );
+      } else {
+        hintWidget.toggleShowAlert();
+        hintWidget.setHint(
+          tracker.activeCell.model.getMetadata('hint').toString()
+        );
+        hintWidget.update();
+      }
+    },
+    icon: listIcon
+  });
+};
+
 /**
  * Initialization data for the grading extension.
  */
@@ -241,7 +330,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     themeManager: IThemeManager,
     mainMenu: IMainMenu
   ) => {
-    console.log('JupyterLab extension grader_labextension is activated!');
+    console.log('JupyterLab extension grader-labextension is activated!');
     console.log('JupyterFrontEnd:', app);
     console.log('ICommandPalette:', palette);
     console.log('Tracker', tracker);
@@ -265,19 +354,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         : 'dark';
     }, this);
 
-    const assignmentTracker = new WidgetTracker<
-      MainAreaWidget<AssignmentManageView>
-    >({
-      namespace: 'grader-assignments'
-    });
-
-    restorer.restore(assignmentTracker, {
-      command: AssignmentsCommandIDs.open,
-      name: () => 'grader-assignments'
-    });
-
     const courseManageTracker = new WidgetTracker<
-      MainAreaWidget<CourseManageView>
+      MainAreaWidget<GraderServiceView>
     >({
       namespace: 'grader-coursemanage'
     });
@@ -288,39 +366,21 @@ const extension: JupyterFrontEndPlugin<void> = {
     });
 
     /* ##### Course Manage View Widget ##### */
-    let command: string = CourseManageCommandIDs.create;
+    const command: string = CourseManageCommandIDs.create;
     app.commands.addCommand(command, {
       execute: () => {
         // Create a blank content widget inside of a MainAreaWidget
-        const gradingView = new CourseManageView();
-        const gradingWidget = new MainAreaWidget<CourseManageView>({
+        const gradingView = new GraderServiceView();
+        const gradingWidget = new MainAreaWidget<GraderServiceView>({
           content: gradingView
         });
         gradingWidget.id = 'coursemanage-jupyterlab';
-        gradingWidget.title.label = 'Course Management';
+        gradingWidget.title.label = 'Grader Service';
         gradingWidget.title.closable = true;
 
         courseManageTracker.add(gradingWidget);
 
         return gradingWidget;
-      }
-    });
-
-    command = AssignmentsCommandIDs.create;
-    app.commands.addCommand(command, {
-      execute: () => {
-        // Create a blank content widget inside a MainAreaWidget
-        const assignmentView = new AssignmentManageView();
-        const assignmentWidget = new MainAreaWidget<AssignmentManageView>({
-          content: assignmentView
-        });
-        assignmentWidget.id = 'assignments-jupyterlab';
-        assignmentWidget.title.label = 'Assignments';
-        assignmentWidget.title.closable = true;
-
-        assignmentTracker.add(assignmentWidget);
-
-        return assignmentWidget;
       }
     });
 
@@ -344,7 +404,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           // add menu to JupyterLab main menu
           const cmMenu = new Menu({ commands: app.commands });
-          cmMenu.title.label = 'Course Management';
+          cmMenu.title.label = 'Grader Service';
           mainMenu.addMenu(cmMenu, false, { rank: 210 });
           createCourseManagementOpenCommand(app, launcher, courseManageTracker);
           GlobalObjects.courseManageMenu = cmMenu;
@@ -358,51 +418,6 @@ const extension: JupyterFrontEndPlugin<void> = {
         GlobalObjects.assignmentMenu = aMenu;
 
         updateMenus();
-
-        // only add assignment list if user permissions can be loaded
-        command = AssignmentsCommandIDs.open;
-        app.commands.addCommand(command, {
-          label: args =>
-            args['label'] ? (args['label'] as string) : 'Assignments',
-          execute: async args => {
-            let assignmentWidget = assignmentTracker.currentWidget;
-            if (!assignmentWidget) {
-              assignmentWidget = await app.commands.execute(
-                AssignmentsCommandIDs.create
-              );
-            }
-
-            let path = args?.path as string;
-            if (args?.path === undefined) {
-              const savedPath = loadString(
-                'assignment-manage-react-router-path'
-              );
-              if (savedPath !== null && savedPath !== '') {
-                path = savedPath;
-              } else {
-                path = '/';
-              }
-            }
-
-            await assignmentWidget.content.router.navigate(path);
-
-            if (!assignmentWidget.isAttached) {
-              // Attach the widget to the main work area if it's not there
-              app.shell.add(assignmentWidget, 'main');
-            }
-            // Activate the widget
-            app.shell.activateById(assignmentWidget.id);
-          },
-          icon: args => (args['path'] ? undefined : editIcon)
-        });
-
-        // Add the command to the launcher
-        console.log('Add assignment launcher');
-        launcher.add({
-          command: command,
-          category: 'Assignments',
-          rank: 0
-        });
       })
       .catch((error: Error) => {
         showErrorMessage(
@@ -410,91 +425,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           'Please restart your server: ' + error.message
         );
       });
-
-    command = NotebookExecuteIDs.run;
-    app.commands.addCommand(command, {
-      label: 'Run cell',
-      execute: async () => {
-        await app.commands.execute('notebook:run-cell');
-      },
-      icon: runIcon
-    });
-
-    command = RevertCellIDs.revert;
-    app.commands.addCommand(command, {
-      label: 'Revert cell',
-      isVisible: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('revert') !== null;
-      },
-      isEnabled: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('revert') !== null;
-      },
-      execute: () => {
-        showDialog({
-          title: "Do you want to revert the cell to it's original state?",
-          body: 'This will overwrite your current changes!',
-          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
-        }).then(result => {
-          if (!result.button.accept) {
-            return;
-          }
-          tracker.activeCell.inputArea.model.sharedModel.setSource('');
-          tracker.activeCell.inputArea.model.sharedModel.setSource(
-            tracker.activeCell.model.getMetadata('revert').toString()
-          );
-        });
-      },
-      icon: undoIcon
-    });
-
-    command = ShowHintIDs.show;
-    app.commands.addCommand(command, {
-      label: 'Show hint',
-      isVisible: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('hint') !== null;
-      },
-      isEnabled: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('hint') !== null;
-      },
-      execute: () => {
-        // check if there is an active cell
-        if (!tracker.activeCell) return;
-
-        let hintWidget: HintWidget | undefined;
-
-        (tracker.activeCell.layout as PanelLayout).widgets.forEach(widget => {
-          if (widget instanceof HintWidget) {
-            hintWidget = widget;
-          }
-        });
-        if (hintWidget === undefined) {
-          (tracker.activeCell.layout as PanelLayout).addWidget(
-            new HintWidget(
-              tracker.activeCell.model.getMetadata('hint').toString()
-            )
-          );
-        } else {
-          hintWidget.toggleShowAlert();
-          hintWidget.setHint(
-            tracker.activeCell.model.getMetadata('hint').toString()
-          );
-          hintWidget.update();
-        }
-      },
-      icon: listIcon
-    });
+    createNotebookCommands(app, tracker);
   }
 };
 export default extension;

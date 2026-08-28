@@ -8,7 +8,7 @@ import { Assignment } from '../model/assignment';
 import { AssignmentDetail } from '../model/assignmentDetail';
 import { Lecture } from '../model/lecture';
 import { HTTPMethod, request } from './request.service';
-import { RepoType } from '../components/util/repo-type';
+import { RepoType } from '../app/components/utils/repo-type';
 
 export function createAssignment(
   lectureId: number,
@@ -125,7 +125,7 @@ export function pushAssignment(
   selectedFiles?: string[]
 ): Promise<void> {
   let url = `/api/lectures/${lectureId}/assignments/${assignmentId}/push/${repoType}`;
-  if (commitMessage && commitMessage !== undefined) {
+  if (commitMessage) {
     const searchParams = new URLSearchParams({
       'commit-message': commitMessage
     });

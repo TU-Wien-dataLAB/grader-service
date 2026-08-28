@@ -6,11 +6,11 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "lib": ["DOM", "ES2020"],
+    "lib": ["DOM", "ES2019", "ES2020.Intl"],
     "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
@@ -18,8 +18,9 @@
     "rootDir": "src",
     "strict": true,
     "strictNullChecks": false,
+    "skipLibCheck": true,
     "target": "ES2020",
-    "types": ["jest"]
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"]
 }

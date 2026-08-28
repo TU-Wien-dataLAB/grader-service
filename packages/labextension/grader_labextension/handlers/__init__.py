@@ -13,6 +13,7 @@ from grader_labextension.handlers import (
     permission,
     submissions,
     version_control,
+    user,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "permission",
     "version_control",
     "base_handler",
+    "user",
 ]
