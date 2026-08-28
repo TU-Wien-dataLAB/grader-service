@@ -47,7 +47,7 @@ def celery_app(app, sql_alchemy_sessionmaker):
 def test_celery_autograde_task_runs_successfully(sql_alchemy_sessionmaker, celery_app):
     """Test that autograde_task runs without errors with valid inputs."""
     session = sql_alchemy_sessionmaker()
-    submission = insert_submission(session.get_bind())
+    submission = insert_submission(session.get_bind(), session=session)
     autograde_task.request.id = "test-task-id"
     autograde_task._sessions = {"test-task-id": session}
 
@@ -90,7 +90,7 @@ def test_celery_autograde_task_invalid_submission_id(sql_alchemy_sessionmaker, c
 def test_celery_autograde_task_mismatched_ids(sql_alchemy_sessionmaker, celery_app):
     """Test that autograde_task raises error when IDs of lecture and submission don't match."""
     session = sql_alchemy_sessionmaker()
-    submission = insert_submission(session.get_bind())
+    submission = insert_submission(session.get_bind(), session=session)
     autograde_task.request.id = "test-task-id"
     autograde_task._sessions = {"test-task-id": session}
 
@@ -107,7 +107,7 @@ def test_celery_autograde_task_mismatched_ids(sql_alchemy_sessionmaker, celery_a
 def test_celery_generate_feedback_task_success(sql_alchemy_sessionmaker, celery_app):
     """Test that generate_feedback_task runs without errors with valid inputs."""
     session = sql_alchemy_sessionmaker()
-    submission = insert_submission(session.get_bind())
+    submission = insert_submission(session.get_bind(), session=session)
     generate_feedback_task.request.id = "test-task-id"
     generate_feedback_task._sessions = {"test-task-id": session}
 
@@ -153,7 +153,7 @@ def test_celery_generate_feedback_task_invalid_submission_id(sql_alchemy_session
 def test_celery_generate_feedback_task_mismatched_ids(sql_alchemy_sessionmaker, celery_app):
     """Test that generate_feedback_task raises error when IDs of lecture and submission don't match."""
     session = sql_alchemy_sessionmaker()
-    submission = insert_submission(session.get_bind())
+    submission = insert_submission(session.get_bind(), session=session)
     generate_feedback_task.request.id = "test-task-id"
     generate_feedback_task._sessions = {"test-task-id": session}
 

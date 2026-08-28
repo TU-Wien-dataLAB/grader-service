@@ -1,4 +1,4 @@
-.PHONY: help sync test-service test-labextension test test-integration lint-service lint-labextension lint build-service build-labextension build docs docs-clean docs-live dev-up dev-down dev-logs clean run-service run-hub watch-labextension
+.PHONY: help sync test-service test-labextension test test-integration lint-service lint-labextension lint build-service build-labextension build docs docs-clean docs-live dev-up rebuild-labextension dev-down dev-logs clean run-service run-hub watch-labextension
 
 SHELL := /bin/bash
 GRADER_API_TOKEN ?= $(shell openssl rand -hex 16)
@@ -68,7 +68,12 @@ docs-live: ## Build and serve Sphinx documentation with live reload
 	uv run --no-sync sphinx-autobuild docs/source docs/_build
 
 dev-up: ## Start development docker-compose environment
-	docker compose -f dev/docker-compose/docker-compose.yml up -d --build
+	docker compose -f dev/docker-compose/docker-compose.yml build labextension
+	GRADER_REPO_ROOT=$(CURDIR) docker compose -f dev/docker-compose/docker-compose.yml up -d --build
+
+rebuild-labextension: ## Rebuild the labextension dev image and restart the hub
+	docker compose -f dev/docker-compose/docker-compose.yml build labextension
+	docker compose -f dev/docker-compose/docker-compose.yml up -d --force-recreate hub
 
 dev-down: ## Stop development docker-compose environment
 	docker compose -f dev/docker-compose/docker-compose.yml down -v

@@ -46,7 +46,14 @@ Access JupyterHub at `http://localhost:8080`
 - **Service**: Edit Python files in `packages/service/grader_service/`
 - **Labextension**: Edit TypeScript files in `packages/labextension/src/`
 
-Changes are automatically picked up by the development environment.
+Service changes are picked up by the dev container; restart the service
+container if a reload is needed (`docker compose -f dev/docker-compose/docker-compose.yml restart service`).
+
+Labextension TypeScript changes are hot-reloaded: an in-pod watcher recompiles on save, so
+refreshing the browser tab picks up the rebuilt extension. See
+[dev/docker-compose/README.md](dev/docker-compose/README.md#editing-the-labextension)
+for details. Dependency, Python code, or build-setup changes require rebuilding the
+labextension image with `make rebuild-labextension`.
 
 ## Development Commands
 
@@ -79,6 +86,7 @@ make docs-live   # Live-reload docs
 make dev-up      # Start dev environment
 make dev-down    # Stop dev environment
 make dev-logs    # View dev logs
+make rebuild-labextension  # Rebuild labextension dev image
 
 # Cleanup
 make clean       # Remove build artifacts
@@ -113,11 +121,14 @@ make test-integration
 
 ### Development Environment
 
-Hot-reload enabled for both packages:
+Hot-reload for labextension TypeScript edits; service reloads on restart:
 
 ```bash
 make dev-up
 ```
+
+See [dev/docker-compose/README.md](dev/docker-compose/README.md) for the full
+development workflow, including editing the service and labextension.
 
 
 

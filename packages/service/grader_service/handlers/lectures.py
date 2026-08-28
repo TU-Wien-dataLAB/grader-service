@@ -3,6 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import re
 from http import HTTPStatus
 
 import tornado
@@ -11,11 +12,14 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 from tornado.web import HTTPError
 
 from grader_service.api.models.lecture import Lecture as LectureModel
+from grader_service.errors import APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import Lecture, LectureState
 from grader_service.orm.takepart import Role, Scope
 from grader_service.registry import VersionSpecifier, register_handler
+
+lecture_code_pattern = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @register_handler(r"\/api\/lectures\/?", VersionSpecifier.ALL)
@@ -64,6 +68,12 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture_model = LectureModel.from_dict(body)
+
+        if not lecture_code_pattern.fullmatch(lecture_model.code or ""):
+            raise APIError(
+                HTTPStatus.BAD_REQUEST,
+                message="Invalid lecture code: only alphanumeric characters, '-' and '_' are allowed.",
+            )
 
         lecture = (
             self.session.query(Lecture).filter(Lecture.code == lecture_model.code).one_or_none()
