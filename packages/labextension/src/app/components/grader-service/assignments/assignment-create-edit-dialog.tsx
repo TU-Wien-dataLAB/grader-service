@@ -55,8 +55,7 @@ import {
 import {
   calculateDaysDifference,
   determineDisplayText,
-  buildPeriod,
-  truncateText
+  buildPeriod
 } from '../../utils/utils';
 import moment from 'moment';
 import { useGroups } from '../../../pages/instructor-view/lecture';
@@ -174,10 +173,10 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent className={'overflow-y-auto'}>
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="truncate w-full">
             {props.assignment
-              ? `Edit ${truncateText(props.assignment.name, 40)}`
+              ? `Edit ${props.assignment.name}`
               : 'New Assignment'}
           </DialogTitle>
         </DialogHeader>

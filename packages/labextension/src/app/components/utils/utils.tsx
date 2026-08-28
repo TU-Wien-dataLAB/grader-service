@@ -42,10 +42,3 @@ export function highlightText(text: string, query: string): React.ReactNode {
     )
   );
 }
-
-export function truncateText(text: string, maxLength = 15, suffix = '...') {
-  if (text.length <= maxLength) {
-    return text;
-  }
-  return text.slice(0, maxLength).trim() + suffix;
-}

@@ -29,10 +29,7 @@ export function useAssignmentDelete() {
       })
   });
 
-  const handleDeleteAssignment = async (
-    assignmentId: number,
-    lectureId: number
-  ) => {
+  const handleDeleteAssignment = (assignmentId: number, lectureId: number) => {
     deleteAssignmentMutation.mutate({ assignmentId, lectureId });
   };
   return { handleDeleteAssignment };
