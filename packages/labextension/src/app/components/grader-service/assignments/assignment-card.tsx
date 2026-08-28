@@ -55,19 +55,19 @@ export const AssignmentCard = (props: IAssignment) => {
     if (gradingType === AutogradeTypeEnum.FullAuto) {
       return (
         <FullyAutomaticGradingBadge
-          className={props.assignment.status === 'complete' && 'opacity-80'}
+          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
         />
       );
     } else if (gradingType === AutogradeTypeEnum.Auto) {
       return (
         <AutomaticGradingBadge
-          className={props.assignment.status === 'complete' && 'opacity-80'}
+          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
         />
       );
     } else {
       return (
         <ManualGradingBadge
-          className={props.assignment.status === 'complete' && 'opacity-80'}
+          className={props.assignment.status === 'complete' ? 'opacity-80' : ''}
         />
       );
     }
@@ -103,13 +103,13 @@ export const AssignmentCard = (props: IAssignment) => {
     >
       <Card
         className={`flex self-stretch gap-0 row-span-1 col-span-1 p-0 ${
-          props.checked && 'border border-primary'
+          props.checked ? 'border border-primary' : ''
         }`}
       >
         <CardHeader
           className={`p-4 flex gap-4 items-center ${
             props.checked && 'bg-[#E0E7EB]'
-          } ${props.assignment.status === 'complete' && 'text-border'}`}
+          } ${props.assignment.status === 'complete' ? 'text-border' : ''}`}
         >
           <Checkbox
             checked={props.checked}
@@ -134,7 +134,7 @@ export const AssignmentCard = (props: IAssignment) => {
           </div>
           <div
             className={`grid grid-cols-3 ${
-              props.assignment.status === 'complete' && 'text-border'
+              props.assignment.status === 'complete' ? 'text-border' : ''
             }`}
           >
             <div className={'flex flex-col items-start gap-2'}>

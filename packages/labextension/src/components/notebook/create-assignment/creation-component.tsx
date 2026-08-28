@@ -28,7 +28,7 @@ export const CreationComponent = (props: ICreationComponentProps) => {
   const [id, setId] = React.useState(toolData.id);
   const [points, setPoints] = React.useState(toolData.points);
   const [hintChecked, setChecked] = React.useState(
-    props.cell.model.getMetadata('hint') != null
+    props.cell.model.getMetadata('hint') !== null
   );
   const [hint, setHint] = React.useState(
     hintChecked ? props.cell.model.getMetadata('hint') : ''

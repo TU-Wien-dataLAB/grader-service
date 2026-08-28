@@ -55,8 +55,7 @@ import {
 import {
   calculateDaysDifference,
   determineDisplayText,
-  buildPeriod,
-  truncateText
+  buildPeriod
 } from '../../utils/utils';
 import moment from 'moment';
 import { useGroups } from '../../../pages/instructor-view/lecture';
@@ -111,18 +110,18 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
         }
       };
 
-      if (!createAnother) {
-        props.setOpenDialog(false);
-      }
       if (props.assignment) {
-        await handleUpdateAssignment(
+        handleUpdateAssignment(
           props.assignment,
           newAssignment,
           props.lectureId,
           recalcScoresConfirmed
         );
       } else {
-        await handleCreateAssignment(newAssignment, props.lectureId);
+        handleCreateAssignment(newAssignment, props.lectureId);
+      }
+      if (!createAnother) {
+        props.setOpenDialog(false);
       }
     }
   });
@@ -174,10 +173,10 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent className={'overflow-y-auto'}>
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="truncate w-full">
             {props.assignment
-              ? `Edit ${truncateText(props.assignment.name, 40)}`
+              ? `Edit ${props.assignment.name}`
               : 'New Assignment'}
           </DialogTitle>
         </DialogHeader>
@@ -350,7 +349,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                     {field.state.value?.length > 0 &&
                       field.state.value.map((submissionPeriod, index) => {
                         const isDisabled = !form.state.values.deadline;
-                        console.log(JSON.stringify(field.state.value));
+
                         return (
                           <div
                             className={

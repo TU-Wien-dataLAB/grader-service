@@ -28,7 +28,7 @@ export namespace CellModel {
     cellType: nbformat.CellType
   ): boolean {
     const data = CellModel.getNbgraderData(cellModel.metadata);
-    if (data == null || !PrivateNbgraderData.isInvalid(data, cellType)) {
+    if (data === null || !PrivateNbgraderData.isInvalid(data, cellType)) {
       return false;
     }
 
@@ -47,7 +47,7 @@ export namespace CellModel {
    */
   export function clearCellType(cellMetadata: Partial<ICellMetadata>): void {
     const data = cellMetadata[NBGRADER_KEY] as JSONObject | undefined;
-    if (data == null) {
+    if (data === null) {
       return;
     }
     data['cell_type'] = undefined;
@@ -62,11 +62,11 @@ export namespace CellModel {
   export function getNbgraderData(
     cellMetadata: Partial<ICellMetadata>
   ): NbgraderData {
-    if (cellMetadata == null) {
+    if (cellMetadata === null) {
       return null;
     }
     const nbgraderValue = cellMetadata[NBGRADER_KEY];
-    if (nbgraderValue == null) {
+    if (nbgraderValue === null) {
       return null;
     }
     return nbgraderValue.valueOf() as NbgraderData;
@@ -158,18 +158,18 @@ export namespace CellModel {
     cellModel: ICellModel
   ): void {
     const readOnlyMetadata = cellModel.metadata;
-    if (data == null) {
-      if (readOnlyMetadata[NBGRADER_KEY] != undefined) {
+    if (data === null) {
+      if (readOnlyMetadata[NBGRADER_KEY] !== undefined) {
         readOnlyMetadata[NBGRADER_KEY] = undefined;
       }
       return;
     }
     const currentDataJson = readOnlyMetadata[NBGRADER_KEY];
     const currentData =
-      currentDataJson == null
+      currentDataJson === null
         ? null
         : (currentDataJson.valueOf() as NbgraderData);
-    if (currentData != data) {
+    if (currentData !== data) {
       cellModel.setMetadata(NBGRADER_KEY, data.toJson());
     }
   }
@@ -181,14 +181,14 @@ export namespace CellModel {
 
 namespace PrivateNbgraderData {
   export function getGradeId(nbgraderData: NbgraderData): string {
-    if (nbgraderData == null || nbgraderData.grade_id == null) {
+    if (nbgraderData === null || nbgraderData.grade_id === null) {
       return '';
     }
     return nbgraderData.grade_id;
   }
 
   export function getPoints(nbgraderData: NbgraderData): number {
-    if (nbgraderData == null) {
+    if (nbgraderData === null) {
       return 0;
     }
     return PrivateNbgraderData._to_float(nbgraderData.points);
@@ -230,7 +230,7 @@ namespace PrivateNbgraderData {
   }
 
   export function isGrade(nbgraderData: NbgraderData): boolean {
-    return nbgraderData != null && nbgraderData.grade === true;
+    return nbgraderData !== null && nbgraderData.grade === true;
   }
 
   export function isGraded(nbgraderData: NbgraderData): boolean {
@@ -247,7 +247,7 @@ namespace PrivateNbgraderData {
     return (
       !PrivateNbgraderData.isTask(nbgraderData) &&
       cellType !== 'code' &&
-      PrivateNbgraderData.isSolution(nbgraderData) !=
+      PrivateNbgraderData.isSolution(nbgraderData) !==
         PrivateNbgraderData.isGrade(nbgraderData)
     );
   }
@@ -256,20 +256,20 @@ namespace PrivateNbgraderData {
     return (
       !PrivateNbgraderData.isSolution(nbgraderData) &&
       (PrivateNbgraderData.isGraded(nbgraderData) ||
-        (nbgraderData != null && nbgraderData.locked === true))
+        (nbgraderData !== null && nbgraderData.locked === true))
     );
   }
 
   export function isSolution(nbgraderData: NbgraderData): boolean {
-    return nbgraderData != null && nbgraderData.solution === true;
+    return nbgraderData !== null && nbgraderData.solution === true;
   }
 
   export function isTask(nbgraderData: NbgraderData): boolean {
-    return nbgraderData != null && nbgraderData.task === true;
+    return nbgraderData !== null && nbgraderData.task === true;
   }
 
   export function _to_float(val: any): number {
-    if (val == null || val === '') {
+    if (val === null || val === '') {
       return 0;
     }
     const valType = typeof val;
@@ -288,7 +288,7 @@ namespace PrivateToolData {
   }
 
   export function getGradeId(data: ToolData): string {
-    return data.id == null ? '' : data.id;
+    return data.id === null ? '' : data.id;
   }
 
   export function getLocked(data: ToolData): boolean {
@@ -337,25 +337,25 @@ export class NbgraderData {
 
   toJson(): ReadonlyJSONObject {
     const json = {} as JSONObject;
-    if (this.grade != null) {
+    if (this.grade !== null) {
       json['grade'] = this.grade;
     }
-    if (this.grade_id != null) {
+    if (this.grade_id !== null) {
       json['grade_id'] = this.grade_id;
     }
-    if (this.locked != null) {
+    if (this.locked !== null) {
       json['locked'] = this.locked;
     }
-    if (this.points != null) {
+    if (this.points !== null) {
       json['points'] = this.points;
     }
-    if (this.schema_version != null) {
+    if (this.schema_version !== null) {
       json['schema_version'] = this.schema_version;
     }
-    if (this.solution != null) {
+    if (this.solution !== null) {
       json['solution'] = this.solution;
     }
-    if (this.task != null) {
+    if (this.task !== null) {
       json['task'] = this.task;
     }
     return json;

@@ -25,8 +25,8 @@ export function useAssignmentUpdate() {
         variables.recalcScores
       );
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
@@ -41,7 +41,7 @@ export function useAssignmentUpdate() {
       })
   });
 
-  const handleUpdateAssignment = async (
+  const handleUpdateAssignment = (
     assignment: Assignment,
     updatedValues: Assignment,
     lectureId: number,

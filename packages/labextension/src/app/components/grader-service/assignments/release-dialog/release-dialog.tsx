@@ -19,7 +19,6 @@ import {
 import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-status-hook';
 import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
-import { truncateText } from '../../../utils/utils';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[] | IGroupedAssignments;
@@ -44,15 +43,15 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
     defaultValues: {
       comment: 'Release'
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       if (props.isAssignmentsGrouped) {
         const flatAssignments = Object.values(props.assignments).flat();
-        await handleAssignmentsRelease(flatAssignments, props.lectureId);
+        handleAssignmentsRelease(flatAssignments, props.lectureId);
       }
       if (Array.isArray(props.assignments)) {
-        await handleAssignmentsRelease(props.assignments, props.lectureId);
+        handleAssignmentsRelease(props.assignments, props.lectureId);
       } else {
-        await handleRelease(props.assignments, props.lectureId);
+        handleRelease(props.assignments, props.lectureId);
       }
       props.setOpenDialog(false);
     }
@@ -65,19 +64,10 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
     : [];
 
   const getDialogTitle = () => {
-    if (!props.assignments) {
-      return 'Release assignments';
-    }
-
     if (props.isAssignmentsGrouped || Array.isArray(props.assignments)) {
       return 'Release assignments';
     }
-
-    if (typeof props.assignments === 'object' && props.assignments.name) {
-      return `Release ${props.assignments.name}`;
-    }
-
-    return 'Release assignments';
+    return `Release ${props.assignments.name}`;
   };
 
   return (
@@ -90,8 +80,10 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
         }}
       >
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{truncateText(getDialogTitle(), 45)}</DialogTitle>
+          <DialogHeader className="min-w-0">
+            <DialogTitle className="truncate w-full">
+              {getDialogTitle()}
+            </DialogTitle>
           </DialogHeader>
           <FieldGroup
             className={

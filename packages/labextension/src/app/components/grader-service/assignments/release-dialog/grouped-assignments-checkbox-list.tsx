@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  CompletedAssignmentBadge,
   CreatedAssignmentBadge,
   ReleasedAssignmentBadge
 } from '../../../ui/badges';
@@ -43,7 +44,7 @@ const AssignmentGroupedCheckboxList = (
       case 'released':
         return <ReleasedAssignmentBadge />;
       case 'complete':
-        return <Badge>Completed</Badge>;
+        return <CompletedAssignmentBadge />;
     }
   };
 
