@@ -20,7 +20,7 @@
     "strictNullChecks": false,
     "skipLibCheck": true,
     "target": "ES2020",
-    "types": ["jest", "node"]
+    "types": ["jest", "node", "@testing-library/jest-dom"]
   },
   "include": ["src/**/*"]
 }

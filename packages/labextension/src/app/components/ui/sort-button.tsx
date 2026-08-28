@@ -39,6 +39,7 @@ export const SortButton = (props: ISortButtonProps) => {
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger>
           <Button
+            data-testid="sort-btn"
             variant={'link'}
             className={'px-2 justify-self-end underline'}
           >

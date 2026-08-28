@@ -22,7 +22,11 @@ export const FilterLecturesButton = (props: IFilterLecturesButtonProps) => {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger>
-        <Button variant={'link'} className={'p-2 justify-self-end underline'}>
+        <Button
+          data-testid="filter-btn"
+          variant={'link'}
+          className={'p-2 justify-self-end underline'}
+        >
           <ListFilter className={'text-primary size-4 justify-self-center'} />
           Filter
         </Button>
