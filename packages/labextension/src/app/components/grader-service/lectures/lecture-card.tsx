@@ -53,14 +53,14 @@ export const LectureCard = (props: ILectureCard) => {
         <CardHeader className={'self-stretch grow p-0'}>
           <div className={'min-w-0'}>
             <p className={'text-base font-bold'}>
-              {highlightText(lecture.code, props.searchQuery)}
+              {highlightText(lecture.code, props.searchQuery ?? '')}
             </p>
             <Tooltip>
               <TooltipTrigger
                 render={
                   <span className={'flex min-w-0'}>
                     <CardTitle {...props} className={'text-3xl line-clamp-2'}>
-                      {highlightText(lecture.name, props.searchQuery)}
+                      {highlightText(lecture.name, props.searchQuery ?? '')}
                     </CardTitle>
                   </span>
                 }

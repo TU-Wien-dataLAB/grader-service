@@ -15,7 +15,7 @@ export const ErrorBanner = (props: IErrorBannerProps) => {
       <div>
         <p className="font-medium">Error</p>
         <p className={'text-secondary-background'}>
-          {props.message || 'Something went wrong. Please tyr again.'}
+          {props.message || 'Something went wrong. Please try again.'}
         </p>
       </div>
     </div>

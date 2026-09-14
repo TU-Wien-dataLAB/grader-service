@@ -29,16 +29,18 @@ interface IFilterLecturesButtonProps {
 export const FilterLecturesButton = (props: IFilterLecturesButtonProps) => {
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger>
-        <Button
-          data-testid="filter-btn"
-          variant={'link'}
-          className={'p-2 justify-self-end underline'}
-        >
-          <ListFilter className={'text-primary size-4 justify-self-center'} />
-          Filter
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            data-testid="filter-btn"
+            variant={'link'}
+            className={'p-2 justify-self-end underline'}
+          >
+            <ListFilter className={'text-primary size-4 justify-self-center'} />
+            Filter
+          </Button>
+        }
+      />
       <DropdownMenuContent align={'start'}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Status</DropdownMenuLabel>
@@ -65,12 +67,14 @@ export const FilterAssignmentsButton = (
 ) => {
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger>
-        <Button variant={'link'} className={'p-1 justify-self-end'}>
-          <ListFilter className={'text-primary size-5 justify-self-center'} />
-          Filter
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant={'link'} className={'p-1 justify-self-end'}>
+            <ListFilter className={'text-primary size-5 justify-self-center'} />
+            Filter
+          </Button>
+        }
+      />
       <DropdownMenuContent align={'end'}>
         {props.allFilters &&
           props.allFilters.map(group =>

@@ -1,13 +1,14 @@
 const jestJupyterLab = require('@jupyterlab/testutils/lib/jest-config');
 
 const esModules = [
+  '@base-ui',
   '@codemirror',
   '@jupyter/react-components',
   '@jupyter/web-components',
   '@jupyter/ydoc',
-  '@jupyterlab/',
+  '@jupyterlab',
   '@microsoft/fast-.*',
-  '@react-dnd/',
+  '@react-dnd',
   'dnd-core',
   'exenv-es6',
   'lib0',
@@ -36,6 +37,6 @@ module.exports = {
     '!src/**/.ipynb_checkpoints/*'
   ],
   coverageReporters: ['lcov', 'text'],
-  testRegex: 'src/.*/.*.spec.ts[x]?$',
-  transformIgnorePatterns: [`/node_modules/(?!${esModules}).+`]
+  testRegex: 'src/.*/.*\\.spec\\.tsx?$',
+  transformIgnorePatterns: [`/node_modules/(?!(?:.pnpm/)?(${esModules}))`]
 };

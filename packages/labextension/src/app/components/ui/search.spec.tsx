@@ -1,31 +1,45 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { createAllProvidersWrapper } from '../../../test/utils';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+
+import { loadObject } from '../../../services/storage.service';
 import { SearchField } from './search';
-import { userEvent } from '@testing-library/user-event';
+import React from 'react';
 
-describe('Dashboard Component', () => {
-  it('search default/empty state', async () => {
-    const Wrapper = createAllProvidersWrapper();
-    const user = userEvent.setup();
+jest.mock('../../../services/storage.service', () => ({
+  loadObject: jest.fn(),
+  storeObject: jest.fn()
+}));
 
-    render(
-      <SearchField
-        searchQuery={''}
-        setSearchQuery={() => {}}
-        placeholder="search"
-      />,
-      {
-        wrapper: Wrapper
-      }
+const mockLoadObject = loadObject as jest.Mock;
+
+const defaultProps = {
+  recentSearchesKey: 'recent-searches',
+  searchQuery: '',
+  setSearchQuery: jest.fn()
+};
+
+beforeEach(() => {
+  mockLoadObject.mockReturnValue([]);
+});
+
+describe('SearchField', () => {
+  it('renders input with placeholder', () => {
+    render(<SearchField {...defaultProps} placeholder="Search here" />);
+    expect(screen.getByTestId('search-input')).toHaveAttribute(
+      'placeholder',
+      'Search here'
     );
+  });
 
-    const input = screen.getByPlaceholderText('search');
-    await user.click(input);
+  it('shows recent searches on focus', async () => {
+    mockLoadObject.mockReturnValue(['lecture1', 'lecture2']);
+    render(<SearchField {...defaultProps} />);
 
-    expect(await screen.findByText('No results found.')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.focus(screen.getByTestId('search-input'));
+      await new Promise(r => setTimeout(r, 50));
+    });
 
-    //   To be continued...
-    //   Need to be done fully for all cases
+    expect(await screen.findByText('lecture1')).toBeInTheDocument();
+    expect(await screen.findByText('lecture2')).toBeInTheDocument();
   });
 });

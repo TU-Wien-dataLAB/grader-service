@@ -112,6 +112,7 @@ export const AssignmentCard = (props: IAssignment) => {
           } ${props.assignment.status === 'complete' ? 'text-border' : ''}`}
         >
           <Checkbox
+            data-testid="card-checkbox"
             checked={props.checked}
             disabled={props.assignment.status !== 'created'}
             onCheckedChange={() => props.handleChange(!props.checked)}

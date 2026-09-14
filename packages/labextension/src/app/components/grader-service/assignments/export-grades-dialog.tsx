@@ -70,7 +70,11 @@ export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
             onValueChange={setFormat}
             items={FORMAT_OPTIONS}
           >
-            <SelectTrigger className={'w-full'}>
+            <SelectTrigger
+              data-testid="format-select"
+              aria-label="Format"
+              className={'w-full'}
+            >
               <SelectValue placeholder="Select a format" />
             </SelectTrigger>
             <SelectContent>
@@ -85,13 +89,18 @@ export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
             value={filter}
             onValueChange={setFilter}
             items={FILTER_OPTIONS}
+            data-testid="filter-select"
           >
             <SelectTrigger className={'w-full'}>
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent>
               {FILTER_OPTIONS.map(({ label, value }) => (
-                <SelectItem key={value} value={value}>
+                <SelectItem
+                  data-testid="filter-option"
+                  key={value}
+                  value={value}
+                >
                   {label}
                 </SelectItem>
               ))}

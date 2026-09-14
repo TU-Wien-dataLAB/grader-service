@@ -37,18 +37,20 @@ export const SortButton = (props: ISortButtonProps) => {
   return (
     <div className={`flex flex-row justify-center`}>
       <DropdownMenu modal={false}>
-        <DropdownMenuTrigger>
-          <Button
-            data-testid="sort-btn"
-            variant={'link'}
-            className={'px-2 justify-self-end underline'}
-          >
-            <ArrowUpDown
-              className={'text-primary size-4 justify-self-center'}
-            />
-            Sort
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              data-testid="sort-btn"
+              variant={'link'}
+              className={'px-2 justify-self-end underline'}
+            >
+              <ArrowUpDown
+                className={'text-primary size-4 justify-self-center'}
+              />
+              Sort
+            </Button>
+          }
+        />
         <DropdownMenuContent>
           <DropdownMenuRadioGroup
             value={sortValue}

@@ -32,7 +32,7 @@ export const CompleteDialog = (props: IDeleteDialog) => {
         >
           <p>
             Do you want to mark "
-            <span className={'font-bold'}>{props.assignment.name}</span>"{' '}
+            <span className={'font-bold'}>{props.assignment.name}</span>"
             complete? This action will hide the assignment for all students.
           </p>
         </div>

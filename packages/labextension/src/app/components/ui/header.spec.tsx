@@ -2,13 +2,17 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { createAllProvidersWrapper } from '../../../test/utils';
 import { Header } from './header';
+import { getCurrentUser } from '../../../services/user.service';
 
-describe('Dashboard Component', () => {
-  it('should render the correct label natively', () => {
-    const Wrapper = createAllProvidersWrapper();
+jest.mock('../../../services/user.service');
 
-    render(<Header />, { wrapper: Wrapper });
+const mockedGetCurrentUser = jest.mocked(getCurrentUser);
 
-    expect(screen.getByText(/Hello,/)).toBeInTheDocument();
-  });
+test('should render the correct label with username natively', async () => {
+  const Wrapper = createAllProvidersWrapper();
+  mockedGetCurrentUser.mockResolvedValue('Mark');
+
+  render(<Header />, { wrapper: Wrapper });
+
+  expect(await screen.findByText('Hello, Mark')).toBeInTheDocument();
 });
