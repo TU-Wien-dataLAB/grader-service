@@ -12,7 +12,7 @@ export interface IErrorComponentProps {
 
 export const ErrorComponent = (props: IErrorComponentProps) => {
   return (
-    <div className="mt-1 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+    <div className="mt-1 rounded-xs border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
       {props.err}
     </div>
   );

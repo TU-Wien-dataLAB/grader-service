@@ -6,9 +6,16 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "lib": ["DOM", "ES2019", "ES2020.Intl"],
-    "module": "esnext",
-    "moduleResolution": "node",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2018",
+      "ES2020.BigInt",
+      "ES2020.Intl",
+      "ES2020.String"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "noEmitOnError": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,
@@ -19,7 +26,7 @@
     "strict": true,
     "strictNullChecks": false,
     "skipLibCheck": true,
-    "target": "ES2020",
+    "target": "ES2022",
     "types": ["jest", "node"]
   },
   "include": ["src/**/*"]
