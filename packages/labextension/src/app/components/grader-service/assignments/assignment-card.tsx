@@ -30,6 +30,7 @@ import {
   ManualGradingBadge,
   ReleasedAssignmentBadge
 } from '../../ui/badges';
+import { useNavigate, useParams } from 'react-router';
 
 export interface IAssignment {
   key: React.Key;
@@ -85,6 +86,18 @@ export const AssignmentCard = (props: IAssignment) => {
       case 'complete':
         return <CompletedAssignmentBadge />;
     }
+  };
+
+  const params = useParams();
+
+  const lectureId = Number(params.id);
+  /* assignment tabs */
+  const navigate = useNavigate();
+
+  const goToAssignment = (tab: string) => {
+    navigate(`/lectures/${lectureId}/assignments/${props.assignment.id}`, {
+      state: { activeTab: tab }
+    });
   };
 
   return isDragging ? (
@@ -170,10 +183,17 @@ export const AssignmentCard = (props: IAssignment) => {
             'items-start flex-col justify-end gap-4 self-stretch bg-[#EBEBEB] p-4'
           }
         >
-          <Button className={'w-full cursor-pointer'}>
+          <Button
+            className={'w-full'}
+            onClick={() => goToAssignment('notebooks-and-files')}
+          >
             Go to notebooks & files
           </Button>
-          <Button className={'w-full cursor-pointer'} variant={'outline'}>
+          <Button
+            className={'w-full'}
+            variant={'outline'}
+            onClick={() => goToAssignment('submissions')}
+          >
             Go to submissions
           </Button>
         </CardFooter>

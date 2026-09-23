@@ -9,7 +9,12 @@ import {
 } from './services/queries/lectures.queries';
 import { queryClient } from './widget';
 import { getCurrentUserQuery } from './services/queries/users.queries';
-import { assignmentsQuery } from './services/queries/assignments.queries';
+import {
+  assignmentQuery,
+  assignmentsQuery
+} from './services/queries/assignments.queries';
+import { Assignment } from './app/pages/instructor-view/assignment';
+import { selectedDirQuery } from '../lib/services/queries/files.queries';
 
 export const getRoutes = () => {
   return createRoutesFromElements(
@@ -40,6 +45,28 @@ export const getRoutes = () => {
           return null;
         }}
       ></Route>
+      <Route
+        path={'lectures/:id/assignments/:aid'}
+        element={<Assignment />}
+        loader={async ({ params }) => {
+          await queryClient.ensureQueryData(selectedDirQuery());
+          await queryClient.ensureQueryData(
+            assignmentQuery(Number(params.id), Number(params.aid))
+          );
+          return null;
+        }}
+      />
+      <Route
+        path={'lectures/:id/assignments/:id'}
+        element={<Assignment />}
+        loader={async ({ params }) => {
+          await queryClient.ensureQueryData(selectedDirQuery());
+          await queryClient.ensureQueryData(
+            assignmentQuery(Number(params.id), Number(params.aid))
+          );
+          return null;
+        }}
+      />
     </Route>
   );
 };
