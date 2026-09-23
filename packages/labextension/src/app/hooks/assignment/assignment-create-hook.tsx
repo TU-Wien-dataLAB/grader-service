@@ -15,8 +15,8 @@ export function useAssignmentCreate() {
     }) => {
       await createAssignment(variables.lectureId, variables.assignment);
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
