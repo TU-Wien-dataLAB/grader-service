@@ -78,7 +78,7 @@ export const Assignment = () => {
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
         <TabsContent value="notebooks-and-files">
-          <FilesView />
+          <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="submissions">
           <div>Submissions</div>
