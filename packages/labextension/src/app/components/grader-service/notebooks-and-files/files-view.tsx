@@ -21,6 +21,7 @@ import {
 import { GlobalObjects } from '../../../../index';
 import { Contents } from '@jupyterlab/services';
 import { getDate } from '../../utils/utils';
+import { FilterFilesButton } from '../../ui/filter-button';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -59,6 +60,7 @@ export const FilesView = (props: IFilesViewProps) => {
   }, [assignment, lecture]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [checkedFileTypes, setCheckedFileTypes] = React.useState<string[]>([]);
 
   const filteredFiles = useMemo(() => {
     let result = files;
@@ -71,8 +73,14 @@ export const FilesView = (props: IFilesViewProps) => {
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+    if (checkedFileTypes?.length > 0) {
+      result = result.filter(file => checkedFileTypes.includes(file.type));
+    }
     return result;
-  }, [searchQuery, files]);
+  }, [searchQuery, checkedFileTypes, files]);
+  const fileTypes = useMemo(() => {
+    return [...new Set(files?.map(file => file.type))];
+  }, [files]);
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
       <div className={'flex justify-between items-center self-stretch'}>
@@ -84,6 +92,11 @@ export const FilesView = (props: IFilesViewProps) => {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           placeholder={'Search for notebooks & files'}
+        />
+        <FilterFilesButton
+          allFileTypes={fileTypes}
+          checkedFileTypes={checkedFileTypes}
+          setFileTypes={setCheckedFileTypes}
         />
       </div>
       <Table>
