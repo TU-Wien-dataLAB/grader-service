@@ -32,16 +32,16 @@ def construct_git_dir(
     assignment_id: int | str,
     submission_id: int | str | None = None,
     username: str | None = None,
-) -> Path | None:
-    """Returns the path of the repository based on the inputs,
-     or None if the artifact_type is not recognised.
+) -> Path:
+    """Returns the path of the repository based on the inputs.
 
      Note: This method does not check permissions to access the given artifact
      type or submission; it only constructs the directory path.
 
     Raises ValueError if the normalised path does not start with
     `gitbase`, to make it robust against fabricated lecture codes
-    or usernames containing substrings like "../..".
+    or usernames containing substrings like "../..",
+    or if the artifact_type is not recognised.
     """
     base_path = gitbase / lect_code / str(assignment_id) / artifact_type
     if artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}:
@@ -354,12 +354,13 @@ class GitFileService(FileService):
                 [self.git_executable, "init", "--initial-branch=main"], cwd=tmp_path_input
             )
             await self._run_git(
-                [self.git_executable, "pull", remote_path_release, "main"], cwd=tmp_path_input
+                [self.git_executable, "pull", str(remote_path_release), "main"], cwd=tmp_path_input
             )
 
             # Clone the user repo (we need the whole clone, because we will be committing to it)
             await self._run_git(
-                [self.git_executable, "clone", remote_path_user, tmp_path_output], cwd=tmp_base
+                [self.git_executable, "clone", str(remote_path_user), str(tmp_path_output)],
+                cwd=tmp_path_output,
             )
             # Ensure the user repo is on `main`
             await self._run_git(
@@ -404,7 +405,7 @@ class GitFileService(FileService):
         self.log.info("Pulling repo %s into input directory", remote_repo_path)
         commands = [
             [self.git_executable, "init", "--initial-branch=main"],
-            [self.git_executable, "pull", remote_repo_path, input_branch],
+            [self.git_executable, "pull", str(remote_repo_path), input_branch],
         ]
         # When autograding a user's submission, check out to the commit of submission
         if artifact_type == ArtifactType.USER:
@@ -418,7 +419,6 @@ class GitFileService(FileService):
     # TODO: differences between `edit...` and `init_user_files`:
     #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
     #  - this checkouts the submission hash; `init_...` just checkouts main
-    #  - edit one is async! (why only this one???) => some code has two variants, sync and async
     async def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
         assignment = submission.assignment
@@ -456,9 +456,12 @@ class GitFileService(FileService):
 
             # Clone the (still empty) edit repository
             await self._run_git(
-                [self.git_executable, "clone", remote_path_edit, tmp_path_output], tmp_path_output
+                [self.git_executable, "clone", str(remote_path_edit), str(tmp_path_output)],
+                cwd=tmp_path_output,
             )
-            await self._run_git([self.git_executable, "checkout", "-B", "main"], tmp_path_output)
+            await self._run_git(
+                [self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output
+            )
             self.log.debug("Successfully set up edit repo")
 
             # Copy files to the edit repo, commit and push the changes
@@ -468,11 +471,7 @@ class GitFileService(FileService):
             shutil.rmtree(tmp_base)
 
     async def push_files(
-        self,
-        filenames: list[str],
-        dir: str | Path,
-        artifact_type: ArtifactType,
-        submission: Submission,
+        self, filenames: list[str], dir: Path, artifact_type: ArtifactType, submission: Submission
     ) -> None:
         """Create the repository of type `artifact_type` at `dir`, commit and push the changes.
 
@@ -506,12 +505,12 @@ class GitFileService(FileService):
         if not remote_repo_path.exists():
             await self.create_bare_repo(remote_repo_path)
 
-        await self._set_up_output_repo(Path(dir), output_branch)
-        await self._commit_files(filenames, Path(dir), msg=submission.commit_hash)
+        await self._set_up_output_repo(dir, output_branch)
+        await self._commit_files(filenames, dir, msg=submission.commit_hash)
 
         self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
         await self._run_git(
-            [self.git_executable, "push", "-uf", remote_repo_path, output_branch], dir
+            [self.git_executable, "push", "-uf", str(remote_repo_path), output_branch], cwd=dir
         )
         self.log.info("Pushing complete")
 
@@ -530,7 +529,7 @@ class GitFileService(FileService):
             self.log.debug("Creating the new branch %r", branch)
         self.log.debug("Now at branch %r", branch)
 
-    async def _commit_files(self, filenames: list[str], dir: str | Path, msg: str) -> None:
+    async def _commit_files(self, filenames: list[str], dir: Path, msg: str) -> None:
         """
         Commit the provided files in the repo at ``dir`` with the provided commit message.
         """
