@@ -312,7 +312,9 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
                 self.session.delete(assignment)
                 self.session.commit()
-                self.file_service.delete_assignment_files(assignment=assignment, lecture=lecture)
+                await self.file_service.delete_assignment_files(
+                    assignment=assignment, lecture=lecture
+                )
             else:
                 if assignment.deleted == DeleteState.deleted:
                     raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment was deleted.")
@@ -323,7 +325,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 )
                 self.session.commit()
                 if previously_deleted is not None:
-                    self.file_service.delete_assignment_files(
+                    await self.file_service.delete_assignment_files(
                         assignment=previously_deleted, lecture=lecture
                     )
 

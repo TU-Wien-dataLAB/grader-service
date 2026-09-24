@@ -436,7 +436,6 @@ class TestJWKS:
 
 
 class TestBearerTokenRequest:
-    @pytest.mark.asyncio
     async def test_request_bearer_token(self, sample_platform):
         """Test JWT assertion is created with correct kid and token is returned."""
         plugin = LTISyncGrades()
@@ -467,14 +466,12 @@ class TestBearerTokenRequest:
             assert header["kid"] == sample_platform.kid
             assert header["alg"] == "RS256"
 
-    @pytest.mark.asyncio
     async def test_request_bearer_token_no_client_id(self):
         plugin = LTISyncGrades()
         platform = LTIPlatformConfig(name="T", url_pattern="", client_id="", token_url="http://x")
         with pytest.raises(HTTPError, match="client_id"):
             await plugin.request_bearer_token(platform)
 
-    @pytest.mark.asyncio
     async def test_request_bearer_token_no_token_url(self):
         plugin = LTISyncGrades()
         platform = LTIPlatformConfig(name="T", url_pattern="", client_id="cid", token_url="")

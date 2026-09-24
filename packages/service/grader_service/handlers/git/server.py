@@ -208,7 +208,8 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid or missing submission id")
             submission = self.get_submission(lecture.id, assignment.id, int(sub_id))
 
-        # if artifact_type is user, get username from path, if given; otherwise take the logged-in user's name
+        # if artifact_type is user, get username from path, if given;
+        # otherwise take the logged-in user's name
         username = None
         if artifact_type == ArtifactType.USER:
             if (

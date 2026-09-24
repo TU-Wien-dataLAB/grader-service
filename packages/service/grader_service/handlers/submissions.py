@@ -646,7 +646,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
 
                 self.session.delete(submission)
                 self.session.commit()
-                self.file_service.delete_submission_files(submission)
+                await self.file_service.delete_submission_files(submission)
             else:
                 # Do not allow students to delete other users' submissions
                 if (
