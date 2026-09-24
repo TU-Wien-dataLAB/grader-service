@@ -60,6 +60,8 @@ export interface IFile {
   name: string;
   path: string;
   type: string;
+  last_modified: string;
+  size: number;
   content: IFile[];
 }
 
@@ -101,6 +103,8 @@ export const getFiles = async (path: string): Promise<IFile[]> => {
         name: f.value.name,
         path: f.value.path,
         type: f.value.type,
+        last_modified: f.value.last_modified,
+        size: f.value.size,
         content: nestedFiles
       });
     } else {
@@ -108,6 +112,8 @@ export const getFiles = async (path: string): Promise<IFile[]> => {
         name: f.value.name,
         path: f.value.path,
         type: f.value.type,
+        last_modified: f.value.last_modified,
+        size: f.value.size,
         content: []
       });
     }
