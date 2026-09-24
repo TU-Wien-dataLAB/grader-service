@@ -3,15 +3,17 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
+import asyncio
 import fnmatch
 import json
 import os
 import shutil
 import subprocess
+from collections.abc import Coroutine
+from concurrent.futures.thread import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any, TypeVar
 
 from sqlalchemy.orm import Session
 from traitlets import observe
@@ -19,16 +21,35 @@ from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets.traitlets import Int, TraitError, Unicode, validate
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.utils import collect_logs, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
 from grader_service.file_services.base_file_service import FileService
-from grader_service.artifact_types import ArtifactType
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.utils import executable_validator
+
+
+T = TypeVar("T")
+_executor = ThreadPoolExecutor()
+
+
+def _run_async(coro: Coroutine[Any, Any, T]) -> T:
+    """Run an async coroutine from a sync context, returning its result.
+
+    In a plain sync context (Celery worker), the coroutine runs on a fresh loop.
+    Inside a running loop (Tornado handler) it is offloaded to a thread with its
+    own loop (because `asyncio.run` is illegal inside a running loop), blocking
+    the caller until the coroutine completes.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    return _executor.submit(lambda: asyncio.run(coro)).result()
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
@@ -122,8 +143,11 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         try:
             self._clean_up_input_and_output_dirs()
-            self.file_service.fetch_files(
-                Path(self.input_path), self.input_artifact_type, self.submission
+
+            _run_async(
+                self.file_service.fetch_files(
+                    Path(self.input_path), self.input_artifact_type, self.submission
+                )
             )
 
             autograding_start = datetime.now()
@@ -132,11 +156,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             autograding_finished = datetime.now()
 
             whitelisted_files = self._get_whitelisted_files()
-            self.file_service.push_files(
-                whitelisted_files,
-                Path(self.output_path),
-                self.output_artifact_type,
-                self.submission,
+            _run_async(
+                self.file_service.push_files(
+                    whitelisted_files,
+                    Path(self.output_path),
+                    self.output_artifact_type,
+                    self.submission,
+                )
             )
             self._set_properties()
             self._set_db_state()

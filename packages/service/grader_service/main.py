@@ -355,6 +355,7 @@ class GraderService(config.Application):
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
+        # TODO: should file service also be a singleton, configured here?
 
     async def cleanup(self):
         pass
