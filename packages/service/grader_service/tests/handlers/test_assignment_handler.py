@@ -1219,16 +1219,16 @@ async def test_assignment_reset_student(
     l_code = "21wle1"  # the code of the lecture with id=1
     a_id = 1
 
-    gitbase_dir = Path(app.grader_service_dir) / "git"
+    files_base = Path(app.grader_service_dir) / "git"
 
     engine = sql_alchemy_engine
     # Create a release repo
     create_git_repository(app, l_code, a_id, artifact_type=ArtifactType.RELEASE, init_repo=True)
     # Create a student submission and a user repo (remote and local)
-    sub = create_user_submission_with_repo(engine, gitbase_dir, default_user, a_id, l_code)
+    sub = create_user_submission_with_repo(engine, files_base, default_user, a_id, l_code)
 
-    user_repo_path = gitbase_dir / "21wle1" / str(a_id) / ArtifactType.USER / default_user.name
-    local_repo_path = gitbase_dir / "tmp" / l_code / str(a_id) / "user" / default_user.name
+    user_repo_path = files_base / "21wle1" / str(a_id) / ArtifactType.USER / default_user.name
+    local_repo_path = files_base / "tmp" / l_code / str(a_id) / "user" / default_user.name
     assert user_repo_path.exists()
     assert (local_repo_path / "submission.ipynb").exists()
     res = subprocess.run(

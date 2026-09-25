@@ -1822,14 +1822,14 @@ async def test_submission_create_edit_artifact(
     l_code = "22wle1"  # the code of the lecture with id=3
     a_id = 3
 
-    gitbase_dir = Path(app.grader_service_dir) / "git"
+    files_base = Path(app.grader_service_dir) / "git"
 
     engine = sql_alchemy_engine
     insert_assignments(engine, l_id)
     student_username = "e.noether"
     student = insert_student(engine, student_username, l_id)
     # Create a student submission and a user artifact
-    submission = create_user_submission_with_repo(engine, gitbase_dir, student, a_id, l_code)
+    submission = create_user_submission_with_repo(engine, files_base, student, a_id, l_code)
     commit_hash = submission.commit_hash
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{submission.id}/edit"
@@ -1844,7 +1844,7 @@ async def test_submission_create_edit_artifact(
     assert submission_dict["commit_hash"] == commit_hash
     assert submission_dict["user_display_name"] == student_username
     assert (
-        gitbase_dir / l_code / str(a_id) / str(ArtifactType.EDIT) / str(submission_dict["id"])
+        files_base / l_code / str(a_id) / str(ArtifactType.EDIT) / str(submission_dict["id"])
     ).exists()
 
 

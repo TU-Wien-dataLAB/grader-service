@@ -26,7 +26,7 @@ def validate_path_relative_to(path: Path, base: Path) -> None:
 
 
 def construct_git_dir(
-    gitbase: Path,
+    files_base: Path,
     artifact_type: ArtifactType,
     lect_code: str,
     assignment_id: int | str,
@@ -39,11 +39,11 @@ def construct_git_dir(
      type or submission; it only constructs the directory path.
 
     Raises ValueError if the normalised path does not start with
-    `gitbase`, to make it robust against fabricated lecture codes
+    `files_base`, to make it robust against fabricated lecture codes
     or usernames containing substrings like "../..",
     or if the artifact_type is not recognised.
     """
-    base_path = gitbase / lect_code / str(assignment_id) / artifact_type
+    base_path = files_base / lect_code / str(assignment_id) / artifact_type
     if artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}:
         if artifact_type == ArtifactType.EDIT:
             if submission_id is None:
@@ -65,7 +65,7 @@ def construct_git_dir(
         else:
             raise ValueError(f"Unknown artifact type: {artifact_type}")
 
-    validate_path_relative_to(path, gitbase)
+    validate_path_relative_to(path, files_base)
     return path
 
 
@@ -90,20 +90,17 @@ class GitFileService(FileService):
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
-        self.gitbase = Path(path) / "git"
-        self.tmpbase = Path(path) / "tmp"
+        self.files_base = path / "git"
+        self.tmpbase = path / "tmp"
 
     def __init__(self, grader_service_dir: Path | str, **kwargs):
+        kwargs["grader_service_dir"] = Path(grader_service_dir)
         super().__init__(**kwargs)
-        self.grader_service_dir: Path = Path(grader_service_dir)
-        self.tmpbase: Path = self.grader_service_dir / "tmp"
-        self.gitbase: Path = self.grader_service_dir / "git"
-
         self._check_environment()
 
     def _check_environment(self):
-        if not self.gitbase.exists():
-            self.gitbase.mkdir()
+        if not self.files_base.exists():
+            self.files_base.mkdir()
 
         # check if git is configured so that git commits don't fail
         default_branch = self._run_git_sync(
@@ -257,7 +254,7 @@ class GitFileService(FileService):
     ) -> None:
         """Checks that user artifact exists and `main` branch contains the commit with `submission_hash`."""
         artifact_path = construct_git_dir(
-            gitbase=self.gitbase,
+            files_base=self.files_base,
             artifact_type=ArtifactType.USER,
             lect_code=assignment.lecture.code,
             assignment_id=assignment.id,
@@ -330,12 +327,12 @@ class GitFileService(FileService):
         l_code = assignment.lecture.code
 
         remote_path_release = construct_git_dir(
-            self.gitbase, ArtifactType.RELEASE, l_code, assignment.id
+            self.files_base, ArtifactType.RELEASE, l_code, assignment.id
         )
         if not remote_path_release.exists():
             raise FileNotFoundError("The release artifact does not exist")
         remote_path_user = construct_git_dir(
-            self.gitbase, ArtifactType.USER, l_code, assignment.id, username=username
+            self.files_base, ArtifactType.USER, l_code, assignment.id, username=username
         )
         if not remote_path_user.exists():
             raise FileNotFoundError("The user submission artifact does not exist")
@@ -399,7 +396,7 @@ class GitFileService(FileService):
         username: str = submission.user.name
 
         remote_repo_path = construct_git_dir(
-            self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
+            self.files_base, artifact_type, l_code, assignment.id, submission.id, username
         )
 
         self.log.info("Pulling repo %s into input directory", remote_repo_path)
@@ -430,7 +427,7 @@ class GitFileService(FileService):
 
         # Path to repository of student which contains the submitted files
         remote_path_user = construct_git_dir(
-            gitbase=self.gitbase,
+            files_base=self.files_base,
             artifact_type=ArtifactType.USER,
             lect_code=lecture.code,
             assignment_id=assignment.id,
@@ -440,7 +437,7 @@ class GitFileService(FileService):
             raise FileNotFoundError("The user submission artifact does not exist")
         # Path to the repository which will store edited submission files (may not exist yet)
         remote_path_edit = construct_git_dir(
-            gitbase=self.gitbase,
+            files_base=self.files_base,
             artifact_type=ArtifactType.EDIT,
             lect_code=lecture.code,
             assignment_id=assignment.id,
@@ -500,7 +497,7 @@ class GitFileService(FileService):
         username: str = submission.user.name
 
         remote_repo_path = construct_git_dir(
-            self.gitbase, artifact_type, l_code, assignment.id, submission.id, username
+            self.files_base, artifact_type, l_code, assignment.id, submission.id, username
         )
         if not remote_repo_path.exists():
             await self.create_bare_repo(remote_repo_path)
@@ -545,8 +542,8 @@ class GitFileService(FileService):
 
     async def delete_lecture_files(self, lecture: Lecture) -> None:
         """Delete all associated directories of the lecture."""
-        lecture_path = (self.gitbase / lecture.code).resolve()
-        validate_path_relative_to(lecture_path, self.gitbase)
+        lecture_path = (self.files_base / lecture.code).resolve()
+        validate_path_relative_to(lecture_path, self.files_base)
         tmp_lecture_path = (self.tmpbase / lecture.code).resolve()
         validate_path_relative_to(tmp_lecture_path, self.tmpbase)
         await asyncio.to_thread(shutil.rmtree, lecture_path, ignore_errors=True)
@@ -554,8 +551,8 @@ class GitFileService(FileService):
 
     async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
         """Delete all associated directories of the assignment."""
-        assignment_path = (self.gitbase / lecture.code / str(assignment.id)).resolve()
-        validate_path_relative_to(assignment_path, self.gitbase)
+        assignment_path = (self.files_base / lecture.code / str(assignment.id)).resolve()
+        validate_path_relative_to(assignment_path, self.files_base)
         tmp_assignment_path = (self.tmpbase / lecture.code / str(assignment.id)).resolve()
         validate_path_relative_to(tmp_assignment_path, self.tmpbase)
         await asyncio.to_thread(shutil.rmtree, assignment_path, ignore_errors=True)
@@ -566,8 +563,8 @@ class GitFileService(FileService):
         l_code = submission.assignment.lecture.code
         a_id = str(submission.assignment.id)
 
-        assignment_path = (self.gitbase / l_code / a_id).resolve()
-        validate_path_relative_to(assignment_path, self.gitbase)
+        assignment_path = (self.files_base / l_code / a_id).resolve()
+        validate_path_relative_to(assignment_path, self.files_base)
         tmp_assignment_path = (self.tmpbase / l_code / a_id).resolve()
         validate_path_relative_to(tmp_assignment_path, self.tmpbase)
 

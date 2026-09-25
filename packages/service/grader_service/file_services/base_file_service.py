@@ -1,7 +1,7 @@
 import typing
 from pathlib import Path
 
-from traitlets import Instance, Integer, List, TraitType, Unicode, Union
+from traitlets import Instance, Integer, List, TraitError, TraitType, Unicode, validate
 from traitlets.config import LoggingConfigurable
 
 from grader_service.orm import Assignment, Lecture, Submission
@@ -13,12 +13,27 @@ if typing.TYPE_CHECKING:
 class FileService(LoggingConfigurable):
     """Base class defining the interface for handling assignment and submission files.
 
+    Subclasses have to set ``files_base`` attribute. It has to be a subdirectory
+    of ``grader_service_dir``.
+
     Note: It is a de facto abstract class, but it cannot inherit from `abc.ABC`
     and `LoggingConfigurable` at the same time because of metaclasses conflict.
     """
 
-    # TODO: Maybe only allow Path?
-    grader_service_dir = Union([Unicode(), Instance(Path)], allow_none=False).tag(config=True)
+    grader_service_dir = Instance(Path, allow_none=False).tag(config=True)
+    files_base = Instance(Path, allow_none=False)
+
+    @validate("files_base")
+    def _validate_files_base(self, proposal):
+        files_base = Path(proposal.value)
+        try:
+            files_base.relative_to(self.grader_service_dir.resolve())
+        except ValueError:
+            raise TraitError(
+                f"files_base must be a subdirectory of grader_service_dir "
+                f"({self.grader_service_dir})"
+            )
+        return files_base
 
     # Server file policy defaults (used in pre-receive hooks)
     max_file_size_mb = Integer(80, allow_none=False).tag(config=True)
