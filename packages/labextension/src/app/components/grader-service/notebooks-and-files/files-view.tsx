@@ -133,7 +133,7 @@ export const FilesView = (props: IFilesViewProps) => {
   };
 
   return (
-    <div className={'flex flex-col items-start gap-4 self-stretch'}>
+    <div className={'flex flex-col items-start gap-4 self-stretch h-full'}>
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
         <NewNotebookDialog />
@@ -201,7 +201,7 @@ export const FilesView = (props: IFilesViewProps) => {
         </div>
       </div>
       <Table>
-        <TableHeader>
+        <TableHeader className={'sticky top-0 bg-card'}>
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Last saved on</TableHead>

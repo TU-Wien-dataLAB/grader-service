@@ -68,7 +68,7 @@ export const Assignment = () => {
       <Tabs
         value={currentTab}
         onValueChange={setCurrentTab}
-        className={'flex-col w-full gap-6'}
+        className={'flex-col w-full gap-6 min-h-0'}
       >
         <TabsList variant="line" className={'border-b-border border-b w-full'}>
           <TabsTrigger value="notebooks-and-files">
@@ -77,7 +77,7 @@ export const Assignment = () => {
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
-        <TabsContent value="notebooks-and-files">
+        <TabsContent value="notebooks-and-files" className={'min-h-0'}>
           <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="submissions">
