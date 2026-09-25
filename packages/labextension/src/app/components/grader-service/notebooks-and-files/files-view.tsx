@@ -7,8 +7,10 @@ import { assignmentQuery } from '../../../../services/queries/assignments.querie
 import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import {
   getFiles,
+  IFile,
   lectureBasePath,
-  openInFileBrowser
+  openInFileBrowser,
+  openInNewTab
 } from '../../../../services/local-file.service';
 import { Eye, Pencil } from 'lucide-react';
 import {
@@ -125,6 +127,11 @@ export const FilesView = (props: IFilesViewProps) => {
     refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
   };
 
+  const handleOpenFile = async (file: IFile) => {
+    // TODO: open file in read-only mode when in release dir
+    await openInNewTab(`${file.path}`);
+  };
+
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
       <div className={'flex justify-between items-center self-stretch'}>
@@ -212,7 +219,7 @@ export const FilesView = (props: IFilesViewProps) => {
               <TableCell>{file.size} B</TableCell>
               <TableCell>
                 {file.type !== 'directory' && (
-                  <Button variant={'link'}>
+                  <Button variant={'link'} onClick={() => handleOpenFile(file)}>
                     {selectedDir === 'source' ? (
                       <Pencil className={'size-5 fill-primary text-card!'} />
                     ) : (
