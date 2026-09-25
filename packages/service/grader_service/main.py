@@ -92,7 +92,6 @@ class GraderService(config.Application):
         False, help="Whether to allow for the specified service port to be reused."
     ).tag(config=True)
 
-    # TODO: use pathlib.Path, not string
     grader_service_dir = Unicode(
         os.getenv("GRADER_SERVICE_DIRECTORY"),
         allow_none=False,
@@ -545,7 +544,6 @@ class GraderService(config.Application):
                 task.result()
             loop.stop()
 
-    # TODO: replace os.path with pathlib in the whole file
     @validate("grader_service_dir")
     def _validate_service_dir(self, proposal):
         path: str = proposal["value"]
