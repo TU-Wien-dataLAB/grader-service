@@ -255,7 +255,6 @@ def test_submission_logs_update(local_autograde_executor):
     assert local_autograde_executor.session.commit.called
     assert local_autograde_executor.session.merge.called
     # Note: the actual submission object in the db is not updated, because we mock the `session`.
-    # TODO: Maybe save the submission to the db? Then we don't have to mock the session.
     sub_logs = local_autograde_executor.session.merge.call_args[0][0]
     assert sub_logs.logs == "Test logs"
     assert sub_logs.sub_id == 123

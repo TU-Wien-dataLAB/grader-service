@@ -64,7 +64,7 @@ class FileService(LoggingConfigurable):
         """Fetch the files of the ``artifact_type`` for the submission into the dir."""
         raise NotImplementedError()
 
-    async def push_files(  # TODO: think of a better name?
+    async def push_files(
         self, filenames: list[str], dir: Path, artifact_type: "ArtifactType", submission: Submission
     ) -> None:
         """Save new/updated files of the ``artifact_type`` for the submission."""

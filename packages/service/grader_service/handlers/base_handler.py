@@ -28,6 +28,7 @@ from tornado.web import HTTPError
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.errors import APIError
+from grader_service.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -153,7 +154,7 @@ class BaseHandler(web.RequestHandler):
         self.authenticator = self.application.authenticator
         self.log = self.application.log
 
-    async def prepare(self) -> Optional[Awaitable[None]]:
+    async def prepare(self) -> Awaitable[None] | None:
         # strip trailing slash
         self.request.path = self.request.path.rstrip("/")
 
@@ -163,53 +164,58 @@ class BaseHandler(web.RequestHandler):
         # authenticate
         try:
             await self.get_current_user()
-
-            # if user is not authenticated and is not actively trying to authenticate
-            if not self.current_user and self.request.path not in [
-                self.settings["login_url"],
-                self.application.base_url.rstrip("/"),
-                url_path_join(self.application.base_url, "/health"),
-                url_path_join(self.application.base_url, "/api/health"),
-                url_path_join(self.application.base_url, "/v1/api/health"),
-                url_path_join(self.application.base_url, "/api/oauth2/token"),
-                url_path_join(self.application.base_url, "/oauth_callback"),
-                url_path_join(self.application.base_url, "/lti13/oauth_callback"),
-            ]:
-                # TODO(Natalia): This is only relevant if Git is used for file operations.
-                # require git to authenticate with token -> otherwise return 401 code
-                # by default, git sends the request unauthenticated, first
-                if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
-                    self.set_status(401)
-                    self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
-                    self.finish("Unauthenticated Git request, Authentication required")
-                    return
-
-                # send to login page if ui page request
-                if self.request.path in [
-                    url_path_join(self.application.base_url, "/api/oauth2/authorize")
-                ] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
-                    url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
-                    self.redirect(url)
-                    return
-
-                if self.request.headers.get("Authorization") is None:
-                    raise HTTPError(401, reason="No API token in auth header")
-
-                # do not redirect to login page if we hit api endpoints
-                raise HTTPError(401, reason="API Token is invalid or expired.")
-
-        except Exception as e:
-            # ensure get_current_user is never called again for this handler,
-            # since it failed
-            self._grader_user = None
+        except SQLAlchemyError:
+            self.log.exception("Rolling back session due to database error")
+            self.session.rollback()
+            raise
+        except Exception:
             self.log.exception("Failed to get current user")
-            if isinstance(e, SQLAlchemyError):
-                self.log.error("Rolling back session due to database error")
-                self.session.rollback()
-            if isinstance(e, HTTPError) and e.status_code == 401:
-                raise e
+            raise
+
+        if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+            # Git endpoints should only be available if Git is used for file operations.
+            self._verify_git_file_service()
+
+        # if user is not authenticated and is not actively trying to authenticate
+        if not self.current_user and self.request.path not in [
+            self.settings["login_url"],
+            self.application.base_url.rstrip("/"),
+            url_path_join(self.application.base_url, "/health"),
+            url_path_join(self.application.base_url, "/api/health"),
+            url_path_join(self.application.base_url, "/v1/api/health"),
+            url_path_join(self.application.base_url, "/api/oauth2/token"),
+            url_path_join(self.application.base_url, "/oauth_callback"),
+            url_path_join(self.application.base_url, "/lti13/oauth_callback"),
+        ]:
+            # require git to authenticate with token -> otherwise return 401 code
+            # by default, git sends the request unauthenticated, first
+            if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+                self.set_status(401)
+                self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
+                self.finish("Unauthenticated Git request, Authentication required")
+                return
+
+            # send to login page if ui page request
+            if self.request.path in [
+                url_path_join(self.application.base_url, "/api/oauth2/authorize")
+            ] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
+                url = url_concat(self.settings["login_url"], {"next": self.request.uri})
+                self.redirect(url)
+                return
+
+            if self.request.headers.get("Authorization") is None:
+                raise HTTPError(401, reason="No API token in auth header")
+
+            # do not redirect to login page if we hit api endpoints
+            raise HTTPError(401, reason="API Token is invalid or expired.")
+
         await maybe_future(super().prepare())
         return
+
+    def _verify_git_file_service(self):
+        if not isinstance(self.application.file_service, GitFileService):
+            msg = "File service is not GitFileService; git endpoints unavailable"
+            raise HTTPError(HTTPStatus.NOT_FOUND, log_message=msg)
 
     @property
     def oauth_provider(self):

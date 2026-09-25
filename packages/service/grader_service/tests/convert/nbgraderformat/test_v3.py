@@ -282,12 +282,12 @@ def test_celltype_changed():
     cell = create_solution_cell("", "code", "foo", 3)
     cell.metadata.nbgrader["cell_type"] = "code"
     logger = logging.getLogger("traitlets")
-    with unittest.mock.patch.object(logger, "warning") as mock_waring:
+    with unittest.mock.patch.object(logger, "warning") as mock_warning:
         MetadataValidatorV3().validate_cell(cell)
-        mock_waring.assert_not_called()
+        mock_warning.assert_not_called()
 
     cell = create_solution_cell("", "code", "foo", 3)
     cell.metadata.nbgrader["cell_type"] = "markdown"
-    with unittest.mock.patch.object(logger, "warning") as mock_waring:
+    with unittest.mock.patch.object(logger, "warning") as mock_warning:
         MetadataValidatorV3().validate_cell(cell)
-        mock_waring.assert_called_with("Cell type has changed from markdown to code!", cell)
+        mock_warning.assert_called_with("Cell type has changed from markdown to code!", cell)

@@ -8,19 +8,23 @@ import shutil
 import subprocess
 from http import HTTPStatus
 from pathlib import Path
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from tornado.httpclient import HTTPClientError
 from tornado.web import HTTPError
 
-from grader_service.file_services.git_file_service import construct_git_dir
-from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.artifact_types import ArtifactType
+from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.handlers.git import InfoRefsHandler, RPCHandler
+from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
 from grader_service.orm.submission import Submission
 from grader_service.orm.takepart import Role, Scope
+from grader_service.tests.handlers.db_util import insert_assignment
 
 _REQUEST_PATH_TEMPLATE = "/git/iv21s/1/{artifact_type}/{tail}"
 
@@ -157,9 +161,8 @@ def _create_release_repo(handler: GitBaseHandler):
     # To create USER artifact, the RELEASE artifact has to exist first
     lec = _get_lecture()
     a = _get_assignment()
-    artifact_path_release = construct_git_dir(
-        handler.files_base, ArtifactType.RELEASE, lec.code, a.id
-    )
+    files_base = handler.file_service.files_base
+    artifact_path_release = construct_git_dir(files_base, ArtifactType.RELEASE, lec.code, a.id)
     os.makedirs(artifact_path_release, exist_ok=True)
     # Initialise the release repo (requires pushing a commit to `main`)
     subprocess.run(["git", "init", "--bare", artifact_path_release], check=True)
@@ -214,8 +217,8 @@ async def test_git_lookup_pull_instructor(git_handler_factory, artifact_type):
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     expected_path = f"iv21s/1/{artifact_type}"
     assert created_paths == Path(expected_path)
 
@@ -249,8 +252,8 @@ async def test_git_lookup_pull_with_submission_instructor(
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
 
     # Note: the submission user is not the same as the currently logged-in user.
     base_dir = Path(f"iv21s/1/{artifact_type}/")
@@ -259,7 +262,7 @@ async def test_git_lookup_pull_with_submission_instructor(
 
 
 @pytest.mark.parametrize("rpc_cmd", GitRpcCmd)
-async def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
+async def test_git_lookup_user_student(git_handler_factory, rpc_cmd):
     artifact_type = ArtifactType.USER
     git_handler = git_handler_factory(artifact_type=artifact_type)
     _create_release_repo(git_handler)
@@ -269,8 +272,8 @@ async def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     assert created_paths == Path(f"iv21s/1/{artifact_type}/{git_handler.user.name}")
 
 
@@ -286,8 +289,8 @@ async def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factor
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     assert created_paths == Path(f"iv21s/1/{artifact_type}/user/{git_handler.user.name}")
 
 
@@ -377,3 +380,183 @@ async def test_git_lookup_pull_feedback_student_invalid_sub_id_error(
         await GitBaseHandler.gitlookup(git_handler_factory(req_path=path), GitRpcCmd.UPLOAD_PACK)
     assert e.value.status_code == HTTPStatus.BAD_REQUEST
     assert e.value.log_message == "Invalid or missing submission id"
+
+
+# ===============  Smoke tests for git endpoints  ===============
+
+
+class _FakeGitStream:
+    """Mimics an asyncio git subprocess stdout stream (a few bytes, then EOF)."""
+
+    def __init__(self, chunks):
+        self._chunks = list(chunks)
+
+    async def read_bytes(self, size, partial=True):
+        if self._chunks:
+            return self._chunks.pop(0)
+        return b""
+
+
+class _FakeProcess:
+    """Minimal stand-in for the ``self.process`` git subprocess."""
+
+    def __init__(self, chunks: list[bytes]):
+        self.stdout = _FakeGitStream(chunks)
+
+
+async def test_rpc_handler_post_runs(git_handler_factory):
+    """Basic smoke test: the git-* RPC POST endpoint handler executes without error."""
+    handler = git_handler_factory()
+    handler.rpc = GitRpcCmd.UPLOAD_PACK
+    handler.process = _FakeProcess([b"some response data", b""])
+    handler.flush = AsyncMock()
+    handler.finish = AsyncMock()
+
+    await RPCHandler.post(handler, GitRpcCmd.UPLOAD_PACK)
+
+    assert handler.get_status() == 200
+
+
+async def test_info_refs_handler_get_runs(git_handler_factory):
+    """Basic smoke test: the info/refs GET endpoint handler executes without error."""
+    handler = git_handler_factory()
+    handler.rpc = GitRpcCmd.UPLOAD_PACK
+    handler.process = _FakeProcess([b"ref advertisement", b""])
+    handler.flush = AsyncMock()
+    handler.finish = AsyncMock()
+
+    await InfoRefsHandler.get(handler)
+
+    assert handler.get_status() == 200
+
+
+async def test_info_refs_handler_through_server(
+    service_base_url, http_server_client, default_token, default_roles, default_user_login
+):
+    """GET the git info/refs endpoint - student accessing their own repo."""
+    l_code = "21wle1"  # the code of the lecture with id=1; default user is student
+    a_id = 1
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.USER}/info/refs?service=git-upload-pack"
+
+    with (
+        patch("asyncio.create_subprocess_exec") as exec_mock,
+        patch("grader_service.handlers.git.server.Subprocess"),
+        patch("grader_service.handlers.git.server.GitBaseHandler.write_pre_receive_hook"),
+    ):
+        process_mock = exec_mock.return_value
+        process_mock.communicate = AsyncMock(return_value=(b"true", b"true"))
+        process_mock.returncode = 0
+
+        response = await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+    assert response.code == HTTPStatus.OK
+    assert "# service=git-upload-pack" in response.body.decode()
+
+
+async def test_rpc_handler_through_server(
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    sql_alchemy_engine,
+):
+    """POST the git RPC endpoint - instructor accessing the source repo."""
+    l_id = 3  # default user is instructor
+    l_code = "22wle1"  # the code of the lecture with id=3
+    insert_assignment(sql_alchemy_engine, l_id)
+    a_id = 3
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.SOURCE}/git-upload-pack"
+
+    with (
+        patch("asyncio.create_subprocess_exec") as exec_mock,
+        patch("grader_service.handlers.git.server.Subprocess") as tornado_subproc_mock,
+        patch("grader_service.handlers.git.server.GitBaseHandler.write_pre_receive_hook"),
+    ):
+        process_mock = exec_mock.return_value
+        process_mock.communicate = AsyncMock(return_value=(b"true", b"true"))
+        process_mock.returncode = 0
+
+        tornado_subproc_mock.return_value.stdout.read_bytes = AsyncMock(return_value=b"")
+
+        response = await http_server_client.fetch(
+            url,
+            method="POST",
+            body=b"0000",
+            headers={
+                "Authorization": f"Token {default_token}",
+                "Content-Type": "application/x-git-upload-pack-request",
+            },
+        )
+    assert response.code == HTTPStatus.OK
+
+
+async def test_info_refs_not_available_with_non_git_file_service(
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    app,
+    monkeypatch,
+):
+    """The git info/refs endpoint returns 404 when file service does not support Git."""
+    l_code = "21wle1"  # the code of the lecture with id=1; default user is student
+    a_id = 1
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.USER}/info/refs?service=git-upload-pack"
+
+    monkeypatch.setattr(app, "file_service", SimpleNamespace())
+    with pytest.raises(HTTPClientError, match="Not Found"):
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+
+
+async def test_rpc_not_available_with_non_git_file_service(
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    app,
+    monkeypatch,
+):
+    """The git RPC endpoint returns 404 when file service does not support Git."""
+    l_code = "22wle1"  # the code of the lecture with id=3; default user is instructor
+    a_id = 3
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.SOURCE}/git-upload-pack"
+
+    monkeypatch.setattr(app, "file_service", SimpleNamespace())
+    with pytest.raises(HTTPClientError, match="Not Found"):
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            body=b"0000",
+            headers={
+                "Authorization": f"Token {default_token}",
+                "Content-Type": "application/x-git-upload-pack-request",
+            },
+        )
+
+
+async def test_rpc_not_available_with_non_git_file_service_unauthenticated(
+    service_base_url, http_server_client, default_token, default_roles, app, monkeypatch
+):
+    """The git RPC endpoint returns 404 when file service does not support Git."""
+    l_code = "22wle1"  # the code of the lecture with id=3; default user is instructor
+    a_id = 3
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.SOURCE}/git-upload-pack"
+
+    monkeypatch.setattr(app, "file_service", SimpleNamespace())
+    with pytest.raises(HTTPClientError, match="Not Found"):
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            body=b"0000",
+            headers={
+                "Authorization": f"Token {default_token}",
+                "Content-Type": "application/x-git-upload-pack-request",
+            },
+        )

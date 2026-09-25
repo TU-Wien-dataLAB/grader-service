@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
+from tornado.httpclient import HTTPClientError
 
 from grader_service.handlers.base_handler import BaseHandler, GraderBaseHandler
 from grader_service.orm import Assignment
@@ -94,3 +95,21 @@ def test_get_auth_token(token_str):
     handler = MagicMock()
     handler.request.headers.get = MagicMock(return_value=token_str)
     assert BaseHandler.get_auth_token(self=handler) == "test"
+
+
+@pytest.mark.parametrize(
+    "url, msg",
+    (
+        ("/api/lectures", "HTTP 401: API Token is invalid or expired"),
+        ("/git/22wle1/3/source/git-upload-pack", "HTTP 401: Unauthorized"),
+    ),
+)
+async def test_prepare_endpoints_not_available_for_unauthenticated_user(
+    app, http_server_client, default_token, url, msg
+):
+    """API/git endpoints return 401 when user not logged in and not actively trying to authenticate."""
+
+    with pytest.raises(HTTPClientError, match=msg):
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )

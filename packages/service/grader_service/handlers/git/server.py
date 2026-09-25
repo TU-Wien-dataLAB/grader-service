@@ -18,7 +18,7 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.file_services import GitFileService, FileServiceError
+from grader_service.file_services import FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.artifact_types import ArtifactType
@@ -34,18 +34,10 @@ class GitRpcCmd(enum.StrEnum):
 
 
 class GitBaseHandler(GraderBaseHandler):
+    """This handler requires file_service to be a ``GitFileService``."""
+
     process: Subprocess
     rpc: GitRpcCmd
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # TODO: This handler requires file_service to be a git one. Where to best assert that?
-        if not isinstance(self.file_service, GitFileService):
-            msg = "File service has to be GitFileService. Check configuration of Grader Service."
-            raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, log_message=msg)
-
-        self.files_base: Path = self.file_service.files_base
-        self.git_executable = self.file_service.git_executable
 
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
@@ -174,12 +166,6 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             return None
 
-        # Artifact type "assignment" has been replaced by "user", so this should not happen,
-        # but we are leaving this check for the time being, just to be on the safe side:
-        if artifact_type == "assignment":
-            self.log.warning("Deprecated artifact_type: 'assignment'! Setting it to 'user'")
-            artifact_type = ArtifactType.USER
-
         try:
             artifact_type = ArtifactType(artifact_type)
         except ValueError:
@@ -234,7 +220,7 @@ class GitBaseHandler(GraderBaseHandler):
         self._check_artifact_permissions(rpc, role, artifact_type, submission, username)
 
         path = construct_git_dir(
-            self.files_base,
+            self.file_service.files_base,
             artifact_type,
             lect_code,
             assign_id,
@@ -337,7 +323,7 @@ class RPCHandler(GitBaseHandler):
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
         gitdir = await self.get_gitdir(rpc=self.rpc)
-        cmd = [self.git_executable, self.rpc, "--stateless-rpc", str(gitdir)]
+        cmd = [self.file_service.git_executable, self.rpc, "--stateless-rpc", str(gitdir)]
         self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
             cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
@@ -385,7 +371,13 @@ class InfoRefsHandler(GitBaseHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
 
         gitdir = await self.get_gitdir(self.rpc)
-        cmd = [self.git_executable, self.rpc, "--stateless-rpc", "--advertise-refs", str(gitdir)]
+        cmd = [
+            self.file_service.git_executable,
+            self.rpc,
+            "--stateless-rpc",
+            "--advertise-refs",
+            str(gitdir),
+        ]
         self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
             cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
