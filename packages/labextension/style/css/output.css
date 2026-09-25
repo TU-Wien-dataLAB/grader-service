@@ -650,9 +650,6 @@
   .h-\[calc\(--spacing\(5\.25\)\)\] {
     height: calc(calc(var(--spacing) * 5.25));
   }
-  .h-\[calc\(100\%-1px\)\] {
-    height: calc(100% - 1px);
-  }
   .h-auto {
     height: auto;
   }
@@ -1438,9 +1435,6 @@
   .p-10 {
     padding: calc(var(--spacing) * 10);
   }
-  .p-\[3px\] {
-    padding: 3px;
-  }
   .p-px {
     padding: 1px;
   }
@@ -1647,12 +1641,6 @@
   }
   .text-foreground\! {
     color: var(--foreground) !important;
-  }
-  .text-foreground\/60 {
-    color: var(--foreground);
-    @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--foreground) 60%, transparent);
-    }
   }
   .text-green-700 {
     color: var(--color-green-700);
@@ -2418,10 +2406,6 @@
     }
   }
   @media (hover: hover) {
-    .hover\:border-b:hover {
-      border-bottom-style: var(--tw-border-style);
-      border-bottom-width: 1px;
-    }
     .hover\:border-b-2:hover {
       border-bottom-style: var(--tw-border-style);
       border-bottom-width: 2px;
@@ -2536,12 +2520,6 @@
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
       var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
-  .focus\:ring-1:focus {
-    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
-      calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
   .focus\:ring-2:focus {
     --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
       calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
@@ -2580,9 +2558,6 @@
     --tw-ring-offset-width: 2px;
     --tw-ring-offset-shadow: var(--tw-ring-inset,) 0 0 0
       var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-  }
-  .focus\:outline-ring:focus {
-    outline-color: var(--ring);
   }
   .focus\:outline-none:focus {
     --tw-outline-style: none;
@@ -3027,19 +3002,12 @@
   .aria-selected\:text-muted-foreground[aria-selected='true'] {
     color: var(--muted-foreground);
   }
-  .data-active\:border-b[data-active] {
-    border-bottom-style: var(--tw-border-style);
-    border-bottom-width: 1px;
-  }
   .data-active\:border-b-2[data-active] {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 2px;
   }
   .data-active\:border-b-primary[data-active] {
     border-bottom-color: var(--primary);
-  }
-  .data-active\:bg-background[data-active] {
-    background-color: var(--background);
   }
   .data-active\:bg-secondary[data-active] {
     background-color: var(--secondary);
@@ -3050,9 +3018,6 @@
   .data-active\:font-medium[data-active] {
     --tw-font-weight: var(--font-weight-medium);
     font-weight: var(--font-weight-medium);
-  }
-  .data-active\:text-foreground[data-active] {
-    color: var(--foreground);
   }
   .data-active\:text-primary[data-active] {
     color: var(--primary);
@@ -3072,16 +3037,6 @@
       :where(.group\/tabs-list)[data-variant='line'] *
     )[data-active] {
     background-color: var(--secondary);
-  }
-  .group-data-\[variant\=line\]\/tabs-list\:data-active\:bg-secondary-background:is(
-      :where(.group\/tabs-list)[data-variant='line'] *
-    )[data-active] {
-    background-color: var(--secondary-background);
-  }
-  .group-data-\[variant\=line\]\/tabs-list\:data-active\:bg-transparent:is(
-      :where(.group\/tabs-list)[data-variant='line'] *
-    )[data-active] {
-    background-color: transparent;
   }
   .group-data-\[variant\=line\]\/tabs-list\:data-active\:shadow-none:is(
       :where(.group\/tabs-list)[data-variant='line'] *

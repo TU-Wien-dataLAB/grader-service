@@ -7,9 +7,10 @@ import { assignmentQuery } from '../../../../services/queries/assignments.querie
 import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import {
   getFiles,
-  lectureBasePath
+  lectureBasePath,
+  openInFileBrowser
 } from '../../../../services/local-file.service';
-import { Pencil } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -22,6 +23,21 @@ import { GlobalObjects } from '../../../../index';
 import { Contents } from '@jupyterlab/services';
 import { getDate } from '../../utils/utils';
 import { FilterFilesButton } from '../../ui/filter-button';
+import {
+  ToggleGroup,
+  ToggleGroupItem
+} from '../../../shadcn-components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '../../../shadcn-components/ui/tooltip';
+import { useAssignmentGenerateReleaseVer } from '../../../hooks/assignment/assignment-generate-release-ver';
+import { storeString } from '../../../../services/storage.service';
+import { useMutationStatus } from '../../../../widget';
+import { SuccessBanner } from '../../ui/success-banner';
+import { ErrorBanner } from '../../ui/error-banner';
+import { Button } from '../../../shadcn-components/ui/button';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -29,35 +45,47 @@ interface IFilesViewProps {
 }
 
 export const FilesView = (props: IFilesViewProps) => {
-  const { data: selectedDir } = useQuery(selectedDirQuery());
+  const { data: selectedDir, refetch: refetchSelectedDir } =
+    useQuery(selectedDirQuery());
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
   const { data: assignment } = useQuery(
     assignmentQuery(props.lectureId, props.assignmentId)
   );
+  const { status } = useMutationStatus();
 
   const { data: files = [], refetch: refetchFiles } = useQuery({
     queryKey: ['files', lecture.id, assignment.id, selectedDir],
     queryFn: async () => {
-      const path = `${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`;
-      return await getFiles(path);
+      return await getFiles(srcPath);
     }
   });
+  const srcPath = useMemo(
+    () => `${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`,
+    [lecture.code, selectedDir, assignment.id]
+  );
 
   useEffect(() => {
-    const srcPath = `${lectureBasePath}${lecture.code}/source/${assignment.id}`;
-    GlobalObjects.docManager.services.contents.fileChanged.connect(
-      async (sender: Contents.IManager, change: Contents.IChangedArgs) => {
-        const { oldValue, newValue } = change;
-        if (
-          (newValue && !newValue.path.includes(srcPath)) ||
-          (oldValue && !oldValue.path.includes(srcPath))
-        ) {
-          return;
-        }
-        await refetchFiles();
+    const handler = async (
+      sender: Contents.IManager,
+      change: Contents.IChangedArgs
+    ) => {
+      const { oldValue, newValue } = change;
+      if (
+        (newValue && !newValue.path.includes(srcPath)) ||
+        (oldValue && !oldValue.path.includes(srcPath))
+      ) {
+        return;
       }
-    );
-  }, [assignment, lecture]);
+      await refetchFiles();
+    };
+
+    GlobalObjects.docManager.services.contents.fileChanged.connect(handler);
+    return () => {
+      GlobalObjects.docManager.services.contents.fileChanged.disconnect(
+        handler
+      );
+    };
+  }, [srcPath, refetchFiles]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [checkedFileTypes, setCheckedFileTypes] = React.useState<string[]>([]);
@@ -81,23 +109,89 @@ export const FilesView = (props: IFilesViewProps) => {
   const fileTypes = useMemo(() => {
     return [...new Set(files?.map(file => file.type))];
   }, [files]);
+
+  const { handleGenerateAssignmentReleaseVer } =
+    useAssignmentGenerateReleaseVer();
+  const handleDirSwitch = async (dir: string) => {
+    if (dir === selectedDir) {
+      return;
+    }
+    if (dir === 'release') {
+      handleGenerateAssignmentReleaseVer(lecture.id, assignment.id);
+    }
+    // set new dir
+    storeString('files-selected-dir', dir);
+    const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${assignment.id}`;
+    refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
+  };
+
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
         <NewNotebookDialog />
       </div>
+      {status.status === 'success' && (
+        <SuccessBanner message={status.message} />
+      )}
+      {status.status === 'error' && <ErrorBanner message={status.message} />}
       <div className={'flex justify-between items-center self-stretch'}>
         <SearchField
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           placeholder={'Search for notebooks & files'}
         />
-        <FilterFilesButton
-          allFileTypes={fileTypes}
-          checkedFileTypes={checkedFileTypes}
-          setFileTypes={setCheckedFileTypes}
-        />
+        <div className={'flex gap-4 items-center ml-auto'}>
+          <FilterFilesButton
+            allFileTypes={fileTypes}
+            checkedFileTypes={checkedFileTypes}
+            setFileTypes={setCheckedFileTypes}
+          />
+          <ToggleGroup
+            type={'single'}
+            value={selectedDir}
+            onValueChange={dir => handleDirSwitch(dir)}
+          >
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span>
+                    <ToggleGroupItem
+                      value={'source'}
+                      disabled={selectedDir === 'source'}
+                      variant={selectedDir === 'source' ? 'default' : 'outline'}
+                    >
+                      <Pencil className={'size-4'} />
+                    </ToggleGroupItem>
+                  </span>
+                }
+              />
+              <TooltipContent>
+                <p>Instructor View</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span>
+                    <ToggleGroupItem
+                      value={'release'}
+                      disabled={selectedDir === 'release'}
+                      variant={
+                        selectedDir === 'release' ? 'default' : 'outline'
+                      }
+                    >
+                      <Eye className={'size-4'} />
+                    </ToggleGroupItem>
+                  </span>
+                }
+              />
+              <TooltipContent>
+                <p>Student Preview</p>
+              </TooltipContent>
+            </Tooltip>
+          </ToggleGroup>
+        </div>
       </div>
       <Table>
         <TableHeader>
@@ -106,7 +200,7 @@ export const FilesView = (props: IFilesViewProps) => {
             <TableHead>Last saved on</TableHead>
             <TableHead>File type</TableHead>
             <TableHead>File size</TableHead>
-            <TableHead>Edit</TableHead>
+            <TableHead>{selectedDir === 'source' ? 'Edit' : 'View'}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -118,7 +212,13 @@ export const FilesView = (props: IFilesViewProps) => {
               <TableCell>{file.size} B</TableCell>
               <TableCell>
                 {file.type !== 'directory' && (
-                  <Pencil className={'size-5 fill-primary text-card!'} />
+                  <Button variant={'link'}>
+                    {selectedDir === 'source' ? (
+                      <Pencil className={'size-5 fill-primary text-card!'} />
+                    ) : (
+                      <Eye className={'size-5 fill-primary text-card!'} />
+                    )}
+                  </Button>
                 )}
               </TableCell>
             </TableRow>
