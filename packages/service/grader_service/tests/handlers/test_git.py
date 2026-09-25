@@ -8,15 +8,17 @@ import shutil
 import subprocess
 from http import HTTPStatus
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from tornado.httpclient import HTTPClientError
 from tornado.web import HTTPError
 
-from grader_service.file_services.git_file_service import construct_git_dir
-from grader_service.handlers.git import RPCHandler, InfoRefsHandler
-from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.artifact_types import ArtifactType
+from grader_service.file_services.base_file_service import FileService
+from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.handlers.git import InfoRefsHandler, RPCHandler
+from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.orm import User
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.lecture import Lecture
@@ -493,3 +495,39 @@ async def test_rpc_handler_through_server(
             },
         )
     assert response.code == HTTPStatus.OK
+
+
+async def test_info_refs_not_available_with_non_git_file_service(
+    service_base_url, http_server_client, default_token, default_roles, default_user_login, app
+):
+    """The git info/refs endpoint returns 404 when file service does not support Git."""
+    l_code = "21wle1"  # the code of the lecture with id=1; default user is student
+    a_id = 1
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.USER}/info/refs?service=git-upload-pack"
+
+    with patch.object(app, "file_service", Mock(spec=FileService)):
+        with pytest.raises(HTTPClientError, match="Not Found"):
+            await http_server_client.fetch(
+                url, method="GET", headers={"Authorization": f"Token {default_token}"}
+            )
+
+
+async def test_rpc_not_available_with_non_git_file_service(
+    service_base_url, http_server_client, default_token, default_roles, default_user_login, app
+):
+    """The git RPC endpoint returns 404 when file service does not support Git."""
+    l_code = "22wle1"  # the code of the lecture with id=3; default user is instructor
+    a_id = 3
+    url = f"/git/{l_code}/{a_id}/{ArtifactType.SOURCE}/git-upload-pack"
+
+    with patch.object(app, "file_service", Mock(spec=FileService)):
+        with pytest.raises(HTTPClientError, match="Not Found"):
+            await http_server_client.fetch(
+                url,
+                method="POST",
+                body=b"0000",
+                headers={
+                    "Authorization": f"Token {default_token}",
+                    "Content-Type": "application/x-git-upload-pack-request",
+                },
+            )

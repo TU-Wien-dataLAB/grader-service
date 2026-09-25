@@ -85,7 +85,9 @@ def reset_my_service_singleton():
 @pytest.fixture()
 def grader_service(tmpdir):
     """Set `grader_service_dir` to `grader_service/` in a tmp directory."""
-    service_dir = tmpdir.mkdir("grader_service")
+    service_dir = tmpdir / "grader_service"
+    if not service_dir.exists():
+        tmpdir.mkdir("grader_service")
     service = GraderService().instance()
     service.grader_service_dir = str(service_dir)
     yield service

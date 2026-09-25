@@ -18,7 +18,7 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.file_services import GitFileService, FileServiceError
+from grader_service.file_services import FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.artifact_types import ArtifactType
@@ -38,11 +38,6 @@ class GitBaseHandler(GraderBaseHandler):
 
     process: Subprocess
     rpc: GitRpcCmd
-
-    def _verify_git_file_service(self):
-        if not isinstance(self.file_service, GitFileService):
-            msg = "File service has to be GitFileService for this endpoint to be available"
-            raise HTTPError(HTTPStatus.NOT_FOUND, log_message=msg)
 
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
@@ -353,7 +348,6 @@ class RPCHandler(GitBaseHandler):
         super().on_finish()
 
     async def post(self, rpc: GitRpcCmd):
-        self._verify_git_file_service()
         self.set_header("Content-Type", f"application/x-git-{rpc}-result")
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         await self.git_response()
@@ -390,7 +384,6 @@ class InfoRefsHandler(GitBaseHandler):
         )
 
     async def get(self):
-        self._verify_git_file_service()
         self.set_header("Content-Type", f"application/x-git-{self.rpc}-advertisement")
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 
