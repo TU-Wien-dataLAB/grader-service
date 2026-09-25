@@ -28,6 +28,7 @@ from tornado.web import HTTPError
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.errors import APIError
+from grader_service.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -175,10 +176,14 @@ class BaseHandler(web.RequestHandler):
                 url_path_join(self.application.base_url, "/oauth_callback"),
                 url_path_join(self.application.base_url, "/lti13/oauth_callback"),
             ]:
-                # TODO(Natalia): This is only relevant if Git is used for file operations.
                 # require git to authenticate with token -> otherwise return 401 code
                 # by default, git sends the request unauthenticated, first
                 if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+                    # This is only relevant if Git is used for file operations.
+                    if not isinstance(self.application.file_service, GitFileService):
+                        msg = "File service is not GitFileService; git endpoints unavailable"
+                        raise HTTPError(HTTPStatus.NOT_FOUND, log_message=msg)
+
                     self.set_status(401)
                     self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
                     self.finish("Unauthenticated Git request, Authentication required")

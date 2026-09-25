@@ -157,9 +157,8 @@ def _create_release_repo(handler: GitBaseHandler):
     # To create USER artifact, the RELEASE artifact has to exist first
     lec = _get_lecture()
     a = _get_assignment()
-    artifact_path_release = construct_git_dir(
-        handler.files_base, ArtifactType.RELEASE, lec.code, a.id
-    )
+    files_base = handler.file_service.files_base
+    artifact_path_release = construct_git_dir(files_base, ArtifactType.RELEASE, lec.code, a.id)
     os.makedirs(artifact_path_release, exist_ok=True)
     # Initialise the release repo (requires pushing a commit to `main`)
     subprocess.run(["git", "init", "--bare", artifact_path_release], check=True)
@@ -214,8 +213,8 @@ async def test_git_lookup_pull_instructor(git_handler_factory, artifact_type):
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     expected_path = f"iv21s/1/{artifact_type}"
     assert created_paths == Path(expected_path)
 
@@ -249,8 +248,8 @@ async def test_git_lookup_pull_with_submission_instructor(
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
 
     # Note: the submission user is not the same as the currently logged-in user.
     base_dir = Path(f"iv21s/1/{artifact_type}/")
@@ -269,8 +268,8 @@ async def test_git_lookup_pull_user_student(git_handler_factory, rpc_cmd):
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     assert created_paths == Path(f"iv21s/1/{artifact_type}/{git_handler.user.name}")
 
 
@@ -286,8 +285,8 @@ async def test_git_lookup_pull_feedback_student_with_valid_id(git_handler_factor
 
     assert lookup_path.exists()
     assert (lookup_path / "HEAD").exists()  # is git dir
-    assert lookup_path.is_relative_to(git_handler.files_base)
-    created_paths = lookup_path.relative_to(git_handler.files_base)
+    assert lookup_path.is_relative_to(git_handler.file_service.files_base)
+    created_paths = lookup_path.relative_to(git_handler.file_service.files_base)
     assert created_paths == Path(f"iv21s/1/{artifact_type}/user/{git_handler.user.name}")
 
 
