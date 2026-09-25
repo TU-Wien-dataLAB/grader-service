@@ -230,7 +230,9 @@ class GraderService(config.Application):
 
     @default("file_service")
     def _file_service_default(self):
-        return self.file_service_class(grader_service_dir=self.grader_service_dir, parent=self)
+        return self.file_service_class(
+            grader_service_dir=Path(self.grader_service_dir), parent=self
+        )
 
     @validate("config_file")
     def _validate_config_file(self, proposal):

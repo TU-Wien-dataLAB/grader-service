@@ -13,12 +13,15 @@ if typing.TYPE_CHECKING:
 class FileService(LoggingConfigurable):
     """Base class defining the interface for handling assignment and submission files.
 
+    Subclasses have to set ``files_base`` attribute. It has to be a subdirectory
+    of ``grader_service_dir``.
+
     Note: It is a de facto abstract class, but it cannot inherit from `abc.ABC`
     and `LoggingConfigurable` at the same time because of metaclasses conflict.
     """
 
     grader_service_dir = Instance(Path, allow_none=False).tag(config=True)
-    files_base = Instance(Path, allow_none=False).tag(config=True)
+    files_base = Instance(Path, allow_none=False)
 
     @validate("files_base")
     def _validate_files_base(self, proposal):

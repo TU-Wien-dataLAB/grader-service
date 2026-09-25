@@ -3,7 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import Unicode, observe, validate, default
+from traitlets import Unicode, observe, validate
 
 from grader_service.artifact_types import ArtifactType
 from grader_service.file_services.base_file_service import FileService, FileServiceError
@@ -90,16 +90,12 @@ class GitFileService(FileService):
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
-        self.tmpbase = Path(path) / "tmp"
-
-    @default("files_base")
-    def _files_base_default(self):
-        return Path(self.grader_service_dir) / "git"
+        self.files_base = path / "git"
+        self.tmpbase = path / "tmp"
 
     def __init__(self, grader_service_dir: Path | str, **kwargs):
+        kwargs["grader_service_dir"] = Path(grader_service_dir)
         super().__init__(**kwargs)
-        self.tmpbase: Path = self.grader_service_dir / "tmp"
-
         self._check_environment()
 
     def _check_environment(self):
