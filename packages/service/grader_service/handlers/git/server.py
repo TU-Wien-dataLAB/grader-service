@@ -171,12 +171,6 @@ class GitBaseHandler(GraderBaseHandler):
         except ValueError:
             return None
 
-        # Artifact type "assignment" has been replaced by "user", so this should not happen,
-        # but we are leaving this check for the time being, just to be on the safe side:
-        if artifact_type == "assignment":
-            self.log.warning("Deprecated artifact_type: 'assignment'! Setting it to 'user'")
-            artifact_type = ArtifactType.USER
-
         try:
             artifact_type = ArtifactType(artifact_type)
         except ValueError:
