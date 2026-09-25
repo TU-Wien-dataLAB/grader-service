@@ -185,22 +185,22 @@ def insert_default_user(ex: Engine) -> None:
 
 
 def create_user_submission_with_repo(
-    engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
+    engine: Engine, files_base: Path, student: User, assignment_id: int, lecture_code: str
 ) -> Submission:
     """Creates a submission for `student` and a user repo for storing it.
 
-    Note: `gitbase_dir` should be based on the pytest `tmp_path` fixture, so that the test does not
+    Note: `files_base` should be based on the pytest `tmp_path` fixture, so that the test does not
     interfere with the file system.
     """
     # 1. Create and configure a student repo (a bare one, as a remote)
     submission_repo_path = construct_git_dir(
-        gitbase_dir, ArtifactType.USER, lecture_code, assignment_id, username=student.name
+        files_base, ArtifactType.USER, lecture_code, assignment_id, username=student.name
     )
     submission_repo_path.mkdir(parents=True)
     subprocess.run(["git", "init", "--bare"], cwd=submission_repo_path, check=True)
 
     # 2. Create a "local" repo, create and commit a submission file, push to the remote
-    tmp_repo_path = gitbase_dir / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
+    tmp_repo_path = files_base / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
     tmp_repo_path.mkdir(parents=True)
     subprocess.run(["git", "init"], cwd=tmp_repo_path, check=True)
     subprocess.run(

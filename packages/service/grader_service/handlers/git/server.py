@@ -44,7 +44,7 @@ class GitBaseHandler(GraderBaseHandler):
             msg = "File service has to be GitFileService. Check configuration of Grader Service."
             raise HTTPError(HTTPStatus.INTERNAL_SERVER_ERROR, log_message=msg)
 
-        self.gitbase = self.file_service.gitbase
+        self.files_base: Path = self.file_service.files_base
         self.git_executable = self.file_service.git_executable
 
     async def data_received(self, chunk: bytes):
@@ -234,7 +234,7 @@ class GitBaseHandler(GraderBaseHandler):
         self._check_artifact_permissions(rpc, role, artifact_type, submission, username)
 
         path = construct_git_dir(
-            self.gitbase,
+            self.files_base,
             artifact_type,
             lect_code,
             assign_id,

@@ -26,12 +26,12 @@ async def setup_repos(git_file_service, submission_123):
 
     # Create release artifact
     release_path = construct_git_dir(
-        git_file_service.gitbase, ArtifactType.RELEASE, lecture_code, assignment.id
+        git_file_service.files_base, ArtifactType.RELEASE, lecture_code, assignment.id
     )
     await git_file_service.create_bare_repo(release_path)
     # Create user artifact
     user_path = construct_git_dir(
-        git_file_service.gitbase,
+        git_file_service.files_base,
         ArtifactType.USER,
         lecture_code,
         assignment.id,
@@ -49,11 +49,11 @@ async def setup_repos_with_release_files(git_file_service, setup_repos):
     clone_path = git_file_service.tmpbase / "release"
     clone_path.mkdir(parents=True, exist_ok=True)
     await git_file_service._run_git(
-        ["git", "clone", remote_path, clone_path], cwd=git_file_service.tmpbase
+        ["git", "clone", str(remote_path), str(clone_path)], cwd=git_file_service.tmpbase
     )
     file_path = clone_path / "assignment.ipynb"
     file_path.touch()
-    await git_file_service._run_git(["git", "add", file_path], cwd=clone_path)
+    await git_file_service._run_git(["git", "add", str(file_path)], cwd=clone_path)
     await git_file_service._run_git(
         ["git", "commit", "-m", "Add assignment notebook"], cwd=clone_path
     )
@@ -68,34 +68,34 @@ async def setup_repos_with_release_files(git_file_service, setup_repos):
 
 def test_construct_git_dir_source_artifact(assignment_123, tmp_path):
     """Test path construction for SOURCE artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
-    path = construct_git_dir(gitbase, ArtifactType.SOURCE, lecture_code, assignment_123.id)
+    path = construct_git_dir(files_base, ArtifactType.SOURCE, lecture_code, assignment_123.id)
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.SOURCE
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.SOURCE
     assert path == expected
 
 
 def test_construct_git_dir_release_artifact(assignment_123, tmp_path):
     """Test path construction for RELEASE artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
-    path = construct_git_dir(gitbase, ArtifactType.RELEASE, lecture_code, assignment_123.id)
+    path = construct_git_dir(files_base, ArtifactType.RELEASE, lecture_code, assignment_123.id)
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.RELEASE
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.RELEASE
     assert path == expected
 
 
 def test_construct_git_dir_user_artifact(assignment_123, tmp_path):
     """Test path construction for USER artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     lecture_code = assignment_123.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, ArtifactType.USER, lecture_code, assignment_123.id, username=username
+        files_base, ArtifactType.USER, lecture_code, assignment_123.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assignment_123.id) / ArtifactType.USER / username
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.USER / username
     assert path == expected
 
 
@@ -109,12 +109,16 @@ def test_construct_git_dir_edit_artifact_requires_submission_id(assignment_123, 
 
 def test_construct_git_dir_edit_artifact(submission_123, tmp_path):
     """Test path construction for EDIT artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
-    path = construct_git_dir(gitbase, ArtifactType.EDIT, lecture_code, assign.id, submission_123.id)
+    path = construct_git_dir(
+        files_base, ArtifactType.EDIT, lecture_code, assign.id, submission_123.id
+    )
 
-    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.EDIT / str(submission_123.id)
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.EDIT / str(submission_123.id)
+    )
     assert path == expected
 
 
@@ -131,29 +135,33 @@ def test_construct_git_dir_artifact_types_require_username(assignment_123, tmp_p
 
 def test_construct_git_dir_autograde_artifact(submission_123, tmp_path):
     """Test path construction for AUTOGRADE artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, ArtifactType.AUTOGRADE, lecture_code, assign.id, username=username
+        files_base, ArtifactType.AUTOGRADE, lecture_code, assign.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.AUTOGRADE / "user" / username
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.AUTOGRADE / "user" / username
+    )
     assert path == expected
 
 
 def test_construct_git_dir_feedback_artifact(submission_123, tmp_path):
     """Test path construction for FEEDBACK artifact type."""
-    gitbase = tmp_path / "git"
+    files_base = tmp_path / "git"
     assign = submission_123.assignment
     lecture_code = assign.lecture.code
     username = "test_user"
     path = construct_git_dir(
-        gitbase, ArtifactType.FEEDBACK, lecture_code, assign.id, username=username
+        files_base, ArtifactType.FEEDBACK, lecture_code, assign.id, username=username
     )
 
-    expected = gitbase / lecture_code / str(assign.id) / ArtifactType.FEEDBACK / "user" / username
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.FEEDBACK / "user" / username
+    )
     assert path == expected
 
 
@@ -180,7 +188,7 @@ async def test_is_bare_git_dir_returns_false_for_non_bare_repo(
     git_file_service, setup_repos, tmp_path
 ):
     """Test that non-bare git repos are not detected as bare."""
-    bare_repo_path = setup_repos["release"]
+    bare_repo_path = str(setup_repos["release"])
     clone_dir = tmp_path / "tmp"
     clone_dir.mkdir()
     await git_file_service._run_git(["git", "clone", bare_repo_path], cwd=clone_dir)
@@ -202,7 +210,7 @@ async def test_is_bare_git_dir_returns_false_for_non_git_dir(git_file_service, t
 
 async def test_is_bare_git_dir_returns_false_for_nonexistent_path(git_file_service):
     """Test that nonexistent paths return False."""
-    nonexistent_path = git_file_service.gitbase / "nonexistent"
+    nonexistent_path = git_file_service.files_base / "nonexistent"
 
     result = await git_file_service.is_bare_git_dir(nonexistent_path)
 
@@ -378,7 +386,7 @@ async def test_fetch_files_from_user_artifact(
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
     sub = create_user_submission_with_repo(
         sql_alchemy_engine,
-        git_file_service.gitbase,
+        git_file_service.files_base,
         student=default_user,
         assignment_id=1,
         lecture_code="21wle1",
@@ -412,7 +420,7 @@ async def test_edit_submission(git_file_service, sql_alchemy_engine, default_use
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
     sub = create_user_submission_with_repo(
         sql_alchemy_engine,
-        git_file_service.gitbase,
+        git_file_service.files_base,
         student=default_user,
         assignment_id=1,
         lecture_code="21wle1",
@@ -423,7 +431,7 @@ async def test_edit_submission(git_file_service, sql_alchemy_engine, default_use
     tmp_base = git_file_service.tmpbase / l_code / str(a_id) / "edit" / str(sub.id)
 
     remote_path_edit = construct_git_dir(
-        git_file_service.gitbase, ArtifactType.EDIT, l_code, a_id, submission_id=sub.id
+        git_file_service.files_base, ArtifactType.EDIT, l_code, a_id, submission_id=sub.id
     )
     assert not remote_path_edit.exists()
 
@@ -465,7 +473,7 @@ async def test_push_files_autograde(git_file_service, submission_123, tmp_path):
     a_id = str(submission_123.assignment.id)
     username = submission_123.user.name
     remote_repo_path = construct_git_dir(
-        git_file_service.gitbase, artifact_type, l_code, a_id, username=username
+        git_file_service.files_base, artifact_type, l_code, a_id, username=username
     )
     assert not remote_repo_path.exists()
 
@@ -517,7 +525,7 @@ async def test_delete_lecture_files_removes_git_and_tmp_dirs(git_file_service, a
     lecture_code = assignment_123.lecture.code
 
     # Create directories
-    git_lecture_path = git_file_service.gitbase / lecture_code
+    git_lecture_path = git_file_service.files_base / lecture_code
     tmp_lecture_path = git_file_service.tmpbase / lecture_code
     git_lecture_path.mkdir(parents=True)
     tmp_lecture_path.mkdir(parents=True)
@@ -533,7 +541,7 @@ async def test_delete_lecture_files_ignores_missing_dirs(git_file_service, assig
     lecture_code = assignment_123.lecture.code
 
     # Don't create the directories
-    git_lecture_path = git_file_service.gitbase / lecture_code
+    git_lecture_path = git_file_service.files_base / lecture_code
     tmp_lecture_path = git_file_service.tmpbase / lecture_code
     assert not git_lecture_path.exists()
     assert not tmp_lecture_path.exists()
@@ -557,7 +565,7 @@ async def test_delete_assignment_files_removes_assignment_dirs(git_file_service,
     assignment_id = str(assignment_123.id)
 
     # Create directories
-    git_assignment_path = git_file_service.gitbase / lecture_code / assignment_id
+    git_assignment_path = git_file_service.files_base / lecture_code / assignment_id
     tmp_assignment_path = git_file_service.tmpbase / lecture_code / assignment_id
     git_assignment_path.mkdir(parents=True)
     tmp_assignment_path.mkdir(parents=True)
@@ -566,7 +574,7 @@ async def test_delete_assignment_files_removes_assignment_dirs(git_file_service,
 
     assert not git_assignment_path.exists()
     assert not tmp_assignment_path.exists()
-    assert (git_file_service.gitbase / lecture_code).exists()
+    assert (git_file_service.files_base / lecture_code).exists()
     assert (git_file_service.tmpbase / lecture_code).exists()
 
 
@@ -582,12 +590,12 @@ async def test_delete_submission_files_removes_user_and_submission_dirs(
     username = submission_123.user.name
     s_id = submission_123.id
 
-    # Create submission-specific directories in gitbase and tmpbase
+    # Create submission-specific directories in files_base and tmpbase
     submission_dirs = []
     assignment_dirs = []
     for artifact_type in ArtifactType:
         artifact_dir = construct_git_dir(
-            git_file_service.gitbase,
+            git_file_service.files_base,
             artifact_type,
             l_code,
             a_id,
@@ -623,7 +631,7 @@ async def test_delete_submission_files_only_removes_target_submission(
     # Create another user's artifact
     other_username = "other_user"
     other_user_path = construct_git_dir(
-        git_file_service.gitbase, ArtifactType.USER, l_code, a_id, username=other_username
+        git_file_service.files_base, ArtifactType.USER, l_code, a_id, username=other_username
     )
     await git_file_service.create_bare_repo(other_user_path)
 
