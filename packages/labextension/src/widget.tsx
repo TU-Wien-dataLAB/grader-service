@@ -68,7 +68,7 @@ function GraderServiceViewComponent({
   return (
     <QueryClientProvider client={queryClient}>
       <Theme className={theme} style={{ height: '100%' }}>
-        <div className="h-full @container">
+        <div className="h-full">
           <MutationContext.Provider value={{ status, setStatus }}>
             <RouterProvider router={router} />
           </MutationContext.Provider>

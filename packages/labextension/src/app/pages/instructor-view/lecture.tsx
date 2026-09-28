@@ -357,7 +357,11 @@ export const Lecture = () => {
         )}
         {status.status === 'error' && <ErrorBanner message={status.message} />}
         {assignments.length > 0 && (
-          <div className={'flex justify-between items-center self-stretch'}>
+          <div
+            className={
+              'flex flex-col justify-between items-center self-stretch @lg:flex-row'
+            }
+          >
             <SearchField
               placeholder={'Search for assignment'}
               recentSearchesKey={'assignment-search-history'}

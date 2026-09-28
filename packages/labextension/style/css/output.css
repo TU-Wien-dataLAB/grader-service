@@ -3797,6 +3797,11 @@
       display: none;
     }
   }
+  @container (width >= 24rem) {
+    .\@sm\:flex-row {
+      flex-direction: row;
+    }
+  }
   @container field-group (width >= 28rem) {
     .\@md\/field-group\:flex-row {
       flex-direction: row;
@@ -3810,9 +3815,24 @@
       align-items: flex-start;
     }
   }
+  @container (width >= 32rem) {
+    .\@lg\:flex-row {
+      flex-direction: row;
+    }
+  }
+  @container (width >= 36rem) {
+    .\@xl\:flex-row {
+      flex-direction: row;
+    }
+  }
   @container (width >= 48rem) {
     .\@3xl\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container (width >= 64rem) {
+    .\@5xl\:flex-row {
+      flex-direction: row;
     }
   }
   @container (width >= 72rem) {

@@ -137,7 +137,11 @@ export const Dashboard = () => {
           <SuccessBanner message={status.message} />
         )}
         {status.status === 'error' && <ErrorBanner message={status.message} />}
-        <div className={'flex justify-between items-center self-stretch'}>
+        <div
+          className={
+            'flex flex-col justify-between items-center self-stretch @xl:flex-row'
+          }
+        >
           <SearchField
             placeholder={'Search for course'}
             recentSearchesKey={'lecture-search-history'}
