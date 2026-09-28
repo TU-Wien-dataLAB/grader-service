@@ -78,11 +78,7 @@ export class GradeBook {
       this.properties['notebooks'][notebook]['grades_dict'][cellId][
         'extra_credit'
       ];
-    if (extraCredit) {
-      return extraCredit;
-    } else {
-      return 0.0;
-    }
+    return extraCredit || 0.0;
   }
 
   public setNeedsManualGrading(
@@ -159,20 +155,17 @@ export class GradeBook {
   }
 
   public getNotebookPoints(notebook: string): number {
-    let sum = 0;
     const grades_dict = this.properties['notebooks'][notebook]['grades_dict'];
-    for (const cellId of Object.keys(grades_dict)) {
-      sum += this.getGradeScore(notebook, cellId);
-    }
-    return sum;
+    return Object.keys(grades_dict)
+      .map(cellId => this.getGradeScore(notebook, cellId))
+      .reduce((sum, grade) => sum + grade, 0);
   }
 
   public getPoints(): number {
-    let sum = 0;
-    for (const notebook of Object.keys(this.properties['notebooks'])) {
-      sum += this.getNotebookPoints(notebook);
-    }
-    return sum;
+    return Object.keys(this.properties['notebooks']).reduce(
+      (sum, notebook) => sum + this.getNotebookPoints(notebook),
+      0
+    );
   }
 
   public addTaskCellsToGrades() {
@@ -207,42 +200,41 @@ export class GradeBook {
   }
 
   public getNotebookMaxPointsCells(notebook: string): number {
-    let sum = 0;
-    const grade_cells_dict =
-      this.properties['notebooks'][notebook]['grade_cells_dict'];
-    for (const cellId of Object.keys(grade_cells_dict)) {
-      sum += this.getGradeCellMaxScore(notebook, cellId);
-    }
-    const task_cells_dict =
-      this.properties['notebooks'][notebook]['task_cells_dict'];
-    for (const cellId of Object.keys(task_cells_dict)) {
-      sum += this.getTaskCellMaxScore(notebook, cellId);
-    }
-    return sum;
+    const { grade_cells_dict, task_cells_dict } =
+      this.properties['notebooks'][notebook];
+
+    const gradePoints = Object.keys(grade_cells_dict).reduce(
+      (sum, cellId) => sum + this.getGradeCellMaxScore(notebook, cellId),
+      0
+    );
+    const taskPoints = Object.keys(task_cells_dict).reduce(
+      (sum, cellId) => sum + this.getTaskCellMaxScore(notebook, cellId),
+      0
+    );
+
+    return gradePoints + taskPoints;
   }
 
   public getMaxPoints(): number {
-    let sum = 0;
-    for (const notebook of Object.keys(this.properties['notebooks'])) {
-      sum += this.getNotebookMaxPointsCells(notebook);
-    }
-    return sum;
+    return Object.keys(this.properties['notebook']).reduce(
+      (sum, notebook) => sum + this.getNotebookMaxPointsCells(notebook),
+      0
+    );
   }
 
   public getNotebookExtraCredit(notebook: string): number {
-    let sum = 0;
-    const grades_dict = this.properties['notebooks'][notebook]['grades_dict'];
-    for (const cellId of Object.keys(grades_dict)) {
-      sum += this.getExtraCredit(notebook, cellId);
-    }
-    return sum;
+    const { grades_dict } = this.properties['notebooks'][notebook];
+
+    return Object.keys(grades_dict).reduce(
+      (sum, cellId) => sum + this.getExtraCredit(notebook, cellId),
+      0
+    );
   }
 
   public getExtraCredits() {
-    let sum = 0;
-    for (const notebook of Object.keys(this.properties['notebooks'])) {
-      sum += this.getNotebookExtraCredit(notebook);
-    }
-    return sum;
+    return Object.keys(this.properties['notebook']).reduce(
+      (sum, notebook) => sum + this.getNotebookExtraCredit(notebook),
+      0
+    );
   }
 }
