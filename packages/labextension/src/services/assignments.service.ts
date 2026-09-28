@@ -6,27 +6,19 @@
 
 import { Assignment } from '../model/assignment';
 import { AssignmentDetail } from '../model/assignmentDetail';
-import { Lecture } from '../model/lecture';
-import { HTTPMethod, request } from './request.service';
-import { RepoType } from '../app/components/utils/repo-type';
+import { request } from './request.service';
+import { HTTPMethod } from './enums/http-methods.enum';
 
-export function createAssignment(
-  lectureId: number,
-  assignment: Assignment
-): Promise<Assignment> {
-  return request<Assignment, Assignment>(
-    HTTPMethod.POST,
-    `/api/lectures/${lectureId}/assignments`,
-    assignment
-  );
-}
+export const baseUrl = (lectureId: number) => {
+  return `/api/lectures/${lectureId}/assignments`;
+};
 
 export function getAllAssignments(
   lectureId: number,
   reload = false,
   includeSubmissions = false
 ): Promise<AssignmentDetail[]> {
-  let url = `/api/lectures/${lectureId}/assignments`;
+  let url = baseUrl(lectureId);
   if (includeSubmissions) {
     const searchParams = new URLSearchParams({
       'include-submissions': String(includeSubmissions)
@@ -39,26 +31,28 @@ export function getAllAssignments(
 export function getAssignment(
   lectureId: number,
   assignmentId: number,
+  instructor: boolean = false,
   reload = false
 ): Promise<Assignment> {
-  return request<Assignment>(
-    HTTPMethod.GET,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}`,
-    null,
-    reload
-  );
+  let url = `${baseUrl(lectureId)}/${assignmentId}`;
+  if (instructor) {
+    const searchParams = new URLSearchParams({
+      'instructor-version': String(instructor)
+    });
+    url += '?' + searchParams.toString();
+  }
+
+  return request<Assignment>(HTTPMethod.GET, url, null, reload);
 }
 
-export function getAssignmentProperties(
+export function createAssignment(
   lectureId: number,
-  assignmentId: number,
-  reload: boolean = false
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}/properties`,
-    null,
-    reload
+  assignment: Assignment
+): Promise<Assignment> {
+  return request<Assignment, Assignment>(
+    HTTPMethod.POST,
+    baseUrl(lectureId),
+    assignment
   );
 }
 
@@ -70,40 +64,40 @@ export function updateAssignment(
   const searchParams = new URLSearchParams({
     'recalc-scores': String(recalcScores)
   });
-  let url = `/api/lectures/${lectureId}/assignments/${assignment.id}`;
+  let url = `${baseUrl(lectureId)}/${assignment.id}`;
   url += '?' + searchParams;
 
   return request<Assignment, Assignment>(HTTPMethod.PUT, url, assignment);
 }
 
-export function generateAssignment(
+export function getAssignmentProperties(
   lectureId: number,
-  assignment: Assignment
+  assignmentId: number,
+  reload: boolean = false
 ): Promise<any> {
   return request<any>(
-    HTTPMethod.PUT,
-    `/api/lectures/${lectureId}/assignments/${assignment.id}/generate`,
-    null
+    HTTPMethod.GET,
+    `${baseUrl(lectureId)}/${assignmentId}/properties`,
+    null,
+    reload
   );
 }
 
-export function fetchAssignment(
+/**
+ * Generates the release files from the source files of an assignment
+ *
+ * @param lectureId - the id of the lecture
+ * @param assignmentId - the id of the assignment to generate release files for
+ */
+export function generateAssignment(
   lectureId: number,
-  assignmentId: number,
-  instructor: boolean = false,
-  metadataOnly: boolean = false,
-  reload: boolean = false
-): Promise<Assignment> {
-  let url = `/api/lectures/${lectureId}/assignments/${assignmentId}`;
-  if (instructor || metadataOnly) {
-    const searchParams = new URLSearchParams({
-      'instructor-version': String(instructor),
-      'metadata-only': String(metadataOnly)
-    });
-    url += '?' + searchParams;
-  }
-
-  return request<Assignment>(HTTPMethod.GET, url, null, reload);
+  assignmentId: number
+): Promise<any> {
+  return request<any>(
+    HTTPMethod.PUT,
+    `${baseUrl(lectureId)}/${assignmentId}/generate`,
+    null
+  );
 }
 
 export function deleteAssignment(
@@ -112,54 +106,7 @@ export function deleteAssignment(
 ): Promise<void> {
   return request<void>(
     HTTPMethod.DELETE,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}`,
-    null
-  );
-}
-
-export function pushAssignment(
-  lectureId: number,
-  assignmentId: number,
-  repoType: RepoType,
-  commitMessage?: string,
-  selectedFiles?: string[]
-): Promise<void> {
-  let url = `/api/lectures/${lectureId}/assignments/${assignmentId}/push/${repoType}`;
-  if (commitMessage) {
-    const searchParams = new URLSearchParams({
-      'commit-message': commitMessage
-    });
-    url += '?' + searchParams;
-  }
-
-  if (selectedFiles && selectedFiles.length > 0) {
-    selectedFiles.forEach(file => {
-      url += `&selected-files=${encodeURIComponent(file)}`;
-    });
-  }
-
-  return request<void>(HTTPMethod.PUT, url, null);
-}
-
-export function pullAssignment(
-  lectureId: number,
-  assignmentId: number,
-  repoType: RepoType
-): Promise<void> {
-  return request<void>(
-    HTTPMethod.GET,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}/pull/${repoType}`,
-    null
-  );
-}
-
-export function resetAssignment(
-  lecture: Lecture,
-  assignment: Assignment
-): Promise<void> {
-  return request<void>(
-    HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/reset`,
+    `${baseUrl(lectureId)}/${assignmentId}`,
     null
   );
 }

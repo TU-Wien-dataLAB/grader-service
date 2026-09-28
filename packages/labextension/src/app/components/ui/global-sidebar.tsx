@@ -40,6 +40,7 @@ import {
 } from '../../shadcn-components/ui/toggle-group';
 import { LogoWithText } from '../../../assets/logo-with-text';
 import { Logo } from '../../../assets/logo';
+import { UserPermissions } from '../../../services/permission.service';
 
 export const GlobalSidebar = () => {
   const { data: fetchedLectures } = useQuery(activeInstructorLecturesQuery());
@@ -94,7 +95,11 @@ export const GlobalSidebar = () => {
                   <CollapsibleTrigger
                     render={
                       <SidebarMenuButton
-                        className="h-full"
+                        className={`${
+                          state === 'collapsed'
+                            ? 'justify-center'
+                            : 'justify-start'
+                        } h-full`}
                         tooltip={lecture.name}
                       />
                     }
@@ -142,27 +147,29 @@ export const GlobalSidebar = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <ToggleGroup type={'single'} className={'rounded-xs w-fit'}>
-          {state === 'collapsed' ? (
-            <>
-              <ToggleGroupItem value={'instructor'}>
-                <Pencil className={'size-4'} />
-              </ToggleGroupItem>
-              <ToggleGroupItem value={'student'} variant={'outline'}>
-                <Eye className={'size-4'} />
-              </ToggleGroupItem>
-            </>
-          ) : (
-            <>
-              <ToggleGroupItem value={'instructor'} variant={'default'}>
-                Instructor View
-              </ToggleGroupItem>
-              <ToggleGroupItem value={'student'} variant={'outline'}>
-                Student View
-              </ToggleGroupItem>
-            </>
-          )}
-        </ToggleGroup>
+        {UserPermissions.hasElevatedPermissions() && (
+          <ToggleGroup type={'single'} className={'rounded-xs w-fit'}>
+            {state === 'collapsed' ? (
+              <>
+                <ToggleGroupItem value={'instructor'}>
+                  <Pencil className={'size-4'} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value={'student'} variant={'outline'}>
+                  <Eye className={'size-4'} />
+                </ToggleGroupItem>
+              </>
+            ) : (
+              <>
+                <ToggleGroupItem value={'instructor'} variant={'default'}>
+                  Instructor View
+                </ToggleGroupItem>
+                <ToggleGroupItem value={'student'} variant={'outline'}>
+                  Student View
+                </ToggleGroupItem>
+              </>
+            )}
+          </ToggleGroup>
+        )}
         <Separator className={'w-full'} />
         <Button
           variant="link"

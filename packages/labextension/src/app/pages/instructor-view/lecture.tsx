@@ -49,6 +49,10 @@ import {
   TooltipTrigger
 } from '../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -154,6 +158,7 @@ export const Lecture = () => {
 
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
+      return [];
       return [];
     }
     // extract all groups from assignments
@@ -363,6 +368,10 @@ export const Lecture = () => {
       checkGroupSymbol(groupKey)
     );
 
+  useEffect(() => {
+    openInFileBrowser(`${lectureBasePath}${lecture.code}`);
+  }, []);
+
   const { status } = useMutationStatus();
 
   useEffect(() => {
@@ -383,12 +392,14 @@ export const Lecture = () => {
       >
         <div
           className={
-            'flex flex-row sticky justify-between items-center self-stretch'
+            'flex flex-row sticky justify-between items-center self-stretch gap-2'
           }
         >
           {!isPendingLecture && (
-            <div className={'flex flex-col gap-1 items-start'}>
-              <h1 className={'text-2xl font-bold'}>{lecture.name}</h1>
+            <div className={'flex flex-col gap-1 items-start min-w-0'}>
+              <h1 className={'text-2xl w-full font-bold truncate'}>
+                {lecture.name}
+              </h1>
               <h3 className={'text-base font-bold'}>{lecture.code}</h3>
             </div>
           )}

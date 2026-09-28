@@ -11,10 +11,10 @@ import { Link } from 'react-router';
 import React from 'react';
 import { Lecture } from '../../../../model/lecture';
 import { useQuery } from '@tanstack/react-query';
-import { getUsers } from '../../../../services/lectures.service';
+import { getLectureUsers } from '../../../../services/lectures.service';
 import { getAllAssignments } from '../../../../services/assignments.service';
 import { IconTextInfo } from '../../ui/icon-text-info';
-import { determineDisplayText, highlightText } from '../../utils/utils';
+import { pluralize, highlightText } from '../../utils/utils';
 import { User } from '../../../../model/user';
 import { EditLectureDialog } from './edit-lecture-dialog';
 import {
@@ -32,7 +32,7 @@ export const LectureCard = (props: ILectureCard) => {
   const lecture = props.lecture;
   const { data: users, isPending: isPendingUsers } = useQuery({
     queryKey: ['users', lecture.id],
-    queryFn: async () => getUsers(lecture.id, false)
+    queryFn: async () => getLectureUsers(lecture.id, false)
   });
 
   const { data: assignments, isPending: isPendingAssignments } = useQuery({
@@ -80,10 +80,10 @@ export const LectureCard = (props: ILectureCard) => {
           <IconTextInfo
             icon={
               <FileText
-                className={'fill-foreground size-5 text-white! self-center'}
+                className={'fill-foreground size-5 text-card! self-center'}
               />
             }
-            text={`${assignments.length.toString()} ${determineDisplayText({
+            text={`${assignments.length.toString()} ${pluralize({
               text: 'Assignment',
               data: assignments
             })}`}
@@ -92,10 +92,10 @@ export const LectureCard = (props: ILectureCard) => {
         <IconTextInfo
           icon={
             <UserIcon
-              className={'fill-foreground text-foreground! size-5 self-center'}
+              className={'fill-foreground text-card! size-5 self-center'}
             />
           }
-          text={`${students.length.toString()} ${determineDisplayText({
+          text={`${students.length.toString()} ${pluralize({
             text: 'Student',
             data: students
           })}`}

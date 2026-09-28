@@ -15,10 +15,14 @@ import {
   SelectValue
 } from '../../../shadcn-components/ui/select';
 import { Button } from '../../../shadcn-components/ui/button';
-import { exportGrades } from '../../../../services/lectures.service';
-import { lectureBasePath, openFile } from '../../../../services/file.service';
+import { exportGrades } from '../../../../services/submissions.service';
+import {
+  lectureBasePath,
+  openInFileBrowser,
+  openInNewTab
+} from '../../../../services/local-file.service';
 import { Lecture } from '../../../../model/lecture';
-import { goToPath } from '../../../../services/file-browser.service';
+import { useMutationStatus } from '../../../../widget';
 
 interface IExportGradesDialogProps {
   lecture: Lecture;
@@ -29,18 +33,20 @@ interface IExportGradesDialogProps {
 export const ExportGradesDialog = (props: IExportGradesDialogProps) => {
   const [format, setFormat] = React.useState<'csv' | 'json'>('csv');
   const [filter, setFilter] = React.useState<'best' | 'latest'>('best');
+  const { setStatus } = useMutationStatus();
 
   const handleExport = async () => {
     try {
       await exportGrades(props.lecture.id, filter, format);
-      // open file in new tab
-      await openFile(
+      await openInNewTab(
         `${lectureBasePath}${props.lecture.code}/${props.lecture.name}_${filter}_submissions.${format}`
       );
-      // go into correct directory
-      await goToPath(`${lectureBasePath}${props.lecture.code}`);
+      await openInFileBrowser(`${lectureBasePath}${props.lecture.code}`);
     } catch (error: any) {
-      console.error('Error exporting grades:', error);
+      setStatus({
+        status: 'error',
+        message: error?.message || 'Failed to export grades'
+      });
     } finally {
       props.setIsOpen(false);
     }

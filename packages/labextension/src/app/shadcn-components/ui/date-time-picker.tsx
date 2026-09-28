@@ -10,15 +10,27 @@ import { Field, FieldGroup, FieldLabel } from './field';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { AnyFieldApi } from '@tanstack/react-form';
 import { InputGroup, InputGroupAddon, InputGroupInput } from './input-group';
+import { calculateDaysDifference } from '../../components/utils/utils';
 
 interface IDatePickerTime {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   field: AnyFieldApi;
+  setTimeDiff?:
+    | React.Dispatch<React.SetStateAction<Record<string, number>>>
+    | undefined;
 }
 
 export function DatePickerTime(props: IDatePickerTime) {
   const date = props.field.state.value as Date | undefined;
+  const setTimeDiff = (selectedDate: Date) => {
+    props.setTimeDiff(
+      calculateDaysDifference({
+        endDate: new Date(selectedDate),
+        startDate: new Date()
+      })
+    );
+  };
 
   const handleDateSelect = (selected: Date | undefined) => {
     if (!selected) {
@@ -27,13 +39,15 @@ export function DatePickerTime(props: IDatePickerTime) {
 
     props.field.handleChange(selected.toISOString());
     props.setOpen(false);
+    setTimeDiff(selected);
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const [hours, minutes, seconds] = e.target.value.split(':').map(Number);
+    const [hours, minutes] = e.target.value.split(':').map(Number);
     const updated = date ? new Date(date) : new Date();
-    updated.setHours(hours, minutes, seconds ?? 0);
+    updated.setHours(hours, minutes ?? 0);
     props.field.handleChange(updated.toISOString());
+    setTimeDiff(updated);
   };
 
   const deleteDate = () => {
@@ -92,8 +106,7 @@ export function DatePickerTime(props: IDatePickerTime) {
           <InputGroupInput
             type="time"
             id="time-picker-optional"
-            step="1"
-            value={date ? format(date, 'HH:mm:ss') : '00:00:00'}
+            value={date ? format(date, 'HH:mm') : '00:00'}
             onChange={handleTimeChange}
             placeholder="HH:MM"
             className="appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"

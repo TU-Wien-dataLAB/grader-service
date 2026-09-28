@@ -1,9 +1,9 @@
 import { SearchField } from '../../components/ui/search';
 import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllLectures } from '../../../services/lectures.service';
+import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
 import {
   Table,
@@ -14,7 +14,7 @@ import {
 } from '../../shadcn-components/ui/table';
 import { LectureCard } from '../../components/grader-service/lectures/lecture-card';
 import { LectureRow } from '../../components/grader-service/lectures/lecture-row';
-import { determineDisplayText } from '../../components/utils/utils';
+import { pluralize } from '../../components/utils/utils';
 import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
 import { Header } from '../../components/ui/header';
 import {
@@ -50,6 +50,10 @@ import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { useMutationStatus } from '../../../widget';
 import { ErrorBanner } from '../../components/ui/error-banner';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
@@ -66,10 +70,15 @@ export const Dashboard = () => {
   } = useQuery({
     queryKey: ['completedLectures'],
     queryFn: async () =>
-      getAllLectures({ instructor: true, complete: true }, false),
+      getLectures({ instructor: true, complete: true }, false),
     // only fetch completed lectures if the "completed" filter option has been chosen
     enabled: filterBy === 'completed'
   });
+
+  useEffect(() => {
+    openInFileBrowser(`${lectureBasePath}`);
+  }, []);
+
   /* logic for searching/filtering/sorting */
   const filteredLectures = useMemo(() => {
     if (!lectures) {
@@ -186,7 +195,7 @@ export const Dashboard = () => {
         {searchQuery && (
           <p className={'w-fit'}>
             <span className={'font-bold'}>{filteredLectures.length}</span>{' '}
-            {determineDisplayText({
+            {pluralize({
               text: 'result',
               data: filteredLectures
             })}{' '}
@@ -288,7 +297,7 @@ export const Dashboard = () => {
           icon={<EmptyIcon />}
           description={
             'There are no courses available for you right \n now. Please check' +
-            'again later.'
+            ' again later.'
           }
         />
       )}
