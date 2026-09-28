@@ -9,7 +9,7 @@ import {
   DialogTrigger
 } from '../../../shadcn-components/ui/dialog';
 import { Button } from '../../../shadcn-components/ui/button';
-import { FieldGroup } from '../../../shadcn-components/ui/field';
+import { Field, FieldGroup } from '../../../shadcn-components/ui/field';
 import { Input } from '../../../shadcn-components/ui/input';
 import { Label } from '../../../shadcn-components/ui/label';
 import {
@@ -31,6 +31,7 @@ import {
   lectureBasePath
 } from '../../../../services/local-file.service';
 import { useQuery } from '@tanstack/react-query';
+import { CircleAlert } from 'lucide-react';
 
 type KernelSelection =
   | { mode: 'none' }
@@ -193,7 +194,7 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
             <form.Field
               name={'notebookName'}
               children={field => (
-                <>
+                <Field>
                   <Label htmlFor={'notebook-name'}>Name*</Label>
                   <Input
                     id={'notebook-name'}
@@ -204,11 +205,14 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
                     aria-invalid={!field.state.meta.isValid}
                   />
                   {!field.state.meta.isValid && (
-                    <em role="alert" className={'text-red-700'}>
+                    <em role="alert" className={'text-red-700 flex gap-1'}>
+                      <CircleAlert
+                        className={'fill-red-700 text-white size-4 self-center'}
+                      />{' '}
                       {field.state.meta.errors.join(', ')}
                     </em>
                   )}
-                </>
+                </Field>
               )}
               validators={{
                 onChange: ({ value }) => {
@@ -227,7 +231,7 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
             <form.Field
               name={'kernel'}
               children={field => (
-                <>
+                <Field>
                   <Label htmlFor={'kernel'}>Kernel</Label>
                   <Select
                     items={items}
@@ -270,7 +274,7 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
                       )}
                     </SelectContent>
                   </Select>
-                </>
+                </Field>
               )}
             ></form.Field>
           </FieldGroup>
