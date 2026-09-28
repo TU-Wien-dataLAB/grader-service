@@ -47,6 +47,7 @@ interface IKernelOption {
 interface INewNotebookDialogProps {
   lectureCode: string;
   assignmentId: number;
+  buttonVariant?: 'default' | 'outline';
 }
 
 export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
@@ -173,7 +174,10 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger
         render={
-          <Button variant={'outline'} className={'ml-auto'}>
+          <Button
+            variant={props.buttonVariant ?? 'default'}
+            className={props.buttonVariant === 'outline' && 'ml-auto'}
+          >
             New notebook
           </Button>
         }

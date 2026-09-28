@@ -39,6 +39,9 @@ import { useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { ErrorBanner } from '../../ui/error-banner';
 import { Button } from '../../../shadcn-components/ui/button';
+import { EmptyState } from '../../utils/empty-state';
+import { NoResultsFoundIcon } from '../../../../assets/no-results-found-icon';
+import { EmptyDirIcon } from '../../../../assets/empty-dir-icon';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -131,107 +134,150 @@ export const FilesView = (props: IFilesViewProps) => {
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch h-full'}>
-      <div className={'flex justify-between items-center self-stretch'}>
-        <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
-        <NewNotebookDialog
-          assignmentId={props.assignmentId}
-          lectureCode={lecture.code}
-        />
-      </div>
-      {status.status === 'success' && (
-        <SuccessBanner message={status.message} />
-      )}
-      {status.status === 'error' && <ErrorBanner message={status.message} />}
-      <div className={'flex justify-between items-center self-stretch'}>
-        <SearchField
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          placeholder={'Search for notebooks & files'}
-        />
-        <div className={'flex gap-4 items-center ml-auto'}>
-          <FilterFilesButton
-            allFileTypes={fileTypes}
-            checkedFileTypes={checkedFileTypes}
-            setFileTypes={setCheckedFileTypes}
+      {files?.length <= 0 ? (
+        <div className={'flex flex-col items-center self-stretch'}>
+          <EmptyState
+            icon={<EmptyDirIcon />}
+            title={'Get started with your first notebook'}
+            description={
+              'Currently, there is no notebook available. You can create a new one now.'
+            }
           />
-          <ToggleGroup
-            type={'single'}
-            value={selectedDir}
-            onValueChange={dir => handleDirSwitch(dir)}
-          >
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <span>
-                    <ToggleGroupItem
-                      value={'source'}
-                      disabled={selectedDir === 'source'}
-                      variant={selectedDir === 'source' ? 'default' : 'outline'}
-                    >
-                      <Pencil className={'size-4'} />
-                    </ToggleGroupItem>
-                  </span>
-                }
-              />
-              <TooltipContent>
-                <p>Instructor View</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <span>
-                    <ToggleGroupItem
-                      value={'release'}
-                      disabled={selectedDir === 'release'}
-                      variant={
-                        selectedDir === 'release' ? 'default' : 'outline'
-                      }
-                    >
-                      <Eye className={'size-4'} />
-                    </ToggleGroupItem>
-                  </span>
-                }
-              />
-              <TooltipContent>
-                <p>Student Preview</p>
-              </TooltipContent>
-            </Tooltip>
-          </ToggleGroup>
+          <NewNotebookDialog
+            assignmentId={props.assignmentId}
+            lectureCode={lecture.code}
+          />
         </div>
-      </div>
-      <Table>
-        <TableHeader className={'sticky top-0 bg-card'}>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Last saved on</TableHead>
-            <TableHead>File type</TableHead>
-            <TableHead>File size</TableHead>
-            <TableHead>{selectedDir === 'source' ? 'Edit' : 'View'}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredFiles?.map(file => (
-            <TableRow key={file.name}>
-              <TableCell>{file.name}</TableCell>
-              <TableCell>{getDate(new Date(file.last_modified))}</TableCell>
-              <TableCell>{file.type}</TableCell>
-              <TableCell>{file.size} B</TableCell>
-              <TableCell>
-                {file.type !== 'directory' && (
-                  <Button variant={'link'} onClick={() => handleOpenFile(file)}>
-                    {selectedDir === 'source' ? (
-                      <Pencil className={'size-5 fill-primary text-card!'} />
-                    ) : (
-                      <Eye className={'size-5 fill-primary text-card!'} />
-                    )}
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      ) : (
+        <>
+          <div className={'flex justify-between items-center self-stretch'}>
+            <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
+            <NewNotebookDialog
+              assignmentId={props.assignmentId}
+              lectureCode={lecture.code}
+              buttonVariant={'outline'}
+            />
+          </div>
+          {status.status === 'success' && (
+            <SuccessBanner message={status.message} />
+          )}
+          {status.status === 'error' && (
+            <ErrorBanner message={status.message} />
+          )}
+          <div className={'flex justify-between items-center self-stretch'}>
+            <SearchField
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              placeholder={'Search for notebooks & files'}
+            />
+            <div className={'flex gap-4 items-center ml-auto'}>
+              <FilterFilesButton
+                allFileTypes={fileTypes}
+                checkedFileTypes={checkedFileTypes}
+                setFileTypes={setCheckedFileTypes}
+              />
+              <ToggleGroup
+                type={'single'}
+                value={selectedDir}
+                onValueChange={dir => handleDirSwitch(dir)}
+              >
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span>
+                        <ToggleGroupItem
+                          value={'source'}
+                          disabled={selectedDir === 'source'}
+                          variant={
+                            selectedDir === 'source' ? 'default' : 'outline'
+                          }
+                        >
+                          <Pencil className={'size-4'} />
+                        </ToggleGroupItem>
+                      </span>
+                    }
+                  />
+                  <TooltipContent>
+                    <p>Instructor View</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span>
+                        <ToggleGroupItem
+                          value={'release'}
+                          disabled={selectedDir === 'release'}
+                          variant={
+                            selectedDir === 'release' ? 'default' : 'outline'
+                          }
+                        >
+                          <Eye className={'size-4'} />
+                        </ToggleGroupItem>
+                      </span>
+                    }
+                  />
+                  <TooltipContent>
+                    <p>Student Preview</p>
+                  </TooltipContent>
+                </Tooltip>
+              </ToggleGroup>
+            </div>
+          </div>
+          {filteredFiles?.length <= 0 ? (
+            <EmptyState
+              icon={<NoResultsFoundIcon />}
+              title={'No results found'}
+              description={
+                'Try adjusting your search or ' +
+                "filter to find what \n you're looking for."
+              }
+            />
+          ) : (
+            <Table>
+              <TableHeader className={'sticky top-0 bg-card'}>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Last saved on</TableHead>
+                  <TableHead>File type</TableHead>
+                  <TableHead>File size</TableHead>
+                  <TableHead>
+                    {selectedDir === 'source' ? 'Edit' : 'View'}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredFiles?.map(file => (
+                  <TableRow key={file.name}>
+                    <TableCell>{file.name}</TableCell>
+                    <TableCell>
+                      {getDate(new Date(file.last_modified))}
+                    </TableCell>
+                    <TableCell>{file.type}</TableCell>
+                    <TableCell>{file.size} B</TableCell>
+                    <TableCell>
+                      {file.type !== 'directory' && (
+                        <Button
+                          variant={'link'}
+                          onClick={() => handleOpenFile(file)}
+                        >
+                          {selectedDir === 'source' ? (
+                            <Pencil
+                              className={'size-5 fill-primary text-card!'}
+                            />
+                          ) : (
+                            <Eye className={'size-5 fill-primary text-card!'} />
+                          )}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </>
+      )}
     </div>
   );
 };
