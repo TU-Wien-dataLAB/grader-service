@@ -67,6 +67,6 @@ export function getRemoteFileStatus(
   const url = `${baseUrl({
     lectureId: lecture.id,
     assignmentId: assignment.id
-  })}/remote-file-status/${repo}/?file=${encodeURIComponent(filePath)}`;
+  })}remote-file-status/${repo}/?file=${encodeURIComponent(filePath)}`;
   return request<RemoteFileStatus>(HTTPMethod.GET, url, null, reload);
 }
