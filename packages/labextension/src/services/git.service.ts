@@ -11,19 +11,15 @@ export function releaseAssignment(
   commitMessage?: string,
   selectedFiles?: string[]
 ): Promise<void> {
-  let url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}`;
+  const searchParams = new URLSearchParams();
   if (commitMessage) {
-    const searchParams = new URLSearchParams({
-      'commit-message': commitMessage
-    });
-    url += '?' + searchParams;
+    searchParams.set('commit-message', commitMessage);
   }
-
-  if (selectedFiles && selectedFiles.length > 0) {
-    selectedFiles.forEach(file => {
-      url += `&selected-files=${encodeURIComponent(file)}`;
-    });
-  }
+  selectedFiles?.forEach(file => {
+    searchParams.append('selected-files', file);
+  });
+  const query = searchParams.toString();
+  const url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}${query ? `?${query}` : ''}`;
 
   return request<void>(HTTPMethod.PUT, url, null);
 }
