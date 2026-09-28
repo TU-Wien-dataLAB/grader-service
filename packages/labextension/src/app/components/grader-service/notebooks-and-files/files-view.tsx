@@ -3,7 +3,6 @@ import { SearchField } from '../../ui/search';
 import { NewNotebookDialog } from './new-notebook-dialog';
 import { useQuery } from '@tanstack/react-query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
-import { assignmentQuery } from '../../../../services/queries/assignments.queries';
 import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import {
   getFiles,
@@ -50,21 +49,19 @@ export const FilesView = (props: IFilesViewProps) => {
   const { data: selectedDir, refetch: refetchSelectedDir } =
     useQuery(selectedDirQuery());
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
-  const { data: assignment } = useQuery(
-    assignmentQuery(props.lectureId, props.assignmentId)
-  );
   const { status } = useMutationStatus();
 
+  const srcPath = useMemo(
+    () =>
+      `${lectureBasePath}${lecture.code}/${selectedDir}/${props.assignmentId}`,
+    [lecture.code, selectedDir, props.assignmentId]
+  );
   const { data: files = [], refetch: refetchFiles } = useQuery({
-    queryKey: ['files', lecture.id, assignment.id, selectedDir],
+    queryKey: ['files', lecture.code, props.assignmentId, selectedDir],
     queryFn: async () => {
       return await getFiles(srcPath);
     }
   });
-  const srcPath = useMemo(
-    () => `${lectureBasePath}${lecture.code}/${selectedDir}/${assignment.id}`,
-    [lecture.code, selectedDir, assignment.id]
-  );
 
   useEffect(() => {
     const handler = async (
@@ -119,11 +116,11 @@ export const FilesView = (props: IFilesViewProps) => {
       return;
     }
     if (dir === 'release') {
-      handleGenerateAssignmentReleaseVer(lecture.id, assignment.id);
+      handleGenerateAssignmentReleaseVer(lecture.id, props.assignmentId);
     }
     // set new dir
     storeString('files-selected-dir', dir);
-    const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${assignment.id}`;
+    const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${props.assignmentId}`;
     refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
   };
 
@@ -136,7 +133,10 @@ export const FilesView = (props: IFilesViewProps) => {
     <div className={'flex flex-col items-start gap-4 self-stretch h-full'}>
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
-        <NewNotebookDialog />
+        <NewNotebookDialog
+          assignmentId={props.assignmentId}
+          lectureCode={lecture.code}
+        />
       </div>
       {status.status === 'success' && (
         <SuccessBanner message={status.message} />
