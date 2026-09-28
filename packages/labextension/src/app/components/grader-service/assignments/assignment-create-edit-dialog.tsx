@@ -108,7 +108,6 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
 
       if (props.assignment) {
         handleUpdateAssignment(
-        handleUpdateAssignment(
           props.assignment,
           newAssignment,
           props.lectureId,
@@ -206,9 +205,6 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent className={'overflow-y-auto'}>
-        <DialogHeader>
-          <DialogTitle>
-            {props.assignment ? `Edit assignment` : 'New assignment'}
         <DialogHeader className="min-w-0">
           <DialogTitle className="truncate w-full">
             {props.assignment
@@ -702,7 +698,6 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-    </Dialog>
-  );
-};
+    )}
+      </Dialog>
+  )};
