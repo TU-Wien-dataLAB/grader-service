@@ -201,6 +201,7 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
                     value={field.state.value}
                     onChange={e => field.handleChange(e.target.value)}
                     required
+                    aria-invalid={!field.state.meta.isValid}
                   />
                   {!field.state.meta.isValid && (
                     <em role="alert" className={'text-red-700'}>
