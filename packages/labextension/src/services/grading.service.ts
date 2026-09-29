@@ -5,7 +5,6 @@
 // LICENSE file in the root directory of this source tree.
 
 import { Assignment } from '../model/assignment';
-import { User } from '../model/user';
 import { request } from './request.service';
 import { Submission } from '../model/submission';
 import { baseUrl } from './file.service';
@@ -47,19 +46,6 @@ export function getGrade(
   );
 }
 
-export function getStudentSubmissions(
-  username: string,
-  format: 'json' | 'csv' = 'csv',
-  reload = false
-): Promise<any> {
-  let url = `/api/users/${username}/submissions`;
-  const params = new URLSearchParams({
-    format: format
-  });
-  url += '?' + params.toString();
-  return request<any>(HTTPMethod.GET, url, null, reload);
-}
-
 export function getManualFeedback(
   lectureId: number,
   assignmentId: number,
@@ -81,31 +67,5 @@ export function createManualFeedback(
     HTTPMethod.GET,
     `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
     null
-  );
-}
-
-export function updateManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.PUT,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    manual
-  );
-}
-
-export function deleteManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.DELETE,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    manual
   );
 }

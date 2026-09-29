@@ -173,6 +173,19 @@ export function getSubmissionLogs(
   return request<string>(HTTPMethod.GET, url, null, reload);
 }
 
+export function getStudentSubmissions(
+  username: string,
+  format: 'json' | 'csv' = 'csv',
+  reload = false
+): Promise<any> {
+  let url = `/api/users/${username}/submissions`;
+  const params = new URLSearchParams({
+    format: format
+  });
+  url += '?' + params.toString();
+  return request<any>(HTTPMethod.GET, url, null, reload);
+}
+
 export async function exportGrades(
   lectureId: number,
   filter: 'latest' | 'best' = 'best',

@@ -324,3 +324,30 @@ class SubmissionCountHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
         self.write(json.dumps(response))
+
+
+@register_handler(path=r"api\/users\/(?P<username>\d*)\/submissions\/?")
+class SubmissionUserHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /users/{username}/submissions.
+    """
+
+    async def get(self, username: str):
+        """Return the submissions of a specific user.
+
+        :param username: username of the user
+        :type username: str
+        """
+
+        try:
+            response = await self.request_service.request(
+                method="GET",
+                endpoint=f"{self.service_base_url}api/users/{username}/submissions",
+                header=self.grader_authentication_header,
+                response_callback=self.set_service_headers,
+            )
+            self.log.info(f"{response}")
+        except RequestServiceError as e:
+            self.log.error(e)
+            raise HTTPError(e.code, reason=e.message)
+        self.write(json.dumps(response))
