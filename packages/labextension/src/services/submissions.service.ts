@@ -78,23 +78,6 @@ export function deleteSubmission(
   );
 }
 
-export function getFeedback(
-  lectureId: number,
-  assignmentId: number,
-  latest = false,
-  instructor = false
-): Promise<any> {
-  let url = `${baseUrl({ lectureId, assignmentId })}feedback`;
-  if (latest || instructor) {
-    const searchParams = new URLSearchParams({
-      'instructor-version': String(instructor),
-      latest: String(latest)
-    });
-    url += '?' + searchParams.toString();
-  }
-  return request<any>(HTTPMethod.GET, url, null);
-}
-
 export function getProperties(
   lectureId: number,
   assignmentId: number,
