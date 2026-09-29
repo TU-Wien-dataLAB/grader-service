@@ -19,7 +19,9 @@ export function releaseAssignment(
     searchParams.append('selected-files', file);
   });
   const query = searchParams.toString();
-  const url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}${query ? `?${query}` : ''}`;
+  const url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}${
+    query ? `?${query}` : ''
+  }`;
 
   return request<void>(HTTPMethod.PUT, url, null);
 }
@@ -56,20 +58,6 @@ export function resetAssignment(
     null
   );
 }
-
-export function getGitLogs(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number,
-  reload = false
-): Promise<string> {
-  const url = `${baseUrl({
-    lectureId,
-    assignmentId
-  })}submissions/${submissionId}/logs`;
-  return request<string>(HTTPMethod.GET, url, null, reload);
-}
-
 export function createOrOverrideEditRepository(
   lectureId: number,
   assignmentId: number,

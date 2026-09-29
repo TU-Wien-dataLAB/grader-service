@@ -160,6 +160,19 @@ export async function getSubmissionCount(
   );
 }
 
+export function getSubmissionLogs(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  reload = false
+): Promise<string> {
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}/logs`;
+  return request<string>(HTTPMethod.GET, url, null, reload);
+}
+
 export async function exportGrades(
   lectureId: number,
   filter: 'latest' | 'best' = 'best',
