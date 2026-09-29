@@ -34,30 +34,6 @@ export function generateFeedback(
   );
 }
 
-export function getGrade(
-  lectureId: number,
-  assignmentId: number,
-  student: User
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/score`,
-    null
-  );
-}
-
-export function getManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User
-): Promise<object> {
-  return request<object>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    null
-  );
-}
-
 export function createManualFeedback(
   lectureId: number,
   assignmentId: number,
