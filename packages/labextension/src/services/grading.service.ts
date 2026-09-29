@@ -9,6 +9,7 @@ import { request } from './request.service';
 import { Submission } from '../model/submission';
 import { baseUrl } from './file.service';
 import { HTTPMethod } from './enums/http-methods.enum';
+import { RepoType } from '../app/components/utils/repo-type';
 
 export function autogradeSubmission(
   lectureId: number,
@@ -42,6 +43,20 @@ export function createManualFeedback(
   return request<any>(
     HTTPMethod.GET,
     `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
+    null
+  );
+}
+
+export async function pullFeedback(
+  lectureId: number,
+  assignmentId: number,
+  submission: Submission
+) {
+  return request<void>(
+    HTTPMethod.GET,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submission.id}/pull/${
+      RepoType.FEEDBACK
+    }`,
     null
   );
 }

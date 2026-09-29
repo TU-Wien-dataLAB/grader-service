@@ -70,20 +70,6 @@ export function createOrOverrideEditRepository(
   return request<Submission>(HTTPMethod.PUT, url, {});
 }
 
-export async function pullFeedback(
-  lectureId: number,
-  assignmentId: number,
-  submission: Submission
-) {
-  return request<void>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${submission.id}/pull/${
-      RepoType.FEEDBACK
-    }`,
-    null
-  );
-}
-
 export async function pullSubmissionFiles(
   lectureId: number,
   assignmentId: number,
