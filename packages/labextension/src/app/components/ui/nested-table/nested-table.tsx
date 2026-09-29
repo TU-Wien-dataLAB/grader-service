@@ -1,8 +1,10 @@
+import React from 'react';
 import {
   columnFilteringFeature,
   createExpandedRowModel,
   createFilteredRowModel,
-  filterFns,
+  filterFn_equalsString,
+  filterFn_includesString,
   globalFilteringFeature,
   rowExpandingFeature,
   rowSelectionFeature,
@@ -16,8 +18,6 @@ import type {
   RowSelectionState
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-
-import React from 'react';
 import { Button } from '../../../shadcn-components/ui/button';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import {
@@ -29,23 +29,24 @@ import {
   TableRow
 } from '../../../shadcn-components/ui/table';
 
-// Features are defined once and exported so column defs can be typed against them.
 export const dataTableFeatures = tableFeatures({
   columnFilteringFeature,
-  globalFilteringFeature, // requires columnFilteringFeature
+  globalFilteringFeature,
   rowExpandingFeature,
   rowSelectionFeature,
-  filteredRowModel: createFilteredRowModel(), // client-side filtering
-  expandedRowModel: createExpandedRowModel(), // client-side expanding
-  filterFns // all built-in filter fns (includesString, equalsString, ...)
+  filteredRowModel: createFilteredRowModel(),
+  expandedRowModel: createExpandedRowModel(),
+
+  // As filterFns is deprecated in new tanstack/react-table version, to add new function look up https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-filtering/filterFns.ts#L442
+  filterFns: {
+    filterFn_includesString,
+    filterFn_equalsString
+  }
 });
 
-export type DataTableColumnDef<TData> = ColumnDef<
-  typeof dataTableFeatures,
-  TData
->;
+export type DataTableColumnDef<T> = ColumnDef<typeof dataTableFeatures, T>;
 
-export function expanderColumn<TData>(): DataTableColumnDef<TData> {
+export function expanderColumn<T>(): DataTableColumnDef<T> {
   return {
     id: 'expander',
     header: () => null,
@@ -69,7 +70,7 @@ export function expanderColumn<TData>(): DataTableColumnDef<TData> {
   };
 }
 
-export function selectColumn<TData>(): DataTableColumnDef<TData> {
+export function selectColumn<T>(): DataTableColumnDef<T> {
   return {
     id: 'select',
     enableGlobalFilter: false,
@@ -103,31 +104,21 @@ export function selectColumn<TData>(): DataTableColumnDef<TData> {
   };
 }
 
-type DataTableProps<TData> = {
-  columns: Array<DataTableColumnDef<TData>>;
-  data: Array<TData>;
-
-  /** Where a row's children live. Omit for a flat table. */
-  getSubRows?: (row: TData) => Array<TData> | undefined;
-  /** Stable ids so selection/expanded state survives data changes. */
-  getRowId?: (row: TData) => string;
-
-  /** Search text. Provide both props to control it from the parent. */
+type DataTableProps<T> = {
+  columns: Array<DataTableColumnDef<T>>;
+  data: Array<T>;
+  getSubRows?: (row: T) => Array<T> | undefined;
+  getRowId?: (row: T) => string;
   globalFilter?: string;
   onGlobalFilterChange?: (value: string) => void;
-
-  /** Per-column filters, e.g. [{ id: 'grading', value: 'failed' }] */
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
-
-  /** Selected rows, keyed by row id. */
-  rowSelection?: RowSelectionState;
+  rowSelection?: RowSelectionState; /** keyed by row id. */
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
-
   emptyMessage?: string;
 };
 
-export function DataTable<TData>({
+export function NestedTable<T>({
   columns,
   data,
   getSubRows,
@@ -139,7 +130,7 @@ export function DataTable<TData>({
   rowSelection,
   onRowSelectionChange,
   emptyMessage = 'No results.'
-}: DataTableProps<TData>) {
+}: DataTableProps<T>) {
   const table = useTable({
     features: dataTableFeatures,
     columns,
@@ -147,8 +138,7 @@ export function DataTable<TData>({
     getSubRows,
     getRowId,
 
-    globalFilterFn: 'includesString',
-    // Keep a parent visible when one of its children matches.
+    globalFilterFn: 'filterFn_includesString',
     filterFromLeafRows: true,
 
     // Only hand a slice to the table when the parent actually controls it.
@@ -159,7 +149,7 @@ export function DataTable<TData>({
       ...(rowSelection !== undefined && { rowSelection })
     },
 
-    // The table gives us an updater (value or function); the parent gets a plain string.
+    // The table gives us an updater (value or function), the parent gets a plain string
     onGlobalFilterChange: onGlobalFilterChange
       ? updater =>
           onGlobalFilterChange(
@@ -167,7 +157,7 @@ export function DataTable<TData>({
               ? updater(globalFilter ?? '')
               : updater
           )
-      : undefined,
+      : undefined, // TODO: review filter's logic and ways
     onColumnFiltersChange,
     onRowSelectionChange
   });

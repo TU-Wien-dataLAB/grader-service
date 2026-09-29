@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import {
   CircleAlert,
   CircleCheck,
@@ -5,11 +6,9 @@ import {
   History,
   TriangleAlert
 } from 'lucide-react';
-
-import React, { useMemo } from 'react';
 import { Button } from '../../../shadcn-components/ui/button';
 import {
-  DataTable,
+  NestedTable,
   DataTableColumnDef,
   expanderColumn,
   selectColumn
@@ -19,57 +18,19 @@ import {
   OnChangeFn,
   RowSelectionState
 } from '@tanstack/react-table';
+import { tableMockData } from './table-mock-data';
 
 type Grading = 'graded' | 'failed' | 'not_graded';
 
-type SubmissionRow = {
+export type SubmissionRow = {
   id: string;
-  student: string; // present on parents AND children so search matches every row
-  label?: string; // e.g. "Submission 2" (children only)
+  student: string; // should be presented on parents and children so search matches every row
+  label?: string; // "Submission 2" (children only)
   score?: number;
   grading?: Grading;
   feedback?: boolean;
   subRows?: Array<SubmissionRow>;
 };
-
-const data: Array<SubmissionRow> = [
-  {
-    id: 'lina',
-    student: 'Lina Hoffmann',
-    subRows: [
-      {
-        id: 'lina-2',
-        student: 'Lina Hoffmann',
-        label: 'Submission 2',
-        score: 283,
-        grading: 'failed',
-        feedback: false
-      },
-      {
-        id: 'lina-1',
-        student: 'Lina Hoffmann',
-        label: 'Submission 1',
-        score: 750,
-        grading: 'graded',
-        feedback: true
-      }
-    ]
-  },
-  {
-    id: 'mateo',
-    student: 'Mateo Alvarez',
-    score: 0,
-    grading: 'not_graded',
-    feedback: false
-  },
-  {
-    id: 'aisha',
-    student: 'Aisha Rahman',
-    score: 800,
-    grading: 'graded',
-    feedback: true
-  }
-];
 
 const gradingLabel: Record<Grading, React.ReactNode> = {
   graded: (
@@ -104,7 +65,7 @@ const columns: Array<DataTableColumnDef<SubmissionRow>> = [
   {
     accessorKey: 'score',
     header: 'Final score',
-    enableGlobalFilter: false, // search box ignores this column
+    enableGlobalFilter: false,
     cell: ({ getValue }) => {
       const score = getValue<number | undefined>();
       return score === undefined ? null : `${score.toFixed(2)} / 800`;
@@ -114,7 +75,7 @@ const columns: Array<DataTableColumnDef<SubmissionRow>> = [
     accessorKey: 'grading',
     header: 'Grading',
     enableGlobalFilter: false,
-    filterFn: 'equalsString', // exact match, so "graded" doesn't match "not_graded"
+    filterFn: 'filterFn_equalsString',
     cell: ({ getValue }) => {
       const grading = getValue<Grading | undefined>();
       return grading ? gradingLabel[grading] : null;
@@ -128,7 +89,8 @@ const columns: Array<DataTableColumnDef<SubmissionRow>> = [
       if (row.original.grading === undefined) return null;
       return getValue<boolean>() ? (
         <span className="flex items-center gap-2">
-          <CircleCheck className="size-4 text-green-600" /> Feedback given
+          <CircleCheck className="size-4 text-green-600 bg-red-500" /> Feedback
+          given
         </span>
       ) : (
         <span className="flex items-center gap-2">
@@ -171,13 +133,13 @@ const SubmissionsDataTable = (props: TTableProps) => {
   const columnFilters = useMemo<ColumnFiltersState>(
     () => (grading === 'all' ? [] : [{ id: 'grading', value: grading }]),
     [grading]
-  );
+  ); // TODO: finish filter logic
 
   return (
     <div className="space-y-4">
-      <DataTable
+      <NestedTable
         columns={columns}
-        data={data}
+        data={tableMockData}
         getSubRows={row => row.subRows}
         getRowId={row => row.id}
         globalFilter={search}

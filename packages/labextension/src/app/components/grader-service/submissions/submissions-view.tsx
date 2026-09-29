@@ -115,12 +115,7 @@ export const SubmissionsView = (props: TProps) => {
               <PaginationItem>
                 {Array.from(
                   {
-                    length: Math.ceil(
-                      [
-                        4, 6, 7, 8, 4, 6, 7, 8, 4, 6, 7, 8, 4, 6, 7, 8, 4, 6, 7,
-                        8, 4, 6, 7, 8
-                      ].length / 6
-                    )
+                    length: Math.ceil(Array(15).length / 6)
                   },
                   (_, i) => (
                     <PaginationLink key={i}>{i + 1}</PaginationLink>
