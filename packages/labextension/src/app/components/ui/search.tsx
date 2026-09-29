@@ -85,6 +85,7 @@ export const SearchField = (props: ISearchField) => {
       >
         <form onSubmit={handleSubmit} className={'flex'} id={'search-form'}>
           <AutocompleteInput
+            data-testid="search-input"
             showClear
             onFocus={handleFocus}
             onBlur={() => setIsOpen(false)}
@@ -94,6 +95,7 @@ export const SearchField = (props: ISearchField) => {
             variant={'outline'}
             size="icon"
             interactive={false}
+            data-testid="search-btn"
             type={'submit'}
             className={
               'bg-sidebar-ring border-none rounded-none text-primary p-2'

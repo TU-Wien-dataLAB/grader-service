@@ -392,7 +392,7 @@ export const Lecture = () => {
               <h3 className={'text-base font-bold'}>{lecture.code}</h3>
             </div>
           )}
-          {assignments.length > 0 && (
+          {assignments?.length > 0 && (
             <div className={'ml-auto flex items-start'}>
               <Button
                 onClick={() => setOpenCreateAssignmentDialog(true)}
@@ -421,7 +421,7 @@ export const Lecture = () => {
           <SuccessBanner message={status.message} />
         )}
         {status.status === 'error' && <ErrorBanner message={status.message} />}
-        {assignments.length > 0 && (
+        {assignments?.length > 0 && (
           <div className={'flex justify-between items-center self-stretch'}>
             <SearchField
               placeholder={'Search for assignment'}
@@ -490,7 +490,7 @@ export const Lecture = () => {
             </Button>
           </div>
         )}
-        {assignments.length > 0 ? (
+        {assignments?.length > 0 ? (
           filteredAssignments.length > 0 ? (
             <DndProvider backend={HTML5Backend}>
               <ScrollingComponent className={'overflow-y-auto h-full w-full'}>

@@ -28,9 +28,8 @@ type MutationStatusContextType = {
 };
 
 const defaultStatus: StatusState = { status: null, message: null };
-const MutationContext = React.createContext<MutationStatusContextType | null>(
-  null
-);
+export const MutationContext =
+  React.createContext<MutationStatusContextType | null>(null);
 
 export function useMutationStatus() {
   const ctx = React.useContext(MutationContext);

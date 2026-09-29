@@ -36,7 +36,9 @@ export const AssignmentActions = (props: IAssignmentActions) => {
     <>
       <DropdownMenu modal={false}>
         <Tooltip>
-          <TooltipTrigger render={<DropdownMenuTrigger />}>
+          <TooltipTrigger
+            render={<DropdownMenuTrigger data-testid="option-btn" />}
+          >
             <EllipsisVertical className={'size-4 text-primary'} />
           </TooltipTrigger>
           <TooltipContent>
