@@ -56,17 +56,6 @@ export const getRoutes = () => {
           return null;
         }}
       />
-      <Route
-        path={'lectures/:id/assignments/:id'}
-        element={<Assignment />}
-        loader={async ({ params }) => {
-          await queryClient.ensureQueryData(selectedDirQuery());
-          await queryClient.ensureQueryData(
-            assignmentQuery(Number(params.id), Number(params.aid))
-          );
-          return null;
-        }}
-      />
     </Route>
   );
 };

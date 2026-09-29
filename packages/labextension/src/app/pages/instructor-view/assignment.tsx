@@ -15,6 +15,7 @@ import {
 } from '../../components/utils/assignment-metadata';
 import { assignmentQuery } from '../../../services/queries/assignments.queries';
 import {
+  buildFileBasePath,
   lectureBasePath,
   openInFileBrowser
 } from '../../../services/local-file.service';
@@ -40,14 +41,18 @@ export const Assignment = () => {
   const [currentTab, setCurrentTab] = useState(
     activeTab ?? 'notebooks-and-files'
   );
-  const [showNewSubmissionForm, setShowNewSubbissionForm] =
+  const [showNewSubmissionForm, setShowNewSubmissionForm] =
     useState<boolean>(false);
 
   useEffect(() => {
     openInFileBrowser(
-      `${lectureBasePath}${lecture?.code}/${selectedDir}/${assignmentId}`
+      `${lectureBasePath}${lecture?.id}/${selectedDir}/${assignmentId}`
     );
   }, [assignmentId, lecture?.code, selectedDir]);
+
+  const currentPath = buildFileBasePath(lecture.code, 'source', assignmentId);
+
+  console.log('ggg: ', currentPath);
 
   return (
     <div className={'flex p-6 flex-col items-start gap-6 w-full bg-background'}>
@@ -86,11 +91,12 @@ export const Assignment = () => {
         <TabsContent value="submissions">
           {showNewSubmissionForm ? (
             <NewSubmission
-              setShowNewSubmissionForm={setShowNewSubbissionForm}
+              currentPath={currentPath}
+              setShowNewSubmissionForm={setShowNewSubmissionForm}
             />
           ) : (
             <SubmissionsView
-              setShowNewSubmissionForm={setShowNewSubbissionForm}
+              setShowNewSubmissionForm={setShowNewSubmissionForm}
             />
           )}
         </TabsContent>

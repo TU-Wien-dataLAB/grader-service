@@ -12,30 +12,53 @@ import {
 } from '../../../shadcn-components/ui/select';
 import { Button } from '../../../shadcn-components/ui/button';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
+import { useParams } from 'react-router';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { lectureUsersQuery } from '../../../../services/queries/lectures.queries';
+import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
+import { createSubmissionFiles } from '../../../../services/git.service';
 
 type TProps = {
   setShowNewSubmissionForm: (val: boolean) => void;
+  currentPath: string;
 };
 
 const NewSubmission = (props: TProps) => {
+  const params = useParams();
+  const lectureId = Number(params.id);
+  const assignmentId = Number(params.aid);
+  const { data: lectureUsers } = useQuery(lectureUsersQuery(lectureId));
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const selectOptions = [
-    { value: 'nadja', label: 'Nadja' },
-    { value: 'florian', label: 'Florian' }
-  ];
 
-  const submissionFileOptions = [
-    { value: 'file.py1', label: 'file.py1', checked: false },
-    { value: 'file.py2', label: 'file.py2', checked: true },
-    { value: 'file.py3', label: 'file.py3', checked: true }
-  ];
+  const path = props.currentPath;
+  const cleanedPath = path.endsWith('/') ? path.slice(0, -1) : path;
+  const { data: files } = useFiles(cleanedPath);
+
+  const lectureUsersOptions = lectureUsers?.students.map(student => {
+    return { label: student.display_name, value: student.name };
+  });
+
+  const submissionFileOptions =
+    files && files.length > 0
+      ? files.map(file => {
+          return { value: file.path, label: file.name, checked: false };
+        })
+      : [];
+
+  const createSubmissionMutation = useMutation({
+    mutationFn: async (username: string) => {
+      await createSubmissionFiles(lectureId, assignmentId, username, [
+        ...selectedFiles
+      ]);
+    }
+  });
 
   const form = useForm({
     defaultValues: {
       student: ''
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      await createSubmissionMutation.mutateAsync(value.student);
     }
   });
 
@@ -70,20 +93,16 @@ const NewSubmission = (props: TProps) => {
                 <Label htmlFor={field.name}>Student *</Label>
                 <Select
                   name={field.name}
-                  items={selectOptions}
+                  items={lectureUsersOptions}
                   onValueChange={value => field.handleChange(value as string)}
                   required
                 >
                   <SelectTrigger className={'bg-white'}>
-                    <SelectValue
-                      placeholder={
-                        field.state.value === 'active' ? 'Active' : 'Completed'
-                      }
-                    />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {selectOptions.map(({ label, value }) => (
+                      {lectureUsersOptions?.map(({ label, value }) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>

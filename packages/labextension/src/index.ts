@@ -47,7 +47,7 @@ import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { FileBrowser, IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
 import { CreationWidget } from './app/components/notebook/create-assignment/creation-widget';
 import {
@@ -88,6 +88,7 @@ export class GlobalObjects {
   static tracker: INotebookTracker;
   static themeManager: IThemeManager;
   static graderServiceMenu: Menu;
+  static defaultBrowser: FileBrowser;
 }
 
 const createGraderServiceCommands = (

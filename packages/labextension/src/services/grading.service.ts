@@ -47,19 +47,6 @@ export function getGrade(
   );
 }
 
-export function getStudentSubmissions(
-  username: string,
-  format: 'json' | 'csv' = 'csv',
-  reload = false
-): Promise<any> {
-  let url = `/api/users/${username}/submissions`;
-  const params = new URLSearchParams({
-    format: format
-  });
-  url += '?' + params.toString();
-  return request<any>(HTTPMethod.GET, url, null, reload);
-}
-
 export function getManualFeedback(
   lectureId: number,
   assignmentId: number,
