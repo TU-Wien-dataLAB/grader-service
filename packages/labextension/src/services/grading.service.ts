@@ -23,6 +23,18 @@ export function autogradeSubmission(
   );
 }
 
+export function pullAutogradedOrOriginalFiles(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
+): Promise<any> {
+  return request<any>(
+    HTTPMethod.GET,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
+    null
+  );
+}
+
 export function generateFeedback(
   lectureId: number,
   assignmentId: number,
@@ -31,18 +43,6 @@ export function generateFeedback(
   return request<Submission>(
     HTTPMethod.GET,
     `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/feedback`,
-    null
-  );
-}
-
-export function createManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
     null
   );
 }
