@@ -48,24 +48,24 @@ export const GradeComponent = (props: GradeComponentProps) => {
           )}
 
           {gradableCell && (
-            <PointsComponent
-              model={model}
-              nbgraderData={props.nbgraderData}
-              toolData={props.toolData}
-              gradebook={props.gradebook}
-              nbname={props.nbname}
-            />
+            <>
+              <PointsComponent
+                model={model}
+                nbgraderData={props.nbgraderData}
+                toolData={props.toolData}
+                gradebook={props.gradebook}
+                nbname={props.nbname}
+              />
+              <ExtraCreditComponent
+                model={model}
+                nbgraderData={props.nbgraderData}
+                toolData={props.toolData}
+                gradebook={props.gradebook}
+                nbname={props.nbname}
+              />
+            </>
           )}
 
-          {gradableCell && (
-            <ExtraCreditComponent
-              model={model}
-              nbgraderData={props.nbgraderData}
-              toolData={props.toolData}
-              gradebook={props.gradebook}
-              nbname={props.nbname}
-            />
-          )}
           <hr style={{ borderTop: '1px', color: 'lightgray' }} />
         </div>
       )}

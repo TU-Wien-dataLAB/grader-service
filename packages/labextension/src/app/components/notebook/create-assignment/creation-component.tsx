@@ -86,10 +86,10 @@ export const CreationComponent = (props: ICreationComponentProps) => {
             <option value="">-</option>
             <option value="readonly">Readonly</option>
             {props.cell.model.type === 'code' && (
-              <option value="solution">Autograded answer</option>
-            )}
-            {props.cell.model.type === 'code' && (
-              <option value="tests">Autograded tests</option>
+              <>
+                <option value="solution">Autograded answer</option>
+                <option value="tests">Autograded tests</option>
+              </>
             )}
             <option value="manual">Manual graded answer</option>
             {props.cell.model.type === 'markdown' && (
