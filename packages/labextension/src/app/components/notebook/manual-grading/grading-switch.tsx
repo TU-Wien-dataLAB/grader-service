@@ -99,7 +99,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
         this.subID
       );
       submission.manual_status = ManualStatus.BeingEdited;
-      updateSubmission(
+      await updateSubmission(
         this.lecture.id,
         this.assignment.id,
         this.subID,
