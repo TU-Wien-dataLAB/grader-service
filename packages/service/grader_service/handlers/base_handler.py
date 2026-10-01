@@ -3,22 +3,16 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import asyncio
 import base64
 import datetime
 import functools
 import json
-import os
 import re
-import shlex
-import shutil
-import subprocess
 import time
 import uuid
 from _decimal import Decimal
 from http import HTTPStatus
-from pathlib import Path
-from typing import Any, Awaitable, Callable, List, Optional, Union
+from typing import Any, Awaitable, List, Optional, Union
 from urllib.parse import parse_qsl, urljoin, urlparse
 
 from sqlalchemy import func
@@ -30,15 +24,11 @@ from tornado import httputil, web
 from tornado.escape import json_decode, json_encode
 from tornado.httputil import url_concat
 from tornado.web import HTTPError
-from traitlets import Integer, TraitType, Type, Unicode
-from traitlets import List as ListTrait
-from traitlets.config import SingletonConfigurable
 
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.errors import APIError
-from grader_service.handlers.handler_utils import GitRepoType
+from grader_service.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -52,11 +42,6 @@ from grader_service.utils import get_browser_protocol, maybe_future, url_path_jo
 SESSION_COOKIE_NAME = "grader-session-id"
 
 auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNORECASE)
-
-
-def ensure_path_within_base(path: str, base: str) -> None:
-    if not Path(path).resolve().is_relative_to(Path(base).resolve()):
-        raise APIError(HTTPStatus.BAD_REQUEST, message="Invalid repository path")
 
 
 def check_authorization(
@@ -165,7 +150,7 @@ class BaseHandler(web.RequestHandler):
         self._accept_cookie_auth = True
         self._accept_token_auth = True
 
-        self.application: GraderServer = self.application
+        self.application: GraderServer = application
         self.authenticator = self.application.authenticator
         self.log = self.application.log
 
@@ -179,40 +164,6 @@ class BaseHandler(web.RequestHandler):
         # authenticate
         try:
             await self.get_current_user()
-
-            # if user is not authenticated and is not actively trying to authenticate
-            if not self.current_user and self.request.path not in [
-                self.settings["login_url"],
-                self.application.base_url.rstrip("/"),
-                url_path_join(self.application.base_url, "/health"),
-                url_path_join(self.application.base_url, "/api/health"),
-                url_path_join(self.application.base_url, "/v1/api/health"),
-                url_path_join(self.application.base_url, "/api/oauth2/token"),
-                url_path_join(self.application.base_url, "/oauth_callback"),
-                url_path_join(self.application.base_url, "/lti13/oauth_callback"),
-            ]:
-                # require git to authenticate with token -> otherwise return 401 code
-                # by default, git sends the request unauthenticated, first
-                if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
-                    self.set_status(401)
-                    self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
-                    self.finish("Unauthenticated Git request, Authentication required")
-                    return
-
-                # send to login page if ui page request
-                if self.request.path in [
-                    url_path_join(self.application.base_url, "/api/oauth2/authorize")
-                ] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
-                    url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
-                    self.redirect(url)
-                    return
-
-                if self.request.headers.get("Authorization") is None:
-                    raise HTTPError(401, reason="No API token in auth header")
-
-                # do not redirect to login page if we hit api endpoints
-                raise HTTPError(401, reason="API Token is invalid or expired.")
-
         except Exception as e:
             # ensure get_current_user is never called again for this handler,
             # since it failed
@@ -223,8 +174,54 @@ class BaseHandler(web.RequestHandler):
                 self.session.rollback()
             if isinstance(e, HTTPError) and e.status_code == 401:
                 raise e
+
+        # if user is not authenticated and is not actively trying to authenticate
+        if not self.current_user and self.request.path not in [
+            self.settings["login_url"],
+            self.application.base_url.rstrip("/"),
+            url_path_join(self.application.base_url, "/health"),
+            url_path_join(self.application.base_url, "/api/health"),
+            url_path_join(self.application.base_url, "/v1/api/health"),
+            url_path_join(self.application.base_url, "/api/oauth2/token"),
+            url_path_join(self.application.base_url, "/oauth_callback"),
+            url_path_join(self.application.base_url, "/lti13/oauth_callback"),
+        ]:
+            # require git to authenticate with token -> otherwise return 401 code
+            # by default, git sends the request unauthenticated, first
+            if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+                # This is only relevant if Git is used for file operations.
+                self._verify_git_file_service()
+
+                self.set_status(401)
+                self.set_header("WWW-Authenticate", 'Basic realm="Git Repository"')
+                self.finish("Unauthenticated Git request, Authentication required")
+                return
+
+            # send to login page if ui page request
+            if self.request.path in [
+                url_path_join(self.application.base_url, "/api/oauth2/authorize")
+            ] or self.request.path.startswith(url_path_join(self.application.base_url, "/ui")):
+                url = url_concat(self.settings["login_url"], dict(next=self.request.uri))
+                self.redirect(url)
+                return
+
+            if self.request.headers.get("Authorization") is None:
+                raise HTTPError(401, reason="No API token in auth header")
+
+            # do not redirect to login page if we hit api endpoints
+            raise HTTPError(401, reason="API Token is invalid or expired.")
+
+        if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
+            # Git endpoints should only be available if Git is used for file operations.
+            self._verify_git_file_service()
+
         await maybe_future(super().prepare())
         return
+
+    def _verify_git_file_service(self):
+        if not isinstance(self.application.file_service, GitFileService):
+            msg = "File service is not GitFileService; git endpoints unavailable"
+            raise HTTPError(HTTPStatus.NOT_FOUND, log_message=msg)
 
     @property
     def oauth_provider(self):
@@ -824,6 +821,12 @@ class GraderErrorMixin:
 
 
 class GraderBaseHandler(GraderErrorMixin, BaseHandler):
+    def __init__(
+        self, application: GraderServer, request: httputil.HTTPServerRequest, **kwargs: Any
+    ) -> None:
+        super().__init__(application, request, **kwargs)
+        self.file_service = self.application.file_service
+
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:
             return
@@ -952,46 +955,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
         return submissions_query.all()
 
-    def delete_lecture_files(self, lecture: Lecture):
-        # delete all associated directories of the lecture
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, lecture.code))
-        tmp_lecture_path = os.path.abspath(os.path.join(self.tmpbase, lecture.code))
-        shutil.rmtree(lecture_path, ignore_errors=True)
-        shutil.rmtree(tmp_lecture_path, ignore_errors=True)
-
-    def delete_assignment_files(self, assignment: Assignment, lecture: Lecture):
-        # delete all associated directories of the assignment
-        assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, lecture.code, str(assignment.id))
-        )
-        tmp_assignment_path = os.path.abspath(
-            os.path.join(self.tmpbase, lecture.code, str(assignment.id))
-        )
-        shutil.rmtree(assignment_path, ignore_errors=True)
-        shutil.rmtree(tmp_assignment_path, ignore_errors=True)
-
-    def delete_submission_files(self, submission: Submission):
-        # delete all associated directories of the submission
-        assignment_path = os.path.abspath(
-            os.path.join(
-                self.gitbase, submission.assignment.lecture.code, str(submission.assignment.id)
-            )
-        )
-        tmp_assignment_path = os.path.abspath(
-            os.path.join(
-                self.tmpbase, submission.assignment.lecture.code, str(submission.assignment.id)
-            )
-        )
-        target_names = {submission.user.name, str(submission.id)}
-        matching_dirs = []
-        for path in [assignment_path, tmp_assignment_path]:
-            for root, dirs, _ in os.walk(path):
-                for d in dirs:
-                    if d in target_names:
-                        matching_dirs.append(os.path.join(root, d))
-        for path in matching_dirs:
-            shutil.rmtree(path, ignore_errors=True)
-
     def validate_assignment_for_soft_delete(self, assignment: Assignment):
         """Validates that an assignment can be soft-deleted.
 
@@ -1041,173 +1004,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
             self.session.delete(previously_deleted)
         return previously_deleted
 
-    @property
-    def gitbase(self):
-        app: GraderServer = self.application
-        return os.path.join(app.grader_service_dir, "git")
-
-    @property
-    def tmpbase(self):
-        app: GraderServer = self.application
-        return os.path.join(app.grader_service_dir, "tmp")
-
-    def construct_git_dir(
-        self,
-        repo_type: GitRepoType,
-        lecture: Lecture,
-        assignment: Assignment,
-        submission: Optional[Submission] = None,
-        username: Optional[str] = None,
-    ) -> Optional[str]:
-        """Helper method for every handler that needs to access git
-        directories which returns the path of the repository based on
-        the inputs or None if the repo_type is not recognized.
-
-        Raises HTTPError 400 if the normalised path does not start with
-        `self.gitbase`, to make it robust against fabricated lecture codes
-        or usernames containing substrings like "../..".
-        """
-        # TODO: refactor
-        assignment_path = os.path.abspath(
-            os.path.join(self.gitbase, lecture.code, str(assignment.id))
-        )
-        allowed_types = {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}
-        if repo_type in allowed_types:
-            path = os.path.join(assignment_path, repo_type)
-            if repo_type == GitRepoType.EDIT:
-                path = os.path.join(path, str(submission.id))
-        elif repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}:
-            type_path = os.path.join(assignment_path, repo_type, "user")
-            if repo_type == GitRepoType.AUTOGRADE:
-                if (submission is None) or (
-                    not self.user.is_admin and self.get_role(lecture.id).role < Scope.tutor
-                ):
-                    raise HTTPError(403)
-                path = os.path.join(type_path, submission.user.name)
-            else:
-                path = os.path.join(type_path, self.user.name)
-        elif repo_type == GitRepoType.USER:
-            user_path = os.path.join(assignment_path, repo_type)
-            # we allow two different paths for user repos:
-            # if username is not specified, we assume the user is trying to access their own repo, so we use self.user.name
-            # if username is specified, we check if the user has permission to access other users' repos, and then use the specified username
-            if username is None:
-                path = os.path.join(user_path, self.user.name)
-            else:
-                user_role = self.get_role(lecture.id).role
-                if not self.user.is_admin and user_role < Scope.tutor:
-                    raise HTTPError(
-                        403,
-                        reason="Only tutors, instructors and admins can access other users' repositories.",
-                    )
-                path = os.path.join(user_path, username)
-        else:
-            raise HTTPError(400, reason=f"Unknown repo type: {repo_type}")
-
-        path = os.path.normpath(path)
-        ensure_path_within_base(path, self.gitbase)
-
-        return path
-
-    @staticmethod
-    def is_base_git_dir(path: str) -> bool:
-        try:
-            out = subprocess.run(
-                ["git", "rev-parse", "--is-bare-repository"], cwd=path, capture_output=True
-            )
-            is_git = (out.returncode == 0) and ("true" in out.stdout.decode("utf-8"))
-        except FileNotFoundError:
-            is_git = False
-        return is_git
-
-    def duplicate_release_repo(
-        self,
-        repo_path_release: str,
-        repo_path_user: str,
-        assignment: Assignment,
-        message: str,
-        checkout_main: bool = False,
-    ):
-        tmp_path_base = Path(
-            self.tmpbase, assignment.lecture.code, str(assignment.id), str(self.user.name)
-        )
-
-        # Deleting dir
-        if os.path.exists(tmp_path_base):
-            shutil.rmtree(tmp_path_base)
-
-        os.makedirs(tmp_path_base, exist_ok=True)
-        tmp_path_release = tmp_path_base.joinpath("release")
-        tmp_path_user = tmp_path_base.joinpath(self.user.name)
-
-        self.log.info(f"Duplicating release repository {repo_path_release}")
-        self.log.info(f"Temporary path used for copying: {tmp_path_base}")
-
-        try:
-            self._run_command(f"git clone -b main '{repo_path_release}'", cwd=tmp_path_base)
-            if checkout_main:
-                self._run_command(f"git clone '{repo_path_user}'", cwd=tmp_path_base)
-                self._run_command("git checkout -b main", cwd=tmp_path_user)
-            else:
-                self._run_command(f"git clone -b main '{repo_path_user}'", cwd=tmp_path_base)
-
-            msg = f"Copying repo from {tmp_path_release} to {tmp_path_user}"
-            self.log.info(msg)
-            ignore = shutil.ignore_patterns(".git", "__pycache__")
-            shutil.copytree(tmp_path_release, tmp_path_user, ignore=ignore, dirs_exist_ok=True)
-            self._run_command("git add -A", tmp_path_user)
-            self._run_command(f'git commit --allow-empty -m "{message}"', tmp_path_user)
-            self._run_command("git push -u origin main", tmp_path_user)
-        finally:
-            shutil.rmtree(tmp_path_base)
-
-    def _run_command(
-        self, command: str, cwd: Optional[Path] = None, capture_output: bool = False
-    ) -> Optional[str]:
-        # TODO currently there are two run_command functions,
-        #  because duplicate_release_repo does not work
-        #  with the _run_command_async
-        self.log.info("Running: %r", command)
-        try:
-            ret = subprocess.run(shlex.split(command), check=True, cwd=cwd, capture_output=True)
-        except subprocess.CalledProcessError as e:
-            self.log.error(e.stderr)
-            raise HTTPError(500, reason="Subprocess Error")
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise HTTPError(404, reason="File not found")
-        if capture_output:
-            return str(ret.stdout, "utf-8")
-
-    async def _run_command_async(self, command_args: List[str], cwd: Optional[str] = None):
-        """Runs a command asynchronously in a subprocess.
-
-        Args:
-            command_args List[str]: List of command arguments to execute.
-            cwd (str, optional): states where the command is getting run.
-                                 Defaults to None.
-
-        Raises:
-            GitError: returns appropriate git error
-        """
-        self.log.info("Running: %s", " ".join(command_args))
-        try:
-            ret = await asyncio.create_subprocess_exec(
-                *command_args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd,
-            )
-        except FileNotFoundError as e:
-            self.log.error(e)
-            raise HTTPError(404, reason="File not found")
-
-        stdout, stderr = await ret.communicate()
-        if ret.returncode != 0:
-            self.log.error(stderr.decode())
-            raise HTTPError(500, reason="Subprocess Error")
-        return stdout.decode()
-
     def write_json(self, obj) -> None:
         self.set_header("Content-Type", "application/json")
         chunk = GraderBaseHandler._serialize(obj)
@@ -1235,24 +1031,6 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         return None
 
 
-def authenticated(
-    method: Callable[..., Optional[Awaitable[None]]],
-) -> Callable[..., Optional[Awaitable[None]]]:
-    """Decorate methods with this to require that the user be logged in.
-
-    If the user is not logged in `tornado.web.HTTPError`
-    with code 401 will be raised.
-    """
-
-    @functools.wraps(method)
-    def wrapper(self: GraderBaseHandler, *args, **kwargs) -> Optional[Awaitable[None]]:
-        if not self.current_user:
-            raise HTTPError(401, reason="User not authenticated")
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
 @register_handler(r"\/?", VersionSpecifier.NONE)
 class VersionHandler(GraderBaseHandler):
     async def get(self):
@@ -1263,28 +1041,3 @@ class VersionHandler(GraderBaseHandler):
 class VersionHandlerV1(GraderBaseHandler):
     async def get(self):
         self.write("Version 1.0")
-
-
-class RequestHandlerConfig(SingletonConfigurable):
-    """This class exists to not avoid all request handlers to inherit
-    from traitlets.config.Configurable and making all requests super
-    slow. If a request handler needs configurable values, they can be
-    accessed from this object."""
-
-    autograde_executor_class = Type(
-        default_value=LocalAutogradeExecutor,
-        # TODO: why does using
-        # LocalAutogradeExecutor give
-        # subclass error?
-        klass=object,
-        allow_none=False,
-        config=True,
-    )
-
-    # Git server file policy defaults
-    git_max_file_size_mb = Integer(80, allow_none=False, config=True)
-    git_max_file_count = Integer(512, allow_none=False, config=True)
-    # empty list allows everything
-    git_allowed_file_extensions = ListTrait(
-        TraitType(Unicode), default_value=[], allow_none=False, config=True
-    )

@@ -12,7 +12,7 @@ image:
   # tag: "latest"
 
 # -- Image pull secrets for private registries
-imagePullSecrets: []
+imagePullSecrets: [ ]
 # -- Override the name of the chart
 nameOverride: ""
 # -- Override the full name of the chart
@@ -23,7 +23,7 @@ serviceAccount:
   # -- Specifies whether a service account should be created
   create: true
   # -- Annotations to add to the service account
-  annotations: {}
+  annotations: { }
 
 # ---------------------------------------------------------------------------
 # Pod configuration (shared defaults for all deployments)
@@ -32,23 +32,23 @@ serviceAccount:
 # ---------------------------------------------------------------------------
 
 # -- Annotations to add to all pods (main + worker)
-podAnnotations: {}
+podAnnotations: { }
 
 # -- Extra labels to add to all pods (main + worker)
-podLabels: {}
+podLabels: { }
 
 # -- Pod-level security context (shared)
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext: { }
+# fsGroup: 2000
 
 # -- Container-level security context (shared)
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext: { }
+# capabilities:
+#   drop:
+#   - ALL
+# readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
 
 # ---------------------------------------------------------------------------
 # Environment variables
@@ -66,7 +66,7 @@ securityContext: {}
 #         secretKeyRef:
 #           name: my-secret
 #           key: my-key
-extraEnv: []
+extraEnv: [ ]
 
 # -- Mount entire Secrets or ConfigMaps as environment variables in all containers.
 # @default -- `[]`
@@ -76,7 +76,7 @@ extraEnv: []
 #         name: my-secret
 #     - configMapRef:
 #         name: my-configmap
-extraEnvFrom: []
+extraEnvFrom: [ ]
 
 # ---------------------------------------------------------------------------
 # Service configuration
@@ -130,14 +130,24 @@ db:
     value: "sqlite:///grader.db"
 
 # ---------------------------------------------------------------------------
-# Git configuration
+# File service configuration
 # ---------------------------------------------------------------------------
 
-gitConfig:
+# -- File service class that handles assignment and submission files
+fileServiceClass: GitFileService
+
+# -- Configuration applicable for any file service class
+fileService:
+  # -- Max [git] file size in MB
+  maxFileSizeMb: 500
+
+# -- Configuration specific to GitFileService
+gitFileService:
   # -- Git user name used for commits
   gitUser: "grader-service"
   # -- Git user email used for commits
-  gitEmail: "grader-service@mail.com"
+  gitEmail: "grader-service@example.com"
+
 
 # ---------------------------------------------------------------------------
 # Volume permissions init container
@@ -158,7 +168,7 @@ autogradeExecutorClass: KubeAutogradeExecutor
 # -- Configuration for the Kubernetes autograde executor
 kubeAutogradeExecutor:
   # -- Annotations for autograde pods
-  annotations: {}
+  annotations: { }
   # -- Image to use for autograde pods
   image: ghcr.io/tu-wien-datalab/grader-service/grader-labextension
   # -- Image tag for autograde pods
@@ -166,9 +176,9 @@ kubeAutogradeExecutor:
   # -- Image pull policy for autograde pods
   imagePullPolicy: "Always"
   # -- Image pull secrets for autograde pods
-  imagePullSecrets: []
+  imagePullSecrets: [ ]
   # -- Labels for autograde pods
-  labels: {}
+  labels: { }
   # -- Namespace for autograde pods (defaults to release namespace)
   namespace: null
   # -- Extra volumes for autograde pods (Python list literal as string)
@@ -206,12 +216,10 @@ extraConfig: ""
 #       mountPath: /etc/myapp/settings.json
 #       content: |
 #         {"debug": false}
-extraFiles: {}
+extraFiles: { }
 
-# -- Request handler configuration
+# -- HTTP request handler configuration
 requestHandlerConfig:
-  # -- Max git file size in MB
-  git_max_file_size_mb: 500
   # -- Max buffer size in bytes (default 100MB)
   max_buffer_size: 104857600
   # -- Max body size in bytes (default 100MB)
@@ -239,7 +247,7 @@ ltiSyncGrades:
   #       private_key_path: "/secrets/lti/private_key.pem"
   #       deployment_id: "1"
 
-  systems: []
+  systems: [ ]
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -275,9 +283,9 @@ ingress:
   # -- Ingress class name
   className: ""
   # -- Ingress annotations
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  annotations: { }
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
   # -- Ingress host rules
   hosts:
     - host: chart-example.local
@@ -285,7 +293,7 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
   # -- Ingress TLS configuration
-  tls: []
+  tls: [ ]
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
@@ -304,7 +312,7 @@ rabbitmq:
       cpu: 2
       memory: 4Gi
   # -- Override spec for the RabbitmqCluster CR
-  override: {}
+  override: { }
 
 # ---------------------------------------------------------------------------
 # Celery workers
@@ -314,49 +322,49 @@ workers:
   # -- Number of worker replicas
   replication: 1
   # -- Resource requests and limits for worker containers
-  resources: {}
+  resources: { }
 
   # Per-deployment overrides (if not set, inherits from global values above)
 
   # -- Extra labels for worker pods only
-  podLabels: {}
+  podLabels: { }
   # -- Annotations for worker pods only
-  podAnnotations: {}
+  podAnnotations: { }
   # -- Pod-level security context for workers
-  podSecurityContext: {}
+  podSecurityContext: { }
   # -- Container-level security context for workers
-  securityContext: {}
+  securityContext: { }
   # -- Node selector for worker pods
-  nodeSelector: {}
+  nodeSelector: { }
   # -- Tolerations for worker pods
-  tolerations: []
+  tolerations: [ ]
   # -- Affinity rules for worker pods
-  affinity: {}
+  affinity: { }
   # -- Extra environment variables for worker containers only
   # (these are added on top of the global `extraEnv`)
-  extraEnv: []
+  extraEnv: [ ]
   # -- Extra envFrom sources for worker containers only
   # (these are added on top of the global `extraEnvFrom`)
-  extraEnvFrom: []
+  extraEnvFrom: [ ]
 
 # ---------------------------------------------------------------------------
 # Main deployment scheduling
 # ---------------------------------------------------------------------------
 
 # -- Resource requests and limits for the main grader-service container
-resources: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources: { }
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
 
 # -- Node selector for main deployment pods
-nodeSelector: {}
+nodeSelector: { }
 
 # -- Tolerations for main deployment pods
-tolerations: []
+tolerations: [ ]
 
 # -- Affinity rules for main deployment pods
-affinity: {}
+affinity: { }

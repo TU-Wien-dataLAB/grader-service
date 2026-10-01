@@ -3,29 +3,53 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
+import asyncio
 import fnmatch
 import json
 import os
 import shutil
 import subprocess
+from collections.abc import Coroutine
+from concurrent.futures.thread import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any, TypeVar
 
 from sqlalchemy.orm import Session
+from traitlets import observe
 from traitlets.config import Config
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets.traitlets import Int, TraitError, Type, Unicode, validate
+from traitlets.traitlets import Int, TraitError, Unicode, validate
 
-from grader_service.autograding.git_manager import GitSubmissionManager
-from grader_service.autograding.utils import collect_logs, executable_validator, rmtree
+from grader_service.artifact_types import ArtifactType
+from grader_service.autograding.utils import collect_logs, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
+from grader_service.file_services.base_file_service import FileService
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
+from grader_service.utils import executable_validator
+
+
+T = TypeVar("T")
+_executor = ThreadPoolExecutor()
+
+
+def _run_async(coro: Coroutine[Any, Any, T]) -> T:
+    """Run an async coroutine from a sync context, returning its result.
+
+    In a plain sync context (Celery worker), the coroutine runs on a fresh loop.
+    Inside a running loop (Tornado handler) it is offloaded to a thread with its
+    own loop (because `asyncio.run` is illegal inside a running loop), blocking
+    the caller until the coroutine completes.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    return _executor.submit(lambda: asyncio.run(coro)).result()
 
 
 class LocalAutogradeExecutor(LoggingConfigurable):
@@ -36,9 +60,17 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     and the gradebook JSON file used by :mod:`grader_service.convert`.
     """
 
-    relative_input_path = Unicode("convert_in", allow_none=True).tag(config=True)
-    relative_output_path = Unicode("convert_out", allow_none=True).tag(config=True)
-    git_manager_class = Type(GitSubmissionManager, allow_none=False).tag(config=True)
+    @property
+    def input_artifact_type(self):
+        if self.submission.edited:
+            # User's submission was edited by the instructor
+            return ArtifactType.EDIT
+        return ArtifactType.USER
+
+    output_artifact_type = ArtifactType.AUTOGRADE
+
+    relative_input_path = Unicode("convert_in", allow_none=False).tag(config=True)
+    relative_output_path = Unicode("convert_out", allow_none=False).tag(config=True)
 
     cell_timeout = Int(
         allow_none=False,
@@ -56,21 +88,21 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     ).tag(config=True)
 
     def __init__(
-        self, grader_service_dir: str, submission: Submission, close_session: bool = True, **kwargs
+        self, autograding_dir: str, submission: Submission, close_session: bool = True, **kwargs
     ):
         """
-        Creates the executor in the input
-        and output directories that are specified
-        by :attr:`base_input_path` and :attr:`base_output_path`.
-        The grader service directory is used for accessing
-        the git repositories to push the grading results.
+        Runs the executor in the input and output directories specified
+        by :attr:`input_path` and :attr:`output_path`. Both are
+        temporary subdirectories of autograding_dir, used respectively
+        for fetching the submission files, and saving the grading results
+        and the gradebook.json file.
         The database session is retrieved from the submission object.
         The associated session of the submission has to be available
         and must not be closed beforehand.
 
-        :param grader_service_dir: The base directory of the whole
-        grader service specified in the configuration.
-        :type grader_service_dir: str
+        :param autograding_dir: The base directory where the autograder
+          stores its working files; created if it doesn't exist.
+        :type autograding_dir: str
         :param submission: The submission object
         which should be graded by the executor.
         :type submission: Submission
@@ -78,7 +110,17 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         :type close_session: bool
         """
         super().__init__(**kwargs)
-        self.grader_service_dir = grader_service_dir
+
+        from grader_service import GraderService
+
+        service = GraderService.instance()
+        self.file_service: FileService = service.file_service
+
+        self._autograding_dir = Path(autograding_dir)
+        if not self._autograding_dir.exists():
+            self._autograding_dir.mkdir(parents=True)
+            self.log.debug("Created autograding dir at %s", self._autograding_dir)
+
         self.submission = submission
         self.assignment: Assignment = submission.assignment
         self.session: Session = Session.object_session(self.submission)
@@ -86,9 +128,6 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         self.close_session = close_session
 
         self.grading_logs: Optional[str] = None
-        # Git manager performs the git operations when creating a new repo for the grading results
-        self.git_manager = self.git_manager_class(grader_service_dir, self.submission)
-
         self.cell_timeout = self._determine_cell_timeout()
 
     def start(self):
@@ -101,17 +140,30 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self.submission.id,
             self.__class__.__name__,
         )
+
         try:
             self._clean_up_input_and_output_dirs()
-            self.git_manager.pull_submission(self.input_path)
+
+            _run_async(
+                self.file_service.fetch_files(
+                    Path(self.input_path), self.input_artifact_type, self.submission
+                )
+            )
 
             autograding_start = datetime.now()
             self._write_gradebook(self._put_grades_in_assignment_properties())
             self._run()
             autograding_finished = datetime.now()
 
-            files_to_commit = self._get_whitelisted_files()
-            self.git_manager.push_results(files_to_commit, self.output_path)
+            whitelisted_files = self._get_whitelisted_files()
+            _run_async(
+                self.file_service.push_files(
+                    whitelisted_files,
+                    Path(self.output_path),
+                    self.output_artifact_type,
+                    self.submission,
+                )
+            )
             self._set_properties()
             self._set_db_state()
         except Exception as e:
@@ -143,13 +195,13 @@ class LocalAutogradeExecutor(LoggingConfigurable):
     @property
     def input_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_input_path, f"submission_{self.submission.id}"
+            self._autograding_dir, self.relative_input_path, f"submission_{self.submission.id}"
         )
 
     @property
     def output_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_output_path, f"submission_{self.submission.id}"
+            self._autograding_dir, self.relative_output_path, f"submission_{self.submission.id}"
         )
 
     def _clean_up_input_and_output_dirs(self):
@@ -235,7 +287,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """
         Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
 
-        The list can be directly passed to the `git commit` command.
+        The list can be directly passed to the `push_files` command of the file service.
 
         :return: list of shell-escaped filenames matching the whitelist patterns of the assignment
         """
@@ -244,7 +296,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             # No filtering needed
             return ["."]
 
-        files_to_commit = []
+        whitelisted_files = []
 
         # get all files in the directory
         for root, dirs, files in os.walk(self.output_path):
@@ -255,9 +307,12 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             for file in files:
                 file_path = os.path.join(rel_root, file) if rel_root != "." else file
                 if any(fnmatch.fnmatch(file_path, pattern) for pattern in file_patterns):
-                    files_to_commit.append(file_path)
+                    whitelisted_files.append(file_path)
 
-        return files_to_commit
+        self.log.debug(
+            "In output path %s, found whitelisted files: %s", self.output_path, whitelisted_files
+        )
+        return whitelisted_files
 
     def _set_properties(self) -> None:
         """
@@ -357,15 +412,15 @@ class LocalAutogradeExecutor(LoggingConfigurable):
 
         return value
 
-    @validate("relative_input_path", "relative_output_path")
-    def _validate_service_dir(self, proposal):
-        path: str = proposal["value"]
-        if not os.path.exists(self.grader_service_dir + "/" + path):
-            self.log.info(f"Path {path} not found, creating new directories.")
-            Path(path).mkdir(parents=True, exist_ok=True, mode=0o700)
-        if not os.path.isdir(self.grader_service_dir + "/" + path):
-            raise TraitError("The path has to be an existing directory")
-        return path
+    @observe("relative_input_path", "relative_output_path")
+    def _ensure_autograde_dir(self, change):
+        path = change["new"]
+        full_path = self._autograding_dir / path
+        if not full_path.exists():
+            self.log.info("Path %s not found, creating new directories.", full_path)
+            full_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        elif not full_path.is_dir():
+            raise TraitError(f"The path {full_path} has to be an existing directory")
 
     @validate("convert_executable")
     def _validate_executable(self, proposal):

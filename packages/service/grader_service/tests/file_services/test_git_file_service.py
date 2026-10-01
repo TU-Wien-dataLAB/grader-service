@@ -1,0 +1,640 @@
+import shutil
+from unittest.mock import patch
+
+import pytest
+import pytest_asyncio
+
+from grader_service.file_services.base_file_service import FileServiceError
+from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
+from grader_service.orm.submission import AutoStatus
+from grader_service.artifact_types import ArtifactType
+from grader_service.tests.handlers.db_util import create_user_submission_with_repo
+
+
+@pytest.fixture
+def git_file_service(grader_service):
+    """Create a GitFileService instance with proper directory structure."""
+    service = GitFileService(grader_service_dir=grader_service.grader_service_dir)
+    yield service
+
+
+@pytest_asyncio.fixture
+async def setup_repos(git_file_service, submission_123):
+    """Set up basic repository structure for testing."""
+    assignment = submission_123.assignment
+    lecture_code = assignment.lecture.code
+
+    # Create release artifact
+    release_path = construct_git_dir(
+        git_file_service.files_base, ArtifactType.RELEASE, lecture_code, assignment.id
+    )
+    await git_file_service.create_bare_repo(release_path)
+    # Create user artifact
+    user_path = construct_git_dir(
+        git_file_service.files_base,
+        ArtifactType.USER,
+        lecture_code,
+        assignment.id,
+        username=submission_123.user.name,
+    )
+    await git_file_service.create_bare_repo(user_path)
+
+    yield {"release": release_path, "user": user_path}
+
+
+@pytest_asyncio.fixture
+async def setup_repos_with_release_files(git_file_service, setup_repos):
+    """Add a commit with a file to the release artifact."""
+    remote_path = setup_repos["release"]
+    clone_path = git_file_service.tmpbase / "release"
+    clone_path.mkdir(parents=True, exist_ok=True)
+    await git_file_service._run_git(
+        ["git", "clone", str(remote_path), str(clone_path)], cwd=git_file_service.tmpbase
+    )
+    file_path = clone_path / "assignment.ipynb"
+    file_path.touch()
+    await git_file_service._run_git(["git", "add", str(file_path)], cwd=clone_path)
+    await git_file_service._run_git(
+        ["git", "commit", "-m", "Add assignment notebook"], cwd=clone_path
+    )
+    await git_file_service._run_git(["git", "push", "-u", "origin", "main"], cwd=clone_path)
+    shutil.rmtree(clone_path)
+
+    yield setup_repos
+
+
+# =============== construct_git_dir tests ===============
+
+
+def test_construct_git_dir_source_artifact(assignment_123, tmp_path):
+    """Test path construction for SOURCE artifact type."""
+    files_base = tmp_path / "git"
+    lecture_code = assignment_123.lecture.code
+    path = construct_git_dir(files_base, ArtifactType.SOURCE, lecture_code, assignment_123.id)
+
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.SOURCE
+    assert path == expected
+
+
+def test_construct_git_dir_release_artifact(assignment_123, tmp_path):
+    """Test path construction for RELEASE artifact type."""
+    files_base = tmp_path / "git"
+    lecture_code = assignment_123.lecture.code
+    path = construct_git_dir(files_base, ArtifactType.RELEASE, lecture_code, assignment_123.id)
+
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.RELEASE
+    assert path == expected
+
+
+def test_construct_git_dir_user_artifact(assignment_123, tmp_path):
+    """Test path construction for USER artifact type."""
+    files_base = tmp_path / "git"
+    lecture_code = assignment_123.lecture.code
+    username = "test_user"
+    path = construct_git_dir(
+        files_base, ArtifactType.USER, lecture_code, assignment_123.id, username=username
+    )
+
+    expected = files_base / lecture_code / str(assignment_123.id) / ArtifactType.USER / username
+    assert path == expected
+
+
+def test_construct_git_dir_edit_artifact_requires_submission_id(assignment_123, tmp_path):
+    """Test that EDIT artifact type requires submission_id."""
+    lecture_code = assignment_123.lecture.code
+
+    with pytest.raises(ValueError, match="Missing submission_id"):
+        construct_git_dir(tmp_path / "git", ArtifactType.EDIT, lecture_code, assignment_123.id)
+
+
+def test_construct_git_dir_edit_artifact(submission_123, tmp_path):
+    """Test path construction for EDIT artifact type."""
+    files_base = tmp_path / "git"
+    assign = submission_123.assignment
+    lecture_code = assign.lecture.code
+    path = construct_git_dir(
+        files_base, ArtifactType.EDIT, lecture_code, assign.id, submission_123.id
+    )
+
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.EDIT / str(submission_123.id)
+    )
+    assert path == expected
+
+
+@pytest.mark.parametrize(
+    "artifact_type", [ArtifactType.USER, ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK]
+)
+def test_construct_git_dir_artifact_types_require_username(assignment_123, tmp_path, artifact_type):
+    """Test that certain artifact types require submission_id."""
+    lecture_code = assignment_123.lecture.code
+
+    with pytest.raises(ValueError, match="Missing username"):
+        construct_git_dir(tmp_path / "git", artifact_type, lecture_code, assignment_123.id)
+
+
+def test_construct_git_dir_autograde_artifact(submission_123, tmp_path):
+    """Test path construction for AUTOGRADE artifact type."""
+    files_base = tmp_path / "git"
+    assign = submission_123.assignment
+    lecture_code = assign.lecture.code
+    username = "test_user"
+    path = construct_git_dir(
+        files_base, ArtifactType.AUTOGRADE, lecture_code, assign.id, username=username
+    )
+
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.AUTOGRADE / "user" / username
+    )
+    assert path == expected
+
+
+def test_construct_git_dir_feedback_artifact(submission_123, tmp_path):
+    """Test path construction for FEEDBACK artifact type."""
+    files_base = tmp_path / "git"
+    assign = submission_123.assignment
+    lecture_code = assign.lecture.code
+    username = "test_user"
+    path = construct_git_dir(
+        files_base, ArtifactType.FEEDBACK, lecture_code, assign.id, username=username
+    )
+
+    expected = (
+        files_base / lecture_code / str(assign.id) / ArtifactType.FEEDBACK / "user" / username
+    )
+    assert path == expected
+
+
+def test_construct_git_dir_path_validation_prevents_traversal(assignment_123, tmp_path):
+    """Test that path traversal attempts are blocked."""
+    lecture_code = "../.."
+
+    with pytest.raises(ValueError, match="Invalid path"):
+        construct_git_dir(tmp_path / "git", ArtifactType.SOURCE, lecture_code, assignment_123.id)
+
+
+# =============== is_bare_git_dir tests ===============
+
+
+async def test_is_bare_git_dir_returns_true_for_bare_repo(git_file_service, setup_repos):
+    """Test detection of bare git repository."""
+    bare_repo_path = setup_repos["release"]
+
+    result = await git_file_service.is_bare_git_dir(bare_repo_path)
+    assert result is True
+
+
+async def test_is_bare_git_dir_returns_false_for_non_bare_repo(
+    git_file_service, setup_repos, tmp_path
+):
+    """Test that non-bare git repos are not detected as bare."""
+    bare_repo_path = str(setup_repos["release"])
+    clone_dir = tmp_path / "tmp"
+    clone_dir.mkdir()
+    await git_file_service._run_git(["git", "clone", bare_repo_path], cwd=clone_dir)
+
+    result = await git_file_service.is_bare_git_dir(clone_dir)
+
+    assert result is False
+
+
+async def test_is_bare_git_dir_returns_false_for_non_git_dir(git_file_service, tmp_path):
+    """Test that non-git directories are not detected as bare repos."""
+    non_git_dir = tmp_path / "not_a_repo"
+    non_git_dir.mkdir()
+
+    result = await git_file_service.is_bare_git_dir(non_git_dir)
+
+    assert result is False
+
+
+async def test_is_bare_git_dir_returns_false_for_nonexistent_path(git_file_service):
+    """Test that nonexistent paths return False."""
+    nonexistent_path = git_file_service.files_base / "nonexistent"
+
+    result = await git_file_service.is_bare_git_dir(nonexistent_path)
+
+    assert result is False
+
+
+# =============== _create_bare_repo tests ===============
+
+
+async def test_create_bare_repo_creates_directory_and_initializes(git_file_service, tmp_path):
+    """Test bare repo creation."""
+    repo_path = tmp_path / "test_repo"
+
+    await git_file_service.create_bare_repo(repo_path)
+
+    assert repo_path.exists()
+    assert await git_file_service.is_bare_git_dir(repo_path)
+
+
+async def test_create_bare_repo_recreates_existing_when_flag_set(git_file_service, tmp_path):
+    """Test that existing repo is recreated when recreate_dir=True."""
+    repo_path = tmp_path / "test_repo"
+    await git_file_service.create_bare_repo(repo_path)
+
+    # Create a file in the repo
+    marker_file = repo_path / "marker.txt"
+    marker_file.touch()
+    assert marker_file.exists()
+
+    # Recreate should remove the file
+    await git_file_service.create_bare_repo(repo_path, recreate_dir=True)
+
+    assert not marker_file.exists()
+    assert await git_file_service.is_bare_git_dir(repo_path)
+
+
+async def test_create_bare_repo_custom_branch(git_file_service, tmp_path):
+    """Test bare repo creation with custom initial branch."""
+    repo_path = tmp_path / "test_repo"
+    custom_branch = "develop"
+
+    await git_file_service.create_bare_repo(repo_path, initial_branch=custom_branch)
+
+    # Verify the branch was created
+    result = await git_file_service._run_git(["git", "branch", "--show-current"], cwd=repo_path)
+    assert custom_branch in result
+
+
+# =============== validate_submission_exists tests ===============
+
+
+async def test_validate_submission_exists_raises_when_artifact_not_found(
+    git_file_service, submission_123
+):
+    """Test error when USER artifact doesn't exist."""
+    with pytest.raises(FileServiceError, match="User artifact not found"):
+        await git_file_service.validate_submission_exists(
+            submission_123.commit_hash, submission_123.assignment, submission_123.user.name
+        )
+
+
+async def test_validate_submission_exists_raises_when_commit_not_found(
+    git_file_service, submission_123, setup_repos
+):
+    """Test error when user artifact exists but submission commit is not in main branch."""
+
+    with pytest.raises(FileServiceError, match="Submission commit not found"):
+        await git_file_service.validate_submission_exists(
+            "9" * 40, submission_123.assignment, submission_123.user.name
+        )
+
+
+# =============== init_user_files tests ===============
+
+
+async def test_init_user_files_raises_when_release_not_exists(git_file_service, submission_123):
+    """Test error when release artifact doesn't exist."""
+    with pytest.raises(FileNotFoundError, match="release artifact does not exist"):
+        await git_file_service.init_user_files(
+            submission_123.assignment, submission_123.user.name, "Initial commit"
+        )
+
+
+async def test_init_user_files_raises_when_user_artifact_not_exists(
+    git_file_service, submission_123, setup_repos
+):
+    """Test error when user artifact doesn't exist."""
+    shutil.rmtree(setup_repos["user"])
+
+    with pytest.raises(FileNotFoundError, match="user submission artifact"):
+        await git_file_service.init_user_files(
+            submission_123.assignment, submission_123.user.name, "Initial commit"
+        )
+
+
+async def test_init_user_files(git_file_service, submission_123, setup_repos_with_release_files):
+    """Test successful copying of release files to a new user artifact."""
+    l_code = submission_123.assignment.lecture.code
+    a_id = submission_123.assignment.id
+    username = submission_123.user.name
+    tmp_base = git_file_service.tmpbase / l_code / str(a_id) / username
+    msg = "Test initial commit"
+
+    await git_file_service.init_user_files(submission_123.assignment, username, msg)
+
+    user_remote = setup_repos_with_release_files["user"]
+    commit_log = await git_file_service._run_git(["git", "log", "--oneline"], cwd=user_remote)
+    assert msg in commit_log
+    # Temp directory should be cleaned up
+    assert not tmp_base.exists()
+
+
+# =============== fetch_files tests ===============
+
+
+@pytest.mark.parametrize(
+    "artifact_type", [ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.FEEDBACK]
+)
+async def test_fetch_files_raises_for_invalid_artifact_type(
+    git_file_service, submission_123, tmp_path, artifact_type
+):
+    """Test error when invalid artifact type is provided."""
+    with pytest.raises(
+        ValueError, match=f"Fetching submission files of type {artifact_type} is not supported"
+    ):
+        await git_file_service.fetch_files(tmp_path, artifact_type, submission_123)
+
+
+async def test_fetch_files_user_artifact_checks_out_commit(
+    git_file_service, submission_123, setup_repos, tmp_path
+):
+    """Test that fetching from USER artifact checks out the submission commit."""
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+
+    with patch.object(git_file_service, "_run_git") as mock_run_git:
+        await git_file_service.fetch_files(input_dir, ArtifactType.USER, submission_123)
+
+    # Should have pulled the main branch
+    pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
+    assert len(pull_calls) == 1
+    git_cmd: list[str] = pull_calls[0].args[0]
+    assert git_cmd[-1] == "main"
+
+    # Verify checkout command was called with commit hash
+    checkout_calls = [call for call in mock_run_git.call_args_list if "checkout" in str(call)]
+    assert len(checkout_calls) == 1
+    assert submission_123.commit_hash in checkout_calls[0].args[0]
+
+
+async def test_fetch_files_autograde_uses_submission_branch(
+    git_file_service, submission_123, setup_repos, tmp_path
+):
+    """Test that fetching AUTOGRADE files uses submission-specific branch."""
+    submission_123.auto_status = AutoStatus.AUTOMATICALLY_GRADED
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+
+    with patch.object(git_file_service, "_run_git") as mock_run_git:
+        await git_file_service.fetch_files(input_dir, ArtifactType.AUTOGRADE, submission_123)
+
+    # Verify pull command uses submission-specific branch
+    pull_calls = [call for call in mock_run_git.call_args_list if "pull" in str(call)]
+    assert len(pull_calls) == 1
+    git_cmd: list[str] = pull_calls[0].args[0]
+    assert git_cmd[-1] == f"submission_{submission_123.commit_hash}"
+
+
+async def test_fetch_files_from_user_artifact(
+    git_file_service, sql_alchemy_engine, default_user, tmp_path
+):
+    """Test successful fetching of files."""
+    # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
+    sub = create_user_submission_with_repo(
+        sql_alchemy_engine,
+        git_file_service.files_base,
+        student=default_user,
+        assignment_id=1,
+        lecture_code="21wle1",
+    )
+
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+
+    await git_file_service.fetch_files(input_dir, ArtifactType.USER, sub)
+
+    assert (input_dir / "submission.ipynb").exists()
+    is_git_repo = await git_file_service._run_git(
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=input_dir
+    )
+    assert "true" in is_git_repo
+
+
+# =============== edit_submission tests ===============
+
+
+async def test_edit_submission_raises_when_user_artifact_not_exists(
+    git_file_service, submission_123
+):
+    """Test error when user artifact doesn't exist for edit."""
+    with pytest.raises(FileNotFoundError, match="user submission artifact"):
+        await git_file_service.edit_submission(submission_123)
+
+
+async def test_edit_submission(git_file_service, sql_alchemy_engine, default_user):
+    """Test creating an EDIT artifact."""
+    # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
+    sub = create_user_submission_with_repo(
+        sql_alchemy_engine,
+        git_file_service.files_base,
+        student=default_user,
+        assignment_id=1,
+        lecture_code="21wle1",
+    )
+
+    a_id = sub.assignment.id
+    l_code = sub.assignment.lecture.code
+    tmp_base = git_file_service.tmpbase / l_code / str(a_id) / "edit" / str(sub.id)
+
+    remote_path_edit = construct_git_dir(
+        git_file_service.files_base, ArtifactType.EDIT, l_code, a_id, submission_id=sub.id
+    )
+    assert not remote_path_edit.exists()
+
+    await git_file_service.edit_submission(sub)
+
+    # Remote EDIT repo should exist and contain an initial commit
+    assert await git_file_service.is_bare_git_dir(remote_path_edit)
+    commit_log = await git_file_service._run_git(["git", "log", "--oneline"], cwd=remote_path_edit)
+    assert "Initial commit" in commit_log
+    # Temp directory should be cleaned up
+    assert not tmp_base.exists()
+
+
+# =============== push_files tests ===============
+
+
+@pytest.mark.parametrize(
+    "artifact_type",
+    [ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.USER, ArtifactType.EDIT],
+)
+async def test_push_files_raises_for_invalid_artifact_types(
+    git_file_service, submission_123, tmp_path, artifact_type
+):
+    """Test that push_files raises if the artifact type is not AUTOGRADE or FEEDBACK"""
+    dir = tmp_path / "convert_out"
+    with pytest.raises(
+        ValueError, match=f"Pushing submission files of type {artifact_type} is not supported"
+    ):
+        await git_file_service.push_files(
+            filenames=[], dir=dir, artifact_type=artifact_type, submission=submission_123
+        )
+
+
+async def test_push_files_autograde(git_file_service, submission_123, tmp_path):
+    """Test pushing files after autograding a submission."""
+    artifact_type = ArtifactType.AUTOGRADE
+
+    l_code = submission_123.assignment.lecture.code
+    a_id = str(submission_123.assignment.id)
+    username = submission_123.user.name
+    remote_repo_path = construct_git_dir(
+        git_file_service.files_base, artifact_type, l_code, a_id, username=username
+    )
+    assert not remote_repo_path.exists()
+
+    # Create a fake "autograded" file; note that ``artifact_path`` is not a repo
+    artifact_path = tmp_path / "convert_out" / "submission_123"
+    artifact_path.mkdir(parents=True)
+    s_file = artifact_path / "autograded.ipynb"
+    s_file.touch()
+
+    await git_file_service.push_files(
+        [s_file.name, "gradebook.json"], artifact_path, artifact_type, submission_123
+    )
+
+    # Remote repo should have been created
+    assert remote_repo_path.exists()
+    is_bare = await git_file_service.is_bare_git_dir(remote_repo_path)
+    assert is_bare
+
+    # The `artifact_path` directory should now be a Git repository
+    is_git_repo = await git_file_service._run_git(
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=artifact_path, may_fail=True
+    )
+    assert "true" in is_git_repo
+
+    # Current branch of the repo should be named after the submission's commit hash
+    current_branch = await git_file_service._run_git(
+        ["git", "branch", "--show-current"], cwd=artifact_path
+    )
+    assert f"submission_{submission_123.commit_hash}" in current_branch
+
+    # The commit message should be the submission's hash, the autograded file should be committed,
+    # but gradebook.json - not
+    last_commit = await git_file_service._run_git(
+        ["git", "show", "--oneline", "--name-only"], cwd=artifact_path
+    )
+    assert submission_123.commit_hash in last_commit
+    assert s_file.name in last_commit
+    assert "gradebook.json" not in last_commit
+
+    # Autograding the same submission again should work, even if there are no changes.
+    await git_file_service.push_files([s_file.name], artifact_path, artifact_type, submission_123)
+
+
+# =============== delete_lecture_files tests ===============
+
+
+async def test_delete_lecture_files_removes_git_and_tmp_dirs(git_file_service, assignment_123):
+    """Test that lecture deletion removes both git and tmp directories."""
+    lecture_code = assignment_123.lecture.code
+
+    # Create directories
+    git_lecture_path = git_file_service.files_base / lecture_code
+    tmp_lecture_path = git_file_service.tmpbase / lecture_code
+    git_lecture_path.mkdir(parents=True)
+    tmp_lecture_path.mkdir(parents=True)
+
+    await git_file_service.delete_lecture_files(assignment_123.lecture)
+
+    assert not git_lecture_path.exists()
+    assert not tmp_lecture_path.exists()
+
+
+async def test_delete_lecture_files_ignores_missing_dirs(git_file_service, assignment_123):
+    """Test that deletion doesn't fail when directories don't exist."""
+    lecture_code = assignment_123.lecture.code
+
+    # Don't create the directories
+    git_lecture_path = git_file_service.files_base / lecture_code
+    tmp_lecture_path = git_file_service.tmpbase / lecture_code
+    assert not git_lecture_path.exists()
+    assert not tmp_lecture_path.exists()
+
+    await git_file_service.delete_lecture_files(assignment_123.lecture)
+
+
+async def test_delete_lecture_files_validation_prevents_traversal(git_file_service, assignment_123):
+    assignment_123.lecture.code = "../.."
+
+    with pytest.raises(ValueError, match="Invalid path"):
+        await git_file_service.delete_lecture_files(assignment_123.lecture)
+
+
+# =============== delete_assignment_files tests ===============
+
+
+async def test_delete_assignment_files_removes_assignment_dirs(git_file_service, assignment_123):
+    """Test that assignment deletion removes both git and tmp assignment directories."""
+    lecture_code = assignment_123.lecture.code
+    assignment_id = str(assignment_123.id)
+
+    # Create directories
+    git_assignment_path = git_file_service.files_base / lecture_code / assignment_id
+    tmp_assignment_path = git_file_service.tmpbase / lecture_code / assignment_id
+    git_assignment_path.mkdir(parents=True)
+    tmp_assignment_path.mkdir(parents=True)
+
+    await git_file_service.delete_assignment_files(assignment_123, assignment_123.lecture)
+
+    assert not git_assignment_path.exists()
+    assert not tmp_assignment_path.exists()
+    assert (git_file_service.files_base / lecture_code).exists()
+    assert (git_file_service.tmpbase / lecture_code).exists()
+
+
+# =============== delete_submission_files tests ===============
+
+
+async def test_delete_submission_files_removes_user_and_submission_dirs(
+    git_file_service, submission_123
+):
+    """Test that submission deletion removes submission-specific directories."""
+    l_code = submission_123.assignment.lecture.code
+    a_id = str(submission_123.assignment.id)
+    username = submission_123.user.name
+    s_id = submission_123.id
+
+    # Create submission-specific directories in files_base and tmpbase
+    submission_dirs = []
+    assignment_dirs = []
+    for artifact_type in ArtifactType:
+        artifact_dir = construct_git_dir(
+            git_file_service.files_base,
+            artifact_type,
+            l_code,
+            a_id,
+            submission_id=s_id,
+            username=username,
+        )
+        artifact_dir.mkdir(parents=True)
+        if artifact_type in [ArtifactType.SOURCE, ArtifactType.RELEASE]:
+            assignment_dirs.append(artifact_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / artifact_type
+            assignment_dirs.append(tmp_dir)
+        else:
+            submission_dirs.append(artifact_dir)
+            tmp_dir = git_file_service.tmpbase / l_code / a_id / artifact_type / username
+            submission_dirs.append(tmp_dir)
+        tmp_dir.mkdir(parents=True)
+
+    await git_file_service.delete_submission_files(submission_123)
+
+    for submission_path in submission_dirs:
+        assert not submission_path.exists()
+    for assignment_path in assignment_dirs:
+        assert assignment_path.exists()
+
+
+async def test_delete_submission_files_only_removes_target_submission(
+    git_file_service, submission_123, setup_repos
+):
+    """Test that only the target submission is deleted, not others."""
+    l_code = submission_123.assignment.lecture.code
+    a_id = str(submission_123.assignment.id)
+
+    # Create another user's artifact
+    other_username = "other_user"
+    other_user_path = construct_git_dir(
+        git_file_service.files_base, ArtifactType.USER, l_code, a_id, username=other_username
+    )
+    await git_file_service.create_bare_repo(other_user_path)
+
+    await git_file_service.delete_submission_files(submission_123)
+
+    assert other_user_path.exists()

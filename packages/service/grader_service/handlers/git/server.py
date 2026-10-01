@@ -3,10 +3,10 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import os
-import shlex
+import enum
 import subprocess
 import zlib
+from http import HTTPStatus
 from pathlib import Path
 from string import Template
 from typing import List, Optional
@@ -18,26 +18,34 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.handlers.base_handler import (
-    GraderBaseHandler,
-    RequestHandlerConfig,
-    ensure_path_within_base,
-)
-from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm.lecture import Lecture
-from grader_service.orm.submission import Submission
-from grader_service.orm.takepart import Role, Scope
+from grader_service.file_services import FileServiceError
+from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.handlers.base_handler import GraderBaseHandler
+from grader_service.artifact_types import ArtifactType
+from grader_service.orm import Lecture, Role, Submission
+from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 
 
+class GitRpcCmd(enum.StrEnum):
+    UPLOAD_PACK = "upload-pack"
+    SEND_PACK = "send-pack"
+    RECEIVE_PACK = "receive-pack"
+
+
 class GitBaseHandler(GraderBaseHandler):
+    """This handler requires file_service to be a ``GitFileService``."""
+
+    process: Subprocess
+    rpc: GitRpcCmd
+
     async def data_received(self, chunk: bytes):
         self.log.debug(f"Writing chunk of size {len(chunk)} to git process stdin")
         return self.process.stdin.write(chunk)
 
     def write_error(self, status_code: int, **kwargs) -> None:
         self.clear()
-        if status_code == 401:
+        if status_code == HTTPStatus.UNAUTHORIZED:
             self.set_header("WWW-Authenticate", 'Basic realm="User Visible Realm"')
         self.set_status(status_code)
 
@@ -78,182 +86,176 @@ class GitBaseHandler(GraderBaseHandler):
             pass
         except Exception as e:
             self.log.error(f"Error from git response {e}")
-            raise APIError(500, message=str(e))
+            raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
 
-    def _check_git_repo_permissions(self, rpc: str, role: Role, pathlets: List[str]):
-        repo_type: str = pathlets[2]
+    def _parse_request_path(self) -> tuple[str, str, str, None | list[str]]:
+        # If request is sent using jupyterhub as a proxy, remove 'services/grader' path prefix
+        path = self.request.path.strip("/").removeprefix("services/grader")
+        pathlets = path.strip("/").split("/")
 
-        if role.role == Scope.student:
-            # 1. no source or release interaction with source repo for students
-            # 2. no pull allowed for autograde for students
-            if (repo_type in {GitRepoType.SOURCE, GitRepoType.RELEASE, GitRepoType.EDIT}) or (
-                repo_type == GitRepoType.AUTOGRADE and rpc == "upload-pack"
-            ):
-                raise HTTPError(403)
-
-            # 3. students should not be able to pull other submissions
-            #    -> add query param for sub_id
-            if (repo_type == GitRepoType.FEEDBACK) and (rpc == "upload-pack"):
-                try:
-                    sub_id = int(pathlets[3])
-                except (ValueError, IndexError):
-                    raise HTTPError(403)
-                submission = self.session.query(Submission).get(sub_id)
-                if submission is None or submission.user_id != self.user.id:
-                    raise HTTPError(403)
-
-        # 4. no push allowed for autograde and feedback
-        #    -> the autograder executor can push locally (will bypass this)
-        if (repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK}) and (
-            rpc in ["send-pack", "receive-pack"]
-        ):
-            raise HTTPError(403)
-
-    def gitlookup(self, rpc: str) -> Optional[str]:
-        """Resolve and initialize a git repository path based on the request URL.
-
-        Parses the request path to extract lecture, assignment, and repository type,
-        validates permissions against the database, and returns the filesystem path
-        to the appropriate git repository. Creates the repository if it doesn't exist.
-
-        Args:
-            rpc: The RPC method name (e.g., "upload-pack", "receive-pack"),
-                 used for permission checking.
-
-        Returns:
-            The absolute filesystem path to the git repository, or None if the
-            repository type is invalid or initialization fails.
-
-        Raises:
-            HTTPError: If the lecture or assignment is not found, if the submission ID
-                is invalid/missing, or if git repository permissions are insufficient.
-        """
-        pathlets = self.request.path.strip("/").split("/")
-        # check if request is sent using jupyterhub as a proxy
-        # if yes, remove services/grader path prefix
-        assert len(pathlets) > 0
-        if pathlets[0] == "services":
-            pathlets = pathlets[2:]
-
-        # pathlets should look like this
-        # pathlets = ['git',
-        #             'lecture_code', 'assignment_id', 'repo_type', ...]
+        # pathlets should look like this:
+        #   pathlets = ['git', <lecture_code>, <assignment_id>, <artifact_type>, ...]
+        # Note: The remaining tail can be empty, a sub_id, a username, or something else,
+        # depending on the artifact type and the action.
         if len(pathlets) < 4:
-            return None
+            raise ValueError("Invalid request path")
 
         # cut git prefix
-        pathlets = pathlets[1:]
-        lect_code, assign_id, repo_type, *pathlets_tail = pathlets
+        _git, lect_code, assign_id, artifact_type, *pathlets_tail = pathlets
+        return lect_code, assign_id, artifact_type, pathlets_tail
 
-        # Repo type "assignment" has been replaced by "user", so this should not happen,
-        # but we are leaving this check for the time being, just to be on the safe side:
-        if repo_type == "assignment":
-            self.log.warning("Deprecated repo_type: 'assignment'! Setting it to 'user'")
-            repo_type = GitRepoType.USER
+    def _check_artifact_permissions(
+        self,
+        rpc: GitRpcCmd,
+        role: Role,
+        artifact_type: ArtifactType,
+        submission: Submission | None,
+        username: str | None,
+    ):
+        if role.role == Scope.student and not self.user.is_admin:
+            # 1. no interaction with source, release, and edit artifacts for students
+            # 2. no pull allowed for autograde for students
+            if (
+                artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}
+            ) or (artifact_type == ArtifactType.AUTOGRADE and rpc == GitRpcCmd.UPLOAD_PACK):
+                raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action")
 
+            # 3. students should not be able to pull other submissions
+            if (artifact_type == ArtifactType.FEEDBACK) and (rpc == GitRpcCmd.UPLOAD_PACK):
+                if submission is None or submission.user_id != self.user.id:
+                    raise HTTPError(HTTPStatus.NOT_FOUND, "Submission not found")
+
+            # 4. students should not be able to access other user's artifacts
+            if artifact_type == ArtifactType.USER and username != self.user.name:
+                raise HTTPError(
+                    HTTPStatus.FORBIDDEN, "Students cannot access other users' artifacts"
+                )
+
+        # 5. no push allowed for autograde and feedback
+        #    -> the autograder executor can push locally (will bypass this)
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK} and rpc in [
+            GitRpcCmd.SEND_PACK,
+            GitRpcCmd.RECEIVE_PACK,
+        ]:
+            raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action for the artifact type")
+
+    async def gitlookup(self, rpc: GitRpcCmd) -> Path | None:
+        """Resolve and initialize a git repository path based on the request URL.
+
+        Parses the request path to extract lecture, assignment, and artifact type,
+        validates permissions against the database, and returns the filesystem path
+        to the appropriate git repository. Creates the directory and initializes
+        the repository if they don't exist. Also writes the pre-recive hook.
+
+        Args:
+            rpc: The Git RPC method name - used for permission checking.
+
+        Returns:
+            The absolute filesystem path to the git repository, or None if the request
+            path is invalid or repository initialization fails.
+
+        Raises:
+            HTTPError: If the lecture, assignment, or user's role is not found;
+                if the submission ID is invalid/missing; or if user's permissions
+                for the artifact/action are insufficient.
+        """
         try:
-            repo_type = GitRepoType(repo_type)
+            # pathlets_tail can be empty, a sub_id, a username, or something else, depending
+            # on the artifact type and action.
+            lect_code, assign_id, artifact_type, pathlets_tail = self._parse_request_path()
         except ValueError:
             return None
 
-        # get lecture and assignment if they exist
+        try:
+            artifact_type = ArtifactType(artifact_type)
+        except ValueError:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid artifact type")
+
+        # get lecture, user's role in it, and assignment - if they exist
         try:
             lecture = self.session.query(Lecture).filter(Lecture.code == lect_code).one()
         except NoResultFound:
-            raise HTTPError(404, reason="Lecture was not found")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="Lecture was not found")
 
-        role = self.session.get(Role, (self.user.id, lecture.id))
-        self._check_git_repo_permissions(rpc, role, pathlets)
+        role = self.get_role(lecture.id)
 
         try:
             assignment = self.get_assignment(lecture.id, int(assign_id))
         except ValueError:
-            raise HTTPError(404, reason="Assignment not found")
+            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid assignment id")
 
-        # create directories once we know they exist in the database
-        lecture_path = os.path.abspath(os.path.join(self.gitbase, lect_code))
-        assignment_path = os.path.abspath(os.path.join(lecture_path, assign_id))
-
-        ensure_path_within_base(lecture_path, self.gitbase)
-        ensure_path_within_base(assignment_path, self.gitbase)
-
-        if not os.path.exists(lecture_path):
-            os.mkdir(lecture_path)
-        if not os.path.exists(assignment_path):
-            os.mkdir(assignment_path)
-
+        #  For the following artifact types, sub_id is required and has to be a number
         submission = None
-        if repo_type in {GitRepoType.AUTOGRADE, GitRepoType.FEEDBACK, GitRepoType.EDIT}:
+        sub_id = None
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK, ArtifactType.EDIT}:
             try:
                 sub_id = int(pathlets_tail[0])
-            except (ValueError, IndexError):
-                raise HTTPError(403, "Invalid or missing submission id")
-            submission = self.get_submission(lecture.id, assignment.id, sub_id)
+            except (IndexError, TypeError, ValueError):
+                raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid or missing submission id")
+            submission = self.get_submission(lecture.id, assignment.id, int(sub_id))
 
-        # if repo_type is user, get username from path, if it exists
+        # if artifact_type is user, get username from path, if given;
+        # otherwise take the logged-in user's name
         username = None
-        if repo_type == GitRepoType.USER:
-            try:
-                if (
-                    pathlets_tail == ["info", "refs"]
-                    or pathlets_tail == ["git-upload-pack"]
-                    or pathlets_tail == ["git-receive-pack"]
-                ):
-                    self.log.warning(
-                        "DEPRECATED: No username specified in path, but info/refs "
-                        "or git-upload-pack/git-receive-pack called. "
-                        "Assuming user is trying to access their own repo."
-                    )
-                else:
+        if artifact_type == ArtifactType.USER:
+            if (
+                pathlets_tail == ["info", "refs"]
+                or pathlets_tail == ["git-upload-pack"]
+                or pathlets_tail == ["git-receive-pack"]
+            ):
+                self.log.warning(
+                    "DEPRECATED: No username specified in path, but info/refs "
+                    "or git-upload-pack/git-receive-pack called. "
+                    "Assuming user is trying to access their own artifact."
+                )
+                username = self.user.name
+            else:
+                try:
                     username = pathlets_tail[0]
-            except IndexError:
-                pass
+                except IndexError:
+                    username = self.user.name
+        elif artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK}:
+            username = submission.user.name
 
-        path = self.construct_git_dir(
-            repo_type, lecture, assignment, submission=submission, username=username
+        self._check_artifact_permissions(rpc, role, artifact_type, submission, username)
+
+        path = construct_git_dir(
+            self.file_service.files_base,
+            artifact_type,
+            lect_code,
+            assign_id,
+            submission_id=sub_id,
+            username=username,
         )
         if path is None:
             return None
 
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        is_git = self.is_base_git_dir(path)
-        # return git repo path
-        if os.path.exists(path) and is_git:
-            self.write_pre_receive_hook(path)
-            return path
-        else:
-            os.mkdir(path)
-            # this path has to be a git dir -> call git init
+        is_git = await self.file_service.is_bare_git_dir(path)
+        if not is_git:
             try:
-                self.log.info("Running: git init --bare")
-                subprocess.run(["git", "init", "--bare", path], check=True)
-            except subprocess.CalledProcessError:
+                await self.file_service.create_bare_repo(path)
+            except FileServiceError:
+                self.log.error("Failed to create bare repo at %s!", path)
                 return None
 
-            if repo_type == GitRepoType.USER:
-                repo_path_release = self.construct_git_dir(
-                    GitRepoType.RELEASE, assignment.lecture, assignment
-                )
-                if not os.path.exists(repo_path_release):
+            if artifact_type == ArtifactType.USER:
+                try:
+                    await self.file_service.init_user_files(
+                        assignment=assignment, username=username, comment="Initialize from Release"
+                    )
+                except FileNotFoundError as err:
+                    self.log.error(err)
                     return None
-                self.duplicate_release_repo(
-                    repo_path_release=repo_path_release,
-                    repo_path_user=path,
-                    assignment=assignment,
-                    message="Initialize with Release",
-                    checkout_main=True,
-                )
 
-            self.write_pre_receive_hook(path)
-            return path
+        self.write_pre_receive_hook(path)
+        return path
 
-    def write_pre_receive_hook(self, path: str):
-        hook_dir = os.path.join(path, "hooks")
-        if not os.path.exists(hook_dir):
-            os.mkdir(hook_dir)
+    def write_pre_receive_hook(self, path: Path):
+        hook_dir = path / "hooks"
+        hook_dir.mkdir(exist_ok=True)
 
-        hook_file = os.path.join(hook_dir, "pre-receive")
-        if not os.path.exists(hook_file):
+        hook_file = hook_dir / "pre-receive"
+        if not hook_file.exists():
             tpl = Template(self._read_hook_template())
             hook = tpl.safe_substitute(
                 {
@@ -262,28 +264,24 @@ class GitBaseHandler(GraderBaseHandler):
                     "tpl_max_file_count": self._get_hook_max_file_count(),
                 }
             )
-            with open(hook_file, "wt") as f:
-                os.chmod(hook_file, 0o755)
+            with hook_file.open("wt") as f:
+                hook_file.chmod(0o755)
                 f.write(hook)
 
-    @staticmethod
-    def _get_hook_file_allow_pattern(extensions: Optional[List[str]] = None) -> str:
+    def _get_hook_file_allow_pattern(self, extensions: Optional[List[str]] = None) -> str:
         pattern = ""
         if extensions is None:
-            req_handler_conf = RequestHandlerConfig.instance()
-            extensions = req_handler_conf.git_allowed_file_extensions
-        if len(extensions) > 0:
+            extensions = self.file_service.allowed_file_extensions
+        if extensions:
             allow_patterns = ["\\." + s.strip(".").replace(".", "\\.") for s in extensions]
             pattern = "|".join(allow_patterns)
         return pattern
 
-    @staticmethod
-    def _get_hook_max_file_size():
-        return RequestHandlerConfig.instance().git_max_file_size_mb
+    def _get_hook_max_file_size(self):
+        return self.file_service.max_file_size_mb
 
-    @staticmethod
-    def _get_hook_max_file_count():
-        return RequestHandlerConfig.instance().git_max_file_count
+    def _get_hook_max_file_count(self):
+        return self.file_service.max_file_count
 
     @staticmethod
     def _read_hook_template() -> str:
@@ -291,16 +289,11 @@ class GitBaseHandler(GraderBaseHandler):
         with open(file_path, mode="rt") as f:
             return f.read()
 
-    @staticmethod
-    def _create_path(path):
-        if not os.path.exists(path):
-            os.mkdir(path)
-
-    def get_gitdir(self, rpc: str):
-        """Determine the git repository for this request"""
-        gitdir = self.gitlookup(rpc)
+    async def get_gitdir(self, rpc: GitRpcCmd) -> Path:
+        """Determine the git repository for this request and create it if it does not exist yet."""
+        gitdir = await self.gitlookup(rpc)
         if gitdir is None:
-            raise HTTPError(404, reason="unable to find repository")
+            raise HTTPError(HTTPStatus.NOT_FOUND, reason="unable to find artifact")
         self.log.info("Accessing git at: %s", gitdir)
 
         return gitdir
@@ -324,15 +317,16 @@ class RPCHandler(GitBaseHandler):
             self._gunzip = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
         # now setup git process
-        self.rpc = self.path_args[0]
-        self.gitdir = self.get_gitdir(rpc=self.rpc)
-        self.cmd = f'git {self.rpc} --stateless-rpc "{self.gitdir}"'
-        self.log.info(f"Running command: {self.cmd}")
+        rpc = self.path_args[0]
+        try:
+            self.rpc = GitRpcCmd(rpc)
+        except ValueError:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
+        gitdir = await self.get_gitdir(rpc=self.rpc)
+        cmd = [self.file_service.git_executable, self.rpc, "--stateless-rpc", str(gitdir)]
+        self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
-            shlex.split(self.cmd),
-            stdin=Subprocess.STREAM,
-            stderr=Subprocess.STREAM,
-            stdout=Subprocess.STREAM,
+            cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
         )
 
     async def data_received(self, chunk: bytes):
@@ -340,7 +334,7 @@ class RPCHandler(GitBaseHandler):
             try:
                 chunk = self._gunzip.decompress(chunk)
             except zlib.error:
-                raise HTTPError(400, "Invalid gzip stream")
+                raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid gzip stream")
         return self.process.stdin.write(chunk)
 
     def on_finish(self):
@@ -353,8 +347,8 @@ class RPCHandler(GitBaseHandler):
                 pass
         super().on_finish()
 
-    async def post(self, rpc):
-        self.set_header("Content-Type", "application/x-git-%s-result" % rpc)
+    async def post(self, rpc: GitRpcCmd):
+        self.set_header("Content-Type", f"application/x-git-{rpc}-result")
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         await self.git_response()
         await self.finish()
@@ -370,18 +364,27 @@ class InfoRefsHandler(GitBaseHandler):
         await super().prepare()
         if self.get_status() != 200:
             return
-        self.rpc = self.get_argument("service")[4:]
-        self.cmd = f'git {self.rpc} --stateless-rpc --advertise-refs "{self.get_gitdir(self.rpc)}"'
-        self.log.info(f"Running command: {self.cmd}")
+        rpc = self.get_argument("service").removeprefix("git-")
+        try:
+            self.rpc = GitRpcCmd(rpc)
+        except ValueError:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, "Invalid Git RPC command")
+
+        gitdir = await self.get_gitdir(self.rpc)
+        cmd = [
+            self.file_service.git_executable,
+            self.rpc,
+            "--stateless-rpc",
+            "--advertise-refs",
+            str(gitdir),
+        ]
+        self.log.info(f"Running command: {' '.join(cmd)}")
         self.process = Subprocess(
-            shlex.split(self.cmd),
-            stdin=Subprocess.STREAM,
-            stderr=Subprocess.STREAM,
-            stdout=Subprocess.STREAM,
+            cmd, stdin=Subprocess.STREAM, stderr=Subprocess.STREAM, stdout=Subprocess.STREAM
         )
 
     async def get(self):
-        self.set_header("Content-Type", "application/x-git-%s-advertisement" % self.rpc)
+        self.set_header("Content-Type", f"application/x-git-{self.rpc}-advertisement")
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 
         prelude = f"# service=git-{self.rpc}\n"

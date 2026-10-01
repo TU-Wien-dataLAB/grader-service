@@ -15,8 +15,9 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
+from grader_service.file_services import GitFileService
 from grader_service.main import get_session_maker
-from grader_service.orm import User
+from grader_service.orm import User, Submission, Assignment, Lecture, SubmissionProperties
 from grader_service.orm.base import set_sqlite_pragma
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
@@ -73,6 +74,27 @@ def default_roles_dict():
     }
 
 
+@pytest.fixture(autouse=True)
+def reset_my_service_singleton():
+    """Ensure GraderService singleton instance is reset before and after every test."""
+    GraderService.clear_instance()
+    yield
+    GraderService.clear_instance()
+
+
+@pytest.fixture()
+def grader_service(tmpdir):
+    """Set `grader_service_dir` to `grader_service/` in a tmp directory."""
+    service_dir = tmpdir / "grader_service"
+    if not service_dir.exists():
+        tmpdir.mkdir("grader_service")
+    service = GraderService().instance()
+    service.grader_service_dir = str(service_dir)
+    yield service
+    # Reset the instance so that using this fixture doesn't affect other tests
+    GraderService.clear_instance()
+
+
 @pytest.fixture(scope="function")
 def default_roles(sql_alchemy_sessionmaker, default_roles_dict):
     service_mock = MagicMock()
@@ -107,14 +129,15 @@ def sql_alchemy_sessionmaker(db_test_config):
 
 @pytest.fixture(scope="function")
 def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
-    service_dir = str(tmpdir.mkdir("grader_service"))
+    service_dir = tmpdir.mkdir("grader_service")
     handlers = HandlerPathRegistry.handler_list()
 
     authenticator = DummyAuthenticator()
     authenticator.admin_users = [default_admin.name]
 
     application = GraderServer(
-        grader_service_dir=service_dir,
+        grader_service_dir=str(service_dir),
+        file_service=GitFileService(service_dir),
         base_url="/",
         authenticator=authenticator,
         handlers=handlers,
@@ -157,3 +180,33 @@ def default_admin():
 def default_token():
     token = "token"
     yield token
+
+
+@pytest.fixture
+def assignment_123():
+    a = Assignment(id=123, properties='{"notebooks": {}}')
+    a.lecture = Lecture(code="LEC_01")
+    a.settings.allowed_files = []
+
+    yield a
+
+
+@pytest.fixture
+def submission_123(assignment_123):
+    submission = Submission()
+    submission.id = 123
+    submission.assignment = assignment_123
+    submission.user = User(name="test_user")
+    submission.properties = SubmissionProperties(properties='{"notebooks": {}}')
+    submission.score_scaling = 1
+    submission.commit_hash = "9ce33a20c72e406f3d9fa0c7b574a4c4591daf33"
+
+    yield submission
+
+
+@pytest.fixture
+def git_file_service_no_git(grader_service):
+    """Mock GitFileService which doesn't actually execute any git commands"""
+    service = GitFileService(grader_service_dir=grader_service.grader_service_dir)
+    with patch.object(service, "_run_git_sync"), patch.object(service, "_run_git"):
+        yield service
