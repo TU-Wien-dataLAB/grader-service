@@ -175,7 +175,7 @@ export class GradingModeSwitch extends React.Component<IModeSwitchProps> {
   public render() {
     return (
       <div className={'flex flex-row gap-1 items-center'}>
-        <Switch checked={this.state.mode} onChange={this.handleChange} />
+        <Switch checked={this.state.mode} onCheckedChange={this.handleChange} />
         <h2>Grading Mode</h2>
         <Button
           className="grader-toolbar-button"
