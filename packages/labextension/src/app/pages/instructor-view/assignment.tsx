@@ -20,6 +20,7 @@ import {
   TabsTrigger
 } from '../../shadcn-components/ui/tabs';
 import { FilesView } from '../../components/grader-service/notebooks-and-files/files-view';
+import { StatisticsView } from '../../components/grader-service/statistics/statistics-view';
 
 export const Assignment = () => {
   const params = useParams();
@@ -47,7 +48,7 @@ export const Assignment = () => {
   }, [assignmentId, lecture?.code, selectedDir]);
 
   return (
-    <div className={'flex p-6 flex-col items-start gap-6 w-full'}>
+    <div className={'flex p-6 flex-col items-start gap-6 w-full bg-background'}>
       <div className={'flex items-center gap-6 self-stretch'}>
         <div className={'flex items-center gap-4'}>
           <Link to={`/lectures/${lectureId}`}>
@@ -83,7 +84,12 @@ export const Assignment = () => {
         <TabsContent value="submissions">
           <div>Submissions</div>
         </TabsContent>
-        <TabsContent value="statistics">Statistics</TabsContent>
+        <TabsContent value="statistics">
+          <StatisticsView 
+            lectureId={lectureId}
+            assignmentId={assignmentId}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
