@@ -286,14 +286,14 @@ class GraderService(config.Application):
         help="Set the logging level for the application",
     ).tag(config=True)
 
-    def setup_loggers(self, log_level: str):
+    def setup_loggers(self, log_level: str | int):
         """Handles application, Tornado, and SQLAlchemy logging configuration."""
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
         formatter = tornado.log.LogFormatter(fmt=fmt, color=True)
 
-        def create_handler(logger: logging.Logger, level: str = log_level):
+        def create_handler(logger: logging.Logger, level: str | int = log_level):
             if logger.handlers:
                 logger.handlers.clear()
             logger.setLevel(level)
@@ -356,7 +356,6 @@ class GraderService(config.Application):
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
-        # TODO: should file service also be a singleton, configured here?
 
     async def cleanup(self):
         pass

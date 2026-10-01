@@ -386,7 +386,7 @@ async def test_git_lookup_pull_feedback_student_invalid_sub_id_error(
 
 
 class _FakeGitStream:
-    """Mimics an asyncio git subprocess stdout stream (a few bytes then EOF)."""
+    """Mimics an asyncio git subprocess stdout stream (a few bytes, then EOF)."""
 
     def __init__(self, chunks):
         self._chunks = list(chunks)
@@ -400,15 +400,13 @@ class _FakeGitStream:
 class _FakeProcess:
     """Minimal stand-in for the ``self.process`` git subprocess."""
 
-    def __init__(self, chunks):
+    def __init__(self, chunks: list[bytes]):
         self.stdout = _FakeGitStream(chunks)
 
 
 async def test_rpc_handler_post_runs(git_handler_factory):
     """Basic smoke test: the git-* RPC POST endpoint handler executes without error."""
-    handler = git_handler_factory(
-        artifact_type=ArtifactType.SOURCE, query_kw={"scope": Scope.instructor}
-    )
+    handler = git_handler_factory()
     handler.rpc = GitRpcCmd.UPLOAD_PACK
     handler.process = _FakeProcess([b"some response data", b""])
     handler.flush = AsyncMock()
@@ -421,9 +419,7 @@ async def test_rpc_handler_post_runs(git_handler_factory):
 
 async def test_info_refs_handler_get_runs(git_handler_factory):
     """Basic smoke test: the info/refs GET endpoint handler executes without error."""
-    handler = git_handler_factory(
-        artifact_type=ArtifactType.SOURCE, query_kw={"scope": Scope.instructor}
-    )
+    handler = git_handler_factory()
     handler.rpc = GitRpcCmd.UPLOAD_PACK
     handler.process = _FakeProcess([b"ref advertisement", b""])
     handler.flush = AsyncMock()

@@ -72,15 +72,6 @@ def construct_git_dir(
 class GitFileService(FileService):
     """Service for submission-related file operations"""
 
-    # TODO: Apparently, not used anywhere! But hard-coded in helm charts and git workflows
-    # service_git_username = Unicode(
-    #     "grader-service", allow_none=False, help="Git username used by the service for commits"
-    # ).tag(config=True)
-    #
-    # service_git_email = Unicode(
-    #     "", allow_none=False, help="Git email used by the service for commits"
-    # ).tag(config=True)
-
     git_executable = Unicode("git", allow_none=False).tag(config=True)
 
     @validate("git_executable")
@@ -413,9 +404,6 @@ class GitFileService(FileService):
 
         self.log.info("Successfully pulled files from the %s artifact.", artifact_type)
 
-    # TODO: differences between `edit...` and `init_user_files`:
-    #  - this re-creates the empty output bare repo, and `init_user...` only commits the changes
-    #  - this checkouts the submission hash; `init_...` just checkouts main
     async def edit_submission(self, submission: Submission) -> None:
         """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
         assignment = submission.assignment
