@@ -34,44 +34,37 @@ import {
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
 
-import { CourseManageView } from './widgets/coursemanage';
+import { GraderServiceWidget } from './widget';
 
 import { Cell } from '@jupyterlab/cells';
 
 import { Menu, PanelLayout } from '@lumino/widgets';
 
-import { NotebookModeSwitch } from './components/notebook/slider';
+import { NotebookModeSwitch } from './app/components/notebook/slider';
 
-import { checkIcon, editIcon, runIcon } from '@jupyterlab/ui-components';
+import { homeIcon, runIcon } from '@jupyterlab/ui-components';
 import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
-import { AssignmentManageView } from './widgets/assignmentmanage';
-import { CreationWidget } from './components/notebook/create-assignment/creation-widget';
+import { CreationWidget } from './app/components/notebook/create-assignment/creation-widget';
 import {
   listIcon,
   undoIcon
 } from '@jupyterlab/ui-components/lib/icon/iconimports';
-import { HintWidget } from './components/notebook/student-plugin/hint-widget';
-import { DeadlineWidget } from './components/notebook/student-plugin/deadline-widget';
-import { lectureSubPaths } from './services/file.service';
-import IModel = Contents.IModel;
+import { HintWidget } from './app/components/notebook/student-plugin/hint-widget';
+import { DeadlineWidget } from './app/components/notebook/student-plugin/deadline-widget';
+import { lectureSubPathsCount } from './services/local-file.service';
 import { updateMenus } from './menu';
 import { loadString } from './services/storage.service';
+import IModel = Contents.IModel;
 
-export namespace AssignmentsCommandIDs {
-  export const create = 'assignments:create';
+export namespace GraderServiceCommandIDs {
+  export const create = 'graderservice:create';
 
-  export const open = 'assignments:open';
-}
-
-export namespace CourseManageCommandIDs {
-  export const create = 'coursemanage:create';
-
-  export const open = 'coursemanage:open';
+  export const open = 'graderservice:open';
 }
 
 namespace NotebookExecuteIDs {
@@ -94,52 +87,66 @@ export class GlobalObjects {
   static browserFactory: IFileBrowserFactory;
   static tracker: INotebookTracker;
   static themeManager: IThemeManager;
-  static assignmentMenu: Menu;
-  static courseManageMenu: Menu;
+  static graderServiceMenu: Menu;
 }
 
-const createCourseManagementOpenCommand = (
+const createGraderServiceCommands = (
   app: JupyterFrontEnd,
   launcher: ILauncher,
-  courseManageTracker: WidgetTracker<MainAreaWidget<CourseManageView>>
+  courseManageTracker: WidgetTracker<MainAreaWidget<GraderServiceWidget>>
 ) => {
-  const command = CourseManageCommandIDs.open;
-  app.commands.addCommand(command, {
+  // add create widget command
+  app.commands.addCommand(GraderServiceCommandIDs.create, {
+    execute: () => {
+      // Create a blank content widget inside of a MainAreaWidget
+      const graderServiceWidget = new MainAreaWidget<GraderServiceWidget>({
+        content: new GraderServiceWidget()
+      });
+      graderServiceWidget.id = 'grader-service';
+      graderServiceWidget.title.label = 'Grader Service';
+      graderServiceWidget.title.closable = true;
+
+      courseManageTracker.add(graderServiceWidget);
+
+      return graderServiceWidget;
+    }
+  });
+  // add open widget command
+  app.commands.addCommand(GraderServiceCommandIDs.open, {
     label: args =>
-      args['label'] ? (args['label'] as string) : 'Course Management',
+      args['label'] ? (args['label'] as string) : 'Grader Service',
     execute: async args => {
-      let gradingWidget = courseManageTracker.currentWidget;
-      if (!gradingWidget) {
-        gradingWidget = await app.commands.execute(
-          CourseManageCommandIDs.create
+      let graderServiceWidget = courseManageTracker.currentWidget;
+      if (!graderServiceWidget) {
+        graderServiceWidget = await app.commands.execute(
+          GraderServiceCommandIDs.create
         );
       }
 
       let path = args?.path as string;
       if (args?.path === undefined) {
-        const savedPath = loadString('course-manage-react-router-path');
+        const savedPath = loadString('grader-service-router-path');
         if (savedPath !== null && savedPath !== '') {
           path = savedPath;
         } else {
           path = '/';
         }
       }
-      await gradingWidget.content.router.navigate(path);
+      await graderServiceWidget.content.router.navigate(path);
 
-      if (!gradingWidget.isAttached) {
+      if (!graderServiceWidget.isAttached) {
         // Attach the widget to the main work area if it's not there
-        app.shell.add(gradingWidget, 'main');
+        app.shell.add(graderServiceWidget, 'main');
       }
       // Activate the widget
-      app.shell.activateById(gradingWidget.id);
+      app.shell.activateById(graderServiceWidget.id);
     },
-    icon: args => (args['path'] ? undefined : checkIcon)
+    icon: args => (args['path'] ? undefined : homeIcon)
   });
   // Add the command to the launcher
-  console.log('Add course management launcher');
   launcher.add({
-    command: command,
-    category: 'Assignments',
+    command: GraderServiceCommandIDs.open,
+    category: 'Grader Service',
     rank: 0
   });
 };
@@ -162,7 +169,6 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
         notebookPanel,
         notebook
       );
-
       tracker.currentWidget.toolbar.insertItem(10, 'Mode', switcher);
 
       //Creation of deadline widget
@@ -187,7 +193,7 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
     }
     const notebookPaths: string[] = contentsModel.path.split('/');
 
-    if (notebookPaths[lectureSubPaths + 1] === 'manualgrade') {
+    if (notebookPaths[lectureSubPathsCount + 1] === 'manualgrade') {
       return;
     }
 
@@ -210,6 +216,98 @@ const connectTrackerSignals = (tracker: INotebookTracker) => {
       (cell.layout as PanelLayout).insertWidget(0, new CreationWidget(cell));
     }
   }, this);
+};
+
+const createNotebookCommands = (
+  app: JupyterFrontEnd,
+  tracker: INotebookTracker
+) => {
+  let command = NotebookExecuteIDs.run;
+  app.commands.addCommand(command, {
+    label: 'Run cell',
+    execute: async () => {
+      await app.commands.execute('notebook:run-cell');
+    },
+    icon: runIcon
+  });
+
+  command = RevertCellIDs.revert;
+  app.commands.addCommand(command, {
+    label: 'Revert cell',
+    isVisible: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('revert') !== null;
+    },
+    isEnabled: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('revert') !== null;
+    },
+    execute: () => {
+      showDialog({
+        title: "Do you want to revert the cell to it's original state?",
+        body: 'This will overwrite your current changes!',
+        buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
+      }).then(result => {
+        if (!result.button.accept) {
+          return;
+        }
+        tracker.activeCell.inputArea.model.sharedModel.setSource('');
+        tracker.activeCell.inputArea.model.sharedModel.setSource(
+          tracker.activeCell.model.getMetadata('revert').toString()
+        );
+      });
+    },
+    icon: undoIcon
+  });
+
+  command = ShowHintIDs.show;
+  app.commands.addCommand(command, {
+    label: 'Show hint',
+    isVisible: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('hint') !== null;
+    },
+    isEnabled: () => {
+      if (tracker.activeCell === null) {
+        return false;
+      }
+      return tracker.activeCell.model.getMetadata('hint') !== null;
+    },
+    execute: () => {
+      // check if there is an active cell
+      if (!tracker.activeCell) {
+        return;
+      }
+
+      let hintWidget: HintWidget | undefined;
+
+      (tracker.activeCell.layout as PanelLayout).widgets.forEach(widget => {
+        if (widget instanceof HintWidget) {
+          hintWidget = widget;
+        }
+      });
+      if (hintWidget === undefined) {
+        (tracker.activeCell.layout as PanelLayout).addWidget(
+          new HintWidget(
+            tracker.activeCell.model.getMetadata('hint').toString()
+          )
+        );
+      } else {
+        hintWidget.toggleShowAlert();
+        hintWidget.setHint(
+          tracker.activeCell.model.getMetadata('hint').toString()
+        );
+        hintWidget.update();
+      }
+    },
+    icon: listIcon
+  });
 };
 
 /**
@@ -241,10 +339,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     themeManager: IThemeManager,
     mainMenu: IMainMenu
   ) => {
-    console.log('JupyterLab extension grader_labextension is activated!');
-    console.log('JupyterFrontEnd:', app);
-    console.log('ICommandPalette:', palette);
-    console.log('Tracker', tracker);
+    console.log('JupyterLab extension grader-labextension is activated!');
 
     GlobalObjects.commands = app.commands;
     GlobalObjects.docRegistry = app.docRegistry;
@@ -253,156 +348,34 @@ const extension: JupyterFrontEndPlugin<void> = {
     GlobalObjects.browserFactory = browserFactory;
     GlobalObjects.tracker = tracker;
     GlobalObjects.themeManager = themeManager;
-
-    // this connects the color-scheme CSS of base.css to the Jupyterlab themeManager
-    // the MUI theme provider is set in the corresponding widgets
-    // the CSS color-scheme property only applies to native input elements automatically so this does only apply to those (i.e. notebook grading mode and creation mode)
-    themeManager.themeChanged.connect(() => {
-      document.documentElement.dataset.theme = themeManager.isLight(
-        themeManager.theme ?? 'light'
-      )
-        ? 'light'
-        : 'dark';
-    }, this);
-
-    const assignmentTracker = new WidgetTracker<
-      MainAreaWidget<AssignmentManageView>
+    const graderServiceTracker = new WidgetTracker<
+      MainAreaWidget<GraderServiceWidget>
     >({
-      namespace: 'grader-assignments'
+      namespace: 'grader-service'
     });
 
-    restorer.restore(assignmentTracker, {
-      command: AssignmentsCommandIDs.open,
-      name: () => 'grader-assignments'
+    restorer.restore(graderServiceTracker, {
+      command: GraderServiceCommandIDs.open,
+      name: () => 'grader-service'
     });
-
-    const courseManageTracker = new WidgetTracker<
-      MainAreaWidget<CourseManageView>
-    >({
-      namespace: 'grader-coursemanage'
-    });
-
-    restorer.restore(courseManageTracker, {
-      command: CourseManageCommandIDs.open,
-      name: () => 'grader-coursemanage'
-    });
-
-    /* ##### Course Manage View Widget ##### */
-    let command: string = CourseManageCommandIDs.create;
-    app.commands.addCommand(command, {
-      execute: () => {
-        // Create a blank content widget inside of a MainAreaWidget
-        const gradingView = new CourseManageView();
-        const gradingWidget = new MainAreaWidget<CourseManageView>({
-          content: gradingView
-        });
-        gradingWidget.id = 'coursemanage-jupyterlab';
-        gradingWidget.title.label = 'Course Management';
-        gradingWidget.title.closable = true;
-
-        courseManageTracker.add(gradingWidget);
-
-        return gradingWidget;
-      }
-    });
-
-    command = AssignmentsCommandIDs.create;
-    app.commands.addCommand(command, {
-      execute: () => {
-        // Create a blank content widget inside a MainAreaWidget
-        const assignmentView = new AssignmentManageView();
-        const assignmentWidget = new MainAreaWidget<AssignmentManageView>({
-          content: assignmentView
-        });
-        assignmentWidget.id = 'assignments-jupyterlab';
-        assignmentWidget.title.label = 'Assignments';
-        assignmentWidget.title.closable = true;
-
-        assignmentTracker.add(assignmentWidget);
-
-        return assignmentWidget;
-      }
-    });
+    /* ##### Grader Service View Widget ##### */
 
     // If the user has no instructor roles in any lecture we do not display the course management
     UserPermissions.loadPermissions()
       .then(() => {
-        const permissions = UserPermissions.getPermissions();
-        let sum = 0;
-        for (const el in permissions) {
-          if (permissions.hasOwnProperty(el)) {
-            sum += permissions[el];
-          }
-        }
-
-        // if tutor or instructor permissions were found add course management menu
-        if (sum !== 0) {
-          console.log(
-            'Non-student permissions found! Adding coursemanage launcher and connecting creation mode'
-          );
+if (UserPermissions.hasElevatedPermissions()) {
           connectTrackerSignals(tracker);
-
-          // add menu to JupyterLab main menu
-          const cmMenu = new Menu({ commands: app.commands });
-          cmMenu.title.label = 'Course Management';
-          mainMenu.addMenu(cmMenu, false, { rank: 210 });
-          createCourseManagementOpenCommand(app, launcher, courseManageTracker);
-          GlobalObjects.courseManageMenu = cmMenu;
         }
+        createGraderServiceCommands(app, launcher, graderServiceTracker);
 
         // add Menu to JupyterLab main menu
-        const aMenu = new Menu({ commands: app.commands });
-        aMenu.title.label = 'Assignments';
-        mainMenu.addMenu(aMenu, false, { rank: 200 });
+        const menu = new Menu({ commands: app.commands });
+        menu.title.label = 'Grader Service';
+        mainMenu.addMenu(menu, false, { rank: 200 });
 
-        GlobalObjects.assignmentMenu = aMenu;
+        GlobalObjects.graderServiceMenu = menu;
 
         updateMenus();
-
-        // only add assignment list if user permissions can be loaded
-        command = AssignmentsCommandIDs.open;
-        app.commands.addCommand(command, {
-          label: args =>
-            args['label'] ? (args['label'] as string) : 'Assignments',
-          execute: async args => {
-            let assignmentWidget = assignmentTracker.currentWidget;
-            if (!assignmentWidget) {
-              assignmentWidget = await app.commands.execute(
-                AssignmentsCommandIDs.create
-              );
-            }
-
-            let path = args?.path as string;
-            if (args?.path === undefined) {
-              const savedPath = loadString(
-                'assignment-manage-react-router-path'
-              );
-              if (savedPath !== null && savedPath !== '') {
-                path = savedPath;
-              } else {
-                path = '/';
-              }
-            }
-
-            await assignmentWidget.content.router.navigate(path);
-
-            if (!assignmentWidget.isAttached) {
-              // Attach the widget to the main work area if it's not there
-              app.shell.add(assignmentWidget, 'main');
-            }
-            // Activate the widget
-            app.shell.activateById(assignmentWidget.id);
-          },
-          icon: args => (args['path'] ? undefined : editIcon)
-        });
-
-        // Add the command to the launcher
-        console.log('Add assignment launcher');
-        launcher.add({
-          command: command,
-          category: 'Assignments',
-          rank: 0
-        });
       })
       .catch((error: Error) => {
         showErrorMessage(
@@ -410,91 +383,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           'Please restart your server: ' + error.message
         );
       });
-
-    command = NotebookExecuteIDs.run;
-    app.commands.addCommand(command, {
-      label: 'Run cell',
-      execute: async () => {
-        await app.commands.execute('notebook:run-cell');
-      },
-      icon: runIcon
-    });
-
-    command = RevertCellIDs.revert;
-    app.commands.addCommand(command, {
-      label: 'Revert cell',
-      isVisible: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('revert') !== null;
-      },
-      isEnabled: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('revert') !== null;
-      },
-      execute: () => {
-        showDialog({
-          title: "Do you want to revert the cell to it's original state?",
-          body: 'This will overwrite your current changes!',
-          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Revert' })]
-        }).then(result => {
-          if (!result.button.accept) {
-            return;
-          }
-          tracker.activeCell.inputArea.model.sharedModel.setSource('');
-          tracker.activeCell.inputArea.model.sharedModel.setSource(
-            tracker.activeCell.model.getMetadata('revert').toString()
-          );
-        });
-      },
-      icon: undoIcon
-    });
-
-    command = ShowHintIDs.show;
-    app.commands.addCommand(command, {
-      label: 'Show hint',
-      isVisible: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('hint') !== null;
-      },
-      isEnabled: () => {
-        if (tracker.activeCell === null) {
-          return false;
-        }
-        return tracker.activeCell.model.getMetadata('hint') !== null;
-      },
-      execute: () => {
-        // check if there is an active cell
-        if (!tracker.activeCell) return;
-
-        let hintWidget: HintWidget | undefined;
-
-        (tracker.activeCell.layout as PanelLayout).widgets.forEach(widget => {
-          if (widget instanceof HintWidget) {
-            hintWidget = widget;
-          }
-        });
-        if (hintWidget === undefined) {
-          (tracker.activeCell.layout as PanelLayout).addWidget(
-            new HintWidget(
-              tracker.activeCell.model.getMetadata('hint').toString()
-            )
-          );
-        } else {
-          hintWidget.toggleShowAlert();
-          hintWidget.setHint(
-            tracker.activeCell.model.getMetadata('hint').toString()
-          );
-          hintWidget.update();
-        }
-      },
-      icon: listIcon
-    });
+    createNotebookCommands(app, tracker);
   }
 };
 export default extension;

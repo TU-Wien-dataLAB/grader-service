@@ -92,7 +92,7 @@ class ExportGradesHandler(ExtensionBaseHandler):
 class GradingAutoHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to
-    /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/auto.
+    /lectures/{lecture_id}/assignments/{assignment_id}/grading/{submission_id}/auto.
     """
 
     @authenticated
@@ -124,7 +124,7 @@ class GradingAutoHandler(ExtensionBaseHandler):
 class GradingManualHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to
-    /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/manual.
+    /lectures/{lecture_id}/assignments/{assignment_id}/grading/{submission_id}/manual.
     """
 
     @authenticated
@@ -215,7 +215,7 @@ class GradingManualHandler(ExtensionBaseHandler):
 class GenerateFeedbackHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to
-    /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/feedback.
+    /lectures/{lecture_id}/assignments/{assignment_id}/grading/{submission_id}/feedback.
     """
 
     @authenticated
@@ -248,7 +248,7 @@ class GenerateFeedbackHandler(ExtensionBaseHandler):
 class PullFeedbackHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to
-    /lectures/{lecture_id}/assignments/{assignment_id}/submissions/{submission_id}/pull/feedback.
+    /lectures/{lecture_id}/assignments/{assignment_id}/grading/{submission_id}/pull/feedback.
     """
 
     @authenticated
