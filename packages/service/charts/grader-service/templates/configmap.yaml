@@ -36,14 +36,12 @@ data:
 
     ## File Service: at the moment, it can only be GitFileService
 {{- if .Values.fileServiceClass }}
-  from grader_service.file_services import {{ .Values.fileServiceClass }}
-  c.GraderService.file_service_class = {{ .Values.fileServiceClass }}
+    from grader_service.file_services import {{ .Values.fileServiceClass }}
+    c.GraderService.file_service_class = {{ .Values.fileServiceClass }}
 {{- end }}
 
-{{- if .Values.fileServiceConfig }}
-{{- if .Values.fileServiceConfig.max_file_size_mb }}
-    c.{{ .Values.fileServiceClass }}.max_file_size_mb = {{ .Values.fileServiceConfig.max_file_size_mb }}
-{{- end }}
+{{- if and .Values.fileServiceClass .Values.fileService .Values.fileService.maxFileSizeMb }}
+    c.{{ .Values.fileServiceClass }}.max_file_size_mb = {{ .Values.fileService.maxFileSizeMb }}
 {{- end }}
 
     ### Database
@@ -90,9 +88,10 @@ data:
     ### Extra Config
 {{ .Values.extraConfig | indent 4 }}
 {{- end }}
+{{- if eq .Values.fileServiceClass "GitFileService" }}
   .gitconfig: |
     [user]
-      name = {{ .Values.gitConfig.gitUser }}
-      email = {{ .Values.gitConfig.gitEmail }}
+      name = {{ .Values.gitFileService.gitUser }}
+      email = {{ .Values.gitFileService.gitEmail }}
     [init]
       defaultBranch = main
