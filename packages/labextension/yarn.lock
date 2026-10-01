@@ -3794,7 +3794,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-compose-refs@npm:1.1.5":
+"@radix-ui/react-compose-refs@npm:1.1.5, @radix-ui/react-compose-refs@npm:^1.1.1":
   version: 1.1.5
   resolution: "@radix-ui/react-compose-refs@npm:1.1.5"
   peerDependencies:
@@ -3843,7 +3843,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-dialog@npm:1.1.23":
+"@radix-ui/react-dialog@npm:1.1.23, @radix-ui/react-dialog@npm:^1.1.6":
   version: 1.1.23
   resolution: "@radix-ui/react-dialog@npm:1.1.23"
   dependencies:
@@ -4022,7 +4022,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-id@npm:1.1.4":
+"@radix-ui/react-id@npm:1.1.4, @radix-ui/react-id@npm:^1.1.0":
   version: 1.1.4
   resolution: "@radix-ui/react-id@npm:1.1.4"
   dependencies:
@@ -4037,7 +4037,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-label@npm:2.1.15, @radix-ui/react-label@npm:^2.1.8":
+"@radix-ui/react-label@npm:2.1.15":
   version: 2.1.15
   resolution: "@radix-ui/react-label@npm:2.1.15"
   dependencies:
@@ -4208,7 +4208,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-popover@npm:1.1.23, @radix-ui/react-popover@npm:^1.1.15":
+"@radix-ui/react-popover@npm:1.1.23":
   version: 1.1.23
   resolution: "@radix-ui/react-popover@npm:1.1.23"
   dependencies:
@@ -4308,7 +4308,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-primitive@npm:2.1.10":
+"@radix-ui/react-primitive@npm:2.1.10, @radix-ui/react-primitive@npm:^2.0.2":
   version: 2.1.10
   resolution: "@radix-ui/react-primitive@npm:2.1.10"
   dependencies:
@@ -4518,7 +4518,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-slot@npm:1.3.3, @radix-ui/react-slot@npm:^1.2.4":
+"@radix-ui/react-slot@npm:1.3.3":
   version: 1.3.3
   resolution: "@radix-ui/react-slot@npm:1.3.3"
   dependencies:
@@ -5161,14 +5161,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/form-core@npm:1.33.3":
-  version: 1.33.3
-  resolution: "@tanstack/form-core@npm:1.33.3"
+"@tanstack/form-core@npm:1.33.5":
+  version: 1.33.5
+  resolution: "@tanstack/form-core@npm:1.33.5"
   dependencies:
     "@tanstack/devtools-event-client": ^0.4.1
     "@tanstack/pacer-lite": ^0.1.1
     "@tanstack/store": ^0.11.0
-  checksum: ff732aa23a4af44cde8d9f74a5f23f10d034711e9aa4e53cb77d549ed5b06036b605be2a9ad43a778d7261d9d4cbf66966d035700b64780280ad8fd197da1712
+  checksum: 66c706ba4d0929e391a4b150d9a2bfbae6f99a4273735e10fadb56d5335a618a511c1b006e49a3bb370fe7cdb53bc3a2b9ed86ba52caec6e179590dee5db9b5d
   languageName: node
   linkType: hard
 
@@ -5186,18 +5186,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-form@npm:^1.32.0":
-  version: 1.33.3
-  resolution: "@tanstack/react-form@npm:1.33.3"
+"@tanstack/react-form@npm:^1.33.5":
+  version: 1.33.5
+  resolution: "@tanstack/react-form@npm:1.33.5"
   dependencies:
-    "@tanstack/form-core": 1.33.3
+    "@tanstack/form-core": 1.33.5
     "@tanstack/react-store": ^0.11.0
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@tanstack/react-start":
       optional: true
-  checksum: c982c82420b5162bd35aad3081907f07e49741f3d2ffb832fa5e2c2cc0e71586326d288e921e6dd0c3414fac1b1799a4328d9d38436cda99717c715a5a2ac769
+  checksum: 3218f7d1e58f7f286d98ad42d1153aeb20ae77d75264950e4e59cc2562688e46d77238638c6c2e5ab73eddeeb336cac3e56892bc4c34277b5b8b15b7923373bf
   languageName: node
   linkType: hard
 
@@ -6674,17 +6674,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clsx@npm:^1.1.0":
-  version: 1.2.1
-  resolution: "clsx@npm:1.2.1"
-  checksum: 30befca8019b2eb7dbad38cff6266cf543091dae2825c856a62a8ccf2c3ab9c2907c4d12b288b73101196767f66812365400a227581484a05f968b0307cfaf12
-  languageName: node
-  linkType: hard
-
 "clsx@npm:^2.1.1":
   version: 2.1.1
   resolution: "clsx@npm:2.1.1"
   checksum: acd3e1ab9d8a433ecb3cc2f6a05ab95fe50b4a3cfc5ba47abb6cbf3754585fcb87b84e90c822a1f256c4198e3b41c7f6c391577ffc8678ad587fc0976b24fd57
+  languageName: node
+  linkType: hard
+
+"cmdk@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "cmdk@npm:1.1.1"
+  dependencies:
+    "@radix-ui/react-compose-refs": ^1.1.1
+    "@radix-ui/react-dialog": ^1.1.6
+    "@radix-ui/react-id": ^1.1.0
+    "@radix-ui/react-primitive": ^2.0.2
+  peerDependencies:
+    react: ^18 || ^19 || ^19.0.0-rc
+    react-dom: ^18 || ^19 || ^19.0.0-rc
+  checksum: 063c3c66eba917c1968c278673cce17a9925cf4ea2d2da72718a7e09e2a103a4f1cb08eac8a7257b6613c8c8e0d273173f22097045b3dfaeaca0e05d3a2e81a7
   languageName: node
   linkType: hard
 
@@ -8526,15 +8534,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"goober@npm:^2.0.33":
-  version: 2.1.19
-  resolution: "goober@npm:2.1.19"
-  peerDependencies:
-    csstype: ^3.0.10
-  checksum: 3d644858efb8ac18a344cda2b982e3d3d39bc4326d4ba626e6d5516f9384ee4dc5d9e29d6aab952811cfaefcbc31bf5663c6936a7aeeab54fdd0f6f764f6361b
-  languageName: node
-  linkType: hard
-
 "gopd@npm:^1.2.0":
   version: 1.2.0
   resolution: "gopd@npm:1.2.0"
@@ -8567,13 +8566,10 @@ __metadata:
     "@jupyterlab/ui-components": ^4.5.5
     "@lumino/commands": ^2.3.4
     "@lumino/widgets": ^2.9.0
-    "@radix-ui/react-label": ^2.1.8
-    "@radix-ui/react-popover": ^1.1.15
-    "@radix-ui/react-slot": ^1.2.4
     "@radix-ui/themes": ^3.2.1
     "@tailwindcss/cli": ^4.2.1
     "@tailwindcss/container-queries": ^0.1.1
-    "@tanstack/react-form": ^1.32.0
+    "@tanstack/react-form": ^1.33.5
     "@tanstack/react-query": ^5.90.15
     "@types/jest": ^29.2.0
     "@types/json-schema": ^7.0.15
@@ -8583,6 +8579,7 @@ __metadata:
     "@typescript-eslint/parser": ^8.51.0
     class-variance-authority: ^0.7.1
     clsx: ^2.1.1
+    cmdk: ^1.1.1
     copyfiles: ^2.4.1
     css-loader: ^7.1.2
     date-fns: ^4.1.0
@@ -8594,7 +8591,6 @@ __metadata:
     lucide-react: ^1.17.0
     mkdirp: ^3.0.1
     moment: ^2.30.1
-    notistack: ^3.0.2
     npm-run-all2: ^8.0.4
     prettier: ^3.7.4
     radix-ui: ^1.5.0
@@ -10577,19 +10573,6 @@ __metadata:
   version: 3.0.0
   resolution: "normalize-path@npm:3.0.0"
   checksum: 88eeb4da891e10b1318c4b2476b6e2ecbeb5ff97d946815ffea7794c31a89017c70d7f34b3c2ebf23ef4e9fc9fb99f7dffe36da22011b5b5c6ffa34f4873ec20
-  languageName: node
-  linkType: hard
-
-"notistack@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "notistack@npm:3.0.2"
-  dependencies:
-    clsx: ^1.1.0
-    goober: ^2.0.33
-  peerDependencies:
-    react: ^17.0.0 || ^18.0.0 || ^19.0.0
-    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: f7d6d2edb43496a1132b9dd10d1f3b962567c92edf4d577b28ff4e6c9877cf0a50cc0a16f6d7834e3772093051597192a620dd36d4108597b118e8a2ad47d048
   languageName: node
   linkType: hard
 
