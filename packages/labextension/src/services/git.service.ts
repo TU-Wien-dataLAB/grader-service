@@ -117,12 +117,14 @@ export async function pullSubmissionFiles(
 export async function createSubmissionFiles(
   lectureId: number,
   assignmentId: number,
-  username: string
+  username: string,
+  selectedFiles: string[]
 ) {
   let url = `${baseUrl({ lectureId, assignmentId })}push/${RepoType.EDIT}`;
   const searchParams = new URLSearchParams({
     for_user: username
   });
+  // selectedFiles.forEach(file => searchParams.append('selected_files', file));
   url += '?' + searchParams;
   return request<void>(HTTPMethod.PUT, url, null);
 }

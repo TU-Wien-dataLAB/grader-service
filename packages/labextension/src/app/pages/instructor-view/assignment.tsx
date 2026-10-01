@@ -1,18 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { selectedDirQuery } from '../../../services/queries/files.queries';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'react-router';
-import { assignmentQuery } from '../../../services/queries/assignments.queries';
-import {
-  lectureBasePath,
-  openInFileBrowser
-} from '../../../services/local-file.service';
 import { lectureQuery } from '../../../services/queries/lectures.queries';
 import { ArrowLeft } from 'lucide-react';
-import {
-  assignmentStatus,
-  gradingType
-} from '../../components/utils/assignment-metadata';
 import {
   Tabs,
   TabsContent,
@@ -20,6 +10,19 @@ import {
   TabsTrigger
 } from '../../shadcn-components/ui/tabs';
 import { FilesView } from '../../components/grader-service/notebooks-and-files/files-view';
+import {
+  assignmentStatus,
+  gradingType
+} from '../../components/utils/assignment-metadata';
+import { assignmentQuery } from '../../../services/queries/assignments.queries';
+import {
+  buildFileBasePath,
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
+import { selectedDirQuery } from '../../../services/queries/file.queries';
+import NewSubmission from '../../components/grader-service/submissions/new-submission';
+import { SubmissionsView } from '../../components/grader-service/submissions/submissions-view';
 
 export const Assignment = () => {
   const params = useParams();
@@ -39,6 +42,8 @@ export const Assignment = () => {
   const [currentTab, setCurrentTab] = useState(
     activeTab ?? 'notebooks-and-files'
   );
+  const [showNewSubmissionForm, setShowNewSubmissionForm] =
+    useState<boolean>(false);
 
   useEffect(() => {
     openInFileBrowser(
@@ -46,8 +51,12 @@ export const Assignment = () => {
     );
   }, [assignmentId, lecture?.code, selectedDir]);
 
+  const currentPath = buildFileBasePath(lecture.code, 'source', assignmentId);
+
+  console.log('ggg: ', currentPath);
+
   return (
-    <div className={'flex p-6 flex-col items-start gap-6 w-full'}>
+    <div className={'flex p-6 flex-col items-start gap-6 w-full bg-background'}>
       <div className={'flex items-center gap-6 self-stretch'}>
         <div className={'flex items-center gap-4'}>
           <Link to={`/lectures/${lectureId}`}>
@@ -81,7 +90,16 @@ export const Assignment = () => {
           <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="submissions">
-          <div>Submissions</div>
+          {showNewSubmissionForm ? (
+            <NewSubmission
+              currentPath={currentPath}
+              setShowNewSubmissionForm={setShowNewSubmissionForm}
+            />
+          ) : (
+            <SubmissionsView
+              setShowNewSubmissionForm={setShowNewSubmissionForm}
+            />
+          )}
         </TabsContent>
         <TabsContent value="statistics">Statistics</TabsContent>
       </Tabs>

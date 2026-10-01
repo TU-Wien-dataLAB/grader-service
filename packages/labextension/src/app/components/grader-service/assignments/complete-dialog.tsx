@@ -27,7 +27,7 @@ export const CompleteDialog = (props: IDeleteDialog) => {
         </DialogHeader>
         <div
           className={
-            'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border'
+            'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border break-all'
           }
         >
           <p>

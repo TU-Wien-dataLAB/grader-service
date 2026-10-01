@@ -20,7 +20,7 @@ export const lectureSubPathsCount = (lectureBasePath as string)
   .reduce((acc, v) => (v.length > 0 ? acc + 1 : acc), 0);
 
 // builds the base path for a given assignment in the file browser, e.g. lectures/lec1/assignments/1/
-const buildFileBasePath = (
+export const buildFileBasePath = (
   lectureCode: string,
   type: string,
   assignmentId: number

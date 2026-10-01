@@ -27,14 +27,14 @@ export const DeleteDialog = (props: IDeleteDialog) => {
         </DialogHeader>
         <div
           className={
-            'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border'
+            'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border break-all'
           }
         >
-          <p>
+          <p className="w-full">
             Are you sure you want to delete "
-            <span className={'font-bold'}>{props.assignment.name}</span>"? This
-            action cannot be undone and all related data will be permanently
-            removed.
+            <span className={'font-bold'}>{props.assignment.name}</span>
+            "? This action cannot be undone and all related data will be
+            permanently removed.
           </p>
         </div>
         <DialogFooter>

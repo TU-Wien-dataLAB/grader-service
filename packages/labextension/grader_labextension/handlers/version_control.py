@@ -185,6 +185,7 @@ class GitLogHandler(ExtensionBaseHandler):
         :param lecture_id: id of the lecture
         :param assignment_id: id of the assignment
         :param repo: repo name
+(grader-monorepo) zebiniso@zebiniso:~/projects/grader-service$ 
         :return: logs of git repo
         """
         if repo not in {GitRepoType.USER, GitRepoType.SOURCE, GitRepoType.RELEASE}:

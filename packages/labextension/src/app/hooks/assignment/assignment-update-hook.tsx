@@ -25,8 +25,8 @@ export function useAssignmentUpdate() {
         variables.recalcScores
       );
     },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries({
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
         queryKey: ['assignments', variables.lectureId]
       });
       setStatus({
