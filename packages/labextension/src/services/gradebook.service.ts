@@ -232,7 +232,7 @@ export class GradeBook {
   }
 
   public getExtraCredits() {
-    return Object.keys(this.properties['notebook']).reduce(
+    return Object.keys(this.properties['notebooks']).reduce(
       (sum, notebook) => sum + this.getNotebookExtraCredit(notebook),
       0
     );
