@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { DeadlineComponent } from '../../util/deadline';
-import { getAllLectures } from '../../../services/lectures.service';
-import { getAssignment } from '../../../services/assignments.service';
-import { lectureSubPaths } from '../../../services/file.service';
-import { Assignment } from '../../../model/assignment';
-import { Lecture } from '../../../model/lecture';
+import { DeadlineComponent } from '../../utils/deadline';
+import { getLectures } from '../../../../services/lectures.service';
+import { getAssignment } from '../../../../services/assignments.service';
+import { lectureSubPathsCount } from '../../../../services/local-file.service';
+import { Assignment } from '../../../../model/assignment';
+import { Lecture } from '../../../../model/lecture';
 
 export interface IDeadlineWrapperProps {
   notebookPaths: string[];
@@ -22,9 +22,9 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
 
   React.useEffect(() => {
     if (lecture === null) {
-      getAllLectures({ complete: false }).then(response => {
+      getLectures({ complete: false }).then(response => {
         const l = response.find(
-          l => l.code === props.notebookPaths[lectureSubPaths]
+          l => l.code === props.notebookPaths[lectureSubPathsCount]
         );
         if (l === undefined) {
           return;
@@ -33,7 +33,7 @@ export const DeadlineWrapper = (props: IDeadlineWrapperProps) => {
         if (l === null) {
           return;
         }
-        const assignmentIdIndex = lectureSubPaths + 2;
+        const assignmentIdIndex = lectureSubPathsCount + 2;
         getAssignment(l.id, +props.notebookPaths[assignmentIdIndex]).then(
           response => {
             setAssignment(response);

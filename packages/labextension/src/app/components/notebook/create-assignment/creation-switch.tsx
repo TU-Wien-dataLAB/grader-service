@@ -11,7 +11,7 @@ import React from 'react';
 import { IModeSwitchProps } from '../slider';
 import { CreationWidget } from './creation-widget';
 import { ErrorWidget } from './error-widget';
-import { Switch } from '../../../app/shadcn-components/ui/switch';
+import { Switch } from '../../../shadcn-components/ui/switch';
 import { Validator } from './validator';
 
 export class CreationModeSwitch extends React.Component<IModeSwitchProps> {

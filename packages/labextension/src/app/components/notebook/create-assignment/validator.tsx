@@ -10,20 +10,20 @@ import * as React from 'react';
 import { CellModel, NbgraderData, ToolData } from '../model';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { ErrorWidget } from './error-widget';
-import { Button } from '../../../app/shadcn-components/ui/button';
+import { Button } from '../../../shadcn-components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '../../../app/shadcn-components/ui/dialog';
+} from '../../../shadcn-components/ui/dialog';
 
-export interface ValidatorProps {
+export interface IValidatorProps {
   notebook: Notebook;
 }
 
-export interface ReportItem {
+export interface IReportItem {
   id: string;
   type: 'error' | 'warning';
   msg: string;
@@ -39,13 +39,13 @@ const alertClass = (type: 'error' | 'warning' | 'success') => {
   return 'rounded-md border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400';
 };
 
-export const Validator = (props: ValidatorProps) => {
-  const [dialogOpen, setDialog] = React.useState(false);
-  const [results, setResult] = React.useState([]);
+export const Validator = (props: IValidatorProps) => {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [results, setResults] = React.useState([]);
   const validateNotebook = () => {
     //check duplicate ids
     const ids = new Set();
-    const result: ReportItem[] = [];
+    const result: IReportItem[] = [];
     props.notebook.widgets.map((c: Cell) => {
       (c.layout as PanelLayout).widgets.map((w: Widget) => {
         if (w instanceof ErrorWidget) {
@@ -171,12 +171,8 @@ export const Validator = (props: ValidatorProps) => {
         msg: noType + 'x Cell with no type found'
       });
     }
-    setResult(result);
-    setDialog(true);
-  };
-
-  const handleClose = () => {
-    setDialog(false);
+    setResults(result);
+    setDialogOpen(true);
   };
 
   return (
@@ -189,23 +185,18 @@ export const Validator = (props: ValidatorProps) => {
       >
         Validate
       </Button>
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={open => {
-          if (!open) handleClose();
-        }}
-      >
+      <Dialog open={dialogOpen} onOpenChange={() => setDialogOpen(!dialogOpen)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Validation Report</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2 px-6">
+          <div className="flex flex-col gap-2 px-6 pb-6">
             {results.length === 0 && (
               <div className={alertClass('success')}>
                 <p className="font-medium">No errors found</p>
               </div>
             )}
-            {results.map((e: ReportItem, i: number) => (
+            {results.map((e: IReportItem, i: number) => (
               <div key={i} className={alertClass(e.type)}>
                 <p className="font-medium">{e.id}</p>
                 <p>{e.msg}</p>
@@ -213,7 +204,7 @@ export const Validator = (props: ValidatorProps) => {
             ))}
           </div>
           <DialogFooter>
-            <Button onClick={handleClose}>Ok</Button>
+            <Button onClick={() => setDialogOpen(false)}>Ok</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
