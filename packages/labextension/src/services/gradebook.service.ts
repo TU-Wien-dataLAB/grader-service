@@ -216,7 +216,7 @@ export class GradeBook {
   }
 
   public getMaxPoints(): number {
-    return Object.keys(this.properties['notebook']).reduce(
+    return Object.keys(this.properties['notebooks']).reduce(
       (sum, notebook) => sum + this.getNotebookMaxPointsCells(notebook),
       0
     );

@@ -326,12 +326,13 @@ class SubmissionCountHandler(ExtensionBaseHandler):
         self.write(json.dumps(response))
 
 
-@register_handler(path=r"api\/users\/(?P<username>\d*)\/submissions\/?")
+@register_handler(path=r"api\/users\/(?P<username>[^/]+)\/submissions\/?")
 class SubmissionUserHandler(ExtensionBaseHandler):
     """
     Tornado Handler class for http requests to /users/{username}/submissions.
     """
 
+    @authenticated
     async def get(self, username: str):
         """Return the submissions of a specific user.
 
