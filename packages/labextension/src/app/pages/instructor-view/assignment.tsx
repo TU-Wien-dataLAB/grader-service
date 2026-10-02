@@ -20,9 +20,7 @@ import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../services/local-file.service';
-import { selectedDirQuery } from '../../../services/queries/file.queries';
-import NewSubmission from '../../components/grader-service/submissions/new-submission';
-import { SubmissionsView } from '../../components/grader-service/submissions/submissions-view';
+import { selectedDirQuery } from '../../../services/queries/files.queries';
 
 export const Assignment = () => {
   const params = useParams();
@@ -42,8 +40,6 @@ export const Assignment = () => {
   const [currentTab, setCurrentTab] = useState(
     activeTab ?? 'notebooks-and-files'
   );
-  const [showNewSubmissionForm, setShowNewSubmissionForm] =
-    useState<boolean>(false);
 
   useEffect(() => {
     openInFileBrowser(
@@ -56,7 +52,11 @@ export const Assignment = () => {
   console.log('ggg: ', currentPath);
 
   return (
-    <div className={'flex p-6 flex-col items-start gap-6 w-full bg-background'}>
+    <div
+      className={
+        'flex p-6 flex-col items-start gap-6 w-full h-full bg-background'
+      }
+    >
       <div className={'flex items-center gap-6 self-stretch'}>
         <div className={'flex items-center gap-4'}>
           <Link to={`/lectures/${lectureId}`}>
@@ -89,18 +89,7 @@ export const Assignment = () => {
         <TabsContent value="notebooks-and-files" className={'min-h-0'}>
           <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
-        <TabsContent value="submissions">
-          {showNewSubmissionForm ? (
-            <NewSubmission
-              currentPath={currentPath}
-              setShowNewSubmissionForm={setShowNewSubmissionForm}
-            />
-          ) : (
-            <SubmissionsView
-              setShowNewSubmissionForm={setShowNewSubmissionForm}
-            />
-          )}
-        </TabsContent>
+        <TabsContent value="submissions">Submissions</TabsContent>
         <TabsContent value="statistics">Statistics</TabsContent>
       </Tabs>
     </div>
