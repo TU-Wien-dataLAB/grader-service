@@ -97,26 +97,18 @@ export const getFiles = async (path: string): Promise<IFile[]> => {
 
   let f = items.next();
   while (f.value !== undefined) {
-    if (f.value.type === 'directory') {
-      const nestedFiles = await getFiles(f.value.path);
-      files.push({
-        name: f.value.name,
-        path: f.value.path,
-        type: f.value.type,
-        last_modified: f.value.last_modified,
-        size: f.value.size,
-        content: nestedFiles
-      });
-    } else {
-      files.push({
-        name: f.value.name,
-        path: f.value.path,
-        type: f.value.type,
-        last_modified: f.value.last_modified,
-        size: f.value.size,
-        content: []
-      });
-    }
+    const item = f.value;
+    const fullPath = PathExt.join(path, item.name);
+
+    files.push({
+      name: item.name,
+      path: fullPath,
+      type: item.type,
+      last_modified: item.last_modified,
+      size: item.size,
+      content: item.type === 'directory' ? await getFiles(fullPath) : []
+    });
+
     f = items.next();
   }
   return files;
