@@ -6,6 +6,7 @@ import {
   filterFn_equalsString,
   filterFn_includesString,
   globalFilteringFeature,
+  Row,
   rowExpandingFeature,
   rowSelectionFeature,
   tableFeatures,
@@ -17,7 +18,7 @@ import type {
   OnChangeFn,
   RowSelectionState
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, CornerDownRight } from 'lucide-react';
 import { Button } from '../../../shadcn-components/ui/button';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import {
@@ -46,27 +47,52 @@ export const dataTableFeatures = tableFeatures({
 
 export type DataTableColumnDef<T> = ColumnDef<typeof dataTableFeatures, T>;
 
+export const INDENT_STEP = 32;
+function ExpandButton<T>({ row }: { row: Row<typeof dataTableFeatures, T> }) {
+  return (
+    <div className="relative size-4">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`absolute -top-2 -left-2 size-8`}
+        onClick={row.getToggleExpandedHandler()}
+        aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+      >
+        {row.getIsExpanded() ? (
+          <ChevronDown className={'text-primary'} />
+        ) : (
+          <ChevronRight className={'text-primary'} />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function RowCheckbox<T>({ row }: { row: Row<typeof dataTableFeatures, T> }) {
+  return (
+    <Checkbox
+      checked={
+        row.getIsSelected() ||
+        (row.getCanSelectSubRows() && row.getIsAllSubRowsSelected())
+          ? true
+          : row.getIsSomeSelected()
+            ? 'indeterminate'
+            : false
+      }
+      onCheckedChange={value => row.toggleSelected(!!value)}
+      aria-label="Select row"
+    />
+  );
+}
+
+// only for top rows
 export function expanderColumn<T>(): DataTableColumnDef<T> {
   return {
     id: 'expander',
     header: () => null,
     enableGlobalFilter: false,
     cell: ({ row }) =>
-      row.getCanExpand() ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          onClick={row.getToggleExpandedHandler()}
-          aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
-        >
-          {row.getIsExpanded() ? (
-            <ChevronDown className="size-4" />
-          ) : (
-            <ChevronRight className="size-4" />
-          )}
-        </Button>
-      ) : null
+      row.depth === 0 && row.getCanExpand() ? <ExpandButton row={row} /> : null
   };
 }
 
@@ -87,20 +113,33 @@ export function selectColumn<T>(): DataTableColumnDef<T> {
         aria-label="Select all"
       />
     ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={
-          row.getIsSelected() ||
-          (row.getCanSelectSubRows() && row.getIsAllSubRowsSelected())
-            ? true
-            : row.getIsSomeSelected()
-              ? 'indeterminate'
-              : false
-        }
-        onCheckedChange={value => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    )
+    cell: ({ row }) =>
+      row.depth === 0 ? (
+        <RowCheckbox row={row} />
+      ) : (
+        // expandable successors have expand button instead of the icon
+        <div className="relative size-4">
+          {row.getCanExpand() ? (
+            <div
+              className="absolute top-0"
+              style={{ left: (row.depth - 1) * INDENT_STEP }}
+            >
+              <ExpandButton row={row} />
+            </div>
+          ) : (
+            <CornerDownRight
+              className="absolute top-0 size-4 text-border"
+              style={{ left: (row.depth - 1) * INDENT_STEP }}
+            />
+          )}
+          <div
+            className="absolute top-0"
+            style={{ left: row.depth * INDENT_STEP }}
+          >
+            <RowCheckbox row={row} />
+          </div>
+        </div>
+      )
   };
 }
 
@@ -113,7 +152,7 @@ type DataTableProps<T> = {
   onGlobalFilterChange?: (value: string) => void;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
-  rowSelection?: RowSelectionState; /** keyed by row id. */
+  rowSelection?: RowSelectionState /** keyed by row id. */;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   emptyMessage?: string;
 };
@@ -137,6 +176,7 @@ export function NestedTable<T>({
     data,
     getSubRows,
     getRowId,
+    autoResetExpanded: false,
 
     globalFilterFn: 'filterFn_includesString',
     filterFromLeafRows: true,
@@ -185,6 +225,7 @@ export function NestedTable<T>({
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && 'selected'}
+              className="data-[state=selected]:bg-[#E0E7EB]"
             >
               {row.getAllCells().map(cell => (
                 <TableCell key={cell.id}>
