@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SearchField } from '../../ui/search';
 import { NewNotebookDialog } from './new-notebook-dialog';
 import { useQuery } from '@tanstack/react-query';
@@ -6,23 +6,12 @@ import { lectureQuery } from '../../../../services/queries/lectures.queries';
 import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import {
   getFiles,
-  IFile,
   lectureBasePath,
-  openInFileBrowser,
-  openInNewTab
+  openInFileBrowser
 } from '../../../../services/local-file.service';
 import { Eye, Pencil } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '../../../shadcn-components/ui/table';
 import { GlobalObjects } from '../../../../index';
 import { Contents } from '@jupyterlab/services';
-import { getDate } from '../../utils/utils';
 import { FilterFilesButton } from '../../ui/filter-button';
 import {
   ToggleGroup,
@@ -38,10 +27,11 @@ import { storeString } from '../../../../services/storage.service';
 import { useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { ErrorBanner } from '../../ui/error-banner';
-import { Button } from '../../../shadcn-components/ui/button';
 import { EmptyState } from '../../utils/empty-state';
 import { NoResultsFoundIcon } from '../../../../assets/no-results-found-icon';
 import { EmptyDirIcon } from '../../../../assets/empty-dir-icon';
+import { FilesDataTable } from './files-table';
+import { RowSelectionState } from '@tanstack/react-table';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -127,10 +117,7 @@ export const FilesView = (props: IFilesViewProps) => {
     refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
   };
 
-  const handleOpenFile = async (file: IFile) => {
-    // TODO: open file in read-only mode when in release dir
-    await openInNewTab(`${file.path}`);
-  };
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch h-full'}>
@@ -234,47 +221,12 @@ export const FilesView = (props: IFilesViewProps) => {
               }
             />
           ) : (
-            <Table>
-              <TableHeader className={'sticky top-0 bg-card'}>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Last saved on</TableHead>
-                  <TableHead>File type</TableHead>
-                  <TableHead>File size</TableHead>
-                  <TableHead>
-                    {selectedDir === 'source' ? 'Edit' : 'View'}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredFiles?.map(file => (
-                  <TableRow key={file.name}>
-                    <TableCell>{file.name}</TableCell>
-                    <TableCell>
-                      {getDate(new Date(file.last_modified))}
-                    </TableCell>
-                    <TableCell>{file.type}</TableCell>
-                    <TableCell>{file.size} B</TableCell>
-                    <TableCell>
-                      {file.type !== 'directory' && (
-                        <Button
-                          variant={'link'}
-                          onClick={() => handleOpenFile(file)}
-                        >
-                          {selectedDir === 'source' ? (
-                            <Pencil
-                              className={'size-5 fill-primary text-card!'}
-                            />
-                          ) : (
-                            <Eye className={'size-5 fill-primary text-card!'} />
-                          )}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <FilesDataTable
+              files={files}
+              setSearch={setSearchQuery}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
+            />
           )}
         </>
       )}
