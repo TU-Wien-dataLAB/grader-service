@@ -87,7 +87,7 @@ export const FilesDataTable = (props: TTableProps) => {
       },
       {
         id: 'actions',
-        header: 'Edit',
+        header: selectedDir === 'source' ? 'Edit' : 'View',
         enableGlobalFilter: false,
         cell: ({ row }) => {
           return (
