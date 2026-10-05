@@ -55,8 +55,8 @@ export const FilesView = (props: IFilesViewProps) => {
   const handlePullAssignment = async () => {
     try {
       await Promise.all([
-        pullAssignment(lecture.id, props.assignmentId, RepoType.RELEASE),
-        pullAssignment(lecture.id, props.assignmentId, RepoType.SOURCE)
+        pullAssignment(lecture.id, props.assignmentId, RepoType.SOURCE),
+        refetchFiles()
       ]).catch((err: HTTPError) =>
         setStatus({ message: err.message, status: 'error' })
       );
