@@ -31,6 +31,10 @@ import { EmptyState } from '../../utils/empty-state';
 import { EmptyDirIcon } from '../../../../assets/empty-dir-icon';
 import { FilesDataTable } from './files-table';
 import { ColumnFiltersState, RowSelectionState } from '@tanstack/react-table';
+import { Button } from '../../../shadcn-components/ui/button';
+import { pullAssignment } from '../../../../services/git.service';
+import { RepoType } from '../../utils/repo-type';
+import { HTTPError } from '../../../../services/request.service';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -38,6 +42,7 @@ interface IFilesViewProps {
 }
 
 export const FilesView = (props: IFilesViewProps) => {
+  const { status, setStatus } = useMutationStatus();
   const { data: selectedDir, refetch: refetchSelectedDir } =
     useQuery(selectedDirQuery());
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
@@ -47,8 +52,31 @@ export const FilesView = (props: IFilesViewProps) => {
       return await getFiles(srcPath);
     }
   });
+  const handlePullAssignment = async () => {
+    try {
+      await Promise.all([
+        pullAssignment(lecture.id, props.assignmentId, RepoType.RELEASE),
+        pullAssignment(lecture.id, props.assignmentId, RepoType.SOURCE)
+      ]).catch((err: HTTPError) =>
+        setStatus({ message: err.message, status: 'error' })
+      );
+    } catch (err) {
+      setStatus({ message: 'Failed to update assignment!', status: 'error' });
+    }
+  };
+  const handleDirSwitch = async (dir: string) => {
+    if (dir === selectedDir) {
+      return;
+    }
+    if (dir === 'release') {
+      handleGenerateAssignmentReleaseVer(lecture.id, props.assignmentId);
+    }
+    // set new dir
+    storeString('files-selected-dir', dir);
+    const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${props.assignmentId}`;
+    refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
+  };
 
-  const { status } = useMutationStatus();
   const srcPath = useMemo(
     () =>
       `${lectureBasePath}${lecture.code}/${selectedDir}/${props.assignmentId}`,
@@ -77,14 +105,13 @@ export const FilesView = (props: IFilesViewProps) => {
       );
     };
   }, [srcPath, refetchFiles]);
-
   const [searchQuery, setSearchQuery] = React.useState('');
+
   const [checkedFileTypes, setCheckedFileTypes] = React.useState<string[]>([]);
 
   const fileTypes = useMemo(() => {
     return [...new Set(files?.map(file => file.type))];
   }, [files]);
-
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
       ...(searchQuery ? [{ id: 'name', value: searchQuery }] : []),
@@ -96,18 +123,6 @@ export const FilesView = (props: IFilesViewProps) => {
   );
   const { handleGenerateAssignmentReleaseVer } =
     useAssignmentGenerateReleaseVer();
-  const handleDirSwitch = async (dir: string) => {
-    if (dir === selectedDir) {
-      return;
-    }
-    if (dir === 'release') {
-      handleGenerateAssignmentReleaseVer(lecture.id, props.assignmentId);
-    }
-    // set new dir
-    storeString('files-selected-dir', dir);
-    const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${props.assignmentId}`;
-    refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
-  };
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   return (
@@ -208,6 +223,12 @@ export const FilesView = (props: IFilesViewProps) => {
             onRowSelectionChange={setRowSelection}
             columnFilters={columnFilters}
           />
+          <div className={'flex items-center gap-4 self-stretch'}>
+            <Button>Save</Button>
+            <Button variant={'outline'} onClick={() => handlePullAssignment()}>
+              Load updates
+            </Button>
+          </div>
         </>
       )}
     </div>
