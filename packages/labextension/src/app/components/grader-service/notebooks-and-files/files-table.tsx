@@ -7,7 +7,11 @@ import {
   selectColumn
 } from '../../ui/nested-table/nested-table';
 import { getDate } from '../../utils/utils';
-import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
+import {
+  ColumnFiltersState,
+  OnChangeFn,
+  RowSelectionState
+} from '@tanstack/react-table';
 import { IFile, openInNewTab } from '../../../../services/local-file.service';
 import { Eye, Pencil } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -27,15 +31,13 @@ export type FileRow = {
 
 type TTableProps = {
   files: IFile[];
-  search?: string;
-  setSearch: (val: string) => void;
   rowSelection: RowSelectionState;
   onRowSelectionChange: OnChangeFn<RowSelectionState>;
+  columnFilters: ColumnFiltersState;
 };
 
 export const FilesDataTable = (props: TTableProps) => {
-  const { files, search, rowSelection, onRowSelectionChange, setSearch } =
-    props;
+  const { files, rowSelection, onRowSelectionChange, columnFilters } = props;
 
   const { data: selectedDir } = useQuery(selectedDirQuery());
 
@@ -51,6 +53,7 @@ export const FilesDataTable = (props: TTableProps) => {
       {
         accessorKey: 'name',
         header: 'Name',
+        filterFn: 'filterFn_includesString',
         cell: ({ row, getValue }) => (
           <div style={{ paddingLeft: row.depth * INDENT_STEP }}>
             {getValue<string>()}
@@ -75,8 +78,8 @@ export const FilesDataTable = (props: TTableProps) => {
       {
         accessorKey: 'type',
         header: 'File type',
-        enableGlobalFilter: true,
-        filterFn: 'filterFn_equalsString',
+        enableGlobalFilter: false,
+        filterFn: 'filterFn_valueInList',
         cell: ({ row }) => <span>{row.original.type}</span>
       },
       {
@@ -129,8 +132,7 @@ export const FilesDataTable = (props: TTableProps) => {
       data={data}
       getSubRows={row => row.subRows}
       getRowId={row => row.id}
-      globalFilter={search}
-      onGlobalFilterChange={setSearch}
+      columnFilters={columnFilters}
       rowSelection={rowSelection}
       onRowSelectionChange={onRowSelectionChange}
     />

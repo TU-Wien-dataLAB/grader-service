@@ -28,10 +28,9 @@ import { useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { ErrorBanner } from '../../ui/error-banner';
 import { EmptyState } from '../../utils/empty-state';
-import { NoResultsFoundIcon } from '../../../../assets/no-results-found-icon';
 import { EmptyDirIcon } from '../../../../assets/empty-dir-icon';
 import { FilesDataTable } from './files-table';
-import { RowSelectionState } from '@tanstack/react-table';
+import { ColumnFiltersState, RowSelectionState } from '@tanstack/react-table';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -42,19 +41,19 @@ export const FilesView = (props: IFilesViewProps) => {
   const { data: selectedDir, refetch: refetchSelectedDir } =
     useQuery(selectedDirQuery());
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
-  const { status } = useMutationStatus();
-
-  const srcPath = useMemo(
-    () =>
-      `${lectureBasePath}${lecture.code}/${selectedDir}/${props.assignmentId}`,
-    [lecture.code, selectedDir, props.assignmentId]
-  );
   const { data: files = [], refetch: refetchFiles } = useQuery({
     queryKey: ['files', lecture.code, props.assignmentId, selectedDir],
     queryFn: async () => {
       return await getFiles(srcPath);
     }
   });
+
+  const { status } = useMutationStatus();
+  const srcPath = useMemo(
+    () =>
+      `${lectureBasePath}${lecture.code}/${selectedDir}/${props.assignmentId}`,
+    [lecture.code, selectedDir, props.assignmentId]
+  );
 
   useEffect(() => {
     const handler = async (
@@ -82,26 +81,19 @@ export const FilesView = (props: IFilesViewProps) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [checkedFileTypes, setCheckedFileTypes] = React.useState<string[]>([]);
 
-  const filteredFiles = useMemo(() => {
-    let result = files;
-    if (!files) {
-      return [];
-    }
-
-    if (searchQuery) {
-      result = files.filter(file =>
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    if (checkedFileTypes?.length > 0) {
-      result = result.filter(file => checkedFileTypes.includes(file.type));
-    }
-    return result;
-  }, [searchQuery, checkedFileTypes, files]);
   const fileTypes = useMemo(() => {
     return [...new Set(files?.map(file => file.type))];
   }, [files]);
 
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => [
+      ...(searchQuery ? [{ id: 'name', value: searchQuery }] : []),
+      ...(checkedFileTypes.length
+        ? [{ id: 'type', value: checkedFileTypes }]
+        : [])
+    ],
+    [searchQuery, checkedFileTypes]
+  );
   const { handleGenerateAssignmentReleaseVer } =
     useAssignmentGenerateReleaseVer();
   const handleDirSwitch = async (dir: string) => {
@@ -116,7 +108,6 @@ export const FilesView = (props: IFilesViewProps) => {
     const newSrcPath = `${lectureBasePath}${lecture.code}/${dir}/${props.assignmentId}`;
     refetchSelectedDir().then(() => openInFileBrowser(newSrcPath));
   };
-
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   return (
@@ -211,23 +202,12 @@ export const FilesView = (props: IFilesViewProps) => {
               </ToggleGroup>
             </div>
           </div>
-          {filteredFiles?.length <= 0 ? (
-            <EmptyState
-              icon={<NoResultsFoundIcon />}
-              title={'No results found'}
-              description={
-                'Try adjusting your search or ' +
-                "filter to find what \n you're looking for."
-              }
-            />
-          ) : (
-            <FilesDataTable
-              files={files}
-              setSearch={setSearchQuery}
-              rowSelection={rowSelection}
-              onRowSelectionChange={setRowSelection}
-            />
-          )}
+          <FilesDataTable
+            files={files}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            columnFilters={columnFilters}
+          />
         </>
       )}
     </div>

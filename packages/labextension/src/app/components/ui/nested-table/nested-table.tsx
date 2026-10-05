@@ -3,6 +3,7 @@ import {
   columnFilteringFeature,
   createExpandedRowModel,
   createFilteredRowModel,
+  FilterFn,
   filterFn_equalsString,
   filterFn_includesString,
   globalFilteringFeature,
@@ -29,6 +30,19 @@ import {
   TableHeader,
   TableRow
 } from '../../../shadcn-components/ui/table';
+import { NoResultsFoundIcon } from '../../../../assets/no-results-found-icon';
+import { EmptyState } from '../../utils/empty-state';
+
+// custom function that checks if a cell value is included in the filters' list
+const filterFn_valueInList: FilterFn<any, any> = (
+  row,
+  columnId,
+  filterValue: string[]
+) => {
+  const v = row.getValue<string>(columnId);
+  return filterValue.includes(v);
+};
+filterFn_valueInList.autoRemove = (val: string[]) => !val?.length;
 
 export const dataTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -41,7 +55,8 @@ export const dataTableFeatures = tableFeatures({
   // As filterFns is deprecated in new tanstack/react-table version, to add new function look up https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-filtering/filterFns.ts#L442
   filterFns: {
     filterFn_includesString,
-    filterFn_equalsString
+    filterFn_equalsString,
+    filterFn_valueInList
   }
 });
 
@@ -235,14 +250,14 @@ export function NestedTable<T>({
             </TableRow>
           ))
         ) : (
-          <TableRow>
-            <TableCell
-              colSpan={columns.length}
-              className="h-24 text-center text-muted-foreground"
-            >
-              {emptyMessage}
-            </TableCell>
-          </TableRow>
+          <EmptyState
+            icon={<NoResultsFoundIcon />}
+            title={'No results found'}
+            description={
+              'Try adjusting your search or ' +
+              "filter to find what \n you're looking for."
+            }
+          />
         )}
       </TableBody>
     </Table>
