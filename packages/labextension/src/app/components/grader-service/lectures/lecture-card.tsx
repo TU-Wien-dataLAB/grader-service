@@ -102,7 +102,7 @@ export const LectureCard = (props: ILectureCard) => {
         />
       </CardContent>
       <Link to={`/lectures/${lecture.id}`}>
-        <Button className={'w-fit'}>Details</Button>
+        <Button className={'w-fit text-primary-foreground'}>Details</Button>
       </Link>
     </Card>
   );

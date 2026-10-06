@@ -54,8 +54,7 @@ export const HeaderIcons = ({ className }: { className?: string }) => {
       />
       <path
         d="M66.751 45.1768H101.976L99.176 69.6747H69.5505L66.751 45.1768Z"
-        fill="#EBEBEB"
-        stroke="#CDCDCD"
+        className="fill-[#EBEBEB] stroke-[#CDCDCD] dark:fill-[#2B2B2B] dark:stroke-[#4A4A4A]"
         stroke-width="2"
         stroke-miterlimit="10"
         stroke-linecap="round"
@@ -63,8 +62,7 @@ export const HeaderIcons = ({ className }: { className?: string }) => {
       />
       <path
         d="M105.707 39.8342H63.0186V47.9336H105.707V39.8342Z"
-        fill="#EBEBEB"
-        stroke="#CDCDCD"
+        className="fill-[#EBEBEB] stroke-[#CDCDCD] dark:fill-[#2B2B2B] dark:stroke-[#4A4A4A]"
         stroke-width="2"
         stroke-miterlimit="10"
         stroke-linecap="round"

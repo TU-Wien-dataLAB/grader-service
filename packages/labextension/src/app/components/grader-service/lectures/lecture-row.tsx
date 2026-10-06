@@ -69,7 +69,7 @@ export const LectureRow = (props: ILectureRow) => {
           <IconTextInfo
             icon={
               <FileText
-                className={'fill-foreground size-5 text-white! self-center'}
+                className={'fill-foreground size-5 text-background! self-center'}
               />
             }
             text={assignments.length.toString()}

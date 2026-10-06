@@ -89,6 +89,9 @@ export const SearchField = (props: ISearchField) => {
             onFocus={handleFocus}
             onBlur={() => setIsOpen(false)}
             placeholder={props?.placeholder}
+            className={
+              'dark:bg-card'
+            }
           />
           <Button
             variant={'outline'}
@@ -96,7 +99,7 @@ export const SearchField = (props: ISearchField) => {
             interactive={false}
             type={'submit'}
             className={
-              'bg-sidebar-ring border-none rounded-none text-primary p-2'
+              'bg-sidebar-ring dark:bg-sidebar-ring hover:bg-sidebar-ring/80 dark:hover:bg-sidebar-ring/80 active:bg-sidebar-ring/80 border-none rounded-none text-primary p-2'
             }
           >
             <Search className={'size-4'} />

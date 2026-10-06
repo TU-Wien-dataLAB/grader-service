@@ -152,7 +152,11 @@ export const Dashboard = () => {
                         variant={view === 'grid' ? 'default' : 'outline'}
                         className={'p-4'}
                       >
-                        <LayoutGrid className={'size-4 fill-secondary'} />
+                        <LayoutGrid 
+                          strokeLinejoin="miter"
+                          strokeLinecap="butt"
+                          className={'size-4 fill-current stroke-current [&_rect]:[rx:0]'} 
+                          />
                       </ToggleGroupItem>
                     </span>
                   }
@@ -171,7 +175,11 @@ export const Dashboard = () => {
                         variant={view === 'list' ? 'default' : 'outline'}
                         className={'p-4'}
                       >
-                        <List className={'size-4'} />
+                        <List 
+                          strokeLinejoin="miter"
+                          strokeLinecap="square"
+                          className={'size-4 stroke-4 [&_rect]:[rx:0]'} 
+                        />
                       </ToggleGroupItem>
                     </span>
                   }
