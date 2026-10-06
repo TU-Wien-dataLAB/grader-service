@@ -180,26 +180,23 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
     const daysDiff = timeDiff.daysDiff;
     const hoursDiff = timeDiff.hoursDiff;
     const minutesDiff = timeDiff.minutesDiff;
-    let timeDiffText = '';
+    const parts: string[] = [];
     if (daysDiff > 0) {
-      timeDiffText += `${daysDiff} ${pluralize({
-        text: 'day',
-        data: daysDiff
-      })}, `;
+      parts.push(
+        `${daysDiff} ${pluralize({ text: 'day', data: daysDiff })}`
+      );
     }
     if (hoursDiff > 0) {
-      timeDiffText += `${hoursDiff} ${pluralize({
-        text: 'hour',
-        data: hoursDiff
-      })} and `;
+      parts.push(
+        `${hoursDiff} ${pluralize({ text: 'hour', data: hoursDiff })}`
+      );
     }
     if (minutesDiff > 0) {
-      timeDiffText += `${minutesDiff} ${pluralize({
-        text: 'minute',
-        data: minutesDiff
-      })}`;
+      parts.push(
+        `${minutesDiff} ${pluralize({ text: 'minute', data: minutesDiff })}`
+      );
     }
-    return timeDiffText;
+    return parts.length > 0 ? parts.join(', ') : 'less than a minute';
   };
 
   return (

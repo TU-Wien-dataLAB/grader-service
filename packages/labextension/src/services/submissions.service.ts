@@ -78,23 +78,6 @@ export function deleteSubmission(
   );
 }
 
-export function getFeedback(
-  lectureId: number,
-  assignmentId: number,
-  latest = false,
-  instructor = false
-): Promise<any> {
-  let url = `${baseUrl({ lectureId, assignmentId })}feedback`;
-  if (latest || instructor) {
-    const searchParams = new URLSearchParams({
-      'instructor-version': String(instructor),
-      latest: String(latest)
-    });
-    url += '?' + searchParams.toString();
-  }
-  return request<any>(HTTPMethod.GET, url, null);
-}
-
 export function getProperties(
   lectureId: number,
   assignmentId: number,
@@ -158,6 +141,32 @@ export async function getSubmissionCount(
     null,
     false
   );
+}
+
+export function getSubmissionLogs(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  reload = false
+): Promise<string> {
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}/logs`;
+  return request<string>(HTTPMethod.GET, url, null, reload);
+}
+
+export function getStudentSubmissions(
+  username: string,
+  format: 'json' | 'csv' = 'csv',
+  reload = false
+): Promise<any> {
+  let url = `/api/users/${username}/submissions`;
+  const params = new URLSearchParams({
+    format: format
+  });
+  url += '?' + params.toString();
+  return request<any>(HTTPMethod.GET, url, null, reload);
 }
 
 export async function exportGrades(

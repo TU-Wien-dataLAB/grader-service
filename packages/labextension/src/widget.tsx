@@ -89,12 +89,14 @@ export class GraderServiceWidget extends ReactWidget {
     this.router = createMemoryRouter(getRoutes(), { initialEntries: ['/'] });
 
     const themeManager = GlobalObjects.themeManager;
+    const resolveTheme = () =>
+      themeManager.isLight(themeManager.theme ?? 'light') ? 'light' : 'dark';
+
+    this.theme = resolveTheme();
 
     themeManager.themeChanged.connect(() => {
-      this.theme = themeManager.isLight(themeManager.theme ?? 'light')
-        ? 'light'
-        : 'dark';
-      this.update(); // tells Lumino to re-invoke render()
+      this.theme = resolveTheme();
+      this.update();
     }, this);
   }
 

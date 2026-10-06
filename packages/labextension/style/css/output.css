@@ -1252,7 +1252,11 @@
   .bg-muted-foreground\/10 {
     background-color: var(--muted-foreground);
     @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+      background-color: color-mix(
+        in oklab,
+        var(--muted-foreground) 10%,
+        transparent
+      );
     }
   }
   .bg-muted\/50 {
@@ -3302,10 +3306,14 @@
     --tw-translate-x: 0px;
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
-  .data-\[state\=unchecked\]\:bg-secondary-background\/30[data-state="unchecked"] {
+  .data-\[state\=unchecked\]\:bg-secondary-background\/30[data-state='unchecked'] {
     background-color: var(--secondary-background);
     @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--secondary-background) 30%, transparent);
+      background-color: color-mix(
+        in oklab,
+        var(--secondary-background) 30%,
+        transparent
+      );
     }
   }
   .data-\[variant\=destructive\]\:text-destructive[data-variant="destructive"] {
@@ -3457,7 +3465,7 @@
     border-color: var(--input);
   }
   .dark\:bg-\[\#2B2B2B\]:is(.dark *) {
-    background-color: #2B2B2B;
+    background-color: #2b2b2b;
   }
   .dark\:bg-\[\#E46E2E\]:is(.dark *) {
     background-color: #E46E2E;

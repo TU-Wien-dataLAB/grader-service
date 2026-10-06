@@ -363,7 +363,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     // If the user has no instructor roles in any lecture we do not display the course management
     UserPermissions.loadPermissions()
       .then(() => {
-        if (UserPermissions.hasElevatedPermissions) {
+if (UserPermissions.hasElevatedPermissions()) {
           connectTrackerSignals(tracker);
         }
         createGraderServiceCommands(app, launcher, graderServiceTracker);

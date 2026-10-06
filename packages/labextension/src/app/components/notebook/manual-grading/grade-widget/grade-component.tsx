@@ -11,7 +11,7 @@ import { ExtraCreditComponent, PointsComponent } from './points-component';
 import { CommentComponent } from './comment-component';
 import { Notebook } from '@jupyterlab/notebook';
 
-export interface GradeComponentProps {
+export interface IGradeComponentProps {
   notebook: Notebook;
   gradebook: GradeBook;
   nbname: string;
@@ -19,9 +19,9 @@ export interface GradeComponentProps {
   toolData: ToolData;
 }
 
-export const GradeComponent = (props: GradeComponentProps) => {
+export const GradeComponent = (props: IGradeComponentProps) => {
   const model = props.notebook.model;
-  if (model.getMetadata('updated') != undefined) {
+  if (model.getMetadata('updated') !== undefined) {
     model.setMetadata('updated', false);
   }
   const gradableCell =
@@ -48,24 +48,24 @@ export const GradeComponent = (props: GradeComponentProps) => {
           )}
 
           {gradableCell && (
-            <PointsComponent
-              model={model}
-              nbgraderData={props.nbgraderData}
-              toolData={props.toolData}
-              gradebook={props.gradebook}
-              nbname={props.nbname}
-            />
+            <>
+              <PointsComponent
+                model={model}
+                nbgraderData={props.nbgraderData}
+                toolData={props.toolData}
+                gradebook={props.gradebook}
+                nbname={props.nbname}
+              />
+              <ExtraCreditComponent
+                model={model}
+                nbgraderData={props.nbgraderData}
+                toolData={props.toolData}
+                gradebook={props.gradebook}
+                nbname={props.nbname}
+              />
+            </>
           )}
 
-          {gradableCell && (
-            <ExtraCreditComponent
-              model={model}
-              nbgraderData={props.nbgraderData}
-              toolData={props.toolData}
-              gradebook={props.gradebook}
-              nbname={props.nbname}
-            />
-          )}
           <hr style={{ borderTop: '1px', color: 'lightgray' }} />
         </div>
       )}
