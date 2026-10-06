@@ -17,7 +17,6 @@
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-700: oklch(52.7% 0.154 150.069);
     --color-blue-500: oklch(62.3% 0.214 259.815);
-    --color-purple-800: oklch(43.8% 0.218 303.724);
     --color-slate-600: oklch(44.6% 0.043 257.281);
     --color-black: #000;
     --color-white: #fff;
@@ -337,6 +336,24 @@
   }
   .row-start-1 {
     grid-row-start: 1;
+  }
+  .container {
+    width: 100%;
+    @media (width >= 40rem) {
+      max-width: 40rem;
+    }
+    @media (width >= 48rem) {
+      max-width: 48rem;
+    }
+    @media (width >= 64rem) {
+      max-width: 64rem;
+    }
+    @media (width >= 80rem) {
+      max-width: 80rem;
+    }
+    @media (width >= 96rem) {
+      max-width: 96rem;
+    }
   }
   .m-0 {
     margin: 0px;
@@ -3327,14 +3344,41 @@
     --tw-translate-x: calc(calc(1 / 2 * 100%) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
-  .dark\:border-input:is(.dark *) {
-    border-color: var(--input);
+  .dark\:border-\[\#9C7DB2\]:is(.dark *) {
+    border-color: #9C7DB2;
+  }
+  .dark\:border-\[\#587C85\]:is(.dark *) {
+    border-color: #587C85;
+  }
+  .dark\:border-\[\#D8D59C\]:is(.dark *) {
+    border-color: #D8D59C;
+  }
+  .dark\:border-\[\#EB4242\]:is(.dark *) {
+    border-color: #EB4242;
+  }
+  .dark\:border-\[\#FFAB6B\]:is(.dark *) {
+    border-color: #FFAB6B;
   }
   .dark\:bg-\[\#2B2B2B\]:is(.dark *) {
     background-color: #2B2B2B;
   }
+  .dark\:bg-\[\#3E0668\]:is(.dark *) {
+    background-color: #3E0668;
+  }
+  .dark\:bg-\[\#7A3500\]:is(.dark *) {
+    background-color: #7A3500;
+  }
+  .dark\:bg-\[\#395F66\]:is(.dark *) {
+    background-color: #395F66;
+  }
   .dark\:bg-\[\#402B20\]:is(.dark *) {
     background-color: #402B20;
+  }
+  .dark\:bg-\[\#66611A\]:is(.dark *) {
+    background-color: #66611A;
+  }
+  .dark\:bg-\[\#C72828\]:is(.dark *) {
+    background-color: #C72828;
   }
   .dark\:bg-\[\#E46E2E\]:is(.dark *) {
     background-color: #E46E2E;
@@ -3372,11 +3416,14 @@
   .dark\:stroke-\[\#4A4A4A\]:is(.dark *) {
     stroke: #4A4A4A;
   }
+  .dark\:text-\[\#8D8D8D\]:is(.dark *) {
+    color: #8D8D8D;
+  }
+  .dark\:text-\[\#414141\]:is(.dark *) {
+    color: #414141;
+  }
   .dark\:text-green-400:is(.dark *) {
     color: var(--color-green-400);
-  }
-  .dark\:text-purple-800:is(.dark *) {
-    color: var(--color-purple-800);
   }
   .dark\:text-yellow-400:is(.dark *) {
     color: var(--color-yellow-400);
@@ -3986,7 +4033,7 @@
   --primary: oklch(61.52% 0.13306 238.652);
   --primary-hover: oklch(66.212% 0.14338 238.689);
   --primary-foreground: oklch(20.463% 0.00002 271.152);
-  --secondary: oklch(0.274 0.0057 240.76);
+  --secondary: oklch(20.463% 0.00002 271.152);
   --secondary-hover: oklch(0.401 0.009 229.072);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.0057 240.76);

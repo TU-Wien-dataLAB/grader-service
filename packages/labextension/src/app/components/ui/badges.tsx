@@ -10,7 +10,7 @@ export const FullyAutomaticGradingBadge = ({
 }) => {
   return (
     <Badge
-      className={`${className}${commonStyle} bg-[#DAAFFA] border-[#9C7DB2]`}
+      className={`${className}${commonStyle} bg-[#DAAFFA] border-[#9C7DB2] dark:bg-[#3E0668] dark:border-[#9C7DB2]`}
     >
       Fully automatic grading
     </Badge>
@@ -24,7 +24,7 @@ export const AutomaticGradingBadge = ({
 }) => {
   return (
     <Badge
-      className={`${className} ${commonStyle} bg-[#FFC89E] border-[#FF9D52]`}
+      className={`${className} ${commonStyle} bg-[#FFC89E] border-[#FF9D52] dark:bg-[#7A3500] dark:border-[#FFAB6B]`}
     >
       Automatic grading
     </Badge>
@@ -38,7 +38,7 @@ export const ManualGradingBadge = ({
 }) => {
   return (
     <Badge
-      className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8]`}
+      className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8] dark:bg-[#395F66] dark:border-[#587C85]`}
     >
       Manual grading
     </Badge>
@@ -52,7 +52,7 @@ export const CreatedAssignmentBadge = ({
 }) => {
   return (
     <Badge
-      className={`${className} ${commonStyle} bg-[#FF9090] border-[#CC7373]`}
+      className={`${className} ${commonStyle} bg-[#FF9090] border-[#CC7373] dark:bg-[#C72828] dark:border-[#EB4242]`}
     >
       Not released
     </Badge>
@@ -66,7 +66,7 @@ export const ReleasedAssignmentBadge = ({
 }) => {
   return (
     <Badge
-      className={`${className} ${commonStyle} bg-[#CED662] border-[#ACB252]`}
+      className={`${className} ${commonStyle} bg-[#CED662] border-[#ACB252] dark:bg-[#66611A] dark:border-[#D8D59C]`}
     >
       Released
     </Badge>

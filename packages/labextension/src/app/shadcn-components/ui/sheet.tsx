@@ -6,6 +6,7 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
 import { Button } from './button';
+import { usePortalContainer } from '../../../portal-container';
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -20,7 +21,8 @@ function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
 }
 
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
+  const container = usePortalContainer();
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} container={container} />;
 }
 
 function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
@@ -46,8 +48,9 @@ function SheetContent({
   side?: 'top' | 'right' | 'bottom' | 'left';
   showCloseButton?: boolean;
 }) {
+  const container = usePortalContainer();
   return (
-    <SheetPortal>
+    <SheetPortal container={container}>
       <SheetOverlay />
       <SheetPrimitive.Popup
         data-slot="sheet-content"

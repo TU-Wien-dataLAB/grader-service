@@ -7,6 +7,7 @@ import { GlobalObjects } from './index';
 import '../style/css/index.css';
 import { createMemoryRouter, DataRouter, RouterProvider } from 'react-router';
 import { getRoutes } from './routes';
+import { PortalContainerContext } from './portal-container';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,9 @@ function GraderServiceViewComponent({
     status: null,
     message: null
   });
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
 
   useEffect(() => {
     if (status.status !== null) {
@@ -68,11 +72,17 @@ function GraderServiceViewComponent({
   return (
     <QueryClientProvider client={queryClient}>
       <Theme className={theme} style={{ height: '100%' }}>
-        <div className="h-full @container">
-          <MutationContext.Provider value={{ status, setStatus }}>
-            <RouterProvider router={router} />
-          </MutationContext.Provider>
-        </div>
+        <PortalContainerContext.Provider value={portalContainer}>
+          <div className="h-full @container">
+            <MutationContext.Provider value={{ status, setStatus }}>
+              <RouterProvider router={router} />
+            </MutationContext.Provider>
+          </div>
+        </PortalContainerContext.Provider>
+        <div
+          ref={setPortalContainer}
+          style={{ position: 'relative', zIndex: 1000 }}
+        />
       </Theme>
     </QueryClientProvider>
   );

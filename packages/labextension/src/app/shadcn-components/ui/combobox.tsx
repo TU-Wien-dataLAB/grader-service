@@ -12,6 +12,7 @@ import {
   InputGroupButton,
   InputGroupInput
 } from './input-group';
+import { usePortalContainer } from '../../../portal-container';
 
 const Combobox = ComboboxPrimitive.Root;
 
@@ -105,8 +106,9 @@ function ComboboxContent({
     ComboboxPrimitive.Positioner.Props,
     'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'
   >) {
+  const container = usePortalContainer();
   return (
-    <ComboboxPrimitive.Portal>
+    <ComboboxPrimitive.Portal container={container}>
       <ComboboxPrimitive.Positioner
         side={side}
         sideOffset={sideOffset}

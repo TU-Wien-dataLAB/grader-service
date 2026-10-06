@@ -139,7 +139,7 @@ export const AssignmentCard = (props: IAssignment) => {
           >
             <div className={'flex flex-col items-start gap-2'}>
               <h6 className={'text-sm font-medium'}>Deadline</h6>
-              <div className={'flex flex-row gap-2 items-center'}>
+              <div className={'flex flex-row gap-2 items-center dark:text-[#8D8D8D]'}>
                 {props.assignment.settings?.deadline
                   ? getDate(new Date(props.assignment.settings?.deadline))
                   : '-'}
@@ -157,11 +157,11 @@ export const AssignmentCard = (props: IAssignment) => {
             </div>
             <div className={'flex flex-col items-start gap-2'}>
               <h6 className={'text-sm font-medium'}>Points</h6>
-              <h6>{props.assignment.points.toString()}</h6>
+              <h6 className={'dark:text-[#8D8D8D]'}>{props.assignment.points.toString()}</h6>
             </div>
             <div className={'flex flex-col gap-2 items-start'}>
               <h6 className={'text-sm font-medium'}>Submissions</h6>
-              <h6>1/20</h6>
+              <h6 className={'dark:text-[#8D8D8D]'}>1/20</h6>
             </div>
           </div>
         </CardContent>
