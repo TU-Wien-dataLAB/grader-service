@@ -198,7 +198,7 @@ def convert_request_to_dict(arguments: dict[str, list[bytes]]) -> dict[str, Any]
 
 def executable_validator(proposal: dict) -> str:
     """Used in Configurable's validators to check that a configured executable exists."""
-    exec: str = proposal["value"]
-    if shutil.which(exec) is None:
-        raise TraitError(f"The executable is not valid: {exec}")
-    return exec
+    executable: str = proposal["value"]
+    if shutil.which(executable) is None:
+        raise TraitError(f"The executable is not valid: {executable}")
+    return executable

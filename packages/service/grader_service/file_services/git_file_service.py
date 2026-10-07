@@ -3,7 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import Unicode, observe, validate
+from traitlets import Unicode, observe, validate, default
 
 from grader_service.artifact_types import ArtifactType
 from grader_service.file_services.base_file_service import FileService, FileServiceError
@@ -72,7 +72,15 @@ def construct_git_dir(
 class GitFileService(FileService):
     """Service for submission-related file operations"""
 
-    git_executable = Unicode("git", allow_none=False).tag(config=True)
+    git_executable = Unicode(allow_none=False).tag(config=True)
+
+    @default("git_executable")
+    def _default_git_executable(self):
+        # Note: ``@validate`` would not run on the static default value when ``GitFileService``
+        # is initialized, so we check that "git" is installed here.
+        default_git = "git"
+        executable_validator({"owner": self, "trait": Unicode(), "value": default_git})
+        return default_git
 
     @validate("git_executable")
     def _validate_executable(self, proposal):

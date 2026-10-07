@@ -544,7 +544,7 @@ class GraderService(config.Application):
             loop.stop()
 
     @validate("grader_service_dir")
-    def _validate_service_dir(self, proposal):
+    def _validate_service_dir(self, proposal) -> str:
         path: str = proposal["value"]
         if not os.path.isabs(path):
             raise TraitError("The path is not absolute")

@@ -142,7 +142,7 @@ def insert_submission(
     score: float = None,
     commit_hash: Optional[str] = None,
     with_logs: bool = False,
-    session: Optional[Session] = None,
+    session: Session | None = None,
 ) -> Submission:
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id

@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
+from traitlets import TraitError
 
+from grader_service import utils
 from grader_service.file_services.base_file_service import FileServiceError
 from grader_service.file_services.git_file_service import GitFileService, construct_git_dir
 from grader_service.orm.submission import AutoStatus
@@ -171,6 +173,31 @@ def test_construct_git_dir_path_validation_prevents_traversal(assignment_123, tm
 
     with pytest.raises(ValueError, match="Invalid path"):
         construct_git_dir(tmp_path / "git", ArtifactType.SOURCE, lecture_code, assignment_123.id)
+
+
+# =============== GitFileService setup tests ===============
+
+
+def test_git_executable_validation(monkeypatch, tmp_path):
+    # Validation should run on instance creation with the default value of ``git_executable``
+    monkeypatch.setattr(utils.shutil, "which", lambda exe: None)
+    with pytest.raises(TraitError, match="The executable is not valid: git"):
+        GitFileService(tmp_path)
+
+    monkeypatch.setattr(utils.shutil, "which", lambda exe: "/usr/bin/git")
+    with patch.object(GitFileService, "_check_environment") as mock_check_env:
+        file_service = GitFileService(tmp_path)
+    mock_check_env.assert_called_once()
+
+    # Validation on update when an invalid value is set should fail before
+    # ``_check_environment`` is called
+    monkeypatch.undo()
+    with (
+        patch.object(GitFileService, "_check_environment") as mock_check_env,
+        pytest.raises(TraitError, match="The executable is not valid: invalid-exe"),
+    ):
+        file_service.git_executable = "invalid-exe"
+    mock_check_env.assert_not_called()
 
 
 # =============== is_bare_git_dir tests ===============
