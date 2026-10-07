@@ -12,7 +12,7 @@ on:
     branches:
       - main
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   detect-changes:
@@ -22,11 +22,11 @@ jobs:
       labextension: ${{ steps.changes.outputs.labextension }}
       docs: ${{ steps.changes.outputs.docs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Get changed files
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
         with:
           filters: |
             service:
@@ -68,12 +68,12 @@ jobs:
     uses: ./.github/workflows/docs-service.yml
 
   integration:
-    needs: [build-service, build-labextension]
+    needs: [ build-service, build-labextension ]
     if: needs.build-service.result == 'success' && needs.build-labextension.result == 'success'
     uses: ./.github/workflows/integration.yml
 
   docker-service:
-    needs: [test-service, build-service]
+    needs: [ test-service, build-service ]
     if: always() && needs.test-service.result == 'success' && needs.build-service.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')))
     uses: ./.github/workflows/docker-service.yml
     permissions:
@@ -81,7 +81,7 @@ jobs:
       packages: write
 
   docker-labextension:
-    needs: [test-labextension, build-labextension]
+    needs: [ test-labextension, build-labextension ]
     if: always() && needs.test-labextension.result == 'success' && needs.build-labextension.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')))
     uses: ./.github/workflows/docker-labextension.yml
     permissions:
@@ -89,7 +89,7 @@ jobs:
       packages: write
 
   publish-service:
-    needs: [build-service, test-service, docker-service]
+    needs: [ build-service, test-service, docker-service ]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-service-') && !startsWith(github.event.release.tag_name, 'grader-service-chart-')
     runs-on: ubuntu-latest
     permissions:
@@ -97,10 +97,10 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
           enable-cache: true
 
@@ -108,7 +108,7 @@ jobs:
         run: uv python install
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: dist-service
           path: packages/service/dist/
@@ -117,7 +117,7 @@ jobs:
         run: uv publish packages/service/dist/*
 
   publish-labextension:
-    needs: [build-labextension, test-labextension, docker-labextension]
+    needs: [ build-labextension, test-labextension, docker-labextension ]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'grader-labextension-')
     runs-on: ubuntu-latest
     permissions:
@@ -125,10 +125,10 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
           enable-cache: true
 
@@ -136,7 +136,7 @@ jobs:
         run: uv python install
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: dist-labextension
           path: packages/labextension/dist/
