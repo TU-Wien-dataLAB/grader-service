@@ -4,7 +4,7 @@ import { baseUrl } from './file.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 import { Submission } from '../model/submission';
 
-export function releaseAssignment(
+export function pushAssignment(
   lectureId: number,
   assignmentId: number,
   repoType: RepoType,
@@ -12,17 +12,16 @@ export function releaseAssignment(
   selectedFiles?: string[]
 ): Promise<void> {
   let url = `${baseUrl({ lectureId, assignmentId })}push/${repoType}`;
-  if (commitMessage) {
-    const searchParams = new URLSearchParams({
-      'commit-message': commitMessage
-    });
-    url += '?' + searchParams;
-  }
 
+  const searchParams = new URLSearchParams();
+  if (commitMessage) {
+    searchParams.set('commit-message', commitMessage);
+  }
   if (selectedFiles && selectedFiles.length > 0) {
-    selectedFiles.forEach(file => {
-      url += `&selected-files=${encodeURIComponent(file)}`;
-    });
+    selectedFiles.forEach(file => searchParams.append('selected-files', file));
+  }
+  if (searchParams.size > 0) {
+    url += '?' + searchParams.toString();
   }
 
   return request<void>(HTTPMethod.PUT, url, null);
