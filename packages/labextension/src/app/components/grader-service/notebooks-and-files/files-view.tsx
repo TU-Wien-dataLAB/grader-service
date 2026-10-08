@@ -35,6 +35,7 @@ import { Button } from '../../../shadcn-components/ui/button';
 import { pullAssignment } from '../../../../services/git.service';
 import { RepoType } from '../../utils/repo-type';
 import { HTTPError } from '../../../../services/request.service';
+import { SaveFilesDialog } from './save-files-dialog';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -124,7 +125,7 @@ export const FilesView = (props: IFilesViewProps) => {
   const { handleGenerateAssignmentReleaseVer } =
     useAssignmentGenerateReleaseVer();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
+  const [openSaveFilesDialog, setOpenSaveFilesDialog] = useState(false);
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch h-full'}>
       {files?.length <= 0 ? (
@@ -224,12 +225,23 @@ export const FilesView = (props: IFilesViewProps) => {
             columnFilters={columnFilters}
           />
           <div className={'flex items-center gap-4 self-stretch'}>
-            <Button>Save</Button>
+            <Button onClick={() => setOpenSaveFilesDialog(true)}>Save</Button>
             <Button variant={'outline'} onClick={() => handlePullAssignment()}>
               Load updates
             </Button>
           </div>
         </>
+      )}
+      {openSaveFilesDialog && (
+        <SaveFilesDialog
+          files={files}
+          isOpen={openSaveFilesDialog}
+          setIsOpen={setOpenSaveFilesDialog}
+          selectedRows={rowSelection}
+          lecture={lecture}
+          assignmentId={props.assignmentId}
+          refetchFiles={refetchFiles}
+        />
       )}
     </div>
   );
