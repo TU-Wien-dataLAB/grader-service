@@ -31,6 +31,7 @@ export function getAllAssignments(
 export function getAssignment(
   lectureId: number,
   assignmentId: number,
+  instructor: boolean = false,
   reload = false
 ): Promise<Assignment> {
   return request<Assignment>(
@@ -81,12 +82,14 @@ export function getAssignmentProperties(
 
 export function generateAssignment(
   lectureId: number,
-  assignment: Assignment
+  assignmentId: number,
+  reload: boolean = false
 ): Promise<any> {
   return request<any>(
     HTTPMethod.PUT,
-    `${baseUrl(lectureId)}/${assignment.id}/generate`,
-    null
+    `${baseUrl(lectureId)}/${assignmentId}/generate`,
+    null,
+    reload
   );
 }
 

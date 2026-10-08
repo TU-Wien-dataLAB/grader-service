@@ -49,6 +49,10 @@ import {
   TooltipTrigger
 } from '../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -154,6 +158,7 @@ export const Lecture = () => {
 
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
+      return [];
       return [];
     }
     // extract all groups from assignments
@@ -362,6 +367,10 @@ export const Lecture = () => {
     Object.entries(checkedGroupAssignments).some(([groupKey]) =>
       checkGroupSymbol(groupKey)
     );
+
+  useEffect(() => {
+    openInFileBrowser(`${lectureBasePath}${lecture.code}`);
+  }, []);
 
   const { status } = useMutationStatus();
 
