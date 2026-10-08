@@ -58,12 +58,16 @@ export const Assignment = () => {
       }
     >
       <div className={'flex items-center gap-6 self-stretch'}>
-        <div className={'flex items-center gap-4'}>
+        <div className={'flex items-center gap-4 w-full'}>
           <Link to={`/lectures/${lectureId}`}>
             <ArrowLeft className={'size-4 cursor-pointer text-primary'} />
           </Link>
-          <div className={'flex flex-col justify-center items-start gap-1'}>
-            <h1 className={'text-2xl font-bold'}>{assignment?.name}</h1>
+          <div
+            className={'flex flex-col justify-center items-start gap-1 w-full'}
+          >
+            <h1 className={'text-2xl font-bold truncate w-full'}>
+              {assignment?.name}
+            </h1>
             <div className={'flex items-center gap-4'}>
               {assignmentStatus(assignment?.status)}
               {gradingType(
