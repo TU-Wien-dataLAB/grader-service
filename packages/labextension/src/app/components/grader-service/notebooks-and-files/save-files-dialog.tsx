@@ -71,19 +71,6 @@ export const SaveFilesDialog = (props: ISaveFilesDialogProps) => {
           )
         )
       );
-
-      /*const relativePathsRelease = Array.from(
-        new Set(
-          files.flatMap(f =>
-            extractRelativePaths(
-              props.lecture.code,
-              RepoType.RELEASE,
-              props.assignmentId,
-              f
-            )
-          )
-        )
-      );*/
       try {
         await Promise.all([
           pushAssignment(
@@ -112,7 +99,6 @@ export const SaveFilesDialog = (props: ISaveFilesDialogProps) => {
           .catch((err: HTTPError) => {
             setStatus({ message: err.message, status: 'error' });
           });
-        //await queryClient.invalidateQueries({ queryKey: ['assignments'] });
         props.refetchFiles();
       } catch (err) {
         setStatus({ message: 'Error saving assignment', status: 'error' });

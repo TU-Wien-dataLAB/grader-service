@@ -139,7 +139,7 @@ export const Dashboard = () => {
         {status.status === 'error' && <ErrorBanner message={status.message} />}
         <div
           className={
-            'flex flex-col justify-between items-center self-stretch @xl:flex-row'
+            'flex flex-col gap-2 justify-between items-center self-stretch @xl:flex-row @xl:gap-0'
           }
         >
           <SearchField

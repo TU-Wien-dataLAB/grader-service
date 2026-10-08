@@ -434,7 +434,7 @@ export const Lecture = () => {
         {assignments.length > 0 && (
           <div
             className={
-              'flex flex-col justify-between items-center self-stretch @lg:flex-row'
+              'flex flex-col justify-between gap-2 items-center self-stretch @lg:flex-row @xl:gap-0'
             }
           >
             <SearchField
