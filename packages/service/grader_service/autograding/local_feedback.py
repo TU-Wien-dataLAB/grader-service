@@ -5,51 +5,39 @@
 # LICENSE file in the root directory of this source tree.
 import os
 import subprocess
-from typing import Any, Set
 
 from traitlets.traitlets import Unicode
 
-from grader_service.autograding.git_manager import GitSubmissionManager
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
-from grader_service.handlers.handler_utils import GitRepoType
-from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus, Submission
-
-
-class FeedbackGitSubmissionManager(GitSubmissionManager):
-    """Git manager for generating submission feedback."""
-
-    input_repo_type = GitRepoType.AUTOGRADE
-    output_repo_type = GitRepoType.FEEDBACK
-
-    def __init__(self, grader_service_dir: str, submission: Submission, **kwargs: Any):
-        super().__init__(grader_service_dir, submission, **kwargs)
-        # When submission hasn't been autograded or autograding failed,
-        # pull from user repo to generate feedback
-        if (
-            submission.auto_status == AutoStatus.NOT_GRADED
-            or submission.auto_status == AutoStatus.GRADING_FAILED
-        ) and submission.manual_status == ManualStatus.MANUALLY_GRADED:
-            self.input_repo_type = GitRepoType.USER
-        else:
-            self.input_branch = f"submission_{self.submission.commit_hash}"
-
-        self.output_branch = f"feedback_{self.submission.commit_hash}"
+from grader_service.artifact_types import ArtifactType
+from grader_service.orm.submission import FeedbackStatus, AutoStatus, ManualStatus
 
 
 class LocalFeedbackExecutor(LocalAutogradeExecutor):
-    git_manager_class = FeedbackGitSubmissionManager
+    output_artifact_type = ArtifactType.FEEDBACK
+
+    @property
+    def input_artifact_type(self):
+        if (
+            self.submission.auto_status in [AutoStatus.NOT_GRADED, AutoStatus.GRADING_FAILED]
+            and self.submission.manual_status == ManualStatus.MANUALLY_GRADED
+        ):
+            # When submission hasn't been autograded or autograding failed,
+            # use the ungraded submission files version to generate feedback
+            return ArtifactType.USER
+        return ArtifactType.AUTOGRADE
 
     @property
     def input_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_input_path, f"feedback_{self.submission.id}"
+            self._autograding_dir, self.relative_input_path, f"feedback_{self.submission.id}"
         )
 
     @property
     def output_path(self):
         return os.path.join(
-            self.grader_service_dir, self.relative_output_path, f"feedback_{self.submission.id}"
+            self._autograding_dir, self.relative_output_path, f"feedback_{self.submission.id}"
         )
 
     def _run(self):
@@ -65,7 +53,7 @@ class LocalFeedbackExecutor(LocalAutogradeExecutor):
         # No need to calculate the properties again when generating feedback.
         return self.submission.properties.properties
 
-    def _get_whitelist_patterns(self) -> Set[str]:
+    def _get_whitelist_patterns(self) -> set[str]:
         # We only want to commit html files when generating feedback.
         return {"*.html"}
 

@@ -9,10 +9,9 @@ import inspect
 import logging
 import os
 import secrets
-import shutil
 import signal
-import subprocess
 import sys
+from pathlib import Path
 
 import tornado
 from jupyterhub.log import log_request
@@ -43,15 +42,17 @@ from grader_service.auth.auth import Authenticator
 # run __init__.py to register handlers
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
-from grader_service.handlers.base_handler import RequestHandlerConfig
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
+from grader_service.file_services import GitFileService
+from grader_service.file_services.base_file_service import FileService
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
-from grader_service.oauth2.provider import make_provider
+from grader_service.oauth2.provider import make_provider, GraderOAuthServer
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
-from grader_service.plugins import create_plugin_manager
+from grader_service.plugins import create_plugin_manager, PluginManager
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
@@ -99,7 +100,11 @@ class GraderService(config.Application):
 
     db_url = Unicode(allow_none=False, help="The URL of the database to use").tag(config=True)
 
-    oauth_provider = None
+    oauth_provider: GraderOAuthServer
+
+    plugin_manager: PluginManager
+
+    session_maker: scoped_session
 
     @default("db_url")
     def _default_db_url(self):
@@ -121,13 +126,27 @@ class GraderService(config.Application):
         104857600, help="Sets the max buffer size in bytes, default to 100mb"
     ).tag(config=True)
 
-    service_git_username = Unicode(
-        "grader-service", allow_none=False, help="Git username used by the service for commits"
-    ).tag(config=True)
+    file_service_class = Type(
+        default_value=GitFileService,
+        klass=FileService,
+        allow_none=False,
+        config=True,
+        help="""
+        The file service class is responsible for all operations on assignment
+        and submission files (e.g. submitting assignment files by an instructor,
+        submitting a submission by a student, fetching a submission by instructor,
+        etc.). Default is GitFileService, which stores files in Git repos
+        and uses git to perform file operations.
+        """,
+    )
+    file_service = Instance(klass=FileService)
 
-    service_git_email = Unicode(
-        "", allow_none=False, help="Git email used by the service for commits"
-    ).tag(config=True)
+    autograde_executor_class = Type(
+        default_value=LocalAutogradeExecutor,
+        klass=LocalAutogradeExecutor,
+        allow_none=False,
+        config=True,
+    )
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
         config=True
@@ -208,13 +227,16 @@ class GraderService(config.Application):
     def _authenticator_default(self):
         return self.authenticator_class(parent=self)
 
+    @default("file_service")
+    def _file_service_default(self):
+        return self.file_service_class(
+            grader_service_dir=Path(self.grader_service_dir), parent=self
+        )
+
     @validate("config_file")
     def _validate_config_file(self, proposal):
-        if not os.path.isfile(proposal.value) and not self.generate_config:
-            print(
-                "ERROR: Failed to find specified config file: {}".format(proposal.value),
-                file=sys.stderr,
-            )
+        if not Path(proposal.value).is_file() and not self.generate_config:
+            self.log.critical("ERROR: Failed to find specified config file: %s", proposal.value)
             sys.exit(1)
         return proposal.value
 
@@ -264,43 +286,30 @@ class GraderService(config.Application):
         help="Set the logging level for the application",
     ).tag(config=True)
 
-    def setup_loggers(self, log_level: str):  # pragma: no cover
-        """Handles application, Tornado, and
-        SQLAlchemy logging configuration."""
-        stream_handler = logging.StreamHandler
+    def setup_loggers(self, log_level: str | int):
+        """Handles application, Tornado, and SQLAlchemy logging configuration."""
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         fmt = "%(color)s%(levelname)-8s %(asctime)s %(module)-13s |%(end_color)s %(message)s"
-        formatter = tornado.log.LogFormatter(fmt=fmt, color=True, datefmt=None)
+        formatter = tornado.log.LogFormatter(fmt=fmt, color=True)
+
+        def create_handler(logger: logging.Logger, level: str | int = log_level):
+            if logger.handlers:
+                logger.handlers.clear()
+            logger.setLevel(level)
+            logger.propagate = False
+            handler = logging.StreamHandler(stream=sys.stdout)
+            handler.setFormatter(formatter)
+            handler.setLevel(level)
+            logger.addHandler(handler)
 
         for log in ("access", "application", "general"):
-            logger = logging.getLogger("tornado.{}".format(log))
-            if len(logger.handlers) > 0:
-                logger.removeHandler(logger.handlers[0])
-            logger.setLevel(log_level)
-            handler = stream_handler(stream=sys.stdout)
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-        sql_logger = logging.getLogger("sqlalchemy")
-        sql_logger.propagate = False
-        sql_logger.setLevel("WARN")
-        sql_handler = stream_handler(stream=sys.stdout)
-        sql_handler.setLevel("WARN")
-        sql_handler.setFormatter(formatter)
-        sql_logger.addHandler(sql_handler)
+            logger = logging.getLogger(f"tornado.{log}")
+            create_handler(logger)
 
-        oauth_log = logging.getLogger("oauthlib")
-        oauth_handler = stream_handler(stream=sys.stdout)
-        oauth_handler.setFormatter(formatter)
-        oauth_log.setLevel(log_level)
-        oauth_log.addHandler(oauth_handler)
-
-        traitlet_logger = traitlets_log.get_logger()
-        traitlet_logger.removeHandler(traitlet_logger.handlers[0])
-        traitlet_logger.setLevel(log_level)
-        traitlets_handler = stream_handler(stream=sys.stdout)
-        traitlets_handler.setFormatter(formatter)
-        traitlet_logger.addHandler(traitlets_handler)
+        create_handler(logging.getLogger("sqlalchemy"), level="WARNING")
+        create_handler(logging.getLogger("oauthlib"))
+        create_handler(traitlets_log.get_logger())
 
     def write_config_file(self):
         self.log.info(f"Writing config file {os.path.abspath(self.config_file)}")
@@ -320,15 +329,19 @@ class GraderService(config.Application):
         config_text = self.generate_config_file(classes=config_classes)
         if isinstance(config_text, bytes):
             config_text = config_text.decode("utf8")
-        print("Generating config: %s" % self.config_file)
+        self.log.info("Generating config: %s", self.config_file)
         with open(self.config_file, mode="w") as f:
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
+        if sys.version_info.major < 3 or sys.version_info.minor < 9:
+            msg = "Grader Service needs Python version 3.9 or above to run!"
+            raise RuntimeError(msg)
+
         self.log.info("Starting Initialization...")
-        self.log.info("Loading config file...")
         super().initialize(*args, **kwargs)
         self.parse_command_line(argv)
+        self.log.info("Loading config file...")
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
@@ -338,16 +351,8 @@ class GraderService(config.Application):
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self._start_future = asyncio.Future()
 
-        if sys.version_info.major < 3 or sys.version_info.minor < 9:
-            msg = "Grader Service needs Python version 3.9 or above to run!"
-            raise RuntimeError(msg)
-        if shutil.which("git") is None:
-            msg = "No git executable found! Git is necessary to run Grader Service!"
-            raise RuntimeError(msg)
-
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
-        RequestHandlerConfig.config = self.config
         self.plugin_manager = create_plugin_manager(config=self.config, log=self.log)
         self.log.info("Registered plugins: %s", self.plugin_manager.names)
         CeleryApp.instance(config=self.config)
@@ -434,15 +439,13 @@ class GraderService(config.Application):
         self.log.info("Starting Grader Service...")
         self.io_loop = tornado.ioloop.IOLoop.current()
 
-        self._setup_environment()
-
         self.init_oauth()
 
         # pass config
         self.set_config()
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
-        self.log.info(handlers)
+        self.log.debug("Registered handlers: %s", handlers)
         # Add the handlers of the authenticator
         auth_handlers = self.authenticator.get_handlers(self.base_url_path)
         handlers.extend(auth_handlers)
@@ -456,9 +459,10 @@ class GraderService(config.Application):
         self.log.info(f"Registered OAuth handlers: {[n for n, _ in oauth_provider_handlers]}")
 
         # start the webserver
-        self.http_server: HTTPServer = HTTPServer(
+        http_server: HTTPServer = HTTPServer(
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
+                file_service=self.file_service,
                 base_url=self.base_url_path,
                 authenticator=self.authenticator,
                 handlers=handlers,
@@ -480,9 +484,7 @@ class GraderService(config.Application):
             xheaders=True,
         )
         self.log.info(f"Service directory - {self.grader_service_dir}")
-        self.http_server.listen(
-            self.service_port, address=self.service_host, reuse_port=self.reuse_port
-        )
+        http_server.listen(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
 
         for s in (signal.SIGTERM, signal.SIGINT):
             asyncio.get_event_loop().add_signal_handler(
@@ -493,34 +495,6 @@ class GraderService(config.Application):
 
         # finish start
         self._start_future.set_result(None)
-
-    def _setup_environment(self):
-        if not os.path.exists(os.path.join(self.grader_service_dir, "git")):
-            os.mkdir(os.path.join(self.grader_service_dir, "git"))
-        # check if git config exits so that git commits don't fail
-        if (
-            subprocess.run(
-                ["git", "config", "init.defaultBranch"], check=False, capture_output=True
-            )
-            .stdout.decode()
-            .strip()
-            != "main"
-        ):
-            raise RuntimeError("Git default branch has to be set to 'main'!")
-        if (
-            subprocess.run(["git", "config", "user.name"], check=False, capture_output=True)
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
-            raise RuntimeError("Git user.name has to be set!")
-        if (
-            subprocess.run(["git", "config", "user.email"], check=False, capture_output=True)
-            .stdout.decode()
-            .strip()
-            == ""
-        ):
-            raise RuntimeError("Git user.email has to be set!")
 
     async def shutdown_cancel_tasks(self, sig):
         """Cancel all other tasks of the event loop and initiate cleanup"""
@@ -570,7 +544,7 @@ class GraderService(config.Application):
             loop.stop()
 
     @validate("grader_service_dir")
-    def _validate_service_dir(self, proposal):
+    def _validate_service_dir(self, proposal) -> str:
         path: str = proposal["value"]
         if not os.path.isabs(path):
             raise TraitError("The path is not absolute")
@@ -581,6 +555,4 @@ class GraderService(config.Application):
     @observe("grader_service_dir")
     def _observe_service_dir(self, change):
         path = change["new"]
-        git_path = os.path.join(path, "git")
-        if not os.path.isdir(git_path):
-            os.mkdir(git_path, mode=0o700)
+        self.file_service.grader_service_dir = Path(path)

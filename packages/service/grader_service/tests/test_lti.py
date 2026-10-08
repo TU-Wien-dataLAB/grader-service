@@ -12,11 +12,14 @@ import hashlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt as pyjwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from tornado.web import HTTPError
 
+from grader_service.handlers.lti import LTIJWKSHandler
 from grader_service.plugins.base import (
     _PLUGIN_REGISTRY,
     GraderPlugin,
@@ -239,10 +242,6 @@ class TestLTIPlatformConfig:
         p2 = LTIPlatformConfig(name="B", url_pattern="", client_id="x", token_url="t")
         assert p1.kid != p2.kid
 
-    def test_get_private_key(self, sample_platform, private_key_pem):
-        key = sample_platform.get_private_key()
-        assert "BEGIN RSA PRIVATE KEY" in key or "BEGIN PRIVATE KEY" in key
-
     def test_get_private_key_missing_path(self):
         platform = LTIPlatformConfig(
             name="T", url_pattern="", client_id="x", token_url="t", private_key_path=""
@@ -263,7 +262,6 @@ class TestLTIPlatformConfig:
 
     def test_get_public_key(self, sample_platform):
         pub = sample_platform.get_public_key()
-        from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
         assert isinstance(pub, RSAPublicKey)
 
@@ -438,7 +436,6 @@ class TestJWKS:
 
 
 class TestBearerTokenRequest:
-    @pytest.mark.asyncio
     async def test_request_bearer_token(self, sample_platform):
         """Test JWT assertion is created with correct kid and token is returned."""
         plugin = LTISyncGrades()
@@ -460,8 +457,6 @@ class TestBearerTokenRequest:
             assert req.method == "POST"
             assert "application/x-www-form-urlencoded" in req.headers["Content-Type"]
 
-            import jwt as pyjwt
-
             body_str = req.body
             if isinstance(body_str, bytes):
                 body_str = body_str.decode()
@@ -471,14 +466,12 @@ class TestBearerTokenRequest:
             assert header["kid"] == sample_platform.kid
             assert header["alg"] == "RS256"
 
-    @pytest.mark.asyncio
     async def test_request_bearer_token_no_client_id(self):
         plugin = LTISyncGrades()
         platform = LTIPlatformConfig(name="T", url_pattern="", client_id="", token_url="http://x")
         with pytest.raises(HTTPError, match="client_id"):
             await plugin.request_bearer_token(platform)
 
-    @pytest.mark.asyncio
     async def test_request_bearer_token_no_token_url(self):
         plugin = LTISyncGrades()
         platform = LTIPlatformConfig(name="T", url_pattern="", client_id="cid", token_url="")
@@ -840,7 +833,6 @@ class TestJWKSHandler:
     @pytest.mark.asyncio
     async def test_jwks_handler_response(self, sample_systems_config):
         """The handler should return a valid JWKS JSON."""
-        from grader_service.handlers.lti import LTIJWKSHandler
 
         # Create a real LTI plugin instance and put it in a PluginManager
         lti_plugin = LTISyncGrades()

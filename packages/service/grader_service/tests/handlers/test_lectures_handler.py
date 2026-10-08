@@ -11,16 +11,16 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
+from grader_service import orm
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.api.models.lecture import Lecture
+from grader_service.artifact_types import ArtifactType
+from grader_service.orm.base import DeleteState
+from grader_service.orm.lecture import LectureState
+from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
-from ... import orm
-from ...handlers import GitRepoType
-from ...orm.base import DeleteState
-from ...orm.lecture import LectureState
-from ...orm.takepart import Scope
 from .db_util import (
     add_role,
     create_git_repository,
@@ -898,11 +898,10 @@ async def test_delete_lecture_hard_assignments_roles(
 
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.SOURCE,
         s_id=1,
-        repo_type=GitRepoType.SOURCE,
         username=default_admin.name,
     )
 

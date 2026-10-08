@@ -4,28 +4,27 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import json
-import os
 import secrets
+import shutil
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
-from unittest.mock import Mock
 
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.handlers import GitRepoType
-from grader_service.handlers.git.server import GitBaseHandler
+from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.artifact_types import ArtifactType
 from grader_service.orm import Assignment, Lecture, Role, Submission, SubmissionLogs, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
-from grader_service.tests.handlers.test_git import get_query_side_effect
 
 
 def add_role(engine: Engine, user_id: int, l_id: int, scope: Scope) -> Role:
@@ -143,7 +142,7 @@ def insert_submission(
     score: float = None,
     commit_hash: Optional[str] = None,
     with_logs: bool = False,
-    session: Optional[Session] = None,
+    session: Session | None = None,
 ) -> Submission:
     # TODO Allows only one submission with properties per user because we do not have
     #  the submission id
@@ -186,30 +185,29 @@ def insert_default_user(ex: Engine) -> None:
 
 
 def create_user_submission_with_repo(
-    engine: Engine, gitbase_dir: Path, student: User, assignment_id: int, lecture_code: str
+    engine: Engine, files_base: Path, student: User, assignment_id: int, lecture_code: str
 ) -> Submission:
     """Creates a submission for `student` and a user repo for storing it.
 
-    Note: `gitbase_dir` should be based on the pytest `tmp_path` fixture, so that the test does not
+    Note: `files_base` should be based on the pytest `tmp_path` fixture, so that the test does not
     interfere with the file system.
     """
     # 1. Create and configure a student repo (a bare one, as a remote)
-    # TODO: This way of creating repo paths is brittle. We should have a function that does it.
-    submission_repo_path = gitbase_dir / lecture_code / str(assignment_id) / "user" / student.name
-    submission_repo_path.mkdir(parents=True)
-    subprocess.run(
-        ["git", "init", "--bare", "--initial-branch=main"], cwd=submission_repo_path, check=True
+    submission_repo_path = construct_git_dir(
+        files_base, ArtifactType.USER, lecture_code, assignment_id, username=student.name
     )
+    submission_repo_path.mkdir(parents=True)
+    subprocess.run(["git", "init", "--bare"], cwd=submission_repo_path, check=True)
 
     # 2. Create a "local" repo, create and commit a submission file, push to the remote
-    tmp_repo_path = gitbase_dir / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
+    tmp_repo_path = files_base / "tmp" / lecture_code / str(assignment_id) / "user" / student.name
     tmp_repo_path.mkdir(parents=True)
-    subprocess.run(["git", "init", "--initial-branch=main"], cwd=tmp_repo_path, check=True)
+    subprocess.run(["git", "init"], cwd=tmp_repo_path, check=True)
     subprocess.run(
         ["git", "remote", "add", "origin", str(submission_repo_path)], cwd=tmp_repo_path, check=True
     )
     submission_file = tmp_repo_path / "submission.ipynb"
-    submission_file.write_text("content")
+    submission_file.write_text("User submission content")
     subprocess.run(["git", "add", "--all"], cwd=tmp_repo_path, check=True)
     subprocess.run(["git", "commit", "-m", "Student submission"], cwd=tmp_repo_path, check=True)
     subprocess.run(["git", "push", "-u", "origin", "main"], cwd=tmp_repo_path, check=True)
@@ -233,8 +231,10 @@ def check_assignment_and_status(
 ):
     session: Session = sessionmaker(engine)()
     assignment = (
-        session.query(orm.Assignment)
-        .filter(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
+        session.execute(
+            select(orm.Assignment).where(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
+        )
+        .scalars()
         .first()
     )
     if should_exist:
@@ -247,8 +247,10 @@ def check_assignment_and_status(
 def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = True):
     session: Session = sessionmaker(engine)()
     submission = (
-        session.query(orm.Submission)
-        .filter(orm.Submission.id == s_id, orm.Submission.assignid == a_id)
+        session.execute(
+            select(orm.Submission).where(orm.Submission.id == s_id, orm.Submission.assignid == a_id)
+        )
+        .scalars()
         .first()
     )
     if should_exist:
@@ -259,92 +261,89 @@ def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = 
 
 def create_git_repository(
     app: GraderServer,
-    l_id: int,
-    code: str,
+    l_code: str,
     a_id: int,
-    s_id: int,
-    repo_type: GitRepoType,
-    username: str,
+    artifact_type: ArtifactType,
+    s_id: int | None = None,
+    username: str | None = None,
+    init_repo: bool = False,
 ):
+    """Creates the directory where the repo of the given `artifact_type` should be located.
+
+    Note: this function does not actually init a Git repo unless `init_repo` is set to `True`.
+    """
     git_dir = Path(app.grader_service_dir) / "git"
     git_dir.mkdir(exist_ok=True)
-    path = f"/git/{code}/{a_id}/{repo_type}/{s_id}"
-    handler_mock = Mock()
-    handler_mock.request.path = path
-    handler_mock.gitbase = str(git_dir)
-    handler_mock.user.name = username
-    sf = get_query_side_effect(
-        lid=l_id, code=code, scope=Scope.instructor, a_id=a_id, s_id=s_id, username=username
+    repo_dir = construct_git_dir(
+        git_dir, artifact_type, l_code, a_id, submission_id=s_id, username=username
     )
-    handler_mock.session.query = Mock(side_effect=sf)
-    constructed_git_dir = GitBaseHandler.construct_git_dir(
-        handler_mock,
-        repo_type=repo_type,
-        lecture=sf(orm.Lecture).filter().one(),
-        assignment=sf(orm.Assignment).filter().one(),
-        submission=sf(orm.Submission).filter().one(),
-    )
-    handler_mock.construct_git_dir = Mock(return_value=constructed_git_dir)
-    lookup_dir = GitBaseHandler.gitlookup(handler_mock, "send-pack")
-    assert os.path.exists(lookup_dir)
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    if init_repo:
+        subprocess.run(["git", "init", "--bare"], cwd=repo_dir, check=True)
+        tmp_base = Path(app.grader_service_dir) / "tmp"
+        tmp_repo_dir = tmp_base / artifact_type
+        try:
+            tmp_base.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["git", "clone", repo_dir], cwd=tmp_base, check=True)
+            submission_file = tmp_repo_dir / "submission.ipynb"
+            submission_file.write_text(f"Test content for {artifact_type} artifact")
+            subprocess.run(["git", "add", "-A"], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "push", "origin", "main"], cwd=tmp_repo_dir, check=True)
+        finally:
+            shutil.rmtree(tmp_repo_dir)
+
+    assert repo_dir.exists()
 
 
-def create_all_git_repositories(
-    app: GraderServer, user: User, l_id: int, l_code: str, a_id: int, s_id: int
-):
-    # create possible git repositories for submission
+def create_all_git_repositories(app: GraderServer, user: User, l_code: str, a_id: int, s_id: int):
+    """Creates all possible git repositories for a submission."""
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.SOURCE,
         s_id=s_id,
-        repo_type=GitRepoType.SOURCE,
         username=user.name,
     )
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.RELEASE,
         s_id=s_id,
-        repo_type=GitRepoType.RELEASE,
         username=user.name,
     )
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.USER,
         s_id=s_id,
-        repo_type=GitRepoType.USER,
         username=user.name,
     )
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.EDIT,
         s_id=s_id,
-        repo_type=GitRepoType.EDIT,
         username=user.name,
     )
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.AUTOGRADE,
         s_id=s_id,
-        repo_type=GitRepoType.AUTOGRADE,
         username=user.name,
     )
     create_git_repository(
         app=app,
-        l_id=l_id,
-        code=l_code,
+        l_code=l_code,
         a_id=a_id,
+        artifact_type=ArtifactType.FEEDBACK,
         s_id=s_id,
-        repo_type=GitRepoType.FEEDBACK,
         username=user.name,
     )
 
@@ -367,12 +366,12 @@ def check_git_repositories(
 ):
     assignment_path = Path(app.grader_service_dir) / "git" / l_code / str(a_id)
 
-    source_path = assignment_path / GitRepoType.SOURCE
-    release_path = assignment_path / GitRepoType.RELEASE
-    user_path = assignment_path / GitRepoType.USER / user.name
-    edit_path = assignment_path / GitRepoType.EDIT / str(s_id)
-    feedback_path = assignment_path / GitRepoType.FEEDBACK / "user" / user.name
-    autograde_path = assignment_path / GitRepoType.AUTOGRADE / "user" / user.name
+    source_path = assignment_path / ArtifactType.SOURCE
+    release_path = assignment_path / ArtifactType.RELEASE
+    user_path = assignment_path / ArtifactType.USER / user.name
+    edit_path = assignment_path / ArtifactType.EDIT / str(s_id)
+    feedback_path = assignment_path / ArtifactType.FEEDBACK / "user" / user.name
+    autograde_path = assignment_path / ArtifactType.AUTOGRADE / "user" / user.name
 
     assert assignment_path.exists() == exists_assignment
     assert source_path.exists() == exists_source

@@ -7,13 +7,15 @@ import concurrent.futures
 import hashlib
 import inspect
 import secrets
+import shutil
 import uuid
 from binascii import b2a_hex
 from datetime import datetime, timezone
 from hmac import compare_digest
-from typing import Any, Dict, List
+from typing import Any
 
 from tornado.log import app_log
+from traitlets import TraitError
 
 
 def isoformat(dt):
@@ -28,29 +30,6 @@ def isoformat(dt):
     if dt.tzinfo:
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt.isoformat() + "Z"
-
-
-# Decorators for authenticated Handlers
-def auth_decorator(check_auth):
-    """Make an authentication decorator.
-
-    I heard you like decorators, so I put a decorator
-    in your decorator, so you can decorate while you decorate.
-    """
-
-    def decorator(method):
-        def decorated(self, *args, **kwargs):
-            check_auth(self, **kwargs)
-            return method(self, *args, **kwargs)
-
-        # Perhaps replace with functools.wrap
-        decorated.__name__ = method.__name__
-        decorated.__doc__ = method.__doc__
-        return decorated
-
-    decorator.__name__ = check_auth.__name__
-    decorator.__doc__ = check_auth.__doc__
-    return decorator
 
 
 # Token utilities
@@ -201,12 +180,12 @@ def get_browser_protocol(request):
     return request.protocol
 
 
-def convert_request_to_dict(arguments: Dict[str, List[bytes]]) -> Dict[str, Any]:
+def convert_request_to_dict(arguments: dict[str, list[bytes]]) -> dict[str, Any]:
     """
     Converts the arguments obtained from a request to a dict.
 
     Args:
-        handler: a tornado.web.RequestHandler object
+        arguments: a dictionary of request arguments
 
     Returns:
         A decoded dict with keys/values extracted from the request's arguments
@@ -215,3 +194,11 @@ def convert_request_to_dict(arguments: Dict[str, List[bytes]]) -> Dict[str, Any]
     for k, values in arguments.items():
         args[k] = values[0].decode()
     return args
+
+
+def executable_validator(proposal: dict) -> str:
+    """Used in Configurable's validators to check that a configured executable exists."""
+    executable: str = proposal["value"]
+    if shutil.which(executable) is None:
+        raise TraitError(f"The executable is not valid: {executable}")
+    return executable

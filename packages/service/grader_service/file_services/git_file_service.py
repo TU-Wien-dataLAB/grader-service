@@ -1,0 +1,571 @@
+import asyncio
+import shutil
+import subprocess
+from pathlib import Path
+
+from traitlets import Unicode, observe, validate, default
+
+from grader_service.artifact_types import ArtifactType
+from grader_service.file_services.base_file_service import FileService, FileServiceError
+from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.utils import executable_validator
+
+
+def validate_path_relative_to(path: Path, base: Path) -> None:
+    """Validate that `path` is relative to `base` directory.
+
+    Prevents using fabricated variables (e.g. lecture codes or usernames containing
+    substrings like "../..") to access directories outside of `base`.
+
+    Raises:
+        ValueError: if the resolved path is not relative to `base`.
+    """
+    path_obj = Path(path).resolve()
+    if not path_obj.is_relative_to(base):
+        raise ValueError("Invalid path")
+
+
+def construct_git_dir(
+    files_base: Path,
+    artifact_type: ArtifactType,
+    lect_code: str,
+    assignment_id: int | str,
+    submission_id: int | str | None = None,
+    username: str | None = None,
+) -> Path:
+    """Returns the path of the repository based on the inputs.
+
+     Note: This method does not check permissions to access the given artifact
+     type or submission; it only constructs the directory path.
+
+    Raises ValueError if the normalised path does not start with
+    `files_base`, to make it robust against fabricated lecture codes
+    or usernames containing substrings like "../..",
+    or if the artifact_type is not recognised.
+    """
+    base_path = files_base / lect_code / str(assignment_id) / artifact_type
+    if artifact_type in {ArtifactType.SOURCE, ArtifactType.RELEASE, ArtifactType.EDIT}:
+        if artifact_type == ArtifactType.EDIT:
+            if submission_id is None:
+                raise ValueError(f"Missing submission_id for artifact type {artifact_type}")
+            path = base_path / str(submission_id)
+        else:
+            path = base_path
+    else:
+        if username is None:
+            raise ValueError(f"Missing username for artifact type {artifact_type}")
+        if artifact_type in {ArtifactType.AUTOGRADE, ArtifactType.FEEDBACK}:
+            # Note: username should be that of the submission's user!
+            path = base_path / "user" / username
+        elif artifact_type == ArtifactType.USER:
+            # we allow two different paths for user artifacts:
+            #  - the logged-in user is trying to access their own artifact,
+            #  - the tutor/instructor accesses the artifact of the user with the specified username.
+            path = base_path / username
+        else:
+            raise ValueError(f"Unknown artifact type: {artifact_type}")
+
+    validate_path_relative_to(path, files_base)
+    return path
+
+
+class GitFileService(FileService):
+    """Service for submission-related file operations"""
+
+    git_executable = Unicode(allow_none=False).tag(config=True)
+
+    @default("git_executable")
+    def _default_git_executable(self):
+        # Note: ``@validate`` would not run on the static default value when ``GitFileService``
+        # is initialized, so we check that "git" is installed here.
+        default_git = "git"
+        executable_validator({"owner": self, "trait": Unicode(), "value": default_git})
+        return default_git
+
+    @validate("git_executable")
+    def _validate_executable(self, proposal):
+        return executable_validator(proposal)
+
+    @observe("grader_service_dir")
+    def _observe_service_dir(self, change):
+        path = change["new"]
+        self.files_base = path / "git"
+        self.tmpbase = path / "tmp"
+
+    def __init__(self, grader_service_dir: Path | str, **kwargs):
+        kwargs["grader_service_dir"] = Path(grader_service_dir)
+        super().__init__(**kwargs)
+        self._check_environment()
+
+    def _check_environment(self):
+        if not self.files_base.exists():
+            self.files_base.mkdir()
+
+        # check if git is configured so that git commits don't fail
+        default_branch = self._run_git_sync(
+            [self.git_executable, "config", "init.defaultBranch"], self.grader_service_dir
+        )
+        if default_branch.strip() != "main":
+            raise RuntimeError("Git default branch has to be set to 'main'!")
+
+        user_name = self._run_git_sync(
+            [self.git_executable, "config", "user.name"], self.grader_service_dir
+        )
+        if user_name.strip() == "":
+            raise RuntimeError("Git user.name has to be set!")
+
+        user_mail = self._run_git_sync(
+            [self.git_executable, "config", "user.email"], self.grader_service_dir
+        )
+        if user_mail.strip() == "":
+            raise RuntimeError("Git user.email has to be set!")
+
+    def _run_git_sync(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
+        """
+        Execute a git command synchronously in a subprocess.
+
+        Note that the command must start with the ``git_executable``.
+
+        Args:
+            command: The git command to execute, as a list of strings.
+            cwd: The working directory the subprocess should run in.
+            may_fail: Whether we expect that the command might fail (e.g. because
+              we want to do something depending on its success/failure).
+        Returns:
+            The stdout of the process as text.
+        Raises:
+            ``FileServiceError`` if the command fails when it should not. This indicates
+              an issue with the files or repositories - something that was not supposed
+              to happen, and will be logged as an error.
+            ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
+              fails; in other words, the command checks something, and this error just
+              indicates one of the possible outcomes. It has to be handled by the caller.
+            If ``may_fail=True``, any other exception thrown while running the subprocess
+            is also re-raised.
+        """
+        if command[0] != self.git_executable:
+            raise ValueError(f"Not a git command: {command}")
+        self.log.debug("Running %r in %s", " ".join(map(str, command)), cwd)
+        try:
+            ret = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            if may_fail:
+                # This error is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e.stderr)
+                raise
+            self.log.error(e.stderr)
+            raise FileServiceError("Subprocess Error")
+        except Exception as e:
+            if may_fail:
+                # An exception is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e)
+                raise
+            # Else: this exception was *not* supposed to happen. We should log the error.
+            self.log.error(e)
+            raise FileServiceError("Subprocess Error")
+        return ret.stdout
+
+    async def _run_git(self, command: list[str], cwd: Path, may_fail: bool = False) -> str:
+        """
+        Run a git command asynchronously in a subprocess.
+
+        Note that the command must start with the `git_executable`.
+
+        Args:
+            command: The git command to execute, as a list of strings.
+            cwd: The working directory the subprocess should run in.
+            may_fail: Whether we expect that the command might fail (e.g. because
+              we want to do something depending on its success/failure).
+        Returns:
+            The stdout of the process as text.
+        Raises:
+            ``FileServiceError`` if the command fails when it should not. This indicates
+              an issue with the files or repositories - something that was not supposed
+              to happen, and will be logged as an error.
+            ``subprocess.CalledProcessError``: if ``may_fail=True`` and ``subprocess.run``
+              fails; in other words, the command checks something, and this error just
+              indicates one of the possible outcomes. It has to be handled by the caller.
+            If ``may_fail=True``, any other exception thrown while running the subprocess
+            is also re-raised.
+        """
+        if command[0] != self.git_executable:
+            raise ValueError(f"Not a git command: {command}")
+        self.log.debug("Running async: %r in %s", " ".join(map(str, command)), cwd)
+        try:
+            ret = await asyncio.create_subprocess_exec(
+                *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
+            )
+        except Exception as e:
+            if may_fail:
+                # An exception is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(e)
+                raise
+            # Else: this exception was *not* supposed to happen. We should log the error.
+            self.log.error(e)
+            raise FileServiceError("Subprocess Error")
+        stdout, stderr = await ret.communicate()
+        if ret.returncode != 0:
+            if may_fail:
+                # This error is an expected possibility and will be handled. No need to log it
+                # as an error.
+                self.log.debug(stderr.decode())
+                raise subprocess.CalledProcessError(ret.returncode, command, stdout, stderr)
+            self.log.error(stderr.decode())
+            raise FileServiceError("Subprocess Error")
+        return stdout.decode("utf-8")
+
+    async def is_bare_git_dir(self, path: Path) -> bool:
+        """Check if the `path` is a directory with a bare git repo."""
+        try:
+            stdout = await self._run_git(
+                [self.git_executable, "rev-parse", "--is-bare-repository"], cwd=path, may_fail=True
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            is_git = False
+        else:
+            is_git = "true" in stdout
+        return is_git
+
+    async def create_bare_repo(
+        self, path: Path, recreate_dir: bool = False, initial_branch: str = "main"
+    ) -> None:
+        """Create and initialize a bare repo in the directory `path`.
+
+        Args:
+            path: the directory where the repo will be initialized
+            recreate_dir: whether to remove and recreate the `path` dir first
+            initial_branch: branch created on repo initialization
+        """
+        if recreate_dir and path.exists():
+            self.log.info("Recreating the bare repo directory: %s", path)
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+        self.log.debug("Running: git init --bare")
+        await self._run_git(
+            [self.git_executable, "init", "--bare", f"--initial-branch={initial_branch}"], cwd=path
+        )
+
+    async def validate_submission_exists(
+        self, submission_hash: str, assignment: Assignment, username: str
+    ) -> None:
+        """Checks that user artifact exists and `main` branch contains the commit with `submission_hash`."""
+        artifact_path = construct_git_dir(
+            files_base=self.files_base,
+            artifact_type=ArtifactType.USER,
+            lect_code=assignment.lecture.code,
+            assignment_id=assignment.id,
+            username=username,
+        )
+
+        # If no submissions for the student exists, we cannot reference a non-existing
+        # commit_hash.
+        if not artifact_path.exists():
+            self.log.error("User artifact not found at %s!", artifact_path)
+            raise FileServiceError("User artifact not found")
+        try:
+            await self._run_git(
+                [self.git_executable, "branch", "main", "--contains", submission_hash],
+                cwd=artifact_path,
+                may_fail=True,
+            )
+        except subprocess.CalledProcessError as err:
+            self.log.debug(err.stderr.decode())
+            raise FileServiceError("Submission commit not found")
+
+    def _prepare_tmp_dirs(
+        self, base: Path, input_dir: str | Path = "input", output_dir: str | Path = "output"
+    ) -> tuple[Path, Path]:
+        """
+        Recreate the base dir and create input and output subdirs in it.
+
+        Base has to be relative to the ``self.tmpbase``.
+        """
+        validate_path_relative_to(base, self.tmpbase)
+        if base.exists():
+            shutil.rmtree(base)
+        base.mkdir(parents=True)
+
+        tmp_path_input = base / input_dir
+        tmp_path_output = base / output_dir
+        validate_path_relative_to(tmp_path_input, base)
+        validate_path_relative_to(tmp_path_output, base)
+        tmp_path_input.mkdir()
+        tmp_path_output.mkdir()
+
+        return tmp_path_input, tmp_path_output
+
+    async def _copy_files_and_commit(
+        self, input_path: Path, output_path: Path, message: str = "Initial commit"
+    ) -> None:
+        """Copy submission files from one repo to another, commit and push them."""
+        self.log.debug("Copying submission files from %s to %s", input_path, output_path)
+        ignore = shutil.ignore_patterns(".git", "__pycache__")
+        shutil.copytree(input_path, output_path, ignore=ignore, dirs_exist_ok=True)
+
+        await self._run_git([self.git_executable, "add", "-A"], cwd=output_path)
+        await self._run_git(
+            [self.git_executable, "commit", "--allow-empty", "-m", message], cwd=output_path
+        )
+        self.log.debug("Successfully commited files. Commit message: '%s'", message)
+        await self._run_git([self.git_executable, "push", "-u", "origin", "main"], cwd=output_path)
+        self.log.debug("Successfully pushed the commit")
+
+    async def init_user_files(self, assignment: Assignment, username: str, comment: str) -> None:
+        """Copy submission files from release to user repo.
+
+        This method can also be used to "reset" one's own repo. Note that it does
+        *not* reset its git history, but rather overwrites the submission files
+        and creates a new commit.
+
+        Raises:
+            FileNotFoundError if any of the release or user repositories do not exist.
+        """
+        l_code = assignment.lecture.code
+
+        remote_path_release = construct_git_dir(
+            self.files_base, ArtifactType.RELEASE, l_code, assignment.id
+        )
+        if not remote_path_release.exists():
+            raise FileNotFoundError("The release artifact does not exist")
+        remote_path_user = construct_git_dir(
+            self.files_base, ArtifactType.USER, l_code, assignment.id, username=username
+        )
+        if not remote_path_user.exists():
+            raise FileNotFoundError("The user submission artifact does not exist")
+
+        tmp_base = self.tmpbase / l_code / str(assignment.id) / username
+        tmp_path_input, tmp_path_output = self._prepare_tmp_dirs(
+            tmp_base, "release", remote_path_user.name
+        )
+
+        self.log.info("Copying the release files from %s", remote_path_release)
+        self.log.debug("Temporary path used for copying: %s", tmp_base)
+
+        try:
+            # Get the release files (no need to clone the whole repo)
+            await self._run_git(
+                [self.git_executable, "init", "--initial-branch=main"], cwd=tmp_path_input
+            )
+            await self._run_git(
+                [self.git_executable, "pull", str(remote_path_release), "main"], cwd=tmp_path_input
+            )
+
+            # Clone the user repo (we need the whole clone, because we will be committing to it)
+            await self._run_git(
+                [self.git_executable, "clone", str(remote_path_user), str(tmp_path_output)],
+                cwd=tmp_path_output,
+            )
+            # Ensure the user repo is on `main`
+            await self._run_git(
+                [self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output
+            )
+
+            # Copy files to the edit repo, commit and push the changes
+            await self._copy_files_and_commit(tmp_path_input, tmp_path_output, comment)
+            self.log.info("Successfully copied release files to user repository.")
+        finally:
+            shutil.rmtree(tmp_base)
+
+    async def fetch_files(self, dir: Path, artifact_type: ArtifactType, submission: Submission):
+        """Init and pull submission files from the repository of type ``artifact_type`` into ``dir``.
+
+        Note that this method does not clone the entire repository, but only pulls
+        the specified branch into the ``dir``, so that the fetched files can be further
+        processed (e.g. autograded, or copied over to initialize a different artifact type).
+
+        Args:
+            dir: The directory where the input repo will be created; has to already exist.
+            artifact_type: Artifact type from which the files are to be fetched
+            submission: Submission whose files are to be fetched
+        Raises:
+            ValueError if artifact_type is not one of the allowed values.
+        """
+        if artifact_type in [ArtifactType.USER, ArtifactType.EDIT]:
+            input_branch = "main"
+        elif artifact_type == ArtifactType.AUTOGRADE:
+            input_branch = f"submission_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Fetching submission files of type {artifact_type} is not supported")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.files_base, artifact_type, l_code, assignment.id, submission.id, username
+        )
+
+        self.log.info("Pulling repo %s into input directory", remote_repo_path)
+        commands = [
+            [self.git_executable, "init", "--initial-branch=main"],
+            [self.git_executable, "pull", str(remote_repo_path), input_branch],
+        ]
+        # When autograding a user's submission, check out to the commit of submission
+        if artifact_type == ArtifactType.USER:
+            commands.append([self.git_executable, "checkout", submission.commit_hash])
+
+        for cmd in commands:
+            await self._run_git(cmd, dir)
+
+        self.log.info("Successfully pulled files from the %s artifact.", artifact_type)
+
+    async def edit_submission(self, submission: Submission) -> None:
+        """Create or overwrite (reset) the repo which stores instructor's changes to submissions files."""
+        assignment = submission.assignment
+        lecture = assignment.lecture
+
+        # Create temporary paths to copy the submission files into the edit repository
+        tmp_base = self.tmpbase / lecture.code / str(assignment.id) / "edit" / str(submission.id)
+        tmp_path_input, tmp_path_output = self._prepare_tmp_dirs(tmp_base)
+
+        # Path to repository of student which contains the submitted files
+        remote_path_user = construct_git_dir(
+            files_base=self.files_base,
+            artifact_type=ArtifactType.USER,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
+            username=submission.user.name,
+        )
+        if not remote_path_user.exists():
+            raise FileNotFoundError("The user submission artifact does not exist")
+        # Path to the repository which will store edited submission files (may not exist yet)
+        remote_path_edit = construct_git_dir(
+            files_base=self.files_base,
+            artifact_type=ArtifactType.EDIT,
+            lect_code=lecture.code,
+            assignment_id=assignment.id,
+            submission_id=submission.id,
+        )
+
+        try:
+            # Get user submission files (no need to clone the whole repo)
+            await self.fetch_files(tmp_path_input, ArtifactType.USER, submission)
+
+            # (Re-)Create bare edit repository
+            await self.create_bare_repo(remote_path_edit, recreate_dir=True)
+
+            # Clone the (still empty) edit repository
+            await self._run_git(
+                [self.git_executable, "clone", str(remote_path_edit), str(tmp_path_output)],
+                cwd=tmp_path_output,
+            )
+            await self._run_git(
+                [self.git_executable, "checkout", "-B", "main"], cwd=tmp_path_output
+            )
+            self.log.debug("Successfully set up edit repo")
+
+            # Copy files to the edit repo, commit and push the changes
+            await self._copy_files_and_commit(tmp_path_input, tmp_path_output)
+            self.log.info("Successfully created a repository for edited submission.")
+        finally:
+            shutil.rmtree(tmp_base)
+
+    async def push_files(
+        self, filenames: list[str], dir: Path, artifact_type: ArtifactType, submission: Submission
+    ) -> None:
+        """Create the repository of type `artifact_type` at `dir`, commit and push the changes.
+
+        This method is to be used on files produced by the autograder/feedback executor.
+        When the submission if autograded/the feedback is generated for the first time,
+        the bare repository is also initialized.
+
+        Args:
+            filenames: List of filenames in ``dir`` to commit
+            dir: The directory where the input repo will be initialized. Should already
+              exist and contain the ``filenames``
+            artifact_type: Artifact type to which the files are to be pushed
+            submission: Submission whose files are updated
+        Raises:
+            ValueError if artifact_type is not one of the allowed values.
+        """
+        if artifact_type == ArtifactType.AUTOGRADE:
+            output_branch = f"submission_{submission.commit_hash}"
+        elif artifact_type == ArtifactType.FEEDBACK:
+            output_branch = f"feedback_{submission.commit_hash}"
+        else:
+            raise ValueError(f"Pushing submission files of type {artifact_type} is not supported")
+
+        assignment: Assignment = submission.assignment
+        l_code: str = assignment.lecture.code
+        username: str = submission.user.name
+
+        remote_repo_path = construct_git_dir(
+            self.files_base, artifact_type, l_code, assignment.id, submission.id, username
+        )
+        if not remote_repo_path.exists():
+            await self.create_bare_repo(remote_repo_path)
+
+        await self._set_up_output_repo(dir, output_branch)
+        await self._commit_files(filenames, dir, msg=submission.commit_hash)
+
+        self.log.info(f"Pushing to {remote_repo_path} at branch {output_branch}")
+        await self._run_git(
+            [self.git_executable, "push", "-uf", str(remote_repo_path), output_branch], cwd=dir
+        )
+        self.log.info("Pushing complete")
+
+    async def _set_up_output_repo(self, dir: Path, branch: str) -> None:
+        """Initialize the repo at ``dir`` and switch to ``branch``."""
+        if not dir.exists():
+            self.log.debug("Creating directory %s", dir)
+            dir.mkdir(parents=True)
+        self.log.info("Initialising repo at %s", dir)
+        await self._run_git([self.git_executable, "init"], dir)
+        self.log.debug("Switching to branch %r", branch)
+        try:
+            await self._run_git([self.git_executable, "switch", branch], dir, may_fail=True)
+        except subprocess.CalledProcessError:  # branch does not exist: create it
+            await self._run_git([self.git_executable, "switch", "-c", branch], dir)
+            self.log.debug("Creating the new branch %r", branch)
+        self.log.debug("Now at branch %r", branch)
+
+    async def _commit_files(self, filenames: list[str], dir: Path, msg: str) -> None:
+        """
+        Commit the provided files in the repo at ``dir`` with the provided commit message.
+        """
+        self.log.info("Committing files: %s in %s", filenames, dir)
+        # Make sure we do not commit the gradebook.json
+        filenames = [f for f in filenames if f != "gradebook.json"]
+
+        if not filenames:
+            self.log.warning("No files to commit! Repository: %s", dir)
+
+        await self._run_git([self.git_executable, "add", "--", *filenames], dir)
+        await self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
+
+    async def delete_lecture_files(self, lecture: Lecture) -> None:
+        """Delete all associated directories of the lecture."""
+        lecture_path = (self.files_base / lecture.code).resolve()
+        validate_path_relative_to(lecture_path, self.files_base)
+        tmp_lecture_path = (self.tmpbase / lecture.code).resolve()
+        validate_path_relative_to(tmp_lecture_path, self.tmpbase)
+        await asyncio.to_thread(shutil.rmtree, lecture_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, tmp_lecture_path, ignore_errors=True)
+
+    async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
+        """Delete all associated directories of the assignment."""
+        assignment_path = (self.files_base / lecture.code / str(assignment.id)).resolve()
+        validate_path_relative_to(assignment_path, self.files_base)
+        tmp_assignment_path = (self.tmpbase / lecture.code / str(assignment.id)).resolve()
+        validate_path_relative_to(tmp_assignment_path, self.tmpbase)
+        await asyncio.to_thread(shutil.rmtree, assignment_path, ignore_errors=True)
+        await asyncio.to_thread(shutil.rmtree, tmp_assignment_path, ignore_errors=True)
+
+    async def delete_submission_files(self, submission: Submission) -> None:
+        """Delete all associated directories of the submission."""
+        l_code = submission.assignment.lecture.code
+        a_id = str(submission.assignment.id)
+
+        assignment_path = (self.files_base / l_code / a_id).resolve()
+        validate_path_relative_to(assignment_path, self.files_base)
+        tmp_assignment_path = (self.tmpbase / l_code / a_id).resolve()
+        validate_path_relative_to(tmp_assignment_path, self.tmpbase)
+
+        target_names = {submission.user.name, str(submission.id)}
+        for base_path in [assignment_path, tmp_assignment_path]:
+            for dir_path in base_path.rglob("*"):
+                if dir_path.is_dir() and dir_path.name in target_names:
+                    await asyncio.to_thread(shutil.rmtree, dir_path, ignore_errors=True)

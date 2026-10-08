@@ -17,7 +17,6 @@ from grader_service.autograding.celery.tasks import (
     lti_sync_task,
 )
 from grader_service.autograding.local_feedback import LocalFeedbackExecutor
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.orm import Submission
 from grader_service.orm.submission import FeedbackStatus
 from grader_service.tests.handlers.db_util import insert_submission
@@ -32,14 +31,10 @@ _lti_sync_result = {
 @pytest.fixture(scope="function")
 def celery_app(app, sql_alchemy_sessionmaker):
     """Mocks CeleryApp instance's plugin manager, initializes GraderService with temp dir"""
-    # The following line is necessary for the generate_feedback_task:
     GraderService.grader_service_dir = app.grader_service_dir
-    # ...and these two - for the autograde_task:
-    grader_service = GraderService.instance()
-    grader_service.grader_service_dir = app.grader_service_dir
 
     mock_plugin = AsyncMock()
-    mock_plugin.check_if_lti_enabled.return_value = True
+    mock_plugin.check_if_lti_enabled = MagicMock(return_value=True)
     mock_plugin.start.return_value = _lti_sync_result
     plugin_manager = MagicMock()
     plugin_manager.get.return_value = mock_plugin
@@ -59,7 +54,7 @@ def test_celery_autograde_task_runs_successfully(sql_alchemy_sessionmaker, celer
     # Mock the actual autograding executor call - this is tested elsewhere
     with (
         patch.object(
-            RequestHandlerConfig.instance().autograde_executor_class, "start", return_value=None
+            GraderService.instance().autograde_executor_class, "start", return_value=None
         ) as autograding_mock,
         patch.object(autograde_task.log, "info", return_value=MagicMock()),
     ):

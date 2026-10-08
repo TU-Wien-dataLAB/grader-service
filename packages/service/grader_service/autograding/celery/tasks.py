@@ -6,7 +6,6 @@ from tornado.web import HTTPError
 
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_feedback import LocalFeedbackExecutor
-from grader_service.handlers.base_handler import RequestHandlerConfig
 from grader_service.orm.submission import FeedbackStatus, Submission
 
 # Note: The celery instance is lazy so we can still add configuration later
@@ -38,7 +37,8 @@ class GraderTask(Task):
 def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id: int):
     from grader_service.main import GraderService
 
-    grader_service_dir = GraderService.instance().grader_service_dir
+    service = GraderService.instance()
+    grader_service_dir = service.grader_service_dir
 
     submission = self.session.get(Submission, sub_id)
     if submission is None:
@@ -48,7 +48,7 @@ def autograde_task(self: GraderTask, lecture_id: int, assignment_id: int, sub_id
             f"invalid submission {submission.id}: {assignment_id=:}, {lecture_id=:} does not match"
         )
 
-    executor = RequestHandlerConfig.instance().autograde_executor_class(
+    executor = service.autograde_executor_class(
         grader_service_dir, submission, config=self.celery.config
     )
     self.log.info(f"Running autograding task for submission {submission.id}")
