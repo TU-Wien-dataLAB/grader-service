@@ -87,8 +87,9 @@ export function generateAssignment(
 ): Promise<any> {
   return request<any>(
     HTTPMethod.PUT,
-    `${baseUrl(lectureId)}/${assignment.id}/generate`,
-    null
+    `${baseUrl(lectureId)}/${assignmentId}/generate`,
+    null,
+    reload
   );
 }
 
