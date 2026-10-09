@@ -8,7 +8,7 @@ import { Assignment } from '../model/assignment';
 import { User } from '../model/user';
 import { request } from './request.service';
 import { Submission } from '../model/submission';
-import { baseUrl } from './file.service';
+import { baseUrl } from './git.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 
 export function autogradeSubmission(
