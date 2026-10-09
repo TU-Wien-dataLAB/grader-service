@@ -24,7 +24,7 @@ interface IDatePickerTime {
 export function DatePickerTime(props: IDatePickerTime) {
   const date = props.field.state.value as Date | undefined;
   const setTimeDiff = (selectedDate: Date) => {
-    props.setTimeDiff(
+    props.setTimeDiff?.(
       calculateDaysDifference({
         endDate: new Date(selectedDate),
         startDate: new Date()

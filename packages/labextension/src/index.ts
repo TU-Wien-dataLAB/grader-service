@@ -47,7 +47,7 @@ import { CommandRegistry } from '@lumino/commands';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents, ServiceManager } from '@jupyterlab/services';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { FileBrowser, IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { UserPermissions } from './services/permission.service';
 import { CreationWidget } from './app/components/notebook/create-assignment/creation-widget';
 import {
@@ -88,7 +88,6 @@ export class GlobalObjects {
   static tracker: INotebookTracker;
   static themeManager: IThemeManager;
   static graderServiceMenu: Menu;
-  static defaultBrowser: FileBrowser;
 }
 
 const createGraderServiceCommands = (
@@ -364,7 +363,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     // If the user has no instructor roles in any lecture we do not display the course management
     UserPermissions.loadPermissions()
       .then(() => {
-        if (UserPermissions.hasElevatedPermissions) {
+        if (UserPermissions.hasElevatedPermissions()) {
           connectTrackerSignals(tracker);
         }
         createGraderServiceCommands(app, launcher, graderServiceTracker);

@@ -191,8 +191,8 @@ const makeDir = async (path: string, name: string) => {
  */
 export const makeDirs = async (path: string, names: string[]) => {
   let p = path;
-  names.map(async name => {
+  for (const name of names) {
     p = await makeDir(p, name);
-  });
+  }
   return p;
 };

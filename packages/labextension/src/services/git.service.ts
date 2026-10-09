@@ -6,6 +6,15 @@ import { Lecture } from '../model/lecture';
 import { Assignment } from '../model/assignment';
 import { RemoteFileStatus } from '../model/remoteFileStatus';
 
+interface IGitLogObject {
+  commit: string;
+  author: string;
+  date: string;
+  ref: string;
+  commit_msg: string;
+  pre_commit: string;
+}
+
 export const baseUrl = (props: { lectureId: number; assignmentId: number }) => {
   return `/api/lectures/${props.lectureId}/assignments/${props.assignmentId}/`;
 };
@@ -64,19 +73,6 @@ export function resetAssignment(
     `${baseUrl({ lectureId, assignmentId })}reset`,
     null
   );
-}
-
-export function getGitLogs(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number,
-  reload = false
-): Promise<string> {
-  const url = `${baseUrl({
-    lectureId,
-    assignmentId
-  })}submissions/${submissionId}/logs`;
-  return request<string>(HTTPMethod.GET, url, null, reload);
 }
 
 export function createOrOverrideEditRepository(
@@ -157,15 +153,6 @@ export function restoreSubmission(
     `${baseUrl({ lectureId, assignmentId })}restore/${commitHash}`,
     null
   );
-}
-
-interface IGitLogObject {
-  commit: string;
-  author: string;
-  date: string;
-  ref: string;
-  commit_msg: string;
-  pre_commit: string;
 }
 
 /**

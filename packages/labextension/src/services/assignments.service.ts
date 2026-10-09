@@ -31,18 +31,14 @@ export function getAllAssignments(
 export function getAssignment(
   lectureId: number,
   assignmentId: number,
-  instructor: boolean = false,
   reload = false
 ): Promise<Assignment> {
-  let url = `${baseUrl(lectureId)}/${assignmentId}`;
-  if (instructor) {
-    const searchParams = new URLSearchParams({
-      'instructor-version': String(instructor)
-    });
-    url += '?' + searchParams.toString();
-  }
-
-  return request<Assignment>(HTTPMethod.GET, url, null, reload);
+  return request<Assignment>(
+    HTTPMethod.GET,
+    `${baseUrl(lectureId)}/${assignmentId}`,
+    null,
+    reload
+  );
 }
 
 export function createAssignment(
@@ -83,12 +79,6 @@ export function getAssignmentProperties(
   );
 }
 
-/**
- * Generates the release files from the source files of an assignment
- *
- * @param lectureId - the id of the lecture
- * @param assignmentId - the id of the assignment to generate release files for
- */
 export function generateAssignment(
   lectureId: number,
   assignmentId: number
@@ -98,6 +88,25 @@ export function generateAssignment(
     `${baseUrl(lectureId)}/${assignmentId}/generate`,
     null
   );
+}
+
+export function fetchAssignment(
+  lectureId: number,
+  assignmentId: number,
+  instructor: boolean = false,
+  metadataOnly: boolean = false,
+  reload: boolean = false
+): Promise<Assignment> {
+  let url = `${baseUrl(lectureId)}/${assignmentId}`;
+  if (instructor || metadataOnly) {
+    const searchParams = new URLSearchParams({
+      'instructor-version': String(instructor),
+      'metadata-only': String(metadataOnly)
+    });
+    url += '?' + searchParams;
+  }
+
+  return request<Assignment>(HTTPMethod.GET, url, null, reload);
 }
 
 export function deleteAssignment(

@@ -5,11 +5,11 @@
 // LICENSE file in the root directory of this source tree.
 
 import { Assignment } from '../model/assignment';
-import { User } from '../model/user';
 import { request } from './request.service';
 import { Submission } from '../model/submission';
 import { baseUrl } from './git.service';
 import { HTTPMethod } from './enums/http-methods.enum';
+import { RepoType } from '../app/components/utils/repo-type';
 
 export function autogradeSubmission(
   lectureId: number,
@@ -19,6 +19,18 @@ export function autogradeSubmission(
   return request<Assignment>(
     HTTPMethod.GET,
     `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/auto`,
+    null
+  );
+}
+
+export function pullAutogradedOrOriginalFiles(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
+): Promise<any> {
+  return request<any>(
+    HTTPMethod.GET,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
     null
   );
 }
@@ -35,64 +47,16 @@ export function generateFeedback(
   );
 }
 
-export function getGrade(
+export async function pullFeedback(
   lectureId: number,
   assignmentId: number,
-  student: User
-): Promise<any> {
-  return request<any>(
+  submission: Submission
+) {
+  return request<void>(
     HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/score`,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submission.id}/pull/${
+      RepoType.FEEDBACK
+    }`,
     null
-  );
-}
-
-export function getManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User
-): Promise<object> {
-  return request<object>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    null
-  );
-}
-
-export function createManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
-    null
-  );
-}
-
-export function updateManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.PUT,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    manual
-  );
-}
-
-export function deleteManualFeedback(
-  lectureId: number,
-  assignmentId: number,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.DELETE,
-    `${baseUrl({ lectureId, assignmentId })}grading/${student.name}/manual`,
-    manual
   );
 }
