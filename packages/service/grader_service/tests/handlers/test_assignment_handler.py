@@ -9,7 +9,6 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models.assignment import Assignment
@@ -77,15 +76,15 @@ async def test_get_assignments_instructor(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
-    engine = sql_alchemy_engine
-    num_inserted = insert_assignments(engine, l_id)
+    num_inserted = insert_assignments(session, l_id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -628,13 +627,14 @@ async def test_get_assignment_created_student(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 2  # assignment is created
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created")
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -650,13 +650,14 @@ async def test_get_assignment_created_admin(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is admin
     a_id = 2  # assignment is created
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created")
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="created")
 
     get_response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -672,14 +673,15 @@ async def test_get_assignment_unauthorized(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 4  # default user has no role
     a_id = 3  # assignment is released
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
-    insert_assignments(sql_alchemy_engine, l_id)
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released")
+    insert_assignments(session, l_id)
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="released")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -763,15 +765,15 @@ async def test_get_assignment_unknown_parameter(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments/4/?instructor-version=true"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, 3)
+    insert_assignments(session, 3)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -787,7 +789,7 @@ async def test_delete_assignment(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
 
@@ -814,9 +816,9 @@ async def test_delete_assignment(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created"
-    )
+
+    session = sql_alchemy_sessionmaker()
+    check_assignment_and_status(session, l_id=l_id, a_id=post_assignment.id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -835,7 +837,7 @@ async def test_delete_assignment_deleted_assignment(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
 
@@ -862,9 +864,9 @@ async def test_delete_assignment_deleted_assignment(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=post_assignment.id, status="created"
-    )
+
+    session = sql_alchemy_sessionmaker()
+    check_assignment_and_status(session, l_id=l_id, a_id=post_assignment.id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -918,7 +920,7 @@ async def test_delete_assignment_same_name_twice(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
 
@@ -945,9 +947,9 @@ async def test_delete_assignment_same_name_twice(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=first_post_assignment.id, status="created"
-    )
+
+    session = sql_alchemy_sessionmaker()
+    check_assignment_and_status(session, l_id=l_id, a_id=first_post_assignment.id, status="created")
 
     url = service_base_url + "lectures/3/assignments/"
 
@@ -967,14 +969,10 @@ async def test_delete_assignment_same_name_twice(
     )
     assert delete_response.code == HTTPStatus.OK
     check_assignment_and_status(
-        sql_alchemy_engine,
-        l_id=l_id,
-        a_id=first_post_assignment.id,
-        status="created",
-        should_exist=False,
+        session, l_id=l_id, a_id=first_post_assignment.id, status="created", should_exist=False
     )
     check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=second_post_assignment.id, status="created"
+        session, l_id=l_id, a_id=second_post_assignment.id, status="created"
     )
 
 
@@ -1054,16 +1052,16 @@ async def test_delete_assignment_with_submissions(
     http_server_client,
     default_token,
     default_user,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
 
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
@@ -1082,14 +1080,15 @@ async def test_delete_assignment_hard(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
     a_id = 3
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
-    insert_assignment(sql_alchemy_engine, l_id)
+    session = sql_alchemy_sessionmaker()
+    insert_assignment(session, l_id)
 
     delete_response = await http_server_client.fetch(
         url + "?hard_delete=true",
@@ -1097,9 +1096,8 @@ async def test_delete_assignment_hard(
         headers={"Authorization": f"Token {default_token}"},
     )
     assert delete_response.code == HTTPStatus.OK
-    check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created", should_exist=False
-    )
+
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="created", should_exist=False)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1110,7 +1108,6 @@ async def test_delete_assignment_hard(
     assert e.code == HTTPStatus.NOT_FOUND
     assert e.message == f"Assignment with id {a_id} was not found"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
     assignments = session.query(AssignmentORM).filter(AssignmentORM.lectid == l_id).all()
     assert len(assignments) == 0
 
@@ -1122,14 +1119,15 @@ async def test_delete_assignment_hard_unauthorized(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 3
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
 
-    insert_assignment(sql_alchemy_engine, l_id)
+    insert_assignment(session, l_id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1148,9 +1146,10 @@ async def test_delete_assignment_hard_with_submissions(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 4
     l_code = "23wle1"
     a_id = 3
@@ -1169,7 +1168,7 @@ async def test_delete_assignment_hard_with_submissions(
     )
     assert post_response.code == HTTPStatus.CREATED
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
     create_all_git_repositories(app, default_user, l_code, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}"
@@ -1180,7 +1179,7 @@ async def test_delete_assignment_hard_with_submissions(
     )
     assert delete_response.code == HTTPStatus.OK
     check_assignment_and_status(
-        sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released", should_exist=False
+        session, l_id=l_id, a_id=a_id, status="released", should_exist=False
     )
 
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1192,7 +1191,6 @@ async def test_delete_assignment_hard_with_submissions(
     assert e.code == HTTPStatus.NOT_FOUND
     assert e.message == f"Assignment with id {a_id} was not found"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
     assignments = session.query(AssignmentORM).filter(AssignmentORM.lectid == l_id).all()
     assert len(assignments) == 0
 
@@ -1212,20 +1210,20 @@ async def test_assignment_reset_student(
     default_roles,
     default_user,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     """Test that a student can reset a released assignment."""
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     l_code = "21wle1"  # the code of the lecture with id=1
     a_id = 1
 
     files_base = Path(app.grader_service_dir) / "git"
 
-    engine = sql_alchemy_engine
     # Create a release repo
     create_git_repository(app, l_code, a_id, artifact_type=ArtifactType.RELEASE, init_repo=True)
     # Create a student submission and a user repo (remote and local)
-    sub = create_user_submission_with_repo(engine, files_base, default_user, a_id, l_code)
+    sub = create_user_submission_with_repo(session, files_base, default_user, a_id, l_code)
 
     user_repo_path = files_base / "21wle1" / str(a_id) / ArtifactType.USER / default_user.name
     local_repo_path = files_base / "tmp" / l_code / str(a_id) / "user" / default_user.name
@@ -1246,7 +1244,7 @@ async def test_assignment_reset_student(
     assert reset_assignment.id == a_id
 
     # Make sure that the student's submission still exist in the database
-    check_submission(engine, a_id, sub.id)
+    check_submission(session, a_id, sub.id)
 
     assert user_repo_path.exists()
     # Get the message of the last (reset) commit
@@ -1326,15 +1324,16 @@ async def test_assignment_reset_unauthorized(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     """Test that resetting an assignment in a lecture where user has no role returns FORBIDDEN."""
+    session = sql_alchemy_sessionmaker()
     l_id = 4  # default user has no role
     a_id = 3
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/reset"
 
-    insert_assignments(sql_alchemy_engine, l_id)
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="released")
+    insert_assignments(session, l_id)
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="released")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1350,14 +1349,15 @@ async def test_assignment_reset_created_student(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     """Test that a student cannot reset an assignment with status 'created'."""
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 2  # assignment is created
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/reset"
 
-    check_assignment_and_status(sql_alchemy_engine, l_id=l_id, a_id=a_id, status="created")
+    check_assignment_and_status(session, l_id=l_id, a_id=a_id, status="created")
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1371,14 +1371,14 @@ async def test_assignment_properties_lecture_assignment_missmatch(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 1
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
     prop = {"notebooks": {}}
@@ -1406,14 +1406,14 @@ async def test_assignment_properties_wrong_assignment_id(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 99
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/properties"
     prop = {"notebooks": {}}
@@ -1441,17 +1441,14 @@ async def test_assignment_properties_not_found(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
     sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-
-    session = sql_alchemy_sessionmaker()
+    insert_assignments(session, l_id)
     assignment = session.query(AssignmentORM).filter_by(id=a_id).first()
     assignment.properties = None
     session.commit()
@@ -1471,7 +1468,6 @@ async def test_assignment_properties_properties_wrong_for_autograde(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -1668,7 +1664,6 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
