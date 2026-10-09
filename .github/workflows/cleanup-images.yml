@@ -2,7 +2,7 @@ name: Cleanup PR Images
 
 on:
   pull_request:
-    types: [closed]
+    types: [ closed ]
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Compute lowercase owner
         run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
-      - uses: dataaxiom/ghcr-cleanup-action@v1
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f  # v1.2.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ env.OWNER }}
@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Compute lowercase owner
         run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
-      - uses: dataaxiom/ghcr-cleanup-action@v1
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f  # v1.2.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ env.OWNER }}
