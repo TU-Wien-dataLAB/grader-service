@@ -120,5 +120,10 @@ c.GraderService.load_roles = {
         {"members": ["student"], "role": "student"},
         {"members": ["tutor"], "role": "tutor"},
         {"members": ["instructor", "admin"], "role": "instructor"},
-    ]
+    ],
+    "lecture2": [
+        {"members": ["student"], "role": "student"},
+        {"members": ["tutor"], "role": "tutor"},
+        {"members": ["instructor", "admin"], "role": "instructor"},
+    ],
 }

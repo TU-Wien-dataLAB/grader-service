@@ -6,11 +6,18 @@
     "esModuleInterop": true,
     "incremental": true,
     "jsx": "react",
-    "lib": ["DOM", "ES2020"],
-    "module": "esnext",
-    "moduleResolution": "node",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+"ES2019",
+      "ES2020.BigInt",
+      "ES2020.Intl",
+      "ES2020.String"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "noEmitOnError": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
@@ -18,8 +25,9 @@
     "rootDir": "src",
     "strict": true,
     "strictNullChecks": false,
-    "target": "ES2020",
-    "types": ["jest"]
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"]
 }

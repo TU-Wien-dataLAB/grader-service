@@ -1,166 +1,43 @@
-// Copyright (c) 2022, TU Wien
-// All rights reserved.
-//
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree.
-
-import { Assignment } from '../model/assignment';
-import { Lecture } from '../model/lecture';
+import { HTTPMethod } from './enums/http-methods.enum';
+import { request } from './request.service';
 import { Submission } from '../model/submission';
-import { request, HTTPMethod } from './request.service';
-import { RepoType } from '../components/util/repo-type';
-
-export function submitAssignment(lecture: Lecture, assignment: Assignment) {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/push/${RepoType.USER}`;
-  const searchParams = new URLSearchParams({
-    submit: 'true'
-  });
-  url += '?' + searchParams;
-
-  return request<Submission>(HTTPMethod.PUT, url, null);
-}
-
-export async function pullFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  submission: Submission
-) {
-  return request<void>(
-    HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/pull/${RepoType.FEEDBACK}`,
-    null
-  );
-}
-
-export async function pullSubmissionFiles(
-  lecture: Lecture,
-  assignment: Assignment,
-  submission: Submission
-) {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/pull/${RepoType.EDIT}`;
-
-  const searchParams = new URLSearchParams({
-    subid: String(submission.id)
-  });
-  url += '?' + searchParams;
-  return request<void>(HTTPMethod.GET, url, null);
-}
-
-export async function createSubmissionFiles(
-  lecture: Lecture,
-  assignment: Assignment,
-  username: string
-) {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/push/${RepoType.EDIT}`;
-  const searchParams = new URLSearchParams({
-    for_user: username
-  });
-  url += '?' + searchParams;
-  return request<void>(HTTPMethod.PUT, url, null);
-}
-
-export async function pushSubmissionFiles(
-  lecture: Lecture,
-  assignment: Assignment,
-  submission: Submission
-) {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/push/${RepoType.EDIT}`;
-  const searchParams = new URLSearchParams({
-    subid: String(submission.id)
-  });
-  url += '?' + searchParams;
-  return request<void>(HTTPMethod.PUT, url, null);
-}
+import { baseUrl } from './file.service';
 
 export function getSubmissions(
-  lecture: Lecture,
-  assignment: Assignment,
-  filter = 'none',
-  reload = false
-): Promise<Submission[]> {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/submissions`;
-  if (filter) {
-    const searchParams = new URLSearchParams({
-      filter: filter
-    });
-    url += '?' + searchParams;
-  }
-  return request<any>(HTTPMethod.GET, url, null, reload);
-}
-
-export function getAllSubmissions(
   lectureId: number,
   assignmentId: number,
   filter: 'none' | 'latest' | 'best' = 'none',
   instructor = true,
   reload = false
 ): Promise<Submission[]> {
-  let url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions`;
+  let url = `${baseUrl({ lectureId, assignmentId })}submissions`;
 
   if (filter || instructor) {
     const searchParams = new URLSearchParams({
       'instructor-version': String(instructor),
       filter: filter
     });
-    url += '?' + searchParams;
+    url += '?' + searchParams.toString();
   }
   return request<Submission[]>(HTTPMethod.GET, url, null, reload);
 }
 
-export function getFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  latest = false,
-  instructor = false
+export function saveSubmissions(
+  lectureId: number,
+  assignmentId: number,
+  filter: 'none' | 'latest' | 'best' = 'none'
 ): Promise<any> {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/feedback`;
-  if (latest || instructor) {
+  let url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/save`;
+  if (filter) {
     const searchParams = new URLSearchParams({
-      'instructor-version': String(instructor),
-      latest: String(latest)
+      filter: filter
     });
-    url += '?' + searchParams;
+    url += '?' + searchParams.toString();
   }
-  return request<any>(HTTPMethod.GET, url, null);
-}
-
-export function getProperties(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number,
-  reload = false
-): Promise<any> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/properties`;
-  return request<any>(HTTPMethod.GET, url, null, reload);
-}
-
-export function getLogs(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number,
-  reload = false
-): Promise<string> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/logs`;
-  return request<string>(HTTPMethod.GET, url, null, reload);
-}
-
-export function createOrOverrideEditRepository(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number
-): Promise<Submission> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/edit`;
-  return request<Submission>(HTTPMethod.PUT, url, {});
-}
-
-export function updateProperties(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number,
-  properties: any
-): Promise<Submission> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}/properties`;
-  return request<Submission>(HTTPMethod.PUT, url, properties);
+  return request<any>(HTTPMethod.PUT, url, null);
 }
 
 export function getSubmission(
@@ -169,7 +46,10 @@ export function getSubmission(
   submissionId: number,
   reload: boolean = false
 ): Promise<Submission> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`;
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}`;
   return request<Submission>(HTTPMethod.GET, url, null, reload);
 }
 
@@ -177,10 +57,51 @@ export function updateSubmission(
   lectureId: number,
   assignmentId: number,
   submissionId: number,
-  sub: Submission
+  updatedSubmission: Submission
 ): Promise<Submission> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`;
-  return request<Submission>(HTTPMethod.PUT, url, sub);
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}`;
+  return request<Submission>(HTTPMethod.PUT, url, updatedSubmission);
+}
+
+export function deleteSubmission(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
+): Promise<void> {
+  return request<void>(
+    HTTPMethod.DELETE,
+    `${baseUrl({ lectureId, assignmentId })}submissions/${submissionId}`,
+    null
+  );
+}
+
+export function getProperties(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  reload = false
+): Promise<any> {
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}/properties`;
+  return request<any>(HTTPMethod.GET, url, null, reload);
+}
+
+export function updateProperties(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  updatedProperties: any
+): Promise<Submission> {
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}/properties`;
+  return request<Submission>(HTTPMethod.PUT, url, updatedProperties);
 }
 
 export function ltiSyncSubmissions(
@@ -195,11 +116,11 @@ export function ltiSyncSubmissions(
     synced_user: number;
   }>;
 }> {
-  let url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/lti`;
+  let url = `${baseUrl({ lectureId, assignmentId })}submissions/lti`;
   const searchParams = new URLSearchParams({
     option: option
   });
-  url += '?' + searchParams;
+  url += '?' + searchParams.toString();
   return request<{
     synced_platforms: Array<{
       platform: string;
@@ -209,39 +130,55 @@ export function ltiSyncSubmissions(
   }>(HTTPMethod.PUT, url, { submission_ids: submissionIds });
 }
 
-export function restoreSubmission(
-  lectureId: number,
-  assignmentId: number,
-  commitHash: string
-): Promise<void> {
-  return request<void>(
-    HTTPMethod.GET,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}/restore/${commitHash}`,
-    null
-  );
-}
-
-export function deleteSubmission(
-  lectureId: number,
-  assignmentId: number,
-  submissionId: number
-): Promise<void> {
-  return request<void>(
-    HTTPMethod.DELETE,
-    `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/${submissionId}`,
-    null
-  );
-}
-
 export async function getSubmissionCount(
   lectureId: number,
   assignmentId: number
 ): Promise<{ submission_count: number }> {
-  const url = `/api/lectures/${lectureId}/assignments/${assignmentId}/submissions/count`;
+  const url = `${baseUrl({ lectureId, assignmentId })}submissions/count`;
   return request<{ submission_count: number }>(
     HTTPMethod.GET,
     url,
     null,
     false
   );
+}
+
+export function getSubmissionLogs(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number,
+  reload = false
+): Promise<string> {
+  const url = `${baseUrl({
+    lectureId,
+    assignmentId
+  })}submissions/${submissionId}/logs`;
+  return request<string>(HTTPMethod.GET, url, null, reload);
+}
+
+export function getStudentSubmissions(
+  username: string,
+  format: 'json' | 'csv' = 'csv',
+  reload = false
+): Promise<any> {
+  let url = `/api/users/${username}/submissions`;
+  const params = new URLSearchParams({
+    format: format
+  });
+  url += '?' + params.toString();
+  return request<any>(HTTPMethod.GET, url, null, reload);
+}
+
+export async function exportGrades(
+  lectureId: number,
+  filter: 'latest' | 'best' = 'best',
+  format: 'json' | 'csv' = 'csv'
+): Promise<any> {
+  let url = `/api/lectures/${lectureId}/submissions`;
+  const searchParams = new URLSearchParams({
+    filter: filter,
+    format: format
+  });
+  url += '?' + searchParams.toString();
+  return request<any>(HTTPMethod.GET, url, null);
 }

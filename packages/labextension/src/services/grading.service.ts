@@ -4,124 +4,59 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Lecture } from '../model/lecture';
 import { Assignment } from '../model/assignment';
-import { User } from '../model/user';
-import { request, HTTPMethod } from './request.service';
+import { request } from './request.service';
 import { Submission } from '../model/submission';
+import { baseUrl } from './file.service';
+import { HTTPMethod } from './enums/http-methods.enum';
+import { RepoType } from '../app/components/utils/repo-type';
 
-export function createManualFeedback(
-  lectid: number,
-  assignid: number,
-  subid: number
+export function autogradeSubmission(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
 ): Promise<any> {
-  return request<any>(
+  return request<Assignment>(
     HTTPMethod.GET,
-    `/api/lectures/${lectid}/assignments/${assignid}/grading/${subid}/manual`,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/auto`,
     null
   );
 }
 
-export function saveSubmissions(
-  lecture: Lecture,
-  assignment: Assignment,
-  filter: 'none' | 'latest' | 'best' = 'none'
+export function pullAutogradedOrOriginalFiles(
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
 ): Promise<any> {
-  let url = `/api/lectures/${lecture.id}/assignments/${assignment.id}/submissions/save`;
-  if (filter) {
-    const searchParams = new URLSearchParams({
-      filter: filter
-    });
-    url += '?' + searchParams;
-  }
-  return request<any>(HTTPMethod.PUT, url, null);
-}
-
-export function autogradeSubmission(
-  lecture: Lecture,
-  assignment: Assignment,
-  submission: Submission
-): Promise<any> {
-  return request<Assignment>(
+  return request<any>(
     HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/auto`,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/manual`,
     null
   );
 }
 
 export function generateFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  submission: Submission
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
 ): Promise<Submission> {
   return request<Submission>(
     HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${submission.id}/feedback`,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submissionId}/feedback`,
     null
   );
 }
 
-//response is not a schema => any
-//TODO: should prob be changed
-export function getStudentSubmissions(
-  lecture: Lecture,
-  assignment: Assignment,
-  reload = false
-): Promise<any> {
-  return request<any>(
+export async function pullFeedback(
+  lectureId: number,
+  assignmentId: number,
+  submission: Submission
+) {
+  return request<void>(
     HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignements/${assignment.id}/grading`,
-    null,
-    reload
-  );
-}
-
-export function getManualFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  student: User
-): Promise<object> {
-  return request<object>(
-    HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/manual`,
-    null
-  );
-}
-
-export function updateManualFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.PUT,
-    `/api/lectures/${lecture.id}/assignements/${assignment.id}/grading/${student.name}/manual`,
-    manual
-  );
-}
-
-export function deleteManualFeedback(
-  lecture: Lecture,
-  assignment: Assignment,
-  student: User,
-  manual: any
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.DELETE,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/manual`,
-    manual
-  );
-}
-
-export function getGrade(
-  lecture: Lecture,
-  assignment: Assignment,
-  student: User
-): Promise<any> {
-  return request<any>(
-    HTTPMethod.GET,
-    `/api/lectures/${lecture.id}/assignments/${assignment.id}/grading/${student.name}/score`,
+    `${baseUrl({ lectureId, assignmentId })}grading/${submission.id}/pull/${
+      RepoType.FEEDBACK
+    }`,
     null
   );
 }
