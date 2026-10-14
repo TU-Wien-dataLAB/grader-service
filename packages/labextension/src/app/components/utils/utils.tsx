@@ -1,5 +1,6 @@
 import moment from 'moment/moment';
 import React from 'react';
+import { FileRow } from '../grader-service/notebooks-and-files/files-table';
 
 export const pluralize = (props: { text: string; data: any }) => {
   return props.data.length === 1 || props.data === 1
@@ -45,4 +46,32 @@ export function highlightText(text: string, query: string): React.ReactNode {
       part
     )
   );
+}
+
+const UNITS = ['B', 'kB', 'MB', 'GB', 'TB'];
+// Returns the size in bytes; directories are the sum of their children.
+function getFileSizeInBytes(file: FileRow): number {
+  if (file.type === 'directory') {
+    return (file.subRows ?? []).reduce(
+      (total, child) => total + getFileSizeInBytes(child),
+      0
+    );
+  }
+  return file.size ?? 0;
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) {
+    return '0 B';
+  }
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    UNITS.length - 1
+  );
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${UNITS[i]}`;
+}
+
+// Drop-in replacement for your original function.
+export function determineFileSize(file: FileRow): string {
+  return formatBytes(getFileSizeInBytes(file));
 }

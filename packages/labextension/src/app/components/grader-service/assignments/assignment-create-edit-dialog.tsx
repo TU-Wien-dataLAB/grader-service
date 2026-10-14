@@ -178,9 +178,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
     const minutesDiff = timeDiff.minutesDiff;
     const parts: string[] = [];
     if (daysDiff > 0) {
-      parts.push(
-        `${daysDiff} ${pluralize({ text: 'day', data: daysDiff })}`
-      );
+      parts.push(`${daysDiff} ${pluralize({ text: 'day', data: daysDiff })}`);
     }
     if (hoursDiff > 0) {
       parts.push(

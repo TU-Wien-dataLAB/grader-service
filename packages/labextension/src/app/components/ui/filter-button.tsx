@@ -93,3 +93,46 @@ export const FilterAssignmentsButton = (
     </DropdownMenu>
   );
 };
+
+interface IFilterFilesButtonProps {
+  allFileTypes: string[];
+  checkedFileTypes: string[];
+  setFileTypes: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+export const FilterFilesButton = (props: IFilterFilesButtonProps) => {
+  const handleCheckedChange = (fileType: string) => {
+    if (props.checkedFileTypes.includes(fileType)) {
+      props.setFileTypes(prevState =>
+        prevState.filter(type => type !== fileType)
+      );
+    } else {
+      props.setFileTypes(prevState => [...prevState, fileType]);
+    }
+  };
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger>
+        <Button variant={'link'} className={'p-1 justify-self-end'}>
+          <ListFilter className={'text-primary size-5 justify-self-center'} />
+          Filter
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>File type</DropdownMenuLabel>
+          {props.allFileTypes.map(fileType => (
+            <DropdownMenuCheckboxItem
+              key={fileType}
+              checked={props.checkedFileTypes.includes(fileType)}
+              onCheckedChange={() => handleCheckedChange(fileType)}
+            >
+              {fileType}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};

@@ -7,7 +7,7 @@
 import { Assignment } from '../model/assignment';
 import { request } from './request.service';
 import { Submission } from '../model/submission';
-import { baseUrl } from './file.service';
+import { baseUrl } from './git.service';
 import { HTTPMethod } from './enums/http-methods.enum';
 import { RepoType } from '../app/components/utils/repo-type';
 
