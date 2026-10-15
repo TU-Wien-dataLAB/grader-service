@@ -8,7 +8,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from tornado.httpclient import HTTPClientError
 
 from grader_service import orm
@@ -60,11 +60,11 @@ async def test_get_lectures_complete(
     default_roles,
     default_user_login,
     default_user,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     url = service_base_url + "lectures?complete=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
@@ -81,8 +81,8 @@ async def test_get_lectures_complete(
     )
     session.commit()
 
-    add_role(sql_alchemy_engine, default_user.id, 10, Scope.instructor)
-    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+    add_role(session, default_user.id, 10, Scope.instructor)
+    add_role(session, default_user.id, 11, Scope.instructor)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -103,11 +103,11 @@ async def test_get_lectures_instructor(
     default_roles,
     default_user_login,
     default_user,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     url = service_base_url + "lectures?instructor=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.active, deleted=DeleteState.active
@@ -120,8 +120,8 @@ async def test_get_lectures_instructor(
     )
     session.commit()
 
-    add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
-    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+    add_role(session, default_user.id, 10, Scope.student)
+    add_role(session, default_user.id, 11, Scope.instructor)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -145,11 +145,11 @@ async def test_get_lectures_instructor_and_complete(
     default_roles,
     default_user_login,
     default_user,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     url = service_base_url + "lectures?complete=true&instructor=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
@@ -166,8 +166,8 @@ async def test_get_lectures_instructor_and_complete(
     )
     session.commit()
 
-    add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
-    add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
+    add_role(session, default_user.id, 10, Scope.student)
+    add_role(session, default_user.id, 11, Scope.instructor)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -209,11 +209,11 @@ async def test_get_lectures_admin_complete(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     url = service_base_url + "lectures?complete=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
@@ -601,7 +601,7 @@ async def test_delete_lecture(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}"
@@ -618,7 +618,7 @@ async def test_delete_lecture(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 1
     assert lectures[0].deleted == DeleteState.deleted
@@ -670,17 +670,17 @@ async def test_delete_lecture_assignment(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 3
     url = service_base_url + f"lectures/{l_id}"
 
-    engine = sql_alchemy_engine
-    insert_assignment(engine, lecture_id=l_id)
+    insert_assignment(session, lecture_id=l_id)
 
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
@@ -702,12 +702,11 @@ async def test_delete_lecture_assignment(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 1
     assert lectures[0].deleted == DeleteState.deleted
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
     assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
     assert len(assignments) == 1
     assert assignments[0].deleted == DeleteState.deleted
@@ -718,18 +717,18 @@ async def test_delete_lecture_assignment_with_submissions(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 3
     url = service_base_url + f"lectures/{l_id}"
 
-    engine = sql_alchemy_engine
-    insert_assignment(engine, lecture_id=l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignment(session, lecture_id=l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -744,15 +743,15 @@ async def test_delete_lecture_assignment_released(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     url = service_base_url + f"lectures/{l_id}"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, lecture_id=3)  # assignment with id 1 is status released
+    insert_assignments(session, lecture_id=3)  # assignment with id 1 is status released
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -801,7 +800,7 @@ async def test_delete_lecture_not_found(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
@@ -823,7 +822,7 @@ async def test_delete_lecture_hard(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
 
@@ -842,7 +841,7 @@ async def test_delete_lecture_hard(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 0
 
@@ -854,7 +853,7 @@ async def test_delete_lecture_hard_unauthorized(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     l_id = 3
 
@@ -876,7 +875,7 @@ async def test_delete_lecture_hard_assignments_roles(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_admin,
 ):
     l_id = 4
@@ -923,7 +922,7 @@ async def test_delete_lecture_hard_assignments_roles(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session: Session = sql_alchemy_sessionmaker()
     lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 0
 
@@ -960,14 +959,15 @@ async def test_get_lecture_users(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
-    insert_student(sql_alchemy_engine, "student1", l_id)
-    insert_student(sql_alchemy_engine, "student2", l_id)
+    insert_student(session, "student1", l_id)
+    insert_student(session, "student2", l_id)
 
     url = service_base_url + f"lectures/{l_id}/users"
     resp = await http_server_client.fetch(
