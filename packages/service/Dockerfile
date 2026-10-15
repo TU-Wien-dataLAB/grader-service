@@ -16,7 +16,7 @@ ENV GRADER_DB_HOST="/var/lib/grader-service/grader.db"
 
 # Create grader-service user
 RUN groupadd -g 1000 grader-service && \
-    useradd -m -d /var/lib/grader-service -s /bin/nologin -u 1000 -g 1000 grader-service
+    useradd -m -d /var/lib/grader-service -s /bin/false -u 1000 -g 1000 grader-service
 
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
@@ -37,8 +37,8 @@ COPY ./grader_service ./grader_service
 COPY pyproject.toml MANIFEST.in ./
 COPY ./grader_service.sh /usr/local/bin/grader_service.sh
 
-ENV PATH /var/lib/grader-service/.local/bin:$PATH
-RUN python3 -m pip install .
+ENV PATH=/var/lib/grader-service/.local/bin:$PATH
+RUN python3 -m pip install --root-user-action=ignore .
 
 USER grader-service
 

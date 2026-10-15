@@ -347,8 +347,6 @@ class GraderService(config.Application):
 
         self.session_maker = get_session_maker(self.db_url)
         self.init_roles()
-        # use uvloop instead of default asyncio loop
-        # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self._start_future = asyncio.Future()
 
     def set_config(self):

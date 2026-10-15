@@ -24,7 +24,8 @@ classifiers = [
 ]
 dependencies = [
     "grader-service>=0.12.4",
-    "jupyter_server>=2.4.0,<3"
+    "jupyter_server>=2.4.0,<3",
+    "jupyterlab>=4.0.0,<5",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 

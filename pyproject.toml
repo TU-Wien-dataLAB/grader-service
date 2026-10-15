@@ -10,7 +10,7 @@ requires-python = ">=3.9"
 members = ["packages/service", "packages/labextension"]
 
 [tool.uv]
-default-groups = ["dev", "docs"]
+default-groups = ["dev"]
 
 [dependency-groups]
 dev = [
@@ -35,7 +35,6 @@ docs = [
     "sphinxcontrib.bibtex",
     "autodoc-traits",
     "sphinx-autobuild",
-
 ]
 
 [tool.ruff]
