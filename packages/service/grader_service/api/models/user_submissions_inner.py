@@ -3,11 +3,11 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from grader_service.api.models.base_model import Model
-from grader_service.api.models.submission import Submission
+from grader_service.api.models.submission_list_item_dto import SubmissionListItemDto
 from grader_service.api.models.user import User
 from grader_service.api import util
 
-from grader_service.api.models.submission import Submission  # noqa: E501
+from grader_service.api.models.submission_list_item_dto import SubmissionListItemDto  # noqa: E501
 from grader_service.api.models.user import User  # noqa: E501
 
 class UserSubmissionsInner(Model):
@@ -22,11 +22,11 @@ class UserSubmissionsInner(Model):
         :param user: The user of this UserSubmissionsInner.  # noqa: E501
         :type user: User
         :param submissions: The submissions of this UserSubmissionsInner.  # noqa: E501
-        :type submissions: List[Submission]
+        :type submissions: List[SubmissionListItemDto]
         """
         self.openapi_types = {
             'user': User,
-            'submissions': List[Submission]
+            'submissions': List[SubmissionListItemDto]
         }
 
         self.attribute_map = {
@@ -70,22 +70,22 @@ class UserSubmissionsInner(Model):
         self._user = user
 
     @property
-    def submissions(self) -> List[Submission]:
+    def submissions(self) -> List[SubmissionListItemDto]:
         """Gets the submissions of this UserSubmissionsInner.
 
 
         :return: The submissions of this UserSubmissionsInner.
-        :rtype: List[Submission]
+        :rtype: List[SubmissionListItemDto]
         """
         return self._submissions
 
     @submissions.setter
-    def submissions(self, submissions: List[Submission]):
+    def submissions(self, submissions: List[SubmissionListItemDto]):
         """Sets the submissions of this UserSubmissionsInner.
 
 
         :param submissions: The submissions of this UserSubmissionsInner.
-        :type submissions: List[Submission]
+        :type submissions: List[SubmissionListItemDto]
         """
 
         self._submissions = submissions
