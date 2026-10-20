@@ -8,7 +8,7 @@ interface ISuccessBannerProps {
 export const SuccessBanner = (props: ISuccessBannerProps) => {
   return (
     <div
-      className="bg-[#E9F5D2] flex flex-row w-full border rounded-xs border-[#6A9816] p-4 gap-2 max-h-20"
+      className="bg-[#E9F5D2] flex flex-row w-full border rounded-xs border-[#6A9816] p-4 gap-2"
       role="alert"
     >
       <CircleCheck className={'fill-[#6A9816] size-6'} />

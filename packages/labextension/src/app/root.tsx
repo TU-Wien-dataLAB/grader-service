@@ -12,7 +12,9 @@ export const Root = () => {
         <div className={'flex flex-row w-full'}>
           <GlobalSidebar />
           <RoutePersist />
-          <Outlet />
+          <div className={'@container w-full'}>
+            <Outlet />
+          </div>
         </div>
       </TooltipProvider>
     </SidebarProvider>

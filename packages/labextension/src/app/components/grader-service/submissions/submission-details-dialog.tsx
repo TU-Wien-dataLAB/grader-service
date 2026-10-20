@@ -38,7 +38,7 @@ export const SubmissionDetailsDialog = ({
 }: SubmissionDetailsDialogProps) => {
   const params = useParams();
 
-  const lectureId = Number(params.id);
+  const lectureId = Number(params.lid);
   const assignmentId = Number(params.aid);
   const navigate = useNavigate();
 

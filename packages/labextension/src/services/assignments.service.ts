@@ -81,11 +81,11 @@ export function getAssignmentProperties(
 
 export function generateAssignment(
   lectureId: number,
-  assignment: Assignment
+  assignmentId: number
 ): Promise<any> {
   return request<any>(
     HTTPMethod.PUT,
-    `${baseUrl(lectureId)}/${assignment.id}/generate`,
+    `${baseUrl(lectureId)}/${assignmentId}/generate`,
     null
   );
 }

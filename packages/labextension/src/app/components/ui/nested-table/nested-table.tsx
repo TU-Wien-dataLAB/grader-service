@@ -3,6 +3,7 @@ import {
   columnFilteringFeature,
   createExpandedRowModel,
   createFilteredRowModel,
+  FilterFn,
   filterFn_equalsString,
   filterFn_includesString,
   globalFilteringFeature,
@@ -29,6 +30,19 @@ import {
   TableHeader,
   TableRow
 } from '../../../shadcn-components/ui/table';
+import { NoResultsFoundIcon } from '../../../../assets/no-results-found-icon';
+import { EmptyState } from '../../utils/empty-state';
+
+// custom function that checks if a cell value is included in the filters' list
+const filterFn_valueInList: FilterFn<any, any> = (
+  row,
+  columnId,
+  filterValue: string[]
+) => {
+  const v = row.getValue<string>(columnId);
+  return filterValue.includes(v);
+};
+filterFn_valueInList.autoRemove = (val: string[]) => !val?.length;
 
 export const dataTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -41,13 +55,14 @@ export const dataTableFeatures = tableFeatures({
   // As filterFns is deprecated in new tanstack/react-table version, to add new function look up https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-filtering/filterFns.ts#L442
   filterFns: {
     filterFn_includesString,
-    filterFn_equalsString
+    filterFn_equalsString,
+    filterFn_valueInList
   }
 });
 
 export type DataTableColumnDef<T> = ColumnDef<typeof dataTableFeatures, T>;
 
-export const INDENT_STEP = 1;
+export const INDENT_STEP = 32;
 function ExpandButton<T>({ row }: { row: Row<typeof dataTableFeatures, T> }) {
   return (
     <div className="relative size-4">
@@ -89,6 +104,7 @@ export function RowCheckbox<T>({
   );
 }
 
+// only for top rows
 export function expanderColumn<T>(): DataTableColumnDef<T> {
   return {
     id: 'expander',
@@ -135,6 +151,17 @@ export function selectColumn<T>(): DataTableColumnDef<T> {
               className="ml-1 block h-2.5 w-2.5 border-b-[1.5px] border-l-[1.5px] border-[#8D8D8D]"
             />
           )}
+          {/*  <CornerDownRight*/}
+          {/*    className="absolute top-0 size-4 text-border"*/}
+          {/*    style={{ left: (row.depth - 1) * INDENT_STEP }}*/}
+          {/*  />*/}
+          {/*)}*/}
+          {/*<div*/}
+          {/*  className="absolute top-0"*/}
+          {/*  style={{ left: row.depth * INDENT_STEP }}*/}
+          {/*>*/}
+          {/*  <RowCheckbox row={row} />*/}
+          {/*</div>*/}
         </div>
       )
   };
@@ -149,7 +176,7 @@ type DataTableProps<T> = {
   onGlobalFilterChange?: (value: string) => void;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
-  rowSelection?: RowSelectionState; /** keyed by row id. */
+  rowSelection?: RowSelectionState /** keyed by row id. */;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   emptyMessage?: string;
 };
@@ -173,6 +200,7 @@ export function NestedTable<T>({
     data,
     getSubRows,
     getRowId,
+    autoResetExpanded: false,
 
     globalFilterFn: 'filterFn_includesString',
     filterFromLeafRows: true,
@@ -221,6 +249,7 @@ export function NestedTable<T>({
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && 'selected'}
+              className="data-[state=selected]:bg-[#E0E7EB]"
             >
               {row.getAllCells().map(cell => (
                 <TableCell key={cell.id}>
@@ -230,14 +259,14 @@ export function NestedTable<T>({
             </TableRow>
           ))
         ) : (
-          <TableRow>
-            <TableCell
-              colSpan={columns.length}
-              className="h-24 text-center text-muted-foreground"
-            >
-              {emptyMessage}
-            </TableCell>
-          </TableRow>
+          <EmptyState
+            icon={<NoResultsFoundIcon />}
+            title={'No results found'}
+            description={
+              'Try adjusting your search or ' +
+              "filter to find what \n you're looking for."
+            }
+          />
         )}
       </TableBody>
     </Table>

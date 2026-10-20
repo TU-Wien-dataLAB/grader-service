@@ -188,17 +188,13 @@ namespace PrivateNbgraderData {
   }
 
   export function getPoints(nbgraderData: NbgraderData): number {
-    if (nbgraderData === null) {
-      return 0;
-    }
-    return PrivateNbgraderData._to_float(nbgraderData.points);
+    return nbgraderData !== null
+      ? PrivateNbgraderData._to_float(nbgraderData.points)
+      : 0;
   }
 
   export function getSchemeaVersion(nbgraderData: NbgraderData): number {
-    if (nbgraderData === null) {
-      return 0;
-    }
-    return nbgraderData.schema_version;
+    return nbgraderData !== null ? nbgraderData.schema_version : 0;
   }
 
   export function getType(

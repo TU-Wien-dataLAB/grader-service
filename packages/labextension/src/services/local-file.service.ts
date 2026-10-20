@@ -60,6 +60,8 @@ export interface IFile {
   name: string;
   path: string;
   type: string;
+  last_modified: string;
+  size: number;
   content: IFile[];
 }
 
@@ -95,22 +97,18 @@ export const getFiles = async (path: string): Promise<IFile[]> => {
 
   let f = items.next();
   while (f.value !== undefined) {
-    if (f.value.type === 'directory') {
-      const nestedFiles = await getFiles(f.value.path);
-      files.push({
-        name: f.value.name,
-        path: f.value.path,
-        type: f.value.type,
-        content: nestedFiles
-      });
-    } else {
-      files.push({
-        name: f.value.name,
-        path: f.value.path,
-        type: f.value.type,
-        content: []
-      });
-    }
+    const item = f.value;
+    const fullPath = PathExt.join(path, item.name);
+
+    files.push({
+      name: item.name,
+      path: fullPath,
+      type: item.type,
+      last_modified: item.last_modified,
+      size: item.size,
+      content: item.type === 'directory' ? await getFiles(fullPath) : []
+    });
+
     f = items.next();
   }
   return files;
@@ -193,8 +191,8 @@ const makeDir = async (path: string, name: string) => {
  */
 export const makeDirs = async (path: string, names: string[]) => {
   let p = path;
-  names.map(async name => {
+  for (const name of names) {
     p = await makeDir(p, name);
-  });
+  }
   return p;
 };

@@ -38,7 +38,7 @@ export namespace UserPermissions {
     return permissions?.[lecture.code] ?? null;
   }
   export function hasElevatedPermissions() {
-    const sum = Object.values(permissions).reduce((acc, v) => acc + v, 0);
+    const sum = Object.values(permissions ?? {}).reduce((acc, v) => acc + v, 0);
     return sum > 0;
   }
 }

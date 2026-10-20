@@ -9,6 +9,7 @@ import { Cell } from '@jupyterlab/cells';
 import { CellModel, CellType } from '../model';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
 import { TriangleAlert } from 'lucide-react';
+import { useEffect } from 'react';
 
 export interface ICreationComponentProps {
   cell: Cell;
@@ -57,9 +58,9 @@ export const CreationComponent = (props: ICreationComponentProps) => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     updateMetadata();
-  });
+  }, [type, id, points, hintChecked, hint]);
 
   const gradableCell =
     type !== ('readonly' as CellType) &&
@@ -86,10 +87,10 @@ export const CreationComponent = (props: ICreationComponentProps) => {
             <option value="">-</option>
             <option value="readonly">Readonly</option>
             {props.cell.model.type === 'code' && (
-              <option value="solution">Autograded answer</option>
-            )}
-            {props.cell.model.type === 'code' && (
-              <option value="tests">Autograded tests</option>
+              <>
+                <option value="solution">Autograded answer</option>
+                <option value="tests">Autograded tests</option>
+              </>
             )}
             <option value="manual">Manual graded answer</option>
             {props.cell.model.type === 'markdown' && (
