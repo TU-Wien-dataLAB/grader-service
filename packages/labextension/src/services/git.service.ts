@@ -123,7 +123,7 @@ export async function createSubmissionFiles(
   const searchParams = new URLSearchParams({
     for_user: username
   });
-  // selectedFiles.forEach(file => searchParams.append('selected_files', file));
+  selectedFiles.forEach(file => searchParams.append('selected_files', file));
   url += '?' + searchParams;
   return request<void>(HTTPMethod.PUT, url, null);
 }

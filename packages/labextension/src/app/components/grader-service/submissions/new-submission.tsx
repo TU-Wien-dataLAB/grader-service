@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Field } from '../../../shadcn-components/ui/field';
 import { Label } from '../../../shadcn-components/ui/label';
 import { useForm } from '@tanstack/react-form';
@@ -19,6 +19,7 @@ import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
 import { createSubmissionFiles } from '../../../../services/git.service';
 import { ErrorBanner } from '../../ui/error-banner';
 import { OctagonAlert } from 'lucide-react';
+import { useMutationStatus } from '../../../../widget';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -27,10 +28,10 @@ type TProps = {
 
 const NewSubmission = (props: TProps) => {
   const params = useParams();
-  const lectureId = Number(params.id);
+  const lectureId = Number(params.lid);
   const assignmentId = Number(params.aid);
   const { data: lectureUsers } = useQuery(lectureUsersQuery(lectureId));
-  const [selectedFiles] = useState<Set<string>>(new Set());
+  const { status, setStatus } = useMutationStatus();
 
   const path = props.currentPath;
   const cleanedPath = path.endsWith('/') ? path.slice(0, -1) : path;
@@ -47,11 +48,32 @@ const NewSubmission = (props: TProps) => {
         })
       : [];
 
+  type submissionFields = {
+    student: string;
+    files: string[];
+  };
+
   const createSubmissionMutation = useMutation({
-    mutationFn: async (username: string) => {
-      await createSubmissionFiles(lectureId, assignmentId, username, [
-        ...selectedFiles
-      ]);
+    mutationFn: async (values: submissionFields) => {
+      await createSubmissionFiles(
+        lectureId,
+        assignmentId,
+        values.student,
+        values.files
+      );
+    },
+    onSuccess: () => {
+      setStatus({
+        message: 'You successfully created a new submission.',
+        status: 'success'
+      });
+      props.setOpenNewSubmission(false);
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to create a submission. Please, try again!',
+        status: 'error'
+      });
     }
   });
 
@@ -61,12 +83,13 @@ const NewSubmission = (props: TProps) => {
       files: []
     },
     onSubmit: async ({ value }) => {
-      await createSubmissionMutation.mutateAsync(value.student);
+      await createSubmissionMutation.mutateAsync(value);
     }
   });
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
+      {status.status === 'error' && <ErrorBanner message={status.message} />}
       <h2 className={'text-xl font-bold'}>New submission</h2>
       <div className="sm:max-w-186 w-full">
         <form

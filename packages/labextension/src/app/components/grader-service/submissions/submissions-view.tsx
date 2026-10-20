@@ -27,6 +27,8 @@ import {
 import { mockSubmissionsData } from './table-mock-data';
 import { Badge } from '../../../shadcn-components/ui/badge';
 import { X } from 'lucide-react';
+import { useMutationStatus } from '../../../../widget';
+import { SuccessBanner } from '../../ui/success-banner';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -38,6 +40,7 @@ export const SubmissionsView = (props: TProps) => {
   const [search, setSearch] = useState('');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [grading, setGrading] = useState<'all' | Grading>('all');
+  const { status } = useMutationStatus();
 
   console.log(() => setGrading('all'));
 
@@ -75,6 +78,9 @@ export const SubmissionsView = (props: TProps) => {
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
+      {status.status === 'success' && (
+        <SuccessBanner message={status.message} />
+      )}
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Submissions</h2>
         <div className="flex gap-3">
