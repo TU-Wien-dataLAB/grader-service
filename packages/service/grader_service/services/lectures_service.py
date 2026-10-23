@@ -28,7 +28,7 @@ LECTURE_SORTABLE_COLUMNS = {
     "created_at": Lecture.created_at,
 }
 
-DEFAULT_PER_PAGE = 10
+DEFAULT_PER_PAGE = 20
 MAX_PER_PAGE = 100
 
 

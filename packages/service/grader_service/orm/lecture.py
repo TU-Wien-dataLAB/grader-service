@@ -14,6 +14,10 @@ from grader_service.api.models import lecture
 from grader_service.orm.base import Base, DeleteState, Serializable
 
 
+def get_utc_time():
+    return datetime.now(UTC)
+
+
 class LectureState(enum.IntEnum):
     active = 0
     complete = 1
@@ -27,10 +31,8 @@ class Lecture(Base, Serializable):
     state = Column(Enum(LectureState), nullable=False, unique=False)
     deleted = Column(Enum(DeleteState), nullable=False, unique=False)
 
-    created_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC), nullable=False
-    )
+    created_at = Column(DateTime, default=get_utc_time, nullable=False)
+    updated_at = Column(DateTime, default=get_utc_time, onupdate=get_utc_time, nullable=False)
 
     assignments = relationship(
         "Assignment", back_populates="lecture", cascade="all, delete-orphan", passive_deletes=True
