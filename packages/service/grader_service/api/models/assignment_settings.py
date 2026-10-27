@@ -3,9 +3,11 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from grader_service.api.models.base_model import Model
+from grader_service.api.models.grading_method import GradingMethod
 from grader_service.api.models.submission_period import SubmissionPeriod
 from grader_service.api import util
 
+from grader_service.api.models.grading_method import GradingMethod  # noqa: E501
 from grader_service.api.models.submission_period import SubmissionPeriod  # noqa: E501
 
 class AssignmentSettings(Model):
@@ -14,7 +16,7 @@ class AssignmentSettings(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, autograde_type='auto', group=None, cell_timeout=None):  # noqa: E501
+    def __init__(self, deadline=None, max_submissions=None, allowed_files=[], late_submission=None, grading_method=GradingMethod.AUTO, group=None, cell_timeout=None):  # noqa: E501
         """AssignmentSettings - a model defined in OpenAPI
 
         :param deadline: The deadline of this AssignmentSettings.  # noqa: E501
@@ -25,8 +27,8 @@ class AssignmentSettings(Model):
         :type allowed_files: List[str]
         :param late_submission: The late_submission of this AssignmentSettings.  # noqa: E501
         :type late_submission: List[SubmissionPeriod]
-        :param autograde_type: The autograde_type of this AssignmentSettings.  # noqa: E501
-        :type autograde_type: str
+        :param grading_method: The grading_method of this AssignmentSettings.  # noqa: E501
+        :type grading_method: GradingMethod
         :param group: The group of this AssignmentSettings.  # noqa: E501
         :type group: str
         :param cell_timeout: The cell_timeout of this AssignmentSettings.  # noqa: E501
@@ -37,7 +39,7 @@ class AssignmentSettings(Model):
             'max_submissions': int,
             'allowed_files': List[str],
             'late_submission': List[SubmissionPeriod],
-            'autograde_type': str,
+            'grading_method': GradingMethod,
             'group': str,
             'cell_timeout': int
         }
@@ -47,7 +49,7 @@ class AssignmentSettings(Model):
             'max_submissions': 'max_submissions',
             'allowed_files': 'allowed_files',
             'late_submission': 'late_submission',
-            'autograde_type': 'autograde_type',
+            'grading_method': 'grading_method',
             'group': 'group',
             'cell_timeout': 'cell_timeout'
         }
@@ -56,7 +58,7 @@ class AssignmentSettings(Model):
         self._max_submissions = max_submissions
         self._allowed_files = allowed_files
         self._late_submission = late_submission
-        self._autograde_type = autograde_type
+        self._grading_method = grading_method
         self._group = group
         self._cell_timeout = cell_timeout
 
@@ -89,6 +91,8 @@ class AssignmentSettings(Model):
         :param deadline: The deadline of this AssignmentSettings.
         :type deadline: datetime
         """
+        if deadline is None:
+            raise ValueError("Invalid value for `deadline`, must not be `None`")  # noqa: E501
 
         self._deadline = deadline
 
@@ -110,6 +114,8 @@ class AssignmentSettings(Model):
         :param max_submissions: The max_submissions of this AssignmentSettings.
         :type max_submissions: int
         """
+        if max_submissions is None:
+            raise ValueError("Invalid value for `max_submissions`, must not be `None`")  # noqa: E501
 
         self._max_submissions = max_submissions
 
@@ -131,6 +137,8 @@ class AssignmentSettings(Model):
         :param allowed_files: The allowed_files of this AssignmentSettings.
         :type allowed_files: List[str]
         """
+        if allowed_files is None:
+            raise ValueError("Invalid value for `allowed_files`, must not be `None`")  # noqa: E501
 
         self._allowed_files = allowed_files
 
@@ -152,35 +160,33 @@ class AssignmentSettings(Model):
         :param late_submission: The late_submission of this AssignmentSettings.
         :type late_submission: List[SubmissionPeriod]
         """
+        if late_submission is None:
+            raise ValueError("Invalid value for `late_submission`, must not be `None`")  # noqa: E501
 
         self._late_submission = late_submission
 
     @property
-    def autograde_type(self) -> str:
-        """Gets the autograde_type of this AssignmentSettings.
+    def grading_method(self) -> GradingMethod:
+        """Gets the grading_method of this AssignmentSettings.
 
 
-        :return: The autograde_type of this AssignmentSettings.
-        :rtype: str
+        :return: The grading_method of this AssignmentSettings.
+        :rtype: GradingMethod
         """
-        return self._autograde_type
+        return self._grading_method
 
-    @autograde_type.setter
-    def autograde_type(self, autograde_type: str):
-        """Sets the autograde_type of this AssignmentSettings.
+    @grading_method.setter
+    def grading_method(self, grading_method: GradingMethod):
+        """Sets the grading_method of this AssignmentSettings.
 
 
-        :param autograde_type: The autograde_type of this AssignmentSettings.
-        :type autograde_type: str
+        :param grading_method: The grading_method of this AssignmentSettings.
+        :type grading_method: GradingMethod
         """
-        allowed_values = ["auto", "full_auto", "unassisted"]  # noqa: E501
-        if autograde_type not in allowed_values:
-            raise ValueError(
-                "Invalid value for `autograde_type` ({0}), must be one of {1}"
-                .format(autograde_type, allowed_values)
-            )
+        if grading_method is None:
+            raise ValueError("Invalid value for `grading_method`, must not be `None`")  # noqa: E501
 
-        self._autograde_type = autograde_type
+        self._grading_method = grading_method
 
     @property
     def group(self) -> str:
@@ -200,6 +206,8 @@ class AssignmentSettings(Model):
         :param group: The group of this AssignmentSettings.
         :type group: str
         """
+        if group is None:
+            raise ValueError("Invalid value for `group`, must not be `None`")  # noqa: E501
 
         self._group = group
 
@@ -221,5 +229,7 @@ class AssignmentSettings(Model):
         :param cell_timeout: The cell_timeout of this AssignmentSettings.
         :type cell_timeout: int
         """
+        if cell_timeout is None:
+            raise ValueError("Invalid value for `cell_timeout`, must not be `None`")  # noqa: E501
 
         self._cell_timeout = cell_timeout
