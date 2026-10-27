@@ -7,7 +7,7 @@ from traitlets import Unicode, observe, validate, default
 
 from grader_service.artifact_types import ArtifactType
 from grader_service.services.file_services.base_file_service import FileService, FileServiceError
-from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.orm import Assignment, Submission
 from grader_service.utils import executable_validator
 
 
@@ -536,20 +536,20 @@ class GitFileService(FileService):
         await self._run_git([self.git_executable, "add", "--", *filenames], dir)
         await self._run_git([self.git_executable, "commit", "--allow-empty", "-m", msg], dir)
 
-    async def delete_lecture_files(self, lecture: Lecture) -> None:
+    async def delete_lecture_files(self, lecture_code: str) -> None:
         """Delete all associated directories of the lecture."""
-        lecture_path = (self.files_base / lecture.code).resolve()
+        lecture_path = (self.files_base / lecture_code).resolve()
         validate_path_relative_to(lecture_path, self.files_base)
-        tmp_lecture_path = (self.tmpbase / lecture.code).resolve()
+        tmp_lecture_path = (self.tmpbase / lecture_code).resolve()
         validate_path_relative_to(tmp_lecture_path, self.tmpbase)
         await asyncio.to_thread(shutil.rmtree, lecture_path, ignore_errors=True)
         await asyncio.to_thread(shutil.rmtree, tmp_lecture_path, ignore_errors=True)
 
-    async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
+    async def delete_assignment_files(self, assignment_id: int, lecture_code: str) -> None:
         """Delete all associated directories of the assignment."""
-        assignment_path = (self.files_base / lecture.code / str(assignment.id)).resolve()
+        assignment_path = (self.files_base / lecture_code / str(assignment_id)).resolve()
         validate_path_relative_to(assignment_path, self.files_base)
-        tmp_assignment_path = (self.tmpbase / lecture.code / str(assignment.id)).resolve()
+        tmp_assignment_path = (self.tmpbase / lecture_code / str(assignment_id)).resolve()
         validate_path_relative_to(tmp_assignment_path, self.tmpbase)
         await asyncio.to_thread(shutil.rmtree, assignment_path, ignore_errors=True)
         await asyncio.to_thread(shutil.rmtree, tmp_assignment_path, ignore_errors=True)

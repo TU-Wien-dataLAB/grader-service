@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import select, func
 
 from grader_service.errors import APIError
-from grader_service.orm import Role, User, Lecture, Assignment
+from grader_service.orm import Role, User, Lecture, Assignment, Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Scope
 
@@ -55,47 +55,64 @@ class BaseService:
             raise APIError(HTTPStatus.NOT_FOUND, message="Lecture not found")
         return lecture
 
-    def validate_assignment_for_soft_delete(self, assignment: Assignment):
-        """Validates that an assignment can be soft-deleted.
+    def validate_assignments_for_soft_delete(self, session, assignments: list[Assignment]):
+        """Validates that all assignments can be soft-deleted.
 
-        Raises an APIError if the assignment has submissions or is released/completed,
-        preventing a soft-delete.
+        Raises an APIError if any assignment has submissions or is released/completed,
+        preventing a soft-delete. Submission counts are fetched in a single grouped
+        query instead of one lazy load per assignment.
 
-        :param assignment: the Assignment object to validate
-        :type assignment: Assignment
-        :raises APIError: if the assignment has submissions or is released/completed
+        :param session: the database session
+        :param assignments: the Assignment objects to validate
+        :raises APIError: if an assignment has submissions or is released/completed
         """
-        if assignment.submissions:
-            raise APIError(
-                HTTPStatus.CONFLICT, message="Cannot delete assignments with submissions!"
+        assignment_ids = [a.id for a in assignments]
+        submission_counts = {}
+        if assignment_ids:
+            submission_counts = dict(
+                session.execute(
+                    select(Submission.assignid, func.count())
+                    .where(Submission.assignid.in_(assignment_ids))
+                    .group_by(Submission.assignid)
+                ).all()
             )
-        if assignment.status in {"released", "complete"}:
-            raise APIError(
-                HTTPStatus.CONFLICT, message="Cannot delete released or completed assignments!"
-            )
+        for assignment in assignments:
+            if submission_counts.get(assignment.id, 0) > 0:
+                raise APIError(
+                    HTTPStatus.CONFLICT, message="Cannot delete assignments with submissions!"
+                )
+            if assignment.status in {"released", "complete"}:
+                raise APIError(
+                    HTTPStatus.CONFLICT, message="Cannot delete released or completed assignments!"
+                )
 
-    def delete_previous_assignment(
-        self, assignment: Assignment, lecture_id: int, session
-    ) -> Optional[Assignment]:
-        """Deletes a previously soft-deleted assignment with the same name in the lecture, if it exists.
+    def delete_previous_assignments(
+        self, assignments: list[Assignment], lecture_id: int, session
+    ) -> list[int]:
+        """Deletes previously soft-deleted assignments with the same names, if they exist.
 
-        When performing a soft-delete, a previously soft-deleted assignment with the same
-        name in the same lecture must be permanently removed (hard-deleted) first to avoid
-        UNIQUE constraint violations before marking the current assignment as deleted.
+        When performing a soft-delete, previously soft-deleted assignments with the same
+        names in the same lecture must be permanently removed (hard-deleted) first to avoid
+        UNIQUE constraint violations before marking the current assignments as deleted.
+        All duplicates are fetched with a single query instead of one per assignment.
 
-        :param assignment: the Assignment object for which a previous duplicate may exist
-        :type assignment: Assignment
-        :param lecture_id: id of the lecture to which the assignment belongs
-        :type lecture_id: int
-        :return: the previously deleted Assignment if one existed, else None
-        :rtype: Optional[Assignment]
+        :param assignments: the Assignment objects for which previous duplicates may exist
+        :param lecture_id: id of the lecture to which the assignments belong
+        :param session: the database session
+        :return: the ids of the previously deleted assignments
         """
-        stmt = select(Assignment).where(
-            Assignment.lectid == lecture_id,
-            Assignment.name == assignment.name,
-            Assignment.deleted == DeleteState.deleted,
-        )
-        previously_deleted = session.execute(stmt).scalar_one_or_none()
-        if previously_deleted is not None:
-            session.delete(previously_deleted)
-        return previously_deleted
+        names = [a.name for a in assignments]
+        if not names:
+            return []
+        previously_deleted = session.scalars(
+            select(Assignment).where(
+                Assignment.lectid == lecture_id,
+                Assignment.name.in_(names),
+                Assignment.deleted == DeleteState.deleted,
+            )
+        ).all()
+        # capture the ids before the objects are deleted from the session
+        previously_deleted_ids = [a.id for a in previously_deleted]
+        for assignment in previously_deleted:
+            session.delete(assignment)
+        return previously_deleted_ids

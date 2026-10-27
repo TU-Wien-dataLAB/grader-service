@@ -1,3 +1,4 @@
+import logging
 import math
 import re
 from http import HTTPStatus
@@ -19,6 +20,8 @@ from grader_service.services.mappers.lectures_mapper import (
     to_lecture_detail_dto,
 )
 from grader_service.services.mappers.users_mapper import to_user_dto
+
+log = logging.getLogger(__name__)
 
 lecture_code_pattern = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -175,6 +178,9 @@ class LecturesService(BaseService):
         with self.session_maker() as session:
             try:
                 lecture = self.get_lecture(session, lecture_id)
+                # capture the code before any commit, since accessing attributes of
+                # ORM objects after they were deleted from the session is fragile
+                lecture_code = lecture.code
                 if hard_delete:
                     if not user.is_admin:
                         raise APIError(
@@ -183,37 +189,47 @@ class LecturesService(BaseService):
 
                     session.delete(lecture)
                     session.commit()
-                    await self.file_service.delete_lecture_files(lecture)
+                    try:
+                        await self.file_service.delete_lecture_files(lecture_code)
+                    except Exception:
+                        # the lecture is already deleted from the database; a file system
+                        # error must not turn the successful delete into a server error
+                        log.exception("Failed to delete files of lecture %s", lecture_code)
                 else:
                     if lecture.deleted == DeleteState.deleted:
                         raise APIError(HTTPStatus.NOT_FOUND, message="Lecture was deleted.")
 
-                    # Hard-delete previously soft-deleted assignments with the same name
-                    # within the same transaction to prevent UNIQUE constraint violations
-                    # (u_name_in_lect) when the current assignments are soft-deleted.
-                    previously_deleted_assignments = []
-                    for assignment in lecture.assignments:
-                        self.validate_assignment_for_soft_delete(assignment=assignment)
-                        previously_deleted = self.delete_previous_assignment(
-                            assignment=assignment, lecture_id=lecture_id, session=session
-                        )
-                        if previously_deleted is not None:
-                            previously_deleted_assignments.append(previously_deleted)
+                    assignments = list(lecture.assignments)
+                    self.validate_assignments_for_soft_delete(session, assignments)
+                    previously_deleted_assignments = self.delete_previous_assignments(
+                        assignments=assignments, lecture_id=lecture_id, session=session
+                    )
 
                     # Flush so the duplicate DELETEs are executed before the UPDATEs
                     # that mark the current assignments as deleted.
                     session.flush()
 
-                    for assignment in lecture.assignments:
+                    for assignment in assignments:
                         assignment.deleted = DeleteState.deleted
 
                     lecture.deleted = DeleteState.deleted
                     session.commit()
 
-                    for assignment in previously_deleted_assignments:
-                        await self.file_service.delete_assignment_files(
-                            assignment=assignment, lecture=lecture
-                        )
+                    # the lecture and its assignments are now soft-deleted; the files of
+                    # the removed duplicates are cleaned up best-effort below
+                    for assignment_id in previously_deleted_assignments:
+                        try:
+                            await self.file_service.delete_assignment_files(
+                                assignment_id, lecture_code
+                            )
+                        except Exception:
+                            # the deletes are already committed; log leftover files
+                            # so they can be cleaned up manually
+                            log.exception(
+                                "Failed to delete files of assignment %s in lecture %s",
+                                assignment_id,
+                                lecture_code,
+                            )
             except Exception:
                 if session.in_transaction():
                     session.rollback()

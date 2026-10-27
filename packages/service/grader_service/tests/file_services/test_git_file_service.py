@@ -557,7 +557,7 @@ async def test_delete_lecture_files_removes_git_and_tmp_dirs(git_file_service, a
     git_lecture_path.mkdir(parents=True)
     tmp_lecture_path.mkdir(parents=True)
 
-    await git_file_service.delete_lecture_files(assignment_123.lecture)
+    await git_file_service.delete_lecture_files(lecture_code)
 
     assert not git_lecture_path.exists()
     assert not tmp_lecture_path.exists()
@@ -573,14 +573,12 @@ async def test_delete_lecture_files_ignores_missing_dirs(git_file_service, assig
     assert not git_lecture_path.exists()
     assert not tmp_lecture_path.exists()
 
-    await git_file_service.delete_lecture_files(assignment_123.lecture)
+    await git_file_service.delete_lecture_files(lecture_code)
 
 
 async def test_delete_lecture_files_validation_prevents_traversal(git_file_service, assignment_123):
-    assignment_123.lecture.code = "../.."
-
     with pytest.raises(ValueError, match="Invalid path"):
-        await git_file_service.delete_lecture_files(assignment_123.lecture)
+        await git_file_service.delete_lecture_files("../..")
 
 
 # =============== delete_assignment_files tests ===============
@@ -597,7 +595,7 @@ async def test_delete_assignment_files_removes_assignment_dirs(git_file_service,
     git_assignment_path.mkdir(parents=True)
     tmp_assignment_path.mkdir(parents=True)
 
-    await git_file_service.delete_assignment_files(assignment_123, assignment_123.lecture)
+    await git_file_service.delete_assignment_files(int(assignment_id), lecture_code)
 
     assert not git_assignment_path.exists()
     assert not tmp_assignment_path.exists()
