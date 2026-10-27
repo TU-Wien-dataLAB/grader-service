@@ -1,23 +1,21 @@
-import { Grading, SubmissionRow } from './submissions-data-table';
+import { SubmissionRow } from './submissions-data-table';
 import { Submission } from '../../../../model/submission';
-
-const toGrading = (_s: Submission): Grading => 'not_graded';
 
 const toRow = (s: Submission, label?: string): SubmissionRow => ({
   id: String(s.id),
-  student: s.user_display_name ?? '',
+  studentName: s.user_display_name ?? '',
   label,
   score: s.score,
-  grading: toGrading(s),
-  feedback: s.feedback_status !== undefined, // TODO: real enum value
+  gradingStatus: s.auto_status,
+  feedbackStatus: s.feedback_status,
   submission: s
 });
 
 export const toSubmissionRows = (
-  submissions: Array<Submission>
+  submissions: Array<Submission> | null
 ): Array<SubmissionRow> => {
   const byUser = new Map<number | undefined, Array<Submission>>();
-  submissions.forEach(s => {
+  (submissions || []).forEach(s => {
     byUser.set(s.user_id, [...(byUser.get(s.user_id) ?? []), s]);
   });
 
@@ -29,7 +27,7 @@ export const toSubmissionRows = (
     );
     return {
       id: `user-${userId}`,
-      student: sorted[0].user_display_name ?? '',
+      studentName: sorted[0].user_display_name ?? '',
       subRows: sorted.map((s, i) => toRow(s, `Submission ${i + 1}`)).reverse()
     };
   });

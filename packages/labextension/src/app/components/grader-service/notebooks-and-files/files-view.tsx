@@ -50,7 +50,7 @@ export const FilesView = (props: IFilesViewProps) => {
   );
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
   const { data: files = [] } = useQuery({
-    queryKey: ['files', lecture.code, props.assignmentId, selectedDir],
+    queryKey: ['files', lecture?.code, props.assignmentId, selectedDir],
     queryFn: async () => {
       return await getFiles(srcPath);
     }
@@ -58,7 +58,7 @@ export const FilesView = (props: IFilesViewProps) => {
   const { data: remoteRepoStatus } = useQuery({
     queryKey: [
       'remote-repo-status',
-      lecture.code,
+      lecture?.code,
       props.assignmentId,
       selectedDir
     ],
@@ -94,8 +94,8 @@ export const FilesView = (props: IFilesViewProps) => {
 
   const srcPath = useMemo(
     () =>
-      `${lectureBasePath}${lecture.code}/${selectedDir}/${props.assignmentId}`,
-    [lecture.code, selectedDir, props.assignmentId]
+      `${lectureBasePath}${lecture?.code}/${selectedDir}/${props.assignmentId}`,
+    [lecture?.code, selectedDir, props.assignmentId]
   );
 
   // synchronize files shown in app with jupyterlab's file browser
@@ -118,7 +118,7 @@ export const FilesView = (props: IFilesViewProps) => {
         queryClient.invalidateQueries({
           queryKey: [
             'remote-repo-status',
-            lecture.code,
+            lecture?.code,
             props.assignmentId,
             selectedDir
           ]
@@ -181,7 +181,7 @@ export const FilesView = (props: IFilesViewProps) => {
           />
           <NewNotebookDialog
             assignmentId={props.assignmentId}
-            lectureCode={lecture.code}
+            lectureCode={lecture?.code}
           />
         </div>
       ) : (
@@ -193,7 +193,7 @@ export const FilesView = (props: IFilesViewProps) => {
             {remoteStatusBadge() ?? null}
             <NewNotebookDialog
               assignmentId={props.assignmentId}
-              lectureCode={lecture.code}
+              lectureCode={lecture?.code}
               buttonVariant={'outline'}
             />
           </div>

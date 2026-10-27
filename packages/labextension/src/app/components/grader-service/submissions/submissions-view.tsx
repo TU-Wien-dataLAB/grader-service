@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SearchField } from '../../ui/search';
 import { Button } from '../../../shadcn-components/ui/button';
 import { SubmissionsActions } from './submissions-actions';
-import { FilterAssignmentsButton, IFilterGroup } from '../../ui/filter-button';
-import { RowSelectionState } from '@tanstack/react-table';
+import { FilterSubmissionsButton, IFilterGroup } from '../../ui/filter-button';
+import { ColumnFiltersState, RowSelectionState } from '@tanstack/react-table';
 import SubmissionsDataTable from './submissions-data-table';
 import {
   Pagination,
@@ -24,11 +24,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '../../../shadcn-components/ui/select';
-import { mockSubmissionsData } from './table-mock-data';
 import { Badge } from '../../../shadcn-components/ui/badge';
 import { X } from 'lucide-react';
 import { useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
+import { useQuery } from '@tanstack/react-query';
+import { getAllSubmissions } from '../../../../services/queries/submissions.query';
+import { useParams } from 'react-router';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -37,10 +39,14 @@ type TProps = {
 export const SubmissionsView = (props: TProps) => {
   type Grading = 'graded' | 'failed' | 'not_graded';
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [search, setSearch] = useState('');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [grading, setGrading] = useState<'all' | Grading>('all');
   const { status } = useMutationStatus();
+
+  const params = useParams();
+
+  const lectureId = Number(params.lid);
+  const assignmentId = Number(params.aid);
 
   console.log(() => setGrading('all'));
 
@@ -48,7 +54,7 @@ export const SubmissionsView = (props: TProps) => {
 
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {
-    const id = `${key}:${value}:${label}`;
+    const id = `${value}`;
     setActiveFilters(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -56,17 +62,31 @@ export const SubmissionsView = (props: TProps) => {
     });
   };
 
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => [
+      ...(searchQuery ? [{ id: 'name', value: searchQuery }] : []),
+      ...(activeFilters.size
+        ? [{ id: 'gradingStatus', value: activeFilters }]
+        : [])
+    ],
+    [searchQuery, activeFilters]
+  );
+
+  const { data: submissionsList } = useQuery(
+    getAllSubmissions(lectureId, assignmentId)
+  );
+
   const STATIC_FILTERS: IFilterGroup[] = [
     {
       Grading: [
         {
-          value: '',
-          label: 'Graded'
+          value: 'pending',
+          label: 'Pending'
         },
-        { value: '', label: 'Not graded' },
+        { value: 'automatically_graded', label: 'Automatically graded' },
         {
-          value: '',
-          label: 'Grading failed'
+          value: 'not_graded',
+          label: 'Not graded'
         }
       ],
       Feedback: [
@@ -96,7 +116,7 @@ export const SubmissionsView = (props: TProps) => {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
-        <FilterAssignmentsButton
+        <FilterSubmissionsButton
           allFilters={STATIC_FILTERS}
           activeFilters={activeFilters}
           toggle={toggle}
@@ -135,16 +155,18 @@ export const SubmissionsView = (props: TProps) => {
       )}
       <div className="w-full">
         <SubmissionsDataTable
-          submissions={mockSubmissionsData}
+          submissions={submissionsList}
           grading={grading}
-          columnFilters={activeFilters}
+          columnFilters={columnFilters}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
-          setSearch={setSearch}
-          search={search}
+          setSearch={setSearchQuery}
+          search={searchQuery}
         />
         <div className="flex items-center justify-between gap-4 mt-2">
-          <p className="whitespace-nowrap">10 of 198</p>
+          <p className="whitespace-nowrap">
+            10 out of {submissionsList?.length || 0}
+          </p>
           <Pagination>
             <PaginationContent>
               <PaginationItem>

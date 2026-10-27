@@ -4,6 +4,7 @@ import {
   CircleCheck,
   Eye,
   History,
+  OctagonAlert,
   TriangleAlert
 } from 'lucide-react';
 import type {
@@ -14,44 +15,78 @@ import type {
 import { Button } from '../../../shadcn-components/ui/button';
 import {
   NestedTable,
-  RowCheckbox,
   expanderColumn,
-  selectColumn
+  selectColumn,
+  RowCheckbox
 } from '../../ui/nested-table/nested-table';
 import type { DataTableColumnDef } from '../../ui/nested-table/nested-table';
 import { Submission } from '../../../../model/submission';
 import { SubmissionDetailsDialog } from './submission-details-dialog';
 import { toSubmissionRows } from './utils';
+import { FeedbackStatus } from '../../../../model/feedbackStatus';
+import { AutoStatus } from '../../../../model/autoStatus';
 
 /* row  */
 
-export type Grading = 'graded' | 'failed' | 'not_graded';
-
 export type SubmissionRow = {
   id: string;
-  student: string;
+  studentName: string;
   label?: string;
   score?: number;
-  grading?: Grading;
-  feedback?: boolean;
+  gradingStatus?: AutoStatus;
+  feedbackStatus?: FeedbackStatus;
   submission?: Submission;
   subRows?: Array<SubmissionRow>;
 };
 
-const gradingLabel: Record<Grading, React.ReactNode> = {
-  graded: (
+const gradingLabel: Record<AutoStatus, React.ReactNode> = {
+  pending: (
     <span className="flex items-center gap-2">
-      <CircleCheck color="#6A9816" className="size-4" /> Graded
+      <CircleCheck color="#6A9816" className="size-4" /> Pending
     </span>
   ),
-  failed: (
+  grading_failed: (
     <span className="flex items-center gap-2">
       <CircleAlert color="#DC182C" className="size-4" /> Grading failed
+    </span>
+  ),
+  automatically_graded: (
+    <span className="flex items-center gap-2">
+      <TriangleAlert color="green" className="size-4" /> Graded
     </span>
   ),
   not_graded: (
     <span className="flex items-center gap-2">
       <TriangleAlert color="#C77700" className="size-4" /> Not graded
+    </span>
+  )
+};
+
+const feedbackLabel: Record<FeedbackStatus, React.ReactNode> = {
+  not_generated: (
+    <span className="flex items-center gap-2">
+      <OctagonAlert color="#DC182C" className="size-4" /> Not Feedback
+    </span>
+  ),
+  generated: (
+    <span className="flex items-center gap-2">
+      <CircleCheck color="#6A9816" className="size-4" /> Generated
+    </span>
+  ),
+  generating: (
+    <span className="flex items-center gap-2">
+      <CircleAlert color="#DC182C" className="size-4" /> Generating
+    </span>
+  ),
+
+  generation_failed: (
+    <span className="flex items-center gap-2">
+      <TriangleAlert color="#C77700" className="size-4" /> Generation failed
+    </span>
+  ),
+  feedback_outdated: (
+    <span className="flex items-center gap-2">
+      <TriangleAlert color="#C77700" className="size-4" /> Feedback outdated
     </span>
   )
 };
@@ -68,8 +103,9 @@ const getColumns = ({
   expanderColumn<SubmissionRow>(),
   selectColumn<SubmissionRow>(),
   {
-    accessorKey: 'student',
+    accessorKey: 'studentName',
     header: 'Name',
+    filterFn: 'filterFn_includesString',
     cell: ({ row, getValue }) => (
       <div className={row.depth > 0 ? 'flex items-center gap-6' : ''}>
         {row.depth > 0 && <RowCheckbox row={row} />}
@@ -84,35 +120,28 @@ const getColumns = ({
     header: 'Final score',
     enableGlobalFilter: false,
     cell: ({ getValue }) => {
-      const score = getValue<number | undefined>();
+      const score = getValue<number | undefined>() || 0;
       return score === undefined ? null : `${score.toFixed(2)} / 800`;
     }
   },
   {
-    accessorKey: 'grading',
-    header: 'Grading',
+    accessorKey: 'gradingStatus',
+    header: 'Auto Grading',
     enableGlobalFilter: false,
-    filterFn: 'filterFn_equalsString',
+    filterFn: 'filterFn_includesString',
     cell: ({ getValue }) => {
-      const grading = getValue<Grading | undefined>();
+      const grading = getValue<AutoStatus | undefined>();
       return grading ? gradingLabel[grading] : null;
     }
   },
   {
-    accessorKey: 'feedback',
+    accessorKey: 'feedbackStatus',
     header: 'Feedback',
     enableGlobalFilter: false,
-    cell: ({ row, getValue }) => {
-      if (row.original.grading === undefined) return null;
-      return getValue<boolean>() ? (
-        <span className="flex items-center gap-2">
-          <CircleCheck color="#6A9816" className="size-4" /> Feedback given
-        </span>
-      ) : (
-        <span className="flex items-center gap-2">
-          <CircleAlert color="#DC182C" className="size-4" /> No feedback
-        </span>
-      );
+    filterFn: 'filterFn_includesString',
+    cell: ({ getValue }) => {
+      const feedbackStatus = getValue<FeedbackStatus>();
+      return feedbackStatus ? feedbackLabel[feedbackStatus] : null;
     }
   },
   {
@@ -149,22 +178,22 @@ const getColumns = ({
 // table
 
 type TTableProps = {
-  submissions: Array<Submission>;
+  submissions: Array<Submission> | null;
   grading: string;
   search?: string;
   setSearch: (val: string) => void;
   rowSelection: RowSelectionState;
   onRowSelectionChange: OnChangeFn<RowSelectionState>;
-  columnFilters: Set<string>;
+  columnFilters: ColumnFiltersState;
 };
 
 const SubmissionsDataTable = ({
   submissions,
-  grading,
   search,
   setSearch,
   rowSelection,
-  onRowSelectionChange
+  onRowSelectionChange,
+  columnFilters
 }: TTableProps) => {
   const [selected, setSelected] = useState<Submission | null>(null);
 
@@ -174,11 +203,6 @@ const SubmissionsDataTable = ({
     () =>
       getColumns({ onViewDetails: row => setSelected(row.submission ?? null) }),
     []
-  );
-
-  const columnFilters = useMemo<ColumnFiltersState>(
-    () => (grading === 'all' ? [] : [{ id: 'grading', value: grading }]),
-    [grading]
   );
 
   return (

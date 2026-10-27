@@ -94,6 +94,42 @@ export const FilterAssignmentsButton = (
   );
 };
 
+export const FilterSubmissionsButton = (
+  props: IFilterAssignmentsButtonProps
+) => {
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger>
+        <Button variant={'link'} className={'p-1 justify-self-end'}>
+          <ListFilter className={'text-primary size-5 justify-self-center'} />
+          Filter
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={'end'}>
+        {props.allFilters &&
+          props.allFilters.map(group =>
+            Object.entries(group).map(([category, filterProperties]) => (
+              <DropdownMenuGroup key={category}>
+                <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                {filterProperties.map(filter => (
+                  <DropdownMenuCheckboxItem
+                    key={`${filter.value}`}
+                    checked={props.activeFilters.has(`${filter.value}`)}
+                    onCheckedChange={() =>
+                      props.toggle(category, filter.value, filter.label)
+                    }
+                  >
+                    {filter.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+            ))
+          )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 interface IFilterFilesButtonProps {
   allFileTypes: string[];
   checkedFileTypes: string[];
