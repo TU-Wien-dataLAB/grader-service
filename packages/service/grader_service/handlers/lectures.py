@@ -3,7 +3,6 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-import re
 from http import HTTPStatus
 
 from tornado.web import HTTPError
@@ -22,8 +21,6 @@ from grader_service.services.lectures_service import (
     MAX_PER_PAGE,
     LECTURE_SORTABLE_COLUMNS,
 )
-
-lecture_code_pattern = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @register_handler(r"\/api\/lectures\/?", VersionSpecifier.ALL)

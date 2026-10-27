@@ -3,11 +3,16 @@ import math
 import re
 from http import HTTPStatus
 
-from sqlalchemy import func, select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from grader_service.api.models import LectureDetailDto, LectureUpdateDto, LectureCreateDto
+from grader_service.api.models import (
+    LectureDetailDto,
+    LectureUpdateDto,
+    LectureCreateDto,
+    LectureListDto,
+)
 from grader_service.api.models.user import User as UserDto
 from grader_service.errors import APIError
 from grader_service.orm.base import DeleteState
@@ -44,10 +49,10 @@ class LecturesService(BaseService):
         user: User,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE,
-        sort_by: str = "id",
+        sort_by: str = "created_at",
         order: str = "asc",
         search: str | None = None,
-    ) -> dict:
+    ) -> LectureListDto:
         with self.session_maker() as session:
             stmt = select(Lecture)
             if complete is not None:
@@ -99,15 +104,13 @@ class LecturesService(BaseService):
             ]
 
             total_pages = math.ceil(total_items / per_page) if total_items > 0 else 0
-            return {
-                "lectures": [
-                    lec.dto_to_dict(omit_if_none={"student_count"}) for lec in lecture_dtos
-                ],
-                "page": page,
-                "per_page": per_page,
-                "total_items": total_items,
-                "total_pages": total_pages,
-            }
+            return LectureListDto(
+                lectures=[lec.dto_to_dict(omit_if_none={"student_count"}) for lec in lecture_dtos],
+                page=page,
+                per_page=per_page,
+                total_items=total_items,
+                total_pages=total_pages,
+            )
 
     def get_lecture_by_id(self, lecture_id: int, user: User) -> LectureDetailDto:
         with self.session_maker() as session:
@@ -157,8 +160,6 @@ class LecturesService(BaseService):
         with self.session_maker() as session:
             try:
                 lecture = self.get_lecture(session, lecture_id)
-                # admins keep access to deleted lectures, consistent with
-                # get_lecture_by_id and get_all_lectures
                 if not user.is_admin and lecture.deleted == DeleteState.deleted:
                     raise APIError(HTTPStatus.NOT_FOUND, message="Lecture was deleted.")
 
@@ -242,7 +243,12 @@ class LecturesService(BaseService):
             roles = session.scalars(
                 select(Role).options(joinedload(Role.user)).where(Role.lectid == lecture_id)
             ).all()
-            students = [to_user_dto(r.user) for r in roles if r.role == Scope.student]
-            tutors = [to_user_dto(r.user) for r in roles if r.role == Scope.tutor]
-            instructors = [to_user_dto(r.user) for r in roles if r.role == Scope.instructor]
+            students, tutors, instructors = [], [], []
+            for role in roles:
+                if role.role == Scope.student:
+                    students.append(to_user_dto(role.user))
+                elif role.role == Scope.tutor:
+                    tutors.append(to_user_dto(role.user))
+                elif role.role == Scope.instructor:
+                    instructors.append(to_user_dto(role.user))
             return students, tutors, instructors
