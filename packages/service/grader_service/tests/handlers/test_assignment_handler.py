@@ -112,7 +112,7 @@ async def test_get_assignments_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
@@ -266,7 +266,7 @@ async def test_post_assignment_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     url = service_base_url + "lectures/3/assignments/"
     post_assignment = Assignment(

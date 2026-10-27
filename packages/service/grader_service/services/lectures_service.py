@@ -39,8 +39,8 @@ MAX_PER_PAGE = 100
 class LecturesService(BaseService):
     def get_all_lectures(
         self,
-        complete: str | None,
-        instructor_view: str | None,
+        complete: bool | None,
+        instructor_view: bool | None,
         user: User,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE,
@@ -51,7 +51,7 @@ class LecturesService(BaseService):
         with self.session_maker() as session:
             stmt = select(Lecture)
             if complete is not None:
-                state = LectureState.complete if complete == "true" else LectureState.active
+                state = LectureState.complete if complete else LectureState.active
                 stmt = stmt.where(Lecture.state == state)
 
             if search:
@@ -67,7 +67,7 @@ class LecturesService(BaseService):
                     Role.user_id == user.id, Lecture.deleted == DeleteState.active
                 )
 
-                if instructor_view == "true" and self.has_elevated_permissions(session, user):
+                if instructor_view and self.has_elevated_permissions(session, user):
                     stmt = stmt.where(Role.role.in_([Scope.instructor, Scope.tutor]))
 
             # total count under the same filters the user can see,
@@ -93,7 +93,7 @@ class LecturesService(BaseService):
                 to_lecture_list_item_dto(
                     lec,
                     a_counts.get(lec.id, 0),
-                    s_counts.get(lec.id, 0) if instructor_view == "true" else None,
+                    s_counts.get(lec.id, 0) if instructor_view else None,
                 )
                 for lec in lectures
             ]

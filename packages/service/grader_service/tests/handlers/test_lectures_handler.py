@@ -546,6 +546,9 @@ async def test_get_lectures_invalid_query_params(
         "per_page=abc",
         "sort_by=foo",
         "order=up",
+        "complete=yes",
+        "instructor=1",
+        "instructor=TRUE",
     ]
     for query in invalid_queries:
         url = service_base_url + "lectures?" + query
@@ -882,7 +885,7 @@ async def test_put_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     update_lecture = LectureUpdateDto(name="new name", complete=False)
 
@@ -912,7 +915,7 @@ async def test_put_lecture_deleted_admin(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     update_lecture = LectureUpdateDto(name="new name", complete=False)
     put_response = await http_server_client.fetch(
@@ -1011,7 +1014,7 @@ async def test_delete_lecture(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1039,7 +1042,7 @@ async def test_delete_lecture_already_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1087,7 +1090,7 @@ async def test_delete_lecture_assignment(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1235,7 +1238,7 @@ async def test_delete_lecture_hard(
         method="DELETE",
         headers={"Authorization": f"Token {default_token}"},
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1316,7 +1319,7 @@ async def test_delete_lecture_hard_assignments_roles(
         method="DELETE",
         headers={"Authorization": f"Token {default_token}"},
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1353,6 +1356,80 @@ async def test_delete_lecture_unknown_parameter(
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+
+
+async def test_delete_lecture_invalid_hard_delete_value(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    url = service_base_url + "lectures/3?hard_delete=yes"
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+
+
+async def test_post_lecture_invalid_body(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    # not valid JSON
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body="{invalid json",
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+
+    # JSON, but the body is not an object
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body="[1, 2, 3]",
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+
+
+async def test_put_lecture_invalid_body(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_user,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    url = service_base_url + "lectures/3"
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body="not json at all",
         )
     e = exc_info.value
     assert e.code == HTTPStatus.BAD_REQUEST

@@ -6,12 +6,15 @@
 import re
 from http import HTTPStatus
 
-import tornado
 from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.handlers.handler_utils import get_int_argument
+from grader_service.handlers.handler_utils import (
+    get_bool_argument,
+    get_int_argument,
+    parse_json_dto,
+)
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.services.lectures_service import (
@@ -37,19 +40,19 @@ class LectureBaseHandler(GraderBaseHandler):
         - For admins: all lectures, regardless of the deletion state.
 
         Query parameters:
-        - complete: filter by lecture state ("true" -> complete, otherwise active)
+        - complete: "true" | "false" -> filter by lecture state (complete or active)
         - instructor: "true" -> only lectures where the user has an elevated role (if eligible)
         - page: 1-based page number (default 1)
         - per_page: items per page, 1-100 (default 20)
-        - sort_by: "id" | "name" | "created_at" (default "id")
+        - sort_by: "id" | "name" | "created_at" (default "created_at")
         - order: "asc" | "desc" (default "asc")
         - search: case-insensitive substring filter on lecture name and code
         """
         self.validate_parameters(
             "complete", "instructor", "page", "per_page", "sort_by", "order", "search"
         )
-        complete = self.get_argument("complete", None)
-        instructor = self.get_argument("instructor", None)
+        complete = get_bool_argument(self, "complete")
+        instructor = get_bool_argument(self, "instructor")
         search = self.get_argument("search", None)
 
         page = get_int_argument(self, "page", default=1, minimum=1)
@@ -87,9 +90,7 @@ class LectureBaseHandler(GraderBaseHandler):
         :raises APIError: throws an error if the lecture code contains invalid characters or is already taken
         """
         self.validate_parameters()
-        body = tornado.escape.json_decode(self.request.body)
-
-        lecture = self.services.lectures.create_lecture(LectureCreateDto.from_dict(body))
+        lecture = self.services.lectures.create_lecture(parse_json_dto(self, LectureCreateDto))
 
         self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture.dto_to_dict())
@@ -110,9 +111,8 @@ class LectureObjectHandler(GraderBaseHandler):
         :type lecture_id: int
         """
         self.validate_parameters()
-        body = tornado.escape.json_decode(self.request.body)
         lecture = self.services.lectures.update_lecture(
-            lecture_id, LectureUpdateDto.from_dict(body), user=self.user
+            lecture_id, parse_json_dto(self, LectureUpdateDto), user=self.user
         )
 
         self.write_json(lecture.dto_to_dict())
@@ -147,12 +147,12 @@ class LectureObjectHandler(GraderBaseHandler):
 
         """
         self.validate_parameters("hard_delete")
-        hard_delete = self.get_argument("hard_delete", "false") == "true"
+        hard_delete = get_bool_argument(self, "hard_delete", default=False)
 
         await self.services.lectures.delete_lecture(
             lecture_id, hard_delete=hard_delete, user=self.user
         )
-        self.write("OK")
+        self.set_status(HTTPStatus.NO_CONTENT)
 
 
 @register_handler(
