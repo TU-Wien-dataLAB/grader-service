@@ -10,7 +10,7 @@ from grader_service.autograding.local_feedback import (
     LocalFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.file_services.base_file_service import FileService
+from grader_service.services.file_services.base_file_service import FileService
 from grader_service.artifact_types import ArtifactType
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 

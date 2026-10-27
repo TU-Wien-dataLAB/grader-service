@@ -66,7 +66,7 @@ def test_assignment_serialization():
             "group": None,
             "cell_timeout": None,
             "max_submissions": 1,
-            "autograde_type": "unassisted",
+            "grading_method": "unassisted",
             "allowed_files": None,
         },
     }

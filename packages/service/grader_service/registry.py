@@ -9,6 +9,9 @@ from typing import List, Tuple
 
 from tornado.web import RequestHandler
 
+from grader_service.services.file_services.base_file_service import FileService
+from grader_service.services.lectures_service import LecturesService
+
 
 class Singleton(type):
     _instances = {}
@@ -83,3 +86,8 @@ def register_handler(path: str, version_specifier: VersionSpecifier = VersionSpe
         return cls
 
     return _register_class
+
+
+class ServiceRegistry:
+    def __init__(self, session_maker, file_service: FileService):
+        self.lectures = LecturesService(session_maker, file_service)

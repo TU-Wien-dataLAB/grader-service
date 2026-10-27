@@ -28,7 +28,7 @@ from tornado.web import HTTPError
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
 from grader_service.errors import APIError
-from grader_service.file_services import GitFileService
+from grader_service.services.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
 from grader_service.orm.lecture import Lecture
@@ -820,6 +820,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
     ) -> None:
         super().__init__(application, request, **kwargs)
         self.file_service = self.application.file_service
+        self.services = self.application.services
 
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:

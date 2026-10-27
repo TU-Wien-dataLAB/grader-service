@@ -16,7 +16,7 @@ from tornado.httpclient import HTTPClientError
 from tornado.web import HTTPError
 
 from grader_service.artifact_types import ArtifactType
-from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.services.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.git import InfoRefsHandler, RPCHandler
 from grader_service.handlers.git.server import GitBaseHandler, GitRpcCmd
 from grader_service.orm import User

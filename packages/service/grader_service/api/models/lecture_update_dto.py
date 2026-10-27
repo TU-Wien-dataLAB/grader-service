@@ -12,29 +12,24 @@ class LectureUpdateDto(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, complete=False):  # noqa: E501
+    def __init__(self, name=None, complete=False):  # noqa: E501
         """LectureUpdateDto - a model defined in OpenAPI
 
-        :param id: The id of this LectureUpdateDto.  # noqa: E501
-        :type id: int
         :param name: The name of this LectureUpdateDto.  # noqa: E501
         :type name: str
         :param complete: The complete of this LectureUpdateDto.  # noqa: E501
         :type complete: bool
         """
         self.openapi_types = {
-            'id': int,
             'name': str,
             'complete': bool
         }
 
         self.attribute_map = {
-            'id': 'id',
             'name': 'name',
             'complete': 'complete'
         }
 
-        self._id = id
         self._name = name
         self._complete = complete
 
@@ -48,29 +43,6 @@ class LectureUpdateDto(Model):
         :rtype: LectureUpdateDto
         """
         return util.deserialize_model(dikt, cls)
-
-    @property
-    def id(self) -> int:
-        """Gets the id of this LectureUpdateDto.
-
-
-        :return: The id of this LectureUpdateDto.
-        :rtype: int
-        """
-        return self._id
-
-    @id.setter
-    def id(self, id: int):
-        """Sets the id of this LectureUpdateDto.
-
-
-        :param id: The id of this LectureUpdateDto.
-        :type id: int
-        """
-        if id is None:
-            raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
-
-        self._id = id
 
     @property
     def name(self) -> str:

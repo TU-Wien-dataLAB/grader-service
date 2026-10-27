@@ -69,15 +69,59 @@ lectures:
         example: "true"
         schema:
           type: string
+      - name: page
+        in: query
+        description: The page number to query (1-based)
+        required: false
+        example: 1
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          default: 1
+      - name: per_page
+        in: query
+        description: The number of lectures per page
+        required: false
+        example: 20
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort_by
+        in: query
+        description: The lecture attribute to sort by
+        required: false
+        example: "id"
+        schema:
+          type: string
+          enum: [ "id", "name", "created_at" ]
+          default: "id"
+      - name: order
+        in: query
+        description: The sort direction
+        required: false
+        example: "asc"
+        schema:
+          type: string
+          enum: [ "asc", "desc" ]
+          default: "asc"
+      - name: search
+        in: query
+        description: Case-insensitive substring filter on lecture name and code
+        required: false
+        example: "ivs"
+        schema:
+          type: string
     responses:
       200:
         description: OK
         content:
           application/json:
             schema:
-              type: "array"
-              items:
-                $ref: "./schemas.yml#/components/schemas/Lecture"
+              $ref: "./schemas.yml#/components/schemas/LectureListDto"
       401:
         description: Unauthorized
         content:

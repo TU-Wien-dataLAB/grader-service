@@ -17,7 +17,7 @@ class GradingMethod(Model):
     """
     AUTO = 'auto'
     FULL_AUTO = 'full_auto'
-    UNASSISTED = 'unassisted'
+    MANUAL = 'manual'
     def __init__(self):  # noqa: E501
         """GradingMethod - a model defined in OpenAPI
 

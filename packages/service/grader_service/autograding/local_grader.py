@@ -25,7 +25,7 @@ from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.utils import collect_logs, rmtree
 from grader_service.convert.converters.autograde import Autograde
 from grader_service.convert.gradebook.models import GradeBookModel
-from grader_service.file_services.base_file_service import FileService
+from grader_service.services.file_services.base_file_service import FileService
 from grader_service.orm.assignment import Assignment
 from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs

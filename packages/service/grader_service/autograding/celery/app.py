@@ -1,9 +1,11 @@
 from typing import Union
 
 from celery import Celery
-from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 from traitlets import Dict
 from traitlets.config import SingletonConfigurable
+
+from grader_service.db import create_sync_session_maker
 
 
 class CeleryApp(SingletonConfigurable):
@@ -24,7 +26,8 @@ class CeleryApp(SingletonConfigurable):
     ).tag(config=True)
 
     app: Celery
-    _session_maker: Union[scoped_session, None] = None
+    _session_maker: Union[sessionmaker, None] = None
+    _db_url: Union[str, None] = None
 
     def __init__(self, config_file: Union[str, None] = None, **kwargs):
         super().__init__(**kwargs)
@@ -41,6 +44,7 @@ class CeleryApp(SingletonConfigurable):
                 self.log.info(f"Loading GraderService config from {config_file}")
                 service.load_config_file(self.config_file)
                 service.set_config()
+                self._db_url = service.db_url
                 self.update_config(service.config)
 
         from grader_service.autograding.celery.tasks import app
@@ -49,13 +53,10 @@ class CeleryApp(SingletonConfigurable):
         self.app.conf.update(self.conf)
 
     @property
-    def sessionmaker(self) -> scoped_session:
+    def session_maker(self) -> sessionmaker | None:
         if self._session_maker is None:
             self.log.info("Instantiating database connection")
-            from grader_service.main import GraderService, get_session_maker
-
-            db_url = GraderService.instance().db_url
-            self._session_maker = get_session_maker(db_url)
+            self._session_maker = create_sync_session_maker(self._db_url)
         return self._session_maker
 
     @property

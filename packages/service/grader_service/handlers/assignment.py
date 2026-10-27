@@ -229,7 +229,7 @@ class AssignmentObjectHandler(GraderBaseHandler):
 
         assignment.name = assignment_model.name
         assignment.status = assignment_model.status
-        if (assignment_model.settings.autograde_type == "full_auto") and (
+        if (assignment_model.settings.grading_method == "full_auto") and (
             assignment.properties is not None
         ):
             model = GradeBookModel.from_dict(json.loads(assignment.properties))
@@ -310,10 +310,12 @@ class AssignmentObjectHandler(GraderBaseHandler):
                         HTTPStatus.FORBIDDEN, reason="Only Admins can hard-delete assignment."
                     )
 
+                lecture_code = lecture.code
+                assignment_id_ = assignment.id
                 self.session.delete(assignment)
                 self.session.commit()
                 await self.file_service.delete_assignment_files(
-                    assignment=assignment, lecture=lecture
+                    assignment_id=assignment_id_, lecture_code=lecture_code
                 )
             else:
                 if assignment.deleted == DeleteState.deleted:
@@ -323,10 +325,11 @@ class AssignmentObjectHandler(GraderBaseHandler):
                 previously_deleted = self.delete_previous_assignment(
                     assignment=assignment, lecture_id=lecture_id
                 )
+                previously_deleted_id = previously_deleted.id if previously_deleted else None
                 self.session.commit()
-                if previously_deleted is not None:
+                if previously_deleted_id is not None:
                     await self.file_service.delete_assignment_files(
-                        assignment=previously_deleted, lecture=lecture
+                        assignment_id=previously_deleted_id, lecture_code=lecture.code
                     )
 
                 assignment.deleted = DeleteState.deleted
@@ -428,7 +431,7 @@ class AssignmentPropertiesHandler(GraderBaseHandler):
         model = GradeBookModel.from_dict(json.loads(properties_string))
         # Check if assignment contains no cells that
         # need manual grading if assignment is fully auto grade
-        if assignment.settings.autograde_type == "full_auto":
+        if assignment.settings.grading_method == "full_auto":
             _check_full_auto_grading(self, model)
 
         assignment.properties = properties_string
