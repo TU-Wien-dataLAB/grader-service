@@ -1,6 +1,5 @@
 from http import HTTPStatus
 from typing import Optional
-from tornado.web import HTTPError
 
 from sqlalchemy import select, func
 
@@ -53,26 +52,26 @@ class BaseService:
     def get_lecture(self, session, lecture_id: int) -> Lecture | None:
         lecture: Optional[Lecture] = session.get(Lecture, lecture_id)
         if lecture is None:
-            raise HTTPError(HTTPStatus.NOT_FOUND, "Lecture not found")
+            raise APIError(HTTPStatus.NOT_FOUND, message="Lecture not found")
         return lecture
 
     def validate_assignment_for_soft_delete(self, assignment: Assignment):
         """Validates that an assignment can be soft-deleted.
 
-        Raises an HTTPError if the assignment has submissions or is released/completed,
+        Raises an APIError if the assignment has submissions or is released/completed,
         preventing a soft-delete.
 
         :param assignment: the Assignment object to validate
         :type assignment: Assignment
-        :raises HTTPError: if the assignment has submissions or is released/completed
+        :raises APIError: if the assignment has submissions or is released/completed
         """
         if assignment.submissions:
-            raise HTTPError(
-                HTTPStatus.CONFLICT, reason="Cannot delete assignments with submissions!"
+            raise APIError(
+                HTTPStatus.CONFLICT, message="Cannot delete assignments with submissions!"
             )
         if assignment.status in {"released", "complete"}:
-            raise HTTPError(
-                HTTPStatus.CONFLICT, reason="Cannot delete released or completed assignments!"
+            raise APIError(
+                HTTPStatus.CONFLICT, message="Cannot delete released or completed assignments!"
             )
 
     def delete_previous_assignment(

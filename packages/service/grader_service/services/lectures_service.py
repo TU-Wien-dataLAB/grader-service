@@ -3,6 +3,7 @@ import re
 from http import HTTPStatus
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from grader_service.api.models import LectureDetailDto, LectureUpdateDto, LectureCreateDto
@@ -138,22 +139,37 @@ class LecturesService(BaseService):
 
                 session.add(lecture)
                 session.commit()
-
-                return to_lecture_detail_dto(lecture)
+            except IntegrityError:
+                # the unique constraint on the code caught a concurrent create
+                session.rollback()
+                raise APIError(HTTPStatus.CONFLICT, message="Lecture code already in use")
             except Exception:
                 if session.in_transaction():
                     session.rollback()
                 raise
 
-    def update_lecture(self, lecture_id: int, lecture_dto: LectureUpdateDto):
-        with self.session_maker() as session:
-            lecture = self.get_lecture(session, lecture_id)
-
-            lecture.name = lecture_dto.name
-            lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
-
-            session.commit()
             return to_lecture_detail_dto(lecture)
+
+    def update_lecture(self, lecture_id: int, lecture_dto: LectureUpdateDto, user: User):
+        with self.session_maker() as session:
+            try:
+                lecture = self.get_lecture(session, lecture_id)
+                # admins keep access to deleted lectures, consistent with
+                # get_lecture_by_id and get_all_lectures
+                if not user.is_admin and lecture.deleted == DeleteState.deleted:
+                    raise APIError(HTTPStatus.NOT_FOUND, message="Lecture was deleted.")
+
+                lecture.name = lecture_dto.name
+                lecture.state = (
+                    LectureState.complete if lecture_dto.complete else LectureState.active
+                )
+
+                session.commit()
+                return to_lecture_detail_dto(lecture)
+            except Exception:
+                if session.in_transaction():
+                    session.rollback()
+                raise
 
     async def delete_lecture(self, lecture_id: int, hard_delete: bool, user: User) -> None:
         with self.session_maker() as session:

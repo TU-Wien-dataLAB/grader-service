@@ -112,7 +112,7 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         body = tornado.escape.json_decode(self.request.body)
         lecture = self.services.lectures.update_lecture(
-            lecture_id, LectureUpdateDto.from_dict(body)
+            lecture_id, LectureUpdateDto.from_dict(body), user=self.user
         )
 
         self.write_json(lecture.dto_to_dict())

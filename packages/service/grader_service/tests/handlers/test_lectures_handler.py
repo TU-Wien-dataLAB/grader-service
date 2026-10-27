@@ -30,7 +30,7 @@ from .db_util import (
     insert_student,
     insert_submission,
 )
-from ...api.models import LectureListItemDto, LectureDetailDto
+from ...api.models import LectureListItemDto, LectureDetailDto, LectureUpdateDto
 
 
 async def test_get_lectures(
@@ -867,6 +867,63 @@ async def test_put_lecture_unauthorized(
 
     e = exc_info.value
     assert e.code == HTTPStatus.FORBIDDEN
+
+
+async def test_put_lecture_deleted(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+):
+    url = service_base_url + "lectures/3"
+
+    delete_response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    update_lecture = LectureUpdateDto(name="new name", complete=False)
+
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="PUT",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(update_lecture.to_dict()),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.NOT_FOUND
+
+
+async def test_put_lecture_deleted_admin(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    # admins keep access to deleted lectures, so updates must still work
+    url = service_base_url + "lectures/3"
+
+    delete_response = await http_server_client.fetch(
+        url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert delete_response.code == HTTPStatus.OK
+
+    update_lecture = LectureUpdateDto(name="new name", complete=False)
+    put_response = await http_server_client.fetch(
+        url,
+        method="PUT",
+        headers={"Authorization": f"Token {default_token}"},
+        body=json.dumps(update_lecture.to_dict()),
+    )
+    assert put_response.code == HTTPStatus.OK
+    updated = LectureDetailDto.from_dict(json.loads(put_response.body.decode()))
+    assert updated.name == "new name"
 
 
 async def test_get_lecture(
