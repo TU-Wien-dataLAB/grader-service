@@ -8,9 +8,9 @@
  * Do not edit the class manually.
  */
 import { User } from './user';
-import { Submission } from './submission';
+import { SubmissionListItemDto } from './submissionListItemDto';
 
 export interface UserSubmissionsInner {
-  user?: User;
-  submissions?: Array<Submission>;
+  user: User;
+  submissions: Array<SubmissionListItemDto>;
 }

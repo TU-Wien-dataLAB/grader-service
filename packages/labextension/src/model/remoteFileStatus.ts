@@ -15,9 +15,9 @@ export namespace RemoteFileStatus {
   export const StatusEnum = {
     UpToDate: 'UP_TO_DATE',
     Divergent: 'DIVERGENT',
-    PullNeeded: 'PULL_NEEDED',
-    PushNeeded: 'PUSH_NEEDED',
-    NoRemoteRepo: 'NO_REMOTE_REPO'
+    UpdateNeeded: 'UPDATE_NEEDED',
+    UnsavedChanges: 'UNSAVED_CHANGES',
+    NoBackup: 'NO_BACKUP'
   } as const;
   export type StatusEnum = (typeof StatusEnum)[keyof typeof StatusEnum];
 }
