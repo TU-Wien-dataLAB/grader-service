@@ -32,3 +32,14 @@ export const toSubmissionRows = (
     };
   });
 };
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+export const formatSubmittedAt = (iso?: string) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};

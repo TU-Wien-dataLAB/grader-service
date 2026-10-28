@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Field } from '../../../shadcn-components/ui/field';
 import { Label } from '../../../shadcn-components/ui/label';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useSelector } from '@tanstack/react-form';
 import {
   Select,
   SelectContent,
@@ -12,49 +12,68 @@ import {
 } from '../../../shadcn-components/ui/select';
 import { Button } from '../../../shadcn-components/ui/button';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
-import { useParams } from 'react-router';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { lectureUsersQuery } from '../../../../services/queries/lectures.queries';
-import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  lectureQuery,
+  lectureUsersQuery
+} from '../../../../services/queries/lectures.queries';
 import { createSubmissionFiles } from '../../../../services/git.service';
 import { ErrorBanner } from '../../ui/error-banner';
 import { OctagonAlert } from 'lucide-react';
 import { useMutationStatus } from '../../../../widget';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../../services/local-file.service';
+import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
+
+type submissionFields = {
+  student: string;
+  files: string[];
+};
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
-  currentPath: string;
+  lectureId: number;
+  assignmentId: number;
 };
 
 const NewSubmission = (props: TProps) => {
-  const params = useParams();
-  const lectureId = Number(params.lid);
-  const assignmentId = Number(params.aid);
+  const { lectureId, assignmentId, setOpenNewSubmission } = props;
+
   const { data: lectureUsers } = useQuery(lectureUsersQuery(lectureId));
+  const { data: lecture } = useQuery(lectureQuery(lectureId));
   const { status, setStatus } = useMutationStatus();
+  const queryClient = useQueryClient();
 
-  const path = props.currentPath;
-  const cleanedPath = path.endsWith('/') ? path.slice(0, -1) : path;
-  const { data: files } = useFiles(cleanedPath);
-
-  const lectureUsersOptions = lectureUsers?.students.map(student => {
-    return { label: student.display_name, value: student.name };
+  const form = useForm({
+    defaultValues: {
+      student: '',
+      files: []
+    },
+    onSubmit: async ({ value }) => {
+      await createSubmissionMutation.mutateAsync(value);
+    }
   });
 
-  const submissionFileOptions =
-    files && files.length > 0
-      ? files.map(file => {
-          return { value: file.path, label: file.name, checked: false };
-        })
-      : [];
+  const userDir = useSelector(form.store, state => state.values.student);
 
-  type submissionFields = {
-    student: string;
-    files: string[];
-  };
+  const path = useMemo(
+    () => `${lectureBasePath}${lecture.code}/create/${assignmentId}/${userDir}`,
+    [lecture, assignmentId, userDir]
+  );
+
+  const { data: files = [] } = useFiles(path);
+
+  const lectureUsersOptions = useMemo(() => {
+    return lectureUsers?.students.map(student => {
+      return { label: student.display_name, value: student.name };
+    });
+  }, [lectureUsers]);
 
   const createSubmissionMutation = useMutation({
     mutationFn: async (values: submissionFields) => {
+      console.log('selected files: ', values.files);
       await createSubmissionFiles(
         lectureId,
         assignmentId,
@@ -67,7 +86,8 @@ const NewSubmission = (props: TProps) => {
         message: 'You successfully created a new submission.',
         status: 'success'
       });
-      props.setOpenNewSubmission(false);
+      setOpenNewSubmission(false);
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
     },
     onError: () => {
       setStatus({
@@ -77,15 +97,9 @@ const NewSubmission = (props: TProps) => {
     }
   });
 
-  const form = useForm({
-    defaultValues: {
-      student: '',
-      files: []
-    },
-    onSubmit: async ({ value }) => {
-      await createSubmissionMutation.mutateAsync(value);
-    }
-  });
+  useEffect(() => {
+    openInFileBrowser(path);
+  }, [path]);
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
@@ -170,7 +184,7 @@ const NewSubmission = (props: TProps) => {
               Start uploading your notebooks & files in the file browser on the
               left.
             </p>
-            {submissionFileOptions.length === 0 && (
+            {files.length === 0 && (
               <div
                 className="text-[#DC182C] flex items-center gap-2"
                 role="alert"
@@ -185,7 +199,7 @@ const NewSubmission = (props: TProps) => {
               </div>
             )}
           </div>
-          {submissionFileOptions.length > 0 && (
+          {files.length > 0 && (
             <div>
               <p className="font-bold py-1">Submission files *</p>
               <form.Field
@@ -204,30 +218,30 @@ const NewSubmission = (props: TProps) => {
                       submission.
                     </legend>
                     <div className={'w-full overflow-y-auto'}>
-                      {submissionFileOptions.map(opt => {
-                        const id = `${field.name}-${opt.value}`;
+                      {files.map(opt => {
+                        const id = `${field.name}-${opt.path}`;
                         return (
                           <div
-                            key={opt.value}
+                            key={opt.path}
                             className={'flex min-h-8 items-center gap-2'}
                           >
                             <Checkbox
                               id={id}
-                              checked={field.state.value.includes(opt.value)}
+                              checked={field.state.value.includes(opt.name)}
                               onBlur={field.handleBlur}
                               onCheckedChange={checked => {
                                 field.handleChange(
                                   checked === true
-                                    ? [...field.state.value, opt.value]
+                                    ? [...field.state.value, opt.name]
                                     : field.state.value.filter(
-                                        (v: string) => v !== opt.value
+                                        (v: string) => v !== opt.name
                                       )
                                 );
                               }}
                               className={`${!field.state.meta.isValid && 'border border-[#DC182C]'}`}
                             />
                             <Label className="font-normal" htmlFor={id}>
-                              {opt.label}
+                              {opt.name}
                             </Label>
                           </div>
                         );
@@ -249,7 +263,7 @@ const NewSubmission = (props: TProps) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => props.setOpenNewSubmission(false)}
+              onClick={() => setOpenNewSubmission(false)}
             >
               Cancel
             </Button>

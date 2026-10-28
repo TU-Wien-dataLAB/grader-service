@@ -102,12 +102,12 @@ export async function pullFeedback(
 export async function pullSubmissionFiles(
   lectureId: number,
   assignmentId: number,
-  submission: Submission
+  submissionId: number
 ) {
   let url = `${baseUrl({ lectureId, assignmentId })}pull/${RepoType.EDIT}`;
 
   const searchParams = new URLSearchParams({
-    subid: String(submission.id)
+    subid: String(submissionId)
   });
   url += '?' + searchParams;
   return request<void>(HTTPMethod.GET, url, null);
@@ -123,7 +123,7 @@ export async function createSubmissionFiles(
   const searchParams = new URLSearchParams({
     for_user: username
   });
-  selectedFiles.forEach(file => searchParams.append('selected_files', file));
+  selectedFiles.forEach(file => searchParams.append('selected-files', file));
   url += '?' + searchParams;
   return request<void>(HTTPMethod.PUT, url, null);
 }

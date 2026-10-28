@@ -179,7 +179,6 @@ const getColumns = ({
 
 type TTableProps = {
   submissions: Array<Submission> | null;
-  grading: string;
   search?: string;
   setSearch: (val: string) => void;
   rowSelection: RowSelectionState;
@@ -220,10 +219,12 @@ const SubmissionsDataTable = ({
         emptyMessage="No submissions match your filters."
       />
 
-      <SubmissionDetailsDialog
-        submission={selected}
-        onClose={() => setSelected(null)}
-      />
+      {selected && (
+        <SubmissionDetailsDialog
+          submissionId={selected?.id} // TODO: set id itself directly from state
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 };

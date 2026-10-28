@@ -16,7 +16,6 @@ import {
 } from '../../components/utils/assignment-metadata';
 import { assignmentQuery } from '../../../services/queries/assignments.queries';
 import {
-  buildFileBasePath,
   lectureBasePath,
   openInFileBrowser
 } from '../../../services/local-file.service';
@@ -49,8 +48,6 @@ export const Assignment = () => {
       `${lectureBasePath}${lecture?.code}/${selectedDir}/${assignmentId}`
     );
   }, [assignmentId, lecture?.code, selectedDir]);
-
-  const currentPath = buildFileBasePath(lecture?.code, 'source', assignmentId);
 
   return (
     <div
@@ -95,7 +92,7 @@ export const Assignment = () => {
           <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="submissions">
-          <Submissions currentPath={currentPath} />
+          <Submissions lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="statistics">Statistics</TabsContent>
       </Tabs>

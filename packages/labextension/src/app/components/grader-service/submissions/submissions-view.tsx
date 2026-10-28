@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SearchField } from '../../ui/search';
 import { Button } from '../../../shadcn-components/ui/button';
 import { SubmissionsActions } from './submissions-actions';
@@ -30,27 +30,27 @@ import { useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { useQuery } from '@tanstack/react-query';
 import { getAllSubmissions } from '../../../../services/queries/submissions.query';
-import { useParams } from 'react-router';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../../services/local-file.service';
+import { lectureQuery } from '../../../../services/queries/lectures.queries';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
+  lectureId: number;
+  assignmentId: number;
 };
 
 export const SubmissionsView = (props: TProps) => {
-  type Grading = 'graded' | 'failed' | 'not_graded';
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const { lectureId, assignmentId, setOpenNewSubmission } = props;
+  const [searchQuery, setSearchQuery] = useState('');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [grading, setGrading] = useState<'all' | Grading>('all');
+  const [activeFilters, setActiveFilters] = useState(new Set<string>());
   const { status } = useMutationStatus();
 
-  const params = useParams();
-
-  const lectureId = Number(params.lid);
-  const assignmentId = Number(params.aid);
-
-  console.log(() => setGrading('all'));
-
-  const [activeFilters, setActiveFilters] = useState(new Set<string>());
+  const { data: lecture } = useQuery(lectureQuery(lectureId));
+  const path = `${lectureBasePath}${lecture.code}/edit/${assignmentId}`;
 
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {
@@ -72,9 +72,11 @@ export const SubmissionsView = (props: TProps) => {
     [searchQuery, activeFilters]
   );
 
-  const { data: submissionsList } = useQuery(
-    getAllSubmissions(lectureId, assignmentId)
-  );
+  const {
+    data: submissionsList,
+    refetch,
+    isLoading
+  } = useQuery(getAllSubmissions(lectureId, assignmentId));
 
   const STATIC_FILTERS: IFilterGroup[] = [
     {
@@ -96,18 +98,30 @@ export const SubmissionsView = (props: TProps) => {
     }
   ];
 
+  useEffect(() => {
+    openInFileBrowser(path);
+  }, [path]);
+
+  if (isLoading) {
+    return <h1>Loading...</h1>;
+  }
+
   return (
-    <div className={'flex flex-col items-start gap-4 self-stretch'}>
+    <div
+      className={
+        'flex flex-col items-start gap-4 self-stretch overflow-auto h-[900px]'
+      }
+    >
       {status.status === 'success' && (
         <SuccessBanner message={status.message} />
       )}
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Submissions</h2>
         <div className="flex gap-3">
-          <Button variant={'outline'}>Reload</Button>
-          <SubmissionsActions
-            setOpenNewSubmission={props.setOpenNewSubmission}
-          />
+          <Button onClick={() => refetch()} variant={'outline'}>
+            Reload
+          </Button>
+          <SubmissionsActions setOpenNewSubmission={setOpenNewSubmission} />
         </div>
       </div>
       <div className={'flex justify-between items-center self-stretch'}>
@@ -156,7 +170,6 @@ export const SubmissionsView = (props: TProps) => {
       <div className="w-full">
         <SubmissionsDataTable
           submissions={submissionsList}
-          grading={grading}
           columnFilters={columnFilters}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}

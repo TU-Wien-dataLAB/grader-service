@@ -1,30 +1,49 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import SubmissionFiles from './submission-files';
 import { ArrowLeft } from 'lucide-react';
 import SubmissionDetailInfo from './submission-detail-info';
-import { Submission } from '../../../../model/submission';
-import { SubmissionFile } from './submission-details-dialog';
 import { EmptyState } from '../../utils/empty-state';
 import { EmptyIcon } from '../../../../assets/empty-icon';
 import { Button } from '../../../shadcn-components/ui/button';
 import { useNavigate, useParams } from 'react-router';
-import { mockSubmission } from './table-mock-data';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../../services/local-file.service';
+import { useQuery } from '@tanstack/react-query';
+import { getSubmissionById } from '../../../../services/queries/submissions.query';
+import { lectureQuery } from '../../../../services/queries/lectures.queries';
+import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
 
 const EditSubmission = () => {
-  const files: SubmissionFile[] = [];
-  const submission: Submission[] = [];
-
   const params = useParams();
-
   const lectureId = Number(params.lid);
   const assignmentId = Number(params.aid);
+  const submissionId = Number(params.sid);
   const navigate = useNavigate();
 
-  const goToViewSubmissions = () => {
+  const { data: submission } = useQuery(
+    getSubmissionById(lectureId, assignmentId, submissionId)
+  );
+  const { data: lecture } = useQuery(lectureQuery(lectureId));
+
+  const path = useMemo(
+    () =>
+      `${lectureBasePath}${lecture.code}/edit/${assignmentId}/${submissionId}`,
+    [lecture, assignmentId]
+  );
+
+  const { data: files = [] } = useFiles(path);
+
+  const goToSubmissionsView = () => {
     navigate(`/lectures/${lectureId}/assignments/${assignmentId}`, {
       state: { activeTab: 'submissions' }
     });
   };
+
+  useEffect(() => {
+    openInFileBrowser(path);
+  }, [path]);
 
   return (
     <div
@@ -34,15 +53,15 @@ const EditSubmission = () => {
     >
       <div className="flex gap-4 items-center w-full">
         <ArrowLeft
-          onClick={goToViewSubmissions}
+          onClick={goToSubmissionsView}
           className={'size-4 cursor-pointer text-primary'}
         />
         <h2 className={'text-2xl font-bold leading-[32px]'}>Edit submission</h2>
       </div>
 
-      {submission && submission.length >= 0 && (
+      {submission && (
         <div className="w-full">
-          <SubmissionDetailInfo submission={mockSubmission} isEditMode />
+          <SubmissionDetailInfo submission={submission} isEditMode />
         </div>
       )}
 
@@ -55,10 +74,10 @@ const EditSubmission = () => {
         </div>
         {files ? (
           <div>
-            <SubmissionFiles files={mockSubmission} />
+            <SubmissionFiles files={files} />
             <div className="flex flex-start gap-4 mt-4">
               <Button variant="default">Replace submission</Button>
-              <Button variant="outline" onClick={goToViewSubmissions}>
+              <Button variant="outline" onClick={goToSubmissionsView}>
                 Cancel
               </Button>
             </div>

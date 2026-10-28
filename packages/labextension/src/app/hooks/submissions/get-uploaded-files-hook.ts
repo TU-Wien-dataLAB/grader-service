@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { GlobalObjects } from '../../../index';
-import { getFiles } from '../../../services/local-file.service';
+import { getFiles, IFile } from '../../../services/local-file.service';
+import { TSubmissionDirectory } from '../../components/grader-service/submissions/submission-details-dialog';
+
+// This hook syncs the uploaded files in File Browser
 
 export const useFiles = (path: string) => {
   const queryClient = useQueryClient();
@@ -25,9 +28,9 @@ export const useFiles = (path: string) => {
     };
   }, [path, queryClient]);
 
-  return useQuery({
+  return useQuery<(IFile | TSubmissionDirectory)[]>({
     queryKey,
-    queryFn: () => getFiles(path),
+    queryFn: () => (path ? getFiles(path) : Promise.resolve([])),
     enabled: !!path
   });
 };
