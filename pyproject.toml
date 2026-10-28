@@ -14,11 +14,11 @@ default-groups = ["dev"]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.3.0",
-    "ruff>=0.14.2",
-    "jupyterlab",
-    "jupyter-builder",
-    "tbump",
+    "pre-commit>=4.7.0",
+    "ruff>=0.17.3",
+    "jupyterlab>=4.0.0,<5",
+    "jupyter-builder>=1.2.4",
+    "tbump>=6.11.0",
 ]
 docs = [
     "sphinx",
