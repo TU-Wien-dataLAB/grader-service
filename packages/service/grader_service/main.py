@@ -334,8 +334,8 @@ class GraderService(config.Application):
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
-        if sys.version_info.major < 3 or sys.version_info.minor < 9:
-            msg = "Grader Service needs Python version 3.9 or above to run!"
+        if sys.version_info.major < 3 or sys.version_info.minor < 11:
+            msg = "Grader Service needs Python version 3.11 or above to run!"
             raise RuntimeError(msg)
 
         self.log.info("Starting Initialization...")
