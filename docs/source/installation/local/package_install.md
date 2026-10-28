@@ -5,15 +5,20 @@ This setup is intended for **local development and testing purposes only**.
 It is **not suitable for production use**. The local autograding executors run student code with full access to the service database and filesystem, so a malicious submission could read or alter grades and other students' work. Use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
 ```
 
-This guide explains how to install the published `grader-service` backend and `grader-labextension` frontend packages from [PyPI](https://pypi.org) into your own environment. If you want to run from source instead, see the [Quick installation](quick_install) or [Installation from source](installation_from_source) guides.
+This guide explains how to install the published `grader-service` backend and `grader-labextension`
+frontend packages from [PyPI](https://pypi.org) into your own environment. If you want to run from
+source instead, see the [Quick installation](quick_install)
+or [Installation from source](installation_from_source) guides.
 
 ---
 
 ## Requirements
 
-- Python 3.9+
-- JupyterHub >= 5.x ([installation guide](https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html))
-- JupyterLab >= 4.x ([installation guide](https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html))
+- Python 3.11+
+- JupyterHub >= 5.x
+  ([installation guide](https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html))
+- JupyterLab >= 4.x
+  ([installation guide](https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html))
 
 ## Create a virtual environment
 
@@ -62,7 +67,9 @@ Or with `uv`:
 uv pip install grader-labextension
 ```
 
-Installing the labextension registers the JupyterLab frontend and the server extension automatically; no manual `jupyter labextension develop` / `jupyter server extension enable` steps are required.
+Installing the labextension registers the JupyterLab frontend and the server extension
+automatically; no manual `jupyter labextension develop` / `jupyter server extension enable` steps
+are required.
 
 ## 3. Configuration of Grader Service
 
@@ -72,7 +79,8 @@ Generate a default configuration file:
 grader-service --generate-config
 ```
 
-Alternatively, use the example configuration files from the `dev/local/token/` directory in the repository.
+Alternatively, use the example configuration files from the `dev/local/token/` directory in the
+repository.
 
 Run the migration to create the database:
 

@@ -68,7 +68,7 @@ Read the `official documentation <https://grader-service.readthedocs.io/en/lates
 Requirements
 ============
 
-* Python >= 3.9
+* Python >= 3.11
 * `JupyterHub <https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html>`_ >= 5.x
 * `JupyterLab <https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html>`_ >= 4.x
 * pip
@@ -105,7 +105,7 @@ Installation from Source
 
 The repository is a `uv workspace <https://docs.astral.sh/uv/concepts/projects/workspaces/>`_ monorepo, so a single command installs both ``grader-service`` and ``grader-labextension`` in editable mode together with all development, test, and documentation dependencies.
 
-Prerequisites: Python >= 3.9, `uv <https://docs.astral.sh/uv/>`_, Node.js >= 20, Git.
+Prerequisites: Python >= 3.11, `uv <https://docs.astral.sh/uv/>`_, Node.js >= 20, Git.
 
 Clone the repository:
 

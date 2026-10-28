@@ -6,15 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "grader-service"
 description = "Grader service"
 version = "0.12.5"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 authors = [{ name = 'Florian Jäger' }, { name = 'Matthias Matt' }]
 license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: Jupyter",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

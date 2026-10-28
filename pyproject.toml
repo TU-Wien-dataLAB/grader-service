@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "Monorepo for Grader Service and Labextension"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 [tool.uv.workspace]
 members = ["packages/service", "packages/labextension"]
