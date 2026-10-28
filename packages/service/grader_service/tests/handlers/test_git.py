@@ -131,7 +131,7 @@ def get_get_side_effect(
 
 
 @pytest.fixture
-def git_handler_factory(app, default_user, default_user_login, sql_alchemy_engine, tmp_path):
+def git_handler_factory(app, default_user, default_user_login, tmp_path):
     def _create_handler(
         req_path: str | None = None,
         artifact_type: ArtifactType | None = ArtifactType.SOURCE,
@@ -461,12 +461,13 @@ async def test_rpc_handler_through_server(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     """POST the git RPC endpoint - instructor accessing the source repo."""
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     l_code = "22wle1"  # the code of the lecture with id=3
-    insert_assignment(sql_alchemy_engine, l_id)
+    insert_assignment(session, l_id)
     a_id = 3
     url = f"/git/{l_code}/{a_id}/{ArtifactType.SOURCE}/git-upload-pack"
 

@@ -9,8 +9,7 @@ from .base import BaseTestPreprocessor
 
 @pytest.fixture
 def preprocessor():
-    pp = DeduplicateIds()
-    return pp
+    return DeduplicateIds()
 
 
 class TestDeduplicateIds(BaseTestPreprocessor):

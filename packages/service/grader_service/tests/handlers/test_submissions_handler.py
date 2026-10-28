@@ -13,15 +13,16 @@ from unittest.mock import patch
 
 import isodate
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from tornado.httpclient import HTTPClientError
+from tornado.web import HTTPError
 
 from grader_service.api.models import AssignmentSettings, Submission
-from grader_service.file_services import GitFileService
 from grader_service.artifact_types import ArtifactType
+from grader_service.file_services import GitFileService
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
-from grader_service.orm import Role, SubmissionLogs, SubmissionProperties
+from grader_service.orm import Role, SubmissionLogs, SubmissionProperties, User
 from grader_service.orm import Submission as SubmissionORM
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
@@ -39,13 +40,15 @@ from .db_util import (
 )
 
 
-async def submission_test_setup(engine, default_user, l_id: int, a_id: int):
-    insert_submission(engine, a_id, default_user.name, default_user.id)
-    insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
-    # should make no difference
-    student = insert_student(engine, "user1", l_id)
-    insert_submission(engine, a_id, student.name, student.id)
-    insert_submission(engine, a_id, student.name, student.id, with_properties=False)
+async def submission_test_setup(
+    session: Session, l_id: int, a_id: int, default_user: User, other_user: User | None = None
+):
+    insert_submission(session, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id, with_properties=False)
+    if not other_user:
+        other_user = insert_student(session, "user1", l_id)
+    insert_submission(session, a_id, other_user.name, other_user.id)
+    insert_submission(session, a_id, other_user.name, other_user.id, with_properties=False)
 
 
 async def test_get_submissions_lecture_unauthorized(
@@ -53,16 +56,17 @@ async def test_get_submissions_lecture_unauthorized(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # user is student
     a_id = 1
     s_id = 1
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
-    check_submission(sql_alchemy_engine, a_id, s_id)
+    check_submission(session, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/submissions/"
 
@@ -107,8 +111,6 @@ def test_calculate_late_submission_scaling_error():
     a.settings = settings
 
     submission_ts = now + isodate.parse_duration("P1M")
-    from tornado.web import HTTPError
-
     with pytest.raises(HTTPError):
         SubmissionHandler.calculate_late_submission_scaling(a, submission_ts, role)
 
@@ -118,15 +120,16 @@ async def test_get_submissions(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 1
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
+    await submission_test_setup(session, l_id, a_id, default_user)
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
     )
@@ -145,14 +148,15 @@ async def test_get_submissions_format_csv(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 1
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/?format=csv"
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
+    await submission_test_setup(session, l_id, a_id, default_user)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -177,7 +181,6 @@ async def test_get_submissions_format_wrong(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -200,7 +203,6 @@ async def test_get_submissions_filter_wrong(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -223,27 +225,20 @@ async def test_get_submissions_instructor_version(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 4
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    other_user = insert_student(engine, "student1", l_id)
-
+    insert_assignments(session, l_id)
+    other_user = insert_student(session, "student1", l_id)
+    await submission_test_setup(session, l_id, a_id, default_user, other_user)
     url = (
         service_base_url
         + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
     )
-
-    insert_submission(engine, a_id, default_user.name, user_id=default_user.id)
-    insert_submission(
-        engine, a_id, default_user.name, user_id=default_user.id, with_properties=False
-    )
-    insert_submission(engine, a_id, other_user.name, user_id=other_user.id)
-    insert_submission(engine, a_id, other_user.name, user_id=other_user.id, with_properties=False)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -283,26 +278,26 @@ async def test_get_submissions_instructor_version_unauthorized(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
-    engine = sql_alchemy_engine
 
     url = (
         service_base_url
         + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true"
     )
 
-    insert_submission(engine, a_id, username=default_user.name, user_id=default_user.id)
+    insert_submission(session, a_id, username=default_user.name, user_id=default_user.id)
     insert_submission(
-        engine, a_id, username=default_user.name, user_id=default_user.id, with_properties=False
+        session, a_id, username=default_user.name, user_id=default_user.id, with_properties=False
     )
 
-    check_submission(sql_alchemy_engine, a_id, 1)
-    check_submission(sql_alchemy_engine, a_id, 2)
+    check_submission(session, a_id, 1)
+    check_submission(session, a_id, 2)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -318,27 +313,21 @@ async def test_get_submissions_latest_instructor_version(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 4
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    other_user = insert_student(engine, "student1", l_id)
+    insert_assignments(session, l_id)
+    other_user = insert_student(session, "student1", l_id)
 
     url = (
         service_base_url
         + f"lectures/{l_id}/assignments/{a_id}/submissions/?instructor-version=true&filter=latest"
     )
-
-    insert_submission(engine, a_id, default_user.name, user_id=default_user.id)
-    insert_submission(
-        engine, a_id, default_user.name, user_id=default_user.id, with_properties=False
-    )
-    insert_submission(engine, a_id, other_user.name, user_id=other_user.id)
-    insert_submission(engine, a_id, other_user.name, user_id=other_user.id, with_properties=False)
+    await submission_test_setup(session, l_id, a_id, default_user, other_user)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -379,15 +368,15 @@ async def test_get_submissions_best_instructor_version(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 4
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    other_user = insert_student(engine, "student1", l_id)
+    insert_assignments(session, l_id)
+    other_user = insert_student(session, "student1", l_id)
 
     url = (
         service_base_url
@@ -395,7 +384,7 @@ async def test_get_submissions_best_instructor_version(
     )
 
     insert_submission(
-        engine,
+        session,
         a_id,
         default_user.name,
         user_id=default_user.id,
@@ -403,15 +392,15 @@ async def test_get_submissions_best_instructor_version(
         score=3,
     )
     insert_submission(
-        engine,
+        session,
         a_id,
         default_user.name,
         user_id=default_user.id,
         feedback=FeedbackStatus.NOT_GENERATED,
         with_properties=False,
     )
-    insert_submission(engine, a_id, "user1", user_id=other_user.id, score=3)
-    insert_submission(engine, a_id, "user1", user_id=other_user.id, with_properties=False)
+    insert_submission(session, a_id, "user1", user_id=other_user.id, score=3)
+    insert_submission(session, a_id, "user1", user_id=other_user.id, with_properties=False)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -481,14 +470,15 @@ async def test_get_submissions_deleted(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
+    await submission_test_setup(session, l_id, a_id, default_user)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -514,15 +504,16 @@ async def test_get_submissions_admin_deleted(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_admin_login,
     default_user,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 1
-    await submission_test_setup(sql_alchemy_engine, default_admin, l_id, a_id)
+    await submission_test_setup(session, l_id, a_id, default_admin)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
     response = await http_server_client.fetch(
@@ -556,15 +547,15 @@ async def test_get_submission(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 4
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
 
@@ -575,7 +566,7 @@ async def test_get_submission(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -591,13 +582,13 @@ async def test_get_submission_assignment_lecture_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
 
     a_id = 1  # assignment with a_id 1 is in l_id 1
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
@@ -616,17 +607,17 @@ async def test_get_submission_assignment_submission_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 4
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
-    check_submission(engine, a_id, 1)
+    check_submission(session, a_id, 1)
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
@@ -645,17 +636,17 @@ async def test_get_submission_wrong_submission(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
-    check_submission(engine, a_id, 1)
+    check_submission(session, a_id, 1)
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/"
@@ -674,18 +665,18 @@ async def test_get_submission_student_from_another_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # user has to be student
     a_id = 1
     s_id = 1
-    engine = sql_alchemy_engine
-    insert_submission(engine, a_id, default_admin.name, default_admin.id)
+    insert_submission(session, a_id, default_admin.name, default_admin.id)
 
-    check_submission(engine, a_id, s_id)
+    check_submission(session, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/"
 
@@ -703,18 +694,18 @@ async def test_get_submission_admin_from_another_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_admin_login,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # admin has no role
     a_id = 1
     s_id = 1
-    engine = sql_alchemy_engine
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
-    check_submission(engine, a_id, s_id)
+    check_submission(session, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/"
 
@@ -732,19 +723,19 @@ async def test_put_submission(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 4
     s_id = 1
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     pre_submission = Submission(
         id=-1,
@@ -779,17 +770,17 @@ async def test_put_submission_lecture_assignment_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 1
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
     pre_submission = Submission(
@@ -818,15 +809,15 @@ async def test_put_submission_assignment_submission_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
@@ -858,15 +849,15 @@ async def test_put_submission_wrong_submission(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/"
@@ -897,13 +888,14 @@ async def test_delete_own_submission_by_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
-    insert_submission(sql_alchemy_engine, a_id, default_user.name)
+    insert_submission(session, a_id, default_user.name)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
     response = await http_server_client.fetch(
@@ -918,7 +910,6 @@ async def test_delete_own_submission_by_student(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session = sessionmaker(sql_alchemy_engine)()
     submission = session.get(SubmissionORM, 1)
     assert submission.deleted == DeleteState.deleted
 
@@ -930,14 +921,15 @@ async def test_delete_submission(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
@@ -946,7 +938,7 @@ async def test_delete_submission(
     )
     assert response.code == HTTPStatus.OK
 
-    check_submission(sql_alchemy_engine, a_id, s_id)
+    check_submission(session, a_id, s_id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -961,15 +953,16 @@ async def test_delete_submission_deleted_submission(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
@@ -978,7 +971,7 @@ async def test_delete_submission_deleted_submission(
     )
     assert response.code == HTTPStatus.OK
 
-    check_submission(sql_alchemy_engine, a_id, s_id)
+    check_submission(session, a_id, s_id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -993,17 +986,18 @@ async def test_delete_submission_not_found(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 999
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
-    check_submission(sql_alchemy_engine, a_id, s_id, should_exist=False)
+    check_submission(session, a_id, s_id, should_exist=False)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1018,18 +1012,19 @@ async def test_delete_submission_student_from_another_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 1
 
     # The submission does NOT belong to the default user:
-    student = insert_student(sql_alchemy_engine, "other_student", l_id)
-    insert_submission(sql_alchemy_engine, a_id, "other_student", student.id)
-    check_submission(sql_alchemy_engine, a_id, s_id)
+    student = insert_student(session, "other_student", l_id)
+    insert_submission(session, a_id, "other_student", student.id)
+    check_submission(session, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1045,16 +1040,17 @@ async def test_delete_submission_admin_from_another_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_admin_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # admin has no role
     a_id = 1
     s_id = 1
 
     # The submission does NOT belong to the admin:
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
     response = await http_server_client.fetch(
@@ -1069,7 +1065,6 @@ async def test_delete_submission_admin_from_another_student(
     submission_dict = json.loads(response.body.decode())
     Submission.from_dict(submission_dict)
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
     submission = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).first()
     assert submission.deleted == DeleteState.deleted
 
@@ -1079,18 +1074,17 @@ async def test_delete_submission_with_feedback(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 1
 
-    insert_submission(
-        sql_alchemy_engine, a_id, default_user.name, feedback=FeedbackStatus.GENERATED
-    )
-    check_submission(sql_alchemy_engine, a_id, s_id)
+    insert_submission(session, a_id, default_user.name, feedback=FeedbackStatus.GENERATED)
+    check_submission(session, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1107,21 +1101,19 @@ async def test_delete_submission_after_deadline(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
     l_id = 1  # default user is student
     a_id = 1
-    s_id = 1
 
-    session = sessionmaker(sql_alchemy_engine)()
+    session = sql_alchemy_sessionmaker()
     assign = session.get(AssignmentORM, 1)
     assign.settings = {"deadline": datetime(1999, 6, 6, tzinfo=timezone.utc)}
     session.commit()
-    session.flush()
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name)
+    s_id = insert_submission(session, a_id, default_user.name).id
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1140,31 +1132,25 @@ async def test_delete_submission_hard(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # admin has no role
     a_id = 1
-    s_id = 1
 
-    insert_submission(
-        sql_alchemy_engine,
-        a_id,
-        default_user.name,
-        default_user.id,
-        with_properties=True,
-        with_logs=True,
-    )
+    s_id = insert_submission(
+        session, a_id, default_user.name, default_user.id, with_properties=True, with_logs=True
+    ).id
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    submissions = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).all()
-    assert len(submissions) == 1
-    submission_properties = (
-        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).all()
+    sub_count = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).count()
+    assert sub_count == 1
+    sub_prop_count = (
+        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).count()
     )
-    assert len(submission_properties) == 1
-    submission_logs = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).all()
-    assert len(submission_logs) == 1
+    assert sub_prop_count == 1
+    sub_logs_count = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).count()
+    assert sub_logs_count == 1
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
 
@@ -1175,7 +1161,7 @@ async def test_delete_submission_hard(
     )
     assert response.code == HTTPStatus.OK
 
-    check_submission(sql_alchemy_engine, a_id, s_id, should_exist=False)
+    check_submission(session, a_id, s_id, should_exist=False)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1184,14 +1170,14 @@ async def test_delete_submission_hard(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    submissions = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).all()
-    assert len(submissions) == 0
-    submission_properties = (
-        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).all()
+    sub_count = session.query(SubmissionORM).filter(SubmissionORM.id == s_id).count()
+    assert sub_count == 0
+    sub_prop_count = (
+        session.query(SubmissionProperties).filter(SubmissionProperties.sub_id == s_id).count()
     )
-    assert len(submission_properties) == 0
-    submission_logs = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).all()
-    assert len(submission_logs) == 0
+    assert sub_prop_count == 0
+    sub_logs_count = session.query(SubmissionLogs).filter(SubmissionLogs.sub_id == s_id).count()
+    assert sub_logs_count == 0
 
 
 async def test_delete_submission_hard_unauthorized(
@@ -1201,20 +1187,16 @@ async def test_delete_submission_hard_unauthorized(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # default user is student
     a_id = 1
     s_id = 1
 
     insert_submission(
-        sql_alchemy_engine,
-        a_id,
-        default_user.name,
-        default_user.id,
-        with_properties=True,
-        with_logs=True,
+        session, a_id, default_user.name, default_user.id, with_properties=True, with_logs=True
     )
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
@@ -1236,15 +1218,16 @@ async def test_delete_submission_hard_with_files(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_user,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1  # admin has no role
     l_code = "21wle1"
     a_id = 1
     s_id = 1
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
     create_all_git_repositories(app, default_user, l_code, a_id, s_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}"
@@ -1256,7 +1239,7 @@ async def test_delete_submission_hard_with_files(
     )
     assert response.code == HTTPStatus.OK
 
-    check_submission(sql_alchemy_engine, a_id, s_id, should_exist=False)
+    check_submission(session, a_id, s_id, should_exist=False)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1276,7 +1259,6 @@ async def test_post_submission_by_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
     tmp_path,
@@ -1308,17 +1290,17 @@ async def test_post_submission_by_instructor(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     tmp_path,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
     student_username = "e.noether"
-    insert_student(engine, student_username, l_id)
+    insert_student(session, student_username, l_id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1357,7 +1339,6 @@ async def test_post_submission_artifact_not_found(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
 ):
@@ -1384,15 +1365,15 @@ async def test_post_submission_commit_hash_not_found(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1506,18 +1487,18 @@ async def test_submission_properties(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     a_id = 4
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     prop = {"notebooks": {}}
     put_response = await http_server_client.fetch(
@@ -1541,11 +1522,11 @@ async def test_submission_properties_student(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
     sql_alchemy_sessionmaker,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 3
     s_id = 1
@@ -1590,15 +1571,15 @@ async def test_submission_properties_student(
         status="released",
         deleted=DeleteState.active,
     )
-    sql_alchemy_sessionmaker.add(assignment)
-    sql_alchemy_sessionmaker.commit()
+    session.add(assignment)
+    session.commit()
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
-    submission = sql_alchemy_sessionmaker().query(SubmissionORM).filter_by(id=s_id).first()
+    submission = session.query(SubmissionORM).filter_by(id=s_id).first()
     submission.properties.properties = json.dumps(props)
 
-    sql_alchemy_sessionmaker().merge(submission)
+    session.merge(submission)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/properties"
 
@@ -1635,18 +1616,18 @@ async def test_submission_properties_not_correct(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user is instructor
     a_id = 4
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     prop = "{}"
     with pytest.raises(HTTPClientError) as exc_info:
@@ -1667,15 +1648,15 @@ async def test_submission_properties_lecture_assignment_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3
     a_id = 1
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
 
@@ -1705,15 +1686,15 @@ async def test_submission_properties_assignment_submission_missmatch(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
@@ -1744,15 +1725,15 @@ async def test_submission_properties_wrong_submission(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
 
     a_id = 1  # this assignment has no submissions
     sub_id = 1  # this submission belongs to another assignment
@@ -1786,15 +1767,15 @@ async def test_submission_properties_not_found(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # user has to be instructor
     a_id = 3
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
-    insert_submission(engine, a_id, default_user.name, default_user.id, with_properties=False)
+    insert_assignments(session, l_id)
+    insert_submission(session, a_id, default_user.name, default_user.id, with_properties=False)
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/properties"
 
@@ -1813,23 +1794,23 @@ async def test_submission_create_edit_artifact(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
     """Create or reset an edit artifact (there is no difference) - SubmissionEditHandler.put()"""
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user has to be instructor
     l_code = "22wle1"  # the code of the lecture with id=3
     a_id = 3
 
     files_base = Path(app.grader_service_dir) / "git"
 
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
     student_username = "e.noether"
-    student = insert_student(engine, student_username, l_id)
+    student = insert_student(session, student_username, l_id)
     # Create a student submission and a user artifact
-    submission = create_user_submission_with_repo(engine, files_base, student, a_id, l_code)
+    submission = create_user_submission_with_repo(session, files_base, student, a_id, l_code)
     commit_hash = submission.commit_hash
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{submission.id}/edit"
@@ -1853,19 +1834,19 @@ async def test_submission_cannot_edit_submission_created_by_instructor(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     tmp_path,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 3  # default user has to be instructor
     a_id = 3
 
     # Set-up: As the instructor, create a new submission for a student
-    engine = sql_alchemy_engine
-    insert_assignments(engine, l_id)
+    insert_assignments(session, l_id)
     student_username = "e.noether"
-    insert_student(engine, student_username, l_id)
+    insert_student(session, student_username, l_id)
 
     post_url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/"
 
@@ -1905,18 +1886,19 @@ async def test_get_submissions_username(
     app: GraderServer,
     service_base_url,
     http_server_client,
+    sql_alchemy_sessionmaker,
     default_token,
-    sql_alchemy_engine,
     default_roles,
     default_user_login,
     default_user,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     a_id = 1
     url = service_base_url + f"users/{default_user.name}/submissions"
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    insert_submission(sql_alchemy_engine, a_id, default_admin.name, default_admin.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_admin.name, default_admin.id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -1934,17 +1916,18 @@ async def test_get_submissions_username_student_from_another_student(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
     default_user,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     a_id = 1
-    url = service_base_url + f"users/{default_admin.name}/submissions"
+    url = service_base_url + f"users/{default_admin.id}/submissions"
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    insert_submission(sql_alchemy_engine, a_id, default_admin.name, default_admin.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_admin.name, default_admin.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -1959,17 +1942,18 @@ async def test_get_submissions_username_admin_from_another_student(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_admin_login,
     default_user,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     a_id = 1
     url = service_base_url + f"users/{default_user.name}/submissions"
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    insert_submission(sql_alchemy_engine, a_id, default_admin.name, default_admin.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_admin.name, default_admin.id)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -1987,18 +1971,19 @@ async def test_get_submissions_username_admin_user_not_found(
     service_base_url,
     http_server_client,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_admin_login,
     default_user,
     default_admin,
 ):
+    session = sql_alchemy_sessionmaker()
     a_id = 1
     username = "windows"
     url = service_base_url + f"users/{username}/submissions"
 
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
-    insert_submission(sql_alchemy_engine, a_id, default_admin.name, default_admin.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_admin.name, default_admin.id)
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -2014,14 +1999,15 @@ async def test_get_submissions_username_format_csv(
     http_server_client,
     default_user,
     default_token,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
     default_roles,
     default_user_login,
 ):
+    session = sql_alchemy_sessionmaker()
     l_id = 1
     a_id = 1
     url = service_base_url + f"users/{default_user.name}/submissions?format=csv"
-    await submission_test_setup(sql_alchemy_engine, default_user, l_id, a_id)
+    await submission_test_setup(session, l_id, a_id, default_user)
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}

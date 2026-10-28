@@ -407,12 +407,13 @@ async def test_fetch_files_autograde_uses_submission_branch(
 
 
 async def test_fetch_files_from_user_artifact(
-    git_file_service, sql_alchemy_engine, default_user, tmp_path
+    git_file_service, sql_alchemy_sessionmaker, default_user, tmp_path
 ):
     """Test successful fetching of files."""
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
+    session = sql_alchemy_sessionmaker()
     sub = create_user_submission_with_repo(
-        sql_alchemy_engine,
+        session,
         git_file_service.files_base,
         student=default_user,
         assignment_id=1,
@@ -442,11 +443,12 @@ async def test_edit_submission_raises_when_user_artifact_not_exists(
         await git_file_service.edit_submission(submission_123)
 
 
-async def test_edit_submission(git_file_service, sql_alchemy_engine, default_user):
+async def test_edit_submission(git_file_service, sql_alchemy_sessionmaker, default_user):
     """Test creating an EDIT artifact."""
     # Preparation: initiate the user repository, create and commit a file "submission.ipynb"
+    session = sql_alchemy_sessionmaker()
     sub = create_user_submission_with_repo(
-        sql_alchemy_engine,
+        session,
         git_file_service.files_base,
         student=default_user,
         assignment_id=1,

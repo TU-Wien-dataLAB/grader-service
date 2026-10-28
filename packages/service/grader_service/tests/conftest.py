@@ -43,9 +43,11 @@ def enable_foreign_keys_for_sqlite():
 
 
 @pytest.fixture(scope="function")
-def default_user_login(default_user, sql_alchemy_engine):
-    engine = sql_alchemy_engine
-    session: Session = sessionmaker(engine)()
+def default_user_login(default_user, sql_alchemy_engine, request):
+    # Note: we attach the user instance to its own session, because otherwise
+    # the handler cannot reload its ``_grader_user`` attribute from the database.
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    request.addfinalizer(session.close)
     user = session.get(User, default_user.id)
     user.is_admin = False
 
@@ -54,9 +56,9 @@ def default_user_login(default_user, sql_alchemy_engine):
 
 
 @pytest.fixture(scope="function")
-def default_admin_login(default_admin, sql_alchemy_engine):
-    engine = sql_alchemy_engine
-    session: Session = sessionmaker(engine)()
+def default_admin_login(default_admin, sql_alchemy_engine, request):
+    session: Session = sessionmaker(sql_alchemy_engine)()
+    request.addfinalizer(session.close)
     user = session.get(User, default_admin.id)
     user.is_admin = True
 
@@ -113,17 +115,18 @@ def db_test_config():
 
 
 @pytest.fixture(scope="function")
-def sql_alchemy_sessionmaker(db_test_config):
+def sql_alchemy_sessionmaker(db_test_config, request):
     session_maker: scoped_session = get_session_maker(url="sqlite:///:memory:")
     session = session_maker()
+    request.addfinalizer(session_maker.remove)
     engine = session.get_bind()
     with engine.begin() as connection:
         db_test_config.attributes["connection"] = connection
         # downgrade(cfg, "base")
         upgrade(db_test_config, "head")
-    insert_lectures(engine)
-    insert_assignments(engine)
-    insert_default_user(engine)
+    insert_lectures(session)
+    insert_assignments(session)
+    insert_default_user(session)
     yield session_maker
 
 
@@ -151,11 +154,11 @@ def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
 
 
 @pytest.fixture(scope="function")
-def sql_alchemy_engine(sql_alchemy_sessionmaker):
+def sql_alchemy_engine(sql_alchemy_sessionmaker, request):
     session = sql_alchemy_sessionmaker()
+    request.addfinalizer(session.close)
     engine = session.get_bind()
     yield engine
-    session.close()
 
 
 @pytest.fixture(scope="module")
