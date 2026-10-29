@@ -58,19 +58,17 @@ export const LectureCard = (props: ILectureCard) => {
         </CardHeader>
       </div>
       <CardContent className={'flex flex-col gap-0.5 px-0 mb-4'}>
-        {!lecture && (
-          <IconTextInfo
-            icon={
-              <FileText
-                className={'fill-foreground size-5 text-card! self-center'}
-              />
-            }
-            text={`${lecture.assignment_count?.toString()} ${pluralize({
-              text: 'Assignment',
-              data: lecture.assignment_count
-            })}`}
-          />
-        )}
+        <IconTextInfo
+          icon={
+            <FileText
+              className={'fill-foreground size-5 text-card! self-center'}
+            />
+          }
+          text={`${lecture.assignment_count?.toString()} ${pluralize({
+            text: 'Assignment',
+            data: lecture.assignment_count
+          })}`}
+        />
         <IconTextInfo
           icon={
             <UserIcon

@@ -19,7 +19,7 @@ export interface ILectureRow {
 }
 
 export const LectureRow = (props: ILectureRow) => {
-  const lecture = props.lecture;
+  const lecture = props?.lecture;
   return (
     <TableRow
       key={lecture.id}
@@ -46,19 +46,17 @@ export const LectureRow = (props: ILectureRow) => {
         </TooltipContent>
       </Tooltip>
       <TableCell>
-        {!lecture && (
-          <IconTextInfo
-            icon={
-              <FileText
-                className={'fill-foreground size-5 text-white! self-center'}
-              />
-            }
-            text={`${lecture.assignment_count?.toString()} ${pluralize({
-              text: 'Assignment',
-              data: lecture.assignment_count
-            })}`}
-          />
-        )}
+        <IconTextInfo
+          icon={
+            <FileText
+              className={'fill-foreground size-5 text-white! self-center'}
+            />
+          }
+          text={`${lecture?.assignment_count?.toString()} ${pluralize({
+            text: 'Assignment',
+            data: lecture.assignment_count
+          })}`}
+        />
       </TableCell>
       <TableCell>
         <IconTextInfo
@@ -67,7 +65,7 @@ export const LectureRow = (props: ILectureRow) => {
               className={'fill-foreground size-5 text-foreground! self-center'}
             />
           }
-          text={`${lecture.student_count?.toString()} ${pluralize({
+          text={`${lecture?.student_count?.toString()} ${pluralize({
             text: 'Student',
             data: lecture.student_count
           })}`}
