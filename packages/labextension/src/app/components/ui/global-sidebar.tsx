@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
+import { activeInstructorLecturesQuery, activeLecturesQuery } from '../../../services/queries/lectures.queries';
 import {
   Sidebar,
   SidebarContent,
@@ -43,7 +43,9 @@ import { Logo } from '../../../assets/logo';
 import { UserPermissions } from '../../../services/permission.service';
 
 export const GlobalSidebar = () => {
-  const { data: fetchedLectures } = useQuery(activeInstructorLecturesQuery());
+  const isInstructor = UserPermissions.hasElevatedPermissions();
+
+  const { data: fetchedLectures } = isInstructor ? useQuery(activeInstructorLecturesQuery()) : useQuery(activeLecturesQuery());
   const location = useLocation();
   const lectures = useMemo(() => {
     return fetchedLectures?.map(lecture => ({
@@ -105,7 +107,7 @@ export const GlobalSidebar = () => {
                     }
                   >
                     <Link
-                      to={`/lectures/${lecture.id}`}
+                      to={isInstructor ? `/instructor/lectures/${lecture.id}` : `/student/lectures/${lecture.id}`}
                       className="overflow-hidden"
                     >
                       <div

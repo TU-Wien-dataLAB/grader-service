@@ -28,6 +28,17 @@ export function getAllAssignments(
   return request<AssignmentDetail[]>(HTTPMethod.GET, url, null, reload);
 }
 
+export interface UpcomingAssignment extends Assignment {
+  lecture: { id: number; name: string; code: string };
+}
+
+export function getUpcomingAssignments(
+  reload = false
+): Promise<UpcomingAssignment[]> {
+  const url = `/api/assignments/upcoming`;
+  return request<UpcomingAssignment[]>(HTTPMethod.GET, url, null, reload);
+}
+
 export function getAssignment(
   lectureId: number,
   assignmentId: number,

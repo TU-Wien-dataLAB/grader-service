@@ -27,6 +27,22 @@ export const buildPeriod = (days: number, hours: number) => {
 
 export const getDate = (date: Date) => moment(date).format('DD.MM.YYYY');
 
+export function getDateTime(date: Date): string {
+  const d = date.toLocaleDateString('de-AT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Europe/Vienna'
+  });
+  const t = date.toLocaleTimeString('de-AT', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'Europe/Vienna'
+  });
+  return `${d} ${t}`;
+}
+
 export function highlightText(text: string, query: string): React.ReactNode {
   if (!query.trim()) {
     return text;

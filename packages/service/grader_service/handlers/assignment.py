@@ -26,6 +26,8 @@ from grader_service.registry import VersionSpecifier, register_handler
 
 from .handler_utils import GitRepoType, parse_ids
 
+from typing import Optional
+
 
 def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
     if settings is None:
@@ -54,6 +56,20 @@ def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Score scaling is not decreasing!")
         current_period = d
         curr_scaling = s
+
+def get_extended_deadline(settings: Optional[AssignmentSettings]) -> Optional[datetime.datetime]:
+    """Deadline plus the longest late-submission period (if any)."""
+    if settings is None or settings.deadline is None:
+        return None
+    end = settings.deadline
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=datetime.timezone.utc)
+    late = settings.late_submission or []
+    if late:
+        # validate_assignment_settings guarantees periods are strictly increasing,
+        # so the last one is the longest
+        end = end + isodate.parse_duration(late[-1].period)
+    return end
 
 
 @register_handler(
@@ -466,3 +482,81 @@ def _check_full_auto_grading(self: GraderBaseHandler, model):
         if len(grades & solutions) > 0:
             msg = "Fully autograded notebook cannot contain manually graded cells!"
             raise HTTPError(HTTPStatus.CONFLICT, reason=msg)
+
+
+@register_handler(
+    path=r"\/api\/assignments\/upcoming\/?",
+    version_specifier=VersionSpecifier.ALL,
+)
+class UpcomingAssignmentsHandler(GraderBaseHandler):
+    """Tornado Handler for http requests
+
+    route: /assignments/upcoming."""
+
+    async def get(self):
+        """Returns all assignments of the user's lectures whose (extended) deadline
+        has not passed yet and for which the user has no submission."""
+        self.validate_parameters()
+
+        # lectures in which the user is a student and which are still active
+        lectures = {
+            r.lecture.id: r.lecture
+            for r in self.user.roles
+            if r.role == Scope.student and r.lecture.deleted == DeleteState.active
+        }
+        lecture_ids = list(lectures.keys())
+        if not lecture_ids:
+            self.write_json([])
+            return
+
+        assignments = (
+            self.session.query(Assignment)
+            .filter(
+                Assignment.lectid.in_(lecture_ids),
+                Assignment.deleted == DeleteState.active,
+                Assignment.status == "released",
+            )
+            .all()
+        )
+
+        # deadlines live in the settings, so filter in Python
+        now = datetime.datetime.now(datetime.timezone.utc)
+        candidates = []
+        for a in assignments:
+            end = get_extended_deadline(a.settings)
+            if end is None or now < end:
+                candidates.append((end, a))
+
+        # drop assignments the user already submitted to
+        candidate_ids = [a.id for _, a in candidates]
+        submitted = set()
+        if candidate_ids:
+            submitted = {
+                assignid
+                for (assignid,) in self.session.query(Submission.assignid)
+                .filter(
+                    Submission.assignid.in_(candidate_ids),
+                    Submission.user_id == self.user.id,
+                )
+                .distinct()
+                .all()
+            }
+
+        # assignments with a deadline first (soonest first), those without at the end
+        far_future = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+        upcoming = [
+            a
+            for end, a in sorted(candidates, key=lambda t: (t[0] is None, t[0] or far_future))
+            if a.id not in submitted
+        ]
+        result = []
+        for a in upcoming:
+            data = a.serialize()
+            lecture = lectures[a.lectid]
+            data["lecture"] = {
+                "id": lecture.id,
+                "name": lecture.name,
+                "code": lecture.code,
+            }
+            result.append(data)
+        self.write_json(result)

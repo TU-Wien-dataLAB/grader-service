@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
+import { UserPermissions } from '../../../../services/permission.service';
 
 export interface ILectureCard {
   lecture: Lecture;
@@ -29,10 +30,14 @@ export interface ILectureCard {
 }
 
 export const LectureCard = (props: ILectureCard) => {
+  const instructorView = UserPermissions.getScope(props.lecture) >= 1;
+
   const lecture = props.lecture;
+
   const { data: users, isPending: isPendingUsers } = useQuery({
     queryKey: ['users', lecture.id],
-    queryFn: async () => getLectureUsers(lecture.id, false)
+    queryFn: async () => getLectureUsers(lecture.id, false),
+    enabled: instructorView
   });
 
   const { data: assignments, isPending: isPendingAssignments } = useQuery({
@@ -41,7 +46,7 @@ export const LectureCard = (props: ILectureCard) => {
   });
 
   let students: User[] = [];
-  if (!isPendingUsers) {
+  if (instructorView && !isPendingUsers) {
     students = users.students;
   }
   return (
@@ -70,9 +75,11 @@ export const LectureCard = (props: ILectureCard) => {
               </TooltipContent>
             </Tooltip>
           </div>
+          {instructorView && 
           <CardAction className={'p-2'}>
             <EditLectureDialog lecture={lecture}></EditLectureDialog>
           </CardAction>
+    }
         </CardHeader>
       </div>
       <CardContent className={'flex flex-col gap-0.5 px-0 mb-4'}>
@@ -89,19 +96,21 @@ export const LectureCard = (props: ILectureCard) => {
             })}`}
           />
         )}
-        <IconTextInfo
-          icon={
-            <UserIcon
-              className={'fill-foreground text-card! size-5 self-center'}
-            />
-          }
-          text={`${students.length.toString()} ${pluralize({
-            text: 'Student',
-            data: students
-          })}`}
-        />
+        {instructorView && (
+          <IconTextInfo
+            icon={
+              <UserIcon
+                className={'fill-foreground text-card! size-5 self-center'}
+              />
+            }
+            text={`${students.length.toString()} ${pluralize({
+              text: 'Student',
+              data: students
+            })}`}
+          />
+        )}
       </CardContent>
-      <Link to={`/lectures/${lecture.id}`}>
+      <Link to={instructorView ? `/instructor/lectures/${lecture.id}` : `/student/lectures/${lecture.id}`}>
         <Button className={'w-fit'}>Details</Button>
       </Link>
     </Card>

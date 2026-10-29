@@ -168,4 +168,29 @@ export const DeadlineComponent = (props: IDeadlineProps) => {
       {displayDate}
     </Badge>
   );
+
 };
+
+export function getDeadlineParts(date?: Date | string | null): {
+  date: string;
+  time: string;
+} | null {
+  if (!date) return null;
+
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+
+  return {
+    date: d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/Vienna",
+    }), // "20 Oct"
+    time: d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      timeZone: "Europe/Vienna",
+    }), // "00:00"
+  };
+}
