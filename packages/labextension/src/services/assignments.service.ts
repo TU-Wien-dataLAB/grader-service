@@ -31,6 +31,7 @@ export function getAllAssignments(
 export function getAssignment(
   lectureId: number,
   assignmentId: number,
+  instructor: boolean = false,
   reload = false
 ): Promise<Assignment> {
   return request<Assignment>(

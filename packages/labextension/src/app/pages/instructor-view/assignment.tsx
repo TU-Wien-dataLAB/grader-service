@@ -21,6 +21,7 @@ import {
   openInFileBrowser
 } from '../../../services/local-file.service';
 import { selectedDirQuery } from '../../../services/queries/files.queries';
+import { StatisticsView } from '../../components/grader-service/statistics/statistics-view';
 
 export const Assignment = () => {
   const params = useParams();
@@ -96,7 +97,12 @@ export const Assignment = () => {
           <FilesView lectureId={lectureId} assignmentId={assignmentId} />
         </TabsContent>
         <TabsContent value="submissions">Submissions</TabsContent>
-        <TabsContent value="statistics">Statistics</TabsContent>
+        <TabsContent value="statistics">
+          <StatisticsView 
+            lectureId={lectureId}
+            assignmentId={assignmentId}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -44,15 +44,15 @@ import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 import {
-  lectureBasePath,
-  openInFileBrowser
-} from '../../../services/local-file.service';
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
+import {
+  lectureBasePath,
+  openInFileBrowser
+} from '../../../services/local-file.service';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -158,6 +158,7 @@ export const Lecture = () => {
 
   const allFilters = useMemo(() => {
     if (isPendingAssignments) {
+      return [];
       return [];
     }
     // extract all groups from assignments

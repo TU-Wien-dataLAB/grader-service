@@ -118,6 +118,10 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
       }
       if (!createAnother) {
         props.setOpenDialog(false);
+        handleCreateAssignment(newAssignment, props.lectureId);
+      }
+      if (!createAnother) {
+        props.setOpenDialog(false);
       }
     }
   });
@@ -689,7 +693,6 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-    </Dialog>
-  );
-};
+    )}
+      </Dialog>
+  )};
