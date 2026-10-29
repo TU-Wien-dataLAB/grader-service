@@ -22,16 +22,6 @@ import {
   ToggleGroupItem
 } from '../../shadcn-components/ui/toggle-group';
 import {
-  Pagination,
-  PaginationContent,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious
-} from '../../shadcn-components/ui/pagination';
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -54,6 +44,7 @@ import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../services/local-file.service';
+import { CustomPagination } from '../../components/ui/custom-pagination';
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
@@ -239,44 +230,11 @@ export const Dashboard = () => {
               </div>
             )}
             <div className="flex items-center justify-between gap-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationFirst
-                      isActive={page !== 1}
-                      onClick={() => setPage(1)}
-                    />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      isActive={page !== 1}
-                      onClick={() => setPage(prev => prev - 1)}
-                    />
-                  </PaginationItem>
-                  <PaginationItem>
-                    {Array.from(
-                      { length: lecturesData.total_pages },
-                      (_, i) => (
-                        <PaginationLink key={i} onClick={() => setPage(i + 1)}>
-                          {i + 1}
-                        </PaginationLink>
-                      )
-                    )}
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext
-                      isActive={page !== lecturesData.total_pages}
-                      onClick={() => setPage(prev => prev + 1)}
-                    />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLast
-                      isActive={page !== lecturesData.total_pages}
-                      onClick={() => setPage(lecturesData.total_pages)}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <CustomPagination
+                page={page}
+                setPage={setPage}
+                totalPages={lecturesData?.total_pages ?? 1}
+              />
               <Select value={perPage} onValueChange={setPerPage}>
                 <SelectTrigger id="select-rows-per-page">
                   <SelectValue />
