@@ -10,7 +10,9 @@ export const Root = () => {
       <TooltipProvider>
         <div className={'flex flex-row w-full'}>
           <GlobalSidebar />
-          <Outlet />
+          <div className={'@container w-full'}>
+            <Outlet />
+          </div>
         </div>
       </TooltipProvider>
     </SidebarProvider>

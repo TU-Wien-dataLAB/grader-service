@@ -82,14 +82,12 @@ export function getAssignmentProperties(
 
 export function generateAssignment(
   lectureId: number,
-  assignmentId: number,
-  reload: boolean = false
+  assignmentId: number
 ): Promise<any> {
   return request<any>(
     HTTPMethod.PUT,
     `${baseUrl(lectureId)}/${assignmentId}/generate`,
-    null,
-    reload
+    null
   );
 }
 

@@ -78,7 +78,7 @@ export const StatisticsView = ({
     }
 
     const dates = [...studentsPerDay.keys()].sort();
-    const end = new Date(dates[dates.length - 1] + 'T00:00:00Z');
+    const end = new Date(dates[dates.length - 1]);
     const result: { date: string; students: number }[] = [];
 
     for (
