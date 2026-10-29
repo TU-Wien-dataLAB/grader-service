@@ -158,13 +158,13 @@ export const FilesView = (props: IFilesViewProps) => {
     switch (remoteRepoStatus?.status) {
       case 'UP_TO_DATE':
         return <Badge className={'bg-lime-600'}>No updates available</Badge>;
-      case 'PULL_NEEDED':
+      case 'UPDATE_NEEDED':
         return <Badge className={'bg-red-400'}>Updates available</Badge>;
-      case 'PUSH_NEEDED':
+      case 'UNSAVED_CHANGES':
         return <Badge className={'bg-yellow-600'}>Unsaved changes</Badge>;
       case 'DIVERGENT':
         return <Badge className={'bg-red-700'}>Out of sync</Badge>;
-      case 'NO_REMOTE_REPO':
+      case 'NO_BACKUP':
         return <Badge className={'bg-gray-400'}>Not backed up</Badge>;
     }
   };

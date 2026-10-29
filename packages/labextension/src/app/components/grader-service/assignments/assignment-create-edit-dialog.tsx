@@ -27,8 +27,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '../../../shadcn-components/ui/select';
-import { AssignmentSettings } from '../../../../model/assignmentSettings';
-import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
 import { DatePickerTime } from '../../../shadcn-components/ui/date-time-picker';
 import { Button } from '../../../shadcn-components/ui/button';
 import {
@@ -64,6 +62,7 @@ import {
   InputGroupAddon,
   InputGroupInput
 } from '../../../shadcn-components/ui/input-group';
+import { GradingMethod } from '../../../../model/gradingMethod';
 
 interface IAssignmentSettingsForm {
   assignment?: Assignment;
@@ -72,9 +71,9 @@ interface IAssignmentSettingsForm {
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
 }
 const GRADING_METHODS = [
-  { label: 'Automatic Grading', value: AutogradeTypeEnum.Auto },
-  { label: 'Fully Automatic Grading', value: AutogradeTypeEnum.FullAuto },
-  { label: 'Manual Grading', value: AutogradeTypeEnum.Unassisted }
+  { label: 'Automatic Grading', value: GradingMethod.Auto },
+  { label: 'Fully Automatic Grading', value: GradingMethod.FullAuto },
+  { label: 'Manual Grading', value: GradingMethod.Manual }
 ];
 
 export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
@@ -85,7 +84,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
     defaultValues: {
       title: props.assignment?.name,
       group: props.assignment?.settings?.group,
-      grading_method: props.assignment?.settings?.autograde_type,
+      grading_method: props.assignment?.settings?.grading_method,
       deadline: props.assignment?.settings?.deadline,
       late_submissions: props.assignment?.settings?.late_submission,
       number_of_submissions: props.assignment?.settings?.max_submissions,
@@ -100,7 +99,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
           deadline: value.deadline,
           max_submissions: value.number_of_submissions,
           allowed_files: value.allowed_file_patterns,
-          autograde_type: value.grading_method,
+          grading_method: value.grading_method,
           cell_timeout: value.cell_timeout,
           late_submission: value.late_submissions
         }
@@ -272,7 +271,7 @@ export const AssignmentCreateEditDialog = (props: IAssignmentSettingsForm) => {
                     <Select
                       items={GRADING_METHODS}
                       onValueChange={field.handleChange}
-                      value={field.state.value ?? AutogradeTypeEnum.Auto}
+                      value={field.state.value ?? GradingMethod.Auto}
                     >
                       <SelectTrigger>
                         <SelectValue />

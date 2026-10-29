@@ -21,8 +21,6 @@ import { AssignmentGroup } from '../../components/grader-service/assignments/ass
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import withScrolling from 'react-dnd-scrolling';
-import { AssignmentSettings } from '../../../model/assignmentSettings';
-import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
 import { Assignment } from '../../../model/assignment';
 import StatusEnum = Assignment.StatusEnum;
 import { EllipsisVertical, X } from 'lucide-react';
@@ -53,6 +51,7 @@ import {
   TooltipTrigger
 } from '../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
+import { GradingMethod } from '../../../model/gradingMethod';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -113,12 +112,12 @@ const STATIC_FILTERS: IFilterGroup[] = [
   {
     'Grading Method': [
       {
-        value: AutogradeTypeEnum.Auto,
+        value: GradingMethod.Auto,
         label: 'Automatic'
       },
-      { value: AutogradeTypeEnum.Unassisted, label: 'Manual' },
+      { value: GradingMethod.Manual, label: 'Manual' },
       {
-        value: AutogradeTypeEnum.FullAuto,
+        value: GradingMethod.FullAuto,
         label: 'Fully automatic'
       }
     ],
@@ -231,7 +230,7 @@ export const Lecture = () => {
 
       if (activeGroups['Grading Method']) {
         result = result.filter(a =>
-          activeGroups['Grading Method'].includes(a.settings.autograde_type)
+          activeGroups['Grading Method'].includes(a.settings.grading_method)
         );
       }
 

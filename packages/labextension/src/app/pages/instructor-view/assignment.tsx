@@ -73,7 +73,7 @@ export const Assignment = () => {
             <div className={'flex items-center gap-4'}>
               {assignmentStatus(assignment?.status)}
               {gradingType(
-                assignment?.settings.autograde_type,
+                assignment?.settings.grading_method,
                 assignment?.status === 'complete'
               )}
             </div>

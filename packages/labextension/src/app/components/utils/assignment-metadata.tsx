@@ -7,18 +7,14 @@ import {
   ReleasedAssignmentBadge
 } from '../ui/badges';
 import React from 'react';
-import { AssignmentSettings } from '../../../model/assignmentSettings';
-import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
+import { GradingMethod } from '../../../model/gradingMethod';
 
-export const gradingType = (
-  gradingType: AutogradeTypeEnum,
-  complete: boolean
-) => {
-  if (gradingType === AutogradeTypeEnum.FullAuto) {
+export const gradingType = (gradingType: GradingMethod, complete: boolean) => {
+  if (gradingType === GradingMethod.FullAuto) {
     return (
       <FullyAutomaticGradingBadge className={complete ? 'opacity-80' : ''} />
     );
-  } else if (gradingType === AutogradeTypeEnum.Auto) {
+  } else if (gradingType === GradingMethod.Auto) {
     return <AutomaticGradingBadge className={complete ? 'opacity-80' : ''} />;
   } else {
     return <ManualGradingBadge className={complete ? 'opacity-80' : ''} />;
