@@ -52,9 +52,14 @@ function PaginationLink({
 }: PaginationLinkProps) {
   return (
     <Button
-      variant={isActive ? 'outline' : 'ghost'}
+      variant={'ghost'}
       size={size}
-      className={cn('text-primary!', className)}
+      className={cn(
+        `text-primary! ${
+          isActive ? 'border-b-2 border-b-primary bg-popover' : ''
+        }`,
+        className
+      )}
       nativeButton={false}
       render={
         <a
