@@ -36,7 +36,7 @@ class BaseService:
     def get_assignment_counts(self, session, lecture_ids):
         stmt = (
             select(Assignment.lectid, func.count())
-            .where(Assignment.lectid.in_(lecture_ids))
+            .where(Assignment.lectid.in_(lecture_ids), Assignment.deleted == DeleteState.active)
             .group_by(Assignment.lectid)
         )
         return dict(session.execute(stmt).all())
