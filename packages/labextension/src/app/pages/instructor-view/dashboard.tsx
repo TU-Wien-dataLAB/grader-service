@@ -1,7 +1,7 @@
 import { SearchField } from '../../components/ui/search';
 import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
@@ -48,7 +48,7 @@ import { SuccessBanner } from '../../components/ui/success-banner';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
-import { useMutationStatus } from '../../../widget';
+import { queryClient, useMutationStatus } from '../../../widget';
 import { ErrorBanner } from '../../components/ui/error-banner';
 import {
   lectureBasePath,
@@ -59,8 +59,8 @@ export const Dashboard = () => {
   const [view, setView] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('');
-  const [sortBy, setSortBy] = useState({ key: '', dir: '' });
-  //const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState({ key: 'created_at', dir: 'asc' });
+  const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
   const { data: lecturesData } = useQuery(
     lecturesQuery(
@@ -68,7 +68,7 @@ export const Dashboard = () => {
       filterBy === 'completed',
       sortBy.key,
       sortBy.dir,
-      1,
+      page,
       perPage,
       searchQuery
     )
@@ -89,51 +89,24 @@ export const Dashboard = () => {
     openInFileBrowser(`${lectureBasePath}`);
   }, []);
 
-  /* logic for searching/filtering/sorting */
-  const filteredLectures = useMemo(() => {
-    if (!lecturesData) {
-      return [];
+  useEffect(() => {
+    if (filterBy || searchQuery || sortBy.key) {
+      queryClient.invalidateQueries({ queryKey: ['lectures'] });
     }
-
-    let result = [...lecturesData.lectures];
-
-    if (filterBy) {
-      if (filterBy === 'completed' && !isPendingCompletedLectures) {
-        result = [...completedLectures.lectures];
-      }
-    }
-    if (searchQuery) {
-      result = result.filter(
-        l =>
-          l.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          l.code?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (sortBy) {
-      result = result.sort((a, b) => {
-        const modifier = sortBy.dir === 'asc' ? 1 : -1;
-        if (sortBy.key === 'name') {
-          return (a.name ?? '').localeCompare(b.name ?? '') * modifier;
-        }
-        if (sortBy.key === 'date') {
-          return (a.id - b.id) * modifier;
-        }
-        return 0;
-      });
-    }
-    return result;
   }, [
     lecturesData,
     completedLectures,
     searchQuery,
     filterBy,
     sortBy,
+    perPage,
+    page,
     isPendingCompletedLectures,
     isRefetchingCompletedLectures
   ]);
 
   const { status } = useMutationStatus();
+  const lectures = lecturesData?.lectures ?? [];
 
   return (
     <div
@@ -208,17 +181,17 @@ export const Dashboard = () => {
         </div>
         {searchQuery && (
           <p className={'w-fit'}>
-            <span className={'font-bold'}>{filteredLectures.length}</span>{' '}
+            <span className={'font-bold'}>{lectures.length}</span>{' '}
             {pluralize({
               text: 'result',
-              data: filteredLectures
+              data: lectures.length
             })}{' '}
             found for <span className={'font-bold'}>"{searchQuery}"</span>
           </p>
         )}
       </div>
-      {(lecturesData?.lectures.length ?? 0) > 0 ? (
-        filteredLectures.length === 0 ? (
+      {(lectures.length ?? 0) > 0 ? (
+        lectures.length === 0 ? (
           <EmptyState
             title={'No results found'}
             icon={<NoResultsFoundIcon />}
@@ -239,7 +212,7 @@ export const Dashboard = () => {
                   'grid gap-6 grid-cols-1 @3xl:grid-cols-2 @6xl:grid-cols-3' //defining grid like this is necessary to have responsive window from both sides
                 }
               >
-                {filteredLectures?.map(lecture => (
+                {lectures?.map(lecture => (
                   <LectureCard lecture={lecture} searchQuery={searchQuery} />
                 ))}
               </div>
@@ -258,7 +231,7 @@ export const Dashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLectures.map(lecture => (
+                    {lectures.map(lecture => (
                       <LectureRow lecture={lecture} searchQuery={searchQuery} />
                     ))}
                   </TableBody>
@@ -269,24 +242,38 @@ export const Dashboard = () => {
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationFirst />
+                    <PaginationFirst
+                      isActive={page !== 1}
+                      onClick={() => setPage(1)}
+                    />
                   </PaginationItem>
                   <PaginationItem>
-                    <PaginationPrevious />
+                    <PaginationPrevious
+                      isActive={page !== 1}
+                      onClick={() => setPage(prev => prev - 1)}
+                    />
                   </PaginationItem>
                   <PaginationItem>
                     {Array.from(
-                      { length: Math.ceil(lecturesData.total_items / perPage) },
+                      { length: lecturesData.total_pages },
                       (_, i) => (
-                        <PaginationLink key={i}>{i + 1}</PaginationLink>
+                        <PaginationLink key={i} onClick={() => setPage(i + 1)}>
+                          {i + 1}
+                        </PaginationLink>
                       )
                     )}
                   </PaginationItem>
                   <PaginationItem>
-                    <PaginationNext />
+                    <PaginationNext
+                      isActive={page !== lecturesData.total_pages}
+                      onClick={() => setPage(prev => prev + 1)}
+                    />
                   </PaginationItem>
                   <PaginationItem>
-                    <PaginationLast />
+                    <PaginationLast
+                      isActive={page !== lecturesData.total_pages}
+                      onClick={() => setPage(lecturesData.total_pages)}
+                    />
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>

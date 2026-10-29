@@ -16,15 +16,15 @@ interface ISortButtonProps {
 }
 
 export const SortButton = (props: ISortButtonProps) => {
-  const [sortValue, setSortValue] = useState('');
+  const [sortValue, setSortValue] = useState('date-new-to-old');
   const handleSortChange = (value: string) => {
     setSortValue(value);
     switch (value) {
       case 'date-new-to-old':
-        props.setSortBy({ key: 'date', dir: 'desc' });
+        props.setSortBy({ key: 'created_at', dir: 'desc' });
         break;
       case 'date-old-to-new':
-        props.setSortBy({ key: 'date', dir: 'asc' });
+        props.setSortBy({ key: 'created_at', dir: 'asc' });
         break;
       case 'title-a-z':
         props.setSortBy({ key: 'name', dir: 'asc' });
