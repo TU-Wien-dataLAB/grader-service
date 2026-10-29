@@ -29,6 +29,11 @@ class LectureBaseHandler(ExtensionBaseHandler):
             {
                 "complete": self.get_argument("complete", None),
                 "instructor": self.get_argument("instructor", None),
+                "page": self.get_argument("page", None),
+                "per_page": self.get_argument("per_page", None),
+                "sort_by": self.get_argument("sort_by", None),
+                "order": self.get_argument("order", None),
+                "search": self.get_argument("search", None),
             }
         )
         try:
