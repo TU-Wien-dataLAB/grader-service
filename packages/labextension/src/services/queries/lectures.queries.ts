@@ -1,25 +1,29 @@
 import { getLectures, getLecture, getLectureUsers } from '../lectures.service';
 import { queryOptions } from '@tanstack/react-query';
 
-export const activeInstructorLecturesQuery = () =>
+export const lecturesQuery = (
+  instructor: boolean = false,
+  complete: boolean = false,
+  sort_by: string = null,
+  order: string = 'asc',
+  page: number = 1,
+  per_page: number = 10,
+  search: string = null
+) =>
   queryOptions({
-    queryKey: ['activeLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: false }, false)
-  });
-
-export const completedLecturesQuery = () =>
-  queryOptions({
-    queryKey: ['completedLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: true }, false)
-  });
-
-export const activeLecturesQuery = () =>
-  queryOptions({
-    queryKey: ['lectures'],
-    queryFn: async () =>
-      getLectures({ instructor: false, complete: false }, false)
+    queryKey: ['lectures', { instructor, complete }],
+    queryFn: () =>
+      getLectures(
+        {
+          complete: complete,
+          sort_by: sort_by,
+          order: order,
+          search: search
+        },
+        instructor,
+        page,
+        per_page
+      )
   });
 
 export const lectureQuery = (lectureId: number) =>

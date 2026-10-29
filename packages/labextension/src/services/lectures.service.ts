@@ -8,13 +8,17 @@ import { Lecture } from '../model/lecture';
 import { request } from './request.service';
 import { User } from '../model/user';
 import { HTTPMethod } from './enums/http-methods.enum';
+import { LectureListDto } from '../model/lectureListDto';
 
 const baseUrl = '/api/lectures';
 
 export function getLectures(
-  filters: { [key: string]: boolean },
+  filters: { [key: string]: boolean | string | number | null },
+  instructor: boolean = false,
+  page: number = 1,
+  perPage: number = 20,
   reload = false
-): Promise<Lecture[]> {
+): Promise<LectureListDto> {
   let url = baseUrl;
   const params = new URLSearchParams();
 
@@ -23,8 +27,11 @@ export function getLectures(
       params.append(key, String(filters[key]));
     }
   }
+  params.append('instructor', String(instructor));
+  params.append('page', String(page));
+  params.append('per_page', String(perPage));
   url += '?' + params.toString();
-  return request<Lecture[]>(HTTPMethod.GET, url, null, reload);
+  return request<LectureListDto>(HTTPMethod.GET, url, null, reload);
 }
 
 export function getLecture(

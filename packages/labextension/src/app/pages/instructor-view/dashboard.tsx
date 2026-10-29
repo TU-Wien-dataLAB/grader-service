@@ -15,7 +15,7 @@ import {
 import { LectureCard } from '../../components/grader-service/lectures/lecture-card';
 import { LectureRow } from '../../components/grader-service/lectures/lecture-row';
 import { pluralize } from '../../components/utils/utils';
-import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
+import { lecturesQuery } from '../../../services/queries/lectures.queries';
 import { Header } from '../../components/ui/header';
 import {
   ToggleGroup,
@@ -57,11 +57,22 @@ import {
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
-  const { data: lectures } = useQuery(activeInstructorLecturesQuery());
-
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('');
   const [sortBy, setSortBy] = useState({ key: '', dir: '' });
+  //const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(6);
+  const { data: lecturesData } = useQuery(
+    lecturesQuery(
+      true,
+      filterBy === 'completed',
+      sortBy.key,
+      sortBy.dir,
+      1,
+      perPage,
+      searchQuery
+    )
+  );
   // fetching directly in the component, since fetching is conditional
   const {
     data: completedLectures,
@@ -69,8 +80,7 @@ export const Dashboard = () => {
     isRefetching: isRefetchingCompletedLectures
   } = useQuery({
     queryKey: ['completedLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: true }, false),
+    queryFn: async () => getLectures({ instructor: true, complete: true }),
     // only fetch completed lectures if the "completed" filter option has been chosen
     enabled: filterBy === 'completed'
   });
@@ -81,15 +91,15 @@ export const Dashboard = () => {
 
   /* logic for searching/filtering/sorting */
   const filteredLectures = useMemo(() => {
-    if (!lectures) {
+    if (!lecturesData) {
       return [];
     }
 
-    let result = [...lectures];
+    let result = [...lecturesData.lectures];
 
     if (filterBy) {
       if (filterBy === 'completed' && !isPendingCompletedLectures) {
-        result = [...completedLectures];
+        result = [...completedLectures.lectures];
       }
     }
     if (searchQuery) {
@@ -114,7 +124,7 @@ export const Dashboard = () => {
     }
     return result;
   }, [
-    lectures,
+    lecturesData,
     completedLectures,
     searchQuery,
     filterBy,
@@ -207,7 +217,7 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {(lectures?.length ?? 0) > 0 ? (
+      {(lecturesData?.lectures.length ?? 0) > 0 ? (
         filteredLectures.length === 0 ? (
           <EmptyState
             title={'No results found'}
@@ -266,7 +276,7 @@ export const Dashboard = () => {
                   </PaginationItem>
                   <PaginationItem>
                     {Array.from(
-                      { length: Math.ceil(lectures.length / 6) },
+                      { length: Math.ceil(lecturesData.total_items / perPage) },
                       (_, i) => (
                         <PaginationLink key={i}>{i + 1}</PaginationLink>
                       )
@@ -280,7 +290,7 @@ export const Dashboard = () => {
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
-              <Select defaultValue="6">
+              <Select value={perPage} onValueChange={setPerPage}>
                 <SelectTrigger id="select-rows-per-page">
                   <SelectValue />
                 </SelectTrigger>

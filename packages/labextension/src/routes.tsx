@@ -4,8 +4,8 @@ import { Dashboard } from './app/pages/instructor-view/dashboard';
 import React from 'react';
 import { Lecture } from './app/pages/instructor-view/lecture';
 import {
-  activeInstructorLecturesQuery,
-  lectureQuery
+  lectureQuery,
+  lecturesQuery
 } from './services/queries/lectures.queries';
 import { queryClient } from './widget';
 import { getCurrentUserQuery } from './services/queries/users.queries';
@@ -22,7 +22,7 @@ export const getRoutes = () => {
       element={<Root />}
       path={'/*'}
       loader={async () => {
-        await queryClient.query(activeInstructorLecturesQuery());
+        await queryClient.query(getCurrentUserQuery());
         return null;
       }}
     >
@@ -30,7 +30,7 @@ export const getRoutes = () => {
         index
         element={<Dashboard />}
         loader={async () => {
-          await queryClient.query(getCurrentUserQuery());
+          await queryClient.query(lecturesQuery(true));
           return null;
         }}
       ></Route>

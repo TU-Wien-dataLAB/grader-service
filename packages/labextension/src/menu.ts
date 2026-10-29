@@ -2,8 +2,10 @@ import { GlobalObjects, GraderServiceCommandIDs } from './index';
 import { Lecture } from './model/lecture';
 import { AssignmentDetail } from './model/assignmentDetail';
 import { Menu } from '@lumino/widgets';
-import { activeLecturesQuery } from './services/queries/lectures.queries';
-import { queryClient } from './widget';
+import { lecturesQuery } from './services/queries/lectures.queries';
+import { UserPermissions } from './services/permission.service';
+import hasElevatedPermissions = UserPermissions.hasElevatedPermissions;
+import { useQuery } from '@tanstack/react-query';
 
 export const getLabel = (assignment: AssignmentDetail | null) => {
   return assignment === null ? 'Overview' : assignment.name;
@@ -15,12 +17,10 @@ const getPath = (lecture: Lecture, assignment: AssignmentDetail | null) => {
 
 export const updateMenus = async (reload: boolean = false) => {
   const menu = GlobalObjects.graderServiceMenu;
-  const [lectures] = await Promise.all([
-    queryClient.ensureQueryData(activeLecturesQuery())
-  ]);
+  const { data: lectures } = useQuery(lecturesQuery(hasElevatedPermissions()));
 
   menu.clearItems();
-  lectures.forEach(v => {
+  lectures.lectures.forEach(v => {
     const subMenu = new Menu({ commands: GlobalObjects.commands });
     subMenu.title.label = v.name;
 
