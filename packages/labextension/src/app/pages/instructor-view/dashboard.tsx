@@ -153,8 +153,8 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {!isPendingLectures && (lectures.length ?? 0) > 0 ? (
-        lectures.length === 0 ? (
+      {!isPendingLectures && lecturesData.total_items_unfiltered > 0 ? (
+        lecturesData.total_items === 0 ? (
           <EmptyState
             title={'No results found'}
             icon={<NoResultsFoundIcon />}
