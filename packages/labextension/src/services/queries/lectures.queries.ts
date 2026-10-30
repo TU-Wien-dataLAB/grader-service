@@ -11,7 +11,10 @@ export const lecturesQuery = (
   search: string = null
 ) =>
   queryOptions({
-    queryKey: ['lectures', { instructor, complete }],
+    queryKey: [
+      'lectures',
+      { instructor, complete, sort_by, order, page, per_page, search }
+    ],
     queryFn: () =>
       getLectures(
         {
