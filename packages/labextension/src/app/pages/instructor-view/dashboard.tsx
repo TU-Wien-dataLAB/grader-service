@@ -3,7 +3,6 @@ import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
 import {
   Table,
@@ -49,7 +48,7 @@ import { CustomPagination } from '../../components/ui/custom-pagination';
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterBy, setFilterBy] = useState('');
+  const [filterBy, setFilterBy] = useState('active');
   const [sortBy, setSortBy] = useState({ key: 'created_at', dir: 'asc' });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
@@ -64,17 +63,6 @@ export const Dashboard = () => {
       searchQuery
     )
   );
-  // fetching directly in the component, since fetching is conditional
-  const {
-    data: completedLectures,
-    isPending: isPendingCompletedLectures,
-    isRefetching: isRefetchingCompletedLectures
-  } = useQuery({
-    queryKey: ['completedLectures'],
-    queryFn: async () => getLectures({ instructor: true, complete: true }),
-    // only fetch completed lectures if the "completed" filter option has been chosen
-    enabled: filterBy === 'completed'
-  });
 
   useEffect(() => {
     openInFileBrowser(`${lectureBasePath}`);
@@ -84,17 +72,7 @@ export const Dashboard = () => {
     if (filterBy || searchQuery || sortBy.key) {
       queryClient.invalidateQueries({ queryKey: ['lectures'] });
     }
-  }, [
-    lecturesData,
-    completedLectures,
-    searchQuery,
-    filterBy,
-    sortBy,
-    perPage,
-    page,
-    isPendingCompletedLectures,
-    isRefetchingCompletedLectures
-  ]);
+  }, [lecturesData, searchQuery, filterBy, sortBy, perPage, page]);
 
   const { status } = useMutationStatus();
   const lectures = lecturesData?.lectures ?? [];
