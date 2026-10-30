@@ -144,6 +144,11 @@ components:
           format: int64
           description: Total number of pages
           example: 1
+        total_items_unfiltered:
+          type: integer
+          format: int64
+          description: Total number of pages (unfiltered results)
+          example: 15
       example:
         lectures:
           - id: 1

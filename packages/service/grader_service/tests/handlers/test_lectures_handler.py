@@ -56,6 +56,7 @@ async def test_get_lectures(
     assert data["page"] == 1
     assert data["per_page"] == 20
     assert data["total_items"] == 3
+    assert data["total_items_unfiltered"] == 3
     assert data["total_pages"] == 1
 
 
@@ -101,6 +102,11 @@ async def test_get_lectures_complete(
     assert lectures
     [Lecture.from_dict(lec) for lec in lectures]  # assert no errors
     assert len(lectures) == 1
+    # the complete filter narrows the results, but the unfiltered total
+    # still counts all lectures visible to the user (1, 2, 3 and 10;
+    # 11 is deleted and therefore not visible)
+    assert data["total_items"] == 1
+    assert data["total_items_unfiltered"] == 4
 
 
 async def test_get_lectures_instructor(
@@ -1565,6 +1571,7 @@ async def test_get_lectures_search_case_insensitive(
     data = json.loads(response.body.decode())
     assert [lec["id"] for lec in data["lectures"]] == [1, 3]
     assert data["total_items"] == 2
+    assert data["total_items_unfiltered"] == 3
 
 
 async def test_get_lectures_search_no_matches(
@@ -1587,6 +1594,8 @@ async def test_get_lectures_search_no_matches(
     assert data["per_page"] == 20
     assert data["total_items"] == 0
     assert data["total_pages"] == 0
+    # no lecture matches the search, but the user still has lectures at all
+    assert data["total_items_unfiltered"] == 3
 
 
 async def test_get_lectures_search_escapes_like_wildcards(

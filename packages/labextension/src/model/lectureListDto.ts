@@ -27,4 +27,8 @@ export interface LectureListDto {
    * Total number of pages
    */
   total_pages: number;
+  /**
+   * Total number of items (unfiltered results)
+   */
+  total_items_unfiltered?: number;
 }

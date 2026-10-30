@@ -14,7 +14,7 @@ class LectureListDto(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, lectures=None, page=None, per_page=None, total_items=None, total_pages=None):  # noqa: E501
+    def __init__(self, lectures=None, page=None, per_page=None, total_items=None, total_pages=None, total_items_unfiltered=None):  # noqa: E501
         """LectureListDto - a model defined in OpenAPI
 
         :param lectures: The lectures of this LectureListDto.  # noqa: E501
@@ -27,13 +27,16 @@ class LectureListDto(Model):
         :type total_items: int
         :param total_pages: The total_pages of this LectureListDto.  # noqa: E501
         :type total_pages: int
+        :param total_items_unfiltered: The total_items_unfiltered of this LectureListDto.  # noqa: E501
+        :type total_items_unfiltered: int
         """
         self.openapi_types = {
             'lectures': List[LectureListItemDto],
             'page': int,
             'per_page': int,
             'total_items': int,
-            'total_pages': int
+            'total_pages': int,
+            'total_items_unfiltered': int
         }
 
         self.attribute_map = {
@@ -41,7 +44,8 @@ class LectureListDto(Model):
             'page': 'page',
             'per_page': 'per_page',
             'total_items': 'total_items',
-            'total_pages': 'total_pages'
+            'total_pages': 'total_pages',
+            'total_items_unfiltered': 'total_items_unfiltered'
         }
 
         self._lectures = lectures
@@ -49,6 +53,7 @@ class LectureListDto(Model):
         self._per_page = per_page
         self._total_items = total_items
         self._total_pages = total_pages
+        self._total_items_unfiltered = total_items_unfiltered
 
     @classmethod
     def from_dict(cls, dikt) -> 'LectureListDto':
@@ -183,3 +188,26 @@ class LectureListDto(Model):
             raise ValueError("Invalid value for `total_pages`, must not be `None`")  # noqa: E501
 
         self._total_pages = total_pages
+
+    @property
+    def total_items_unfiltered(self) -> int:
+        """Gets the total_items_unfiltered of this LectureListDto.
+
+        Total number of pages (unfiltered results)  # noqa: E501
+
+        :return: The total_items_unfiltered of this LectureListDto.
+        :rtype: int
+        """
+        return self._total_items_unfiltered
+
+    @total_items_unfiltered.setter
+    def total_items_unfiltered(self, total_items_unfiltered: int):
+        """Sets the total_items_unfiltered of this LectureListDto.
+
+        Total number of pages (unfiltered results)  # noqa: E501
+
+        :param total_items_unfiltered: The total_items_unfiltered of this LectureListDto.
+        :type total_items_unfiltered: int
+        """
+
+        self._total_items_unfiltered = total_items_unfiltered
