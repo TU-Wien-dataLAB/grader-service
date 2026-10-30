@@ -37,7 +37,7 @@ import { SuccessBanner } from '../../components/ui/success-banner';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
-import { queryClient, useMutationStatus } from '../../../widget';
+import { useMutationStatus } from '../../../widget';
 import { ErrorBanner } from '../../components/ui/error-banner';
 import {
   lectureBasePath,
@@ -52,7 +52,7 @@ export const Dashboard = () => {
   const [sortBy, setSortBy] = useState({ key: 'created_at', dir: 'asc' });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
-  const { data: lecturesData } = useQuery(
+  const { data: lecturesData, isPending: isPendingLectures } = useQuery(
     lecturesQuery(
       true,
       filterBy === 'completed',
@@ -67,12 +67,6 @@ export const Dashboard = () => {
   useEffect(() => {
     openInFileBrowser(`${lectureBasePath}`);
   }, []);
-
-  useEffect(() => {
-    if (filterBy || searchQuery || sortBy.key) {
-      queryClient.invalidateQueries({ queryKey: ['lectures'] });
-    }
-  }, [lecturesData, searchQuery, filterBy, sortBy, perPage, page]);
 
   const { status } = useMutationStatus();
   const lectures = lecturesData?.lectures ?? [];
@@ -159,7 +153,7 @@ export const Dashboard = () => {
           </p>
         )}
       </div>
-      {(lectures.length ?? 0) > 0 ? (
+      {!isPendingLectures && (lectures.length ?? 0) > 0 ? (
         lectures.length === 0 ? (
           <EmptyState
             title={'No results found'}
