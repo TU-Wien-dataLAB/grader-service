@@ -9,6 +9,7 @@ import { request } from './request.service';
 import { User } from '../model/user';
 import { HTTPMethod } from './enums/http-methods.enum';
 import { LectureListDto } from '../model/lectureListDto';
+import { LectureUpdateDto } from '../model/lectureUpdateDto';
 
 const baseUrl = '/api/lectures';
 
@@ -46,10 +47,13 @@ export function getLecture(
   );
 }
 
-export function updateLecture(lecture: Lecture): Promise<Lecture> {
+export function updateLecture(
+  lecture: LectureUpdateDto,
+  lectureId: number
+): Promise<Lecture> {
   return request<Lecture, Lecture>(
     HTTPMethod.PUT,
-    `${baseUrl}/${lecture.id}`,
+    `${baseUrl}/${lectureId}`,
     lecture
   );
 }

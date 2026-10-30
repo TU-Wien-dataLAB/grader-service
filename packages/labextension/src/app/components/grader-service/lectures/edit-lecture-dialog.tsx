@@ -20,7 +20,6 @@ import {
   SelectValue
 } from '../../../shadcn-components/ui/select';
 import { useForm } from '@tanstack/react-form';
-import { Lecture } from '../../../../model/lecture';
 import { Pencil } from 'lucide-react';
 import { useUpdateLecture } from '../../../hooks/lecture/update-lecture-hook';
 import {
@@ -28,9 +27,10 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
+import { LectureListItemDto } from '../../../../model/lectureListItemDto';
 
 interface IEditLectureDialog {
-  lecture: Lecture;
+  lecture: LectureListItemDto;
 }
 
 export const EditLectureDialog = (props: IEditLectureDialog) => {
@@ -47,7 +47,7 @@ export const EditLectureDialog = (props: IEditLectureDialog) => {
       await mutateLecture.mutateAsync({
         name: value.name.trim(),
         complete: value.status === 'completed',
-        lecture: props.lecture
+        lectureId: props.lecture.id
       });
       setOpenDialog(false);
     }
