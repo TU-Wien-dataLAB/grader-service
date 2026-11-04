@@ -31,7 +31,7 @@ export const UpcomingAssignmentCard = ({ assignment }: { assignment: UpcomingAss
   }
 
   return (
-  <Card className="w-full bg-card p-4 flex flex-row gap-4 items-center">
+  <Card className="w-full bg-card p-4 flex flex-row flex-wrap gap-4 items-center">
     <div className="flex relative flex-col bg-background p-1.5 items-center justify-center shrink-0">
       {deadline ? (
         <>
@@ -46,7 +46,7 @@ export const UpcomingAssignmentCard = ({ assignment }: { assignment: UpcomingAss
       )
     }
     </div>
-    <div className="flex flex-1 min-w-0 flex-col justify-around">
+    <div className="flex flex-1 grow basis-48 min-w-0 flex-col justify-around">
       <CardHeader className="flex flex-row min-w-0 items-center p-0">
         <CardTitle className="min-w-0 truncate text-[16px]">
           {assignment.name}
@@ -57,7 +57,7 @@ export const UpcomingAssignmentCard = ({ assignment }: { assignment: UpcomingAss
         {assignment.lecture.name}
       </CardDescription>
     </div>
-    <CardAction className="self-center ml-auto">
+    <CardAction className="self-center">
       <Link to={`/student/lectures/${assignment.lecture.id}/assignments/${assignment.id}`} className="block w-full">
         <Button className={'w-full cursor-pointer'}>
             Go to assignment

@@ -111,7 +111,7 @@ export const LectureCard = (props: ILectureCard) => {
         )}
       </CardContent>
       <Link to={instructorView ? `/instructor/lectures/${lecture.id}` : `/student/lectures/${lecture.id}`}>
-        <Button className={'w-fit'}>Details</Button>
+        <Button className={'w-full'}>Details</Button>
       </Link>
     </Card>
   );

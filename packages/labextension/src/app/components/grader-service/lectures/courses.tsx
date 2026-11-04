@@ -131,9 +131,10 @@ export const Courses = () => {
             }
           />
         ) : (
+          <>  
           <div
             className={
-              'flex flex-col gap-6 m-6 mt-0 overflow-y-auto min-h-0 flex-1 h-full'
+              'flex flex-col gap-6 m-4 mt-0 overflow-y-auto flex-1'
             }
           >
 
@@ -147,8 +148,8 @@ export const Courses = () => {
                 ))}
             </div>
 
-
-            <div className="flex items-center justify-between gap-4">
+          </div>
+          <div className="flex items-center justify-between gap-4">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
@@ -186,7 +187,8 @@ export const Courses = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+        </>
+
         )
       ) : (
         <EmptyState
