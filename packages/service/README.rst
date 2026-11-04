@@ -69,7 +69,7 @@ Requirements
 ============
 
 * Python >= 3.11
-* `JupyterHub <https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html>`_ >= 5.x
+* `JupyterHub <https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html>`_ >= 6.x
 * `JupyterLab <https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html>`_ >= 4.x
 * pip
 
