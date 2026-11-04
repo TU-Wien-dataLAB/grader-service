@@ -15,7 +15,7 @@ or [Installation from source](installation_from_source) guides.
 ## Requirements
 
 - Python 3.11+
-- JupyterHub >= 5.x
+- JupyterHub >= 6.x
   ([installation guide](https://jupyterhub.readthedocs.io/en/stable/tutorial/quickstart.html))
 - JupyterLab >= 4.x
   ([installation guide](https://jupyterlab.readthedocs.io/en/latest/getting_started/installation.html))
