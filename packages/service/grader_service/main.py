@@ -146,6 +146,8 @@ class GraderService(config.Application):
         klass=LocalAutogradeExecutor,
         allow_none=False,
         config=True,
+        help="""The autograde executor class used for autograding submissions.
+        The default is the LocalAutogradeExecutor.""",
     )
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
