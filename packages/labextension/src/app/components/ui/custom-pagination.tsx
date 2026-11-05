@@ -12,7 +12,7 @@ import React from 'react';
 
 interface IPaginationProps {
   page: number;
-  setPage: React.Dispatch<React.SetStateAction<number>>;
+  setPage: (page: number) => void;
   totalPages: number;
 }
 
@@ -32,7 +32,7 @@ export const CustomPagination = (props: IPaginationProps) => {
           <PaginationPrevious
             disabled={page === 1}
             isActive={page !== 1}
-            onClick={() => setPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setPage(Math.max(1, page - 1))}
           />
         </PaginationItem>
         <PaginationItem>
@@ -50,7 +50,7 @@ export const CustomPagination = (props: IPaginationProps) => {
           <PaginationNext
             disabled={page === totalPages}
             isActive={page !== totalPages}
-            onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
           />
         </PaginationItem>
         <PaginationItem>

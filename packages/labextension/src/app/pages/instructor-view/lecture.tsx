@@ -52,6 +52,7 @@ import {
 } from '../../shadcn-components/ui/tooltip';
 import { ReleaseDialog } from '../../components/grader-service/assignments/release-dialog/release-dialog';
 import { GradingMethod } from '../../../model/gradingMethod';
+import { SortBy } from '../../stores/lecture-filter-store';
 
 export interface IAssignmentChecked {
   assignment: AssignmentDetail;
@@ -152,7 +153,7 @@ export const Lecture = () => {
   } = useQuery(assignmentsQuery(lectureId));
 
   // filtering logic
-  const [sortBy, setSortBy] = useState({ key: '', dir: '' });
+  const [sortBy, setSortBy] = useState({ key: '', dir: 'asc' } as SortBy);
   const [searchQuery, setSearchQuery] = useState('');
 
   const allFilters = useMemo(() => {

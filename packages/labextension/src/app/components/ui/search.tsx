@@ -16,7 +16,7 @@ export interface ISearchField {
   placeholder?: string;
   recentSearchesKey?: string;
   searchQuery: string;
-  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  setSearchQuery: (query: string) => void;
 }
 export const SearchField = (props: ISearchField) => {
   const [query, setQuery] = useState('');

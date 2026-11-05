@@ -44,24 +44,24 @@ import {
   openInFileBrowser
 } from '../../../services/local-file.service';
 import { CustomPagination } from '../../components/ui/custom-pagination';
+import { useLectureFilters } from '../../stores/lecture-filter-store';
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterBy, setFilterBy] = useState('active');
-  const [sortBy, setSortBy] = useState({ key: 'created_at', dir: 'asc' });
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(6);
+
+  const filterBy = useLectureFilters(s => s.filterBy);
+  const sortBy = useLectureFilters(s => s.sortBy);
+  const page = useLectureFilters(s => s.page);
+  const perPage = useLectureFilters(s => s.perPage);
+  const searchQuery = useLectureFilters(s => s.searchQuery);
+
+  const setFilterBy = useLectureFilters(s => s.setFilterBy);
+  const setSortBy = useLectureFilters(s => s.setSortBy);
+  const setPage = useLectureFilters(s => s.setPage);
+  const setPerPage = useLectureFilters(s => s.setPerPage);
+  const setSearchQuery = useLectureFilters(s => s.setSearchQuery);
   const { data: lecturesData, isPending: isPendingLectures } = useQuery(
-    lecturesQuery(
-      true,
-      filterBy === 'completed',
-      sortBy.key,
-      sortBy.dir,
-      page,
-      perPage,
-      searchQuery
-    )
+    lecturesQuery(true)
   );
 
   useEffect(() => {

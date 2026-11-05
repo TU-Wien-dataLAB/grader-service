@@ -8,11 +8,12 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
+import { SortBy } from '../../stores/lecture-filter-store';
 
 interface ISortButtonProps {
   className?: string;
-  sortBy: { key: string; dir: string };
-  setSortBy: React.Dispatch<React.SetStateAction<{ key: string; dir: string }>>;
+  sortBy: SortBy;
+  setSortBy: (sortBy: SortBy) => void;
 }
 
 export const SortButton = (props: ISortButtonProps) => {

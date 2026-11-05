@@ -1,33 +1,39 @@
 import { getLectures, getLecture, getLectureUsers } from '../lectures.service';
 import { queryOptions } from '@tanstack/react-query';
+import { useLectureFilters } from '../../app/stores/lecture-filter-store';
+import { useShallow } from 'zustand/react/shallow';
 
-export const lecturesQuery = (
-  instructor: boolean = false,
-  complete: boolean = false,
-  sort_by: string = null,
-  order: string = 'asc',
-  page: number = 1,
-  per_page: number = 10,
-  search: string = null
-) =>
-  queryOptions({
+export const lecturesQuery = (instructor: boolean = false) => {
+  const { filterBy, sortBy, page, perPage, searchQuery } = useLectureFilters(
+    useShallow(s => ({
+      filterBy: s.filterBy,
+      sortBy: s.sortBy,
+      page: s.page,
+      perPage: s.perPage,
+      searchQuery: s.searchQuery
+    }))
+  );
+  const key = sortBy.key;
+  const dir = sortBy.dir;
+  return queryOptions({
     queryKey: [
       'lectures',
-      { instructor, complete, sort_by, order, page, per_page, search }
+      { instructor, filterBy, key, dir, page, perPage, searchQuery }
     ],
     queryFn: () =>
       getLectures(
         {
-          complete: complete,
-          sort_by: sort_by,
-          order: order,
-          search: search
+          complete: filterBy === 'completed',
+          sort_by: sortBy.key,
+          order: sortBy.dir,
+          search: searchQuery
         },
         instructor,
         page,
-        per_page
+        perPage
       )
   });
+};
 
 export const lectureQuery = (lectureId: number) =>
   queryOptions({

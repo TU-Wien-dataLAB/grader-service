@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
+import { FilterBy } from '../../stores/lecture-filter-store';
 
 export interface IFilterOption<V extends string = string> {
   value: V;
@@ -22,8 +23,8 @@ export interface IFilterGroup {
 
 interface IFilterLecturesButtonProps {
   className?: string;
-  filterBy: string;
-  setFilterBy: React.Dispatch<React.SetStateAction<string>>;
+  filterBy: FilterBy;
+  setFilterBy: (value: FilterBy) => void;
 }
 
 export const FilterLecturesButton = (props: IFilterLecturesButtonProps) => {
