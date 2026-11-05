@@ -1,11 +1,4 @@
-import {
-  AutomaticGradingBadge,
-  CompletedAssignmentBadge,
-  CreatedAssignmentBadge,
-  FullyAutomaticGradingBadge,
-  ManualGradingBadge,
-  ReleasedAssignmentBadge
-} from '../ui/badges';
+import { CustomBadge } from '../ui/badges';
 import React from 'react';
 import { AssignmentSettings } from '../../../model/assignmentSettings';
 import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
@@ -16,24 +9,37 @@ export const gradingType = (
 ) => {
   if (gradingType === AutogradeTypeEnum.FullAuto) {
     return (
-      <FullyAutomaticGradingBadge className={complete ? 'opacity-80' : ''} />
+      <CustomBadge
+        type="fully_automatic_grading"
+        className={complete ? 'opacity-80' : ''}
+      />
     );
   } else if (gradingType === AutogradeTypeEnum.Auto) {
-    return <AutomaticGradingBadge className={complete ? 'opacity-80' : ''} />;
+    return (
+      <CustomBadge
+        type="automatic_grading"
+        className={complete ? 'opacity-80' : ''}
+      />
+    );
   } else {
-    return <ManualGradingBadge className={complete ? 'opacity-80' : ''} />;
+    return (
+      <CustomBadge
+        type="manual_grading"
+        className={complete ? 'opacity-80' : ''}
+      />
+    );
   }
 };
 
 export const assignmentStatus = (status: string) => {
   switch (status) {
     case 'created':
-      return <CreatedAssignmentBadge />;
+      return <CustomBadge type="not_released" />;
     case 'pushed':
-      return <CreatedAssignmentBadge />;
+      return <CustomBadge type="not_released" />;
     case 'released':
-      return <ReleasedAssignmentBadge />;
+      return <CustomBadge type="released" />;
     case 'complete':
-      return <CompletedAssignmentBadge />;
+      return <CustomBadge type="completed" />;
   }
 };

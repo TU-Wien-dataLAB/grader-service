@@ -10,10 +10,19 @@ import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../../services/local-file.service';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { getSubmissionById } from '../../../../services/queries/submissions.query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
 import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
+import {
+  createOrOverrideEditRepository,
+  pullSubmissionFiles,
+  pushSubmissionFiles
+} from '../../../../services/git.service';
+import { queryClient, useMutationStatus } from '../../../../widget';
+import { SuccessBanner } from '../../ui/success-banner';
+import { ErrorBanner } from '../../ui/error-banner';
+import { assignmentQuery } from '../../../../services/queries/assignments.queries';
 
 const EditSubmission = () => {
   const params = useParams();
@@ -21,19 +30,23 @@ const EditSubmission = () => {
   const assignmentId = Number(params.aid);
   const submissionId = Number(params.sid);
   const navigate = useNavigate();
+  const { status, setStatus } = useMutationStatus();
+  const { data: assignment } = useQuery(
+    assignmentQuery(lectureId, assignmentId)
+  );
 
-  const { data: submission } = useQuery(
+  const { data: submission, refetch: refetchSubmission } = useQuery(
     getSubmissionById(lectureId, assignmentId, submissionId)
   );
   const { data: lecture } = useQuery(lectureQuery(lectureId));
 
   const path = useMemo(
     () =>
-      `${lectureBasePath}${lecture.code}/edit/${assignmentId}/${submissionId}`,
+      `${lectureBasePath}${lecture?.code}/edit/${assignmentId}/${submissionId}`,
     [lecture, assignmentId]
   );
 
-  const { data: files = [] } = useFiles(path);
+  const { data: files = [], refetch: refetchFiles } = useFiles(path);
 
   const goToSubmissionsView = () => {
     navigate(`/lectures/${lectureId}/assignments/${assignmentId}`, {
@@ -41,9 +54,63 @@ const EditSubmission = () => {
     });
   };
 
+  const pushSubmissionFilesMutation = useMutation({
+    mutationFn: async () => {
+      await pushSubmissionFiles(lectureId, assignmentId, submission);
+    },
+    onSuccess: () => {
+      setStatus({
+        message: 'You successfully push submission files.',
+        status: 'success'
+      });
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to push submission files. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
+  const pullSubmissionFilesMutation = useMutation({
+    mutationFn: async () => {
+      await pullSubmissionFiles(lectureId, assignmentId, submissionId);
+    },
+    onSuccess: () => {
+      refetchFiles();
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to pull submission files. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
+  const createOrOverrideEditRepositoryMutation = useMutation({
+    mutationFn: async () => {
+      await createOrOverrideEditRepository(
+        lectureId,
+        assignmentId,
+        submissionId
+      );
+    }
+  });
+
+  const restoreLatestSubmission = async () => {
+    await refetchSubmission();
+    refetchFiles();
+  };
+
   useEffect(() => {
     openInFileBrowser(path);
   }, [path]);
+
+  useEffect(() => {
+    createOrOverrideEditRepositoryMutation.mutate();
+    pullSubmissionFilesMutation.mutate();
+  }, []);
 
   return (
     <div
@@ -51,6 +118,10 @@ const EditSubmission = () => {
         'flex flex-col items-start gap-4 self-stretch p-6 w-full overflow-auto'
       }
     >
+      {status.status === 'success' && (
+        <SuccessBanner message={status.message} />
+      )}
+      {status.status === 'error' && <ErrorBanner message={status.message} />}
       <div className="flex gap-4 items-center w-full">
         <ArrowLeft
           onClick={goToSubmissionsView}
@@ -61,7 +132,11 @@ const EditSubmission = () => {
 
       {submission && (
         <div className="w-full">
-          <SubmissionDetailInfo submission={submission} isEditMode />
+          <SubmissionDetailInfo
+            submission={submission}
+            assignment={assignment}
+            isEditMode
+          />
         </div>
       )}
 
@@ -69,14 +144,21 @@ const EditSubmission = () => {
         <div className="flex justify-between mb-2 w-full">
           <h3 className="text-xl font-bold mb-2">Submission</h3>
           {files && (
-            <Button variant="outline">Restore latest submission</Button>
+            <Button onClick={restoreLatestSubmission} variant="outline">
+              Restore latest submission
+            </Button>
           )}
         </div>
-        {files ? (
+        {submission?.edited ? (
           <div>
             <SubmissionFiles files={files} />
             <div className="flex flex-start gap-4 mt-4">
-              <Button variant="default">Replace submission</Button>
+              <Button
+                onClick={() => pushSubmissionFilesMutation.mutate()}
+                variant="default"
+              >
+                Replace submission
+              </Button>
               <Button variant="outline" onClick={goToSubmissionsView}>
                 Cancel
               </Button>
@@ -91,7 +173,11 @@ const EditSubmission = () => {
                 'Start editing to load the submission and make changes.'
               }
             />
-            <Button className="w-fit" variant="default">
+            <Button
+              onClick={() => createOrOverrideEditRepositoryMutation.mutate()}
+              className="w-fit"
+              variant="default"
+            >
               Start editing
             </Button>
           </div>

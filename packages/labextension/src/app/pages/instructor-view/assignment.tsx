@@ -44,10 +44,16 @@ export const Assignment = () => {
   );
 
   useEffect(() => {
-    openInFileBrowser(
-      `${lectureBasePath}${lecture?.code}/${selectedDir}/${assignmentId}`
-    );
-  }, [assignmentId, lecture?.code, selectedDir]);
+    if (activeTab === 'submissions') {
+      openInFileBrowser(
+        `${lectureBasePath}${lecture?.code}/edit/${assignmentId}`
+      );
+    } else {
+      openInFileBrowser(
+        `${lectureBasePath}${lecture?.code}/${selectedDir}/${assignmentId}`
+      );
+    }
+  }, [assignmentId, lecture?.code, selectedDir, activeTab]);
 
   return (
     <div

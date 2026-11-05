@@ -227,6 +227,7 @@ export function NestedTable<T>({
   });
 
   const rows = table.getRowModel().rows;
+  const columnCount = table.getAllLeafColumns().length;
 
   return (
     <Table>
@@ -259,14 +260,17 @@ export function NestedTable<T>({
             </TableRow>
           ))
         ) : (
-          <EmptyState
-            icon={<NoResultsFoundIcon />}
-            title={'No results found'}
-            description={
-              'Try adjusting your search or ' +
-              "filter to find what \n you're looking for."
-            }
-          />
+          <TableRow className="hover:bg-transparent">
+            <TableCell colSpan={columnCount} className="p-0">
+              <EmptyState
+                icon={<NoResultsFoundIcon />}
+                title="No results found"
+                description={
+                  "Try adjusting your search or filter to find what you're looking for."
+                }
+              />
+            </TableCell>
+          </TableRow>
         )}
       </TableBody>
     </Table>

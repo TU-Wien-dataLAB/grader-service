@@ -1,6 +1,5 @@
 import React from 'react';
 import { Submission } from '../../../../model/submission';
-import { AutomaticallyGradedBadge, ManuallyGradedBadge } from '../../ui/badges';
 import {
   Select,
   SelectContent,
@@ -9,11 +8,17 @@ import {
   SelectValue
 } from '../../../shadcn-components/ui/select';
 import { formatSubmittedAt } from './utils';
+import { CustomBadge } from '../../ui/badges';
+import { AutoStatus } from '../../../../model/autoStatus';
+import { Assignment } from '../../../../model/assignment';
 
-const getGradingMethod = (s: Submission): 'automatic' | 'manual' =>
-  s.manual_status !== undefined ? 'manual' : 'automatic';
-
-const hasFeedback = (s: Submission): boolean => s.feedback_status !== undefined;
+enum feedback {
+  generated = 'Feedback given',
+  not_generated = 'No Feedback',
+  generation_failed = 'Feedback failed',
+  generating = 'Feedback pending',
+  feedback_outdated = 'Feedback outdated'
+}
 
 const DetailRow = ({
   label,
@@ -31,29 +36,27 @@ const DetailRow = ({
 interface ISubmissionDetailInfoProps {
   submission: Submission;
   isEditMode?: boolean;
+  assignment: Assignment;
 }
 
 const SubmissionDetailInfo = ({
   submission,
-  isEditMode = false
+  isEditMode = false,
+  assignment
 }: ISubmissionDetailInfoProps) => {
   return (
     <div className="py-6">
       <h3 className="text-xl font-bold mb-2">Details</h3>
       <dl className="flex flex-col flex-start gap-3">
-        <DetailRow label="Assignment">Submission details</DetailRow>
+        <DetailRow label="Assignment">{assignment.name}</DetailRow>
         <DetailRow label="Name">
           {submission?.user_display_name ?? '—'}
         </DetailRow>
         <DetailRow label="Grading method">
-          {getGradingMethod(submission) === 'automatic' ? (
-            <AutomaticallyGradedBadge />
-          ) : (
-            <ManuallyGradedBadge />
-          )}
+          <CustomBadge type={submission.auto_status as AutoStatus} />
         </DetailRow>
         <DetailRow label="Feedback">
-          {hasFeedback(submission) ? 'Feedback given' : 'No Feedback'}
+          {feedback[submission.feedback_status]}
         </DetailRow>
         <DetailRow label="Submitted at">
           {formatSubmittedAt(submission?.submitted_at)}
@@ -61,12 +64,7 @@ const SubmissionDetailInfo = ({
         <DetailRow label="Achieved points">
           {(submission?.grading_score ?? 0).toFixed(2)}/5
         </DetailRow>
-        <DetailRow label="Extra credit">
-          {Math.max(
-            0,
-            (submission.score ?? 0) - (submission.grading_score ?? 0)
-          ).toFixed(2)}
-        </DetailRow>
+        <DetailRow label="Extra credit"> ? </DetailRow>
         <DetailRow label="Final score">{submission.score ?? '—'}</DetailRow>
         {!isEditMode && (
           <DetailRow label="Score scaling">

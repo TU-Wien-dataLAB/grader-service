@@ -595,14 +595,14 @@
   .h-80 {
     height: calc(var(--spacing) * 80);
   }
-  .h-\[900px\] {
-    height: 900px;
-  }
   .h-\[calc\(--spacing\(5\.25\)\)\] {
     height: calc(calc(var(--spacing) * 5.25));
   }
   .h-auto {
     height: auto;
+  }
+  .h-fit {
+    height: fit-content;
   }
   .h-full {
     height: 100%;
@@ -624,6 +624,9 @@
   }
   .max-h-100 {
     max-height: calc(var(--spacing) * 100);
+  }
+  .max-h-\[700px\] {
+    max-height: 700px;
   }
   .max-h-\[min\(calc\(--spacing\(72\)-\(--spacing\(9\)\)\)\,calc\(var\(--available-height\)-\(--spacing\(9\)\)\)\)\] {
     max-height: min(calc(calc(var(--spacing) * 72) - (calc(var(--spacing) * 9))), calc(var(--available-height) - (calc(var(--spacing) * 9))));
@@ -832,8 +835,8 @@
   .grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .grid-cols-\[minmax\(0\,15rem\)_4rem_6rem_auto\] {
-    grid-template-columns: minmax(0,15rem) 4rem 6rem auto;
+  .grid-cols-\[minmax\(0\,15rem\)_15rem_6rem_auto\] {
+    grid-template-columns: minmax(0,15rem) 15rem 6rem auto;
   }
   .grid-rows-\[auto_auto\] {
     grid-template-rows: auto auto;
@@ -1091,6 +1094,9 @@
   .border-\[\#ACB252\] {
     border-color: #ACB252;
   }
+  .border-\[\#B8B8B8\] {
+    border-color: #B8B8B8;
+  }
   .border-\[\#CC7373\] {
     border-color: #CC7373;
   }
@@ -1187,6 +1193,9 @@
   .bg-\[\#DAAFFA\] {
     background-color: #DAAFFA;
   }
+  .bg-\[\#DBDBDB\] {
+    background-color: #DBDBDB;
+  }
   .bg-\[\#E0E7EB\] {
     background-color: #E0E7EB;
   }
@@ -1208,6 +1217,9 @@
   .bg-\[\#FF9090\] {
     background-color: #FF9090;
   }
+  .bg-\[\#FF9999\] {
+    background-color: #FF9999;
+  }
   .bg-\[\#FFC89E\] {
     background-color: #FFC89E;
   }
@@ -1222,6 +1234,9 @@
   }
   .bg-background {
     background-color: var(--background);
+  }
+  .bg-black {
+    background-color: var(--color-black);
   }
   .bg-black\/10 {
     background-color: color-mix(in srgb, #000 10%, transparent);
@@ -1578,6 +1593,9 @@
   }
   .whitespace-nowrap {
     white-space: nowrap;
+  }
+  .whitespace-pre-wrap {
+    white-space: pre-wrap;
   }
   .text-\[\#006699\] {
     color: #006699;
@@ -2233,6 +2251,9 @@
     }
     .hover\:bg-sidebar-accent:hover {
       background-color: var(--sidebar-accent);
+    }
+    .hover\:bg-transparent:hover {
+      background-color: transparent;
     }
     .hover\:text-foreground:hover {
       color: var(--foreground);

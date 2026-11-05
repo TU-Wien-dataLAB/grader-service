@@ -25,6 +25,7 @@ import { SubmissionDetailsDialog } from './submission-details-dialog';
 import { toSubmissionRows } from './utils';
 import { FeedbackStatus } from '../../../../model/feedbackStatus';
 import { AutoStatus } from '../../../../model/autoStatus';
+import { SubmissionLogsDialog } from './submission-logs';
 
 /* row  */
 
@@ -78,7 +79,6 @@ const feedbackLabel: Record<FeedbackStatus, React.ReactNode> = {
       <CircleAlert color="#DC182C" className="size-4" /> Generating
     </span>
   ),
-
   generation_failed: (
     <span className="flex items-center gap-2">
       <TriangleAlert color="#C77700" className="size-4" /> Generation failed
@@ -127,7 +127,7 @@ const getColumns = ({
   {
     accessorKey: 'gradingStatus',
     header: 'Auto Grading',
-    enableGlobalFilter: false,
+    enableGlobalFilter: true,
     filterFn: 'filterFn_includesString',
     cell: ({ getValue }) => {
       const grading = getValue<AutoStatus | undefined>();
@@ -137,7 +137,7 @@ const getColumns = ({
   {
     accessorKey: 'feedbackStatus',
     header: 'Feedback',
-    enableGlobalFilter: false,
+    enableGlobalFilter: true,
     filterFn: 'filterFn_includesString',
     cell: ({ getValue }) => {
       const feedbackStatus = getValue<FeedbackStatus>();
@@ -194,15 +194,32 @@ const SubmissionsDataTable = ({
   onRowSelectionChange,
   columnFilters
 }: TTableProps) => {
-  const [selected, setSelected] = useState<Submission | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [openViewDetail, setOpenViewDetail] = useState<boolean>(false);
+  const [openViewLogs, setOpenViewLogs] = useState<boolean>(false);
 
   const data = useMemo(() => toSubmissionRows(submissions), [submissions]);
 
   const columns = useMemo(
     () =>
-      getColumns({ onViewDetails: row => setSelected(row.submission ?? null) }),
+      getColumns({
+        onViewDetails: row => {
+          setSelected(row.submission.id ?? null);
+          setOpenViewDetail(true);
+        },
+        onViewLogs: row => {
+          setSelected(row.submission.id ?? null);
+          setOpenViewLogs(true);
+        }
+      }),
     []
   );
+
+  const handleCloseDialog = (type: 'view-details' | 'view-logs') => {
+    if (type === 'view-details') setOpenViewDetail(false);
+    if (type === 'view-logs') setOpenViewLogs(false);
+    setSelected(null);
+  };
 
   return (
     <div className="space-y-4 relative">
@@ -215,14 +232,25 @@ const SubmissionsDataTable = ({
         onGlobalFilterChange={setSearch}
         columnFilters={columnFilters}
         rowSelection={rowSelection}
-        onRowSelectionChange={onRowSelectionChange}
+        onRowSelectionChange={updater => {
+          onRowSelectionChange(prev => {
+            return typeof updater === 'function' ? updater(prev) : updater;
+          });
+        }}
         emptyMessage="No submissions match your filters."
       />
 
-      {selected && (
+      {openViewDetail && (
         <SubmissionDetailsDialog
-          submissionId={selected?.id} // TODO: set id itself directly from state
-          onClose={() => setSelected(null)}
+          submissionId={selected}
+          onClose={() => handleCloseDialog('view-details')}
+        />
+      )}
+
+      {openViewLogs && (
+        <SubmissionLogsDialog
+          submissionId={selected}
+          onClose={() => handleCloseDialog('view-logs')}
         />
       )}
     </div>

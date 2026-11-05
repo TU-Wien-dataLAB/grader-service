@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  CompletedAssignmentBadge,
-  CreatedAssignmentBadge,
-  ReleasedAssignmentBadge
-} from '../../../ui/badges';
-import { Badge } from '../../../../shadcn-components/ui/badge';
+import { CustomBadge } from '../../../ui/badges';
 import { Checkbox } from '../../../../shadcn-components/ui/checkbox';
 import { CornerDownRight } from 'lucide-react';
 import { IAssignmentChecked } from '../../../../pages/instructor-view/lecture';
@@ -38,13 +33,13 @@ const AssignmentGroupedCheckboxList = (
     const status = assignment.status;
     switch (status) {
       case 'created':
-        return <CreatedAssignmentBadge />;
+        return <CustomBadge type="not_released" />;
       case 'pushed':
-        return <Badge>Pushed</Badge>;
+        return <CustomBadge type="not_released" />;
       case 'released':
-        return <ReleasedAssignmentBadge />;
+        return <CustomBadge type="released" />;
       case 'complete':
-        return <CompletedAssignmentBadge />;
+        return <CustomBadge type="completed" />;
     }
   };
 

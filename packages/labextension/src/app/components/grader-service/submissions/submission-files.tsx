@@ -7,7 +7,7 @@ import { TSubmissionDirectory } from './submission-details-dialog';
 //   score === undefined ? '' : `${score.toFixed(2)}/${max}`;
 
 const ROW_GRID =
-  'grid grid-cols-[minmax(0,15rem)_4rem_6rem_auto] items-center gap-x-6';
+  'grid grid-cols-[minmax(0,15rem)_15rem_6rem_auto] items-center gap-x-6';
 
 const FileLink = ({ file }: { file: IFile }) => (
   <div
@@ -18,6 +18,7 @@ const FileLink = ({ file }: { file: IFile }) => (
     <span className="truncate text-sm text-[#006699] underline underline-offset-2">
       {file.name}
     </span>
+    {/*<span className="text-sm">{formatScore(file.content., file.maxScore)}</span>*/}
   </div>
 );
 
@@ -25,7 +26,6 @@ const FileRow = ({ file }: { file: IFile }) => (
   <div className={`${ROW_GRID} rounded-xs bg-white py-2 px-4`}>
     <FileLink file={file} />
 
-    {/*<span className="text-sm">{formatScore(file.content., file.maxScore)}</span>*/}
     {/*<span>{file.manuallyGraded && <ManuallyGradedBadge />}</span>*/}
   </div>
 );

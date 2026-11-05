@@ -6,7 +6,7 @@ import {
   SheetTitle
 } from '../../../shadcn-components/ui/sheet';
 import { Separator } from '../../../shadcn-components/ui/separator';
-import { EditedBadge } from '../../ui/badges';
+import { CustomBadge } from '../../ui/badges';
 import SubmissionDetailInfo from './submission-detail-info';
 import SubmissionFiles from './submission-files';
 import { Button } from '../../../shadcn-components/ui/button';
@@ -16,12 +16,20 @@ import {
   IFile,
   lectureBasePath
 } from '../../../../services/local-file.service';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   getPulledSubmissionFiles,
   getSubmissionById
 } from '../../../../services/queries/submissions.query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
+import {
+  autogradeSubmission,
+  generateFeedback
+} from '../../../../services/grading.service';
+import { queryClient, useMutationStatus } from '../../../../widget';
+import { ErrorBanner } from '../../ui/error-banner';
+import { SuccessBanner } from '../../ui/success-banner';
+import { assignmentQuery } from '../../../../services/queries/assignments.queries';
 
 type SubmissionDetailsDialogProps = {
   submissionId: number;
@@ -38,7 +46,11 @@ export const SubmissionDetailsDialog = ({
   const lectureId = Number(params.lid);
   const assignmentId = Number(params.aid);
   const navigate = useNavigate();
+  const { status, setStatus } = useMutationStatus();
   const { data: lecture } = useQuery(lectureQuery(lectureId));
+  const { data: assignment } = useQuery(
+    assignmentQuery(lectureId, assignmentId)
+  );
 
   const goToEditSubmission = () => {
     navigate(
@@ -65,6 +77,48 @@ export const SubmissionDetailsDialog = ({
     getSubmissionById(lectureId, assignmentId, submissionId)
   );
 
+  const generateFeedbackMutation = useMutation({
+    mutationFn: async () => {
+      await generateFeedback(lectureId, assignmentId, submissionId);
+    },
+    onSuccess: () => {
+      setStatus({
+        message: 'You successfully generated a feedback!',
+        status: 'success'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['submissionById', submissionId]
+      });
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to generate a feedback. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
+  const autogradeMutation = useMutation({
+    mutationFn: async () => {
+      await autogradeSubmission(lectureId, assignmentId, submissionId);
+    },
+    onSuccess: () => {
+      setStatus({
+        message: 'You successfully autograded a submission!',
+        status: 'success'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['submissionById', submissionId]
+      });
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to autograde. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
   return (
     <Sheet
       open={submissionId !== null}
@@ -75,27 +129,47 @@ export const SubmissionDetailsDialog = ({
         className="gap-0 overflow-y-auto bg-[#F5F5F5] pb-6 absolute"
         style={{ width: '40vw', maxWidth: '100vw' }}
       >
+        {status.status === 'success' && (
+          <SuccessBanner message={status.message} />
+        )}
+        {status.status === 'error' && <ErrorBanner message={status.message} />}
         {submission && (
           <>
             <SheetHeader className="px-6 py-6">
               <SheetTitle className="text-2xl font-bold flex gap-4">
                 <h3>Submission details</h3>
-                <EditedBadge />
+                {submission.edited && <CustomBadge type="edited" />}
               </SheetTitle>
             </SheetHeader>
             <Separator />
 
             <div className="px-6 text-base">
-              <SubmissionDetailInfo submission={submission} />
+              <SubmissionDetailInfo
+                submission={submission}
+                assignment={assignment}
+              />
               <div className="py-6">
                 <div className="flex justify-between mb-2">
                   <h3 className="text-xl font-bold mb-2">Submission</h3>
-                  <Button variant="outline">Autograde</Button>
+                  <Button
+                    onClick={() => autogradeMutation.mutate()}
+                    variant="outline"
+                  >
+                    Autograde
+                  </Button>
                 </div>
                 <div>
                   <SubmissionFiles files={files} />
                   <div className="flex flex-start gap-4 mt-4">
-                    <Button variant="default">Generate feedback</Button>
+                    <Button
+                      disabled={
+                        submission.auto_status !== 'automatically_graded'
+                      }
+                      onClick={() => generateFeedbackMutation.mutate()}
+                      variant="default"
+                    >
+                      Generate feedback
+                    </Button>
                     <Button variant="outline" onClick={goToEditSubmission}>
                       Edit submission
                     </Button>

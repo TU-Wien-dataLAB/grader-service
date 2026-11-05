@@ -1,5 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getSubmission, getSubmissions } from '../submissions.service';
+import {
+  getSubmission,
+  getSubmissionLogs,
+  getSubmissions
+} from '../submissions.service';
 import { pullSubmissionFiles } from '../git.service';
 
 export const getAllSubmissions = (lectureId: number, assignmentId: number) =>
@@ -15,7 +19,8 @@ export const getSubmissionById = (
 ) =>
   queryOptions({
     queryKey: ['submissionById', submissionId],
-    queryFn: async () => getSubmission(lectureId, assignmentId, submissionId)
+    queryFn: async () =>
+      getSubmission(lectureId, assignmentId, submissionId, true)
   });
 
 export const getPulledSubmissionFiles = (
@@ -24,7 +29,18 @@ export const getPulledSubmissionFiles = (
   submissionId: number
 ) =>
   queryOptions({
-    queryKey: ['submissionFilesl', submissionId],
+    queryKey: ['submissionFiles', submissionId],
     queryFn: async () =>
       pullSubmissionFiles(lectureId, assignmentId, submissionId)
+  });
+
+export const getSubmissionLogsData = (
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
+) =>
+  queryOptions({
+    queryKey: ['submissionLogs', submissionId],
+    queryFn: async () =>
+      getSubmissionLogs(lectureId, assignmentId, submissionId)
   });

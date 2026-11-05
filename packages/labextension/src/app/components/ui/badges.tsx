@@ -1,128 +1,87 @@
 import { Badge } from '../../shadcn-components/ui/badge';
 import React from 'react';
+import { AutoStatus } from '../../../model/autoStatus';
 
 const commonStyle = 'text-foreground';
 
-export const FullyAutomaticGradingBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className}${commonStyle} bg-[#DAAFFA] border-[#9C7DB2]`}
-    >
-      Fully automatic grading
-    </Badge>
-  );
+// Add type and properties to add a new badge
+
+export type BadgeType =
+  | AutoStatus
+  | 'manually_graded'
+  | 'edited'
+  | 'completed'
+  | 'released'
+  | 'not_released'
+  | 'manual_grading'
+  | 'automatic_grading'
+  | 'fully_automatic_grading';
+
+export const gradingBadge: Record<
+  BadgeType,
+  { label: string; className: string }
+> = {
+  pending: {
+    label: 'Pending',
+    className: 'bg-[#DBDBDB] border-[#B8B8B8]'
+  },
+  grading_failed: {
+    label: 'Grading failed',
+    className: 'bg-[#FF9999] border-[#CC7373]'
+  },
+  automatically_graded: {
+    label: 'Automatically graded',
+    className: 'bg-[#FFC89E] border-[#FF9D52]'
+  },
+  not_graded: {
+    label: 'Not graded',
+    className: 'bg-[#FF9999] border-[#CC7373]'
+  },
+  manually_graded: {
+    label: 'Manually graded',
+    className: 'bg-[#AEDCE5] border-[#8CB0B8]'
+  },
+  edited: {
+    label: 'Edited',
+    className: 'bg-[#FFEB99] border-[#F5C918]'
+  },
+  completed: {
+    label: 'Completed',
+    className: 'bg-primary border-primary-hover opacity-80'
+  },
+  released: {
+    label: 'Released',
+    className: 'bg-[#CED662] border-[#ACB252]'
+  },
+  not_released: {
+    label: 'Not released',
+    className: 'bg-[#FF9090] border-[#CC7373]'
+  },
+  manual_grading: {
+    label: 'Manual grading',
+    className: 'bg-[#AEDCE5] border-[#8CB0B8]'
+  },
+  automatic_grading: {
+    label: 'Automatic grading',
+    className: 'bg-[#FFC89E] border-[#FF9D52]'
+  },
+  fully_automatic_grading: {
+    label: 'Fully automatic grading',
+    className: 'bg-[#DAAFFA] border-[#9C7DB2]'
+  }
 };
 
-export const AutomaticGradingBadge = ({
-  className = ''
-}: {
+interface ICustomBadgeProps {
+  type: BadgeType;
   className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#FFC89E] border-[#FF9D52]`}
-    >
-      Automatic grading
-    </Badge>
-  );
-};
+}
 
-export const ManualGradingBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8]`}
-    >
-      Manual grading
-    </Badge>
-  );
-};
+export const CustomBadge = ({ type, className = '' }: ICustomBadgeProps) => {
+  const { label, className: badgeClassName } = gradingBadge[type];
 
-export const CreatedAssignmentBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
   return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#FF9090] border-[#CC7373]`}
-    >
-      Not released
-    </Badge>
-  );
-};
-
-export const ReleasedAssignmentBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#CED662] border-[#ACB252]`}
-    >
-      Released
-    </Badge>
-  );
-};
-
-export const CompletedAssignmentBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-primary border-primary-hover opacity-80`}
-    >
-      Completed
-    </Badge>
-  );
-};
-
-export const EditedBadge = ({ className = '' }: { className?: string }) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#FFEB99] border-[#F5C918]`}
-    >
-      Edited
-    </Badge>
-  );
-};
-
-// Need to reuse components below so the text only changes
-
-export const AutomaticallyGradedBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#FFC89E] border-[#FF9D52]`}
-    >
-      Automatically graded
-    </Badge>
-  );
-};
-
-export const ManuallyGradedBadge = ({
-  className = ''
-}: {
-  className?: string;
-}) => {
-  return (
-    <Badge
-      className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8]`}
-    >
-      Manually graded
+    <Badge className={`${commonStyle} ${badgeClassName} ${className}`}>
+      {label}
     </Badge>
   );
 };

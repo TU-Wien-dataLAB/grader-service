@@ -113,8 +113,10 @@ export const FilterSubmissionsButton = (
                 <DropdownMenuLabel>{category}</DropdownMenuLabel>
                 {filterProperties.map(filter => (
                   <DropdownMenuCheckboxItem
-                    key={`${filter.value}`}
-                    checked={props.activeFilters.has(`${filter.value}`)}
+                    key={`${category}:${filter.value}:${filter.label}`}
+                    checked={props.activeFilters.has(
+                      `${category}:${filter.value}:${filter.label}`
+                    )}
                     onCheckedChange={() =>
                       props.toggle(category, filter.value, filter.label)
                     }

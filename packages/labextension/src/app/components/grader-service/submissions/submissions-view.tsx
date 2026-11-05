@@ -26,15 +26,20 @@ import {
 } from '../../../shadcn-components/ui/select';
 import { Badge } from '../../../shadcn-components/ui/badge';
 import { X } from 'lucide-react';
-import { useMutationStatus } from '../../../../widget';
+import { queryClient, useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { getAllSubmissions } from '../../../../services/queries/submissions.query';
 import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../../services/local-file.service';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
+import {
+  autogradeSubmission,
+  generateFeedback
+} from '../../../../services/grading.service';
+import { ErrorBanner } from '../../ui/error-banner';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -47,14 +52,14 @@ export const SubmissionsView = (props: TProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [activeFilters, setActiveFilters] = useState(new Set<string>());
-  const { status } = useMutationStatus();
+  const { status, setStatus } = useMutationStatus();
 
   const { data: lecture } = useQuery(lectureQuery(lectureId));
   const path = `${lectureBasePath}${lecture.code}/edit/${assignmentId}`;
 
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {
-    const id = `${value}`;
+    const id = `${key}:${value}:${label}`;
     setActiveFilters(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -62,15 +67,24 @@ export const SubmissionsView = (props: TProps) => {
     });
   };
 
-  const columnFilters = useMemo<ColumnFiltersState>(
-    () => [
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const gradingFilterValues: string[] = [];
+    const feedbackFilterValues: string[] = [];
+    Array.from(activeFilters).forEach(id => {
+      const [key, value] = id.split(':');
+      if (key === 'Grading') gradingFilterValues.push(value);
+      if (key === 'Feedback') feedbackFilterValues.push(value);
+    });
+    return [
       ...(searchQuery ? [{ id: 'name', value: searchQuery }] : []),
-      ...(activeFilters.size
-        ? [{ id: 'gradingStatus', value: activeFilters }]
+      ...(gradingFilterValues.length
+        ? [{ id: 'gradingStatus', value: gradingFilterValues }]
+        : []),
+      ...(feedbackFilterValues.length
+        ? [{ id: 'feedbackStatus', value: feedbackFilterValues }]
         : [])
-    ],
-    [searchQuery, activeFilters]
-  );
+    ];
+  }, [searchQuery, activeFilters]);
 
   const {
     data: submissionsList,
@@ -89,11 +103,16 @@ export const SubmissionsView = (props: TProps) => {
         {
           value: 'not_graded',
           label: 'Not graded'
+        },
+        {
+          value: 'grading_failed',
+          label: 'Grading failed'
         }
       ],
       Feedback: [
-        { value: 'Overdue', label: 'Feedback given' },
-        { value: 'Upcoming', label: 'No feedback' }
+        { value: 'generated', label: 'Feedback given' },
+        { value: 'not_generated', label: 'No feedback' },
+        { value: 'generation_failed', label: 'Feedback failed' }
       ]
     }
   ];
@@ -102,19 +121,69 @@ export const SubmissionsView = (props: TProps) => {
     openInFileBrowser(path);
   }, [path]);
 
+  const generateFeedbackMutation = useMutation({
+    mutationFn: async () => {
+      await Promise.all(
+        Object.keys(rowSelection).map(submissionId =>
+          generateFeedback(lectureId, assignmentId, Number(submissionId))
+        )
+      );
+    },
+    onSuccess: () => {
+      setStatus({
+        message:
+          'You successfully generated feedback for selected submissions!',
+        status: 'success'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['submissions']
+      });
+      setRowSelection({});
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to generate a feedback. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
+  const autogradeMutation = useMutation({
+    mutationFn: async () => {
+      await Promise.all(
+        Object.keys(rowSelection).map(submissionId =>
+          autogradeSubmission(lectureId, assignmentId, Number(submissionId))
+        )
+      );
+    },
+    onSuccess: () => {
+      setStatus({
+        message: 'You successfully autograded selected submissions!',
+        status: 'success'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['submissions']
+      });
+      setRowSelection({});
+    },
+    onError: () => {
+      setStatus({
+        message: 'Failed to autograde. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
+
   if (isLoading) {
     return <h1>Loading...</h1>;
   }
 
   return (
-    <div
-      className={
-        'flex flex-col items-start gap-4 self-stretch overflow-auto h-[900px]'
-      }
-    >
+    <div className={'flex flex-col items-start gap-4 self-stretch'}>
       {status.status === 'success' && (
         <SuccessBanner message={status.message} />
       )}
+      {status.status === 'error' && <ErrorBanner message={status.message} />}
       <div className={'flex justify-between items-center self-stretch'}>
         <h2 className={'text-xl font-bold'}>Submissions</h2>
         <div className="flex gap-3">
@@ -168,14 +237,17 @@ export const SubmissionsView = (props: TProps) => {
         </div>
       )}
       <div className="w-full">
-        <SubmissionsDataTable
-          submissions={submissionsList}
-          columnFilters={columnFilters}
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          setSearch={setSearchQuery}
-          search={searchQuery}
-        />
+        <div className="overflow-auto h-fit max-h-[700px]">
+          <SubmissionsDataTable
+            submissions={submissionsList}
+            columnFilters={columnFilters}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            setSearch={setSearchQuery}
+            search={searchQuery}
+          />
+        </div>
+
         <div className="flex items-center justify-between gap-4 mt-2">
           <p className="whitespace-nowrap">
             10 out of {submissionsList?.length || 0}
@@ -226,8 +298,13 @@ export const SubmissionsView = (props: TProps) => {
         </div>
       </div>
       <div className="flex gap-4">
-        <Button>Autograde</Button>
-        <Button variant="outline">Generate feedback</Button>
+        <Button onClick={() => autogradeMutation.mutate()}>Autograde</Button>
+        <Button
+          onClick={() => generateFeedbackMutation.mutate()}
+          variant="outline"
+        >
+          Generate feedback
+        </Button>
       </div>
     </div>
   );
