@@ -22,12 +22,17 @@ export const CustomPagination = (props: IPaginationProps) => {
     <Pagination>
       <PaginationContent>
         <PaginationItem>
-          <PaginationFirst isActive={page !== 1} onClick={() => setPage(1)} />
+          <PaginationFirst
+            disabled={page === 1}
+            isActive={page !== 1}
+            onClick={() => setPage(1)}
+          />
         </PaginationItem>
         <PaginationItem>
           <PaginationPrevious
+            disabled={page === 1}
             isActive={page !== 1}
-            onClick={() => setPage(prev => prev - 1)}
+            onClick={() => setPage(prev => Math.max(1, prev - 1))}
           />
         </PaginationItem>
         <PaginationItem>
@@ -43,12 +48,14 @@ export const CustomPagination = (props: IPaginationProps) => {
         </PaginationItem>
         <PaginationItem>
           <PaginationNext
+            disabled={page === totalPages}
             isActive={page !== totalPages}
-            onClick={() => setPage(prev => prev + 1)}
+            onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
           />
         </PaginationItem>
         <PaginationItem>
           <PaginationLast
+            disabled={page === totalPages}
             isActive={page !== totalPages}
             onClick={() => setPage(totalPages)}
           />
