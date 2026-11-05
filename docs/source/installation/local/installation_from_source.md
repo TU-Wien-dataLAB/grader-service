@@ -1,6 +1,9 @@
 # Installation from Source
 
-This guide installs both packages from the repository in editable (development) mode. The repository is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) monorepo, so a single `make sync` installs the `grader-service` and `grader-labextension` packages together with all development, test, and documentation dependencies.
+This guide installs both packages from the repository in editable (development) mode. The repository
+is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) monorepo, so a single
+`make sync` installs the `grader-service` and `grader-labextension` packages together with all
+development, test, and documentation dependencies.
 
 ```{warning}
 This setup runs student code with the local autograding executors, which have full access to the service database and filesystem. A malicious submission could read or alter grades and other students' work. It is for **local development and testing only** - use the [Kubernetes installation](../kubernetes) with `KubeAutogradeExecutor` for any deployment that grades untrusted student code.
@@ -8,7 +11,7 @@ This setup runs student code with the local autograding executors, which have fu
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.11+
 - [uv](https://docs.astral.sh/uv/) - Python package manager
 - Node.js 20+ (required to build the labextension frontend)
 - Git
@@ -20,7 +23,8 @@ git clone https://github.com/TU-Wien-dataLAB/grader-service.git
 cd grader
 ```
 
-The monorepo contains both packages, so you no longer need to clone the service and labextension repositories separately:
+The monorepo contains both packages, so you no longer need to clone the service and labextension
+repositories separately:
 
 - `packages/service/` - `grader-service` backend
 - `packages/labextension/` - `grader-labextension` JupyterLab extension
@@ -31,17 +35,22 @@ The monorepo contains both packages, so you no longer need to clone the service 
 make sync
 ```
 
-This runs `uv sync --all-packages --all-groups` and creates a single virtual environment with both packages installed in editable mode. Because the repository is configured as a uv workspace, the labextension's dependency on `grader-service` is resolved from the local package (see `tool.uv.sources` in `packages/labextension/pyproject.toml`).
+This runs `uv sync --all-packages --all-groups` and creates a single virtual environment with both
+packages installed in editable mode. Because the repository is configured as a uv workspace, the
+labextension's dependency on `grader-service` is resolved from the local package (see
+`tool.uv.sources` in `packages/labextension/pyproject.toml`).
 
 ## 3. Create the database
 
-The repository ships example configuration files in `dev/local/token/`. Create the database schema by running the migration against the service config:
+The repository ships example configuration files in `dev/local/token/`. Create the database schema
+by running the migration against the service config:
 
 ```bash
 uv run grader-service-migrate -f dev/local/token/grader_service_config.py
 ```
 
-The default config uses an embedded SQLite database and runs autograding tasks eagerly, so no external database or message broker is required for local testing.
+The default config uses an embedded SQLite database and runs autograding tasks eagerly, so no
+external database or message broker is required for local testing.
 
 ## 4. Start Grader Service and JupyterHub
 
@@ -67,7 +76,8 @@ Start the Grader Service **before** JupyterHub.
 
 ## 5. Developing the labextension
 
-The labextension is installed in editable mode, so Python server-extension changes are picked up automatically. The TypeScript frontend, however, must be rebuilt to be visible in JupyterLab.
+The labextension is installed in editable mode, so Python server-extension changes are picked up
+automatically. The TypeScript frontend, however, must be rebuilt to be visible in JupyterLab.
 
 To rebuild the frontend once:
 
@@ -81,9 +91,13 @@ To watch the source directory and rebuild automatically on every change:
 make watch-labextension
 ```
 
-With the watch command running, every saved change is rebuilt and made available in your running JupyterLab after a browser refresh. Note that it may take several seconds for the extension to rebuild. Keep in mind that `make watch-labextension` continues running until you stop it and can consume significant system resources, so `jlpm build` is preferable for one-off changes.
+With the watch command running, every saved change is rebuilt and made available in your running
+JupyterLab after a browser refresh. Note that it may take several seconds for the extension to
+rebuild. Keep in mind that `make watch-labextension` continues running until you stop it and can
+consume significant system resources, so `jlpm build` is preferable for one-off changes.
 
 ## Next steps
 
-- For the full list of development commands (tests, linting, building, docs, Docker Compose), see the [Development Guide](https://github.com/TU-Wien-dataLAB/grader-service/blob/main/DEVELOPMENT.md).
+- For the full list of development commands (tests, linting, building, docs, Docker Compose), see
+  the [Development Guide](https://github.com/TU-Wien-dataLAB/grader-service/blob/main/DEVELOPMENT.md).
 - For a fully containerized local stack, see the [Docker installation guide](../docker).

@@ -2,7 +2,6 @@ import json
 from http import HTTPStatus
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service import orm
@@ -84,7 +83,7 @@ async def test_get_user_unauthorized(
     default_user_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}/"
+    url = service_base_url + f"users/{default_user.id}/"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -103,7 +102,7 @@ async def test_get_user_admin_unknown_parameter(
     default_admin_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}/?abc=123"
+    url = service_base_url + f"users/{default_user.id}/?abc=123"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -161,7 +160,7 @@ async def test_put_user_unauthorized(
     default_user_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}"
+    url = service_base_url + f"users/{default_user.id}"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     with pytest.raises(HTTPClientError) as exc_info:
@@ -184,7 +183,7 @@ async def test_put_user_admin_unknown_parameter(
     default_admin_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}/?abc=123"
+    url = service_base_url + f"users/{default_user.id}/?abc=123"
 
     data = {"name": default_user.name, "display_name": "New Name"}
     with pytest.raises(HTTPClientError) as exc_info:
@@ -207,6 +206,7 @@ async def test_put_user_admin(
     default_admin_login,
     default_user,
     default_admin,
+    sql_alchemy_sessionmaker,
 ):
     url = service_base_url + f"users/{default_user.id}"
 
@@ -260,7 +260,7 @@ async def test_delete_user_unauthorized(
     default_user_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}"
+    url = service_base_url + f"users/{default_user.id}"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -279,7 +279,7 @@ async def test_delete_user_admin_unknown_parameter(
     default_admin_login,
     default_user,
 ):
-    url = service_base_url + f"users/{default_user.name}/?abc=123"
+    url = service_base_url + f"users/{default_user.id}/?abc=123"
 
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -298,7 +298,7 @@ async def test_delete_user_admin(
     default_admin_login,
     default_user,
     default_admin,
-    sql_alchemy_engine,
+    sql_alchemy_sessionmaker,
 ):
     username = default_user.name
     url = service_base_url + f"users/{default_user.id}/"
@@ -308,7 +308,7 @@ async def test_delete_user_admin(
     )
     assert response.code == HTTPStatus.OK
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
+    session = sql_alchemy_sessionmaker()
     old_user = session.query(orm.User).filter(orm.User.name == username).first()
 
     orm.APIToken.new(user=old_user)
@@ -328,7 +328,7 @@ async def test_delete_user_admin(
     l_code = "21wle1"
     a_id = 1
     s_id = 1
-    insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
+    insert_submission(session, a_id, default_user.name, default_user.id)
     create_all_git_repositories(app, default_user, l_code, a_id, s_id)
 
     old_submissions = (

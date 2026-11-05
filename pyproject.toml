@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "Monorepo for Grader Service and Labextension"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 [tool.uv.workspace]
 members = ["packages/service", "packages/labextension"]
@@ -14,11 +14,11 @@ default-groups = ["dev"]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.3.0",
-    "ruff>=0.14.2",
-    "jupyterlab",
-    "jupyter-builder",
-    "tbump",
+    "pre-commit>=4.7.0",
+    "ruff==0.15.22", # 0.16 introduces too many braking changes
+    "jupyterlab>=4.0.0,<5",
+    "jupyter-builder>=1.2.4",
+    "tbump>=6.11.0",
 ]
 docs = [
     "sphinx",

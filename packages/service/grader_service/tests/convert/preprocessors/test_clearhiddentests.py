@@ -47,7 +47,7 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         assert removed_test
         assert cell.source == "something something"
 
-    def test_remove_hidded_test_region_no_end(self, preprocessor):
+    def test_remove_hidden_test_region_no_end(self, preprocessor):
         """Is an error thrown when there is no end hidden test statement?"""
         cell = create_text_cell()
         cell.source = dedent(
