@@ -2,6 +2,7 @@ from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import Integer
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
@@ -17,7 +18,7 @@ class LimitOutput(NbGraderPreprocessor):
     )
 
     def _limit_stream_output(self, cell: NotebookNode) -> NotebookNode:
-        if self.max_lines == -1 or cell.cell_type != "code":
+        if self.max_lines == -1 or cell.cell_type != CellType.CODE:
             return cell
 
         length = 0
@@ -41,7 +42,7 @@ class LimitOutput(NbGraderPreprocessor):
         return cell
 
     def _limit_traceback(self, cell: NotebookNode) -> NotebookNode:
-        if self.max_traceback == -1 or cell.cell_type != "code":
+        if self.max_traceback == -1 or cell.cell_type != CellType.CODE:
             return cell
 
         for output in cell.outputs:

@@ -9,6 +9,7 @@ from traitlets import Bool, Dict, Unicode, observe
 from traitlets.config.loader import Config
 
 from grader_service.convert import utils
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
@@ -82,11 +83,13 @@ class ClearSolutions(NbGraderPreprocessor):
     ).tag(config=True)
 
     def _load_config(self, cfg: Config, **kwargs: Any) -> None:
-        if not isinstance(cfg.ClearSolutions.get("code_stub"), dict):
+        if "code_stub" in cfg.ClearSolutions and not isinstance(
+            cfg.ClearSolutions["code_stub"], dict
+        ):
             self.log.warning(
                 "The ClearSolutions.code_stub option must be a dictionary with keys for the "
-                "language of the notebook. I will automatically convert ClearSolutions.code_stub "
-                "to a dictionary with a key for 'python', but note that this functionality may "
+                "language of the notebook. I will automatically overwrite ClearSolutions.code_stub "
+                "with a dictionary with a key 'python', but note that this functionality may "
                 "be removed in future releases."
             )
             cfg.ClearSolutions.code_stub = {"python": cfg.ClearSolutions.code_stub}
@@ -102,10 +105,10 @@ class ClearSolutions(NbGraderPreprocessor):
         super()._load_config(cfg, **kwargs)
 
     def _replace_solution_region(self, cell: NotebookNode, language: str) -> bool:
-        """Find a region in the cell that is delimeted by
+        """Find a region in the cell that is delimited by
         `self.begin_solution_delimiter` and `self.end_solution_delimiter` (e.g.
         ### BEGIN SOLUTION and ### END SOLUTION). Replace that region either
-        with the code stub or text stub, depending the cell type.
+        with the code stub or text stub, depending on the cell type.
 
         This modifies the cell in place, and then returns True if a
         solution region was replaced, and False otherwise.
@@ -113,7 +116,7 @@ class ClearSolutions(NbGraderPreprocessor):
         """
         # pull out the cell input/source
         lines = cell.source.split("\n")
-        if cell.cell_type == "code":
+        if cell.cell_type == CellType.CODE:
             stub_lines = self.code_stub[language].split("\n")
         else:
             stub_lines = self.text_stub.split("\n")
@@ -194,7 +197,7 @@ class ClearSolutions(NbGraderPreprocessor):
         # we already replaced a solution region, because that means
         # there are parts of the cells that should be preserved
         if is_solution and not replaced_solution:
-            if cell.cell_type == "code":
+            if cell.cell_type == CellType.CODE:
                 cell.source = self.code_stub[language]
             else:
                 cell.source = self.text_stub

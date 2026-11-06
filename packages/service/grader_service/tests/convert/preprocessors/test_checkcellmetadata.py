@@ -3,6 +3,7 @@ import os
 import pytest
 from nbformat.v4 import new_notebook
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.nbgraderformat import ValidationError
 from grader_service.convert.preprocessors import CheckCellMetadata
 
@@ -33,19 +34,19 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
         resources = {"grade_ids": []}
         nb = new_notebook()
 
-        nb.cells = [create_grade_cell("", "code", "", 1)]
+        nb.cells = [create_grade_cell("", CellType.CODE, "", 1)]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_grade_cell("", "code", "a b", 1)]
+        nb.cells = [create_grade_cell("", CellType.CODE, "a b", 1)]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_grade_cell("", "code", 'a"b', 1)]
+        nb.cells = [create_grade_cell("", CellType.CODE, 'a"b', 1)]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_solution_cell("", "code", "abc-ABC_0")]
+        nb.cells = [create_solution_cell("", CellType.CODE, "abc-ABC_0")]
         preprocessor.preprocess(nb, resources)
 
     def test_invalid_solution_cell_id(self, preprocessor):
@@ -53,19 +54,19 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
         resources = {"grade_ids": []}
         nb = new_notebook()
 
-        nb.cells = [create_solution_cell("", "code", "")]
+        nb.cells = [create_solution_cell("", CellType.CODE, "")]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_solution_cell("", "code", "a b")]
+        nb.cells = [create_solution_cell("", CellType.CODE, "a b")]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_solution_cell("", "code", 'a"b')]
+        nb.cells = [create_solution_cell("", CellType.CODE, 'a"b')]
         with pytest.raises(ValidationError):
             preprocessor.preprocess(nb, resources)
 
-        nb.cells = [create_solution_cell("", "code", "abc-ABC_0")]
+        nb.cells = [create_solution_cell("", CellType.CODE, "abc-ABC_0")]
         preprocessor.preprocess(nb, resources)
 
     def test_blank_points(self, preprocessor):

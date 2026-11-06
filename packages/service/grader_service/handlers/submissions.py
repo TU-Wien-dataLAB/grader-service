@@ -401,7 +401,7 @@ class SubmissionHandler(GraderBaseHandler):
                     submission_hash, assignment, username
                 )
             except FileServiceError as e:
-                self.log.exception()
+                self.log.error("Submission %s does not exist: %s", submission_hash, e)
                 raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
 
         submission.assignid = assignment.id

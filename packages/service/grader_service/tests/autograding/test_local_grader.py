@@ -1,7 +1,6 @@
 import copy
 import json
 import os
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -362,7 +361,7 @@ def test_process_executor_run_failure(mock_run, process_executor):
     ]
 
     mock_run.assert_called_once_with(
-        expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
+        expected_command, capture_output=True, cwd=None, text=True, check=False
     )
     assert process_executor.grading_logs == "Error: autograding failed"
 

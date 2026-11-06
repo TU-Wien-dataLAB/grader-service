@@ -19,6 +19,7 @@ from tornado.web import HTTPError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.artifact_types import ArtifactType
+from grader_service.convert.gradebook.models import CellType
 from grader_service.file_services import GitFileService
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
@@ -1548,7 +1549,7 @@ async def test_submission_properties_student(
                 "source_cells_dict": {
                     "cell-1e1d884e2e83e97f": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "6453ffdd62ea1a1eabcf95616174dd88",
                         "id": None,
                         "locked": True,
