@@ -7,7 +7,6 @@
 import copy
 import hashlib
 import os
-from typing import Optional
 
 from kubernetes import config
 from kubernetes.client.models import (
@@ -41,7 +40,7 @@ def generate_hashed_slug(slug, limit=63, hash_length=6):
     """
     Generate a unique name that's within a certain length limit
 
-    Most k8s objects have a 63 char name limit. We wanna be able to compress
+    Most k8s objects have a 63 char name limit. We want to be able to compress
     larger names down to that if required, while still maintaining some
     amount of legibility about what the objects really are.
 
@@ -56,40 +55,37 @@ def generate_hashed_slug(slug, limit=63, hash_length=6):
 
     slug_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
 
-    return "{prefix}-{hash}".format(
-        prefix=slug[: limit - hash_length - 1], hash=slug_hash[:hash_length]
-    ).lower()
+    return f"{slug[: limit - hash_length - 1]}-{slug_hash[:hash_length]}".lower()
 
 
 def update_k8s_model(target, changes, logger=None, target_name=None, changes_name=None):
     """
     Takes a model instance such as V1PodSpec() and updates it with another
     model, which is allowed to be a dict or another model instance of the same
-    type. The logger is used to warn if any truthy value in the target is is
+    type. The logger is used to warn if any truthy value in the target is
     overridden. The target_name parameter can for example be "pod.spec", and
-    changes_name parameter could be "extra_pod_config". These parameters allows
+    changes_name parameter could be "extra_pod_config". These parameters allow
     the logger to write out something more meaningful to the user whenever
     something is about to become overridden.
     """
     model_type = type(target)
     if not hasattr(target, "attribute_map"):
         raise AttributeError(
-            "Attribute 'target' ({}) must be an object (such as 'V1PodSpec') "
-            "with an attribute 'attribute_map'.".format(model_type.__name__)
+            f"Attribute 'target' ({model_type.__name__}) must be an object (such as 'V1PodSpec') "
+            "with an attribute 'attribute_map'."
         )
     if not isinstance(changes, model_type) and not isinstance(changes, dict):
-        raise AttributeError(
-            "Attribute 'changes' ({}) must be an object of the same type "
-            "as 'target' ({}) or a 'dict'.".format(type(changes).__name__, model_type.__name__)
+        raise TypeError(
+            f"Attribute 'changes' ({type(changes).__name__}) must be an object of the same type "
+            f"as 'target' ({model_type.__name__}) or a 'dict'."
         )
 
     changes_dict = _get_k8s_model_dict(model_type, changes)
     for key, value in changes_dict.items():
         if key not in target.attribute_map:
             raise ValueError(
-                "The attribute 'changes' ({}) contained '{}' not modeled by '{}'.".format(
-                    type(changes).__name__, key, model_type.__name__
-                )
+                f"The attribute 'changes' ({type(changes).__name__}) contained '{key}' "
+                f"not modeled by '{model_type.__name__}'."
             )
 
         # If changes are passed as a dict, they will only have a few keys/value
@@ -99,16 +95,12 @@ def update_k8s_model(target, changes, logger=None, target_name=None, changes_nam
         # These default values, which are also falsy,
         # should not use to override the target's values.
         if isinstance(changes, dict) or value:
-            if getattr(target, key):
-                if logger and changes_name:
-                    warning = (
-                        "'{}.{}' current value: '{}' "
-                        "is overridden with '{}', "
-                        "which is the value of '{}.{}'.".format(
-                            target_name, key, getattr(target, key), value, changes_name, key
-                        )
-                    )
-                    logger.warning(warning)
+            if getattr(target, key) and logger and changes_name:
+                warning = (
+                    f"'{target_name}.{key}' current value: '{getattr(target, key)}' "
+                    f"is overridden with '{value}', which is the value of '{changes_name}.{key}'."
+                )
+                logger.warning(warning)
             setattr(target, key, value)
 
     return target
@@ -116,8 +108,8 @@ def update_k8s_model(target, changes, logger=None, target_name=None, changes_nam
 
 def get_k8s_model(model_type, model_dict):
     """
-    Returns an instance of type specified model_type from an model instance or
-    represantative dictionary.
+    Returns an instance of type specified model_type from a model instance or
+    representative dictionary.
     """
     model_dict = copy.deepcopy(model_dict)
 
@@ -129,10 +121,9 @@ def get_k8s_model(model_type, model_dict):
         # use the dictionary keys to initialize a model of given type
         return model_type(**model_dict)
     else:
-        raise AttributeError(
-            "Expected object of type 'dict' (or '{}') but got '{}'.".format(
-                model_type.__name__, type(model_dict).__name__
-            )
+        raise TypeError(
+            f"Expected object of type 'dict' (or '{model_type.__name__}') but got "
+            f"'{type(model_dict).__name__}'."
         )
 
 
@@ -147,10 +138,9 @@ def _get_k8s_model_dict(model_type, model):
     elif isinstance(model, dict):
         return _map_dict_keys_to_model_attributes(model_type, model)
     else:
-        raise AttributeError(
-            "Expected object of type '{}' (or 'dict') but got '{}'.".format(
-                model_type.__name__, type(model).__name__
-            )
+        raise TypeError(
+            f"Expected object of type '{model_type.__name__}' (or 'dict') "
+            f"but got '{type(model).__name__}'."
         )
 
 
@@ -214,10 +204,7 @@ def _get_k8s_model_attribute(model_type, field_name):
     for key, value in model_type.attribute_map.items():
         if value == field_name:
             return key
-    else:
-        raise ValueError(
-            f"'{model_type.__name__}' did not have an attribute matching '{field_name}'"
-        )
+    raise ValueError(f"'{model_type.__name__}' did not have an attribute matching '{field_name}'")
 
 
 def make_pod(
@@ -226,14 +213,14 @@ def make_pod(
     env: list[V1EnvVar],
     image: str,
     image_pull_policy: str,
-    image_pull_secrets: Optional[list] = None,
-    working_dir: Optional[str] = None,
-    volumes: Optional[list] = None,
-    volume_mounts: Optional[list] = None,
-    labels: Optional[dict] = None,
-    annotations: Optional[dict] = None,
-    tolerations: Optional[list] = None,
-    run_as_user: Optional[int] = None,
+    image_pull_secrets: list | None = None,
+    working_dir: str | None = None,
+    volumes: list | None = None,
+    volume_mounts: list | None = None,
+    labels: dict | None = None,
+    annotations: dict | None = None,
+    tolerations: list | None = None,
+    run_as_user: int | None = None,
 ) -> V1Pod:
     """
     Creates a Kubernetes Pod specification (V1Pod) with the given parameters.
@@ -244,7 +231,8 @@ def make_pod(
         env (list[V1EnvVar]): List of env vars to set in the autograde container.
         image (str): The Docker image to use for the pod's container.
         image_pull_policy (str): The image pull policy.
-        image_pull_secrets (Optional[list], default None): List of secrets to pull images from private registries.
+        image_pull_secrets (Optional[list], default None): List of secrets to pull images
+            from private registries.
         working_dir (Optional[str], default None): The working directory for the container.
         volumes (Optional[list], default None): List of volumes to attach to the pod.
         volume_mounts (Optional[list], default None): List of volume mounts for the container.

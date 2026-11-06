@@ -1,6 +1,5 @@
-import typing as t
 from textwrap import dedent
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -41,8 +40,8 @@ class Execute(NbGraderPreprocessor, ExecutePreprocessor):
     ).tag(config=True)
 
     def preprocess(
-        self, nb: NotebookNode, resources: ResourcesDict, retries: Optional[Any] = None
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+        self, nb: NotebookNode, resources: ResourcesDict, retries: Any | None = None
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # This gets added in by the parent execute preprocessor, so if it's already in our
         # extra arguments we need to delete it or traitlets will be unhappy.
         if "--HistoryManager.hist_file=:memory:" in self.extra_arguments:
@@ -51,7 +50,7 @@ class Execute(NbGraderPreprocessor, ExecutePreprocessor):
         if retries is None:
             retries = self.execute_retries
         try:
-            output = super(Execute, self).preprocess(nb, resources)
+            output = super().preprocess(nb, resources)
         except RuntimeError:
             if retries == 0:
                 raise UnresponsiveKernelError()
@@ -61,9 +60,7 @@ class Execute(NbGraderPreprocessor, ExecutePreprocessor):
 
         return output
 
-    async def _async_handle_timeout(
-        self, timeout: int, cell: t.Optional[NotebookNode] = None
-    ) -> None:
+    async def _async_handle_timeout(self, timeout: int, cell: NotebookNode | None = None) -> None:
         await super()._async_handle_timeout(timeout, cell)
 
         error_output = NotebookNode(output_type="error")

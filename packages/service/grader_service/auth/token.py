@@ -45,12 +45,12 @@ class TokenLoginHandler(LoginHandler):
         user = await self.login_user(data)
 
         if user:
-            # create a API token for the user, that he can use to authenticate and return it
+            # create an API token for the user, that he can use to authenticate and return it
             token = APIToken.new(
                 user=user,
                 scopes=["identify"],  # Define the scopes for the token
                 note="User login token",
-                expires_in=os.environ.get("TOKEN_EXPIRES_IN", 1209600),  # Set expiration time
+                expires_in=os.environ.get("TOKEN_EXPIRES_IN", "1209600"),  # 2 weeks
             )
             self.write({"api_token": token})
         else:

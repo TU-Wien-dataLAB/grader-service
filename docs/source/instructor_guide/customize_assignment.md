@@ -17,7 +17,9 @@ Instructors have the ability to customize the grading process using a configurat
        : Normally, solution cells are replaced with `raise NotImplementedError()`. Modify this default behavior like so:
 
          ```python
-         c.ClearSolutions.code_stub = { 'python': "# The stage is yours\nraise NotImplementedError('No Answer Given!')" }
+         c.ClearSolutions.code_stub = {
+             "python": "# The stage is yours\nraise NotImplementedError('No Answer Given!')"
+         }
          ```
      - **Changing Delimiters for Hidden Tests**
        : By default, the grader identifies hidden tests using "BEGIN HIDDEN TESTS" and "END HIDDEN TESTS". You can modify these by setting the following:
@@ -56,9 +58,9 @@ Here is a sample `grader_config.py` template for reference:
 # `code_stub` replaces the content of solution cells with a language-specific code snippet.
 # Instructors can override these placeholders with the code snippets of their choice.
 c.ClearSolutions.code_stub = {
-    'python': "# YOUR CODE HERE\nraise NotImplementedError()",  # Placeholder for Python solution cells
-    'matlab': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
-    'octave': "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
+    "python": "# YOUR CODE HERE\nraise NotImplementedError()",  # Placeholder for Python solution cells
+    "matlab": "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for MATLAB solution cells
+    "octave": "% YOUR CODE HERE\nerror('No Answer Given!')",  # Placeholder for Octave solution cells
     # ... (More languages)
 }
 

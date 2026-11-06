@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Unicode, inspect, or_
 from sqlalchemy.orm import relationship
@@ -89,12 +89,10 @@ class Hashed(Expiring):
     def check_token(cls, db, token):
         """Check if a token is acceptable"""
         if len(token) < cls.min_length:
-            raise ValueError(
-                "Tokens must be at least %i characters, got %r" % (cls.min_length, token)
-            )
+            raise ValueError(f"Tokens must be at least {cls.min_length} characters, got {token}")
         found = cls.find(db, token)
         if found:
-            raise ValueError("Collision on token: %s..." % token[: cls.prefix_length])
+            raise ValueError("Collision on token: {token[: klass.prefix_length]}...")
 
     @classmethod
     def find_prefix(cls, db, token):
@@ -144,7 +142,7 @@ class APIToken(Hashed, Base):
 
     @property
     def api_id(self):
-        return "a%i" % self.id
+        return str(self.id)
 
     @property
     def owner(self):
@@ -166,8 +164,8 @@ class APIToken(Hashed, Base):
     # the browser session id associated with a given token,
     # if issued during oauth to be stored in a cookie
     session_id = Column(Unicode(255), nullable=True)
-    now = datetime.now(timezone.utc)
-    created = Column(DateTime, default=datetime.now(timezone.utc))
+    now = datetime.now(UTC)
+    created = Column(DateTime, default=datetime.now(UTC))
     expires_at = Column(DateTime, default=None, nullable=True)
     last_activity = Column(DateTime)
     note = Column(Unicode(1023))
@@ -176,12 +174,9 @@ class APIToken(Hashed, Base):
     def __repr__(self):
         kind = "user"
         name = self.user.name if self.user else None
-        return "<{cls}('{pre}...', {kind}='{name}', client_id={client_id!r})>".format(
-            cls=self.__class__.__name__,
-            pre=self.prefix,
-            kind=kind,
-            name=name,
-            client_id=self.client_id,
+        return (
+            f"<{self.__class__.__name__}('{self.prefix}...', {kind}='{name}', "
+            f"client_id={self.client_id!r})>"
         )
 
     @classmethod

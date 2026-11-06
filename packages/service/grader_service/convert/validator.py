@@ -1,6 +1,5 @@
 import os
 import sys
-import typing
 from textwrap import dedent, fill
 
 from nbconvert.filters import ansi2html, strip_ansi
@@ -127,9 +126,7 @@ class Validator(LoggingConfigurable):
 
     def _print_type_changed(self, old_type: str, new_type: str, source: str) -> None:
         self.stream.write("\n" + "=" * self.width + "\n")
-        self.stream.write(
-            "The following {} cell has changed to a {} cell:\n\n".format(old_type, new_type)
-        )
+        self.stream.write(f"The following {old_type} cell has changed to a {new_type} cell:\n\n")
         self.stream.write(self._indent(source) + "\n\n")
 
     def _print_changed(self, source):
@@ -185,7 +182,7 @@ class Validator(LoggingConfigurable):
                 fill(self.passed_warning.format(num_passed=num_passed), width=self.width)
             )
 
-    def _get_type_changed_cells(self, nb: NotebookNode) -> typing.List[NotebookNode]:
+    def _get_type_changed_cells(self, nb: NotebookNode) -> list[NotebookNode]:
         changed = []
 
         for cell in nb.cells:
@@ -201,7 +198,7 @@ class Validator(LoggingConfigurable):
 
         return changed
 
-    def _get_changed_cells(self, nb: NotebookNode) -> typing.List:
+    def _get_changed_cells(self, nb: NotebookNode) -> list:
         changed = []
         for cell in nb.cells:
             if not (utils.is_grade(cell) or utils.is_locked(cell)):
@@ -221,7 +218,7 @@ class Validator(LoggingConfigurable):
 
         return changed
 
-    def _get_failed_cells(self, nb: NotebookNode) -> typing.List[NotebookNode]:
+    def _get_failed_cells(self, nb: NotebookNode) -> list[NotebookNode]:
         failed = []
         for cell in nb.cells:
             if not (self.validate_all or utils.is_grade(cell) or utils.is_locked(cell)):
@@ -248,7 +245,7 @@ class Validator(LoggingConfigurable):
 
         return failed
 
-    def _get_passed_cells(self, nb: NotebookNode) -> typing.List[NotebookNode]:
+    def _get_passed_cells(self, nb: NotebookNode) -> list[NotebookNode]:
         passed = []
         for cell in nb.cells:
             if not (utils.is_grade(cell) or utils.is_locked(cell)):
@@ -278,8 +275,8 @@ class Validator(LoggingConfigurable):
                 nb, resources = pp.preprocess(nb, resources)
         return nb
 
-    def validate(self, filename: str) -> typing.Dict[str, typing.List[typing.Dict[str, str]]]:
-        self.log.info("Validating '{}'".format(os.path.abspath(filename)))
+    def validate(self, filename: str) -> dict[str, list[dict[str, str]]]:
+        self.log.info(f"Validating '{os.path.abspath(filename)}'")
         basename = os.path.basename(filename)
         dirname = os.path.dirname(filename)
         with utils.chdir(dirname):

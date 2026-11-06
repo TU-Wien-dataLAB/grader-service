@@ -89,7 +89,7 @@ class LocalAuthenticator(Authenticator):
             try:
                 group = self._getgrnam(grnam)
             except KeyError:
-                self.log.error("No such group: [%s]" % grnam)
+                self.log.error(f"No such group: [{grnam}]")
                 continue
             if username in group.gr_mem:
                 return True
@@ -158,9 +158,9 @@ class LocalAuthenticator(Authenticator):
         cmd = [arg.replace("USERNAME", name) for arg in self.add_user_cmd]
         try:
             uid = self.uids[name]
-            cmd += ["--uid", "%d" % uid]
+            cmd += ["--uid", f"{uid:d}"]
         except KeyError:
-            self.log.debug("No UID for user %s" % name)
+            self.log.debug("No UID for user %s", name)
         cmd += [name]
         self.log.info("Creating user: %s", " ".join(map(shlex.quote, cmd)))
         p = Popen(cmd, stdout=PIPE, stderr=STDOUT)

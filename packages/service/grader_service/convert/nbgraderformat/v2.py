@@ -48,7 +48,7 @@ class MetadataValidatorV2(BaseMetadataValidator):
         return cell
 
     def validate_cell(self, cell: NotebookNode) -> None:
-        super(MetadataValidatorV2, self).validate_cell(cell)
+        super().validate_cell(cell)
 
         if "nbgrader" not in cell.metadata:
             return
@@ -59,45 +59,34 @@ class MetadataValidatorV2(BaseMetadataValidator):
         locked = meta["locked"]
 
         # check if the cell type has changed
-        if "cell_type" in meta:
-            if meta["cell_type"] != cell.cell_type:
-                self.log.warning(
-                    "Cell type has changed from {} to {}!".format(
-                        meta["cell_type"], cell.cell_type
-                    ),
-                    cell,
-                )
+        if "cell_type" in meta and meta["cell_type"] != cell.cell_type:
+            self.log.warning(f"Cell type has changed from {meta['cell_type']} to {cell.cell_type}!")
 
         # check for a valid grade id
         if grade or solution or locked:
             if "grade_id" not in meta:
-                raise ValidationError(
-                    "nbgrader cell does not have a grade_id: {}".format(cell.source)
-                )
+                raise ValidationError(f"nbgrader cell does not have a grade_id: {cell.source}")
             if meta["grade_id"] == "":
                 raise ValidationError("grade_id is empty")
 
         # check for valid points
-        if grade:
-            if "points" not in meta:
-                raise ValidationError(
-                    "nbgrader cell '{}' does not have points".format(meta["grade_id"])
-                )
+        if grade and "points" not in meta:
+            raise ValidationError(f"nbgrader cell '{meta['grade_id']}' does not have points")
 
         # check that markdown cells are grade AND solution (not either/or)
         if cell.cell_type == "markdown" and grade and not solution:
             raise ValidationError(
-                "Markdown grade cell '{}' is not marked as a solution cell".format(meta["grade_id"])
+                f"Markdown grade cell '{meta['grade_id']}' is not marked as a solution cell"
             )
         if cell.cell_type == "markdown" and not grade and solution:
             raise ValidationError(
-                "Markdown solution cell is not marked as a grade cell: {}".format(cell.source)
+                f"Markdown solution cell is not marked as a grade cell: {cell.source}"
             )
 
     def validate_nb(self, nb: NotebookNode) -> None:
-        super(MetadataValidatorV2, self).validate_nb(nb)
+        super().validate_nb(nb)
 
-        ids = set([])
+        ids = set()
         for cell in nb.cells:
             if "nbgrader" not in cell.metadata:
                 continue
@@ -111,7 +100,7 @@ class MetadataValidatorV2(BaseMetadataValidator):
 
             grade_id = cell.metadata["nbgrader"]["grade_id"]
             if grade_id in ids:
-                raise ValidationError("Duplicate grade id: {}".format(grade_id))
+                raise ValidationError(f"Duplicate grade id: {grade_id}")
             ids.add(grade_id)
 
 

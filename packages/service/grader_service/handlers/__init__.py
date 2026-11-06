@@ -22,15 +22,15 @@ from grader_service.handlers import (
 
 __all__ = [
     "assignment",
+    "base_handler",
+    "config",
+    "git",
     "grading",
+    "health",
     "lectures",
     "lti",
-    "submissions",
-    "git",
     "permission",
-    "health",
-    "config",
-    "base_handler",
     "roles",
+    "submissions",
     "users",
 ]

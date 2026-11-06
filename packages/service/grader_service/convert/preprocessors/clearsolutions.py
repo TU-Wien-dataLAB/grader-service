@@ -1,7 +1,7 @@
 import re
 import warnings
 from textwrap import dedent
-from typing import Any, Tuple
+from typing import Any
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
@@ -82,16 +82,14 @@ class ClearSolutions(NbGraderPreprocessor):
     ).tag(config=True)
 
     def _load_config(self, cfg: Config, **kwargs: Any) -> None:
-        if "code_stub" in cfg.ClearSolutions:
-            if not isinstance(cfg.ClearSolutions.code_stub, dict):
-                self.log.warning(
-                    "The ClearSolutions.code_stub option must now be given as a "
-                    "dictionary with keys for the language of the notebook. I will "
-                    "automatically convert ClearSolutions.code_stub to a dictionary "
-                    "with a key for 'python', but note that this functionality may "
-                    "be removed in future releases."
-                )
-                cfg.ClearSolutions.code_stub = dict(python=cfg.ClearSolutions.code_stub)
+        if not isinstance(cfg.ClearSolutions.get("code_stub"), dict):
+            self.log.warning(
+                "The ClearSolutions.code_stub option must be a dictionary with keys for the "
+                "language of the notebook. I will automatically convert ClearSolutions.code_stub "
+                "to a dictionary with a key for 'python', but note that this functionality may "
+                "be removed in future releases."
+            )
+            cfg.ClearSolutions.code_stub = {"python": cfg.ClearSolutions.code_stub}
 
         if "comment_mark" in cfg.ClearSolutions:
             self.log.warning(
@@ -101,7 +99,7 @@ class ClearSolutions(NbGraderPreprocessor):
             )
             del cfg.ClearSolutions.comment_mark
 
-        super(ClearSolutions, self)._load_config(cfg, **kwargs)
+        super()._load_config(cfg, **kwargs)
 
     def _replace_solution_region(self, cell: NotebookNode, language: str) -> bool:
         """Find a region in the cell that is delimeted by
@@ -149,7 +147,7 @@ class ClearSolutions(NbGraderPreprocessor):
                 new_lines.append(line)
 
         # we finished going through all the lines, but didn't find a
-        # matching END SOLUTION statment
+        # matching END SOLUTION statement
         if in_solution:
             raise RuntimeError("no end solution statement found")
 
@@ -160,22 +158,22 @@ class ClearSolutions(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         language = nb.metadata.get("kernelspec", {}).get("language", "python")
         if language not in self.code_stub:
             raise ValueError(
-                "language '{}' has not been specified in ClearSolutions.code_stub".format(language)
+                f"language '{language}' has not been specified in ClearSolutions.code_stub"
             )
 
         resources["language"] = language
-        nb, resources = super(ClearSolutions, self).preprocess(nb, resources)
+        nb, resources = super().preprocess(nb, resources)
         if "celltoolbar" in nb.metadata:
             del nb.metadata["celltoolbar"]
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # replace solution regions with the relevant stubs
         language = resources["language"]
         replaced_solution = self._replace_solution_region(cell, language)
@@ -186,12 +184,11 @@ class ClearSolutions(NbGraderPreprocessor):
         # check that it is marked as a solution cell if we replaced a solution
         # region -- if it's not, then this is a problem, because the cell needs
         # to be given an id
-        if not is_solution and replaced_solution:
-            if self.enforce_metadata:
-                raise RuntimeError(
-                    "Solution region detected in a non-solution cell; please make sure "
-                    "all solution regions are within solution cells."
-                )
+        if not is_solution and replaced_solution and self.enforce_metadata:
+            raise RuntimeError(
+                "Solution region detected in a non-solution cell; please make sure "
+                "all solution regions are within solution cells."
+            )
 
         # replace solution cells with the code/text stub -- but not if
         # we already replaced a solution region, because that means

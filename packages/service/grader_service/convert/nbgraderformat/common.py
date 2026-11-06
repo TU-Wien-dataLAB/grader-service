@@ -11,7 +11,7 @@ root = os.path.dirname(__file__)
 
 class SchemaMismatchError(Exception):
     def __init__(self, message, actual_version, expected_version):
-        super(SchemaMismatchError, self).__init__(message)
+        super().__init__(message)
         self.actual_version = actual_version
         self.expected_version = expected_version
 
@@ -26,7 +26,7 @@ class SchemaTooNewError(SchemaMismatchError):
 
 class BaseMetadataValidator(LoggingConfigurable):
     def __init__(self) -> None:
-        with open(os.path.join(root, "v{:d}.json".format(self.schema_version)), "r") as fh:
+        with open(os.path.join(root, f"v{self.schema_version:d}.json"), "r") as fh:
             self.schema = json.loads(fh.read())
 
     def _remove_extra_keys(self, cell: NotebookNode) -> None:
@@ -34,9 +34,7 @@ class BaseMetadataValidator(LoggingConfigurable):
         allowed = set(self.schema["properties"].keys())
         keys = set(meta.keys()) - allowed
         if len(keys) > 0:
-            self.log.warning(
-                "extra keys detected in metadata, these will be removed: {}".format(keys)
-            )
+            self.log.warning(f"extra keys detected in metadata, these will be removed: {keys}")
             for key in keys:
                 del meta[key]
 
@@ -54,13 +52,13 @@ class BaseMetadataValidator(LoggingConfigurable):
         schema = cell.metadata["nbgrader"].get("schema_version", 0)
         if schema < self.schema_version:
             raise SchemaTooOldError(
-                "Outdated schema version: {} (expected {})".format(schema, self.schema_version),
+                f"Outdated schema version: {schema} (expected {self.schema_version})",
                 schema,
                 self.schema_version,
             )
         elif schema > self.schema_version:
             raise SchemaTooNewError(
-                "Schema version is too new: {} (expected {})".format(schema, self.schema_version),
+                f"Schema version is too new: {schema} (expected {self.schema_version})",
                 schema,
                 self.schema_version,
             )

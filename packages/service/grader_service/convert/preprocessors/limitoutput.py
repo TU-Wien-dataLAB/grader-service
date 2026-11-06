@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import Integer
@@ -47,20 +45,19 @@ class LimitOutput(NbGraderPreprocessor):
             return cell
 
         for output in cell.outputs:
-            if output.output_type == "error":
-                if len(output.traceback) > self.max_traceback:
-                    start = int(self.max_traceback / 2)
-                    end = self.max_traceback - start - 1
-                    tb = output.traceback[:start]
-                    tb.append("... Traceback truncated ...")
-                    tb.extend(output.traceback[-end:])
-                    output.traceback = tb
+            if output.output_type == "error" and len(output.traceback) > self.max_traceback:
+                start = int(self.max_traceback / 2)
+                end = self.max_traceback - start - 1
+                tb = output.traceback[:start]
+                tb.append("... Traceback truncated ...")
+                tb.extend(output.traceback[-end:])
+                output.traceback = tb
 
         return cell
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         cell = self._limit_stream_output(cell)
         cell = self._limit_traceback(cell)
         return cell, resources

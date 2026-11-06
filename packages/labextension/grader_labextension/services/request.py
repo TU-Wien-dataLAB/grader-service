@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from typing import Callable, Dict, Optional, Union
+from collections.abc import Callable
 from urllib.parse import ParseResultBytes, quote_plus, urlencode, urlparse
 
 from grader_service.errors import APIError
@@ -60,16 +60,16 @@ class RequestService(SingletonConfigurable):
         self,
         method: str,
         endpoint: str,
-        body: Union[dict, str] = None,
-        header: Dict[str, str] = None,
+        body: dict | str | None = None,
+        header: dict[str, str] | None = None,
         decode_response: bool = True,
-        request_timeout: float = None,
-        connect_timeout: float = None,
-        max_retries: int = None,
+        request_timeout: float | None = None,
+        connect_timeout: float | None = None,
+        max_retries: int | None = None,
         retry_delay: float = 1.0,  # Initial retry delay in seconds
         backoff_factor: float = 2.0,  # Factor to increase delay between retries
-        response_callback: Optional[Callable[[HTTPResponse], None]] = None,
-    ) -> Union[dict, list, HTTPResponse]:
+        response_callback: Callable[[HTTPResponse], None] | None = None,
+    ) -> dict | list | str | HTTPResponse:
         """
         Make an HTTP request with retry logic for transient errors.
         """
@@ -109,13 +109,13 @@ class RequestService(SingletonConfigurable):
         self,
         method: str,
         endpoint: str,
-        body: Union[dict, str] = None,
-        header: Dict[str, str] = None,
+        body: dict | str | None = None,
+        header: dict[str, str] | None = None,
         decode_response: bool = True,
-        request_timeout: float = None,
-        connect_timeout: float = None,
-        response_callback: Optional[Callable[[HTTPResponse], None]] = None,
-    ) -> Union[dict, list, HTTPResponse]:
+        request_timeout: float | None = None,
+        connect_timeout: float | None = None,
+        response_callback: Callable[[HTTPResponse], None] | None = None,
+    ) -> dict | list | str | HTTPResponse:
         """
         Core request function that handles the HTTP call.
         """
@@ -186,12 +186,12 @@ class RequestService(SingletonConfigurable):
             )
 
         except Exception as e:
-            self.log.error(f"Unexpected error: {e}")
+            self.log.exception("Unexpected error when handling a request")
             raise RequestServiceError(
-                500, "Internal Server Error", f"An unexpected error occurred: {str(e)}"
+                500, "Internal Server Error", f"An unexpected error occurred: {e!s}"
             )
 
-    def prepare_headers(self, header: Dict[str, str] = None) -> Dict[str, str]:
+    def prepare_headers(self, header: dict[str, str] | None = None) -> dict[str, str]:
         """
         Prepares headers by adding service cookie or authorization if available.
         """

@@ -3,7 +3,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import json
-from typing import Awaitable, Optional
+from collections.abc import Awaitable
 from unittest import mock
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
@@ -116,18 +116,14 @@ class OAuthHandler:
 class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
     """Implement OAuth authorization endpoint(s)"""
 
-    def prepare(self) -> Optional[Awaitable[None]]:
+    def prepare(self) -> Awaitable[None] | None:
         return super().prepare()
 
     def _complete_login(self, uri, headers, scopes, credentials):
-        try:
-            headers, body, status = self.application.oauth_provider.create_authorization_response(
-                uri, "POST", "", headers, scopes, credentials
-            )
-
-        except oauth2.FatalClientError:
-            # TODO: human error page
-            raise
+        # TODO: human error page in case of oauth2.FatalClientError in the line below
+        headers, body, status = self.application.oauth_provider.create_authorization_response(
+            uri, "POST", "", headers, scopes, credentials
+        )
         self.send_oauth_response(headers, body, status)
 
     def needs_oauth_confirm(self, user, oauth_client, requested_scopes):
@@ -201,7 +197,7 @@ class OAuthAuthorizeHandler(OAuthHandler, BaseHandler):
                 self.current_user,
                 create=True,
             ):
-                (requested_scopes, credentials) = (
+                (_requested_scopes, credentials) = (
                     self.oauth_provider.validate_authorization_request(
                         uri, http_method, body, headers
                     )

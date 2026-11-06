@@ -123,7 +123,8 @@ def test_read():
 def test_reads():
     currdir = os.path.split(__file__)[0]
     path = os.path.join(currdir, "files", "test-v2.ipynb")
-    contents = open(path, "r").read()
+    with open(path, "r") as f:
+        contents = f.read()
     reads_v2(contents, current_nbformat)
 
 

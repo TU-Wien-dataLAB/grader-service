@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import os
 import shutil
 import tempfile
@@ -64,43 +62,43 @@ def test_is_solution():
 def test_is_locked():
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=True, grade=False, locked=False)
+    cell.metadata["nbgrader"] = {"solution": True, "grade": False, "locked": False}
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=True, grade=True, locked=False)
+    cell.metadata["nbgrader"] = {"solution": True, "grade": True, "locked": False}
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=True, grade=False, locked=True)
+    cell.metadata["nbgrader"] = {"solution": True, "grade": False, "locked": True}
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=True, grade=True, locked=True)
+    cell.metadata["nbgrader"] = {"solution": True, "grade": True, "locked": True}
     assert not utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=False, grade=True, locked=False)
+    cell.metadata["nbgrader"] = {"solution": False, "grade": True, "locked": False}
     assert utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=False, grade=True, locked=True)
+    cell.metadata["nbgrader"] = {"solution": False, "grade": True, "locked": True}
     assert utils.is_locked(cell)
 
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=False, grade=False, locked=True)
+    cell.metadata["nbgrader"] = {"solution": False, "grade": False, "locked": True}
     assert utils.is_locked(cell)
 
     assert utils.is_locked(cell)
     cell = create_code_cell()
     assert not utils.is_locked(cell)
-    cell.metadata["nbgrader"] = dict(solution=False, grade=False, locked=False)
+    cell.metadata["nbgrader"] = {"solution": False, "grade": False, "locked": False}
     assert not utils.is_locked(cell)
 
 

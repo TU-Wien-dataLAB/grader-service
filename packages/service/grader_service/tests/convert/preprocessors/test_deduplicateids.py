@@ -20,7 +20,7 @@ class TestDeduplicateIds(BaseTestPreprocessor):
         nb.cells.append(cell1)
         nb.cells.append(cell2)
 
-        nb, resources = preprocessor.preprocess(nb, {})
+        nb, _resources = preprocessor.preprocess(nb, {})
 
         assert nb.cells[0].metadata != {}
         assert nb.cells[1].metadata == {}
@@ -32,7 +32,7 @@ class TestDeduplicateIds(BaseTestPreprocessor):
         nb.cells.append(cell1)
         nb.cells.append(cell2)
 
-        nb, resources = preprocessor.preprocess(nb, {})
+        nb, _resources = preprocessor.preprocess(nb, {})
 
         assert nb.cells[0].metadata != {}
         assert nb.cells[1].metadata == {}
@@ -44,7 +44,7 @@ class TestDeduplicateIds(BaseTestPreprocessor):
         nb.cells.append(cell1)
         nb.cells.append(cell2)
 
-        nb, resources = preprocessor.preprocess(nb, {})
+        nb, _resources = preprocessor.preprocess(nb, {})
 
         assert nb.cells[0].metadata != {}
         assert nb.cells[1].metadata == {}

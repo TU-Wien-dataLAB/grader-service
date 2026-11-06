@@ -1,6 +1,6 @@
 """HTTP Handlers for the hub server"""
 
-from typing import Awaitable, Optional
+from collections.abc import Awaitable
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
@@ -83,7 +83,7 @@ class LoginHandler(BaseHandler):
         ).render(**context)
         return self.render_template("auth/login.html.j2", **context, custom_html=custom_html)
 
-    async def prepare(self) -> Optional[Awaitable[None]]:
+    async def prepare(self) -> Awaitable[None] | None:
         await super().prepare()
         return
 

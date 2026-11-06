@@ -9,8 +9,8 @@ import shlex
 import shutil
 import subprocess
 from datetime import datetime
+from logging import Logger
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from grader_service.artifact_types import ArtifactType
@@ -54,14 +54,14 @@ class GitService(Configurable):
         assignment_id: int,
         artifact_type: ArtifactType,
         force_user_artifact: bool = False,
-        sub_id: Optional[int] = None,
-        username: Optional[str] = None,
-        log=logging.getLogger("gitservice"),
+        sub_id: int | None = None,
+        username: str | None = None,
+        log: Logger | None = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.log = log
+        self.log = log or logging.getLogger("gitservice")
         self.git_root_dir = server_root_dir
         self.lecture_code = lecture_code
         self.assignment_id = assignment_id
@@ -73,7 +73,7 @@ class GitService(Configurable):
         self._initialize_git_logging()
 
     def _determine_repo_path(
-        self, force_user_artifact: bool, sub_id: Optional[int], username: Optional[str]
+        self, force_user_artifact: bool, sub_id: int | None, username: str | None
     ) -> str:
         """Determine the path for the git repository based on the type."""
         if self.artifact_type == ArtifactType.USER or force_user_artifact:
@@ -108,7 +108,7 @@ class GitService(Configurable):
         self.git_http_scheme, self.git_remote_url = self._parse_git_service_url()
         self.log.info(f"git_service_url: {self.git_service_url}")
 
-    def _parse_git_service_url(self) -> Tuple[str, str]:
+    def _parse_git_service_url(self) -> tuple[str, str]:
         """Parse the git service URL into scheme and remote URL."""
         url_parsed = urlparse(self.git_service_url)
         return url_parsed.scheme, f"{url_parsed.netloc}{url_parsed.path}"
@@ -269,7 +269,7 @@ class GitService(Configurable):
                     self.log.info(f"Deleted {os.path.join(root, d)} from {self.git_root_dir}")
 
     # Note: dirs_exist_ok was only added in Python 3.8
-    def copy_repo_contents(self, src: str, selected_files: List[str] = None):
+    def copy_repo_contents(self, src: str, selected_files: list[str] | None = None):
         """copies repo contents from src to the git path
 
         Args:
@@ -327,7 +327,7 @@ class GitService(Configurable):
 
     def git_status(
         self, hidden_files: bool = False
-    ) -> Tuple[List[str], List[str], List[str], List[str]]:
+    ) -> tuple[list[str], list[str], list[str], list[str]]:
         files = self._run_command("git status --porcelain", cwd=self.path)
         untracked, added, modified, deleted = [], [], [], []
         for line in files.splitlines():
@@ -374,7 +374,7 @@ class GitService(Configurable):
             return False
         return True
 
-    def get_log(self, history_count: int = 10) -> List[Dict[str, str]]:
+    def get_log(self, history_count: int = 10) -> list[dict[str, str]]:
         """
         Execute git log command & return the result.
         """
@@ -418,12 +418,12 @@ class GitService(Configurable):
             try:
                 version = self._run_command("git --version", cwd=self.path)
             except GitError:
-                return tuple()
+                return ()
             version = version.split(" ")[2]
             self._git_version = tuple([int(v) for v in version.split(".")])
         return self._git_version
 
-    def commit(self, message: str = str(datetime.now()), selected_files: List[str] = None):
+    def commit(self, message: str | None = None, selected_files: list[str] | None = None):
         """Commit staged changes.
 
         Args:
@@ -436,10 +436,12 @@ class GitService(Configurable):
         else:
             self._run_command("git add .", cwd=self.path)
 
+        if message is None:
+            message = str(datetime.now())
         self.log.info(f"Committing changes with message: {message}")
         self._run_command(f'git commit --allow-empty -m "{message}"', cwd=self.path)
 
-    def _run_command(self, command: str, cwd: str) -> Union[str, None]:
+    def _run_command(self, command: str, cwd: str) -> str | None:
         """Run a shell command and return the output.
 
         Args:
