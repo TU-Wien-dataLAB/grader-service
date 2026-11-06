@@ -7,6 +7,7 @@ from traitlets import Bool, Unicode
 
 from grader_service.convert import utils
 from grader_service.convert.gradebook.gradebook import Gradebook, MissingEntry
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.nbgraderformat import MetadataValidator
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
@@ -77,7 +78,7 @@ class OverwriteCells(NbGraderPreprocessor):
         }
 
         # Code cell format is slightly different
-        if cell["cell_type"] == "code":
+        if cell["cell_type"] == CellType.CODE:
             cell["execution_count"] = None
             cell["outputs"] = []
             cell["source"] = "# " + cell["source"]  # make the notification we add a comment
@@ -220,13 +221,13 @@ class OverwriteCells(NbGraderPreprocessor):
     def update_cell_type(self, cell: NotebookNode, cell_type: str) -> None:
         if cell.cell_type == cell_type:
             return
-        elif cell_type == "code":
-            cell.cell_type = "code"
+        elif cell_type == CellType.CODE:
+            cell.cell_type = CellType.CODE
             cell.outputs = []
             cell.execution_count = None
 
-        elif cell_type == "markdown":
-            cell.cell_type = "markdown"
+        elif cell_type == CellType.MARKDOWN:
+            cell.cell_type = CellType.MARKDOWN
             if "outputs" in cell:
                 del cell["outputs"]
             if "execution_count" in cell:

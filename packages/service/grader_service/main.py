@@ -524,7 +524,7 @@ class GraderService(config.Application):
             # Keep the event loop alive until the app is shut down
             await self._shutdown_event.wait()
         except Exception:
-            self.log.exception()
+            self.log.exception("Application start failed!")
             self.exit(1)
 
     @classmethod

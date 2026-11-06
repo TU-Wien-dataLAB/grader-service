@@ -7,6 +7,7 @@ from nbformat import writes as _writes
 from nbformat.notebooknode import NotebookNode
 
 from .. import utils
+from ..gradebook.models import CellType
 from .common import BaseMetadataValidator, ValidationError
 from .v1 import MetadataValidatorV1
 from .v2 import MetadataValidatorV2
@@ -61,9 +62,7 @@ class MetadataValidatorV3(BaseMetadataValidator):
 
         # check if the cell type has changed
         if "cell_type" in meta and meta["cell_type"] != cell.cell_type:
-            self.log.warning(
-                "Cell type has changed from %s to %s!", meta["cell_type"], cell.cell_type
-            )
+            self.log.warning(f"Cell type has changed from {meta['cell_type']} to {cell.cell_type}!")
 
         # check for a valid grade id
         if grade or solution or locked:
@@ -78,16 +77,16 @@ class MetadataValidatorV3(BaseMetadataValidator):
 
         # check that markdown cells are grade AND solution (not either/or)
         if not task:
-            if cell.cell_type == "markdown" and grade and not solution:
+            if cell.cell_type == CellType.MARKDOWN and grade and not solution:
                 raise ValidationError(
                     f"Markdown grade cell '{meta['grade_id']}' is not marked as a solution cell"
                 )
-            if cell.cell_type == "markdown" and not grade and solution:
+            if cell.cell_type == CellType.MARKDOWN and not grade and solution:
                 raise ValidationError(
                     f"Markdown solution cell is not marked as a grade cell: {cell.source}"
                 )
         else:
-            if cell.cell_type != "markdown":
+            if cell.cell_type != CellType.MARKDOWN:
                 raise ValidationError(f"Task cells have to be markdown: {cell.source}")
 
     def validate_nb(self, nb: NotebookNode) -> None:

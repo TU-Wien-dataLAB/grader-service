@@ -14,6 +14,7 @@ from tornado.httpclient import HTTPClientError
 from grader_service.api.models.assignment import Assignment
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.artifact_types import ArtifactType
+from grader_service.convert.gradebook.models import CellType
 from grader_service.orm import Assignment as AssignmentORM
 from grader_service.orm import Submission as SubmissionORM
 from grader_service.server import GraderServer
@@ -1266,7 +1267,8 @@ async def test_assignment_reset_student(
     assert stdout.decode().strip("\n'") == "Reset Assignment"
 
     # Make sure the content of the file has been rest to the original release version
-    await asyncio.create_subprocess_exec("git", "pull", cwd=local_repo_path)
+    res = await asyncio.create_subprocess_exec("git", "pull", cwd=local_repo_path)
+    await res.communicate()
     assert local_repo_path / "submission.ipynb"
     res = await asyncio.create_subprocess_exec(
         "cat",
@@ -1516,7 +1518,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                 "grade_cells_dict": {
                     "cell-81540a070d18c412": {
                         "_type": "GradeCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1526,7 +1528,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "GradeCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1536,7 +1538,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "GradeCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1570,7 +1572,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                 "source_cells_dict": {
                     "cell-1b9d18df2b17e57f": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "92c710dde448a453c67a457a1a516266",
                         "id": None,
                         "locked": None,
@@ -1580,7 +1582,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-26053a7da067ded3": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "341dd0694041ff4b5666c5ae94083cb4",
                         "id": None,
                         "locked": True,
@@ -1590,7 +1592,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-28df1799f8f8b769": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "bd34afadfba8f9e585d1245ca8d75beb",
                         "id": None,
                         "locked": False,
@@ -1600,7 +1602,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-58d7f9f371feee54": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "378450bc4a5678dafbcd41aa17baa337",
                         "id": None,
                         "locked": True,
@@ -1610,7 +1612,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-81540a070d18c412": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "efff0d4fdfcbd070c4a9afa0afc914dc",
                         "id": None,
                         "locked": True,
@@ -1620,7 +1622,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "cbcb81d7877ddde960682872f59d9578",
                         "id": None,
                         "locked": False,
@@ -1630,7 +1632,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-c06c761f0b7b0f59": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "4ce43bbad8e68a85ba3a7594ea9a41be",
                         "id": None,
                         "locked": True,
@@ -1640,7 +1642,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "5e838f105bec52e51e488e029e4727fd",
                         "id": None,
                         "locked": True,
@@ -1652,7 +1654,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
                 "task_cells_dict": {
                     "cell-58d7f9f371feee54": {
                         "_type": "TaskCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1712,7 +1714,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                 "grade_cells_dict": {
                     "cell-81540a070d18c412": {
                         "_type": "GradeCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1722,7 +1724,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "GradeCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1732,7 +1734,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "GradeCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "comment_id": None,
                         "grade_id": None,
                         "id": None,
@@ -1766,7 +1768,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                 "source_cells_dict": {
                     "cell-1b9d18df2b17e57f": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "92c710dde448a453c67a457a1a516266",
                         "id": None,
                         "locked": None,
@@ -1776,7 +1778,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-26053a7da067ded3": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "341dd0694041ff4b5666c5ae94083cb4",
                         "id": None,
                         "locked": True,
@@ -1786,7 +1788,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-28df1799f8f8b769": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "bd34afadfba8f9e585d1245ca8d75beb",
                         "id": None,
                         "locked": False,
@@ -1796,7 +1798,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-81540a070d18c412": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "efff0d4fdfcbd070c4a9afa0afc914dc",
                         "id": None,
                         "locked": True,
@@ -1806,7 +1808,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-9ea0264ada6c25bd": {
                         "_type": "SourceCell",
-                        "cell_type": "markdown",
+                        "cell_type": CellType.MARKDOWN,
                         "checksum": "cbcb81d7877ddde960682872f59d9578",
                         "id": None,
                         "locked": False,
@@ -1816,7 +1818,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-c06c761f0b7b0f59": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "4ce43bbad8e68a85ba3a7594ea9a41be",
                         "id": None,
                         "locked": True,
@@ -1826,7 +1828,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
                     },
                     "cell-da8c82e850a1922b": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "5e838f105bec52e51e488e029e4727fd",
                         "id": None,
                         "locked": True,

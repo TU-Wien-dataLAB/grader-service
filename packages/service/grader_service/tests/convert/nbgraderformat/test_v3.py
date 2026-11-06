@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import tempfile
-import unittest
+from unittest.mock import patch
 
 import pytest
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v3 import (
     MetadataValidatorV3,
@@ -27,7 +28,7 @@ from .. import (
 
 
 def test_set_false():
-    cell = create_grade_cell("", "code", "foo", 2, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 2, 0)
     del cell.metadata.nbgrader["solution"]
     del cell.metadata.nbgrader["locked"]
 
@@ -35,7 +36,7 @@ def test_set_false():
     assert not cell.metadata.nbgrader["solution"]
     assert not cell.metadata.nbgrader["locked"]
 
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     del cell.metadata.nbgrader["grade"]
     del cell.metadata.nbgrader["locked"]
 
@@ -45,7 +46,7 @@ def test_set_false():
 
 
 def test_remove_metadata():
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     cell.metadata.nbgrader["solution"] = False
 
     MetadataValidatorV3().upgrade_cell_metadata(cell)
@@ -53,7 +54,7 @@ def test_remove_metadata():
 
 
 def test_remove_points():
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     cell.metadata.nbgrader["points"] = 2
 
     MetadataValidatorV3().upgrade_cell_metadata(cell)
@@ -61,82 +62,82 @@ def test_remove_points():
 
 
 def test_set_points():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
-    cell = create_grade_cell("", "code", "foo", "1.5", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "1.5", 0)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 1.5
 
-    cell = create_grade_cell("", "code", "foo", 1, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 1, 0)
     del cell.metadata.nbgrader["points"]
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
-    cell = create_grade_cell("", "code", "foo", -1, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", -1, 0)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
 
 def test_extra_keys():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     cell.metadata.nbgrader["foo"] = "bar"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert "foo" not in cell.metadata.nbgrader
 
-    cell = create_grade_cell("", "code", "foo", "", 1)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 1)
     cell.metadata.nbgrader["foo"] = "bar"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert "foo" not in cell.metadata.nbgrader
 
-    cell = create_grade_cell("", "code", "foo", "", 2)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 2)
     cell.metadata.nbgrader["foo"] = "bar"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert "foo" not in cell.metadata.nbgrader
 
 
 def test_schema_version():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     del cell.metadata.nbgrader["schema_version"]
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["schema_version"] == 3
 
 
 def test_cell_type():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
     assert "cell_type" not in cell.metadata.nbgrader
 
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader["cell_type"] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == CellType.CODE
 
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
-    cell.metadata.nbgrader["cell_type"] = "markdown"
+    cell.metadata.nbgrader["cell_type"] = CellType.MARKDOWN
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader["cell_type"] == "markdown"
+    assert cell.metadata.nbgrader["cell_type"] == CellType.MARKDOWN
 
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     cell.metadata.nbgrader["checksum"] = "abcd"
-    cell.metadata.nbgrader["cell_type"] = "code"
+    cell.metadata.nbgrader["cell_type"] = CellType.CODE
     MetadataValidatorV3().upgrade_cell_metadata(cell)
-    assert cell.metadata.nbgrader["cell_type"] == "code"
+    assert cell.metadata.nbgrader["cell_type"] == CellType.CODE
 
 
 def test_task_value():
-    cell = create_task_cell("this is a task cell", "markdown", "foo", 0)
+    cell = create_task_cell("this is a task cell", CellType.MARKDOWN, "foo", 0)
     assert cell.metadata.nbgrader["task"]
 
-    cell = create_grade_cell("", "code", "foo", "")
+    cell = create_grade_cell("", CellType.CODE, "foo", "")
     assert not cell.metadata.nbgrader["task"]
 
-    cell = create_grade_cell("", "code", "foo", "")
+    cell = create_grade_cell("", CellType.CODE, "foo", "")
     assert not cell.metadata.nbgrader["task"]
 
-    cell = create_solution_cell("", "code", "foo")
+    cell = create_solution_cell("", CellType.CODE, "foo")
     assert not cell.metadata.nbgrader["task"]
 
 
@@ -193,17 +194,17 @@ def test_upgrade_notebook_metadata():
     path = os.path.join(currdir, "files", "test-v0.ipynb")
     with open(path, "r") as fh:
         nb = read(fh, current_nbformat)
-    nb = MetadataValidatorV3().upgrade_notebook_metadata(nb)
+    MetadataValidatorV3().upgrade_notebook_metadata(nb)
 
 
 def test_upgrade_cell_metadata():
-    cell = create_grade_cell("", "code", "foo", 5, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 0)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
 
-    cell = create_grade_cell("", "code", "foo", 5, 3)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 3)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
 
-    cell = create_grade_cell("", "code", "foo", 5, 4)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 4)
     MetadataValidatorV3().upgrade_cell_metadata(cell)
 
 
@@ -216,12 +217,12 @@ def test_regular_cells():
     validator.upgrade_cell_metadata(cell)
 
     # code cell with metadata, but not an nbgrader cell
-    cell = create_regular_cell("", "code", schema_version=3)
+    cell = create_regular_cell("", CellType.CODE, schema_version=3)
     validator.validate_cell(cell)
 
     nb = new_notebook()
     cell1 = create_code_cell()
-    cell2 = create_regular_cell("", "code", schema_version=3)
+    cell2 = create_regular_cell("", CellType.CODE, schema_version=3)
     nb.cells = [cell1, cell2]
     validator.validate_nb(nb)
 
@@ -230,41 +231,41 @@ def test_invalid_metadata():
     validator = MetadataValidatorV3()
 
     # make sure the default cell works ok
-    cell = create_grade_cell("", "code", "foo", 5, 3)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 3)
     validator.validate_cell(cell)
 
     # missing grade_id -> ignored
-    cell = create_grade_cell("", "code", "foo", 5, 3)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 3)
     del cell.metadata.nbgrader["grade_id"]
 
     # grade_id is empty
-    cell = create_grade_cell("", "code", "", 5, 3)
+    cell = create_grade_cell("", CellType.CODE, "", 5, 3)
     del cell.metadata.nbgrader["task"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # missing points
-    cell = create_grade_cell("", "code", "foo", 5, 3)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 3)
     del cell.metadata.nbgrader["points"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # markdown grade cell not marked as a solution cell
-    cell = create_grade_cell("", "markdown", "foo", 5, 3)
+    cell = create_grade_cell("", CellType.MARKDOWN, "foo", 5, 3)
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # markdown solution cell not marked as a grade cell
-    cell = create_solution_cell("", "markdown", "foo", 3)
+    cell = create_solution_cell("", CellType.MARKDOWN, "foo", 3)
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # task cell shouldn't be a code cell
-    cell = create_task_cell("", "markdown", "foo", 5, 3)
+    cell = create_task_cell("", CellType.MARKDOWN, "foo", 5, 3)
     validator.validate_cell(cell)
 
     # task cell shouldn't be able to be a code cell
-    cell = create_task_cell("", "code", "foo", 5, 3)
+    cell = create_task_cell("", CellType.CODE, "foo", 5, 3)
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
@@ -272,23 +273,24 @@ def test_invalid_metadata():
 def test_duplicate_cells():
     validator = MetadataValidatorV3()
     nb = new_notebook()
-    cell1 = create_grade_cell("", "code", "foo", 5, 3)
-    cell2 = create_grade_cell("", "code", "foo", 5, 3)
+    cell1 = create_grade_cell("", CellType.CODE, "foo", 5, 3)
+    cell2 = create_grade_cell("", CellType.CODE, "foo", 5, 3)
     nb.cells = [cell1, cell2]
     with pytest.raises(ValidationError):
         validator.validate_nb(nb)
 
 
-def test_celltype_changed():
-    cell = create_solution_cell("", "code", "foo", 3)
-    cell.metadata.nbgrader["cell_type"] = "code"
+def test_celltype_changed(caplog):
+    cell = create_solution_cell("", CellType.CODE, "foo", 3)
+    cell.metadata.nbgrader["cell_type"] = CellType.CODE
     logger = logging.getLogger("traitlets")
-    with unittest.mock.patch.object(logger, "warning") as mock_warning:
+    with patch.object(logger, "warning") as mock_warning:
         MetadataValidatorV3().validate_cell(cell)
         mock_warning.assert_not_called()
 
-    cell = create_solution_cell("", "code", "foo", 3)
-    cell.metadata.nbgrader["cell_type"] = "markdown"
-    with unittest.mock.patch.object(logger, "warning") as mock_warning:
+    cell = create_solution_cell("", CellType.CODE, "foo", 3)
+    cell.metadata.nbgrader["cell_type"] = CellType.MARKDOWN
+
+    with patch.object(logger, "warning") as mock_warning:
         MetadataValidatorV3().validate_cell(cell)
-        mock_warning.assert_called_with("Cell type has changed from markdown to code!", cell)
+        mock_warning.assert_called_with("Cell type has changed from markdown to code!")
