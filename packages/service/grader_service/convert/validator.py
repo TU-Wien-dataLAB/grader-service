@@ -10,6 +10,7 @@ from traitlets import Bool, Integer, List, Unicode
 from traitlets.config import LoggingConfigurable
 
 from grader_service.convert import utils
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors import CheckCellMetadata, ClearOutput, Execute
 
 
@@ -104,7 +105,7 @@ class Validator(LoggingConfigurable):
         # 1. the cell returned an error in cell.outputs
         # 2. grade cell returned score < max_points (i.e. partial credit)
         # 3. the student did not provide a response
-        if cell.cell_type == "code":
+        if cell.cell_type == CellType.CODE:
             for output in cell.outputs:
                 if output.output_type == "error":
                     errors.append("\n".join(output.traceback))
@@ -233,7 +234,7 @@ class Validator(LoggingConfigurable):
                     pass
                 elif score < max_score:
                     failed.append(cell)
-            elif self.validate_all and cell.cell_type == "code":
+            elif self.validate_all and cell.cell_type == CellType.CODE:
                 for output in cell.outputs:
                     if (
                         output.output_type == "error"
@@ -284,15 +285,16 @@ class Validator(LoggingConfigurable):
 
         type_changed = self._get_type_changed_cells(nb)
         if len(type_changed) > 0:
-            results = {}
-            results["type_changed"] = [
-                {
-                    "source": cell.source.strip(),
-                    "old_type": cell.cell_type,
-                    "new_type": cell.metadata.nbgrader.cell_type,
-                }
-                for cell in type_changed
-            ]
+            results = {
+                "type_changed": [
+                    {
+                        "source": cell.source.strip(),
+                        "old_type": cell.cell_type,
+                        "new_type": cell.metadata.nbgrader.cell_type,
+                    }
+                    for cell in type_changed
+                ]
+            }
             return results
 
         with utils.chdir(dirname):
@@ -303,15 +305,15 @@ class Validator(LoggingConfigurable):
 
         results = {}
 
-        if not self.ignore_checksums and len(changed) > 0:
+        if not self.ignore_checksums and changed:
             results["changed"] = [{"source": cell.source.strip()} for cell in changed]
 
         elif self.invert:
-            if len(passed) > 0:
+            if passed:
                 results["passed"] = [{"source": cell.source.strip()} for cell in passed]
 
         else:
-            if len(failed) > 0:
+            if failed:
                 results["failed"] = [
                     {
                         "source": cell.source.strip(),

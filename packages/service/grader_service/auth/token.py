@@ -50,7 +50,7 @@ class TokenLoginHandler(LoginHandler):
                 user=user,
                 scopes=["identify"],  # Define the scopes for the token
                 note="User login token",
-                expires_in=os.environ.get("TOKEN_EXPIRES_IN", "1209600"),  # 2 weeks
+                expires_in=int(os.environ.get("TOKEN_EXPIRES_IN", "1209600")),  # 2 weeks
             )
             self.write({"api_token": token})
         else:

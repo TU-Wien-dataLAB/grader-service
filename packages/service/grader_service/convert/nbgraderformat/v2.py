@@ -6,6 +6,7 @@ from nbformat import write as _write
 from nbformat import writes as _writes
 from nbformat.notebooknode import NotebookNode
 
+from ..gradebook.models import CellType
 from .common import BaseMetadataValidator, ValidationError
 from .v1 import MetadataValidatorV1
 
@@ -74,11 +75,11 @@ class MetadataValidatorV2(BaseMetadataValidator):
             raise ValidationError(f"nbgrader cell '{meta['grade_id']}' does not have points")
 
         # check that markdown cells are grade AND solution (not either/or)
-        if cell.cell_type == "markdown" and grade and not solution:
+        if cell.cell_type == CellType.MARKDOWN and grade and not solution:
             raise ValidationError(
                 f"Markdown grade cell '{meta['grade_id']}' is not marked as a solution cell"
             )
-        if cell.cell_type == "markdown" and not grade and solution:
+        if cell.cell_type == CellType.MARKDOWN and not grade and solution:
             raise ValidationError(
                 f"Markdown solution cell is not marked as a grade cell: {cell.source}"
             )

@@ -23,6 +23,7 @@ from nbformat.notebooknode import NotebookNode
 from tornado.log import LogFormatter
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert.gradebook.models import CellType
 
 # pwd is for unix passwords only, so we shouldn't import it on
 # windows machines
@@ -164,7 +165,7 @@ def determine_grade(cell: NotebookNode, log: Logger | None = None) -> tuple[floa
         else:
             return None, max_points
 
-    elif cell.cell_type == "code":
+    elif cell.cell_type == CellType.CODE:
         # for code cells, we look at the output. There are three options:
         # 1. output contains an error (no credit);
         # 2. output is a value greater than 0 (partial credit);
