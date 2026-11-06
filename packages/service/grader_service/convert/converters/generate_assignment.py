@@ -3,7 +3,7 @@ from textwrap import dedent
 from typing import Any
 
 from traitlets import Bool, List, default
-from traitlets.config import Config
+from traitlets.config import Config, PyFileConfigLoader
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
 from grader_service.convert import utils
@@ -77,11 +77,7 @@ class GenerateAssignment(BaseConverter):
         c = Config()
         custom_config_path = f"{self._input_directory}/grader_config.py"
         if os.path.exists(custom_config_path):
-            local_vars = {"c": c}
-            with open(custom_config_path) as f:
-                code = compile(f.read(), "config.py", "exec")
-                exec(code, {}, local_vars)
-            c = local_vars["c"]
+            c = PyFileConfigLoader(custom_config_path).load_config()
         c.Exporter.default_preprocessors = []
         self.update_config(c)
 

@@ -4,7 +4,6 @@ import importlib
 import os
 import re
 import shutil
-import traceback
 import typing
 from textwrap import dedent
 
@@ -144,7 +143,7 @@ class BaseConverter(LoggingConfigurable):
         assignment_settings: AssignmentSettings,
         **kwargs: typing.Any,
     ) -> None:
-        super(BaseConverter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._input_directory = os.path.abspath(os.path.expanduser(input_dir))
         self._output_directory = os.path.abspath(os.path.expanduser(output_dir))
         self._file_pattern = file_pattern
@@ -172,7 +171,7 @@ class BaseConverter(LoggingConfigurable):
 
     @default("classes")
     def _classes_default(self):
-        classes = super(BaseConverter, self)._classes_default()
+        classes = super()._classes_default()
         classes.append(FilesWriter)
         classes.append(Exporter)
         for pp in self.preprocessors:
@@ -195,17 +194,16 @@ class BaseConverter(LoggingConfigurable):
         if len(self.notebooks) == 0:
             self.log.warning("No notebooks were matched by '%s'", notebook_glob)
 
-    def init_single_notebook_resources(
-        self, notebook_filename: str
-    ) -> typing.Dict[str, typing.Any]:
-        resources = {}
-        resources["unique_key"] = os.path.splitext(os.path.basename(notebook_filename))[0]
-        resources["output_files_dir"] = "%s_files" % os.path.basename(notebook_filename)
-        resources["output_json_file"] = "gradebook.json"
+    def init_single_notebook_resources(self, notebook_filename: str) -> dict[str, typing.Any]:
+        resources = {
+            "unique_key": os.path.splitext(os.path.basename(notebook_filename))[0],
+            "output_files_dir": f"{os.path.basename(notebook_filename)}_files",
+            "output_json_file": "gradebook.json",
+            "nbgrader": {},  # support nbgrader pre-processors
+        }
         resources["output_json_path"] = os.path.join(
             self._output_directory, resources["output_json_file"]
         )
-        resources["nbgrader"] = dict()  # support nbgrader pre-processors
         return resources
 
     def write_single_notebook(self, output: str, resources: ResourcesDict) -> None:
@@ -404,8 +402,7 @@ class BaseConverter(LoggingConfigurable):
             raise GraderConvertException(e.message)
 
         except Exception as e:
-            self.log.error("There was an error processing files: %s", self._format_source())
-            self.log.error(traceback.format_exc())
+            self.log.exception("There was an error processing files: %s", self._format_source())
             errors.append(e)
             _handle_failure(e)
 
@@ -431,7 +428,7 @@ class BaseConverter(LoggingConfigurable):
                     output_dir=self._output_directory,
                 )
             except Exception:
-                self.log.error("Pre-convert hook failed", exc_info=True)
+                self.log.exception("Pre-convert hook failed")
 
     def run_post_convert_hook(self):
         if self.post_convert_hook:
@@ -443,4 +440,4 @@ class BaseConverter(LoggingConfigurable):
                     output_dir=self._output_directory,
                 )
             except Exception:
-                self.log.error("Post-convert hook failed", exc_info=True)
+                self.log.exception("Post-convert hook failed")

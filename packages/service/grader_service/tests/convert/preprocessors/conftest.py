@@ -33,5 +33,5 @@ def resources(json_path):
         unique_key="test",
         output_json_file="gradebook.json",
         output_json_path=json_path,
-        nbgrader=dict(),
+        nbgrader={},
     )

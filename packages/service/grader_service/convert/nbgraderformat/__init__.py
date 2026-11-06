@@ -8,10 +8,10 @@ from .v3 import writes_v3 as writes
 SCHEMA_VERSION = MetadataValidator.schema_version
 
 __all__ = [
+    "MetadataValidator",
     "SchemaTooNewError",
     "SchemaTooOldError",
     "ValidationError",
-    "MetadataValidator",
     "read",
     "reads",
     "write",

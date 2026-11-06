@@ -8,6 +8,7 @@ import json
 import os
 import urllib.parse
 
+import anyio
 import tornado
 from tornado.web import HTTPError, authenticated
 
@@ -160,7 +161,7 @@ def get_content_type_from_response(response):
     lines = response.split("\n")  # Split the response into lines
     for line in lines:
         if "Content-Type" in line:  # Look for the Content-Type header
-            key, value = line.split(":", 1)  # Split key and value
+            _key, value = line.split(":", 1)  # Split key and value
             return value.strip()  # Return the Content-Type value, stripped of whitespace
     return ""  # Default if Content-Type is not found
 
@@ -219,14 +220,14 @@ class SubmissionLectureHandler(ExtensionBaseHandler):
             dir_path, f"{lecture['name']}_{filter_value}_submissions.{format_value}"
         )
         if format_value == "csv":
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(response)
+            async with await anyio.open_file(file_path, "w", encoding="utf-8") as f:
+                await f.write(response)
         elif format_value == "json":
             json_content = (
                 json.dumps(response, indent=2) if isinstance(response, dict) else response
             )
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(json_content)
+            async with await anyio.open_file(file_path, "w", encoding="utf-8") as f:
+                await f.write(json_content)
         else:
             raise HTTPError(400, reason="Invalid format specified")
         self.write(

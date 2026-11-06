@@ -3,6 +3,7 @@ import warnings
 from textwrap import dedent
 
 import pytest
+from nbconvert.exporters import ResourcesDict
 from traitlets.config import Config
 
 from grader_service.convert.preprocessors import ClearMarkScheme
@@ -72,7 +73,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             ### END MARK SCHEME
             """
         ).strip()
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -88,7 +89,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             """
         ).strip()
 
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -108,7 +109,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
         nb = self._read_nb(os.path.join("files", "test_taskcell.ipynb"))
-        preprocessor.preprocess(nb, {})
+        preprocessor.preprocess(nb, ResourcesDict())
 
     def test_deprecated_delimeter_config(self):
         """Does the deprecated delimeter config key still work and warn?"""

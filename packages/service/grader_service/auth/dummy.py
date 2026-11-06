@@ -17,11 +17,8 @@ class DummyAuthenticator(Authenticator):
 
     @default("allow_all")
     def _allow_all_default(self):
-        if self.allowed_users:
-            return False
-        else:
-            # allow all by default
-            return True
+        # allow all by default, i.e. when allowed_users not provided
+        return not bool(self.allowed_users)
 
     password = Unicode(
         config=True,

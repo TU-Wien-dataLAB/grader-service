@@ -17,7 +17,7 @@ def preprocessors():
 
 class TestOverwriteKernelSpec(BaseTestPreprocessor):
     def test_overwrite_kernelspec(self, preprocessors, resources, gradebook: Gradebook):
-        kernelspec = dict(display_name="blarg", name="python3", language="python")
+        kernelspec = {"display_name": "blarg", "name": "python3", "language": "python"}
 
         nb = new_notebook()
         nb.metadata["kernelspec"] = kernelspec

@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, Tuple
+from typing import Any
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
@@ -36,14 +36,14 @@ class OverwriteCells(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # pull information from the resources
         self.notebook_id = resources["unique_key"]
         self.json_path = resources["output_json_path"]
         self.gradebook = Gradebook(self.json_path)
 
         with self.gradebook:
-            nb, resources = super(OverwriteCells, self).preprocess(nb, resources)
+            nb, resources = super().preprocess(nb, resources)
             if self.add_missing_cells:
                 nb, resources = self.add_missing_grade_cells(nb, resources)
                 nb, resources = self.add_missing_task_cells(nb, resources)
@@ -99,7 +99,7 @@ class OverwriteCells(NbGraderPreprocessor):
 
     def add_missing_grade_cells(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         """
         Add missing grade cells back to the notebook.
         If missing, find the previous solution/grade cell, and add the current cell after it.
@@ -113,14 +113,14 @@ class OverwriteCells(NbGraderPreprocessor):
         solution_cell_ids = [cell.name for cell in source_nb.solution_cells]
 
         # track indices of solution and grade cells in the submitted notebook
-        submitted_cell_idxs = dict()
+        submitted_cell_idxs = {}
         for idx, cell in enumerate(nb.cells):
             if utils.grade_id_present(cell) and (utils.is_grade(cell) or utils.is_solution(cell)):
                 submitted_cell_idxs[cell.metadata.nbgrader["grade_id"]] = idx
 
         # Every time we add a cell, the idxs above get shifted
-        # We could process the notebook backwards, but that makes adding the cells in the right place more difficult
-        # So we keep track of how many we have added so far
+        # We could process the notebook backwards, but that makes adding the cells in the right
+        # place more difficult, so we keep track of how many we have added so far
         added_count = 0
 
         for grade_cell_id, grade_cell in grade_cells.items():
@@ -145,7 +145,9 @@ class OverwriteCells(NbGraderPreprocessor):
                     prev_cell_id = source_cell_ids[source_cell_idx - 1]
                     if not submitted_cell_idxs:
                         self.log.warning(
-                            f"No grade or solution cells were submitted, adding missing grade cell {grade_cell_id} to the start of the notebook"
+                            "No grade or solution cells were submitted, adding missing grade cell "
+                            "%s to the start of the notebook",
+                            grade_cell_id,
                         )
                         prev_cell_idx = 0
                         nb.cells.insert(prev_cell_idx, cell_to_add)
@@ -155,7 +157,8 @@ class OverwriteCells(NbGraderPreprocessor):
                         nb.cells.insert(prev_cell_idx + 1, cell_to_add)  # +1 to add it after
                         submitted_cell_idxs[grade_cell_id] = submitted_cell_idxs[prev_cell_id]
 
-                # If the cell we just added is followed by other missing cells, we need to know its index in the nb
+                # If the cell we just added is followed by other missing cells, we need to know
+                # its index in the nb.
                 # However, no need to add `added_count` to avoid double-counting
 
                 added_count += 1  # shift idxs
@@ -164,10 +167,11 @@ class OverwriteCells(NbGraderPreprocessor):
 
     def add_missing_task_cells(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         """
         Add missing task cells back to the notebook.
-        We can't figure out their original location, so they are added at the end, in their original order.
+        We can't figure out their original location, so they are added at the end,
+        in their original order.
         """
         source_nb = self.gradebook.find_notebook(self.notebook_id)
         source_cells = source_nb.source_cells
@@ -189,10 +193,11 @@ class OverwriteCells(NbGraderPreprocessor):
 
     def add_missing_readonly_cells(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         """
         Add missing task cells back to the notebook.
-        We can't figure out their original location, so they are added at the end, in their original order.
+        We can't figure out their original location, so they are added at the end,
+        in their original order.
         """
         source_nb = self.gradebook.find_notebook(self.notebook_id)
         source_cells = source_nb.source_cells
@@ -236,14 +241,14 @@ class OverwriteCells(NbGraderPreprocessor):
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         if not utils.grade_id_present(cell):
             return cell, resources
         grade_id = cell.metadata.nbgrader["grade_id"]
         try:
             source_cell = self.gradebook.find_source_cell(grade_id, self.notebook_id)
         except MissingEntry:
-            self.log.warning("Cell '{}' does not exist in the properties".format(grade_id))
+            self.log.warning(f"Cell '{grade_id}' does not exist in the properties")
             del cell.metadata.nbgrader["grade_id"]
             return cell, resources
 
@@ -276,19 +281,16 @@ class OverwriteCells(NbGraderPreprocessor):
             new_checksum = utils.compute_checksum(cell)
             if old_checksum != new_checksum:
                 self.log.info(
-                    "Source of cell {} in overwritten order to prove checksum.".format(grade_id)
+                    "Source of cell %s in overwritten in order to prove checksum.", grade_id
                 )
                 cell.source = source_cell.source
                 # check the checksum is correct now
                 double_checksum = utils.compute_checksum(cell)
                 if double_checksum != old_checksum:
                     self.log.error(
-                        "Checksums of the cell {} and source cell {} are not the same.".format(
-                            double_checksum, new_checksum
-                        )
+                        f"Checksums of the cell {double_checksum} and source cell {new_checksum} "
+                        f"are not the same."
                     )
-                    raise RuntimeError(
-                        "Inconsistent checksums for cell {}".format(source_cell.name)
-                    )
+                    raise RuntimeError(f"Inconsistent checksums for cell {source_cell.name}")
 
         return cell, resources

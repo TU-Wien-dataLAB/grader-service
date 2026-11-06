@@ -7,15 +7,14 @@
 import datetime
 import json
 from http import HTTPStatus
-from typing import List
 
 import isodate
 import pandas as pd
-import tornado
 from celery import chain
 from sqlalchemy import label
 from sqlalchemy.orm.exc import NoResultFound, ObjectDeletedError
 from sqlalchemy.sql.expression import func
+from tornado.escape import json_decode
 from tornado.web import HTTPError
 
 from grader_service.api.models.submission import Submission as SubmissionModel
@@ -192,9 +191,8 @@ class SubmissionUserHandler(GraderBaseHandler):
                 HTTPStatus.BAD_REQUEST, reason="Response format can either be 'json' or 'csv'"
             )
 
-        if not self.user.is_admin:
-            if username != self.user.name:
-                raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
+        if not self.user.is_admin and username != self.user.name:
+            raise HTTPError(HTTPStatus.FORBIDDEN, reason="Forbidden")
 
         db_user = self.session.query(User).filter_by(name=username).first()
         if db_user is None:
@@ -222,7 +220,7 @@ class SubmissionUserHandler(GraderBaseHandler):
         for i, s in enumerate(submissions):
             d = s.serialize_with_lectid()
             if i == 0:
-                self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+                self.write(",".join(k for k in d if k != "logs") + "\n")
             self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
 
 
@@ -336,7 +334,7 @@ class SubmissionHandler(GraderBaseHandler):
         for i, s in enumerate(submissions):
             d = s.model.to_dict()
             if i == 0:
-                self.write(",".join((k for k in d.keys() if k != "logs")) + "\n")
+                self.write(",".join(k for k in d if k != "logs") + "\n")
             self.write(",".join((str(v) for k, v in d.items() if k != "logs")) + "\n")
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor])
@@ -352,7 +350,7 @@ class SubmissionHandler(GraderBaseHandler):
         """
         lecture_id, assignment_id = parse_ids(lecture_id, assignment_id)
         self.validate_parameters()
-        body = tornado.escape.json_decode(self.request.body)
+        body = json_decode(self.request.body)
         try:
             submission_hash = body["commit_hash"]
         except KeyError:
@@ -366,7 +364,7 @@ class SubmissionHandler(GraderBaseHandler):
         if role.role == Scope.student and assignment.status != "released":
             raise HTTPError(HTTPStatus.NOT_FOUND, "Assignment not found")
         # set utc time
-        submission_ts = datetime.datetime.now(datetime.timezone.utc)
+        submission_ts = datetime.datetime.now(datetime.UTC)
         # use implicit utc time to compare with database objects
         # submission_ts = submission_ts.replace(tzinfo=None)
 
@@ -403,7 +401,7 @@ class SubmissionHandler(GraderBaseHandler):
                     submission_hash, assignment, username
                 )
             except FileServiceError as e:
-                self.log.exception(e)
+                self.log.exception()
                 raise HTTPError(HTTPStatus.UNPROCESSABLE_ENTITY, reason=str(e)) from None
 
         submission.assignid = assignment.id
@@ -436,7 +434,7 @@ class SubmissionHandler(GraderBaseHandler):
             self.log.info(
                 f"Error while creating submission properties for submission {submission.id}: {e}"
             )
-            raise e
+            raise
 
         # If the assignment has automatic or fully automatic grading, run the necessary tasks.
         # The autograding is not performed when an instructor creates a new submission for a student.
@@ -477,9 +475,9 @@ class SubmissionHandler(GraderBaseHandler):
         # make submission timestamp timezone aware
         deadline = assignment.settings.deadline
         if submission_ts.tzinfo is None:
-            submission_ts = submission_ts.replace(tzinfo=datetime.timezone.utc)
+            submission_ts = submission_ts.replace(tzinfo=datetime.UTC)
         if deadline.tzinfo is None:
-            deadline = deadline.replace(tzinfo=datetime.timezone.utc)
+            deadline = deadline.replace(tzinfo=datetime.UTC)
 
         if assignment.settings.late_submission and len(assignment.settings.late_submission) > 0:
             scaling = 0.0
@@ -517,20 +515,20 @@ class SubmissionHandler(GraderBaseHandler):
             comments_dict = properties_dict["notebooks"][notebook_name]["comments_dict"]
 
             # add entries for grades_dict
-            for grade_cell in notebook.grade_cells_dict.keys():
+            for grade_cell in notebook.grade_cells_dict:
                 grades_dict[grade_cell] = gradebook.find_grade(grade_cell, notebook_name).to_dict()
                 grades_dict[grade_cell]["max_score_gradecell"] = gradebook.find_grade_cell(
                     grade_cell, notebook_name
                 ).max_score
 
             # add entries for comments_dict
-            for solution_cell in notebook.solution_cells_dict.keys():
+            for solution_cell in notebook.solution_cells_dict:
                 comments_dict[solution_cell] = gradebook.find_comment(
                     solution_cell, notebook_name
                 ).to_dict()
 
             # add entries for both
-            for task_cell in notebook.task_cells_dict.keys():
+            for task_cell in notebook.task_cells_dict:
                 grades_dict[task_cell] = gradebook.find_grade(task_cell, notebook_name).to_dict()
                 grades_dict[task_cell]["max_score_taskcell"] = gradebook.find_task_cell(
                     task_cell, notebook_name
@@ -590,7 +588,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
         lecture_id, assignment_id, submission_id = parse_ids(
             lecture_id, assignment_id, submission_id
         )
-        body = tornado.escape.json_decode(self.request.body)
+        body = json_decode(self.request.body)
         sub_model = SubmissionModel.from_dict(body)
         sub = self.get_submission(lecture_id, assignment_id, submission_id)
         # sub.date = sub_model.submitted_at
@@ -666,7 +664,7 @@ class SubmissionObjectHandler(GraderBaseHandler):
                 if (
                     submission.assignment.settings.deadline
                     and submission.assignment.settings.deadline
-                    < datetime.datetime.now(datetime.timezone.utc)
+                    < datetime.datetime.now(datetime.UTC)
                 ):
                     raise HTTPError(
                         HTTPStatus.FORBIDDEN,
@@ -769,7 +767,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
 
         try:
             gradebook = GradeBookModel.from_dict(json.loads(properties_string))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.log.info(e)
             raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Cannot parse properties file!")
 
@@ -858,14 +856,15 @@ class LtiSyncHandler(GraderBaseHandler):
         self.validate_parameters("option")
         lti_option = self.get_argument("option", "latest")
 
-        assignment: Assignment = self.session.get(Assignment, assignment_id)
+        assignment: Assignment | None = self.session.get(Assignment, assignment_id)
         if (
             (assignment is None)
             or (assignment.deleted == DeleteState.deleted)
             or (int(assignment.lectid) != int(lecture_id))
         ):
-            self.log.error("Assignment with id " + str(assignment_id) + " was not found")
-            return None
+            self.log.error("Assignment with id %s was not found", assignment_id)
+            return
+
         lecture: Lecture = assignment.lecture
 
         # get all latest submissions with feedback
@@ -877,32 +876,31 @@ class LtiSyncHandler(GraderBaseHandler):
         else:
             # get submissions with given submission ids
             try:
-                body = tornado.escape.json_decode(self.request.body)
-                submission_ids: List[int] = body.get("submission_ids", [])
-
-                if not submission_ids:
-                    raise ValueError("No submission IDs provided")
-
-                # Fetch and validate submissions
-                submissions = (
-                    self.session.query(Submission)
-                    .filter(
-                        Submission.id.in_(submission_ids),
-                        Submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED,
-                        Submission.assignid == assignment_id,
-                    )
-                    .all()
-                )
-                if len(submissions) != len(submission_ids):
-                    raise HTTPError(
-                        HTTPStatus.BAD_REQUEST,
-                        reason="Some submission IDs are invalid or do not belong to this assignment.",
-                    )
-
-            except Exception as e:
+                body = json_decode(self.request.body)
+            except (TypeError, ValueError) as e:
                 err_msg = f"Could not process submission IDs: {e}"
                 self.log.error(err_msg)
                 raise APIError(HTTPStatus.BAD_REQUEST, message=err_msg)
+
+            submission_ids: list[int] = body.get("submission_ids", [])
+            if not submission_ids:
+                raise APIError(HTTPStatus.BAD_REQUEST, message="No submission IDs provided")
+
+            # Fetch and validate submissions
+            submissions = (
+                self.session.query(Submission)
+                .filter(
+                    Submission.id.in_(submission_ids),
+                    Submission.auto_status == AutoStatus.AUTOMATICALLY_GRADED,
+                    Submission.assignid == assignment_id,
+                )
+                .all()
+            )
+            if len(submissions) != len(submission_ids):
+                raise APIError(
+                    HTTPStatus.BAD_REQUEST,
+                    message="Some submission IDs are invalid or do not belong to this assignment.",
+                )
 
         lti_plugin: LTISyncGrades | None = self.application.plugin_manager.get("lti")
         if lti_plugin is None:
@@ -918,13 +916,13 @@ class LtiSyncHandler(GraderBaseHandler):
         ):
             try:
                 results = await lti_plugin.start(lecture_model, assignment_model, submissions_model)
-                return self.write_json(results)
+                self.write_json(results)
             except HTTPError as e:
                 err_msg = f"Could not sync grades: {e.reason}"
-                self.log.info(err_msg)
+                self.log.error(err_msg)
                 raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=err_msg)
-            except Exception as e:
-                self.log.error("Could not sync grades: " + str(e))
+            except Exception as e:  # noqa: BLE001
+                self.log.error("Could not sync grades: %s", e)
                 raise HTTPError(500, reason="An unexpected error occurred.")
         else:
             raise HTTPError(403, reason="LTI plugin is not enabled by administrator.")

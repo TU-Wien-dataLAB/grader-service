@@ -5,13 +5,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.local_feedback import (
     LocalFeedbackExecutor,
     LocalFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services.base_file_service import FileService
-from grader_service.artifact_types import ArtifactType
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 
 

@@ -20,11 +20,11 @@ and celery tasks via ``self.celery.plugin_manager.get("name")``.
 """
 
 import logging
-from typing import Dict, Iterator, List, Optional, Type
+from collections.abc import Iterator
 
 from traitlets.config import LoggingConfigurable
 
-_PLUGIN_REGISTRY: List[Type["GraderPlugin"]] = []
+_PLUGIN_REGISTRY: list[type["GraderPlugin"]] = []
 
 
 class GraderPlugin(LoggingConfigurable):
@@ -49,7 +49,7 @@ class GraderPlugin(LoggingConfigurable):
             )
 
 
-def register_plugin(cls: Type[GraderPlugin]) -> Type[GraderPlugin]:
+def register_plugin(cls: type[GraderPlugin]) -> type[GraderPlugin]:
     """Class decorator that registers a plugin class for auto-discovery.
 
     Usage::
@@ -74,7 +74,7 @@ class PluginManager:
     """
 
     def __init__(self) -> None:
-        self._plugins: Dict[str, GraderPlugin] = {}
+        self._plugins: dict[str, GraderPlugin] = {}
         self.log = logging.getLogger(__name__)
 
     # -- mutation -----------------------------------------------------------
@@ -88,7 +88,7 @@ class PluginManager:
 
     # -- lookup -------------------------------------------------------------
 
-    def get(self, name: str) -> Optional[GraderPlugin]:
+    def get(self, name: str) -> GraderPlugin | None:
         """Return a plugin by *name*, or ``None`` if not found."""
         return self._plugins.get(name)
 
@@ -105,7 +105,7 @@ class PluginManager:
         return len(self._plugins)
 
     @property
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """Return the names of all registered plugins."""
         return list(self._plugins.keys())
 
@@ -130,13 +130,13 @@ def create_plugin_manager(config=None, log=None) -> PluginManager:
     _log = log or logging.getLogger(__name__)
 
     for cls in _PLUGIN_REGISTRY:
+        kwargs = {}
+        if config is not None:
+            kwargs["config"] = config
         try:
-            kwargs = {}
-            if config is not None:
-                kwargs["config"] = config
             plugin = cls(**kwargs)
             manager.register(plugin)
-        except Exception:
+        except Exception:  # noqa: BLE001
             _log.exception(f"Failed to create plugin {cls.__name__}")
 
     return manager

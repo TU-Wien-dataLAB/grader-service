@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from traitlets import CaselessStrEnum, Unicode
 from traitlets import List as TraitletsList
@@ -176,8 +176,8 @@ class LTI13Authenticator(Authenticator):
         ]
 
     async def authenticate(
-        self, handler: LTI13LoginInitHandler, data: Dict[str, str] = None
-    ) -> Dict[str, Any]:
+        self, handler: LTI13LoginInitHandler, data: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         """
         Handles LTI 1.3 launch requests based on a passed JWT.
 
@@ -195,7 +195,7 @@ class LTI13Authenticator(Authenticator):
 
         return {"name": username, "auth_state": data}
 
-    def get_username(self, token: Dict[str, Any]) -> str:
+    def get_username(self, token: dict[str, Any]) -> str:
         """
         Infer the username from the ID token.
 
@@ -215,7 +215,7 @@ class LTI13Authenticator(Authenticator):
         username = data.get(username_key)
         if not username:
             logger.warning(
-                f"Cannot find the key {username_key} in the ID token. `sub` used instread."
+                f"Cannot find the key {username_key} in the ID token. `sub` used instead."
             )
             username = token.get("sub")
         if not username:

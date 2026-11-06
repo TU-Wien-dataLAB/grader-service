@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 
@@ -12,18 +10,18 @@ class DeduplicateIds(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # keep track of grade ids encountered so far
-        self.grade_ids = set([])
+        self.grade_ids = set()
 
         # process each cell in reverse order
-        nb, resources = super(DeduplicateIds, self).preprocess(nb, resources)
+        nb, resources = super().preprocess(nb, resources)
 
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # if cell has no type, ignore
         if not utils.has_cell_type(cell):
             return cell, resources

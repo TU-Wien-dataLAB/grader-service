@@ -5,8 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-from datetime import date, datetime, timezone
-from typing import Any, Set, Union
+from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import DECIMAL, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
@@ -17,7 +17,7 @@ from grader_service.orm.base import Base, DeleteState, Serializable
 
 
 def get_utc_time():
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def json_serial(obj):
@@ -25,7 +25,7 @@ def json_serial(obj):
 
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
-    raise TypeError("Type %s not serializable" % type(obj))
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 
 class Assignment(Base, Serializable):
@@ -57,24 +57,23 @@ class Assignment(Base, Serializable):
         return AssignmentSettings.from_dict(json.loads(self._settings))
 
     @settings.setter
-    def settings(self, settings: Union[AssignmentSettings, dict]):
+    def settings(self, settings: AssignmentSettings | dict):
         if isinstance(settings, dict):
             self._settings = json.dumps(settings, default=json_serial)
-            return settings
+            return
         self._settings = json.dumps(settings.to_dict(), default=json_serial)
-        return settings
 
     def update_settings(self, **kwargs: Any):
         # Update specific fields of the AssignmentSettings object
         settings = self.settings  # Get the current AssignmentSettings object
         for key, value in kwargs.items():
-            if key not in AssignmentSettings.openapi_types.keys():
+            if key not in AssignmentSettings.openapi_types:
                 raise RuntimeError(f"provided key '{key}' is not valid for assignment settings")
             if hasattr(settings, key):  # Ensure the attribute exists on AssignmentSettings
                 setattr(settings, key, value)
         self.settings = settings  # Save the updated object back
 
-    def get_whitelist_patterns(self) -> Set[str]:
+    def get_whitelist_patterns(self) -> set[str]:
         """
         Combines all whitelist patterns into a single set.
         """

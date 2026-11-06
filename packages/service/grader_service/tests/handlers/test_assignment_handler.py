@@ -3,8 +3,8 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
+import asyncio
 import json
-import subprocess
 from http import HTTPStatus
 from pathlib import Path
 
@@ -1229,10 +1229,15 @@ async def test_assignment_reset_student(
     local_repo_path = files_base / "tmp" / l_code / str(a_id) / "user" / default_user.name
     assert user_repo_path.exists()
     assert (local_repo_path / "submission.ipynb").exists()
-    res = subprocess.run(
-        ["cat", "submission.ipynb"], cwd=local_repo_path, capture_output=True, text=True
+    res = await asyncio.create_subprocess_exec(
+        "cat",
+        "submission.ipynb",
+        cwd=local_repo_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
-    assert res.stdout == "User submission content"
+    stdout, _stderr = await res.communicate()
+    assert stdout.decode() == "User submission content"
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/reset"
 
@@ -1248,18 +1253,30 @@ async def test_assignment_reset_student(
 
     assert user_repo_path.exists()
     # Get the message of the last (reset) commit
-    res = subprocess.run(
-        ["git", "show", "-s", "--format='%s'"], cwd=user_repo_path, capture_output=True, text=True
+    res = await asyncio.create_subprocess_exec(
+        "git",
+        "show",
+        "-s",
+        "--format='%s'",
+        cwd=user_repo_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
-    assert res.stdout.strip("\n'") == "Reset Assignment"
+    stdout, _stderr = await res.communicate()
+    assert stdout.decode().strip("\n'") == "Reset Assignment"
 
     # Make sure the content of the file has been rest to the original release version
-    subprocess.run(["git", "pull"], cwd=local_repo_path, capture_output=True, text=True)
+    await asyncio.create_subprocess_exec("git", "pull", cwd=local_repo_path)
     assert local_repo_path / "submission.ipynb"
-    res = subprocess.run(
-        ["cat", "submission.ipynb"], cwd=local_repo_path, capture_output=True, text=True
+    res = await asyncio.create_subprocess_exec(
+        "cat",
+        "submission.ipynb",
+        cwd=local_repo_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
-    assert res.stdout == "Test content for release artifact"
+    stdout, _stderr = await res.communicate()
+    assert stdout.decode() == "Test content for release artifact"
 
 
 async def test_assignment_reset_wrong_lecture_id(

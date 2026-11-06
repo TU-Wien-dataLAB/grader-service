@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import Bool
@@ -29,22 +27,18 @@ class LockCells(NbGraderPreprocessor):
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         if (
             (self.lock_solution_cells or self.lock_grade_cells)
             and utils.is_solution(cell)
             and utils.is_grade(cell)
+        ) or (self.lock_solution_cells and utils.is_solution(cell)):
+            cell.metadata["deletable"] = False
+        elif (
+            (self.lock_grade_cells and utils.is_grade(cell))
+            or (self.lock_readonly_cells and utils.is_locked(cell))
+            or self.lock_all_cells
         ):
-            cell.metadata["deletable"] = False
-        elif self.lock_solution_cells and utils.is_solution(cell):
-            cell.metadata["deletable"] = False
-        elif self.lock_grade_cells and utils.is_grade(cell):
-            cell.metadata["deletable"] = False
-            cell.metadata["editable"] = False
-        elif self.lock_readonly_cells and utils.is_locked(cell):
-            cell.metadata["deletable"] = False
-            cell.metadata["editable"] = False
-        elif self.lock_all_cells:
             cell.metadata["deletable"] = False
             cell.metadata["editable"] = False
         return cell, resources

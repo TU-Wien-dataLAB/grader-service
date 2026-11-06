@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import base64
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -48,7 +48,7 @@ def test_dict_serialization_empty():
 
 
 def test_datetime_serialization():
-    d = datetime.now(tz=timezone.utc)
+    d = datetime.now(tz=UTC)
     s = GraderBaseHandler._serialize(d)
     assert isinstance(s, str)
     assert str(d) == s
@@ -62,7 +62,7 @@ def test_assignment_serialization():
         "points": 0,
         "settings": {
             "late_submission": None,
-            "deadline": datetime.now(tz=timezone.utc).isoformat(),
+            "deadline": datetime.now(tz=UTC).isoformat(),
             "group": None,
             "cell_timeout": None,
             "max_submissions": 1,

@@ -1,6 +1,5 @@
 import warnings
 from textwrap import dedent
-from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
@@ -104,15 +103,15 @@ class ClearMarkScheme(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
-        nb, resources = super(ClearMarkScheme, self).preprocess(nb, resources)
+    ) -> tuple[NotebookNode, ResourcesDict]:
+        nb, resources = super().preprocess(nb, resources)
         if "celltoolbar" in nb.metadata:
             del nb.metadata["celltoolbar"]
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # remove hidden test regions
         removed_ms = self._remove_mark_scheme_region(cell)
 
@@ -122,12 +121,10 @@ class ClearMarkScheme(NbGraderPreprocessor):
         # check that it is marked as a task cell if we remove a mark scheme
         # region -- if it's not, then this is a problem, because the cell needs
         # to be given an id
-        if not is_task and removed_ms:
-            if self.enforce_metadata:
-                raise RuntimeError(
-                    "Mark scheme region detected in a non-grade cell; "
-                    "please make sure all mark scheme regions are within "
-                    "'Manually graded task' cells."
-                )
+        if not is_task and removed_ms and self.enforce_metadata:
+            raise RuntimeError(
+                "Mark scheme region detected in a non-grade cell; please make sure all mark "
+                "scheme regions are within 'Manually graded task' cells."
+            )
 
         return cell, resources

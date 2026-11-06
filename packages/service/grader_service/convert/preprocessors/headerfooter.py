@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-
-import io
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat import current_nbformat
 from nbformat.notebooknode import NotebookNode
@@ -24,7 +19,7 @@ class IncludeHeaderFooter(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         """Concatenates the cells from the header and footer notebooks to the
         given cells.
 
@@ -33,7 +28,7 @@ class IncludeHeaderFooter(NbGraderPreprocessor):
 
         # header
         if self.header:
-            with io.open(self.header, encoding="utf-8") as fh:
+            with open(self.header, encoding="utf-8") as fh:
                 header_nb = read_nb(fh, as_version=current_nbformat)
             new_cells.extend(header_nb.cells)
 
@@ -42,16 +37,16 @@ class IncludeHeaderFooter(NbGraderPreprocessor):
 
         # footer
         if self.footer:
-            with io.open(self.footer, encoding="utf-8") as fh:
+            with open(self.footer, encoding="utf-8") as fh:
                 footer_nb = read_nb(fh, as_version=current_nbformat)
             new_cells.extend(footer_nb.cells)
 
         nb.cells = new_cells
-        super(IncludeHeaderFooter, self).preprocess(nb, resources)
+        super().preprocess(nb, resources)
 
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         return cell, resources

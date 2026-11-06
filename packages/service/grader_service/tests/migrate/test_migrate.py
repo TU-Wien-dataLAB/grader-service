@@ -58,7 +58,7 @@ def clean_database(database_backend):
 
 @pytest.fixture
 def alembic_cfg(database_backend):
-    backend, db_url = database_backend
+    _backend, db_url = database_backend
     cfg = Config(ALEMBIC_INI)
     cfg.set_main_option("script_location", MIGRATE_DIR)
     cfg.set_main_option("sqlalchemy.url", db_url)
@@ -224,8 +224,8 @@ def test_migration_upgrade_downgrade(alembic_cfg, migration):
         for table in ordered_tables:
             try:
                 insert_one_row(inspector, table, generated_keys, referenced_cols)
-            except Exception:
-                raise Exception(f"Failed to insert into table {table}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to insert into table {table}") from e
 
         # Commit the transaction
         trans.commit()
@@ -340,8 +340,8 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
         for table in ordered_tables:
             try:
                 insert_one_row(inspector, table, generated_keys, referenced_cols)
-            except Exception:
-                raise Exception(f"Failed to insert into table {table}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to insert into table {table}") from e
 
         data_before_upgrade = get_table_data(engine, tables)
 
@@ -374,7 +374,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     f"Schema changed after downgrade from {migration.revision} ({migration.doc}) "
                     f"to {prev_rev}!"
                 )
-            except AssertionError as e:
+            except AssertionError:
                 if migration.revision != "fc5d2febe781" and migration.revision != "4a88dacd888f":
                     # In migration "fc5d2febe781"
                     # ("merged assignment configuration options into assignment settings column"):
@@ -384,7 +384,7 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     # In migration "4a88dacd888f"
                     # Foreign keys whose names contained ‘None’ before the upgrade will retain their new names,
                     # because SQLAlchemy does not allow ‘None’ in identifiers.
-                    raise e
+                    raise
             # 7.b Check if the data is still the same
             data_after_downgrade = get_table_data(engine3, tables_after_downgrade)
 
@@ -398,10 +398,10 @@ def test_migration_upgrade_downgrade_with_data_from_prev_revision(alembic_cfg, m
                     f"Data changed after downgrade from {migration.revision} ({migration.doc}) "
                     f"to {prev_rev}!"
                 )
-            except AssertionError as e:
+            except AssertionError:
                 # If the tested migration is part of the not lossless migration do not throw the error
                 if migration.revision not in data_loss_migrations:
-                    raise e
+                    raise
     finally:
         engine.dispose()
         if engine2 is not None:
@@ -446,8 +446,8 @@ def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg
         for table in ordered_tables:
             try:
                 insert_one_row(inspector, table, generated_keys, referenced_cols)
-            except Exception:
-                raise Exception(f"Failed to insert into table {table}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to insert into table {table}") from e
 
         # 3. Upgrade the database schema to the n-th migration
         command.upgrade(cfg, migration.revision)
@@ -465,8 +465,8 @@ def test_migration_upgrade_and_downgrade_with_data_inserts_inbetween(alembic_cfg
         for table in ordered_tables:
             try:
                 insert_one_row(inspector, table, generated_keys, referenced_cols)
-            except Exception:
-                raise Exception(f"Failed to insert into table {table}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to insert into table {table}") from e
 
         # 5. Downgrade to the previous revision
         prev_rev = migration.down_revision or "base"

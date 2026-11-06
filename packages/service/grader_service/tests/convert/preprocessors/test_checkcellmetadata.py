@@ -30,7 +30,7 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
 
     def test_invalid_grade_cell_id(self, preprocessor):
         """Check that an error is raised when the grade cell id is invalid"""
-        resources = dict(grade_ids=[])
+        resources = {"grade_ids": []}
         nb = new_notebook()
 
         nb.cells = [create_grade_cell("", "code", "", 1)]
@@ -50,7 +50,7 @@ class TestCheckCellMetadata(BaseTestPreprocessor):
 
     def test_invalid_solution_cell_id(self, preprocessor):
         """Check that an error is raised when the solution id is invalid"""
-        resources = dict(grade_ids=[])
+        resources = {"grade_ids": []}
         nb = new_notebook()
 
         nb.cells = [create_solution_cell("", "code", "")]

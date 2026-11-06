@@ -22,7 +22,7 @@ def stream() -> StringIO:
 
 
 @pytest.mark.slow
-class TestValidator(object):
+class TestValidator:
     def _add_error(self, cell):
         cell.outputs.append(
             new_output(

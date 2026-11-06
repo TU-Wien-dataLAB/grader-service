@@ -55,21 +55,29 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.escape import json_encode, json_decode
 
 c.JupyterHub.authenticator_class = DummyAuthenticator
-c.Authenticator.allowed_users = {'admin', 'instructor', 'tutor', 'student'}
+c.Authenticator.allowed_users = {"admin", "instructor", "tutor", "student"}
 c.Authenticator.admin_users = {"admin"}
-c.JupyterHub.load_groups = {"lect1:instructor": {'users' : ["admin", "instructor"]}, "lect1:student": {'users' : ["student"]}, "lect1:tutor": {'users' : ["tutor"]}}
+c.JupyterHub.load_groups = {
+    "lect1:instructor": {"users": ["admin", "instructor"]},
+    "lect1:student": {"users": ["student"]},
+    "lect1:tutor": {"users": ["tutor"]},
+}
 c.Authenticator.enable_auth_state = True
+
 
 # this hook will be called when a user starts a server and will pass the JupyterHub API token to the Grader Service
 # in return the Grader Service will return an API token that can be used to authenticate with the Grader Service
 async def pre_spawn_hook(spawner):
     http_client = AsyncHTTPClient()
-    data = {"token" : spawner.api_token}
-    request = HTTPRequest(url="<grader-service-url>/services/grader/login", method='POST', body=json_encode(data))
+    data = {"token": spawner.api_token}
+    request = HTTPRequest(
+        url="<grader-service-url>/services/grader/login", method="POST", body=json_encode(data)
+    )
 
     response = await http_client.fetch(request=request)
     grader_api_token = json_decode(response.body)["api_token"]
     spawner.environment.update({"GRADER_API_TOKEN": grader_api_token})
+
 
 c.Spawner.pre_spawn_hook = pre_spawn_hook
 ```
@@ -94,6 +102,7 @@ c.Authenticator.allow_all = True
 # c.Authenticator.admin_users = {'admin1', 'admin2'}
 c.JupyterHubTokenAuthenticator.user_info_url = "<jupyterhub-url>/hub/api/user"
 
+
 def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentication: dict):
     log = handler.log
     session = handler.session
@@ -109,7 +118,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
         session.commit()
 
     for group in groups:
-        if (":" in group):
+        if ":" in group:
             split_group = group.split(":")
             lecture_code = split_group[0]
             scope = split_group[1]
@@ -125,20 +134,27 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
                 session.add(lecture)
                 session.commit()
 
-            role = session.query(Role).filter(Role.user_id == user_model.id, Role.lectid == lecture.id).one_or_none()
+            role = (
+                session.query(Role)
+                .filter(Role.user_id == user_model.id, Role.lectid == lecture.id)
+                .one_or_none()
+            )
             if role is None:
-                log.info(f'No role for user {username} in lecture {lecture_code}... creating role')
+                log.info(f"No role for user {username} in lecture {lecture_code}... creating role")
                 role = Role(user_id=user_model.id, lectid=lecture.id, role=scope)
                 session.add(role)
                 session.commit()
             else:
-                log.info(f'Found role {role.role.name} for user {username} in lecture {lecture_code}... updating role to {scope.name}')
+                log.info(
+                    f"Found role {role.role.name} for user {username} in lecture {lecture_code}... updating role to {scope.name}"
+                )
                 role.role = scope
                 session.commit()
         else:
             log.info("Found group that doesn't match schema. Ignoring %s", group)
 
     return authentication
+
 
 c.Authenticator.post_auth_hook = post_auth_hook
 ```
@@ -172,19 +188,25 @@ from grader_service.auth.dummy import DummyAuthenticator
 
 c.GraderService.authenticator_class = DummyAuthenticator
 # default users
-c.Authenticator.allowed_users = {'admin', 'instructor', 'student', 'tutor'}
-c.Authenticator.admin_users = {'admin'}
+c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
+c.Authenticator.admin_users = {"admin"}
 # default roles
-c.GraderService.load_roles = {"lect1": [{"members": ["admin", "instructor"], "role": "instructor"},
-                                        {"members": ["tutor"], "role": "tutor"},
-                                        {"members": ["student"], "role": "student"}]}
+c.GraderService.load_roles = {
+    "lect1": [
+        {"members": ["admin", "instructor"], "role": "instructor"},
+        {"members": ["tutor"], "role": "tutor"},
+        {"members": ["student"], "role": "student"},
+    ]
+}
 
 # JupyterHub client config
-c.GraderService.oauth_clients = [{
-    'client_id': '<my_id>',
-    'client_secret': '<my_secret>',
-    'redirect_uri': '<jupyterhub-url>/hub/oauth_callback'
-}]
+c.GraderService.oauth_clients = [
+    {
+        "client_id": "<my_id>",
+        "client_secret": "<my_secret>",
+        "redirect_uri": "<jupyterhub-url>/hub/oauth_callback",
+    }
+]
 ```
 
 Lastly, we will configure the JupyterHub to use the Grader Service as an OAuth2 provider.
@@ -215,6 +237,7 @@ c.GenericOAuthenticator.logout_redirect_url = "<grader-service-url>/services/gra
 c.GenericOAuthenticator.userdata_url = "<grader-service-url>/services/grader/api/user"
 c.GenericOAuthenticator.username_claim = "name"
 c.Authenticator.enable_auth_state = True
+
 
 def auth_state_hook(spawner, auth_state):
     token = auth_state["access_token"]

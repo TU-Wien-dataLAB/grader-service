@@ -7,17 +7,16 @@ import json
 import secrets
 import shutil
 import subprocess
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
-from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.artifact_types import ArtifactType
+from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.orm import Assignment, Lecture, Role, Submission, SubmissionLogs, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
@@ -71,7 +70,7 @@ def insert_assignment(session: Session, lecture_id=1):
             lecture_id,
             20,
             "created",
-            AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2)),
+            AssignmentSettings(deadline=datetime.now(tz=UTC) + timedelta(weeks=2)),
         )
     )
     session.commit()
@@ -86,7 +85,7 @@ def insert_assignments(session: Session, lecture_id=1):
             lecture_id,
             20,
             "released",
-            AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2)),
+            AssignmentSettings(deadline=datetime.now(tz=UTC) + timedelta(weeks=2)),
         )
     )
     session.add(
@@ -95,7 +94,7 @@ def insert_assignments(session: Session, lecture_id=1):
             lecture_id,
             10,
             "created",
-            AssignmentSettings(deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=1)),
+            AssignmentSettings(deadline=datetime.now(tz=UTC) + timedelta(weeks=1)),
         )
     )
     session.commit()
@@ -108,11 +107,11 @@ def _get_submission(
     username: str,
     user_id: int,
     feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
-    score: Optional[float] = None,
-    commit_hash: Optional[str] = None,
+    score: float | None = None,
+    commit_hash: str | None = None,
 ):
     s = Submission()
-    s.date = datetime.now(tz=timezone.utc)
+    s.date = datetime.now(tz=UTC)
     s.auto_status = AutoStatus.NOT_GRADED
     s.manual_status = ManualStatus.NOT_GRADED
     s.assignid = assignment_id
@@ -127,12 +126,12 @@ def _get_submission(
 def insert_submission(
     session: Session,
     assignment_id: int = 1,
-    username: Optional[str] = "ubuntu",
-    user_id: Optional[int] = 1,
+    username: str | None = "ubuntu",
+    user_id: int | None = 1,
     feedback: FeedbackStatus = FeedbackStatus.NOT_GENERATED,
     with_properties: bool = True,
-    score: float = None,
-    commit_hash: Optional[str] = None,
+    score: float | None = None,
+    commit_hash: str | None = None,
     with_logs: bool = False,
 ) -> Submission:
     submission = _get_submission(
