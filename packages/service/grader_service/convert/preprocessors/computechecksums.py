@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 
@@ -12,7 +10,7 @@ class ComputeChecksums(NbGraderPreprocessor):
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # compute checksums of grade cell and solution cells
         if utils.is_grade(cell) or utils.is_solution(cell) or utils.is_locked(cell):
             checksum = utils.compute_checksum(cell)

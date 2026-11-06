@@ -3,7 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from traitlets import Unicode, observe, validate, default
+from traitlets import Unicode, default, observe, validate
 
 from grader_service.artifact_types import ArtifactType
 from grader_service.file_services.base_file_service import FileService, FileServiceError

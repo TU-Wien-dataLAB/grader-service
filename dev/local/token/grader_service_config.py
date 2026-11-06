@@ -1,14 +1,13 @@
 import os
-from typing import Optional
 
 from grader_service.auth.auth import Authenticator
 from grader_service.auth.token import JupyterHubTokenAuthenticator
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import BaseHandler
-from grader_service.orm import User, Lecture
+from grader_service.orm import Lecture, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
-from grader_service.orm.takepart import Scope, Role
+from grader_service.orm.takepart import Role, Scope
 from traitlets import log as traitlets_log
 
 logger = traitlets_log.get_logger()
@@ -22,16 +21,16 @@ c.GraderService.grader_service_dir = service_dir
 
 c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 
-c.CeleryApp.conf = dict(
-    broker_url="amqp://localhost",
-    result_backend="rpc://",
-    task_serializer="json",
-    result_serializer="json",
-    accept_content=["json"],
-    broker_connection_retry_on_startup=True,
-    task_always_eager=True,
-)
-c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
+c.CeleryApp.conf = {
+    "broker_url": "amqp://localhost",
+    "result_backend": "rpc://",
+    "task_serializer": "json",
+    "result_serializer": "json",
+    "accept_content": ["json"],
+    "broker_connection_retry_on_startup": True,
+    "task_always_eager": True,
+}
+c.CeleryApp.worker_kwargs = {"concurrency": 1, "pool": "prefork"}
 
 
 # JupyterHub client config
@@ -56,7 +55,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: Optional[User] = session.query(User).filter(User.name == username).one_or_none()
+    user_model: User | None = session.query(User).filter(User.name == username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username

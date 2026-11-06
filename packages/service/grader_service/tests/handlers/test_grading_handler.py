@@ -6,7 +6,7 @@
 
 
 import json
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import celery
 import pytest
@@ -85,11 +85,11 @@ async def test_auto_grading_wrong_assignment(
         patch.object(
             grader_service.autograding.celery.tasks.autograde_task, "delay", return_value=None
         ),
+        pytest.raises(HTTPClientError) as exc_info,
     ):
-        with pytest.raises(HTTPClientError) as exc_info:
-            await http_server_client.fetch(
-                url, method="GET", headers={"Authorization": f"Token {default_token}"}
-            )
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
     e = exc_info.value
     assert e.code == 404
 

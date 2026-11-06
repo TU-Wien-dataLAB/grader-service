@@ -32,7 +32,7 @@ class APIHandler(BaseHandler):
 
     @property
     def content_security_policy(self):
-        return "; ".join([super().content_security_policy, "default-src 'none'"])
+        return f"{super().content_security_policy}; default-src 'none'"
 
     def get_content_type(self):
         return "application/json"
@@ -94,9 +94,12 @@ class APIHandler(BaseHandler):
         # check these only if there is a cookie user,
         # avoiding misleading "Blocking Cross Origin" messages
         # when there's no cookie set anyway.
-        if cookie_user:
-            if self.request.method.upper() == "POST" and not self.check_post_content_type():
-                return None
+        if (
+            cookie_user
+            and self.request.method.upper() == "POST"
+            and not self.check_post_content_type()
+        ):
+            return None
         return cookie_user
 
     def get_json_body(self):
@@ -108,7 +111,7 @@ class APIHandler(BaseHandler):
             model = json.loads(body)
         except Exception:
             self.log.debug("Bad JSON: %r", body)
-            self.log.error("Couldn't parse JSON", exc_info=True)
+            self.log.exception("Couldn't parse JSON")
             raise web.HTTPError(400, reason="Invalid JSON in body of request")
         return model
 
@@ -123,8 +126,8 @@ class APIHandler(BaseHandler):
             # get the custom message, if defined
             try:
                 message = exception.log_message % exception.args
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                self.log.debug("Failed formatting of the exception message: %s", e)
 
             # construct the custom reason, if defined
             reason = getattr(exception, "reason", "")
@@ -135,15 +138,16 @@ class APIHandler(BaseHandler):
             try:
                 exception_str = str(exception)
                 self.log.warning("Rolling back session due to database error %s", exception_str)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.log.warning("Rolling back session due to database error %s", type(exception))
-            self.db.rollback()
+            finally:
+                self.db.rollback()
 
         self.set_header("Content-Type", "application/json")
         if isinstance(exception, web.HTTPError):
             # allow setting headers from exceptions
             # since exception handler clears headers
-            headers = getattr(exception, "headers", None)
+            headers = getattr(exception, "headers", {})
             if headers:
                 for key, value in headers.items():
                     self.set_header(key, value)
@@ -189,7 +193,7 @@ class APIHandler(BaseHandler):
             keys.update(allowed_keys)
         return model
 
-    _user_model_types = {
+    _user_model_types = {  # noqa: RUF012
         "name": str,
         "admin": bool,
         "groups": list,
@@ -197,9 +201,9 @@ class APIHandler(BaseHandler):
         "auth_state": dict,
     }
 
-    _group_model_types = {"name": str, "users": list, "roles": list}
+    _group_model_types = {"name": str, "users": list, "roles": list}  # noqa: RUF012
 
-    _service_model_types = {
+    _service_model_types = {  # noqa: RUF012
         "name": str,
         "admin": bool,
         "url": str,
@@ -225,13 +229,13 @@ class APIHandler(BaseHandler):
             name (str): name of the model, used in error messages
         """
         if not isinstance(model, dict):
-            raise web.HTTPError(400, reason="Invalid JSON data: %r" % model)
+            raise web.HTTPError(400, reason=f"Invalid JSON data: {model!r}")
         if not set(model).issubset(set(model_types)):
-            raise web.HTTPError(400, reason="Invalid JSON keys: %r" % model)
+            raise web.HTTPError(400, reason=f"Invalid JSON keys: {model!r}")
         for key, value in model.items():
             if not isinstance(value, model_types[key]):
                 raise web.HTTPError(
-                    400, "%s.%s must be %s, not: %r" % (name, key, model_types[key], type(value))
+                    400, f"{name}.{key} must be {model_types[key]}, not: {type(value)!r}"
                 )
 
     def _check_user_model(self, model):
@@ -239,21 +243,21 @@ class APIHandler(BaseHandler):
         self._check_model(model, self._user_model_types, "user")
         for username in model.get("users", []):
             if not isinstance(username, str):
-                raise web.HTTPError(400, ("usernames must be str, not %r", type(username)))
+                raise web.HTTPError(400, "usernames must be str, not %r", type(username))
 
     def _check_group_model(self, model):
         """Check a request-provided group model from a REST API"""
         self._check_model(model, self._group_model_types, "group")
         for groupname in model.get("groups", []):
             if not isinstance(groupname, str):
-                raise web.HTTPError(400, ("group names must be str, not %r", type(groupname)))
+                raise web.HTTPError(400, "group names must be str, not %r", type(groupname))
 
     def _check_service_model(self, model):
         """Check a request-provided service model from a REST API"""
         self._check_model(model, self._service_model_types, "service")
         service_name = model.get("name")
         if not isinstance(service_name, str):
-            raise web.HTTPError(400, ("Service name must be str, not %r", type(service_name)))
+            raise web.HTTPError(400, "Service name must be str, not %r", type(service_name))
 
     def get_api_pagination(self):
         default_limit = self.settings["api_page_default_limit"]
@@ -268,12 +272,11 @@ class APIHandler(BaseHandler):
         try:
             offset = abs(int(offset)) if offset is not None else 0
             limit = abs(int(limit))
-            if limit > max_limit:
-                limit = max_limit
-            if limit < 1:
-                limit = 1
-        except Exception:
+        except (TypeError, ValueError):
             raise web.HTTPError(400, "Invalid argument type, offset and limit must be integers")
+
+        limit = min(limit, max_limit)
+        limit = max(limit, 1)
         return offset, limit
 
     def paginated_model(self, items, offset, limit, total_count):

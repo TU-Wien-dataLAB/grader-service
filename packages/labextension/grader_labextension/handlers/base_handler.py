@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import functools
 import os
-from typing import Awaitable, Optional
+from collections.abc import Awaitable
 
 from grader_service.handlers.base_handler import GraderErrorMixin
 from jupyter_server.base.handlers import APIHandler
@@ -60,7 +60,7 @@ class ExtensionBaseHandler(GraderErrorMixin, APIHandler):
     BaseHandler for all server-extension handler
     """
 
-    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+    def data_received(self, chunk: bytes) -> Awaitable[None] | None:
         pass
 
     def set_service_headers(self, response: HTTPResponse):
@@ -95,7 +95,7 @@ class ExtensionBaseHandler(GraderErrorMixin, APIHandler):
         :rtype: dict
         """
 
-        return dict(Authorization="Token " + HandlerConfig.instance().grader_api_token)
+        return {"Authorization": f"Token {HandlerConfig.instance().grader_api_token}"}
 
     @property
     def user_name(self):
@@ -111,7 +111,7 @@ class ExtensionBaseHandler(GraderErrorMixin, APIHandler):
             return lecture
         except RequestServiceError as e:
             self.log.error(e)
-            raise HTTPError(e.code, reason=e.message)
+            raise HTTPError(e.code, message=e.message)
 
     async def get_assignment(self, lecture_id: int, assignment_id: int) -> dict:
         try:
@@ -123,4 +123,4 @@ class ExtensionBaseHandler(GraderErrorMixin, APIHandler):
             return assignment
         except RequestServiceError as e:
             self.log.error(e)
-            raise HTTPError(e.code, reason=e.message)
+            raise HTTPError(e.code, message=e.message)

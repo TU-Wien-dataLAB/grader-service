@@ -1,4 +1,5 @@
 import os
+
 from oauthenticator.generic import GenericOAuthenticator
 
 ## generic

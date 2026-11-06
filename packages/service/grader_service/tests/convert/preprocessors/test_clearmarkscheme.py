@@ -3,8 +3,10 @@ import warnings
 from textwrap import dedent
 
 import pytest
+from nbconvert.exporters import ResourcesDict
 from traitlets.config import Config
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors import ClearMarkScheme
 
 from .. import create_code_cell, create_task_cell, create_text_cell
@@ -27,7 +29,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             ### END MARK SCHEME
             """
         ).strip()
-        cell = create_task_cell(source, "markdown", "some-task-id", 2)
+        cell = create_task_cell(source, CellType.MARKDOWN, "some-task-id", 2)
         removed_test = preprocessor._remove_mark_scheme_region(cell)
         assert removed_test
         assert cell.source == "assert True"
@@ -41,7 +43,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             this is a test!
             """
         ).strip()
-        cell = create_task_cell(source, "markdown", "some-task-id", 2)
+        cell = create_task_cell(source, CellType.MARKDOWN, "some-task-id", 2)
 
         with pytest.raises(RuntimeError):
             preprocessor._remove_mark_scheme_region(cell)
@@ -56,7 +58,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             this is a test!
             """
         ).strip()
-        cell = create_task_cell(source, "markdown", "some-task-id", 2)
+        cell = create_task_cell(source, CellType.MARKDOWN, "some-task-id", 2)
 
         with pytest.raises(RuntimeError):
             preprocessor._remove_mark_scheme_region(cell)
@@ -72,7 +74,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             ### END MARK SCHEME
             """
         ).strip()
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -88,7 +90,7 @@ class TestClearMarkScheme(BaseTestPreprocessor):
             """
         ).strip()
 
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -101,14 +103,14 @@ class TestClearMarkScheme(BaseTestPreprocessor):
     def test_dont_remove_mark_scheme_region(self, preprocessor):
         """Is false returned when there is no hidden test region?"""
         source = "nothing to remove"
-        cell = create_task_cell(source, "markdown", "some-task-id", 2)
+        cell = create_task_cell(source, CellType.MARKDOWN, "some-task-id", 2)
         removed_test = preprocessor._remove_mark_scheme_region(cell)
         assert not removed_test
 
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
         nb = self._read_nb(os.path.join("files", "test_taskcell.ipynb"))
-        preprocessor.preprocess(nb, {})
+        preprocessor.preprocess(nb, ResourcesDict())
 
     def test_deprecated_delimeter_config(self):
         """Does the deprecated delimeter config key still work and warn?"""

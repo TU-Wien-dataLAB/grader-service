@@ -5,11 +5,11 @@ By default, Celery is configured to use RabbitMQ as the message broker:
 
 ```python
 c.CeleryApp.conf = dict(
-    broker_url='amqp://localhost',
-    result_backend='rpc://',
-    task_serializer='json',
-    result_serializer='json',
-    accept_content=['json'],
+    broker_url="amqp://localhost",
+    result_backend="rpc://",
+    task_serializer="json",
+    result_serializer="json",
+    accept_content=["json"],
     broker_connection_retry_on_startup=True,
 )
 c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
