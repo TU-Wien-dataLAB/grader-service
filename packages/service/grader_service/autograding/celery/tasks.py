@@ -1,5 +1,4 @@
 import asyncio
-from typing import Union
 
 from celery import Celery, Task
 from tornado.web import HTTPError
@@ -85,12 +84,12 @@ def lti_sync_task(
     assignment: dict,
     submissions: list[dict],
     feedback_sync: bool = False,
-) -> Union[dict, None]:
+) -> dict | None:
     """Gathers submissions based on params and starts LTI sync process
     :param lecture: lecture object
     :param assignment: assignment object
     :param submissions: submissions to be synced (including user information)
-    :param feedback_sync(optional): if True, the sync task was started by a feedback generation
+    :param feedback_sync: if True, the sync task was started by a feedback generation
     """
     lti_plugin = self.celery.plugin_manager.get("lti")
     if lti_plugin is None:
@@ -105,17 +104,16 @@ def lti_sync_task(
             results = asyncio.run(lti_plugin.start(lecture, assignment, submissions))
             return results
         except HTTPError as e:
-            err_msg = f"Could not sync grades: {e.reason}"
-            self.log.info(err_msg)
-            raise e
-        except Exception as e:
-            self.log.error("Could not sync grades: " + str(e))
-            raise HTTPError(500, reason="An unexpected error occured.")
+            self.log.info("Could not sync grades: %s", e.reason)
+            raise
+        except Exception:
+            self.log.exception("Could not sync grades")
+            raise HTTPError(500, reason="An unexpected error occurred when syncing grades.")
     else:
         # if the synchronisation task is automatic only log event
         if feedback_sync:
             self.log.info("Skipping LTI grade synchronisation, because it is not enabled")
         else:
             # else tell the user that the plugin is disabled
-            raise HTTPError(403, reason="LTI plugin is not enabled by administator.")
+            raise HTTPError(403, reason="LTI plugin is not enabled by administrator.")
     return None

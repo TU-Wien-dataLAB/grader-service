@@ -15,7 +15,7 @@ from grader_service.api.models.base_model import Model
 Base = declarative_base()
 
 
-class Serializable(object):
+class Serializable:
     @property
     def model(self) -> Model:
         return Model()

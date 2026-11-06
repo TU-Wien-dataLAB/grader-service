@@ -9,8 +9,8 @@ import os
 import shutil
 import stat
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from traitlets.config.configurable import LoggerType
 
@@ -36,7 +36,7 @@ def rm_error(func, path, exc_info):
         os.chmod(path, stat.S_IWUSR)
         func(path)
     else:
-        raise
+        raise  # noqa: PLE0704
 
 
 @contextmanager

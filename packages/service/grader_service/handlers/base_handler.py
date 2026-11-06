@@ -11,8 +11,9 @@ import re
 import time
 import uuid
 from _decimal import Decimal
+from collections.abc import Awaitable
 from http import HTTPStatus
-from typing import Any, Awaitable, List, Optional, Union
+from typing import Any
 from urllib.parse import parse_qsl, urljoin, urlparse
 
 from sqlalchemy import func
@@ -45,7 +46,7 @@ auth_header_pat = re.compile(r"^(token|bearer|basic)\s+([^\s]+)$", flags=re.IGNO
 
 
 def check_authorization(
-    self: "GraderBaseHandler", scopes: list[Scope], lecture_id: Union[int, None]
+    self: "GraderBaseHandler", scopes: list[Scope], lecture_id: int | None
 ) -> bool:
     request_path = self.request.path
     is_admin = self.authenticator.is_admin(handler=self, authentication={"name": self.user.name})
@@ -139,7 +140,7 @@ class BaseHandler(web.RequestHandler):
 
     Implements validation and request functions"""
 
-    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+    def data_received(self, chunk: bytes) -> Awaitable[None] | None:
         pass
 
     def __init__(
@@ -308,14 +309,14 @@ class BaseHandler(web.RequestHandler):
             self.application.cookie_name, path=self.application.base_url.rstrip("/"), **kwargs
         )
 
-    def get_session_cookie(self) -> Optional[str]:
+    def get_session_cookie(self) -> str | None:
         """Get the session id from a cookie
 
         Returns None if no session id is stored
         """
         return self.get_cookie(SESSION_COOKIE_NAME, None)
 
-    def _user_for_cookie(self, cookie_name, cookie_value=None) -> Optional[User]:
+    def _user_for_cookie(self, cookie_name, cookie_value=None) -> User | None:
         """Get the User for a given cookie, if there is one"""
         cookie_id = self.get_secure_cookie(
             cookie_name, cookie_value, max_age_days=self.application.cookie_max_age_days
@@ -369,7 +370,7 @@ class BaseHandler(web.RequestHandler):
             return True
         return False
 
-    def get_auth_token(self) -> Optional[str]:
+    def get_auth_token(self) -> str | None:
         """Get the authorization token from Authorization header"""
         auth_header = self.request.headers.get("Authorization", "")
         match = auth_header_pat.match(auth_header)
@@ -383,7 +384,7 @@ class BaseHandler(web.RequestHandler):
         else:
             return match.group(2)
 
-    def get_token(self) -> Optional[APIToken]:
+    def get_token(self) -> APIToken | None:
         """get token from authorization header"""
         if not hasattr(self, "_cached_token"):
             token = self.get_auth_token()
@@ -393,7 +394,7 @@ class BaseHandler(web.RequestHandler):
                 self._cached_token = APIToken.find(self.session, token)
         return self._cached_token
 
-    def get_current_user_token(self) -> Optional[User]:
+    def get_current_user_token(self) -> User | None:
         """get_current_user from Authorization header token"""
         # record token activity
         orm_token = self.get_token()
@@ -409,7 +410,7 @@ class BaseHandler(web.RequestHandler):
         self._token_authenticated = True
         return orm_token.user
 
-    def get_current_user_cookie(self) -> Optional[User]:
+    def get_current_user_cookie(self) -> User | None:
         """get_current_user from a cookie token"""
         return self._user_for_cookie(self.application.cookie_name)
 
@@ -468,7 +469,7 @@ class BaseHandler(web.RequestHandler):
             auth_info["auth_state"] = await user.get_auth_state()
         return await self.auth_to_user(auth_info, user)
 
-    async def get_current_user(self) -> Optional[User]:
+    async def get_current_user(self) -> User | None:
         """get current user"""
         if not hasattr(self, "_grader_user"):
             user = None
@@ -491,7 +492,7 @@ class BaseHandler(web.RequestHandler):
         self.session.close()
 
     @property
-    def current_user(self) -> Optional[User]:
+    def current_user(self) -> User | None:
         """Override .current_user accessor from tornado
 
         Allows .get_current_user to be async.
@@ -501,7 +502,7 @@ class BaseHandler(web.RequestHandler):
         return self._grader_user
 
     @property
-    def user(self) -> Optional[User]:
+    def user(self) -> User | None:
         return self.current_user
 
     def set_session_cookie(self):
@@ -666,18 +667,18 @@ class BaseHandler(web.RequestHandler):
     def template_namespace(self):
         user = self.current_user
         base_url = urljoin(self.application.base_url, "/")  # make sure "/" is at the end
-        ns = dict(
-            base_url=base_url,
-            prefix=base_url,
-            user=user,
-            login_url=self.settings["login_url"],
-            login_service=self.authenticator.login_service,
-            logout_url=self.settings["logout_url"],
-            static_url=self.static_url,
-            version_hash="",
-            parsed_scopes=self.parsed_scopes,
-            xsrf=self.xsrf_token.decode("ascii"),
-        )
+        ns = {
+            "base_url": base_url,
+            "prefix": base_url,
+            "user": user,
+            "login_url": self.settings["login_url"],
+            "login_service": self.authenticator.login_service,
+            "logout_url": self.settings["logout_url"],
+            "static_url": self.static_url,
+            "version_hash": "",
+            "parsed_scopes": self.parsed_scopes,
+            "xsrf": self.xsrf_token.decode("ascii"),
+        }
         if self.application.template_vars:
             for key, value in self.application.template_vars.items():
                 if callable(value):
@@ -829,17 +830,17 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
             raise HTTPError(400, reason=f"Unknown arguments: {unknown_args}")
 
     def get_role(self, lecture_id: int) -> Role:
-        role: Optional[Role] = self.session.get(Role, (self.user.id, lecture_id))
+        role: Role | None = self.session.get(Role, (self.user.id, lecture_id))
         if role is None:
             raise HTTPError(403, reason="No role found")
         return role
 
     def get_lecture(self, lecture_id: int) -> Lecture:
-        lecture: Optional[Lecture] = self.session.get(Lecture, lecture_id)
+        lecture: Lecture | None = self.session.get(Lecture, lecture_id)
         return lecture
 
     def get_assignment(self, lecture_id: int, assignment_id: int) -> Assignment:
-        assignment: Optional[Assignment] = self.session.get(Assignment, assignment_id)
+        assignment: Assignment | None = self.session.get(Assignment, assignment_id)
         if (
             (assignment is None)
             or ((assignment.deleted == DeleteState.deleted) and (not self.user.is_admin))
@@ -850,7 +851,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         return assignment
 
     def get_submission(self, lecture_id: int, assignment_id: int, submission_id: int) -> Submission:
-        submission: Optional[Submission] = self.session.get(Submission, submission_id)
+        submission: Submission | None = self.session.get(Submission, submission_id)
         if (
             (submission is None)
             or (submission.assignid != assignment_id)
@@ -863,7 +864,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
     def get_latest_submissions(
         self, assignment_id, must_have_feedback=False, user_id=None
-    ) -> List[Submission]:
+    ) -> list[Submission]:
         query = (
             self.session.query(Submission.user_id, func.max(Submission.date).label("max_date"))
             .filter(Submission.assignid == assignment_id)
@@ -899,7 +900,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
         return submissions_query.all()
 
-    def get_all_submissions(self, assignment_id) -> List[Submission]:
+    def get_all_submissions(self, assignment_id) -> list[Submission]:
         query = (
             self.session.query(Submission)
             .options(joinedload(Submission.user))
@@ -913,7 +914,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
     def get_best_submissions(
         self, assignment_id, must_have_feedback=False, user_id=None
-    ) -> List[Submission]:
+    ) -> list[Submission]:
         query = (
             self.session.query(Submission.user_id, func.max(Submission.score).label("max_score"))
             .filter(Submission.assignid == assignment_id)
@@ -970,7 +971,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
     def delete_previous_assignment(
         self, assignment: Assignment, lecture_id: int
-    ) -> Optional[Assignment]:
+    ) -> Assignment | None:
         """Deletes a previously soft-deleted assignment with the same name in the lecture, if it exists.
 
         When performing a soft-delete, a previously soft-deleted assignment with the same
@@ -1016,7 +1017,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         if isinstance(obj, (str, int, float, complex)) or obj is None:
             return obj
         if isinstance(obj, datetime.datetime):
-            obj = obj.replace(tzinfo=datetime.timezone.utc)
+            obj = obj.replace(tzinfo=datetime.UTC)
             return str(obj)
         if isinstance(obj, Decimal):
             return float(obj)

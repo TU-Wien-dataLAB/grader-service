@@ -221,7 +221,7 @@ class TestSaveCells(BaseTestPreprocessor):
         assert source_cell.source == "goodbye"
 
     def test_save_kernelspec(self, preprocessor, gradebook, resources):
-        kernelspec = dict(display_name="blarg", name="python3", language="python")
+        kernelspec = {"display_name": "blarg", "name": "python3", "language": "python"}
 
         nb = new_notebook()
         nb.metadata["kernelspec"] = kernelspec

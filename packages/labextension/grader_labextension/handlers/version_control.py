@@ -8,13 +8,13 @@ import json
 import os
 import shutil
 from http import HTTPStatus
-from typing import List, Optional
 from urllib.parse import quote, unquote
 
+import anyio
+from grader_service.artifact_types import ArtifactType
 from grader_service.convert.converters.base import GraderConvertException
 from grader_service.convert.converters.generate_assignment import GenerateAssignment
 from grader_service.errors import APIError
-from grader_service.artifact_types import ArtifactType
 from tornado.web import HTTPError, authenticated
 
 from grader_labextension.api.models.assignment_settings import AssignmentSettings
@@ -63,15 +63,15 @@ class GenerateHandler(ExtensionBaseHandler):
             self.log.info("Deleting files in release directory")
             shutil.rmtree(output_dir)
             os.mkdir(output_dir)
-        except Exception as e:
-            self.log.error(e)
+        except OSError as e:
+            self.log.error("Failed to delete the release directory: %s", e)
             raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
 
         self.log.info("Starting GenerateAssignment converter")
         try:
             generator.start()
         except Exception as e:
-            self.log.error(e)
+            self.log.exception("GenerateAssignment converter failed to start")
             raise APIError(HTTPStatus.CONFLICT, message=str(e))
 
         gradebook_path = os.path.join(generator._output_directory, "gradebook.json")
@@ -355,9 +355,7 @@ class PushHandler(ExtensionBaseHandler):
 
         self.write({"status": "OK"})
 
-    def _extract_request_params(
-        self,
-    ) -> tuple[Optional[str], Optional[str], List[str], bool, Optional[str]]:
+    def _extract_request_params(self) -> tuple[str | None, str | None, list[str], bool, str | None]:
         sub_id_str = self.get_argument("subid", None)
         commit_message = self.get_argument("commit-message", None)
         selected_files = self.get_arguments("selected-files")
@@ -375,7 +373,7 @@ class PushHandler(ExtensionBaseHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND, reason="Commit message was not found")
 
     async def _create_submission_for_user(
-        self, lecture_id: int, assignment_id: int, username: Optional[str]
+        self, lecture_id: int, assignment_id: int, username: str | None
     ) -> int:
         """Creates a new submission for the user `username`."""
         if username is None:
@@ -464,7 +462,7 @@ class PushHandler(ExtensionBaseHandler):
             shutil.rmtree(output_path)
             os.mkdir(output_path)
         except Exception as e:
-            self.log.error(e)
+            self.log.exception("Failed to recreate the release directory")
             raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
 
         self.log.info("Starting GenerateAssignment converter")
@@ -472,13 +470,13 @@ class PushHandler(ExtensionBaseHandler):
             generator.start()
             self.log.info("GenerateAssignment conversion done")
         except GraderConvertException as e:
-            self.log.error("Converting failed: Error converting notebook!", exc_info=True)
+            self.log.exception("Converting failed: Error converting notebook!")
             raise APIError(HTTPStatus.CONFLICT, message=str(e))
 
     async def _update_assignment_properties(self, gradebook_path, lecture_id, assignment_id):
         try:
-            with open(gradebook_path, "r") as f:
-                gradebook_json = json.load(f)
+            async with await anyio.open_file(gradebook_path, "r") as f:
+                gradebook_json = json.loads(await f.read())
 
             try:
                 # update assignment properties in grader service with the generated gradebook.json
@@ -505,7 +503,7 @@ class PushHandler(ExtensionBaseHandler):
         artifact: ArtifactType,
         commit_message: str,
         selected_files,
-        sub_id: Optional[int] = None,
+        sub_id: int | None = None,
     ):
         remote = f"grader_{artifact}"
         try:

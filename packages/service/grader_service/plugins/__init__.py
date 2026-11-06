@@ -6,7 +6,7 @@
 
 # Import plugin modules so that @register_plugin decorators execute and
 # populate the plugin registry before create_plugin_manager() is called.
-from grader_service.plugins import lti  # noqa: F401
+from grader_service.plugins import lti
 from grader_service.plugins.base import (
     GraderPlugin,
     PluginManager,
@@ -14,4 +14,4 @@ from grader_service.plugins.base import (
     register_plugin,
 )
 
-__all__ = ["GraderPlugin", "PluginManager", "create_plugin_manager", "register_plugin", "lti"]
+__all__ = ["GraderPlugin", "PluginManager", "create_plugin_manager", "lti", "register_plugin"]

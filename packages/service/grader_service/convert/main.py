@@ -26,8 +26,8 @@ class GraderConverter(ConverterApp):
     aliases = aliases
     flags = flags
 
-    subcommands = dict(
-        generate_assignment=(
+    subcommands = {  # noqa: RUF012
+        "generate_assignment": (
             GenerateAssignmentApp,
             dedent(
                 """
@@ -36,7 +36,7 @@ class GraderConverter(ConverterApp):
                 """
             ).strip(),
         ),
-        autograde=(
+        "autograde": (
             AutogradeApp,
             dedent(
                 """
@@ -45,7 +45,7 @@ class GraderConverter(ConverterApp):
                 """
             ).strip(),
         ),
-        generate_feedback=(
+        "generate_feedback": (
             GenerateFeedbackApp,
             dedent(
                 """
@@ -54,7 +54,7 @@ class GraderConverter(ConverterApp):
                 """
             ).strip(),
         ),
-    )
+    }
 
 
 def main():

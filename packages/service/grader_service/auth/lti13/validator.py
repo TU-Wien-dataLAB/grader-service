@@ -1,6 +1,7 @@
 from calendar import timegm
-from datetime import datetime, timezone
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any
 
 import jwt
 from traitlets import Int
@@ -22,7 +23,7 @@ from .error import (
 
 
 def now() -> int:
-    return timegm(datetime.now(tz=timezone.utc).utctimetuple())
+    return timegm(datetime.now(tz=UTC).utctimetuple())
 
 
 class LTI13LaunchValidator(LoggingConfigurable):
@@ -49,7 +50,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
         """,
     )
 
-    def validate_login_request(self, args: Dict[str, Any]) -> None:
+    def validate_login_request(self, args: dict[str, Any]) -> None:
         """
         Validates the initial authentication request and ensures the required
         claims are included in said request.
@@ -62,7 +63,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
         """
         self._validate_required_args(args, LTI13_INIT_LOGIN_REQUEST_ARGS)
 
-    def validate_auth_response(self, args: Dict[str, Any]) -> None:
+    def validate_auth_response(self, args: dict[str, Any]) -> None:
         """
         Validates the response from the authorization server and ensures that the required
         parameters are present.
@@ -75,17 +76,17 @@ class LTI13LaunchValidator(LoggingConfigurable):
         """
         self._validate_required_args(args, LTI13_AUTH_RESPONSE_ARGS)
 
-    def _check_arg_not_missing(self, args: Dict[str, Any], required: Iterable[str]):
+    def _check_arg_not_missing(self, args: dict[str, Any], required: Iterable[str]):
         for a in required:
             if a not in args:
                 raise MissingRequiredArgumentError(f"Required LTI 1.3 arg {a} not in request")
 
-    def _check_arg_not_empty(self, args: Dict[str, Any], required: Iterable[str]):
+    def _check_arg_not_empty(self, args: dict[str, Any], required: Iterable[str]):
         for a in required:
             if not args.get(a):
                 raise MissingRequiredArgumentError(f"Required LTI 1.3 arg {a} needs a value")
 
-    def _validate_required_args(self, args: Dict[str, Any], required: Iterable[str]):
+    def _validate_required_args(self, args: dict[str, Any], required: Iterable[str]):
         self._check_arg_not_missing(args, required)
         self._check_arg_not_empty(args, required)
 
@@ -131,7 +132,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
 
         return id_token
 
-    def _check_message_type(self, id_token: Dict[str, Any]) -> None:
+    def _check_message_type(self, id_token: dict[str, Any]) -> None:
         """Validate message type value"""
         message_type = id_token.get("https://purl.imsglobal.org/spec/lti/claim/message_type")
         if (
@@ -146,7 +147,7 @@ class LTI13LaunchValidator(LoggingConfigurable):
         ):
             raise IncorrectValueError(f"Incorrect value {message_type} for message_type claim")
 
-    def _check_context_label(self, id_token: Dict[str, Any]) -> None:
+    def _check_context_label(self, id_token: dict[str, Any]) -> None:
         """Validate context label."""
         context_claim = id_token.get("https://purl.imsglobal.org/spec/lti/claim/context")
         context_label = context_claim.get("label") if context_claim else None
@@ -155,19 +156,19 @@ class LTI13LaunchValidator(LoggingConfigurable):
                 "Claim https://purl.imsglobal.org/spec/lti/claim/context present, but context label is missing."
             )
 
-    def _check_lti_version(self, id_token: Dict[str, Any]) -> None:
+    def _check_lti_version(self, id_token: dict[str, Any]) -> None:
         """Check version claim."""
         lti_version = id_token.get("https://purl.imsglobal.org/spec/lti/claim/version")
         if lti_version != "1.3.0":
             raise IncorrectValueError(f"Incorrect value {lti_version} for version claim")
 
-    def _check_resource_link_id(self, id_token: Dict[str, Any]) -> None:
+    def _check_resource_link_id(self, id_token: dict[str, Any]) -> None:
         """Check if resource_link claim has id set."""
         id = id_token.get("https://purl.imsglobal.org/spec/lti/claim/resource_link", {}).get("id")
         if not id:
             raise MissingRequiredArgumentError("resource_link claim's id can't be empty")
 
-    def validate_azp_claim(self, id_token: Dict[str, Any], client_id: Iterable[str]) -> None:
+    def validate_azp_claim(self, id_token: dict[str, Any], client_id: Iterable[str]) -> None:
         """Check if azp claim is present and matches client_id."""
         aud = id_token["aud"]
         need_azp = isinstance(id_token["aud"], list) and len(aud) > 1
@@ -181,13 +182,13 @@ class LTI13LaunchValidator(LoggingConfigurable):
         if azp not in client_id:
             raise InvalidAudienceError("azp claim does not match client_id.")
 
-    def _check_if_iat_is_too_old(self, id_token: Dict[str, Any]) -> None:
+    def _check_if_iat_is_too_old(self, id_token: dict[str, Any]) -> None:
         """Raise TokenError if iat is too old."""
         iat = id_token["iat"]
         if iat < now() - self.max_age - self.time_leeway:
             raise TokenError("id_token issued too long ago.")
 
-    def validate_id_token(self, id_token: Dict[str, Any]) -> None:
+    def validate_id_token(self, id_token: dict[str, Any]) -> None:
         """
         Validates that a LTI 1.3 launch request's decoded JWT has required
         claims (dictionary keys of id_token).

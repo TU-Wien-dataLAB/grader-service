@@ -7,8 +7,9 @@ import os
 import shutil
 import urllib.parse
 
-from grader_service.errors import APIError
+import anyio
 from grader_service.artifact_types import ArtifactType
+from grader_service.errors import APIError
 from tornado.httpclient import HTTPResponse
 from tornado.web import HTTPError, authenticated
 
@@ -80,8 +81,8 @@ class ExportGradesHandler(ExtensionBaseHandler):
         file_path = os.path.join(
             dir_path, f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
         )
-        with open(file_path, "w") as f:
-            f.write(csv_content)
+        async with await anyio.open_file(file_path, "w") as f:
+            await f.write(csv_content)
 
         self.write({"status": "OK"})
 

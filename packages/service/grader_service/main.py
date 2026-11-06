@@ -242,7 +242,7 @@ class GraderService(config.Application):
             sys.exit(1)
         return proposal.value
 
-    flags = {
+    flags = {  # noqa: RUF012  # TODO: unused, remove
         "debug": (
             {"Application": {"log_level": logging.DEBUG}},
             "Set log-level to debug, for the most verbose logging.",
@@ -261,7 +261,7 @@ class GraderService(config.Application):
         ),
     }
 
-    aliases = {
+    aliases = {  # noqa: RUF012  # TODO: unused, remove
         "log-level": "Application.log_level",
         "f": "GraderService.config_file",
         "config": "GraderService.config_file",
@@ -334,10 +334,6 @@ class GraderService(config.Application):
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
-        if sys.version_info < (3, 11):
-            msg = "Grader Service needs Python version 3.11 or above to run!"
-            raise RuntimeError(msg)
-
         self.log.info("Starting Initialization...")
         super().initialize(*args, **kwargs)
         self.parse_command_line(argv)
@@ -512,8 +508,7 @@ class GraderService(config.Application):
             except asyncio.CancelledError:
                 self.log.debug("Caught Task CancelledError. Ignoring")
             except StopAsyncIteration:
-                msg = "Caught StopAsyncIteration Exception"
-                self.log.error(msg, exc_info=True)
+                self.log.exception("Caught StopAsyncIteration Exception. Ignoring")
 
             tasks = [t for t in asyncio.all_tasks()]
             for t in tasks:

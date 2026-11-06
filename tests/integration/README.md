@@ -188,11 +188,7 @@ def test_new_feature(self, admin_auth_token):
     """Test new feature functionality."""
     headers = {"Authorization": f"Bearer {admin_auth_token}"}
     try:
-        response = requests.get(
-            f"{SERVICE_URL}/new-feature",
-            headers=headers,
-            timeout=5
-        )
+        response = requests.get(f"{SERVICE_URL}/new-feature", headers=headers, timeout=5)
         assert response.status_code == 200
     except requests.exceptions.ConnectionError:
         pytest.skip("Service not available")

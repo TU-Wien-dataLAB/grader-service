@@ -6,8 +6,6 @@ Create Date: 2025-11-04 11:55:10.513853
 
 """
 
-from typing import Dict, List
-
 from alembic import op
 from sqlalchemy import Column, Connection, MetaData, String, Table, and_, inspect, select, text
 
@@ -91,7 +89,7 @@ def _get_stored_old_fk(conn, table_name, local_cols, referred_table):
 
 
 def _upgrade_recreate_foreign_keys(
-    connection: Connection, table_name: str, fk_definitions: List[Dict]
+    connection: Connection, table_name: str, fk_definitions: list[dict]
 ) -> None:
     """
     Recreate foreign key constraints on a table during a migration.
@@ -131,7 +129,7 @@ def _upgrade_recreate_foreign_keys(
 
 
 def _downgrade_recreate_foreign_keys(
-    connection: Connection, table_name: str, fk_definitions: List[Dict]
+    connection: Connection, table_name: str, fk_definitions: list[dict]
 ) -> None:
     """
     Restore previous foreign key constraints during a downgrade migration.

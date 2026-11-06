@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import patch
 
 from nbclient import NotebookClient
@@ -32,7 +32,7 @@ def _generate_test_submission(
     input_dir: str | Path,
     output_dir: str | Path,
     file_pattern: str = "*.ipynb",
-    assignment_settings_kwargs: Dict[str, Any] = None,
+    assignment_settings_kwargs: dict[str, Any] | None = None,
 ):
     if assignment_settings_kwargs is None:
         assignment_settings_kwargs = {}
@@ -50,7 +50,7 @@ def _autograde_test_submission(
     input_dir: str,
     output_dir: str,
     file_pattern: str = "*.ipynb",
-    assignment_settings_kwargs: Dict[str, Any] = None,
+    assignment_settings_kwargs: dict[str, Any] | None = None,
 ):
     if assignment_settings_kwargs is None:
         assignment_settings_kwargs = {}

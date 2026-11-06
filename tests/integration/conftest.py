@@ -1,10 +1,11 @@
 """Conftest for integration tests with user server spawning."""
 
+import os
+import time
+import uuid
+
 import pytest
 import requests
-import time
-import os
-import uuid
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8080")
 SERVICE_URL = os.getenv("SERVICE_URL", "http://localhost:8000/services/grader/api")
@@ -71,7 +72,6 @@ def admin_auth_token(wait_for_services, hub_service_token):
             return response.json()["api_token"]
     except requests.exceptions.RequestException as e:
         print(f"Failed to login to service: {e}")
-        pass
     return None
 
 
@@ -106,7 +106,6 @@ def test_user(wait_for_services, hub_service_token):
         return {"username": username}
     except requests.exceptions.RequestException as e:
         print(f"Failed to create user: {e}")
-        pass
 
     return None
 
@@ -154,8 +153,8 @@ def user_server(test_user, hub_service_token, wait_for_services):
                 requests.delete(
                     f"{HUB_API_URL}/users/{username}/server", headers=headers, timeout=10
                 )
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                print(f"Failed to delete server: {e}")
 
 
 @pytest.fixture(scope="session")
