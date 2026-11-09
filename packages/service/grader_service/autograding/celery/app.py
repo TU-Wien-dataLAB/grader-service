@@ -26,8 +26,8 @@ class CeleryApp(SingletonConfigurable):
     ).tag(config=True)
 
     app: Celery
-    _session_maker: Union[sessionmaker, None] = None
-    _db_url: Union[str, None] = None
+    _session_maker: Optional[sessionmaker] = None
+    _db_url: Optional[str] = None
 
     def __init__(self, config_file: Union[str, None] = None, **kwargs):
         super().__init__(**kwargs)
