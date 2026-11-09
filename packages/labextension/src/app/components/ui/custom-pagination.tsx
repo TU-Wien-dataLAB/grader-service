@@ -1,6 +1,7 @@
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationFirst,
   PaginationItem,
   PaginationLast,
@@ -16,8 +17,37 @@ interface IPaginationProps {
   totalPages: number;
 }
 
+type PageItem = number | 'ellipsis-start' | 'ellipsis-end';
+
+const MAX_VISIBLE = 5;
+
+const range = (from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+const getPageItems = (page: number, total: number): PageItem[] => {
+  // Show everything if an ellipsis would not hide at least one page
+  if (total <= MAX_VISIBLE + 2) {
+    return range(1, total);
+  }
+
+  // Near the start: 1 2 3 4 5 … last
+  if (page <= 3) {
+    return [...range(1, MAX_VISIBLE), 'ellipsis-end', total];
+  }
+
+  // Near the end: 1 … last-4 … last
+  if (page >= total - 2) {
+    return [1, 'ellipsis-start', ...range(total - MAX_VISIBLE + 1, total)];
+  }
+
+  // In the middle: 1 … p-1 p p+1 … last
+  return [1, 'ellipsis-start', page - 1, page, page + 1, 'ellipsis-end', total];
+};
+
 export const CustomPagination = (props: IPaginationProps) => {
   const { page, setPage, totalPages } = props;
+  const items = getPageItems(page, totalPages);
+
   return (
     <Pagination>
       <PaginationContent>
@@ -35,17 +65,23 @@ export const CustomPagination = (props: IPaginationProps) => {
             onClick={() => setPage(Math.max(1, page - 1))}
           />
         </PaginationItem>
-        <PaginationItem>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <PaginationLink
-              key={i}
-              isActive={i + 1 === page}
-              onClick={() => setPage(i + 1)}
-            >
-              {i + 1}
-            </PaginationLink>
-          ))}
-        </PaginationItem>
+
+        {items.map(item =>
+          typeof item === 'number' ? (
+            <PaginationItem key={item}>
+              <PaginationLink
+                isActive={item === page}
+                onClick={() => setPage(item)}
+              >
+                {item}
+              </PaginationLink>
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={item}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          )
+        )}
         <PaginationItem>
           <PaginationNext
             disabled={page === totalPages}
