@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from celery import Celery
 from sqlalchemy.orm import sessionmaker

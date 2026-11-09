@@ -9,11 +9,6 @@ from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.handlers.handler_utils import (
-    get_bool_argument,
-    get_int_argument,
-    parse_json_dto,
-)
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.services.lectures_service import (
@@ -48,13 +43,13 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters(
             "complete", "instructor", "page", "per_page", "sort_by", "order", "search"
         )
-        complete = get_bool_argument(self, "complete")
-        instructor = get_bool_argument(self, "instructor")
+        complete = self.get_bool_argument("complete")
+        instructor = self.get_bool_argument("instructor")
         search = self.get_argument("search", None)
 
-        page = get_int_argument(self, "page", default=1, minimum=1)
-        per_page = get_int_argument(
-            self, "per_page", default=DEFAULT_PER_PAGE, minimum=1, maximum=MAX_PER_PAGE
+        page = self.get_int_argument("page", default=1, minimum=1)
+        per_page = self.get_int_argument(
+            "per_page", default=DEFAULT_PER_PAGE, minimum=1, maximum=MAX_PER_PAGE
         )
 
         sort_by = self.get_argument("sort_by", "created_at")
@@ -87,7 +82,7 @@ class LectureBaseHandler(GraderBaseHandler):
         :raises APIError: throws an error if the lecture code contains invalid characters or is already taken
         """
         self.validate_parameters()
-        lecture = self.services.lectures.create_lecture(parse_json_dto(self, LectureCreateDto))
+        lecture = self.services.lectures.create_lecture(self.parse_json_dto(LectureCreateDto))
 
         self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture.dto_to_dict())
@@ -109,7 +104,7 @@ class LectureObjectHandler(GraderBaseHandler):
         """
         self.validate_parameters()
         lecture = self.services.lectures.update_lecture(
-            lecture_id, parse_json_dto(self, LectureUpdateDto), user=self.user
+            lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
         )
 
         self.write_json(lecture.dto_to_dict())
@@ -144,7 +139,7 @@ class LectureObjectHandler(GraderBaseHandler):
 
         """
         self.validate_parameters("hard_delete")
-        hard_delete = get_bool_argument(self, "hard_delete", default=False)
+        hard_delete = self.get_bool_argument("hard_delete", default=False)
 
         await self.services.lectures.delete_lecture(
             lecture_id, hard_delete=hard_delete, user=self.user
