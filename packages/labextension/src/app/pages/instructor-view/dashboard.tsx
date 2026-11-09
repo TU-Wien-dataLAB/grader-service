@@ -144,7 +144,8 @@ export const Dashboard = () => {
         </div>
         {searchQuery && (
           <p className={'w-fit'}>
-            <span className={'font-bold'}>{lectures.length}</span>{' '}
+            Showing <span className={'font-bold'}>{lectures.length}</span> out
+            of <span className={'font-bold'}>{lecturesData?.total_items}</span>{' '}
             {pluralize({
               text: 'result',
               data: lectures.length
