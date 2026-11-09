@@ -202,6 +202,9 @@ export const Dashboard = () => {
               </div>
             )}
             <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-secondary-background flex items-center w-37.5">
+                {lectures.length} of {lecturesData.total_items}
+              </p>
               <CustomPagination
                 page={page}
                 setPage={setPage}
