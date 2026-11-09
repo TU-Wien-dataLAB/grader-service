@@ -62,7 +62,7 @@ class LectureBaseHandler(GraderBaseHandler):
         if order not in ("asc", "desc"):
             raise HTTPError(400, reason="Invalid order: must be 'asc' or 'desc'")
 
-        response = self.services.lectures.get_all_lectures(
+        lectures = self.services.lectures.get_all_lectures(
             complete=complete,
             instructor_view=instructor,
             user=self.user,
@@ -72,7 +72,7 @@ class LectureBaseHandler(GraderBaseHandler):
             order=order,
             search=search,
         )
-        self.write_json(response)
+        self.write_json(lectures)
 
     @authorize([Scope.instructor, Scope.admin])
     async def post(self):
@@ -85,7 +85,7 @@ class LectureBaseHandler(GraderBaseHandler):
         lecture = self.services.lectures.create_lecture(self.parse_json_dto(LectureCreateDto))
 
         self.set_status(HTTPStatus.CREATED)
-        self.write_json(lecture.dto_to_dict())
+        self.write_json(lecture)
 
 
 @register_handler(r"\/api\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
@@ -107,7 +107,7 @@ class LectureObjectHandler(GraderBaseHandler):
             lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
         )
 
-        self.write_json(lecture.dto_to_dict())
+        self.write_json(lecture)
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
@@ -118,7 +118,7 @@ class LectureObjectHandler(GraderBaseHandler):
         """
         self.validate_parameters()
         lecture = self.services.lectures.get_lecture_by_id(lecture_id, user=self.user)
-        self.write_json(lecture.dto_to_dict())
+        self.write_json(lecture)
 
     @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int):
@@ -165,9 +165,5 @@ class LectureStudentsHandler(GraderBaseHandler):
         """
         students, tutors, instructors = self.services.lectures.get_lecture_users(lecture_id)
 
-        lecture_users = {
-            "instructors": [i.dto_to_dict() for i in instructors],
-            "tutors": [t.dto_to_dict() for t in tutors],
-            "students": [s.dto_to_dict() for s in students],
-        }
+        lecture_users = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(lecture_users)

@@ -1085,7 +1085,7 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         if isinstance(obj, Decimal):
             return float(obj)
         if isinstance(obj, Model):
-            return cls._serialize(obj.to_dict())
+            return cls._serialize(obj.dto_to_dict())
         return None
 
 

@@ -50,13 +50,22 @@ class Model:
 
         return result
 
-    def dto_to_dict(self, omit_if_none=()):
-        """Serialize a generated DTO, dropping the given optional fields when they are None."""
-        return {
-            k: v
-            for k, v in self.to_dict().items()
-            if not (k in omit_if_none and v is None)
-        }
+    def dto_to_dict(self):
+        """Serialize a generated DTO, dropping all None fields."""
+        result = {}
+        for attr in self.openapi_types:
+            value = getattr(self, attr)
+            if value is None:
+                continue
+            if isinstance(value, list):
+                result[attr] = [v.dto_to_dict() if isinstance(v, Model) else v for v in value]
+            elif isinstance(value, Model):
+                result[attr] = value.dto_to_dict()
+            elif isinstance(value, datetime):
+                result[attr] = value.isoformat()
+            else:
+                result[attr] = value
+        return result
 
     def to_str(self):
         """Returns the string representation of the model
