@@ -311,11 +311,10 @@ class AssignmentObjectHandler(GraderBaseHandler):
                     )
 
                 lecture_code = lecture.code
-                assignment_id_ = assignment.id
                 self.session.delete(assignment)
                 self.session.commit()
                 await self.file_service.delete_assignment_files(
-                    assignment_id=assignment_id_, lecture_code=lecture_code
+                    assignment_id=assignment_id, lecture_code=lecture_code
                 )
             else:
                 if assignment.deleted == DeleteState.deleted:
