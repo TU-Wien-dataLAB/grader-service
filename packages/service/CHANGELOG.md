@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking:** `GET /api/lectures` now returns a paginated envelope object (`lectures`, `page`, `per_page`, `total_items`, `total_pages`) instead of a bare JSON array, and supports the new query parameters `page`, `per_page` (1–100, default 20), `sort_by` (`id` | `name` | `created_at`), `order` (`asc` | `desc`) and `search` (case-insensitive substring filter on name and code); the labextension lecture proxy forwards the new parameters and its frontend service unwraps the envelope
+
 ## [0.12.5] - 2026-07-15
 
 ### Fixed

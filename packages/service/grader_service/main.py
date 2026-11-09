@@ -15,8 +15,8 @@ from pathlib import Path
 
 import tornado
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine, Engine
+from sqlalchemy.orm import sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
     Bool,
@@ -43,8 +43,9 @@ from grader_service.auth.auth import Authenticator
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.file_services import GitFileService
-from grader_service.file_services.base_file_service import FileService
+from grader_service.db import create_sync_session_maker
+from grader_service.services.file_services import GitFileService
+from grader_service.services.file_services.base_file_service import FileService
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
 from grader_service.oauth2.provider import make_provider, GraderOAuthServer
@@ -53,14 +54,9 @@ from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
 from grader_service.plugins import create_plugin_manager, PluginManager
-from grader_service.registry import HandlerPathRegistry
+from grader_service.registry import HandlerPathRegistry, ServiceRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
-
-
-def get_session_maker(url) -> scoped_session:
-    engine = create_engine(url)
-    return scoped_session(sessionmaker(bind=engine))
 
 
 class GraderService(config.Application):
@@ -104,7 +100,9 @@ class GraderService(config.Application):
 
     plugin_manager: PluginManager
 
-    session_maker: scoped_session
+    session_maker: sessionmaker
+
+    db_engine: Engine
 
     @default("db_url")
     def _default_db_url(self):
@@ -345,7 +343,8 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
-        self.session_maker = get_session_maker(self.db_url)
+        self.session_maker = create_sync_session_maker(self.db_url)
+        self.db_engine = self.session_maker.kw["bind"]
         self.init_roles()
         # use uvloop instead of default asyncio loop
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -358,7 +357,7 @@ class GraderService(config.Application):
         CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
-        pass
+        await self.db_engine.dispose()
 
     def init_oauth(self):
         engine = create_engine(self.db_url)
@@ -444,6 +443,9 @@ class GraderService(config.Application):
         # pass config
         self.set_config()
 
+        # register services
+        services = ServiceRegistry(self.session_maker, self.file_service)
+
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         self.log.debug("Registered handlers: %s", handlers)
         # Add the handlers of the authenticator
@@ -463,6 +465,7 @@ class GraderService(config.Application):
             GraderServer(
                 grader_service_dir=self.grader_service_dir,
                 file_service=self.file_service,
+                services=services,
                 base_url=self.base_url_path,
                 authenticator=self.authenticator,
                 handlers=handlers,

@@ -18,8 +18,8 @@ from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
 from grader_service.errors import APIError
-from grader_service.file_services import FileServiceError
-from grader_service.file_services.git_file_service import construct_git_dir
+from grader_service.services.file_services import FileServiceError
+from grader_service.services.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
 from grader_service.artifact_types import ArtifactType
 from grader_service.orm import Lecture, Role, Submission

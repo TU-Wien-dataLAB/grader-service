@@ -4,7 +4,7 @@ from pathlib import Path
 from traitlets import Instance, Integer, List, TraitError, TraitType, Unicode, validate
 from traitlets.config import LoggingConfigurable
 
-from grader_service.orm import Assignment, Lecture, Submission
+from grader_service.orm import Assignment, Submission
 
 if typing.TYPE_CHECKING:
     from grader_service.artifact_types import ArtifactType
@@ -70,11 +70,11 @@ class FileService(LoggingConfigurable):
         """Save new/updated files of the ``artifact_type`` for the submission."""
         raise NotImplementedError()
 
-    async def delete_lecture_files(self, lecture: Lecture) -> None:
+    async def delete_lecture_files(self, lecture_code: str) -> None:
         """Delete all associated files when a lecture is hard-deleted."""
         raise NotImplementedError()
 
-    async def delete_assignment_files(self, assignment: Assignment, lecture: Lecture) -> None:
+    async def delete_assignment_files(self, assignment_id: int, lecture_code: str) -> None:
         """Delete all associated files when an assignment is hard-deleted."""
         raise NotImplementedError()
 

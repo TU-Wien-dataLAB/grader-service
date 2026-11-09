@@ -12,5 +12,9 @@ get {
 
 assert {
   res.status: eq 200
-  res.body: isDefined
+  res.body.lectures: isDefined
+  res.body.page: isDefined
+  res.body.per_page: isDefined
+  res.body.total_items: isDefined
+  res.body.total_pages: isDefined
 }
