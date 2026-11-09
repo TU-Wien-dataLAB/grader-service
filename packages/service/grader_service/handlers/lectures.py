@@ -12,9 +12,9 @@ from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.services.lectures_service import (
+    LECTURE_SORTABLE_COLUMNS,
     DEFAULT_PER_PAGE,
     MAX_PER_PAGE,
-    LECTURE_SORTABLE_COLUMNS,
 )
 
 
@@ -35,7 +35,7 @@ class LectureBaseHandler(GraderBaseHandler):
         - complete: "true" | "false" -> filter by lecture state (complete or active)
         - instructor: "true" -> only lectures where the user has an elevated role (if eligible)
         - page: 1-based page number (default 1)
-        - per_page: items per page, 1-100 (default 20)
+        - per_page: items per page, 1-100 (DEFAULT_PER_PAGE = 20, MAX_PER_PAGE = 100)
         - sort_by: "id" | "name" | "created_at" (default "created_at")
         - order: "asc" | "desc" (default "asc")
         - search: case-insensitive substring filter on lecture name and code
