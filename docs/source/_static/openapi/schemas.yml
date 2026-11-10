@@ -417,12 +417,8 @@ components:
             items:
               $ref: "#/components/schemas/SubmissionListItemDto"
     RemoteFileStatus:
-      type: object
-      required: ["status"]
-      properties:
-        status:
-          type: string
-          enum: ["UP_TO_DATE", "DIVERGENT", "UPDATE_NEEDED", "UNSAVED_CHANGES", "NO_BACKUP"]
+      type: string
+      enum: ["up_to_date", "divergent", "update_needed", "unsaved_changes", "no_backup"]
     AutoStatus:
       type: string
       enum: [ "not_graded", "pending", "automatically_graded", "grading_failed" ]

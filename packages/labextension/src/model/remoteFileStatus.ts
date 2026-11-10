@@ -8,16 +8,12 @@
  * Do not edit the class manually.
  */
 
-export interface RemoteFileStatus {
-  status: RemoteFileStatus.StatusEnum;
-}
-export namespace RemoteFileStatus {
-  export const StatusEnum = {
-    UpToDate: 'UP_TO_DATE',
-    Divergent: 'DIVERGENT',
-    UpdateNeeded: 'UPDATE_NEEDED',
-    UnsavedChanges: 'UNSAVED_CHANGES',
-    NoBackup: 'NO_BACKUP'
-  } as const;
-  export type StatusEnum = (typeof StatusEnum)[keyof typeof StatusEnum];
-}
+export const RemoteFileStatus = {
+  UpToDate: 'up_to_date',
+  Divergent: 'divergent',
+  UpdateNeeded: 'update_needed',
+  UnsavedChanges: 'unsaved_changes',
+  NoBackup: 'no_backup'
+} as const;
+export type RemoteFileStatus =
+  (typeof RemoteFileStatus)[keyof typeof RemoteFileStatus];

@@ -12,21 +12,23 @@ class RemoteFileStatus(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, status=None):  # noqa: E501
+    """
+    allowed enum values
+    """
+    UP_TO_DATE = 'up_to_date'
+    DIVERGENT = 'divergent'
+    UPDATE_NEEDED = 'update_needed'
+    UNSAVED_CHANGES = 'unsaved_changes'
+    NO_BACKUP = 'no_backup'
+    def __init__(self):  # noqa: E501
         """RemoteFileStatus - a model defined in OpenAPI
 
-        :param status: The status of this RemoteFileStatus.  # noqa: E501
-        :type status: str
         """
         self.openapi_types = {
-            'status': str
         }
 
         self.attribute_map = {
-            'status': 'status'
         }
-
-        self._status = status
 
     @classmethod
     def from_dict(cls, dikt) -> 'RemoteFileStatus':
@@ -38,30 +40,3 @@ class RemoteFileStatus(Model):
         :rtype: RemoteFileStatus
         """
         return util.deserialize_model(dikt, cls)
-
-    @property
-    def status(self) -> str:
-        """Gets the status of this RemoteFileStatus.
-
-
-        :return: The status of this RemoteFileStatus.
-        :rtype: str
-        """
-        return self._status
-
-    @status.setter
-    def status(self, status: str):
-        """Sets the status of this RemoteFileStatus.
-
-
-        :param status: The status of this RemoteFileStatus.
-        :type status: str
-        """
-        allowed_values = ["UP_TO_DATE", "DIVERGENT", "UPDATE_NEEDED", "UNSAVED_CHANGES", "NO_BACKUP"]  # noqa: E501
-        if status not in allowed_values:
-            raise ValueError(
-                "Invalid value for `status` ({0}), must be one of {1}"
-                .format(status, allowed_values)
-            )
-
-        self._status = status
