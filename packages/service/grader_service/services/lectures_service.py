@@ -156,7 +156,9 @@ class LecturesService(BaseService):
 
             return to_lecture_detail_dto(lecture)
 
-    def update_lecture(self, lecture_id: int, lecture_dto: LectureUpdateDto, user: User):
+    def update_lecture(
+        self, lecture_id: int, lecture_dto: LectureUpdateDto, user: User
+    ) -> LectureDetailDto:
         with self.session_maker() as session:
             try:
                 lecture = self.get_lecture(session, lecture_id)

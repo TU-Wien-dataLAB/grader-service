@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from traitlets import Dict
 from traitlets.config import SingletonConfigurable
 
-from grader_service.db import create_sync_session_maker
+from grader_service.db import session_maker
 
 
 class CeleryApp(SingletonConfigurable):
@@ -56,7 +56,7 @@ class CeleryApp(SingletonConfigurable):
     def session_maker(self) -> sessionmaker | None:
         if self._session_maker is None:
             self.log.info("Instantiating database connection")
-            self._session_maker = create_sync_session_maker(self._db_url)
+            self._session_maker = session_maker(self._db_url)
         return self._session_maker
 
     @property
