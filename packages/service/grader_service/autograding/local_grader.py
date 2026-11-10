@@ -13,7 +13,7 @@ from collections.abc import Coroutine
 from concurrent.futures.thread import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Any, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy.orm import Session
 from traitlets import observe
@@ -31,7 +31,6 @@ from grader_service.orm.submission import AutoStatus, ManualStatus, Submission
 from grader_service.orm.submission_logs import SubmissionLogs
 from grader_service.orm.submission_properties import SubmissionProperties
 from grader_service.utils import executable_validator
-
 
 T = TypeVar("T")
 _executor = ThreadPoolExecutor()
@@ -127,7 +126,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         # close session after grading (might need session later)
         self.close_session = close_session
 
-        self.grading_logs: Optional[str] = None
+        self.grading_logs: str | None = None
         self.cell_timeout = self._determine_cell_timeout()
 
     def start(self):
@@ -167,11 +166,10 @@ class LocalAutogradeExecutor(LoggingConfigurable):
             self._set_properties()
             self._set_db_state()
         except Exception as e:
-            self.log.error(
+            self.log.exception(
                 "Failed autograding job for submission %s in %s",
                 self.submission.id,
                 self.__class__.__name__,
-                exc_info=True,
             )
             if isinstance(e, subprocess.CalledProcessError):
                 err_msg = e.stderr
@@ -283,7 +281,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         """Return the glob patterns which are used for whitelisting the generated autograded files."""
         return self.assignment.get_whitelist_patterns()
 
-    def _get_whitelisted_files(self) -> List[str]:
+    def _get_whitelisted_files(self) -> list[str]:
         """
         Prepares a list of shell-escaped filenames matching the whitelist patterns of the assignment.
 
@@ -333,7 +331,7 @@ class LocalAutogradeExecutor(LoggingConfigurable):
         gradebook_dict = json.loads(gradebook_str)
         book = GradeBookModel.from_dict(gradebook_dict)
         score = 0
-        for id, n in book.notebooks.items():
+        for n in book.notebooks.values():
             score += n.score
         self.submission.grading_score = score
         self.submission.score = self.submission.score_scaling * score
@@ -453,9 +451,7 @@ class LocalAutogradeProcessExecutor(LocalAutogradeExecutor):
             f"--ExecutePreprocessor.timeout={self.cell_timeout}",
         ]
         self.log.info(f"Running {command}")
-        process = subprocess.run(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
-        )
+        process = subprocess.run(command, capture_output=True, cwd=None, text=True, check=False)
         self.grading_logs = process.stderr
         if process.returncode == 0:
             self.log.info(self.grading_logs)

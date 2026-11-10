@@ -11,6 +11,7 @@ from http import HTTPStatus
 import pytest
 from tornado.httpclient import HTTPError
 from traitlets.config import Config
+from traitlets.config.loader import PyFileConfigLoader
 
 from grader_service.server import GraderServer
 
@@ -29,13 +30,6 @@ class TestConfigHandler:
             from grader_service.autograding.local_grader import LocalAutogradeExecutor
 
             app.config.GraderService.autograde_executor_class = LocalAutogradeExecutor
-
-    def load_fake_config(self, path):
-        c = Config()
-        with open(path, "r") as f:
-            code = f.read()
-        exec(code, {"c": c})
-        return c
 
     async def test_get_default_cell_timeout_values(
         self,
@@ -75,7 +69,7 @@ class TestConfigHandler:
         fake_config_path = (
             pathlib.Path(__file__).parent / "test_files" / "fake_grader_service_config.py"
         )
-        fake_config = self.load_fake_config(fake_config_path)
+        fake_config = PyFileConfigLoader(str(fake_config_path)).load_config()
         app.config = fake_config
 
         url = service_base_url + "config"

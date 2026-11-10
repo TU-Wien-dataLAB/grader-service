@@ -9,7 +9,6 @@ import zlib
 from http import HTTPStatus
 from pathlib import Path
 from string import Template
-from typing import List, Optional
 
 from sqlalchemy.orm.exc import NoResultFound
 from tornado.ioloop import IOLoop
@@ -17,11 +16,11 @@ from tornado.iostream import StreamClosedError
 from tornado.process import Subprocess
 from tornado.web import HTTPError, stream_request_body
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.errors import APIError
 from grader_service.file_services import FileServiceError
 from grader_service.file_services.git_file_service import construct_git_dir
 from grader_service.handlers.base_handler import GraderBaseHandler
-from grader_service.artifact_types import ArtifactType
 from grader_service.orm import Lecture, Role, Submission
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -69,7 +68,7 @@ class GitBaseHandler(GraderBaseHandler):
             if self.process.stderr:
                 try:
                     stderr = await self.process.stderr.read_until_close()
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
             self.log.error(
                 "Git process failed (code=%s): %s", e.returncode, stderr.decode(errors="replace")
@@ -85,7 +84,7 @@ class GitBaseHandler(GraderBaseHandler):
         except StreamClosedError:
             pass
         except Exception as e:
-            self.log.error(f"Error from git response {e}")
+            self.log.exception("Unexpected error from git response")
             raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
 
     def _parse_request_path(self) -> tuple[str, str, str, None | list[str]]:
@@ -121,9 +120,12 @@ class GitBaseHandler(GraderBaseHandler):
                 raise HTTPError(HTTPStatus.FORBIDDEN, "forbidden action")
 
             # 3. students should not be able to pull other submissions
-            if (artifact_type == ArtifactType.FEEDBACK) and (rpc == GitRpcCmd.UPLOAD_PACK):
-                if submission is None or submission.user_id != self.user.id:
-                    raise HTTPError(HTTPStatus.NOT_FOUND, "Submission not found")
+            if (
+                (artifact_type == ArtifactType.FEEDBACK)
+                and (rpc == GitRpcCmd.UPLOAD_PACK)
+                and (submission is None or submission.user_id != self.user.id)
+            ):
+                raise HTTPError(HTTPStatus.NOT_FOUND, "Submission not found")
 
             # 4. students should not be able to access other user's artifacts
             if artifact_type == ArtifactType.USER and username != self.user.name:
@@ -227,8 +229,6 @@ class GitBaseHandler(GraderBaseHandler):
             submission_id=sub_id,
             username=username,
         )
-        if path is None:
-            return None
 
         is_git = await self.file_service.is_bare_git_dir(path)
         if not is_git:
@@ -268,7 +268,7 @@ class GitBaseHandler(GraderBaseHandler):
                 hook_file.chmod(0o755)
                 f.write(hook)
 
-    def _get_hook_file_allow_pattern(self, extensions: Optional[List[str]] = None) -> str:
+    def _get_hook_file_allow_pattern(self, extensions: list[str] | None = None) -> str:
         pattern = ""
         if extensions is None:
             extensions = self.file_service.allowed_file_extensions
@@ -307,10 +307,11 @@ class RPCHandler(GitBaseHandler):
     Use this handler to handle example.git/git-upload-pack
     and example.git/git-receive-pack URLs"""
 
+    _gunzip = None
+
     async def prepare(self):
         await super().prepare()
         # check if payload is gzipped
-        self._gunzip = None
         encoding = self.request.headers.get("Content-Encoding", "")
         if encoding == "gzip":
             # 16 + MAX_WBITS enables gzip decoding
@@ -343,8 +344,8 @@ class RPCHandler(GitBaseHandler):
                 tail = self._gunzip.flush()
                 if tail:
                     self.process.stdin.write(tail)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                self.log.debug("Error on clean-up with gzipped payload: %e. Ignoring", e)
         super().on_finish()
 
     async def post(self, rpc: GitRpcCmd):

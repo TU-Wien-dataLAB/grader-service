@@ -6,6 +6,7 @@ from textwrap import dedent
 import pytest
 from nbformat.v4 import new_output
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.validator import Validator
 
 from . import create_code_cell, create_text_cell
@@ -22,7 +23,7 @@ def stream() -> StringIO:
 
 
 @pytest.mark.slow
-class TestValidator(object):
+class TestValidator:
     def _add_error(self, cell):
         cell.outputs.append(
             new_output(
@@ -57,7 +58,7 @@ class TestValidator(object):
         cell = create_code_cell()
         validator.stream = stream
         validator.width = 20
-        validator._print_type_changed("markdown", "code", cell.source.strip())
+        validator._print_type_changed(CellType.MARKDOWN, CellType.CODE, cell.source.strip())
 
         expected = dedent(
             """

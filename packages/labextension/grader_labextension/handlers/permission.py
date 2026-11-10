@@ -33,6 +33,6 @@ class PermissionBaseHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
         except Exception as e:
-            self.log.error(f"Unexpected Error: {e}")
-            raise HTTPError(e)
+            self.log.exception("Unexpected error when retrieving user permissions")
+            raise HTTPError(500, reason=str(e))
         self.write(json.dumps(response))

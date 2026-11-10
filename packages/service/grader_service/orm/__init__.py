@@ -17,15 +17,15 @@ from grader_service.orm.takepart import Role
 from grader_service.orm.user import User
 
 __all__ = [
-    "Lecture",
-    "User",
-    "Role",
-    "Submission",
+    "APIToken",
     "Assignment",
     "Base",
-    "OAuthCode",
+    "Lecture",
     "OAuthClient",
-    "APIToken",
+    "OAuthCode",
+    "Role",
+    "Submission",
     "SubmissionLogs",
     "SubmissionProperties",
+    "User",
 ]

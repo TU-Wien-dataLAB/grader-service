@@ -11,7 +11,6 @@ import os
 import time
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import List, Optional
 from urllib.parse import urlparse
 
 import jwt
@@ -96,8 +95,8 @@ class LTIPlatformConfig:
     deployment_id: str = ""
 
     # Per-platform bearer-token cache (not serialised)
-    _cached_token: Optional[str] = field(default=None, repr=False, compare=False)
-    _token_ttl: Optional[datetime.datetime] = field(default=None, repr=False, compare=False)
+    _cached_token: str | None = field(default=None, repr=False, compare=False)
+    _token_ttl: datetime.datetime | None = field(default=None, repr=False, compare=False)
 
     # ---- helpers ----------------------------------------------------------
 
@@ -269,7 +268,7 @@ class LTISyncGrades(GraderPlugin):
 
     # ---- internal state ---------------------------------------------------
 
-    _platforms: List[LTIPlatformConfig] = []
+    _platforms: list[LTIPlatformConfig]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -297,13 +296,13 @@ class LTISyncGrades(GraderPlugin):
                 raise ValueError(f"Missing required key {exc} in LTI system configuration") from exc
 
     @property
-    def platforms(self) -> List[LTIPlatformConfig]:
+    def platforms(self) -> list[LTIPlatformConfig]:
         """Lazily parsed list of configured LTI platforms."""
         if not self._platforms and self.systems:
             self._parse_systems()
         return self._platforms
 
-    def get_platform(self, name: str) -> Optional[LTIPlatformConfig]:
+    def get_platform(self, name: str) -> LTIPlatformConfig | None:
         """Look up a platform by *name*; returns ``None`` if not found."""
         for platform in self.platforms:
             if platform.name == name:
@@ -355,7 +354,7 @@ class LTISyncGrades(GraderPlugin):
             try:
                 result = await self._sync_platform(platform, lecture, assignment, submissions)
                 results.append({"platform": platform.name, **result})
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 self.log.error(f"LTI: Failed to sync to platform '{platform.name}': {exc}")
                 results.append(
                     {
@@ -392,7 +391,7 @@ class LTISyncGrades(GraderPlugin):
             membership_url = lti_urls["membership_url"]
         except Exception as exc:
             self.log.error(f"LTI [{platform.name}]: failed to resolve URLs: {exc}")
-            raise exc
+            raise
 
         httpclient = AsyncHTTPClient()
 
@@ -404,7 +403,7 @@ class LTISyncGrades(GraderPlugin):
                     url=membership_url,
                     method="GET",
                     headers={
-                        "Authorization": "Bearer " + token,
+                        "Authorization": f"Bearer {token}",
                         "Accept": "application/vnd.ims.lti-nrps.v2.membershipcontainer+json",
                     },
                 )
@@ -440,7 +439,7 @@ class LTISyncGrades(GraderPlugin):
                     url=lineitems_url,
                     method="GET",
                     headers={
-                        "Authorization": "Bearer " + token,
+                        "Authorization": f"Bearer {token}",
                         "Accept": "application/vnd.ims.lis.v2.lineitemcontainer+json",
                     },
                 )
@@ -480,7 +479,7 @@ class LTISyncGrades(GraderPlugin):
                         method="POST",
                         body=json.dumps(grade),
                         headers={
-                            "Authorization": "Bearer " + token,
+                            "Authorization": f"Bearer {token}",
                             "Content-Type": "application/vnd.ims.lis.v1.score+json",
                         },
                     )
@@ -509,7 +508,7 @@ class LTISyncGrades(GraderPlugin):
                     method="POST",
                     body=json.dumps(lineitem_body),
                     headers={
-                        "Authorization": "Bearer " + token,
+                        "Authorization": f"Bearer {token}",
                         "Content-Type": "application/vnd.ims.lis.v2.lineitem+json",
                     },
                 )
@@ -518,14 +517,14 @@ class LTISyncGrades(GraderPlugin):
             self.log.error(exc.response)
             raise HTTPError(
                 exc.code,
-                reason=(f"Unable to create lineitem in '{platform.name}': {exc.response.reason}"),
+                reason=f"Unable to create lineitem in '{platform.name}': {exc.response.reason}",
             )
         # LMS implementations vary: response may be a list or a dict
         try:
             lineitem_response = json_decode(response.body)
-        except Exception as exc:
+        except Exception:
             self.log.error(f"LTI [{platform.name}]: could not decode lineitem response")
-            raise exc
+            raise
         if isinstance(lineitem_response, list):
             return lineitem_response[0]
         if isinstance(lineitem_response, dict):
@@ -589,7 +588,7 @@ class LTISyncGrades(GraderPlugin):
         }
         try:
             encoded = jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
-        except Exception as exc:
+        except TypeError as exc:
             raise APIError(
                 HTTPStatus.UNPROCESSABLE_ENTITY, message=f"Unable to encode payload: {exc}"
             )
@@ -621,7 +620,7 @@ class LTISyncGrades(GraderPlugin):
             self.log.error(exc.response)
             raise HTTPError(
                 exc.code,
-                reason=(f"Unable to request token from '{platform.name}': {exc.response.reason}"),
+                reason=f"Unable to request token from '{platform.name}': {exc.response.reason}",
             )
         return json_decode(response.body)["access_token"]
 
@@ -643,7 +642,7 @@ class LTISyncGrades(GraderPlugin):
                 jwk_dict["alg"] = "RS256"
                 jwk_dict["use"] = "sig"
                 keys.append(jwk_dict)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 self.log.warning(
                     f"LTI: Could not generate JWK for platform '{platform.name}': {exc}"
                 )

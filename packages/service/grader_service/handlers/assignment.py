@@ -1,7 +1,6 @@
 import datetime
 import json
 from http import HTTPStatus
-from typing import Union
 
 import isodate
 import tornado
@@ -24,7 +23,7 @@ from grader_service.registry import VersionSpecifier, register_handler
 from .handler_utils import parse_ids
 
 
-def validate_assignment_settings(settings: Union[AssignmentSettings, None]):
+def validate_assignment_settings(settings: AssignmentSettings | None):
     if settings is None:
         return
     late_submission = settings.late_submission or []
@@ -272,9 +271,8 @@ class AssignmentObjectHandler(GraderBaseHandler):
             self.write_json(assignment)
         else:
             role: Role = self.get_role(lecture_id=lecture_id)
-            if role.role == Scope.student:
-                if assignment.status == "created" or assignment.status == "pushed":
-                    raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
+            if role.role == Scope.student and (assignment.status in ("created", "pushed")):
+                raise HTTPError(HTTPStatus.NOT_FOUND, reason="Assignment not found")
             self.write_json(assignment)
 
     @authorize([Scope.instructor, Scope.admin])

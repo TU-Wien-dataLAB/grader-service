@@ -1,6 +1,5 @@
 import warnings
 from textwrap import dedent
-from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
@@ -102,30 +101,27 @@ class ClearHiddenTests(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
-        nb, resources = super(ClearHiddenTests, self).preprocess(nb, resources)
+    ) -> tuple[NotebookNode, ResourcesDict]:
+        nb, resources = super().preprocess(nb, resources)
         if "celltoolbar" in nb.metadata:
             del nb.metadata["celltoolbar"]
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # remove hidden test regions
         removed_test = self._remove_hidden_test_region(cell)
 
         # determine whether the cell is a grade cell
         is_grade = utils.is_grade(cell)
 
-        # check that it is marked as a grade cell if we remove a test
-        # region -- if it's not, then this is a problem, because the cell needs
-        # to be given an id
-        if not is_grade and removed_test:
-            if self.enforce_metadata:
-                raise RuntimeError(
-                    "Hidden test region detected in a non-grade cell; "
-                    "please make sure all solution regions are within "
-                    "'Autograder tests' cells."
-                )
+        # check that it is marked as a grade cell if we remove a test region -- if it's not, then
+        # this is a problem, because the cell needs to be given an id
+        if not is_grade and removed_test and self.enforce_metadata:
+            raise RuntimeError(
+                "Hidden test region detected in a non-grade cell; please make sure all solution "
+                "regions are within 'Autograder tests' cells."
+            )
 
         return cell, resources

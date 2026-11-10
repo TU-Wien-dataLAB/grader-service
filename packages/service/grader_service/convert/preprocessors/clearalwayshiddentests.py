@@ -1,6 +1,5 @@
 import warnings
 from textwrap import dedent
-from typing import Tuple
 
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
@@ -99,30 +98,27 @@ class ClearAlwaysHiddenTests(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
-        nb, resources = super(ClearAlwaysHiddenTests, self).preprocess(nb, resources)
+    ) -> tuple[NotebookNode, ResourcesDict]:
+        nb, resources = super().preprocess(nb, resources)
         if "celltoolbar" in nb.metadata:
             del nb.metadata["celltoolbar"]
         return nb, resources
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # remove hidden test regions
         removed_util = self._remove_hidden_util_region(cell)
 
         # determine whether the cell is a grade cell
         is_grade = utils.is_grade(cell)
 
-        # check that it is marked as a grade cell if we remove a test
-        # region -- if it's not, then this is a problem, because the cell needs
-        # to be given an id
-        if not is_grade and removed_util:
-            if self.enforce_metadata:
-                raise RuntimeError(
-                    "Hidden util region detected in a non-grade cell; "
-                    "please make sure all solution regions are within "
-                    "'Autograded test cells' cells."
-                )
+        # check that it is marked as a grade cell if we remove a test region -- if it's not, then
+        # this is a problem, because the cell needs to be given an id
+        if not is_grade and removed_util and self.enforce_metadata:
+            raise RuntimeError(
+                "Hidden util region detected in a non-grade cell; please make sure all solution "
+                "regions are within 'Autograded test cells' cells."
+            )
 
         return cell, resources

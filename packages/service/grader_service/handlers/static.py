@@ -1,5 +1,5 @@
 import os
-from typing import Any, Optional
+from typing import Any
 
 from tornado import httputil
 from tornado.web import StaticFileHandler
@@ -32,7 +32,7 @@ class LogoHandler(StaticFileHandler):
         super().__init__(application, request, **kwargs)
         self.application: GraderServer = self.application
 
-    def initialize(self, default_filename: Optional[str] = None) -> None:
+    def initialize(self, default_filename: str | None = None) -> None:
         path = self.application.logo_file
         super().initialize(path, default_filename)
 

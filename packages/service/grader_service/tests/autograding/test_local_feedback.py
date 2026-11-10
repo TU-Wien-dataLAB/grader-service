@@ -1,17 +1,16 @@
 import os
-import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.local_feedback import (
     LocalFeedbackExecutor,
     LocalFeedbackProcessExecutor,
 )
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.file_services.base_file_service import FileService
-from grader_service.artifact_types import ArtifactType
 from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 
 
@@ -232,7 +231,7 @@ def test_process_executor_run_failure(mock_run, process_executor, grader_service
     ]
 
     mock_run.assert_called_once_with(
-        expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
+        expected_command, capture_output=True, cwd=None, text=True, check=False
     )
 
 

@@ -1,13 +1,13 @@
 import copy
 import json
 import os
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import traitlets.traitlets
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
     LocalAutogradeProcessExecutor,
@@ -15,7 +15,6 @@ from grader_service.autograding.local_grader import (
 from grader_service.file_services import FileServiceError
 from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
-from grader_service.artifact_types import ArtifactType
 
 
 @pytest.fixture
@@ -362,7 +361,7 @@ def test_process_executor_run_failure(mock_run, process_executor):
     ]
 
     mock_run.assert_called_once_with(
-        expected_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
+        expected_command, capture_output=True, cwd=None, text=True, check=False
     )
     assert process_executor.grading_logs == "Error: autograding failed"
 
