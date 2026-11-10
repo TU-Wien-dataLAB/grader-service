@@ -12,8 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from grader_service import orm
 from grader_service.api.models.assignment_settings import AssignmentSettings
@@ -27,12 +26,11 @@ from grader_service.orm.takepart import Scope
 from grader_service.server import GraderServer
 
 
-def add_role(engine: Engine, user_id: int, l_id: int, scope: Scope) -> Role:
-    session: Session = sessionmaker(engine)()
+def add_role(session: Session, user_id: int, l_id: int, scope: Scope) -> Role:
     role = Role(user_id=user_id, lectid=l_id, role=scope)
     session.add(role)
     session.commit()
-    session.flush()
+    session.refresh(role)
     return role
 
 
@@ -46,14 +44,12 @@ def _get_lecture(id, name, code):
     return lec
 
 
-def insert_lectures(session: Engine):
-    session: Session = sessionmaker(session)()
+def insert_lectures(session: Session):
     session.add(_get_lecture(1, "lecture1", "21wle1"))
     session.add(_get_lecture(2, "lecture2", "20wle2"))
     session.add(_get_lecture(3, "lecture3", "22wle1"))
     session.add(_get_lecture(4, "lecture4", "23wle1"))
     session.commit()
-    session.flush()
 
 
 def _get_assignment(name, lectid, points, status, settings):
@@ -68,8 +64,7 @@ def _get_assignment(name, lectid, points, status, settings):
     return a
 
 
-def insert_assignment(ex, lecture_id=1):
-    session: Session = sessionmaker(ex)()
+def insert_assignment(session: Session, lecture_id=1):
     session.add(
         _get_assignment(
             "assignment_1",
@@ -80,13 +75,11 @@ def insert_assignment(ex, lecture_id=1):
         )
     )
     session.commit()
-    session.flush()
     num_inserts = 1
     return num_inserts
 
 
-def insert_assignments(ex, lecture_id=1):
-    session: Session = sessionmaker(ex)()
+def insert_assignments(session: Session, lecture_id=1):
     session.add(
         _get_assignment(
             "assignment_1",
@@ -106,7 +99,6 @@ def insert_assignments(ex, lecture_id=1):
         )
     )
     session.commit()
-    session.flush()
     num_inserts = 2
     return num_inserts
 
@@ -133,7 +125,7 @@ def _get_submission(
 
 
 def insert_submission(
-    ex: Engine,
+    session: Session,
     assignment_id: int = 1,
     username: Optional[str] = "ubuntu",
     user_id: Optional[int] = 1,
@@ -142,12 +134,7 @@ def insert_submission(
     score: float = None,
     commit_hash: Optional[str] = None,
     with_logs: bool = False,
-    session: Session | None = None,
 ) -> Submission:
-    # TODO Allows only one submission with properties per user because we do not have
-    #  the submission id
-    if session is None:
-        session = sessionmaker(ex)()
     submission = _get_submission(
         assignment_id, username, user_id, feedback=feedback, score=score, commit_hash=commit_hash
     )
@@ -163,29 +150,28 @@ def insert_submission(
         session.commit()
 
     session.refresh(submission)
-    session.flush()
     return submission
 
 
-def insert_student(ex: Engine, username: str, lecture_id: int) -> User:
+def insert_student(session: Session, username: str, lecture_id: int) -> User:
     """Creates a user with a student role in the specified lecture."""
-    session: Session = sessionmaker(ex)(expire_on_commit=False)
-    session.add(User(name=username, display_name=username))
+    user = User(name=username, display_name=username)
+    session.add(user)
     session.commit()
-    user = session.query(User).filter(User.name == username).one()
+    session.refresh(user)
     session.add(Role(user_id=user.id, lectid=lecture_id, role=Scope.student))
     session.commit()
+    session.refresh(user)
     return user
 
 
-def insert_default_user(ex: Engine) -> None:
-    session: Session = sessionmaker(ex)()
+def insert_default_user(session: Session) -> None:
     session.add(User(name="ubuntu", display_name="ubuntu"))
     session.commit()
 
 
 def create_user_submission_with_repo(
-    engine: Engine, files_base: Path, student: User, assignment_id: int, lecture_code: str
+    session: Session, files_base: Path, student: User, assignment_id: int, lecture_code: str
 ) -> Submission:
     """Creates a submission for `student` and a user repo for storing it.
 
@@ -221,15 +207,14 @@ def create_user_submission_with_repo(
         .decode()
     )
     submission = insert_submission(
-        engine, assignment_id, student.name, user_id=student.id, commit_hash=commit_hash
+        session, assignment_id, student.name, user_id=student.id, commit_hash=commit_hash
     )
     return submission
 
 
 def check_assignment_and_status(
-    engine: Engine, l_id: int, a_id: int, status: str, should_exist: bool = True
+    session: Session, l_id: int, a_id: int, status: str, should_exist: bool = True
 ):
-    session: Session = sessionmaker(engine)()
     assignment = (
         session.execute(
             select(orm.Assignment).where(orm.Assignment.id == a_id, orm.Assignment.lectid == l_id)
@@ -244,8 +229,7 @@ def check_assignment_and_status(
         assert assignment is None, f"assignment exists (id={a_id}, lectid={l_id})"
 
 
-def check_submission(engine: Engine, a_id: int, s_id: int, should_exist: bool = True):
-    session: Session = sessionmaker(engine)()
+def check_submission(session: Session, a_id: int, s_id: int, should_exist: bool = True):
     submission = (
         session.execute(
             select(orm.Submission).where(orm.Submission.id == s_id, orm.Submission.assignid == a_id)

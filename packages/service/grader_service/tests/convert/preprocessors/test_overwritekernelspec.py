@@ -1,5 +1,4 @@
 import json
-import os
 
 import pytest
 from nbformat import validate
@@ -13,29 +12,7 @@ from .base import BaseTestPreprocessor
 
 @pytest.fixture
 def preprocessors():
-    return (SaveCells(), OverwriteKernelspec())
-
-
-@pytest.fixture
-def gradebook(request, json_path):
-    gb = Gradebook(json_path)
-
-    def fin():
-        os.remove(json_path)
-
-    request.addfinalizer(fin)
-
-    return gb
-
-
-@pytest.fixture
-def resources(json_path):
-    resources = {}
-    resources["unique_key"] = "test"
-    resources["output_json_file"] = "gradebook.json"
-    resources["output_json_path"] = json_path
-    resources["nbgrader"] = dict()  # support nbgrader pre-processors
-    return resources
+    return SaveCells(), OverwriteKernelspec()
 
 
 class TestOverwriteKernelSpec(BaseTestPreprocessor):
