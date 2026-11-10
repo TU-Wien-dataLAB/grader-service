@@ -205,7 +205,7 @@ class LecturesService(BaseService):
                     assignments = list(lecture.assignments)
                     self.validate_assignments_for_soft_delete(session, assignments)
                     previously_deleted_assignments = self.delete_previous_assignments(
-                        assignments=assignments, lecture_id=lecture_id, session=session
+                        session=session, assignments=assignments, lecture_id=lecture_id
                     )
 
                     # Flush so the duplicate DELETEs are executed before the UPDATEs
