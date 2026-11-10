@@ -47,12 +47,12 @@ from grader_service.file_services import GitFileService
 from grader_service.file_services.base_file_service import FileService
 from grader_service.handlers.static import CacheControlStaticFilesHandler
 from grader_service.oauth2 import handlers as oauth_handlers
-from grader_service.oauth2.provider import make_provider, GraderOAuthServer
+from grader_service.oauth2.provider import GraderOAuthServer, make_provider
 from grader_service.orm import Lecture, Role, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
-from grader_service.plugins import create_plugin_manager, PluginManager
+from grader_service.plugins import PluginManager, create_plugin_manager
 from grader_service.registry import HandlerPathRegistry
 from grader_service.server import GraderServer
 from grader_service.utils import url_path_join
@@ -146,6 +146,8 @@ class GraderService(config.Application):
         klass=LocalAutogradeExecutor,
         allow_none=False,
         config=True,
+        help="""The autograde executor class used for autograding submissions.
+        The default is the LocalAutogradeExecutor.""",
     )
 
     config_file = Unicode("grader_service_config.py", help="The config file to load").tag(
@@ -171,7 +173,7 @@ class GraderService(config.Application):
     authenticator = Instance(klass=Authenticator)
 
     # TODO make configurable
-    oauth_token_expires_in = int(1 * 24 * 3600)
+    oauth_token_expires_in = 1 * 24 * 3600
 
     load_roles = Dict(
         List(),
@@ -327,15 +329,13 @@ class GraderService(config.Application):
         config_classes = [x[1] for x in members]
 
         config_text = self.generate_config_file(classes=config_classes)
-        if isinstance(config_text, bytes):
-            config_text = config_text.decode("utf8")
         self.log.info("Generating config: %s", self.config_file)
         with open(self.config_file, mode="w") as f:
             f.write(config_text)
 
     def initialize(self, argv, *args, **kwargs):
-        if sys.version_info.major < 3 or sys.version_info.minor < 9:
-            msg = "Grader Service needs Python version 3.9 or above to run!"
+        if sys.version_info < (3, 11):
+            msg = "Grader Service needs Python version 3.11 or above to run!"
             raise RuntimeError(msg)
 
         self.log.info("Starting Initialization...")
@@ -347,7 +347,7 @@ class GraderService(config.Application):
 
         self.session_maker = get_session_maker(self.db_url)
         self.init_roles()
-        self._start_future = asyncio.Future()
+        self._shutdown_event = asyncio.Event()
 
     def set_config(self):
         """Create plugin manager and pass config to singletons."""
@@ -376,7 +376,7 @@ class GraderService(config.Application):
         """Load predefined groups into the database"""
         with self.session_maker() as db:
             users_loaded = set()
-            for lecture_code in self.load_roles.keys():
+            for lecture_code in self.load_roles:
                 role_list = self.load_roles[lecture_code]
                 for role_dict in role_list:
                     role = role_dict.get("role")
@@ -435,7 +435,6 @@ class GraderService(config.Application):
             self.exit(0)
 
         self.log.info("Starting Grader Service...")
-        self.io_loop = tornado.ioloop.IOLoop.current()
 
         self.init_oauth()
 
@@ -484,21 +483,25 @@ class GraderService(config.Application):
         self.log.info(f"Service directory - {self.grader_service_dir}")
         http_server.listen(self.service_port, address=self.service_host, reuse_port=self.reuse_port)
 
-        for s in (signal.SIGTERM, signal.SIGINT):
-            asyncio.get_event_loop().add_signal_handler(
-                s, lambda: asyncio.ensure_future(self.shutdown_cancel_tasks(s))
+        loop = asyncio.get_running_loop()
+        for sign in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(
+                sign, lambda s=sign: asyncio.ensure_future(self.shutdown_cancel_tasks(s))
             )
 
         self.log.info(f"Grader service running at {self.service_host}:{self.service_port}")
 
-        # finish start
-        self._start_future.set_result(None)
-
     async def shutdown_cancel_tasks(self, sig):
-        """Cancel all other tasks of the event loop and initiate cleanup"""
+        """Cancel all other tasks of the event loop and initiate clean-up"""
         self.log.critical("Received signal %s, initiating shutdown...", sig.name)
 
-        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+        # Note: "_main_task" is the "launch_instance_async", which is doing the cancelling. It is
+        # waiting for the shutdown Event to be set, so it shouldn't be cancelled here.
+        tasks = [
+            t
+            for t in asyncio.all_tasks()
+            if t is not asyncio.current_task() and t is not getattr(self, "_main_task", None)
+        ]
 
         if tasks:
             self.log.debug("Cancelling pending tasks")
@@ -516,30 +519,26 @@ class GraderService(config.Application):
             for t in tasks:
                 self.log.debug("Task status: %s", t)
         await self.cleanup()
-        asyncio.get_event_loop().stop()
+        self._shutdown_event.set()
 
     async def launch_instance_async(self, argv=None):
+        self._main_task = asyncio.current_task()
         try:
             self.initialize(argv)
             await self.start()
-        except Exception as e:
-            self.log.exception(e)
+            # Keep the event loop alive until the app is shut down
+            await self._shutdown_event.wait()
+        except Exception:
+            self.log.exception()
             self.exit(1)
 
     @classmethod
     def launch_instance(cls, argv=None):
         self = cls.instance()
-        loop = tornado.ioloop.IOLoop.current()
-        task = asyncio.ensure_future(self.launch_instance_async(argv))
         try:
-            loop.start()
+            asyncio.run(self.launch_instance_async(argv))
         except KeyboardInterrupt:
             print("\nInterrupted")
-        finally:
-            if task.done():
-                # re-raise exceptions in launch_instance_async
-                task.result()
-            loop.stop()
 
     @validate("grader_service_dir")
     def _validate_service_dir(self, proposal) -> str:

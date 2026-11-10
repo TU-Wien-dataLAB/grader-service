@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.3.2"]
+requires = ["hatchling>=1.33.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.4.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "grader-labextension"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 classifiers = [
     "Framework :: Jupyter",
     "Framework :: Jupyter :: JupyterLab",
@@ -16,15 +16,15 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 dependencies = [
     "grader-service>=0.12.4",
-    "jupyter_server>=2.4.0,<3",
+    "jupyter_server>=2.21.1.0,<3",
     "jupyterlab>=4.0.0,<5",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
@@ -34,11 +34,10 @@ grader-service = { workspace = true }
 
 [dependency-groups]
 test = [
-    "coverage",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "pytest-jupyter[server]>=0.6.0"
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1",
+    "pytest-cov>=7.1.0",
+    "pytest-jupyter[server]>=0.11.0"
 ]
 
 [tool.tbump]

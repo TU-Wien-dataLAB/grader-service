@@ -17,6 +17,11 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install system docs dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxslt1-dev
+
       - name: Set up Python
         run: uv python install
 
