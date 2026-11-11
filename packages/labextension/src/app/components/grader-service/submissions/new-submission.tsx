@@ -83,7 +83,7 @@ const NewSubmission = (props: TProps) => {
     },
     onSuccess: () => {
       setStatus({
-        message: 'You successfully created a new submission.',
+        message: 'New submission has been successfully created.',
         status: 'success'
       });
       setOpenNewSubmission(false);
@@ -91,7 +91,7 @@ const NewSubmission = (props: TProps) => {
     },
     onError: () => {
       setStatus({
-        message: 'Failed to create a submission. Please, try again!',
+        message: 'Something went wrong. Please try again.',
         status: 'error'
       });
     }

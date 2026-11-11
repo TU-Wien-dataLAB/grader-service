@@ -11,18 +11,19 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
+import { SynchronizeGradesWithLTIDialog } from './synchronize-with-lti';
+import { ExportSubmissionsDialog } from './export-submissions';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
+  lectureId: number;
 };
 
 export const SubmissionsActions = (props: TProps) => {
-  const [openExportSubmissionDialog, setOpenExportSubmissionDialog] =
-    useState(false);
   const [openSynchronizeGradesDialog, setOpenSynchronizeGradesDialog] =
     useState(false);
-
-  console.log(openExportSubmissionDialog, openSynchronizeGradesDialog);
+  const [openExportSubmissionsDialog, setOpenExportSubmissionsDialog] =
+    useState(false);
 
   return (
     <>
@@ -39,17 +40,32 @@ export const SubmissionsActions = (props: TProps) => {
           <DropdownMenuItem onClick={() => props.setOpenNewSubmission(true)}>
             New submission
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpenExportSubmissionDialog(true)}>
+          <DropdownMenuItem
+            onClick={() => setOpenExportSubmissionsDialog(true)}
+          >
             Export submissions
           </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={() => setOpenSynchronizeGradesDialog(true)}
           >
-            Synchronize grades with Moodle
+            Synchronize grades with LTI
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {openSynchronizeGradesDialog && (
+        <SynchronizeGradesWithLTIDialog
+          openDialog={openSynchronizeGradesDialog}
+          setOpenDialog={setOpenSynchronizeGradesDialog}
+        />
+      )}
+      {openExportSubmissionsDialog && (
+        <ExportSubmissionsDialog
+          openDialog={openExportSubmissionsDialog}
+          setOpenDialog={setOpenExportSubmissionsDialog}
+        />
+      )}
     </>
   );
 };

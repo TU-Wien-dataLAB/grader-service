@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import {
+  exportGrades,
   getSubmission,
   getSubmissionLogs,
   getSubmissions
@@ -43,4 +44,14 @@ export const getSubmissionLogsData = (
     queryKey: ['submissionLogs', submissionId],
     queryFn: async () =>
       getSubmissionLogs(lectureId, assignmentId, submissionId)
+  });
+
+export const exportSubmissionsData = (
+  lectureId: number,
+  filter: 'latest' | 'best' = 'best',
+  format: 'json' | 'csv' = 'csv'
+) =>
+  queryOptions({
+    queryKey: ['exportSubmissions'],
+    queryFn: async () => exportGrades(lectureId, filter, format)
   });

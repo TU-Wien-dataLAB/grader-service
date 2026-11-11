@@ -25,7 +25,7 @@ import {
   SelectValue
 } from '../../../shadcn-components/ui/select';
 import { Badge } from '../../../shadcn-components/ui/badge';
-import { X } from 'lucide-react';
+import { Loader, X } from 'lucide-react';
 import { queryClient, useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -40,6 +40,7 @@ import {
   generateFeedback
 } from '../../../../services/grading.service';
 import { ErrorBanner } from '../../ui/error-banner';
+import { ltiSyncSubmissions } from '../../../../services/submissions.service';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -89,7 +90,7 @@ export const SubmissionsView = (props: TProps) => {
   const {
     data: submissionsList,
     refetch,
-    isLoading
+    isFetching
   } = useQuery(getAllSubmissions(lectureId, assignmentId));
 
   const STATIC_FILTERS: IFilterGroup[] = [
@@ -174,25 +175,74 @@ export const SubmissionsView = (props: TProps) => {
     }
   });
 
-  if (isLoading) {
-    return <h1>Loading...</h1>;
-  }
+  const handleRefresh = async () => {
+    const result = await refetch();
+    setStatus(
+      result.isSuccess
+        ? {
+            message: 'The submissions table is now up to date.',
+            status: 'success'
+          }
+        : {
+            message: 'Something went wrong. Please try again.',
+            status: 'error'
+          }
+    );
+  };
+
+  const synchronizeMutation = useMutation({
+    mutationFn: async () => {
+      return await ltiSyncSubmissions(
+        lectureId,
+        assignmentId,
+        'selection',
+        Object.keys(rowSelection).map(Number)
+      );
+    },
+    onSuccess: response => {
+      const syncedPlatforms = response.synced_platforms;
+      if (!syncedPlatforms.length) {
+        setStatus({
+          message:
+            'No connected learning platform was available for grade sync',
+          status: 'error'
+        });
+        return;
+      }
+      syncedPlatforms.forEach(platformResult => {
+        setStatus({
+          message: `${platformResult.platform}: Synced ${platformResult.synced_user}/${platformResult.syncable_users} users`,
+          status: 'success'
+        });
+      });
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+    },
+    onError: () => {
+      setStatus({
+        message: 'Something went wrong. Please, try again!',
+        status: 'error'
+      });
+    }
+  });
 
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
+      <div className={'flex justify-between items-center self-stretch'}>
+        <h2 className={'text-xl font-bold'}>Submissions</h2>
+        <div className="flex gap-3">
+          <Button onClick={handleRefresh} variant={'outline'}>
+            Reload
+          </Button>
+          <SubmissionsActions
+            lectureId={lectureId}
+            setOpenNewSubmission={setOpenNewSubmission}
+          />
+        </div>
+      </div>
       {status.status === 'success' && (
         <SuccessBanner message={status.message} />
       )}
       {status.status === 'error' && <ErrorBanner message={status.message} />}
-      <div className={'flex justify-between items-center self-stretch'}>
-        <h2 className={'text-xl font-bold'}>Submissions</h2>
-        <div className="flex gap-3">
-          <Button onClick={() => refetch()} variant={'outline'}>
-            Reload
-          </Button>
-          <SubmissionsActions setOpenNewSubmission={setOpenNewSubmission} />
-        </div>
-      </div>
       <div className={'flex justify-between items-center self-stretch'}>
         <SearchField
           placeholder="Search for submissions"
@@ -236,69 +286,77 @@ export const SubmissionsView = (props: TProps) => {
           </Button>
         </div>
       )}
-      <div className="w-full">
-        <div className="overflow-auto h-fit max-h-[700px]">
-          <SubmissionsDataTable
-            submissions={submissionsList}
-            columnFilters={columnFilters}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            setSearch={setSearchQuery}
-            search={searchQuery}
-          />
-        </div>
+      {isFetching ? (
+        <Loader />
+      ) : (
+        <div className="w-full">
+          <div className="overflow-auto h-fit max-h-[700px]">
+            <SubmissionsDataTable
+              submissions={submissionsList}
+              columnFilters={columnFilters}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
+              setSearch={setSearchQuery}
+              search={searchQuery}
+            />
+          </div>
 
-        <div className="flex items-center justify-between gap-4 mt-2">
-          <p className="whitespace-nowrap">
-            10 out of {submissionsList?.length || 0}
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationFirst />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationPrevious />
-              </PaginationItem>
-              <PaginationItem>
-                {Array.from(
-                  {
-                    length: Math.ceil(Array(15).length / 6)
-                  },
-                  (_, i) => (
-                    <PaginationLink key={i}>{i + 1}</PaginationLink>
-                  )
-                )}
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLast />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-          <Field orientation="horizontal" className="w-fit">
-            <Select defaultValue="25">
-              <SelectTrigger className="w-20" id="select-rows-per-page">
-                <SelectValue placeholder="Select amount">
-                  {value => `${value || 10} / Page`}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectGroup>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25 </SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
+          <div className="flex items-center justify-between gap-4 mt-2">
+            <p className="whitespace-nowrap">
+              10 out of {submissionsList?.length || 0}
+            </p>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationFirst />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationPrevious />
+                </PaginationItem>
+                <PaginationItem>
+                  {Array.from(
+                    {
+                      length: Math.ceil(Array(15).length / 6)
+                    },
+                    (_, i) => (
+                      <PaginationLink key={i}>{i + 1}</PaginationLink>
+                    )
+                  )}
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLast />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+            <Field orientation="horizontal" className="w-fit">
+              <Select defaultValue="25">
+                <SelectTrigger className="w-20" id="select-rows-per-page">
+                  <SelectValue placeholder="Select amount">
+                    {value => `${value || 10} / Page`}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25 </SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
         </div>
-      </div>
+      )}
+
       <div className="flex gap-4">
         <Button onClick={() => autogradeMutation.mutate()}>Autograde</Button>
+        <Button onClick={() => synchronizeMutation.mutate()} variant="outline">
+          Synchronize grades with LTI
+        </Button>
         <Button
           onClick={() => generateFeedbackMutation.mutate()}
           variant="outline"

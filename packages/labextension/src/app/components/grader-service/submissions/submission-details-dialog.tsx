@@ -110,6 +110,9 @@ export const SubmissionDetailsDialog = ({
       queryClient.invalidateQueries({
         queryKey: ['submissionById', submissionId]
       });
+      queryClient.invalidateQueries({
+        queryKey: ['submissions']
+      });
     },
     onError: () => {
       setStatus({
@@ -129,10 +132,6 @@ export const SubmissionDetailsDialog = ({
         className="gap-0 overflow-y-auto bg-[#F5F5F5] pb-6 absolute"
         style={{ width: '40vw', maxWidth: '100vw' }}
       >
-        {status.status === 'success' && (
-          <SuccessBanner message={status.message} />
-        )}
-        {status.status === 'error' && <ErrorBanner message={status.message} />}
         {submission && (
           <>
             <SheetHeader className="px-6 py-6">
@@ -142,7 +141,16 @@ export const SubmissionDetailsDialog = ({
               </SheetTitle>
             </SheetHeader>
             <Separator />
-
+            {status.status === 'success' && (
+              <div className="m-6">
+                <SuccessBanner message={status.message} />
+              </div>
+            )}
+            {status.status === 'error' && (
+              <div className="m-6">
+                <ErrorBanner message={status.message} />
+              </div>
+            )}
             <div className="px-6 text-base">
               <SubmissionDetailInfo
                 submission={submission}

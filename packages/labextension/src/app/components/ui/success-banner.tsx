@@ -11,7 +11,7 @@ export const SuccessBanner = (props: ISuccessBannerProps) => {
       className="bg-[#E9F5D2] flex flex-row w-full border rounded-xs border-[#6A9816] p-4 gap-2"
       role="alert"
     >
-      <CircleCheck className={'fill-[#6A9816] size-6'} />
+      <CircleCheck color="#E9F5D2" className={'fill-[#6A9816] size-6'} />
       <div>
         <p className="font-medium">Success</p>
         <p className={'text-secondary-background'}>{props.message}</p>

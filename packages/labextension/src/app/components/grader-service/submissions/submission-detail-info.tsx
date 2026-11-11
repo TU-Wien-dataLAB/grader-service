@@ -48,7 +48,7 @@ const SubmissionDetailInfo = ({
     <div className="py-6">
       <h3 className="text-xl font-bold mb-2">Details</h3>
       <dl className="flex flex-col flex-start gap-3">
-        <DetailRow label="Assignment">{assignment.name}</DetailRow>
+        <DetailRow label="Assignment">{assignment?.name}</DetailRow>
         <DetailRow label="Name">
           {submission?.user_display_name ?? '—'}
         </DetailRow>

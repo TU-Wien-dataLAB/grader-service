@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import SubmissionFiles from './submission-files';
 import { ArrowLeft } from 'lucide-react';
 import SubmissionDetailInfo from './submission-detail-info';
@@ -23,6 +23,7 @@ import { queryClient, useMutationStatus } from '../../../../widget';
 import { SuccessBanner } from '../../ui/success-banner';
 import { ErrorBanner } from '../../ui/error-banner';
 import { assignmentQuery } from '../../../../services/queries/assignments.queries';
+import { RestoreSubmissionDialog } from './restore-submission';
 
 const EditSubmission = () => {
   const params = useParams();
@@ -34,6 +35,9 @@ const EditSubmission = () => {
   const { data: assignment } = useQuery(
     assignmentQuery(lectureId, assignmentId)
   );
+
+  const [openRestoreConfirmationDialog, setOpenRestoreConfirmationDialog] =
+    useState<boolean>(false);
 
   const { data: submission, refetch: refetchSubmission } = useQuery(
     getSubmissionById(lectureId, assignmentId, submissionId)
@@ -113,77 +117,93 @@ const EditSubmission = () => {
   }, []);
 
   return (
-    <div
-      className={
-        'flex flex-col items-start gap-4 self-stretch p-6 w-full overflow-auto'
-      }
-    >
-      {status.status === 'success' && (
-        <SuccessBanner message={status.message} />
-      )}
-      {status.status === 'error' && <ErrorBanner message={status.message} />}
-      <div className="flex gap-4 items-center w-full">
-        <ArrowLeft
-          onClick={goToSubmissionsView}
-          className={'size-4 cursor-pointer text-primary'}
-        />
-        <h2 className={'text-2xl font-bold leading-[32px]'}>Edit submission</h2>
-      </div>
-
-      {submission && (
-        <div className="w-full">
-          <SubmissionDetailInfo
-            submission={submission}
-            assignment={assignment}
-            isEditMode
+    <>
+      <div
+        className={
+          'flex flex-col items-start gap-4 self-stretch p-6 w-full overflow-auto'
+        }
+      >
+        <div className="flex gap-4 items-center w-full">
+          <ArrowLeft
+            onClick={goToSubmissionsView}
+            className={'size-4 cursor-pointer text-primary'}
           />
+          <h2 className={'text-2xl font-bold leading-[32px]'}>
+            Edit submission
+          </h2>
         </div>
-      )}
 
-      <div className="py-6 w-full">
-        <div className="flex justify-between mb-2 w-full">
-          <h3 className="text-xl font-bold mb-2">Submission</h3>
-          {files && (
-            <Button onClick={restoreLatestSubmission} variant="outline">
-              Restore latest submission
-            </Button>
-          )}
-        </div>
-        {submission?.edited ? (
-          <div>
-            <SubmissionFiles files={files} />
-            <div className="flex flex-start gap-4 mt-4">
-              <Button
-                onClick={() => pushSubmissionFilesMutation.mutate()}
-                variant="default"
-              >
-                Replace submission
-              </Button>
-              <Button variant="outline" onClick={goToSubmissionsView}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-10 flex flex-col items-center">
-            <EmptyState
-              title={'No entries found'}
-              icon={<EmptyIcon />}
-              description={
-                'Start editing to load the submission and make changes.'
-              }
+        {status.status === 'success' && (
+          <SuccessBanner message={status.message} />
+        )}
+        {status.status === 'error' && <ErrorBanner message={status.message} />}
+
+        {submission && (
+          <div className="w-full">
+            <SubmissionDetailInfo
+              submission={submission}
+              assignment={assignment}
+              isEditMode
             />
-            <Button
-              onClick={() => createOrOverrideEditRepositoryMutation.mutate()}
-              className="w-fit"
-              variant="default"
-            >
-              Start editing
-            </Button>
           </div>
         )}
+
+        <div className="py-6 w-full">
+          <div className="flex justify-between mb-2 w-full">
+            <h3 className="text-xl font-bold mb-2">Submission</h3>
+            {files && (
+              <Button
+                onClick={() => setOpenRestoreConfirmationDialog(true)}
+                variant="outline"
+              >
+                Restore latest submission
+              </Button>
+            )}
+          </div>
+          {submission?.edited ? (
+            <div>
+              <SubmissionFiles files={files} />
+              <div className="flex flex-start gap-4 mt-4">
+                <Button
+                  onClick={() => pushSubmissionFilesMutation.mutate()}
+                  variant="default"
+                >
+                  Replace submission
+                </Button>
+                <Button variant="outline" onClick={goToSubmissionsView}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-10 flex flex-col items-center">
+              <EmptyState
+                title={'No entries found'}
+                icon={<EmptyIcon />}
+                description={
+                  'Start editing to load the submission and make changes.'
+                }
+              />
+              <Button
+                onClick={() => createOrOverrideEditRepositoryMutation.mutate()}
+                className="w-fit"
+                variant="default"
+              >
+                Start editing
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {openRestoreConfirmationDialog && (
+        <RestoreSubmissionDialog
+          openDialog={openRestoreConfirmationDialog}
+          setOpenDialog={setOpenRestoreConfirmationDialog}
+          handleRestoreSubmission={restoreLatestSubmission}
+        />
+      )}
+    </>
   );
 };
 
