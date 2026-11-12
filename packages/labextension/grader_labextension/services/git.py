@@ -1,7 +1,6 @@
 # Copyright (c) 2022, TU Wien
 # All rights reserved.
 #
-import enum
 import logging
 import os
 import posixpath
@@ -13,6 +12,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
+from grader_labextension.api.models import RemoteFileStatus
 from grader_service.artifact_types import ArtifactType
 from traitlets.config.configurable import Configurable
 from traitlets.traitlets import Unicode
@@ -23,14 +23,6 @@ class GitError(Exception):
         self.code = code
         self.error = error
         super().__init__(error)
-
-
-class RemoteFileStatus(enum.Enum):
-    UP_TO_DATE = 1
-    PULL_NEEDED = 2
-    PUSH_NEEDED = 3
-    DIVERGENT = 4
-    NO_REMOTE_REPO = 5
 
 
 class GitService(Configurable):
@@ -291,7 +283,7 @@ class GitService(Configurable):
             self.log.info(f"Copying repository contents from {src} to {self.path}")
             shutil.copytree(src, self.path, ignore=ignore, dirs_exist_ok=True)
 
-    def check_remote_status(self, origin: str, branch: str) -> RemoteFileStatus:
+    def check_remote_status(self, origin: str, branch: str) -> str:
         untracked, added, modified, deleted = self.git_status(hidden_files=False)
         local_changes = any([untracked, added, modified, deleted])
 
@@ -302,16 +294,16 @@ class GitService(Configurable):
         if self.remote_branch_exists(origin, branch):
             remote = self._run_command(f"git rev-parse {origin}/{branch}", cwd=self.path).strip()
         else:
-            return RemoteFileStatus.NO_REMOTE_REPO
+            return RemoteFileStatus.NO_BACKUP
 
         if local is None and remote:
             if local_changes:
                 return RemoteFileStatus.DIVERGENT
-            return RemoteFileStatus.PULL_NEEDED
+            return RemoteFileStatus.UPDATE_NEEDED
 
         if local == remote:
             if local_changes:
-                return RemoteFileStatus.PUSH_NEEDED
+                return RemoteFileStatus.UNSAVED_CHANGES
             return RemoteFileStatus.UP_TO_DATE
 
         base = self._run_command(
@@ -319,9 +311,9 @@ class GitService(Configurable):
         ).strip()
 
         if local == base:
-            return RemoteFileStatus.PULL_NEEDED
+            return RemoteFileStatus.UPDATE_NEEDED
         elif remote == base:
-            return RemoteFileStatus.PUSH_NEEDED
+            return RemoteFileStatus.UNSAVED_CHANGES
         else:
             return RemoteFileStatus.DIVERGENT
 
@@ -344,7 +336,7 @@ class GitService(Configurable):
                 deleted.append(v)
         return untracked, added, modified, deleted
 
-    def check_remote_file_status(self, file_path: str) -> RemoteFileStatus:
+    def check_remote_file_status(self, file_path: str) -> str:
         file_status_list = self._run_command(
             f"git status --porcelain {file_path}", cwd=self.path
         ).split(maxsplit=1)
@@ -356,7 +348,7 @@ class GitService(Configurable):
             return RemoteFileStatus.UP_TO_DATE
         # Convert the file status to the corresponding enum value
         if file_status in {"??", "M", "A", "D"}:
-            return RemoteFileStatus.PUSH_NEEDED
+            return RemoteFileStatus.UNSAVED_CHANGES
         else:
             return RemoteFileStatus.DIVERGENT
 

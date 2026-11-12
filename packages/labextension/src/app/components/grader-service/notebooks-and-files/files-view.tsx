@@ -37,6 +37,7 @@ import { RepoType } from '../../utils/repo-type';
 import { SaveFilesDialog } from './save-files-dialog';
 import { Badge } from '../../../shadcn-components/ui/badge';
 import { LoadUpdatesDialog } from './load-updates-dialog';
+import { RemoteFileStatus } from '../../../../model/remoteFileStatus';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -156,15 +157,15 @@ export const FilesView = (props: IFilesViewProps) => {
   );
   const remoteStatusBadge = () => {
     switch (remoteRepoStatus?.status) {
-      case 'UP_TO_DATE':
+      case RemoteFileStatus.UpToDate:
         return <Badge className={'bg-lime-600'}>No updates available</Badge>;
-      case 'UPDATE_NEEDED':
+      case RemoteFileStatus.UpdateNeeded:
         return <Badge className={'bg-red-400'}>Updates available</Badge>;
-      case 'UNSAVED_CHANGES':
+      case RemoteFileStatus.UnsavedChanges:
         return <Badge className={'bg-yellow-600'}>Unsaved changes</Badge>;
-      case 'DIVERGENT':
+      case RemoteFileStatus.Divergent:
         return <Badge className={'bg-red-700'}>Out of sync</Badge>;
-      case 'NO_BACKUP':
+      case RemoteFileStatus.NoBackup:
         return <Badge className={'bg-gray-400'}>Not backed up</Badge>;
     }
   };
