@@ -265,7 +265,7 @@ export const Lecture = () => {
                 <h2 className="font-bold text-xl">
                     {group} ({items.length})
                 </h2>
-                <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 @4xl:grid-cols-2 @7xl:grid-cols-3 gap-2">
                     {items.map(assignment => (
                     <AssignmentCardStudent
                         key={assignment.id}

@@ -114,8 +114,8 @@ export const AssignmentCardStudent = (props: IAssignment) => {
                       <TooltipContent>Deadline over</TooltipContent>
                     </Tooltip>
                   )}
-                {props.assignment.settings.late_submission && (new Date(props.assignment.settings?.deadline) > new Date()) &&
-                    <MoreTimeIcon className="absolute right-0 top-0 size-4 translate-x-1/2 -translate-y-1/2 text-primary"/>
+                {props.assignment.settings?.late_submission && (new Date(props.assignment.settings?.deadline) > new Date()) &&
+                    <MoreTimeIcon className="relative right-0 top-0 size-4 text-primary"/>
                 }
               </div>
             </div>
