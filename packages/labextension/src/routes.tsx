@@ -33,7 +33,7 @@ export const getRoutes = () => {
       element={<Root />}
       path={'/'}
       loader={async () => {
-        await queryClient.ensureQueryData(getCurrentUserQuery());
+        await queryClient.query(activeInstructorLecturesQuery());
         return null;
       }}
     >

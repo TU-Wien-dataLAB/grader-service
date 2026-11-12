@@ -1,7 +1,7 @@
 import { HTTPMethod } from './enums/http-methods.enum';
 import { request } from './request.service';
 import { Submission } from '../model/submission';
-import { baseUrl } from './file.service';
+import { baseUrl } from './git.service';
 
 export function getSubmissions(
   lectureId: number,

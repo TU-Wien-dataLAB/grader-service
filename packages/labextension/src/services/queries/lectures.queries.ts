@@ -1,4 +1,4 @@
-import { getLectures, getLecture } from '../lectures.service';
+import { getLectures, getLecture, getLectureUsers } from '../lectures.service';
 import { queryOptions } from '@tanstack/react-query';
 
 export const activeInstructorLecturesQuery = () =>
@@ -26,4 +26,10 @@ export const lectureQuery = (lectureId: number) =>
   queryOptions({
     queryKey: ['lectures', lectureId],
     queryFn: async () => getLecture(lectureId, false)
+  });
+
+export const lectureUsersQuery = (lectureId: number) =>
+  queryOptions({
+    queryKey: ['lectureUsers', lectureId],
+    queryFn: async () => getLectureUsers(lectureId, false)
   });

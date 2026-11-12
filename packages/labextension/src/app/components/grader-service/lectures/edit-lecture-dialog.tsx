@@ -44,11 +44,6 @@ export const EditLectureDialog = (props: IEditLectureDialog) => {
       status: props.lecture.complete ? 'completed' : 'active'
     },
     onSubmit: async ({ value }) => {
-      // don't do anything if values haven't changed
-      if (form.state.isPristine) {
-        setOpenDialog(false);
-        return;
-      }
       await mutateLecture.mutateAsync({
         name: value.name.trim(),
         complete: value.status === 'completed',
