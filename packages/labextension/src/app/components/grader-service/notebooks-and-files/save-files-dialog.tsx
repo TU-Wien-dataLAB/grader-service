@@ -23,20 +23,19 @@ import { Textarea } from '../../../shadcn-components/ui/textarea';
 import { Field, FieldLabel } from '../../../shadcn-components/ui/field';
 import { Label } from '../../../shadcn-components/ui/label';
 import { Checkbox } from '../../../shadcn-components/ui/checkbox';
-import { pushAssignment } from '../../../../services/git.service';
 import { RepoType } from '../../utils/repo-type';
 import { useForm } from '@tanstack/react-form';
-import { queryClient, useMutationStatus } from '../../../../widget';
-import { HTTPError } from '../../../../services/request.service';
-import { Lecture } from '../../../../model/lecture';
+import { useMutationStatus } from '../../../../widget';
 import { CornerDownRight } from 'lucide-react';
+import { useAssignmentPush } from '../../../hooks/assignment/assignment-push-hook';
+import { LectureDetailDto } from '../../../../model/lectureDetailDto';
 
 interface ISaveFilesDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   selectedRows: RowSelectionState;
   files: IFile[];
-  lecture: Lecture;
+  lecture: LectureDetailDto;
   assignmentId: number;
   selectedDir: string;
 }
@@ -44,6 +43,7 @@ interface ISaveFilesDialogProps {
 type SelectedFile = Omit<IFile, 'content'> & { content?: unknown };
 export const SaveFilesDialog = (props: ISaveFilesDialogProps) => {
   const { setStatus } = useMutationStatus();
+  const { handlePushAssignment } = useAssignmentPush();
   const flatten = (file: IFile): IFile[] =>
     file.type === 'directory'
       ? [file, ...(file.content ?? []).flatMap(flatten)]
@@ -71,45 +71,21 @@ export const SaveFilesDialog = (props: ISaveFilesDialogProps) => {
         )
       );
       try {
-        await Promise.all([
-          pushAssignment(
-            props.lecture.id,
-            props.assignmentId,
-            RepoType.SOURCE,
-            value.comment,
-            relativePaths
-          ),
-          pushAssignment(props.lecture.id, props.assignmentId, RepoType.RELEASE)
-        ])
-          .then(async () => {
-            await Promise.all([
-              queryClient.invalidateQueries({
-                queryKey: [
-                  'files',
-                  props.lecture.code,
-                  props.assignmentId,
-                  props.selectedDir
-                ]
-              }),
-              queryClient.invalidateQueries({
-                queryKey: [
-                  'remote-repo-status',
-                  props.lecture.code,
-                  props.assignmentId,
-                  props.selectedDir
-                ]
-              })
-            ]);
-            props.setIsOpen(false);
-            setStatus({
-              message:
-                'Your changes have been saved successfully. The notebooks & files will now be pushed to the repository, and the updates will be visible to your students.',
-              status: 'success'
-            });
-          })
-          .catch((err: HTTPError) => {
-            setStatus({ message: err.message, status: 'error' });
-          });
+        handlePushAssignment(
+          props.assignmentId,
+          props.lecture,
+          RepoType.SOURCE,
+          value.comment,
+          relativePaths,
+          props.selectedDir,
+          true
+        );
+        handlePushAssignment(
+          props.assignmentId,
+          props.lecture,
+          RepoType.RELEASE
+        );
+        props.setIsOpen(false);
       } catch (err) {
         setStatus({ message: 'Error saving assignment', status: 'error' });
       }

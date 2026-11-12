@@ -4,12 +4,12 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Lecture } from '../model/lecture';
 import { request } from './request.service';
 import { User } from '../model/user';
 import { HTTPMethod } from './enums/http-methods.enum';
 import { LectureListDto } from '../model/lectureListDto';
 import { LectureUpdateDto } from '../model/lectureUpdateDto';
+import { LectureDetailDto } from '../model/lectureDetailDto';
 
 const baseUrl = '/api/lectures';
 
@@ -38,8 +38,8 @@ export function getLectures(
 export function getLecture(
   lectureId: number,
   reload = false
-): Promise<Lecture> {
-  return request<Lecture>(
+): Promise<LectureDetailDto> {
+  return request<LectureDetailDto>(
     HTTPMethod.GET,
     `${baseUrl}/${lectureId}`,
     null,
@@ -50,8 +50,8 @@ export function getLecture(
 export function updateLecture(
   lecture: LectureUpdateDto,
   lectureId: number
-): Promise<Lecture> {
-  return request<Lecture, Lecture>(
+): Promise<LectureDetailDto> {
+  return request<LectureDetailDto, LectureUpdateDto>(
     HTTPMethod.PUT,
     `${baseUrl}/${lectureId}`,
     lecture
