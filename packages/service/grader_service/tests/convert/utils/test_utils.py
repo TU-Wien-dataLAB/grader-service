@@ -1,8 +1,6 @@
 import os
 import shutil
 import tempfile
-import zipfile
-from os.path import join
 
 import pytest
 from nbformat.v4 import new_output
@@ -16,11 +14,6 @@ from .. import (
     create_grade_cell,
     create_solution_cell,
 )
-from .conftest import notwindows
-
-
-class UnrecognizedFormat(Exception):
-    pass
 
 
 @pytest.fixture
@@ -317,137 +310,3 @@ def test_compute_checksum_utf8():
     utils.compute_checksum(
         create_solution_cell("$$\\int^\u221e_0 x^2dx$$", CellType.MARKDOWN, "foo")
     )
-
-
-def test_ignore_patterns(temp_cwd):
-    dir = "foo"
-    os.mkdir(dir)
-    files = ["foo.txt", "long.txt", "truc.png"]
-    for file in files:
-        with open(join(dir, file), "w") as fh:
-            fh.write("bar")
-            if file == "long.txt":
-                fh.write("x" * 2000)
-    os.mkdir(join(dir, "foo"))
-    files.append("foo")
-    assert utils.ignore_patterns(exclude=["foo*"])(dir, files) == ["foo.txt", "foo"]
-    assert utils.ignore_patterns(include=["*.txt"])(dir, files) == ["truc.png"]
-    assert utils.ignore_patterns(exclude=["foo.*"], include=["*.txt"])(dir, files) == [
-        "foo.txt",
-        "truc.png",
-    ]
-    assert utils.ignore_patterns(max_file_size=2)(dir, files) == ["long.txt"]
-
-
-def test_is_ignored(temp_cwd):
-    os.mkdir("foo")
-    with open(join("foo", "bar.txt"), "w") as fh:
-        fh.write("bar")
-
-    assert not utils.is_ignored("foo")
-    assert utils.is_ignored(join("foo", "bar.txt"), ["*.txt"])
-    assert utils.is_ignored(join("foo", "bar.txt"), ["bar.txt"])
-    assert utils.is_ignored(join("foo", "bar.txt"), ["*"])
-    assert not utils.is_ignored(join("foo", "bar.txt"), ["*.csv"])
-    assert not utils.is_ignored(join("foo", "bar.txt"), ["foo"])
-    assert not utils.is_ignored(join("foo", "bar.txt"), [join("foo", "*")])
-
-
-def test_find_all_files(temp_cwd):
-    os.makedirs(join("foo", "bar", "quux"))
-    with open(join("foo", "baz.txt"), "w") as fh:
-        fh.write("baz")
-    with open(join("foo", "bar", "baz.txt"), "w") as fh:
-        fh.write("baz")
-    with open(join("foo", "bar", "quux", "baz.txt"), "w") as fh:
-        fh.write("baz")
-
-    assert utils.find_all_files("foo") == [
-        join("foo", "baz.txt"),
-        join("foo", "bar", "baz.txt"),
-        join("foo", "bar", "quux", "baz.txt"),
-    ]
-    assert utils.find_all_files("foo", ["bar"]) == [join("foo", "baz.txt")]
-    assert utils.find_all_files("foo", ["quux"]) == [
-        join("foo", "baz.txt"),
-        join("foo", "bar", "baz.txt"),
-    ]
-    assert utils.find_all_files(join("foo", "bar")) == [
-        join("foo", "bar", "baz.txt"),
-        join("foo", "bar", "quux", "baz.txt"),
-    ]
-    assert utils.find_all_files(join("foo", "bar"), ["*.txt"]) == []
-    assert utils.find_all_files(".") == [
-        join(".", "foo", "baz.txt"),
-        join(".", "foo", "bar", "baz.txt"),
-        join(".", "foo", "bar", "quux", "baz.txt"),
-    ]
-    assert utils.find_all_files(".", ["bar"]) == [join(".", "foo", "baz.txt")]
-    assert utils.find_all_files(".", ["quux"]) == [
-        join(".", "foo", "baz.txt"),
-        join(".", "foo", "bar", "baz.txt"),
-    ]
-
-
-def test_unzip_invalid_ext(temp_cwd):
-    with open(join("baz.txt"), "w"):
-        pass
-    with pytest.raises(ValueError):
-        utils.unzip("baz.txt", os.getcwd())
-
-
-def test_unzip_bad_zip(temp_cwd):
-    with open(join("baz.zip"), "wb"):
-        pass
-    with pytest.raises(ValueError):
-        utils.unzip("baz.zip", os.getcwd())
-
-
-def test_unzip_no_output_path(temp_cwd):
-    with open(join("baz.zip"), "wb"):
-        pass
-    out = os.path.join(os.getcwd(), "blarg")
-    with pytest.raises(OSError):
-        utils.unzip("baz.zip", out)
-
-
-def test_unzip_create_own_folder(temp_cwd):
-    with open(join("foo.txt"), "w") as fh:
-        fh.write("foo")
-    with zipfile.ZipFile("baz.zip", "w") as fh:
-        fh.write("foo.txt")
-
-    utils.unzip("baz.zip", os.getcwd())
-    assert not os.path.isdir("baz")
-
-    utils.unzip("baz.zip", os.getcwd(), create_own_folder=True)
-    assert os.path.isdir("baz")
-    assert os.path.isfile(os.path.join("baz", "foo.txt"))
-
-
-def test_unzip_tree(temp_cwd):
-    with open(join("foo.txt"), "w") as fh:
-        fh.write("foo")
-
-    with zipfile.ZipFile("baz.zip", "w") as fh:
-        fh.write("foo.txt", os.path.join("bar", "foo.txt"))
-        fh.write("foo.txt")
-
-    with zipfile.ZipFile("data.zip", "w") as fh:
-        fh.write("foo.txt", os.path.join("bar", "foo.txt"))
-        fh.write("foo.txt")
-        fh.write("baz.zip")  # must also get unzipped
-
-    utils.unzip("data.zip", os.getcwd(), create_own_folder=True, tree=True)
-    assert os.path.isdir("data")
-    assert os.path.isdir(os.path.join("data", "baz"))
-    assert os.path.isdir(os.path.join("data", "bar"))
-    assert os.path.isdir(os.path.join("data", "baz", "bar"))
-    assert os.path.isfile(os.path.join("data", "baz", "bar", "foo.txt"))
-
-
-@notwindows
-def test_get_username():
-    assert utils.get_username() == os.environ["USER"]
-    # Can't test get_username's support for JUPYTERHUB_USER, as
-    # this would require actually running the tests as 'jovyan'.

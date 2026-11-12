@@ -1,5 +1,3 @@
-import socket
-
 from nbformat.v4 import new_code_cell, new_markdown_cell
 
 from grader_service.convert.gradebook.models import CellType
@@ -145,18 +143,3 @@ def create_task_cell(source, cell_type: CellType, grade_id, points, schema_versi
     }
 
     return cell
-
-
-def get_free_ports(n):
-    """Based on https://gist.github.com/dbrgn/3979133"""
-    ports = []
-    sockets = []
-    for i in range(n):
-        s = socket.socket()
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-        ports.append(port)
-        sockets.append(s)
-    for s in sockets:
-        s.close()
-    return ports

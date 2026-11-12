@@ -19,11 +19,9 @@ class OverwriteKernelspec(NbGraderPreprocessor):
 
         with Gradebook(self.json_path) as gb:
             kernelspec = json.loads(gb.find_notebook(self.notebook_id).kernelspec)
-            self.log.debug(f"Source notebook kernelspec: {kernelspec}")
-            self.log.debug(
-                "Submitted notebook kernelspec: {}".format(nb.metadata.get("kernelspec", None))
-            )
+            self.log.debug("Source notebook kernelspec: %s", kernelspec)
+            self.log.debug("Submitted notebook kernelspec: %s", nb.metadata.get("kernelspec"))
             if kernelspec:
-                self.log.info(f"Overwriting submitted notebook kernelspec: {kernelspec}")
+                self.log.info("Overwriting submitted notebook kernelspec: %s", kernelspec)
                 nb.metadata["kernelspec"] = kernelspec
         return nb, resources

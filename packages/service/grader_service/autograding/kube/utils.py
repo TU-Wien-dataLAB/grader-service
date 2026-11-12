@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
-import hashlib
 import os
 
 from kubernetes import config
@@ -36,76 +35,6 @@ def get_current_namespace():
         return "default"
 
 
-def generate_hashed_slug(slug, limit=63, hash_length=6):
-    """
-    Generate a unique name that's within a certain length limit
-
-    Most k8s objects have a 63 char name limit. We want to be able to compress
-    larger names down to that if required, while still maintaining some
-    amount of legibility about what the objects really are.
-
-    If the length of the slug is shorter than the limit - hash_length, we just
-    return slug directly. If not, we truncate the slug to (limit - hash_length)
-    characters, hash the slug and append hash_length characters from the hash
-    to the end of the truncated slug. This ensures that these names are always
-    unique no matter what.
-    """
-    if len(slug) < (limit - hash_length):
-        return slug
-
-    slug_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
-
-    return f"{slug[: limit - hash_length - 1]}-{slug_hash[:hash_length]}".lower()
-
-
-def update_k8s_model(target, changes, logger=None, target_name=None, changes_name=None):
-    """
-    Takes a model instance such as V1PodSpec() and updates it with another
-    model, which is allowed to be a dict or another model instance of the same
-    type. The logger is used to warn if any truthy value in the target is
-    overridden. The target_name parameter can for example be "pod.spec", and
-    changes_name parameter could be "extra_pod_config". These parameters allow
-    the logger to write out something more meaningful to the user whenever
-    something is about to become overridden.
-    """
-    model_type = type(target)
-    if not hasattr(target, "attribute_map"):
-        raise AttributeError(
-            f"Attribute 'target' ({model_type.__name__}) must be an object (such as 'V1PodSpec') "
-            "with an attribute 'attribute_map'."
-        )
-    if not isinstance(changes, model_type) and not isinstance(changes, dict):
-        raise TypeError(
-            f"Attribute 'changes' ({type(changes).__name__}) must be an object of the same type "
-            f"as 'target' ({model_type.__name__}) or a 'dict'."
-        )
-
-    changes_dict = _get_k8s_model_dict(model_type, changes)
-    for key, value in changes_dict.items():
-        if key not in target.attribute_map:
-            raise ValueError(
-                f"The attribute 'changes' ({type(changes).__name__}) contained '{key}' "
-                f"not modeled by '{model_type.__name__}'."
-            )
-
-        # If changes are passed as a dict, they will only have a few keys/value
-        # pairs representing the specific changes.
-        # If the changes parameter is a model instance on the other hand,
-        # the changes parameter will have a lot of default values as well.
-        # These default values, which are also falsy,
-        # should not use to override the target's values.
-        if isinstance(changes, dict) or value:
-            if getattr(target, key) and logger and changes_name:
-                warning = (
-                    f"'{target_name}.{key}' current value: '{getattr(target, key)}' "
-                    f"is overridden with '{value}', which is the value of '{changes_name}.{key}'."
-                )
-                logger.warning(warning)
-            setattr(target, key, value)
-
-    return target
-
-
 def get_k8s_model(model_type, model_dict):
     """
     Returns an instance of type specified model_type from a model instance or
@@ -124,23 +53,6 @@ def get_k8s_model(model_type, model_dict):
         raise TypeError(
             f"Expected object of type 'dict' (or '{model_type.__name__}') but got "
             f"'{type(model_dict).__name__}'."
-        )
-
-
-def _get_k8s_model_dict(model_type, model):
-    """
-    Returns a dictionary representation of a provided model type
-    """
-    model = copy.deepcopy(model)
-
-    if isinstance(model, model_type):
-        return model.to_dict()
-    elif isinstance(model, dict):
-        return _map_dict_keys_to_model_attributes(model_type, model)
-    else:
-        raise TypeError(
-            f"Expected object of type '{model_type.__name__}' (or 'dict') "
-            f"but got '{type(model).__name__}'."
         )
 
 

@@ -16,7 +16,7 @@ from traitlets import Callable, Dict, Integer, List, Unicode
 from traitlets.config import LoggingConfigurable
 from urllib3.exceptions import MaxRetryError
 
-from grader_service.autograding.kube.util import get_current_namespace, make_pod
+from grader_service.autograding.kube.utils import get_current_namespace, make_pod
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.orm import Submission
 from grader_service.orm.assignment import json_serial

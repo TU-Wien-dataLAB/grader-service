@@ -788,15 +788,6 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
         self.session.commit()
         self.write_json(submission)
 
-    # TODO: not used, remove?
-    def get_extra_credit(self, gradebook):
-        extra_credit = 0
-        for notebook in gradebook.notebooks.values():
-            for grades in notebook.grades:
-                extra_credit += grades.extra_credit if grades.extra_credit is not None else 0
-        self.log.info("Extra credit is " + str(extra_credit))
-        return extra_credit
-
 
 @register_handler(
     path=r"\/api\/lectures\/(?P<lecture_id>\d*)\/assignments\/"

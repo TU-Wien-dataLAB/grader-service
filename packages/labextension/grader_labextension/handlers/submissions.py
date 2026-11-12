@@ -263,15 +263,6 @@ class SubmissionObjectHandler(ExtensionBaseHandler):
     r"submissions\/lti\/?"
 )
 class LtiSyncHandler(ExtensionBaseHandler):
-    def raise_status(self, request):
-        try:
-            request.raise_for_status()
-            request = request.json()
-        except Exception:  # noqa: BLE001
-            self.log.error(request["message"])
-            raise HTTPError(request["status"], reason=request["message"])
-        return request
-
     async def put(self, lecture_id: int, assignment_id: int):
         query_params = RequestService.get_query_string(
             {"option": self.get_argument("option", "selection")}
