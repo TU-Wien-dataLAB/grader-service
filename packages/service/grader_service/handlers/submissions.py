@@ -783,7 +783,7 @@ class SubmissionPropertiesHandler(GraderBaseHandler):
             submission.feedback_status = FeedbackStatus.FEEDBACK_OUTDATED
 
         if submission.manual_status == ManualStatus.MANUALLY_GRADED:
-            submission.manually_graded = ManualStatus.BEING_EDITED
+            submission.manual_status = ManualStatus.BEING_EDITED
 
         self.session.commit()
         self.write_json(submission)
