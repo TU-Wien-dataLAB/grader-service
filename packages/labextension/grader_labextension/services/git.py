@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
-from grader_labextension.api.models import RemoteFileStatus
+from grader_labextension.api.models.remote_file_status import RemoteFileStatus
 from grader_service.artifact_types import ArtifactType
 from traitlets.config.configurable import Configurable
 from traitlets.traitlets import Unicode
