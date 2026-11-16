@@ -22,6 +22,16 @@ import {
 } from '../../../shadcn-components/ui/tooltip';
 import { assignmentStatus, gradingType } from '../../utils/assignment-metadata';
 import { useNavigate, useParams } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import {
+  getFiles,
+  lectureBasePath
+} from '../../../../services/local-file.service';
+import { lectureQuery } from '../../../../services/queries/lectures.queries';
+import { Badge } from '../../../shadcn-components/ui/badge';
+import { getRemoteStatus } from '../../../../services/git.service';
+import { RepoType } from '../../utils/repo-type';
+import { RemoteFileStatus } from '../../../../model/remoteFileStatus';
 
 export interface IAssignment {
   key: React.Key;
@@ -44,12 +54,54 @@ export const AssignmentCard = (props: IAssignment) => {
   const params = useParams();
 
   const lectureId = Number(params.id);
+  /* file status handling needed for release action */
+  const { data: lecture } = useQuery(lectureQuery(lectureId));
+  const { data: filesLength } = useQuery({
+    queryKey: ['files-length', lecture.code, props.assignment.id, 'source'],
+    queryFn: async () => {
+      return await getFiles(
+        `${lectureBasePath}${lecture.code}/source/${props.assignment.id}`
+      ).then(files => {
+        return files?.length;
+      });
+    }
+  });
+  const { data: remoteRepoStatus } = useQuery({
+    queryKey: [
+      'remote-repo-status',
+      lecture.code,
+      props.assignment.id,
+      'source'
+    ],
+    queryFn: async () => {
+      return await getRemoteStatus(
+        lectureId,
+        props.assignment.id,
+        RepoType.SOURCE
+      );
+    },
+    enabled: !!filesLength
+  });
   /* assignment tabs */
   const navigate = useNavigate();
   const goToAssignment = (tab: string) => {
     navigate(`/lectures/${lectureId}/assignments/${props.assignment.id}`, {
       state: { activeTab: tab }
     });
+  };
+
+  const filesStatusBadge = () => {
+    if (filesLength === 0) {
+      return <Badge className={'bg-gray-500'}>No files</Badge>;
+    }
+    switch (remoteRepoStatus?.status) {
+      case RemoteFileStatus.UpdateNeeded:
+        return <Badge className={'bg-red-400'}>Updates available</Badge>;
+      case RemoteFileStatus.UnsavedChanges:
+        return <Badge className={'bg-yellow-600'}>Unsaved changes</Badge>;
+      case RemoteFileStatus.Divergent:
+        return <Badge className={'bg-red-700'}>Out of sync</Badge>;
+    }
   };
 
   return isDragging ? (
@@ -99,6 +151,7 @@ export const AssignmentCard = (props: IAssignment) => {
               props.assignment.settings.grading_method,
               props.assignment.status === 'complete'
             )}
+            {filesStatusBadge() ?? null}
           </div>
           <div
             className={`grid grid-cols-3 ${

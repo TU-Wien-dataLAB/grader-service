@@ -23,6 +23,7 @@
     --color-blue-500: oklch(62.3% 0.214 259.815);
     --color-slate-600: oklch(44.6% 0.043 257.281);
     --color-gray-400: oklch(70.7% 0.022 261.325);
+    --color-gray-500: oklch(55.1% 0.027 264.364);
     --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
@@ -1311,6 +1312,9 @@
   }
   .bg-gray-400 {
     background-color: var(--color-gray-400);
+  }
+  .bg-gray-500 {
+    background-color: var(--color-gray-500);
   }
   .bg-green-500\/10 {
     background-color: color-mix(
