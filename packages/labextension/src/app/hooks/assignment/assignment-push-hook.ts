@@ -89,5 +89,27 @@ export function useAssignmentPush() {
       showSuccessMessage
     });
   };
-  return { handlePushAssignment };
+
+  const handlePushAssignments = (
+    assignmentIds: number[],
+    lecture: LectureDetailDto,
+    repoType: RepoType,
+    commitMessage?: string,
+    selectedFiles?: string[],
+    selectedDir?: string,
+    showSuccessMessage?: boolean
+  ) => {
+    assignmentIds.forEach(id =>
+      handlePushAssignment(
+        id,
+        lecture,
+        repoType,
+        commitMessage,
+        selectedFiles,
+        selectedDir,
+        showSuccessMessage
+      )
+    );
+  };
+  return { handlePushAssignment, handlePushAssignments };
 }

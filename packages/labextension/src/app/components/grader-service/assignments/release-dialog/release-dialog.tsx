@@ -23,12 +23,15 @@ import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
 import { AssignmentReleaseRemoteStatusBadge } from '../utils/assignment-release-remote-status-badge';
 import { RemoteFileStatus } from '../../../../../model/remoteFileStatus';
+import { useAssignmentPush } from '../../../../hooks/assignment/assignment-push-hook';
+import { LectureDetailDto } from '../../../../../model/lectureDetailDto';
+import { RepoType } from '../../../utils/repo-type';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[] | IGroupedAssignments;
   groupName?: string;
   isAssignmentsGrouped?: boolean;
-  lectureId: number;
+  lecture: LectureDetailDto;
   openDialog: boolean;
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
   handleGroupChecked?: (group: string) => void;
@@ -55,6 +58,7 @@ const dialogDescriptions: Record<RemoteFileStatus, string> = {
 
 export const ReleaseDialog = (props: IReleaseDialog) => {
   const { handleRelease, handleAssignmentsRelease } = useAssignmentStatus();
+  const { handlePushAssignment, handlePushAssignments } = useAssignmentPush();
 
   /* the dialog either shows a single assignment, a list of checked
      assignments or all assignments grouped by their group */
@@ -72,11 +76,38 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
         const flatAssignments = Object.values(
           props.assignments as IGroupedAssignments
         ).flat();
-        handleAssignmentsRelease(flatAssignments, props.lectureId);
+        handlePushAssignments(
+          flatAssignments.map(a => a.checked && a.assignment.id),
+          props.lecture,
+          RepoType.RELEASE,
+          value.comment,
+          undefined,
+          'release',
+          false
+        );
+        handleAssignmentsRelease(flatAssignments, props.lecture.id);
       } else if (Array.isArray(props.assignments)) {
-        handleAssignmentsRelease(props.assignments, props.lectureId);
+        handlePushAssignments(
+          props.assignments.map(a => a.checked && a.assignment.id),
+          props.lecture,
+          RepoType.RELEASE,
+          value.comment,
+          undefined,
+          'release',
+          false
+        );
+        handleAssignmentsRelease(props.assignments, props.lecture.id);
       } else if (singleAssignment) {
-        handleRelease(singleAssignment, props.lectureId);
+        handlePushAssignment(
+          singleAssignment.id,
+          props.lecture,
+          RepoType.RELEASE,
+          value.comment,
+          undefined,
+          'release',
+          false
+        );
+        handleRelease(singleAssignment, props.lecture.id);
       }
       props.setOpenDialog(false);
     }
@@ -98,7 +129,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
 
   /* file status handling needed for release action */
   const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
-    props.lectureId,
+    props.lecture.id,
     singleAssignment?.id
   );
 
@@ -141,7 +172,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
                   key={groupKey}
                   assignments={assignments}
                   groupName={groupKey}
-                  lectureId={props.lectureId}
+                  lectureId={props.lecture.id}
                   checkGroupSymbol={props.checkGroupSymbol}
                   handleGroupChecked={props.handleGroupChecked}
                   handleAssignmentChecked={props.handleAssignmentChecked}

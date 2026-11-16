@@ -18,6 +18,8 @@ import {
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
 import { CompleteDialog } from './complete-dialog';
+import { useQuery } from '@tanstack/react-query';
+import { lectureQuery } from '../../../../services/queries/lectures.queries';
 
 interface IAssignmentActions {
   assignment: AssignmentDetail;
@@ -27,6 +29,7 @@ export const AssignmentActions = (props: IAssignmentActions) => {
   const { handleRelease, handleUnrelease } = useAssignmentStatus();
   const params = useParams();
   const lectureId = Number(params.id);
+  const { data: lecture } = useQuery(lectureQuery(lectureId));
   const [openReleaseDialog, setOpenReleaseDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openSettingsDialog, setOpenSettingsDialog] = useState(false);
@@ -84,7 +87,7 @@ export const AssignmentActions = (props: IAssignmentActions) => {
       {openReleaseDialog && (
         <ReleaseDialog
           assignments={props.assignment}
-          lectureId={lectureId}
+          lecture={lecture}
           openDialog={openReleaseDialog}
           setOpenDialog={setOpenReleaseDialog}
         />

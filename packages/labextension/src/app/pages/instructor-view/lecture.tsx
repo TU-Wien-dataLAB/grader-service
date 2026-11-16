@@ -573,7 +573,7 @@ export const Lecture = () => {
         <ReleaseDialog
           assignments={checkedGroupAssignments}
           isAssignmentsGrouped
-          lectureId={lectureId}
+          lecture={lecture}
           openDialog={openReleaseDialog}
           setOpenDialog={setOpenReleaseDialog}
           handleGroupChecked={handleGroupChecked}
