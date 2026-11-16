@@ -183,7 +183,7 @@ export const FilesView = (props: IFilesViewProps) => {
             icon={<EmptyDirIcon />}
             title={'Get started with your first notebook'}
             description={
-              'Currently, there is no notebook available. You can create a new one now.'
+              'Currently, there is no notebooks available. You can create a new one now.'
             }
           />
           <NewNotebookDialog
