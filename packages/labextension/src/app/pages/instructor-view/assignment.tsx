@@ -13,7 +13,7 @@ import { FilesView } from '../../components/grader-service/notebooks-and-files/f
 import {
   assignmentStatus,
   gradingType
-} from '../../components/utils/assignment-metadata';
+} from '../../components/grader-service/assignments/utils/assignment-metadata';
 import { assignmentQuery } from '../../../services/queries/assignments.queries';
 import {
   buildFileBasePath,

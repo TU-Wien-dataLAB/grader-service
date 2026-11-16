@@ -5,9 +5,9 @@ import {
   FullyAutomaticGradingBadge,
   ManualGradingBadge,
   ReleasedAssignmentBadge
-} from '../ui/badges';
+} from '../../../ui/badges';
 import React from 'react';
-import { GradingMethod } from '../../../model/gradingMethod';
+import { GradingMethod } from '../../../../../model/gradingMethod';
 
 export const gradingType = (gradingType: GradingMethod, complete: boolean) => {
   if (gradingType === GradingMethod.FullAuto) {
