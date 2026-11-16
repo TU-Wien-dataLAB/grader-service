@@ -10,10 +10,14 @@ import { CornerDownRight } from 'lucide-react';
 import { IAssignmentChecked } from '../../../../pages/instructor-view/lecture';
 import { Assignment } from '../../../../../model/assignment';
 import { Label } from '../../../../shadcn-components/ui/label';
+import { useAssignmentRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
+import { AssignmentReleaseRemoteStatusBadge } from '../utils/assignment-release-remote-status-badge';
+import { AssignmentDetail } from '../../../../../model/assignmentDetail';
 
 interface IAssignmentGroupedCheckboxList {
   assignments: IAssignmentChecked[];
   groupName: string;
+  lectureId: number;
   checkGroupSymbol: (group: string) => boolean | 'indeterminate';
   handleGroupChecked: (group: string) => void;
   handleAssignmentChecked: (
@@ -22,6 +26,28 @@ interface IAssignmentGroupedCheckboxList {
     group: string
   ) => void;
 }
+
+/* renders the remote repo status of a single row; only assignments that can
+   still be released need the remote status*/
+const AssignmentRowRemoteStatusBadge = ({
+  lectureId,
+  assignment
+}: {
+  lectureId: number;
+  assignment: AssignmentDetail;
+}) => {
+  const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
+    lectureId,
+    assignment.id,
+    assignment.status === 'created'
+  );
+  return (
+    <AssignmentReleaseRemoteStatusBadge
+      remoteRepoStatus={remoteStatus}
+      filesLength={filesLength}
+    />
+  );
+};
 
 const AssignmentGroupedCheckboxList = (
   props: IAssignmentGroupedCheckboxList
@@ -77,7 +103,13 @@ const AssignmentGroupedCheckboxList = (
             >
               {a.assignment.name}
             </p>
-            <div className={'ml-auto'}>{assignmentStatus(a.assignment)}</div>
+            <div className={'ml-auto flex items-center gap-2'}>
+              {assignmentStatus(a.assignment)}
+              <AssignmentRowRemoteStatusBadge
+                lectureId={props.lectureId}
+                assignment={a.assignment}
+              />
+            </div>
           </li>
         ))}
       </ul>
