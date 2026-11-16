@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -17,8 +18,11 @@ import {
   IGroupedAssignments
 } from '../../../../pages/instructor-view/lecture';
 import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-status-hook';
+import { useAssignmentRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
 import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
+import { AssignmentReleaseRemoteStatusBadge } from '../utils/assignment-release-remote-status-badge';
+import { RemoteFileStatus } from '../../../../../model/remoteFileStatus';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[] | IGroupedAssignments;
@@ -37,38 +41,66 @@ interface IReleaseDialog {
   isAnyAssignmentChecked?: boolean;
 }
 
+const dialogDescriptions: Record<RemoteFileStatus, string> = {
+  unsaved_changes:
+    "Your local changes haven't been saved. The released assignment will not include them.",
+  divergent:
+    'Your local changes are out of sync with the remote system. Please resolve the conflicts before releasing.',
+  update_needed:
+    'The assignment has been updated in the remote system. ' +
+    "The release will be done using the files from remote. You can go back to 'Notebooks and files' of this assignment and load the updates to see what would be released.",
+  up_to_date: '',
+  no_backup: ''
+};
+
 export const ReleaseDialog = (props: IReleaseDialog) => {
   const { handleRelease, handleAssignmentsRelease } = useAssignmentStatus();
+
+  /* the dialog either shows a single assignment, a list of checked
+     assignments or all assignments grouped by their group */
+  const singleAssignment =
+    !props.isAssignmentsGrouped && !Array.isArray(props.assignments)
+      ? (props.assignments as Assignment)
+      : undefined;
+
   const form = useForm({
     defaultValues: {
       comment: 'Release'
     },
     onSubmit: ({ value }) => {
       if (props.isAssignmentsGrouped) {
-        const flatAssignments = Object.values(props.assignments).flat();
+        const flatAssignments = Object.values(
+          props.assignments as IGroupedAssignments
+        ).flat();
         handleAssignmentsRelease(flatAssignments, props.lectureId);
-      }
-      if (Array.isArray(props.assignments)) {
+      } else if (Array.isArray(props.assignments)) {
         handleAssignmentsRelease(props.assignments, props.lectureId);
-      } else {
-        handleRelease(props.assignments, props.lectureId);
+      } else if (singleAssignment) {
+        handleRelease(singleAssignment, props.lectureId);
       }
       props.setOpenDialog(false);
     }
   });
 
-  const renderGroups: [string, IAssignmentChecked[]][] = props.assignments
-    ? props.isAssignmentsGrouped
-      ? Object.entries(props.assignments)
-      : [[props.groupName, props.assignments]]
-    : [];
+  const renderGroups: [string, IAssignmentChecked[]][] =
+    props.isAssignmentsGrouped
+      ? Object.entries((props.assignments as IGroupedAssignments) ?? {})
+      : Array.isArray(props.assignments)
+        ? [[props.groupName ?? '', props.assignments]]
+        : [];
 
   const getDialogTitle = () => {
     if (props.isAssignmentsGrouped || Array.isArray(props.assignments)) {
       return 'Release assignments';
     }
-    return `Release ${props.assignments.name}`;
+    return `Release ${singleAssignment?.name}`;
   };
+
+  /* file status handling needed for release action */
+  const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
+    props.lectureId,
+    singleAssignment?.id
+  );
 
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
@@ -80,10 +112,23 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
         }}
       >
         <DialogContent>
-          <DialogHeader className="min-w-0">
-            <DialogTitle className="truncate w-full">
-              {getDialogTitle()}
-            </DialogTitle>
+          <DialogHeader className="min-w-0 gap-2">
+            <div className={'flex flex-row gap-2 items-center self-stretch'}>
+              <DialogTitle className="truncate max-w-[calc(100%-4rem)]">
+                {getDialogTitle()}
+              </DialogTitle>
+              {singleAssignment && (
+                <AssignmentReleaseRemoteStatusBadge
+                  remoteRepoStatus={remoteStatus}
+                  filesLength={filesLength}
+                />
+              )}
+            </div>
+            {singleAssignment && (
+              <DialogDescription>
+                {dialogDescriptions[remoteStatus]}
+              </DialogDescription>
+            )}
           </DialogHeader>
           <FieldGroup
             className={
@@ -96,6 +141,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
                   key={groupKey}
                   assignments={assignments}
                   groupName={groupKey}
+                  lectureId={props.lectureId}
                   checkGroupSymbol={props.checkGroupSymbol}
                   handleGroupChecked={props.handleGroupChecked}
                   handleAssignmentChecked={props.handleAssignmentChecked}
@@ -157,5 +203,3 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
     </Dialog>
   );
 };
-
-export default ReleaseDialog;
