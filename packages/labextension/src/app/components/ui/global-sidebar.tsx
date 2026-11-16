@@ -53,7 +53,7 @@ export const GlobalSidebar = () => {
   const lectures = useMemo(() => {
     return fetchedLectures?.lectures.map(lecture => ({
       ...lecture,
-      isActive: location.pathname.startsWith(`/lectures/${lecture.id}`)
+      isActive: location.pathname === `/lectures/${lecture.id}`
     }));
   }, [fetchedLectures, location.pathname]);
 
