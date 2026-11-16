@@ -138,7 +138,7 @@ def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
     application = GraderServer(
         grader_service_dir=str(service_dir),
         file_service=file_service,
-        services=ServiceRegistry(sql_alchemy_sessionmaker, file_service),
+        services=ServiceRegistry(file_service),
         base_url="/",
         authenticator=authenticator,
         handlers=handlers,

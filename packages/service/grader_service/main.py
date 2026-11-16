@@ -441,7 +441,7 @@ class GraderService(config.Application):
         self.set_config()
 
         # register services
-        services = ServiceRegistry(self.session_maker, self.file_service)
+        services = ServiceRegistry(self.file_service)
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         self.log.debug("Registered handlers: %s", handlers)

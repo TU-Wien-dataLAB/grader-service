@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import Optional
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 
 from grader_service.errors import APIError
 from grader_service.orm import Role, User, Lecture, Assignment, Submission
@@ -12,8 +12,12 @@ from grader_service.services.file_services.base_file_service import FileService
 
 
 class BaseService:
-    def __init__(self, session_maker: sessionmaker, file_service: FileService):
-        self.session_maker = session_maker
+    """Base class for services.
+
+    Services contain all database and business logic. They do not manage a session lifecycle.
+    """
+
+    def __init__(self, file_service: FileService):
         self.file_service = file_service
 
     def get_role(self, session: Session, lecture_id: int, user: User) -> Role:

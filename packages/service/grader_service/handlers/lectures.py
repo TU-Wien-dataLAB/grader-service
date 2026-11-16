@@ -63,6 +63,7 @@ class LectureBaseHandler(GraderBaseHandler):
             raise HTTPError(400, reason="Invalid order: must be 'asc' or 'desc'")
 
         lectures = self.services.lectures.get_all_lectures(
+            self.session,
             complete=complete,
             instructor_view=instructor,
             user=self.user,
@@ -82,7 +83,9 @@ class LectureBaseHandler(GraderBaseHandler):
         :raises APIError: throws an error if the lecture code contains invalid characters or is already taken
         """
         self.validate_parameters()
-        lecture = self.services.lectures.create_lecture(self.parse_json_dto(LectureCreateDto))
+        lecture = self.services.lectures.create_lecture(
+            self.session, self.parse_json_dto(LectureCreateDto)
+        )
 
         self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
@@ -104,7 +107,7 @@ class LectureObjectHandler(GraderBaseHandler):
         """
         self.validate_parameters()
         lecture = self.services.lectures.update_lecture(
-            lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
+            self.session, lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
         )
 
         self.write_json(lecture)
@@ -117,7 +120,7 @@ class LectureObjectHandler(GraderBaseHandler):
         :return: lecture with given id
         """
         self.validate_parameters()
-        lecture = self.services.lectures.get_lecture_by_id(lecture_id, user=self.user)
+        lecture = self.services.lectures.get_lecture_by_id(self.session, lecture_id, user=self.user)
         self.write_json(lecture)
 
     @authorize([Scope.instructor, Scope.admin])
@@ -142,7 +145,7 @@ class LectureObjectHandler(GraderBaseHandler):
         hard_delete = self.get_bool_argument("hard_delete", default=False)
 
         await self.services.lectures.delete_lecture(
-            lecture_id, hard_delete=hard_delete, user=self.user
+            self.session, lecture_id, hard_delete=hard_delete, user=self.user
         )
         self.set_status(HTTPStatus.NO_CONTENT)
 
@@ -163,7 +166,9 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: a dictionary of user, tutor and instructor names lists
         """
-        students, tutors, instructors = self.services.lectures.get_lecture_users(lecture_id)
+        students, tutors, instructors = self.services.lectures.get_lecture_users(
+            self.session, lecture_id
+        )
 
         lecture_users = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(lecture_users)

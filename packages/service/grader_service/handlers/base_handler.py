@@ -172,6 +172,8 @@ class BaseHandler(web.RequestHandler):
             self.log.exception("Failed to get current user")
             raise
 
+        self.session.commit()
+
         if self.request.path.startswith(url_path_join(self.application.base_url, "/git")):
             # Git endpoints should only be available if Git is used for file operations.
             self._verify_git_file_service()
