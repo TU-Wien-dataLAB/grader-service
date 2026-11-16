@@ -86,3 +86,69 @@ export const CompletedAssignmentBadge = ({
     </Badge>
   );
 };
+
+export const NoFilesBadge = ({ className = '' }: { className?: string }) => {
+  return (
+    <Badge
+      className={`${className} ${commonStyle} bg-gray-400 border-gray-500`}
+    >
+      No files
+    </Badge>
+  );
+};
+
+export const NoBackupBadge = ({ className = '' }: { className?: string }) => {
+  return (
+    <Badge
+      className={`${className} ${commonStyle} bg-gray-400 border-gray-500`}
+    >
+      No backup
+    </Badge>
+  );
+};
+
+export const UpToDateBadge = ({ className = '' }: { className?: string }) => {
+  return (
+    <Badge
+      className={`${className} ${commonStyle} bg-lime-600 border-lime-700`}
+    >
+      Up to date
+    </Badge>
+  );
+};
+
+export const UpdatesAvailableBadge = ({
+  className = ''
+}: {
+  className?: string;
+}) => {
+  return (
+    <Badge
+      className={`${className} ${commonStyle} bg-blue-400 border-blue-500`}
+    >
+      Updates available
+    </Badge>
+  );
+};
+
+export const OutOfSyncBadge = ({ className = '' }: { className?: string }) => {
+  return (
+    <Badge className={`${className} ${commonStyle} bg-red-600 border-red-700`}>
+      Out of sync
+    </Badge>
+  );
+};
+
+export const UnsavedChangesBadge = ({
+  className = ''
+}: {
+  className?: string;
+}) => {
+  return (
+    <Badge
+      className={`${className} ${commonStyle} bg-yellow-400 border-yellow-500`}
+    >
+      Unsaved changes
+    </Badge>
+  );
+};

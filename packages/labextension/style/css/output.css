@@ -11,15 +11,18 @@
       'Liberation Mono', 'Courier New', monospace;
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-red-500: oklch(63.7% 0.237 25.331);
+    --color-red-600: oklch(57.7% 0.245 27.325);
     --color-red-700: oklch(50.5% 0.213 27.518);
     --color-yellow-400: oklch(85.2% 0.199 91.936);
     --color-yellow-500: oklch(79.5% 0.184 86.047);
     --color-yellow-600: oklch(68.1% 0.162 75.834);
     --color-yellow-700: oklch(55.4% 0.135 66.442);
     --color-lime-600: oklch(64.8% 0.2 131.684);
+    --color-lime-700: oklch(53.2% 0.157 131.589);
     --color-green-400: oklch(79.2% 0.209 151.711);
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-700: oklch(52.7% 0.154 150.069);
+    --color-blue-400: oklch(70.7% 0.165 254.624);
     --color-blue-500: oklch(62.3% 0.214 259.815);
     --color-slate-600: oklch(44.6% 0.043 257.281);
     --color-gray-400: oklch(70.7% 0.022 261.325);
@@ -1124,6 +1127,9 @@
   .border-\[\#FF9D52\] {
     border-color: #ff9d52;
   }
+  .border-blue-500 {
+    border-color: var(--color-blue-500);
+  }
   .border-blue-500\/50 {
     border-color: color-mix(
       in srgb,
@@ -1152,6 +1158,9 @@
       border-color: color-mix(in oklab, var(--destructive) 50%, transparent);
     }
   }
+  .border-gray-500 {
+    border-color: var(--color-gray-500);
+  }
   .border-green-500\/50 {
     border-color: color-mix(
       in srgb,
@@ -1175,6 +1184,9 @@
       border-color: color-mix(in oklab, var(--input) 30%, transparent);
     }
   }
+  .border-lime-700 {
+    border-color: var(--color-lime-700);
+  }
   .border-muted-foreground {
     border-color: var(--muted-foreground);
   }
@@ -1184,11 +1196,17 @@
   .border-primary-hover {
     border-color: var(--primary-hover);
   }
+  .border-red-700 {
+    border-color: var(--color-red-700);
+  }
   .border-sidebar-border {
     border-color: var(--sidebar-border);
   }
   .border-transparent {
     border-color: transparent;
+  }
+  .border-yellow-500 {
+    border-color: var(--color-yellow-500);
   }
   .border-yellow-500\/50 {
     border-color: color-mix(
@@ -1203,6 +1221,9 @@
         transparent
       );
     }
+  }
+  .border-yellow-700 {
+    border-color: var(--color-yellow-700);
   }
   .border-t-transparent {
     border-top-color: transparent;
@@ -1270,6 +1291,9 @@
         transparent
       );
     }
+  }
+  .bg-blue-400 {
+    background-color: var(--color-blue-400);
   }
   .bg-blue-500\/10 {
     background-color: color-mix(
@@ -1370,6 +1394,9 @@
   .bg-red-400 {
     background-color: var(--color-red-400);
   }
+  .bg-red-600 {
+    background-color: var(--color-red-600);
+  }
   .bg-red-700 {
     background-color: var(--color-red-700);
   }
@@ -1393,6 +1420,9 @@
   }
   .bg-white {
     background-color: var(--color-white);
+  }
+  .bg-yellow-400 {
+    background-color: var(--color-yellow-400);
   }
   .bg-yellow-500 {
     background-color: var(--color-yellow-500);

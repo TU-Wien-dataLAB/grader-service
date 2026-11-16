@@ -28,10 +28,15 @@ import {
   lectureBasePath
 } from '../../../../services/local-file.service';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
-import { Badge } from '../../../shadcn-components/ui/badge';
 import { getRemoteStatus } from '../../../../services/git.service';
 import { RepoType } from '../../utils/repo-type';
 import { RemoteFileStatus } from '../../../../model/remoteFileStatus';
+import {
+  NoFilesBadge,
+  OutOfSyncBadge,
+  UnsavedChangesBadge,
+  UpdatesAvailableBadge
+} from '../../ui/badges';
 
 export interface IAssignment {
   key: React.Key;
@@ -92,15 +97,15 @@ export const AssignmentCard = (props: IAssignment) => {
 
   const filesStatusBadge = () => {
     if (filesLength === 0) {
-      return <Badge className={'bg-gray-500'}>No files</Badge>;
+      return <NoFilesBadge />;
     }
     switch (remoteRepoStatus?.status) {
       case RemoteFileStatus.UpdateNeeded:
-        return <Badge className={'bg-red-400'}>Updates available</Badge>;
+        return <UpdatesAvailableBadge />;
       case RemoteFileStatus.UnsavedChanges:
-        return <Badge className={'bg-yellow-600'}>Unsaved changes</Badge>;
+        return <UnsavedChangesBadge />;
       case RemoteFileStatus.Divergent:
-        return <Badge className={'bg-red-700'}>Out of sync</Badge>;
+        return <OutOfSyncBadge />;
     }
   };
 
