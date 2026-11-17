@@ -27,7 +27,14 @@ from tornado.web import HTTPError
 
 from grader_service import __version__
 from grader_service.api.models.base_model import Model
-from grader_service.errors import APIError
+from grader_service.errors import (
+    APIError,
+    ServiceError,
+    NotFoundError,
+    ConflictError,
+    InvalidInputError,
+    PermissionDeniedError,
+)
 from grader_service.services.file_services import GitFileService
 from grader_service.orm import APIToken, Assignment, Submission
 from grader_service.orm.base import DeleteState, Serializable
@@ -799,6 +806,35 @@ class BaseHandler(web.RequestHandler):
 
 
 class GraderErrorMixin:
+    SERVICE_ERROR_STATUS: dict[type[ServiceError], HTTPStatus] = {
+        NotFoundError: HTTPStatus.NOT_FOUND,
+        ConflictError: HTTPStatus.CONFLICT,
+        InvalidInputError: HTTPStatus.BAD_REQUEST,
+        PermissionDeniedError: HTTPStatus.FORBIDDEN,
+    }
+
+    @staticmethod
+    def to_api_error(e: ServiceError) -> APIError:
+        """Translates a service-layer error into an APIError.
+
+        The status is looked up through the class hierarchy, so subclasses of
+        mapped errors (e.g. NotFoundError) inherit their status.
+
+        :param e: the ServiceError raised by a service
+        :return: the equivalent APIError
+        :raises ValueError: if the ServiceError has no mapped status
+        """
+        status = None
+        for cls in type(e).__mro__:
+            if cls in GraderErrorMixin.SERVICE_ERROR_STATUS:
+                status = GraderErrorMixin.SERVICE_ERROR_STATUS[cls]
+                break
+        if status is None:
+            raise ValueError(
+                f"No HTTP status mapping for service error {type(e).__name__}. "
+            ) from e
+        return APIError(status, message=str(e))
+
     def write_error(self, status_code, **kwargs):
         self.log.error("Error %s: %s", status_code, self._reason)
 

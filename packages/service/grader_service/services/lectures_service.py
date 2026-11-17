@@ -1,6 +1,5 @@
 import logging
 import math
-from http import HTTPStatus
 
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +12,12 @@ from grader_service.api.models import (
     LectureListDto,
 )
 from grader_service.api.models.user import User as UserDto
-from grader_service.errors import APIError
+from grader_service.errors import (
+    ConflictError,
+    InvalidInputError,
+    NotFoundError,
+    PermissionDeniedError,
+)
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
@@ -112,7 +116,7 @@ class LecturesService(BaseService):
 
         if not user.is_admin:
             if lecture.deleted == DeleteState.deleted:
-                raise APIError(HTTPStatus.NOT_FOUND, message="Lecture not found")
+                raise NotFoundError("Lecture not found")
         return to_lecture_detail_dto(lecture)
 
     def create_lecture(self, session: Session, lecture_dto: LectureCreateDto) -> LectureDetailDto:
@@ -121,7 +125,7 @@ class LecturesService(BaseService):
                 select(Lecture).where(Lecture.code == lecture_dto.code)
             ).first()
             if lecture is not None:
-                raise APIError(HTTPStatus.CONFLICT, message="Lecture code already in use")
+                raise ConflictError("Lecture code already in use")
 
             lecture = Lecture()
             lecture.name = lecture_dto.name
@@ -132,11 +136,11 @@ class LecturesService(BaseService):
             session.add(lecture)
             session.commit()
         except ValueError as e:
-            raise APIError(HTTPStatus.BAD_REQUEST, message=str(e))
+            raise InvalidInputError(str(e))
         except IntegrityError:
             # the unique constraint on the code caught a concurrent create
             session.rollback()
-            raise APIError(HTTPStatus.CONFLICT, message="Lecture code already in use")
+            raise ConflictError("Lecture code already in use")
         except Exception:
             if session.in_transaction():
                 session.rollback()
@@ -150,7 +154,7 @@ class LecturesService(BaseService):
         try:
             lecture = self.get_lecture(session, lecture_id)
             if not user.is_admin and lecture.deleted == DeleteState.deleted:
-                raise APIError(HTTPStatus.NOT_FOUND, message="Lecture was deleted.")
+                raise NotFoundError("Lecture was deleted.")
 
             lecture.name = lecture_dto.name
             lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
@@ -172,9 +176,7 @@ class LecturesService(BaseService):
             lecture_code = lecture.code
             if hard_delete:
                 if not user.is_admin:
-                    raise APIError(
-                        HTTPStatus.FORBIDDEN, message="Only Admins can hard-delete lecture."
-                    )
+                    raise PermissionDeniedError("Only Admins can hard-delete lecture.")
 
                 session.delete(lecture)
                 session.commit()
@@ -186,7 +188,7 @@ class LecturesService(BaseService):
                     log.exception("Failed to delete files of lecture %s", lecture_code)
             else:
                 if lecture.deleted == DeleteState.deleted:
-                    raise APIError(HTTPStatus.NOT_FOUND, message="Lecture was deleted.")
+                    raise NotFoundError("Lecture was deleted.")
 
                 assignments = list(lecture.assignments)
                 self.validate_assignments_for_soft_delete(session, assignments)

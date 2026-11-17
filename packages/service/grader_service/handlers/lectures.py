@@ -8,6 +8,7 @@ from http import HTTPStatus
 from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
+from grader_service.errors import ServiceError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -83,9 +84,12 @@ class LectureBaseHandler(GraderBaseHandler):
         :raises APIError: throws an error if the lecture code contains invalid characters or is already taken
         """
         self.validate_parameters()
-        lecture = self.services.lectures.create_lecture(
-            self.session, self.parse_json_dto(LectureCreateDto)
-        )
+        try:
+            lecture = self.services.lectures.create_lecture(
+                self.session, self.parse_json_dto(LectureCreateDto)
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
 
         self.set_status(HTTPStatus.CREATED)
         self.write_json(lecture)
@@ -106,9 +110,12 @@ class LectureObjectHandler(GraderBaseHandler):
         :type lecture_id: int
         """
         self.validate_parameters()
-        lecture = self.services.lectures.update_lecture(
-            self.session, lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
-        )
+        try:
+            lecture = self.services.lectures.update_lecture(
+                self.session, lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
 
         self.write_json(lecture)
 
@@ -120,7 +127,12 @@ class LectureObjectHandler(GraderBaseHandler):
         :return: lecture with given id
         """
         self.validate_parameters()
-        lecture = self.services.lectures.get_lecture_by_id(self.session, lecture_id, user=self.user)
+        try:
+            lecture = self.services.lectures.get_lecture_by_id(
+                self.session, lecture_id, user=self.user
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
         self.write_json(lecture)
 
     @authorize([Scope.instructor, Scope.admin])
@@ -144,9 +156,12 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters("hard_delete")
         hard_delete = self.get_bool_argument("hard_delete", default=False)
 
-        await self.services.lectures.delete_lecture(
-            self.session, lecture_id, hard_delete=hard_delete, user=self.user
-        )
+        try:
+            await self.services.lectures.delete_lecture(
+                self.session, lecture_id, hard_delete=hard_delete, user=self.user
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
         self.set_status(HTTPStatus.NO_CONTENT)
 
 

@@ -1,10 +1,9 @@
-from http import HTTPStatus
 from typing import Optional
 
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from grader_service.errors import APIError
+from grader_service.errors import NotFoundError, ConflictError
 from grader_service.orm import Role, User, Lecture, Assignment, Submission
 from grader_service.orm.base import DeleteState
 from grader_service.orm.takepart import Scope
@@ -23,7 +22,7 @@ class BaseService:
     def get_role(self, session: Session, lecture_id: int, user: User) -> Role:
         role: Optional[Role] = session.get(Role, (user.id, lecture_id))
         if role is None:
-            raise APIError(HTTPStatus.NOT_FOUND, "No role found")
+            raise NotFoundError("No role found")
         return role
 
     def has_elevated_permissions(self, session: Session, user: User) -> bool | None:
@@ -58,7 +57,7 @@ class BaseService:
     def get_lecture(self, session: Session, lecture_id: int) -> Lecture | None:
         lecture: Optional[Lecture] = session.get(Lecture, lecture_id)
         if lecture is None:
-            raise APIError(HTTPStatus.NOT_FOUND, message="Lecture not found")
+            raise NotFoundError("Lecture not found")
         return lecture
 
     def validate_assignments_for_soft_delete(
@@ -66,13 +65,13 @@ class BaseService:
     ) -> None:
         """Validates that all assignments can be soft-deleted.
 
-        Raises an APIError if any assignment has submissions or is released/completed,
+        Raises a ServiceError if any assignment has submissions or is released/completed,
         preventing a soft-delete. Submission counts are fetched in a single grouped
         query instead of one lazy load per assignment.
 
         :param session: the database session
         :param assignments: the Assignment objects to validate
-        :raises APIError: if an assignment has submissions or is released/completed
+        :raises ConflictError: if an assignment has submissions or is released/completed
         """
         assignment_ids = [a.id for a in assignments]
         submission_counts = {}
@@ -86,13 +85,9 @@ class BaseService:
             )
         for assignment in assignments:
             if submission_counts.get(assignment.id, 0) > 0:
-                raise APIError(
-                    HTTPStatus.CONFLICT, message="Cannot delete assignments with submissions!"
-                )
+                raise ConflictError("Cannot delete assignments with submissions!")
             if assignment.status in {"released", "complete"}:
-                raise APIError(
-                    HTTPStatus.CONFLICT, message="Cannot delete released or completed assignments!"
-                )
+                raise ConflictError("Cannot delete released or completed assignments!")
 
     def delete_previous_assignments(
         self, session: Session, assignments: list[Assignment], lecture_id: int
