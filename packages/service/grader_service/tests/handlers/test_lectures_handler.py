@@ -332,19 +332,6 @@ async def test_get_lectures_pagination_paging(
     assert data["total_pages"] == 2
     assert [lec["id"] for lec in data["lectures"]] == [3]
 
-    page_3 = await http_server_client.fetch(
-        service_base_url + "lectures?page=3&per_page=2",
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
-    )
-    assert page_3.code == HTTPStatus.OK
-    data = json.loads(page_3.body.decode())
-    assert data["page"] == 3
-    assert data["per_page"] == 2
-    assert data["total_items"] == 3
-    assert data["total_pages"] == 2
-    assert data["lectures"] == []
-
 
 async def test_get_lectures_page_beyond_range(
     app: GraderServer,
