@@ -8,7 +8,7 @@ from http import HTTPStatus
 from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
-from grader_service.errors import ServiceError
+from grader_service.errors import ServiceError, APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
@@ -149,17 +149,22 @@ class LectureObjectHandler(GraderBaseHandler):
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises HTTPError: throws an error if the lecture was already deleted
-        or was not found
+        :raises APIError: throws an error if the lecture was already deleted, was not found, or
+        a user is not authorized to hard delete the lecture
 
         """
         self.validate_parameters("hard_delete")
         hard_delete = self.get_bool_argument("hard_delete", default=False)
 
         try:
-            await self.services.lectures.delete_lecture(
-                self.session, lecture_id, hard_delete=hard_delete, user=self.user
-            )
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise APIError(
+                        HTTPStatus.FORBIDDEN, message="Only admins can hard-delete lectures."
+                    )
+                await self.services.lectures.hard_delete_lecture(self.session, lecture_id)
+            else:
+                await self.services.lectures.soft_delete_lecture(self.session, lecture_id)
         except ServiceError as e:
             raise self.to_api_error(e)
         self.set_status(HTTPStatus.NO_CONTENT)
