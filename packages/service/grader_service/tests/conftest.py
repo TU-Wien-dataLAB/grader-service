@@ -159,6 +159,13 @@ def sql_alchemy_engine(sql_alchemy_sessionmaker):
     session.close()
 
 
+@pytest.fixture(scope="function")
+def sql_alchemy_session(sql_alchemy_sessionmaker):
+    session = sql_alchemy_sessionmaker()
+    yield session
+    session.close()
+
+
 @pytest.fixture(scope="module")
 def service_base_url():
     base_url = "/api/"
