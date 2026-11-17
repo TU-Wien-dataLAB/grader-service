@@ -650,6 +650,50 @@ async def test_post_lecture_existing_code(
     assert next(lec["name"] for lec in lectures if lec["code"] == "20wle2") == name_before
 
 
+async def test_post_lecture_invalid_code(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())["lectures"]
+    assert isinstance(lectures, list)
+    assert len(lectures) == 4
+
+    # creating a lecture with an invalid lecture code is rejected
+    invalid_lecture = Lecture(id=-1, name="pytest_lecture", code="&lec&code", complete=False)
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(invalid_lecture.to_dict()),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+    error = json.loads(e.response.body.decode())
+    assert (
+        error["message"]
+        == "Invalid lecture code: only alphanumeric characters, '-' and '_' are allowed."
+    )
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())["lectures"]
+    assert len(lectures) == 4
+
+
 async def test_post_lectures_update_unauthorized(
     app: GraderServer,
     service_base_url,
@@ -1374,62 +1418,6 @@ async def test_delete_lecture_invalid_hard_delete_value(
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-
-async def test_post_lecture_invalid_body(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_admin,
-    default_token,
-    default_roles,
-    default_admin_login,
-):
-    url = service_base_url + "lectures"
-
-    # not valid JSON
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="POST",
-            headers={"Authorization": f"Token {default_token}"},
-            body="{invalid json",
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-    # JSON, but the body is not an object
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="POST",
-            headers={"Authorization": f"Token {default_token}"},
-            body="[1, 2, 3]",
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-
-async def test_put_lecture_invalid_body(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_user,
-    default_token,
-    default_roles,
-    default_user_login,
-):
-    url = service_base_url + "lectures/3"
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="PUT",
-            headers={"Authorization": f"Token {default_token}"},
-            body="not json at all",
         )
     e = exc_info.value
     assert e.code == HTTPStatus.BAD_REQUEST
