@@ -1,6 +1,5 @@
 import logging
 import math
-import re
 from http import HTTPStatus
 
 from sqlalchemy import select, func
@@ -27,8 +26,6 @@ from grader_service.services.mappers.lectures_mapper import (
 from grader_service.services.mappers.users_mapper import to_user_dto
 
 log = logging.getLogger(__name__)
-
-lecture_code_pattern = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # Allow-list of sortable lecture columns
 LECTURE_SORTABLE_COLUMNS = {
@@ -120,11 +117,6 @@ class LecturesService(BaseService):
 
     def create_lecture(self, session: Session, lecture_dto: LectureCreateDto) -> LectureDetailDto:
         try:
-            if not lecture_code_pattern.fullmatch(lecture_dto.code or ""):
-                raise APIError(
-                    HTTPStatus.BAD_REQUEST,
-                    message="Invalid lecture code: only alphanumeric characters, '-' and '_' are allowed.",
-                )
             lecture = session.scalars(
                 select(Lecture).where(Lecture.code == lecture_dto.code)
             ).first()
@@ -139,6 +131,8 @@ class LecturesService(BaseService):
 
             session.add(lecture)
             session.commit()
+        except ValueError as e:
+            raise APIError(HTTPStatus.BAD_REQUEST, message=str(e))
         except IntegrityError:
             # the unique constraint on the code caught a concurrent create
             session.rollback()

@@ -884,8 +884,8 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
         try:
             body = json_decode(self.request.body)
             return dto_cls.from_dict(body)
-        except ValueError:
-            raise HTTPError(HTTPStatus.BAD_REQUEST, reason="Invalid request body")
+        except ValueError as e:
+            raise APIError(HTTPStatus.BAD_REQUEST, message=str(e))
 
     def validate_parameters(self, *args):
         if len(self.request.arguments) == 0:

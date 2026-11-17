@@ -75,6 +75,7 @@ components:
           example: "Informationsvisualisierung"
         code:
           type: string
+          pattern: "^[A-Za-z0-9_-]+$"
           example: "ivs21"
         complete:
           type: boolean
