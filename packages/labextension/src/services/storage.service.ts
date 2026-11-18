@@ -15,9 +15,12 @@ function getKey(
   return 'grader:' + key;
 }
 
-export function deleteKey(key: string) {
-  key = getKey(key);
-  localStorage.removeItem(key);
+export function deleteKey(
+  key: string,
+  lecture?: Lecture,
+  assignment?: Assignment
+) {
+  localStorage.removeItem(getKey(key, lecture, assignment));
 }
 
 export function storeString(
@@ -54,11 +57,7 @@ export function loadBoolean(
   assignment?: Assignment
 ): boolean | null {
   const v = loadString(key, lecture, assignment);
-  if (v === null) {
-    return null;
-  } else {
-    return v === 'true';
-  }
+  return v === null ? null : v === 'true';
 }
 
 export function storeNumber(
@@ -76,11 +75,7 @@ export function loadNumber(
   assignment?: Assignment
 ): number | null {
   const v = loadString(key, lecture, assignment);
-  if (v === null) {
-    return null;
-  } else {
-    return +v;
-  }
+  return v === null ? null : Number(v);
 }
 
 export function storeObject<T>(
@@ -98,6 +93,5 @@ export function loadObject<T>(
   assignment?: Assignment
 ): T | null {
   const jsonString = loadString(key, lecture, assignment);
-  if (!jsonString) return null; // Return null if there's nothing to parse
-  return JSON.parse(jsonString);
+  return !jsonString ? null : JSON.parse(jsonString);
 }
