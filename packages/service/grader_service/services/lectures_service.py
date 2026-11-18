@@ -51,6 +51,18 @@ class LecturesService(BaseService):
         search: str | None = None,
     ) -> LectureListDto:
         stmt = select(Lecture)
+        if not user.is_admin:
+            stmt = stmt.join(Role).where(
+                Role.user_id == user.id, Lecture.deleted == DeleteState.active
+            )
+
+            if has_elevated_permissions:
+                stmt = stmt.where(Role.role.in_([Scope.instructor, Scope.tutor]))
+
+        total_items_unfiltered = session.execute(
+            select(func.count()).select_from(stmt.subquery())
+        ).scalar_one()
+
         if complete is not None:
             state = LectureState.complete if complete else LectureState.active
             stmt = stmt.where(Lecture.state == state)
@@ -62,14 +74,6 @@ class LecturesService(BaseService):
             stmt = stmt.where(
                 Lecture.name.ilike(term, escape="\\") | Lecture.code.ilike(term, escape="\\")
             )
-
-        if not user.is_admin:
-            stmt = stmt.join(Role).where(
-                Role.user_id == user.id, Lecture.deleted == DeleteState.active
-            )
-
-            if has_elevated_permissions:
-                stmt = stmt.where(Role.role.in_([Scope.instructor, Scope.tutor]))
 
         # total count under the same filters the user can see,
         # so pagination metadata is consistent with the page contents
@@ -106,6 +110,7 @@ class LecturesService(BaseService):
             per_page=per_page,
             total_items=total_items,
             total_pages=total_pages,
+            total_items_unfiltered=total_items_unfiltered,
         )
 
     def get_lecture_by_id(

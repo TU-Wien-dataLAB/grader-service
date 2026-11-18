@@ -181,12 +181,17 @@ export function getRemoteStatus(
   assignmentId: number,
   repo: RepoType,
   reload = false
-): Promise<RemoteFileStatus> {
+): Promise<{ status: RemoteFileStatus }> {
   const url = `${baseUrl({
     lectureId: lectureId,
     assignmentId: assignmentId
   })}remote-status/${repo}/`;
-  return request<RemoteFileStatus>(HTTPMethod.GET, url, null, reload);
+  return request<{ status: RemoteFileStatus }>(
+    HTTPMethod.GET,
+    url,
+    null,
+    reload
+  );
 }
 
 /**
@@ -198,10 +203,15 @@ export function getRemoteFileStatus(
   repo: RepoType,
   filePath: string,
   reload = false
-): Promise<RemoteFileStatus> {
+): Promise<{ status: RemoteFileStatus }> {
   const url = `${baseUrl({
     lectureId: lectureId,
     assignmentId: assignmentId
   })}/remote-file-status/${repo}/?file=${encodeURIComponent(filePath)}`;
-  return request<RemoteFileStatus>(HTTPMethod.GET, url, null, reload);
+  return request<{ status: RemoteFileStatus }>(
+    HTTPMethod.GET,
+    url,
+    null,
+    reload
+  );
 }

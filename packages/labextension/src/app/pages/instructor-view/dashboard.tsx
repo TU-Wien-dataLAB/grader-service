@@ -1,9 +1,8 @@
 import { SearchField } from '../../components/ui/search';
 import { FilterLecturesButton } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getLectures } from '../../../services/lectures.service';
 import { LayoutGrid, List } from 'lucide-react';
 import {
   Table,
@@ -14,23 +13,13 @@ import {
 } from '../../shadcn-components/ui/table';
 import { LectureCard } from '../../components/grader-service/lectures/lecture-card';
 import { LectureRow } from '../../components/grader-service/lectures/lecture-row';
-import { pluralize } from '../../components/utils/utils';
-import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
+import { capitalizeFirstLetter, pluralize } from '../../components/utils/utils';
+import { lecturesQuery } from '../../../services/queries/lectures.queries';
 import { Header } from '../../components/ui/header';
 import {
   ToggleGroup,
   ToggleGroupItem
 } from '../../shadcn-components/ui/toggle-group';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious
-} from '../../shadcn-components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -54,76 +43,33 @@ import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../services/local-file.service';
+import { CustomPagination } from '../../components/ui/custom-pagination';
+import { useLectureFilters } from '../../stores/lecture-filter-store';
 
 export const Dashboard = () => {
   const [view, setView] = useState('grid');
-  const { data: lectures } = useQuery(activeInstructorLecturesQuery());
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterBy, setFilterBy] = useState('');
-  const [sortBy, setSortBy] = useState({ key: '', dir: '' });
-  // fetching directly in the component, since fetching is conditional
-  const {
-    data: completedLectures,
-    isPending: isPendingCompletedLectures,
-    isRefetching: isRefetchingCompletedLectures
-  } = useQuery({
-    queryKey: ['completedLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: true }, false),
-    // only fetch completed lectures if the "completed" filter option has been chosen
-    enabled: filterBy === 'completed'
-  });
+  const filterBy = useLectureFilters(s => s.filterBy);
+  const sortBy = useLectureFilters(s => s.sortBy);
+  const page = useLectureFilters(s => s.page);
+  const perPage = useLectureFilters(s => s.perPage);
+  const searchQuery = useLectureFilters(s => s.searchQuery);
+
+  const setFilterBy = useLectureFilters(s => s.setFilterBy);
+  const setSortBy = useLectureFilters(s => s.setSortBy);
+  const setPage = useLectureFilters(s => s.setPage);
+  const setPerPage = useLectureFilters(s => s.setPerPage);
+  const setSearchQuery = useLectureFilters(s => s.setSearchQuery);
+  const { data: lecturesData, isPending: isPendingLectures } = useQuery(
+    lecturesQuery(true)
+  );
 
   useEffect(() => {
     openInFileBrowser(`${lectureBasePath}`);
   }, []);
 
-  /* logic for searching/filtering/sorting */
-  const filteredLectures = useMemo(() => {
-    if (!lectures) {
-      return [];
-    }
-
-    let result = [...lectures];
-
-    if (filterBy) {
-      if (filterBy === 'completed' && !isPendingCompletedLectures) {
-        result = [...completedLectures];
-      }
-    }
-    if (searchQuery) {
-      result = result.filter(
-        l =>
-          l.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          l.code?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (sortBy) {
-      result = result.sort((a, b) => {
-        const modifier = sortBy.dir === 'asc' ? 1 : -1;
-        if (sortBy.key === 'name') {
-          return (a.name ?? '').localeCompare(b.name ?? '') * modifier;
-        }
-        if (sortBy.key === 'date') {
-          return (a.id - b.id) * modifier;
-        }
-        return 0;
-      });
-    }
-    return result;
-  }, [
-    lectures,
-    completedLectures,
-    searchQuery,
-    filterBy,
-    sortBy,
-    isPendingCompletedLectures,
-    isRefetchingCompletedLectures
-  ]);
-
   const { status } = useMutationStatus();
+  const lectures = lecturesData?.lectures ?? [];
 
   return (
     <div
@@ -132,7 +78,9 @@ export const Dashboard = () => {
     >
       <Header />
       <div className={'flex flex-col sticky top-0 shrink-0 m-6 gap-6'}>
-        <span className={'text-xl font-bold'}>Courses</span>
+        <span className={'text-xl font-bold'}>
+          {capitalizeFirstLetter(filterBy)} courses
+        </span>
         {status.status === 'success' && (
           <SuccessBanner message={status.message} />
         )}
@@ -198,17 +146,18 @@ export const Dashboard = () => {
         </div>
         {searchQuery && (
           <p className={'w-fit'}>
-            <span className={'font-bold'}>{filteredLectures.length}</span>{' '}
+            Showing <span className={'font-bold'}>{lectures.length}</span> out
+            of <span className={'font-bold'}>{lecturesData?.total_items}</span>{' '}
             {pluralize({
               text: 'result',
-              data: filteredLectures
+              data: lectures.length
             })}{' '}
             found for <span className={'font-bold'}>"{searchQuery}"</span>
           </p>
         )}
       </div>
-      {(lectures?.length ?? 0) > 0 ? (
-        filteredLectures.length === 0 ? (
+      {!isPendingLectures && lecturesData.total_items_unfiltered > 0 ? (
+        lecturesData.total_items === 0 ? (
           <EmptyState
             title={'No results found'}
             icon={<NoResultsFoundIcon />}
@@ -229,7 +178,7 @@ export const Dashboard = () => {
                   'grid gap-6 grid-cols-1 @3xl:grid-cols-2 @6xl:grid-cols-3' //defining grid like this is necessary to have responsive window from both sides
                 }
               >
-                {filteredLectures?.map(lecture => (
+                {lectures?.map(lecture => (
                   <LectureCard lecture={lecture} searchQuery={searchQuery} />
                 ))}
               </div>
@@ -248,7 +197,7 @@ export const Dashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLectures.map(lecture => (
+                    {lectures.map(lecture => (
                       <LectureRow lecture={lecture} searchQuery={searchQuery} />
                     ))}
                   </TableBody>
@@ -256,31 +205,15 @@ export const Dashboard = () => {
               </div>
             )}
             <div className="flex items-center justify-between gap-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationFirst />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationPrevious />
-                  </PaginationItem>
-                  <PaginationItem>
-                    {Array.from(
-                      { length: Math.ceil(lectures.length / 6) },
-                      (_, i) => (
-                        <PaginationLink key={i}>{i + 1}</PaginationLink>
-                      )
-                    )}
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLast />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-              <Select defaultValue="6">
+              <p className="text-sm text-secondary-background flex items-center w-37.5">
+                {lectures.length} of {lecturesData.total_items}
+              </p>
+              <CustomPagination
+                page={page}
+                setPage={setPage}
+                totalPages={lecturesData?.total_pages ?? 1}
+              />
+              <Select value={perPage} onValueChange={setPerPage}>
                 <SelectTrigger id="select-rows-per-page">
                   <SelectValue />
                 </SelectTrigger>

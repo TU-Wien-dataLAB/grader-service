@@ -3,10 +3,7 @@ import { Root } from './app/root';
 import { Dashboard } from './app/pages/instructor-view/dashboard';
 import React from 'react';
 import { Lecture } from './app/pages/instructor-view/lecture';
-import {
-  activeInstructorLecturesQuery,
-  lectureQuery
-} from './services/queries/lectures.queries';
+import { lectureQuery } from './services/queries/lectures.queries';
 import { queryClient } from './widget';
 import { getCurrentUserQuery } from './services/queries/users.queries';
 import {
@@ -22,18 +19,11 @@ export const getRoutes = () => {
       element={<Root />}
       path={'/*'}
       loader={async () => {
-        await queryClient.query(activeInstructorLecturesQuery());
+        await queryClient.query(getCurrentUserQuery());
         return null;
       }}
     >
-      <Route
-        index
-        element={<Dashboard />}
-        loader={async () => {
-          await queryClient.query(getCurrentUserQuery());
-          return null;
-        }}
-      ></Route>
+      <Route index element={<Dashboard />}></Route>
       <Route
         path={'lectures/:id'}
         element={<Lecture />}

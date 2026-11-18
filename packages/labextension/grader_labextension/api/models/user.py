@@ -67,6 +67,8 @@ class User(Model):
         :param id: The id of this User.
         :type id: int
         """
+        if id is None:
+            raise ValueError("Invalid value for `id`, must not be `None`")  # noqa: E501
 
         self._id = id
 
@@ -109,5 +111,7 @@ class User(Model):
         :param display_name: The display_name of this User.
         :type display_name: str
         """
+        if display_name is None:
+            raise ValueError("Invalid value for `display_name`, must not be `None`")  # noqa: E501
 
         self._display_name = display_name

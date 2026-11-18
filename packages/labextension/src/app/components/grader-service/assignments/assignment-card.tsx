@@ -96,7 +96,7 @@ export const AssignmentCard = (props: IAssignment) => {
           <div className={'flex items-start gap-4'}>
             {assignmentStatus(props.assignment.status)}
             {gradingType(
-              props.assignment.settings.autograde_type,
+              props.assignment.settings.grading_method,
               props.assignment.status === 'complete'
             )}
           </div>

@@ -8,17 +8,12 @@
  * Do not edit the class manually.
  */
 
-export type FeedbackStatus =
-  | 'not_generated'
-  | 'generating'
-  | 'generated'
-  | 'generation_failed'
-  | 'feedback_outdated';
-
 export const FeedbackStatus = {
-  NotGenerated: 'not_generated' as FeedbackStatus,
-  Generating: 'generating' as FeedbackStatus,
-  Generated: 'generated' as FeedbackStatus,
-  GenerationFailed: 'generation_failed' as FeedbackStatus,
-  FeedbackOutdated: 'feedback_outdated' as FeedbackStatus
-};
+  NotGenerated: 'not_generated',
+  Generating: 'generating',
+  Generated: 'generated',
+  GenerationFailed: 'generation_failed',
+  FeedbackOutdated: 'feedback_outdated'
+} as const;
+export type FeedbackStatus =
+  (typeof FeedbackStatus)[keyof typeof FeedbackStatus];

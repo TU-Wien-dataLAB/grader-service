@@ -1,26 +1,39 @@
 import { getLectures, getLecture, getLectureUsers } from '../lectures.service';
 import { queryOptions } from '@tanstack/react-query';
+import { useLectureFilters } from '../../app/stores/lecture-filter-store';
+import { useShallow } from 'zustand/react/shallow';
 
-export const activeInstructorLecturesQuery = () =>
-  queryOptions({
-    queryKey: ['activeLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: false }, false)
+export const lecturesQuery = (instructor: boolean = false) => {
+  const { filterBy, sortBy, page, perPage, searchQuery } = useLectureFilters(
+    useShallow(s => ({
+      filterBy: s.filterBy,
+      sortBy: s.sortBy,
+      page: s.page,
+      perPage: s.perPage,
+      searchQuery: s.searchQuery
+    }))
+  );
+  const key = sortBy.key;
+  const dir = sortBy.dir;
+  return queryOptions({
+    queryKey: [
+      'lectures',
+      { instructor, filterBy, key, dir, page, perPage, searchQuery }
+    ],
+    queryFn: () =>
+      getLectures(
+        {
+          complete: filterBy === 'all' ? null : filterBy === 'completed',
+          sort_by: sortBy.key,
+          order: sortBy.dir,
+          search: searchQuery
+        },
+        instructor,
+        page,
+        perPage
+      )
   });
-
-export const completedLecturesQuery = () =>
-  queryOptions({
-    queryKey: ['completedLectures'],
-    queryFn: async () =>
-      getLectures({ instructor: true, complete: true }, false)
-  });
-
-export const activeLecturesQuery = () =>
-  queryOptions({
-    queryKey: ['lectures'],
-    queryFn: async () =>
-      getLectures({ instructor: false, complete: false }, false)
-  });
+};
 
 export const lectureQuery = (lectureId: number) =>
   queryOptions({

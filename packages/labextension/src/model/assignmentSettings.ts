@@ -8,22 +8,15 @@
  * Do not edit the class manually.
  */
 import { SubmissionPeriod } from './submissionPeriod';
+import { GradingMethod } from './gradingMethod';
 
 export interface AssignmentSettings {
   deadline?: string;
   max_submissions?: number;
   allowed_files?: Array<string>;
   late_submission?: Array<SubmissionPeriod>;
-  autograde_type?: AssignmentSettings.AutogradeTypeEnum;
+  grading_method: GradingMethod;
   group?: string;
   cell_timeout?: number;
 }
-export namespace AssignmentSettings {
-  export const AutogradeTypeEnum = {
-    Auto: 'auto',
-    FullAuto: 'full_auto',
-    Unassisted: 'unassisted'
-  } as const;
-  export type AutogradeTypeEnum =
-    (typeof AutogradeTypeEnum)[keyof typeof AutogradeTypeEnum];
-}
+export namespace AssignmentSettings {}

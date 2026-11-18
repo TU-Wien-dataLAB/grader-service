@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { activeInstructorLecturesQuery } from '../../../services/queries/lectures.queries';
+import { lecturesQuery } from '../../../services/queries/lectures.queries';
 import {
   Sidebar,
   SidebarContent,
@@ -43,10 +43,15 @@ import { Logo } from '../../../assets/logo';
 import { UserPermissions } from '../../../services/permission.service';
 
 export const GlobalSidebar = () => {
-  const { data: fetchedLectures } = useQuery(activeInstructorLecturesQuery());
+  const [view, setView] = React.useState<'instructor' | 'student'>(
+    'instructor'
+  );
+  const { data: fetchedLectures } = useQuery(
+    lecturesQuery(view === 'instructor')
+  );
   const location = useLocation();
   const lectures = useMemo(() => {
-    return fetchedLectures?.map(lecture => ({
+    return fetchedLectures?.lectures.map(lecture => ({
       ...lecture,
       isActive: location.pathname.startsWith(`/lectures/${lecture.id}`)
     }));
@@ -148,7 +153,12 @@ export const GlobalSidebar = () => {
           </SelectContent>
         </Select>
         {UserPermissions.hasElevatedPermissions() && (
-          <ToggleGroup type={'single'} className={'rounded-xs w-fit'}>
+          <ToggleGroup
+            type={'single'}
+            className={'rounded-xs w-fit'}
+            value={view}
+            onValueChange={value => setView(value as 'instructor' | 'student')}
+          >
             {state === 'collapsed' ? (
               <>
                 <ToggleGroupItem value={'instructor'}>

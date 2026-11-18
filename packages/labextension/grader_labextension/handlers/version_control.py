@@ -122,7 +122,7 @@ class GitRemoteFileStatusHandler(ExtensionBaseHandler):
         except GitError as e:
             self.log.error(e)
             raise APIError(502, message=e.error)
-        response = json.dumps({"status": status.name})
+        response = json.dumps({"status": status})
         self.write(response)
 
 
@@ -163,7 +163,7 @@ class GitRemoteStatusHandler(ExtensionBaseHandler):
         except GitError as e:
             self.log.error(e)
             raise APIError(502, reason="error fetching remote files", message=e.error)
-        response = json.dumps({"status": status.name})
+        response = json.dumps({"status": status})
         self.write(response)
 
 

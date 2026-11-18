@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Lecture } from '../../../model/lecture';
 import { updateLecture } from '../../../services/lectures.service';
 import { useMutationStatus } from '../../../widget';
+import { LectureUpdateDto } from '../../../model/lectureUpdateDto';
 
 export const useUpdateLecture = () => {
   const queryClient = useQueryClient();
@@ -11,20 +11,16 @@ export const useUpdateLecture = () => {
     mutationFn: async (variables: {
       name: string;
       complete: boolean;
-      lecture: Lecture;
+      lectureId: number;
     }) => {
-      const updatedLecture: Lecture = {
-        ...variables.lecture,
+      const updatedLecture: LectureUpdateDto = {
         name: variables.name,
         complete: variables.complete
       };
-      return updateLecture(updatedLecture);
+      return updateLecture(updatedLecture, variables.lectureId);
     },
-    onSuccess: () => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['activeLectures'] }),
-        queryClient.invalidateQueries({ queryKey: ['completedLectures'] })
-      ]);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
       setStatus({
         status: 'success',
         message: 'Your changes have been saved successfully!'

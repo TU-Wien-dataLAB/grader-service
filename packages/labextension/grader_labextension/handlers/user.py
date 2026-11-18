@@ -1,4 +1,4 @@
-from grader_service.handlers.base_handler import authenticated
+from tornado.web import authenticated
 
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from grader_labextension.registry import register_handler
