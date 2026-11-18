@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
 
-from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
 from grader_service.errors import ServiceError, APIError
@@ -46,6 +45,10 @@ class LectureBaseHandler(GraderBaseHandler):
         )
         complete = self.get_bool_argument("complete")
         instructor = self.get_bool_argument("instructor")
+        # only hit the database for the permission check if the instructor view was requested
+        has_elevated_permissions = instructor and self.services.lectures.has_elevated_permissions(
+            self.session, self.user
+        )
         search = self.get_argument("search", None)
 
         page = self.get_int_argument("page", default=1, minimum=1)
@@ -55,18 +58,18 @@ class LectureBaseHandler(GraderBaseHandler):
 
         sort_by = self.get_argument("sort_by", "created_at")
         if sort_by not in LECTURE_SORTABLE_COLUMNS:
-            raise HTTPError(
-                400, reason=f"Invalid sort_by: must be one of {sorted(LECTURE_SORTABLE_COLUMNS)}"
+            raise APIError(
+                400, message=f"Invalid sort_by: must be one of {sorted(LECTURE_SORTABLE_COLUMNS)}"
             )
 
         order = self.get_argument("order", "asc")
         if order not in ("asc", "desc"):
-            raise HTTPError(400, reason="Invalid order: must be 'asc' or 'desc'")
+            raise APIError(400, message="Invalid order: must be 'asc' or 'desc'")
 
         lectures = self.services.lectures.get_all_lectures(
             self.session,
             complete=complete,
-            instructor_view=instructor,
+            has_elevated_permissions=has_elevated_permissions,
             user=self.user,
             page=page,
             per_page=per_page,
@@ -101,24 +104,6 @@ class LectureObjectHandler(GraderBaseHandler):
     Tornado Handler class for http requests to /lectures/{lecture_id}.
     """
 
-    @authorize([Scope.instructor, Scope.admin])
-    async def put(self, lecture_id: int):
-        """
-        Updates a lecture.
-
-        :param lecture_id: id of the lecture
-        :type lecture_id: int
-        """
-        self.validate_parameters()
-        try:
-            lecture = self.services.lectures.update_lecture(
-                self.session, lecture_id, self.parse_json_dto(LectureUpdateDto), user=self.user
-            )
-        except ServiceError as e:
-            raise self.to_api_error(e)
-
-        self.write_json(lecture)
-
     @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
         """
@@ -129,10 +114,32 @@ class LectureObjectHandler(GraderBaseHandler):
         self.validate_parameters()
         try:
             lecture = self.services.lectures.get_lecture_by_id(
-                self.session, lecture_id, user=self.user
+                self.session, lecture_id, can_get_deleted_lecture=self.user.is_admin
             )
         except ServiceError as e:
             raise self.to_api_error(e)
+        self.write_json(lecture)
+
+    @authorize([Scope.instructor, Scope.admin])
+    async def put(self, lecture_id: int):
+        """
+        Updates a lecture.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :return: updated lecture
+        """
+        self.validate_parameters()
+        try:
+            lecture = self.services.lectures.update_lecture(
+                self.session,
+                lecture_id,
+                self.parse_json_dto(LectureUpdateDto),
+                can_update_deleted_lecture=self.user.is_admin,
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
+
         self.write_json(lecture)
 
     @authorize([Scope.instructor, Scope.admin])

@@ -42,7 +42,7 @@ class LecturesService(BaseService):
         self,
         session: Session,
         complete: bool | None,
-        instructor_view: bool | None,
+        has_elevated_permissions: bool | None,
         user: User,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE,
@@ -68,7 +68,7 @@ class LecturesService(BaseService):
                 Role.user_id == user.id, Lecture.deleted == DeleteState.active
             )
 
-            if instructor_view and self.has_elevated_permissions(session, user):
+            if has_elevated_permissions:
                 stmt = stmt.where(Role.role.in_([Scope.instructor, Scope.tutor]))
 
         # total count under the same filters the user can see,
@@ -92,7 +92,9 @@ class LecturesService(BaseService):
 
         lecture_dtos = [
             to_lecture_list_item_dto(
-                lec, a_counts.get(lec.id, 0), s_counts.get(lec.id, 0) if instructor_view else None
+                lec,
+                a_counts.get(lec.id, 0),
+                s_counts.get(lec.id, 0) if has_elevated_permissions else None,
             )
             for lec in lectures
         ]
@@ -106,10 +108,12 @@ class LecturesService(BaseService):
             total_pages=total_pages,
         )
 
-    def get_lecture_by_id(self, session: Session, lecture_id: int, user: User) -> LectureDetailDto:
+    def get_lecture_by_id(
+        self, session: Session, lecture_id: int, can_get_deleted_lecture: bool
+    ) -> LectureDetailDto:
         lecture = self.get_lecture(session, lecture_id)
 
-        if not user.is_admin:
+        if not can_get_deleted_lecture:
             if lecture.deleted == DeleteState.deleted:
                 raise NotFoundError("Lecture not found")
         return to_lecture_detail_dto(lecture)
@@ -144,11 +148,15 @@ class LecturesService(BaseService):
         return to_lecture_detail_dto(lecture)
 
     def update_lecture(
-        self, session: Session, lecture_id: int, lecture_dto: LectureUpdateDto, user: User
+        self,
+        session: Session,
+        lecture_id: int,
+        lecture_dto: LectureUpdateDto,
+        can_update_deleted_lecture: bool,
     ) -> LectureDetailDto:
         try:
             lecture = self.get_lecture(session, lecture_id)
-            if not user.is_admin and lecture.deleted == DeleteState.deleted:
+            if not can_update_deleted_lecture and lecture.deleted == DeleteState.deleted:
                 raise NotFoundError("Lecture was deleted.")
 
             lecture.name = lecture_dto.name
