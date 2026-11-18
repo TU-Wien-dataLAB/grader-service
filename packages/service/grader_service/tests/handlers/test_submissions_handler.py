@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service.api.models import AssignmentSettings, Submission
-from grader_service.file_services import GitFileService
+from grader_service.services.file_services import GitFileService
 from grader_service.artifact_types import ArtifactType
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
@@ -1430,7 +1430,7 @@ async def test_post_submission_max_submissions_assignment(
     assignment_orm.settings = AssignmentSettings(
         deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2),
         max_submissions=1,
-        autograde_type="unassisted",
+        grading_method="manual",
     )
     assignment_orm.properties = json.dumps({"notebooks": {}})
     session.add(assignment_orm)
@@ -1590,15 +1590,16 @@ async def test_submission_properties_student(
         status="released",
         deleted=DeleteState.active,
     )
-    sql_alchemy_sessionmaker.add(assignment)
-    sql_alchemy_sessionmaker.commit()
+    with sql_alchemy_sessionmaker() as session:
+        session.add(assignment)
+        session.commit()
 
     insert_submission(sql_alchemy_engine, a_id, default_user.name, default_user.id)
 
-    submission = sql_alchemy_sessionmaker().query(SubmissionORM).filter_by(id=s_id).first()
-    submission.properties.properties = json.dumps(props)
-
-    sql_alchemy_sessionmaker().merge(submission)
+    with sql_alchemy_sessionmaker() as session:
+        submission = session.query(SubmissionORM).filter_by(id=s_id).first()
+        submission.properties.properties = json.dumps(props)
+        session.commit()
 
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/{s_id}/properties"
 

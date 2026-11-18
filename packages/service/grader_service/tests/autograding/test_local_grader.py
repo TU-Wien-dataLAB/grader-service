@@ -12,7 +12,7 @@ from grader_service.autograding.local_grader import (
     LocalAutogradeExecutor,
     LocalAutogradeProcessExecutor,
 )
-from grader_service.file_services import FileServiceError
+from grader_service.services.file_services import FileServiceError
 from grader_service.orm import Assignment
 from grader_service.orm.submission import AutoStatus
 from grader_service.artifact_types import ArtifactType

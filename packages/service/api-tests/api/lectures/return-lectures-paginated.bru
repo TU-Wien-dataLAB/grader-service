@@ -1,0 +1,20 @@
+meta {
+  name: return-lectures-paginated
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{grader-base-url}}/api/lectures?page=1&per_page=2&sort_by=name&order=desc
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.lectures: isDefined
+  res.body.page: eq 1
+  res.body.per_page: eq 2
+  res.body.total_items: isDefined
+  res.body.total_pages: isDefined
+}

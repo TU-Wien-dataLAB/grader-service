@@ -9,6 +9,9 @@ from typing import List, Tuple
 
 from tornado.web import RequestHandler
 
+from grader_service.services.file_services.base_file_service import FileService
+from grader_service.services.lectures_service import LecturesService
+
 
 class Singleton(type):
     _instances = {}
@@ -83,3 +86,14 @@ def register_handler(path: str, version_specifier: VersionSpecifier = VersionSpe
         return cls
 
     return _register_class
+
+
+class ServiceRegistry:
+    """Centralizes application service registration.
+
+    Provides a single place for assembling service objects that depend on a shared
+    file service.
+    """
+
+    def __init__(self, file_service: FileService):
+        self.lectures = LecturesService(file_service)
