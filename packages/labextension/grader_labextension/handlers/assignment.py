@@ -227,3 +227,28 @@ class AssignmentPropertiesHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
         self.write(response)
+
+@register_handler(path=r"api\/assignments\/upcoming\/?")
+class UpcomingAssignmentsHandler(ExtensionBaseHandler):
+    """
+    Tornado Handler class for http requests to /assignments/upcoming.
+    """
+
+    @authenticated
+    async def get(self):
+        """Sends a GET request to the grader service and returns the upcoming assignments
+        (across all lectures) that have no submission yet and whose
+        (extended) deadline has not passed.
+        """
+        try:
+            response = await self.request_service.request(
+                method="GET",
+                endpoint=f"{self.service_base_url}api/assignments/upcoming",
+                header=self.grader_authentication_header,
+                response_callback=self.set_service_headers,
+            )
+        except RequestServiceError as e:
+            self.log.error(e)
+            raise HTTPError(e.code, reason=e.message)
+
+        self.write(json.dumps(response))

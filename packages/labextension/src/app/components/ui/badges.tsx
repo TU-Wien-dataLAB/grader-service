@@ -86,3 +86,55 @@ export const CompletedAssignmentBadge = ({
     </Badge>
   );
 };
+
+export const ChangesAssignmentBadge = ({ 
+  className = ''
+ }: { 
+  className?: string; 
+ }) => {
+  return(<Badge
+      className={`${className} ${commonStyle} bg-[#FFEB99] border-[#F5C918]`}
+    >
+      Changes
+    </Badge> 
+    );
+ };
+
+ export const NewAssignmentBadge = ({ 
+  className = ''
+ }: { 
+  className?: string; 
+ }) => {
+  return(<Badge
+      className={`${className} ${commonStyle} bg-[#FF9EE5] border-[#CC7EB7] dark:bg-[#7A005A] dark:border-[#D391C2]`}
+    >
+      New
+    </Badge> 
+    );
+ };
+
+ export const NoSubmissionAssignmentBadge = ({ 
+  className = ''
+ }: { 
+  className?: string; 
+ }) => {
+  return(<Badge
+      className={`${className} ${commonStyle} bg-[#FF9999] border-[#CC7373] dark:bg-[#C72828] dark:border-[#EB4242]`}
+    >
+      No Submission
+    </Badge> 
+    );
+ };
+
+export const FeedbackAssignmentBadge = ({ 
+  className = ''
+ }: { 
+  className?: string; 
+ }) => {
+  return(<Badge
+      className={`${className} ${commonStyle} bg-[#AEDCE5] border-[#8CB0B8] dark:bg-[#395F66] dark:border-[#587C85]`}
+    >
+      Feedback
+    </Badge> 
+    );
+ };
