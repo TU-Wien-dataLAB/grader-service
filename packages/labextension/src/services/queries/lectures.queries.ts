@@ -23,7 +23,7 @@ export const lecturesQuery = (instructor: boolean = false) => {
     queryFn: () =>
       getLectures(
         {
-          complete: filterBy === 'completed',
+          complete: filterBy === 'all' ? null : filterBy === 'completed',
           sort_by: sortBy.key,
           order: sortBy.dir,
           search: searchQuery

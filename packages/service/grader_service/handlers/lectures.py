@@ -43,7 +43,7 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters(
             "complete", "instructor", "page", "per_page", "sort_by", "order", "search"
         )
-        complete = self.get_bool_argument("complete")
+        complete = self.get_bool_argument("complete", default=None)
         instructor = self.get_bool_argument("instructor")
         # only hit the database for the permission check if the instructor view was requested
         has_elevated_permissions = instructor and self.services.lectures.has_elevated_permissions(
