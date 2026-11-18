@@ -11,6 +11,7 @@ import {
   AutocompleteItem,
   AutocompleteList
 } from '../../shadcn-components/ui/autocomplete';
+import type { AutocompleteRootChangeEventDetails } from '@base-ui/react/autocomplete';
 
 export interface ISearchField {
   placeholder?: string;
@@ -59,12 +60,19 @@ export const SearchField = (props: ISearchField) => {
     setIsOpen(false);
   };
 
-  const handleValueChange = (value: string) => {
+  const handleValueChange = (
+    value: string,
+    eventDetails: AutocompleteRootChangeEventDetails
+  ) => {
     setQuery(value);
     if (value.trim() === '') {
       setSuggestions(recentSearches);
     } else {
       setSuggestions([]);
+    }
+    // Clicking the clear (x) button resets the search query.
+    if (eventDetails.reason === 'clear-press') {
+      props.setSearchQuery('');
     }
     setIsOpen(true);
   };
