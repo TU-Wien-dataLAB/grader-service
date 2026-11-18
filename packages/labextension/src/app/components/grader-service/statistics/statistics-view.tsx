@@ -156,13 +156,11 @@ export const StatisticsView = ({
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="date"
+                  className={'px-5'}
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  padding={{ left: 20, right: 20 }}
-                  tickFormatter={value =>
-                    formatDate(value)
-                  }
+                  tickFormatter={(value: string) => formatDate(value)}
                 />
                 <YAxis
                   tickLine={false}
@@ -174,7 +172,7 @@ export const StatisticsView = ({
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      labelFormatter={value => formatDate(String(value))}
+                      labelFormatter={(value: any) => formatDate(String(value))}
                       indicator="line"
                     />
                   }
