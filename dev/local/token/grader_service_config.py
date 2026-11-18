@@ -114,7 +114,7 @@ c.Authenticator.post_auth_hook = post_auth_hook
 c.Authenticator.allowed_users = {"admin", "instructor", "student", "tutor"}
 
 c.Authenticator.admin_users = {"admin"}
-"""
+
 c.GraderService.load_roles = {
     "lecture1": [
         {"members": ["student"], "role": "student"},
@@ -127,4 +127,3 @@ c.GraderService.load_roles = {
         {"members": ["instructor", "admin"], "role": "instructor"},
     ],
 }
-"""
