@@ -75,3 +75,10 @@ function formatBytes(bytes: number): string {
 export function determineFileSize(file: FileRow): string {
   return formatBytes(getFileSizeInBytes(file));
 }
+
+export function capitalizeFirstLetter(str: string) {
+  if (!str) {
+    return str;
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}

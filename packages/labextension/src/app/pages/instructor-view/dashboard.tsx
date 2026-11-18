@@ -13,7 +13,7 @@ import {
 } from '../../shadcn-components/ui/table';
 import { LectureCard } from '../../components/grader-service/lectures/lecture-card';
 import { LectureRow } from '../../components/grader-service/lectures/lecture-row';
-import { pluralize } from '../../components/utils/utils';
+import { capitalizeFirstLetter, pluralize } from '../../components/utils/utils';
 import { lecturesQuery } from '../../../services/queries/lectures.queries';
 import { Header } from '../../components/ui/header';
 import {
@@ -78,7 +78,9 @@ export const Dashboard = () => {
     >
       <Header />
       <div className={'flex flex-col sticky top-0 shrink-0 m-6 gap-6'}>
-        <span className={'text-xl font-bold'}>Courses</span>
+        <span className={'text-xl font-bold'}>
+          {capitalizeFirstLetter(filterBy)} courses
+        </span>
         {status.status === 'success' && (
           <SuccessBanner message={status.message} />
         )}
