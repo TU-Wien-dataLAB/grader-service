@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from grader_service import GraderService, handlers
 from grader_service.auth.dummy import DummyAuthenticator
-from grader_service.db import create_sync_session_maker
+from grader_service.db import session_maker as db_session_maker
 from grader_service.services.file_services import GitFileService
 from grader_service.orm import User, Submission, Assignment, Lecture, SubmissionProperties
 from grader_service.orm.base import set_sqlite_pragma
@@ -114,7 +114,7 @@ def db_test_config():
 
 @pytest.fixture(scope="function")
 def sql_alchemy_sessionmaker(db_test_config):
-    session_maker = create_sync_session_maker(url="sqlite:///:memory:")
+    session_maker = db_session_maker(url="sqlite:///:memory:")
     engine = session_maker.kw["bind"]
     with engine.begin() as connection:
         db_test_config.attributes["connection"] = connection
@@ -138,7 +138,7 @@ def app(tmpdir, sql_alchemy_sessionmaker, default_admin):
     application = GraderServer(
         grader_service_dir=str(service_dir),
         file_service=file_service,
-        services=ServiceRegistry(sql_alchemy_sessionmaker, file_service),
+        services=ServiceRegistry(file_service),
         base_url="/",
         authenticator=authenticator,
         handlers=handlers,
@@ -156,6 +156,13 @@ def sql_alchemy_engine(sql_alchemy_sessionmaker):
     session = sql_alchemy_sessionmaker()
     engine = session.get_bind()
     yield engine
+    session.close()
+
+
+@pytest.fixture(scope="function")
+def sql_alchemy_session(sql_alchemy_sessionmaker):
+    session = sql_alchemy_sessionmaker()
+    yield session
     session.close()
 
 

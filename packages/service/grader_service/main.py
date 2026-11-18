@@ -15,7 +15,7 @@ from pathlib import Path
 
 import tornado
 from jupyterhub.log import log_request
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tornado.httpserver import HTTPServer
 from traitlets import (
@@ -43,7 +43,7 @@ from grader_service.auth.auth import Authenticator
 from grader_service.auth.dummy import DummyAuthenticator
 from grader_service.autograding.celery.app import CeleryApp
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
-from grader_service.db import create_sync_session_maker
+from grader_service.db import session_maker, dispose_engine
 from grader_service.services.file_services import GitFileService
 from grader_service.services.file_services.base_file_service import FileService
 from grader_service.handlers.static import CacheControlStaticFilesHandler
@@ -101,8 +101,6 @@ class GraderService(config.Application):
     plugin_manager: PluginManager
 
     session_maker: sessionmaker
-
-    db_engine: Engine
 
     @default("db_url")
     def _default_db_url(self):
@@ -343,8 +341,7 @@ class GraderService(config.Application):
         self.load_config_file(self.config_file)
         self.setup_loggers(self.log_level)
 
-        self.session_maker = create_sync_session_maker(self.db_url)
-        self.db_engine = self.session_maker.kw["bind"]
+        self.session_maker = session_maker(self.db_url)
         self.init_roles()
         # use uvloop instead of default asyncio loop
         # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -357,7 +354,7 @@ class GraderService(config.Application):
         CeleryApp.instance(config=self.config)
 
     async def cleanup(self):
-        await self.db_engine.dispose()
+        dispose_engine()
 
     def init_oauth(self):
         engine = create_engine(self.db_url)
@@ -444,7 +441,7 @@ class GraderService(config.Application):
         self.set_config()
 
         # register services
-        services = ServiceRegistry(self.session_maker, self.file_service)
+        services = ServiceRegistry(self.file_service)
 
         handlers = HandlerPathRegistry.handler_list(self.base_url_path)
         self.log.debug("Registered handlers: %s", handlers)
