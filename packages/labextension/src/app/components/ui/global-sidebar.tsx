@@ -41,6 +41,7 @@ import {
 import { LogoWithText } from '../../../assets/logo-with-text';
 import { Logo } from '../../../assets/logo';
 import { UserPermissions } from '../../../services/permission.service';
+import { openInFileBrowser } from '../../../services/local-file.service';
 
 export const GlobalSidebar = () => {
   const [view, setView] = React.useState<'instructor' | 'student'>(
@@ -53,7 +54,7 @@ export const GlobalSidebar = () => {
   const lectures = useMemo(() => {
     return fetchedLectures?.lectures.map(lecture => ({
       ...lecture,
-      isActive: location.pathname.startsWith(`/lectures/${lecture.id}`)
+      isActive: location.pathname === `/lectures/${lecture.id}`
     }));
   }, [fetchedLectures, location.pathname]);
 
@@ -67,6 +68,9 @@ export const GlobalSidebar = () => {
     { label: state === 'collapsed' ? 'DE' : 'Deustch - DE', value: 'de' }
   ];
 
+  const handleLectureClick = async (lectureCode: string) => {
+    await openInFileBrowser(`/lectures/${lectureCode}`);
+  };
   return (
     <Sidebar collapsible={'icon'} className={'h-full'}>
       <SidebarHeader className={'h-13.5 pl-0'}>
@@ -112,6 +116,7 @@ export const GlobalSidebar = () => {
                     <Link
                       to={`/lectures/${lecture.id}`}
                       className="overflow-hidden"
+                      onClick={() => handleLectureClick(lecture.code)}
                     >
                       <div
                         className={`${
