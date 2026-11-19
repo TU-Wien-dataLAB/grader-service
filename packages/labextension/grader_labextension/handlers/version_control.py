@@ -5,9 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import os
 import shutil
 from http import HTTPStatus
+from pathlib import Path
 from typing import List, Optional
 from urllib.parse import quote, unquote
 
@@ -22,6 +22,7 @@ from grader_labextension.services.request import RequestServiceError
 
 from ..api.models.submission import Submission
 from ..registry import register_handler
+from ..services.dirs import create_dir, remove_file
 from ..services.git import GitError, GitService
 from .base_handler import ExtensionBaseHandler
 
@@ -46,8 +47,8 @@ class GenerateHandler(ExtensionBaseHandler):
         lecture = await self.get_lecture(lecture_id)
         code = lecture["code"]
 
-        output_dir = f"{self.root_dir}/{code}/release/{assignment_id}"
-        os.makedirs(os.path.expanduser(output_dir), exist_ok=True)
+        output_dir = Path(self.root_dir) / code / "release" / str(assignment_id)
+        output_dir.mkdir(exist_ok=True).expanduser()
 
         generator = GenerateAssignment(
             input_dir=f"{self.root_dir}/{code}/source/{assignment_id}",
@@ -62,7 +63,7 @@ class GenerateHandler(ExtensionBaseHandler):
             # delete contents of output directory since we might have chosen to disallow files
             self.log.info("Deleting files in release directory")
             shutil.rmtree(output_dir)
-            os.mkdir(output_dir)
+            create_dir(output_dir)
         except Exception as e:
             self.log.error(e)
             raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
@@ -74,12 +75,12 @@ class GenerateHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise APIError(HTTPStatus.CONFLICT, message=str(e))
 
-        gradebook_path = os.path.join(generator._output_directory, "gradebook.json")
+        gradebook_path = Path(generator._output_directory) / "gradebook.json"
         try:
-            os.remove(gradebook_path)
-            self.log.info(f"Successfully deleted {gradebook_path}")
+            remove_file(gradebook_path)
+            self.log.info(f"Successfully deleted {str(gradebook_path)}")
         except OSError as e:
-            self.log.error(f"Could not delete {gradebook_path}! Error: {e.strerror}")
+            self.log.error(f"Could not delete {str(gradebook_path)}! Error: {e.strerror}")
         self.log.info("GenerateAssignment conversion done")
         self.write({"status": "OK"})
 
@@ -435,17 +436,19 @@ class PushHandler(ExtensionBaseHandler):
         generator = self._initialize_generator(src_path, git_service.path)
         await self._generate_release_files(generator, git_service.path)
 
-        gradebook_path = os.path.join(git_service.path, "gradebook.json")
+        gradebook_path = Path(git_service.path) / "gradebook.json"
         await self._update_assignment_properties(gradebook_path, lecture_id, assignment_id)
 
         try:
-            os.remove(gradebook_path)
-            self.log.info(f"Successfully deleted {gradebook_path}")
+            remove_file(gradebook_path)
+            self.log.info(f"Successfully deleted {str(gradebook_path)}")
         except OSError as e:
-            self.log.error(f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!")
+            self.log.error(
+                f"Cannot delete {str(gradebook_path)}! Error: {e.strerror}\nAborting push!"
+            )
             raise HTTPError(
                 HTTPStatus.CONFLICT,
-                reason=f"Cannot delete {gradebook_path}! Error: {e.strerror}\nAborting push!",
+                reason=f"Cannot delete {str(gradebook_path)}! Error: {e.strerror}\nAborting push!",
             )
 
     def _initialize_generator(self, src_path, output_path):
@@ -462,7 +465,7 @@ class PushHandler(ExtensionBaseHandler):
     async def _generate_release_files(self, generator, output_path):
         try:
             shutil.rmtree(output_path)
-            os.mkdir(output_path)
+            create_dir(output_path)
         except Exception as e:
             self.log.error(e)
             raise APIError(HTTPStatus.INTERNAL_SERVER_ERROR, message=str(e))
