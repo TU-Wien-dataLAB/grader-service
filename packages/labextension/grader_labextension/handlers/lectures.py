@@ -216,13 +216,13 @@ class SubmissionLectureHandler(ExtensionBaseHandler):
         file_path = dir_path / f"{lecture['name']}_{filter_value}_submissions.{format_value}"
 
         if format_value == "csv":
-            with open(file_path, "w", encoding="utf-8") as f:
+            with file_path.open("w", encoding="utf-8") as f:
                 f.write(response)
         elif format_value == "json":
             json_content = (
                 json.dumps(response, indent=2) if isinstance(response, dict) else response
             )
-            with open(file_path, "w", encoding="utf-8") as f:
+            with file_path.open("w", encoding="utf-8") as f:
                 f.write(json_content)
         else:
             raise HTTPError(400, reason="Invalid format specified")
