@@ -79,9 +79,9 @@ class GenerateHandler(ExtensionBaseHandler):
         gradebook_path = Path(generator._output_directory) / "gradebook.json"
         try:
             remove_file(gradebook_path)
-            self.log.info(f"Successfully deleted {str(gradebook_path)}")
+            self.log.info(f"Successfully deleted {gradebook_path.as_posix()}")
         except OSError as e:
-            self.log.error(f"Could not delete {str(gradebook_path)}! Error: {e.strerror}")
+            self.log.error(f"Could not delete {gradebook_path.as_posix()}! Error: {e.strerror}")
         self.log.info("GenerateAssignment conversion done")
         self.write({"status": "OK"})
 
@@ -442,14 +442,14 @@ class PushHandler(ExtensionBaseHandler):
 
         try:
             remove_file(gradebook_path)
-            self.log.info(f"Successfully deleted {str(gradebook_path)}")
+            self.log.info(f"Successfully deleted {gradebook_path.as_posix()}")
         except OSError as e:
             self.log.error(
-                f"Cannot delete {str(gradebook_path)}! Error: {e.strerror}\nAborting push!"
+                f"Cannot delete {gradebook_path.as_posix()}! Error: {e.strerror}\nAborting push!"
             )
             raise HTTPError(
                 HTTPStatus.CONFLICT,
-                reason=f"Cannot delete {str(gradebook_path)}! Error: {e.strerror}\nAborting push!",
+                reason=f"Cannot delete {gradebook_path.as_posix()}! Error: {e.strerror}\nAborting push!",
             )
 
     def _initialize_generator(self, src_path, output_path):

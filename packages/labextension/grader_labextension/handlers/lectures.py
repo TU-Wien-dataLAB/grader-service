@@ -229,7 +229,7 @@ class SubmissionLectureHandler(ExtensionBaseHandler):
         self.write(
             {
                 "status": "OK",
-                "message": f"File saved successfully: {str(file_path)}",
-                "file_path": str(file_path),
+                "message": f"File saved successfully: {file_path.as_posix()}",
+                "file_path": file_path.as_posix(),
             }
         )

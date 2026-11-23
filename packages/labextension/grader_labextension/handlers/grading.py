@@ -185,7 +185,7 @@ class GradingManualHandler(ExtensionBaseHandler):
             / str(git_service.assignment_id)
             / str(sub_id)
         )
-        self.log.info(f"Path: {str(git_service.path)}")
+        self.log.info(f"Path: {git_service.path.as_posix()}")
 
         shutil.rmtree(git_service.path, ignore_errors=True)
         create_dir(git_service.path)
@@ -289,7 +289,7 @@ class PullFeedbackHandler(ExtensionBaseHandler):
             / str(git_service.assignment_id)
             / str(sub_id)
         )
-        self.log.info(f"Path: {str(git_service.path)}")
+        self.log.info(f"Path: {git_service.path.as_posix()}")
         create_dir(git_service.path)
 
         if not git_service.is_git():
