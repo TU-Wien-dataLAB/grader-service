@@ -280,8 +280,8 @@ class GitService(Configurable):
             self.log.info(f"Copying only selected files from {src} to {self.path.as_posix()}")
             for item in Path(src).iterdir():
                 if item.name in selected_files:
-                    s = Path(src) / item
-                    d = self.path / item
+                    s = item
+                    d = self.path / item.name
                     if s.is_dir():
                         shutil.copytree(s, d, ignore=ignore)
                     else:
