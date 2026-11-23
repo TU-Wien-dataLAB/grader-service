@@ -113,7 +113,7 @@ class LectureObjectHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
 
-        create_dir(Path(f"{self.root_dir}") / response_data["code"])
+        create_dir(Path(self.root_dir) / response_data["code"])
         self.write(json.dumps(response_data))
 
     @authenticated
@@ -213,7 +213,7 @@ class SubmissionLectureHandler(ExtensionBaseHandler):
         filter_value = parsed_query_params.get("filter", ["none"])[0]
         format_value = parsed_query_params.get("format", ["json"])[0]
 
-        file_path = Path(dir_path) / f"{lecture['name']}_{filter_value}_submissions.{format_value}"
+        file_path = dir_path / f"{lecture['name']}_{filter_value}_submissions.{format_value}"
 
         if format_value == "csv":
             with open(file_path, "w", encoding="utf-8") as f:

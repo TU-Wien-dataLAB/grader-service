@@ -49,7 +49,7 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
             assignments_dir = Path(self.root_dir) / lecture["code"] / "assignments"
             dirs = {e.name for e in assignments_dir.iterdir() if not e.name.startswith(".")}
             for assignment in response:
-                if assignment["id"] not in dirs:
+                if str(assignment["id"]) not in dirs:
                     self.log.info(f"Creating directory {assignments_dir / str(assignment['id'])}")
                     create_dir(assignments_dir / str(assignment["id"]))
                 try:

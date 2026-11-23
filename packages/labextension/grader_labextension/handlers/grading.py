@@ -78,8 +78,7 @@ class ExportGradesHandler(ExtensionBaseHandler):
         parsed_query_params = urllib.parse.parse_qs(query_params.lstrip("?"))
         filter_value = parsed_query_params.get("filter", ["none"])[0]
         file_path = (
-            Path(dir_path)
-            / f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
+            dir_path / f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
         )
         with file_path.open("w") as f:
             f.write(csv_content)
