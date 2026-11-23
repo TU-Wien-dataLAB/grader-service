@@ -47,11 +47,11 @@ class GenerateHandler(ExtensionBaseHandler):
         lecture = await self.get_lecture(lecture_id)
         code = lecture["code"]
 
+        input_dir = Path(self.root_dir) / code / "source" / str(assignment_id)
         output_dir = Path(self.root_dir) / code / "release" / str(assignment_id)
-        output_dir.mkdir(exist_ok=True).expanduser()
 
         generator = GenerateAssignment(
-            input_dir=f"{self.root_dir}/{code}/source/{assignment_id}",
+            input_dir=input_dir,
             output_dir=output_dir,
             file_pattern="*.ipynb",
             assignment_settings=AssignmentSettings(allowed_files=["*"]),
@@ -75,6 +75,7 @@ class GenerateHandler(ExtensionBaseHandler):
             self.log.error(e)
             raise APIError(HTTPStatus.CONFLICT, message=str(e))
 
+        # TODO
         gradebook_path = Path(generator._output_directory) / "gradebook.json"
         try:
             remove_file(gradebook_path)
@@ -478,11 +479,12 @@ class PushHandler(ExtensionBaseHandler):
             self.log.error("Converting failed: Error converting notebook!", exc_info=True)
             raise APIError(HTTPStatus.CONFLICT, message=str(e))
 
-    async def _update_assignment_properties(self, gradebook_path, lecture_id, assignment_id):
+    async def _update_assignment_properties(
+        self, gradebook_path: Path, lecture_id: int, assignment_id: int
+    ):
         try:
-            with open(gradebook_path, "r") as f:
+            with gradebook_path.open("r") as f:
                 gradebook_json = json.load(f)
-
             try:
                 # update assignment properties in grader service with the generated gradebook.json
                 await self.request_service.request(

@@ -3,16 +3,16 @@
 #
 import logging
 import os
-import posixpath
 import shlex
 import shutil
 import subprocess
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from grader_labextension.api.models.remote_file_status import RemoteFileStatus
+from grader_labextension.services.dirs import create_dir, remove_file
 from grader_service.artifact_types import ArtifactType
 from traitlets.config.configurable import Configurable
 from traitlets.traitlets import Unicode
@@ -60,43 +60,50 @@ class GitService(Configurable):
         self.artifact_type = artifact_type
 
         self.path = self._determine_repo_path(force_user_artifact, sub_id, username)
-        os.makedirs(self.path, exist_ok=True)
+        create_dir(self.path)
 
         self._initialize_git_logging()
 
     def _determine_repo_path(
         self, force_user_artifact: bool, sub_id: Optional[int], username: Optional[str]
-    ) -> str:
+    ) -> Path:
         """Determine the path for the git repository based on the type."""
         if self.artifact_type == ArtifactType.USER or force_user_artifact:
             # For artifact type USER, the subdirectory is called `assignments` (for historical reasons).
-            return os.path.join(
-                self.git_root_dir, self.lecture_code, "assignments", str(self.assignment_id)
+            return (
+                Path(self.git_root_dir)
+                / self.lecture_code
+                / "assignments"
+                / str(self.assignment_id)
             )
         elif self.artifact_type == ArtifactType.EDIT:
             if username is not None:
-                return os.path.join(
-                    self.git_root_dir,
-                    self.lecture_code,
-                    "create",
-                    str(self.assignment_id),
-                    username,
+                return (
+                    Path(self.git_root_dir)
+                    / self.lecture_code
+                    / "create"
+                    / str(self.assignment_id)
+                    / username
                 )
             else:
-                return os.path.join(
-                    self.git_root_dir,
-                    self.lecture_code,
-                    self.artifact_type,
-                    str(self.assignment_id),
-                    str(sub_id),
+                return (
+                    Path(self.git_root_dir)
+                    / self.lecture_code
+                    / self.artifact_type
+                    / str(self.assignment_id)
+                    / str(sub_id)
                 )
-        return os.path.join(
-            self.git_root_dir, self.lecture_code, self.artifact_type, str(self.assignment_id)
+
+        return (
+            Path(self.git_root_dir)
+            / self.lecture_code
+            / self.artifact_type
+            / str(self.assignment_id)
         )
 
     def _initialize_git_logging(self):
         """Initialize logging related to git configuration."""
-        self.log.info(f"New git service working in {self.path}")
+        self.log.info(f"New git service working in {self.path.as_posix()}")
         self.git_http_scheme, self.git_remote_url = self._parse_git_service_url()
         self.log.info(f"git_service_url: {self.git_service_url}")
 
@@ -112,7 +119,7 @@ class GitService(Configurable):
             origin (str): The remote repository.
             force (bool): Whether to force push. Defaults to False.
         """
-        self.log.info(f"Pushing to remote {origin} at {self.path}")
+        self.log.info(f"Pushing to remote {origin} at {self.path.as_posix()}")
         self._run_command(f"git push {origin} main" + (" --force" if force else ""), cwd=self.path)
 
     def set_remote(self, origin: str, additional_path: str = ""):
@@ -122,13 +129,13 @@ class GitService(Configurable):
             origin (str): The remote name.
             additional_path (str): Optional additional path for the remote.
         """
-        url_path = posixpath.join(
-            self.git_remote_url, self.lecture_code, str(self.assignment_id), self.artifact_type
+        url_path = (
+            Path(self.git_remote_url)
+            / self.lecture_code
+            / str(self.assignment_id)
+            / self.artifact_type
         )
-        url = (
-            f"{self.git_http_scheme}://oauth:{self.git_access_token}@"
-            f"{posixpath.join(url_path, additional_path)}"
-        )
+        url = f"{self.git_http_scheme}://oauth:{self.git_access_token}@{url_path / additional_path}"
         self.log.info(f"Setting remote {origin} for {self.path} to {url}")
         try:
             self._run_command(f"git remote add {origin} {url}", cwd=self.path)
@@ -142,13 +149,13 @@ class GitService(Configurable):
         Args:
             branch (str): The branch name.
         """
-        self.log.info(f"Fetching all branches at {self.path}")
+        self.log.info(f"Fetching all branches at {self.path.as_posix()}")
         self._run_command("git fetch --all", cwd=self.path)
-        self.log.info(f"Switching to branch {branch} at {self.path}")
+        self.log.info(f"Switching to branch {branch} at {self.path.as_posix()}")
         self._run_command(f"git checkout {branch}", cwd=self.path)
 
     def fetch_all(self):
-        self.log.info(f"Fetching all at path {self.path}")
+        self.log.info(f"Fetching all at path {self.path.as_posix()}")
         self._run_command("git fetch --all", cwd=self.path)
 
     def pull(self, origin: str, branch: str = "main", force: bool = False):
@@ -159,7 +166,7 @@ class GitService(Configurable):
             branch (str): The branch to pull from. Defaults to "main".
             force (bool): Whether to force the pull. Defaults to False.
         """
-        self.log.info(f"Pulling from {origin}/{branch} at {self.path}")
+        self.log.info(f"Pulling from {origin}/{branch} at {self.path.as_posix()}")
         if not self.remote_branch_exists(origin, branch):
             raise GitError(
                 code=404,
@@ -189,7 +196,7 @@ class GitService(Configurable):
             force (bool): Whether to force initialization. Defaults to False.
         """
         if not self.is_git() or force:
-            self.log.info(f"Initializing git repository at {self.path}")
+            self.log.info(f"Initializing git repository at {self.path.as_posix()}")
             command = "git init -b main" if self.git_version >= (2, 28) else "git init"
             self._run_command(command, cwd=self.path)
 
@@ -227,7 +234,7 @@ class GitService(Configurable):
         Returns:
             bool: True if it's a git repository, False otherwise.
         """
-        return Path(self.path).joinpath(".git").exists()
+        return (self.path / ".git").exists()
 
     def set_author(self, author):
         # TODO: maybe ask user to specify their own choices
@@ -253,12 +260,12 @@ class GitService(Configurable):
         """
         for root, dirs, files in os.walk(self.path):
             for f in files:
-                os.unlink(os.path.join(root, f))
-                self.log.info(f"Deleted {os.path.join(root, f)} from {self.git_root_dir}")
+                remove_file(Path(root) / f)
+                self.log.info(f"Deleted {(Path(root) / f).as_posix()} from {self.git_root_dir}")
             for d in dirs:
                 if d != ".git" or include_git:
-                    shutil.rmtree(os.path.join(root, d))
-                    self.log.info(f"Deleted {os.path.join(root, d)} from {self.git_root_dir}")
+                    shutil.rmtree(Path(root) / d)
+                    self.log.info(f"Deleted {(Path(root) / d).as_posix()} from {self.git_root_dir}")
 
     # Note: dirs_exist_ok was only added in Python 3.8
     def copy_repo_contents(self, src: str, selected_files: List[str] = None):
@@ -270,17 +277,17 @@ class GitService(Configurable):
         """
         ignore = shutil.ignore_patterns(".git", "__pycache__")
         if selected_files:
-            self.log.info(f"Copying only selected files from {src} to {self.path}")
-            for item in os.listdir(src):
-                if item in selected_files:
-                    s = os.path.join(src, item)
-                    d = os.path.join(self.path, item)
-                    if os.path.isdir(s):
+            self.log.info(f"Copying only selected files from {src} to {self.path.as_posix()}")
+            for item in Path(src).iterdir():
+                if item.name in selected_files:
+                    s = Path(src) / item
+                    d = self.path / item
+                    if s.is_dir():
                         shutil.copytree(s, d, ignore=ignore)
                     else:
                         shutil.copy2(s, d)
         else:
-            self.log.info(f"Copying repository contents from {src} to {self.path}")
+            self.log.info(f"Copying repository contents from {src} to {self.path.as_posix()}")
             shutil.copytree(src, self.path, ignore=ignore, dirs_exist_ok=True)
 
     def check_remote_status(self, origin: str, branch: str) -> str:
@@ -431,7 +438,7 @@ class GitService(Configurable):
         self.log.info(f"Committing changes with message: {message}")
         self._run_command(f'git commit --allow-empty -m "{message}"', cwd=self.path)
 
-    def _run_command(self, command: str, cwd: str) -> Union[str, None]:
+    def _run_command(self, command: str, cwd: PurePath) -> Union[str, None]:
         """Run a shell command and return the output.
 
         Args:
@@ -439,7 +446,7 @@ class GitService(Configurable):
             cwd (str): The working directory for the command.
         """
 
-        self.log.debug(f"Executing command: {command} in {cwd}")
+        self.log.debug(f"Executing command: {command} in {cwd.as_posix()}")
         try:
             result = subprocess.run(
                 command, shell=True, check=True, cwd=cwd, text=True, capture_output=True
