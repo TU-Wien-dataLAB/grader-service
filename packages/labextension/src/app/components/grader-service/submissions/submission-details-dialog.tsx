@@ -110,9 +110,6 @@ export const SubmissionDetailsDialog = ({
       queryClient.invalidateQueries({
         queryKey: ['submissionById', submissionId]
       });
-      queryClient.invalidateQueries({
-        queryKey: ['submissions']
-      });
     },
     onError: () => {
       setStatus({

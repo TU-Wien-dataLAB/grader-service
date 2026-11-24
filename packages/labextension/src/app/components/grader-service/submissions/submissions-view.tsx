@@ -40,7 +40,6 @@ import {
   generateFeedback
 } from '../../../../services/grading.service';
 import { ErrorBanner } from '../../ui/error-banner';
-import { ltiSyncSubmissions } from '../../../../services/submissions.service';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
@@ -54,6 +53,8 @@ export const SubmissionsView = (props: TProps) => {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [activeFilters, setActiveFilters] = useState(new Set<string>());
   const { status, setStatus } = useMutationStatus();
+
+  const hasSelection = Object.values(rowSelection).some(Boolean);
 
   const { data: lecture } = useQuery(lectureQuery(lectureId));
   const path = `${lectureBasePath}${lecture.code}/edit/${assignmentId}`;
@@ -190,41 +191,6 @@ export const SubmissionsView = (props: TProps) => {
     );
   };
 
-  const synchronizeMutation = useMutation({
-    mutationFn: async () => {
-      return await ltiSyncSubmissions(
-        lectureId,
-        assignmentId,
-        'selection',
-        Object.keys(rowSelection).map(Number)
-      );
-    },
-    onSuccess: response => {
-      const syncedPlatforms = response.synced_platforms;
-      if (!syncedPlatforms.length) {
-        setStatus({
-          message:
-            'No connected learning platform was available for grade sync',
-          status: 'error'
-        });
-        return;
-      }
-      syncedPlatforms.forEach(platformResult => {
-        setStatus({
-          message: `${platformResult.platform}: Synced ${platformResult.synced_user}/${platformResult.syncable_users} users`,
-          status: 'success'
-        });
-      });
-      queryClient.invalidateQueries({ queryKey: ['submissions'] });
-    },
-    onError: () => {
-      setStatus({
-        message: 'Something went wrong. Please, try again!',
-        status: 'error'
-      });
-    }
-  });
-
   return (
     <div className={'flex flex-col items-start gap-4 self-stretch'}>
       <div className={'flex justify-between items-center self-stretch'}>
@@ -236,6 +202,7 @@ export const SubmissionsView = (props: TProps) => {
           <SubmissionsActions
             lectureId={lectureId}
             setOpenNewSubmission={setOpenNewSubmission}
+            selectedSubmissions={rowSelection}
           />
         </div>
       </div>
@@ -353,13 +320,16 @@ export const SubmissionsView = (props: TProps) => {
       )}
 
       <div className="flex gap-4">
-        <Button onClick={() => autogradeMutation.mutate()}>Autograde</Button>
-        <Button onClick={() => synchronizeMutation.mutate()} variant="outline">
-          Synchronize grades with LTI
+        <Button
+          onClick={() => autogradeMutation.mutate()}
+          disabled={!hasSelection}
+        >
+          Autograde
         </Button>
         <Button
           onClick={() => generateFeedbackMutation.mutate()}
           variant="outline"
+          disabled={!hasSelection}
         >
           Generate feedback
         </Button>

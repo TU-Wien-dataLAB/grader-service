@@ -5,7 +5,7 @@ import {
   getSubmissionLogs,
   getSubmissions
 } from '../submissions.service';
-import { pullSubmissionFiles } from '../git.service';
+import { pullSubmissionFiles, restoreSubmission } from '../git.service';
 
 export const getAllSubmissions = (lectureId: number, assignmentId: number) =>
   queryOptions({
@@ -44,6 +44,16 @@ export const getSubmissionLogsData = (
     queryKey: ['submissionLogs', submissionId],
     queryFn: async () =>
       getSubmissionLogs(lectureId, assignmentId, submissionId)
+  });
+
+export const restoreLatestSubmission = (
+  lectureId: number,
+  assignmentId: number,
+  commitHash: string
+) =>
+  queryOptions({
+    queryKey: ['latestSubmission', commitHash],
+    queryFn: async () => restoreSubmission(lectureId, assignmentId, commitHash)
   });
 
 export const exportSubmissionsData = (

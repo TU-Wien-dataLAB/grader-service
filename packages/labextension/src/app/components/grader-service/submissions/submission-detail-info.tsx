@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Submission } from '../../../../model/submission';
 import {
   Select,
@@ -19,6 +19,11 @@ enum feedback {
   generating = 'Feedback pending',
   feedback_outdated = 'Feedback outdated'
 }
+
+const SCORE_OPTIONS = Array.from({ length: 11 }, (_, i) => {
+  const value = i / 10;
+  return { label: value.toFixed(1), value };
+});
 
 const DetailRow = ({
   label,
@@ -44,6 +49,10 @@ const SubmissionDetailInfo = ({
   isEditMode = false,
   assignment
 }: ISubmissionDetailInfoProps) => {
+  const [scoreScaling, setScoreScaling] = useState<number | null>(
+    submission.score_scaling
+  );
+
   return (
     <div className="py-6">
       <h3 className="text-xl font-bold mb-2">Details</h3>
@@ -69,22 +78,15 @@ const SubmissionDetailInfo = ({
         {!isEditMode && (
           <DetailRow label="Score scaling">
             <Select
-              value={
-                submission.score_scaling !== undefined
-                  ? String(submission.score_scaling)
-                  : undefined
-              }
+              value={scoreScaling}
+              onValueChange={opt => setScoreScaling(opt)}
             >
               <SelectTrigger className="w-64 rounded-none border-[#b5b5b5] bg-white">
                 <SelectValue placeholder="Choose option" />
               </SelectTrigger>
               <SelectContent>
-                {[
-                  { label: '1', value: 1 },
-                  { label: '2', value: 2 },
-                  { label: '3', value: 3 }
-                ].map(option => (
-                  <SelectItem key={option.value} value={String(option.value)}>
+                {SCORE_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
                 ))}

@@ -13,10 +13,12 @@ import {
 } from '../../../shadcn-components/ui/tooltip';
 import { SynchronizeGradesWithLTIDialog } from './synchronize-with-lti';
 import { ExportSubmissionsDialog } from './export-submissions';
+import { RowSelectionState } from '@tanstack/react-table';
 
 type TProps = {
   setOpenNewSubmission: (val: boolean) => void;
   lectureId: number;
+  selectedSubmissions: RowSelectionState;
 };
 
 export const SubmissionsActions = (props: TProps) => {
@@ -58,6 +60,7 @@ export const SubmissionsActions = (props: TProps) => {
         <SynchronizeGradesWithLTIDialog
           openDialog={openSynchronizeGradesDialog}
           setOpenDialog={setOpenSynchronizeGradesDialog}
+          selectedSubmissions={props.selectedSubmissions}
         />
       )}
       {openExportSubmissionsDialog && (

@@ -21,12 +21,18 @@ import {
   SelectTrigger,
   SelectValue
 } from '../../../shadcn-components/ui/select';
-import { SUBMISSION_FILTER_OPTIONS } from './export-submissions';
+import { RowSelectionState } from '@tanstack/react-table';
 
 interface ISynchronizeGradesWithLTIProps {
   openDialog: boolean;
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedSubmissions: RowSelectionState;
 }
+export const SUBMISSION_SYNC_LTI_FILTER_OPTIONS = [
+  { value: 'best', label: 'Best submissions' },
+  { value: 'latest', label: 'Latest submissions' },
+  { value: 'selection', label: 'Selected submissions' }
+] as const;
 
 export const SynchronizeGradesWithLTIDialog = (
   props: ISynchronizeGradesWithLTIProps
@@ -35,11 +41,23 @@ export const SynchronizeGradesWithLTIDialog = (
   const lectureId = Number(params.lid);
   const assignmentId = Number(params.aid);
   const { setStatus } = useMutationStatus();
-  const [filterValue, setFilterValue] = useState<'latest' | 'best'>('best');
+  const [filter, setFilter] = useState<'latest' | 'best' | 'selection'>('best');
+  const hasSelection = Object.values(props.selectedSubmissions).some(Boolean);
 
   const synchronizeMutation = useMutation({
-    mutationFn: async () => {
-      return await ltiSyncSubmissions(lectureId, assignmentId, filterValue);
+    mutationFn: async ({
+      option,
+      selected
+    }: {
+      option: string;
+      selected?: number[];
+    }) => {
+      return await ltiSyncSubmissions(
+        lectureId,
+        assignmentId,
+        option,
+        selected
+      );
     },
     onSuccess: response => {
       const syncedPlatforms = response.synced_platforms;
@@ -69,7 +87,14 @@ export const SynchronizeGradesWithLTIDialog = (
   });
 
   const handleSynchronize = () => {
-    synchronizeMutation.mutate();
+    if (filter === 'selection') {
+      synchronizeMutation.mutate({
+        option: filter,
+        selected: Object.keys(props.selectedSubmissions).map(Number)
+      });
+    } else {
+      synchronizeMutation.mutate({ option: filter });
+    }
     props.setOpenDialog(false);
   };
 
@@ -86,22 +111,26 @@ export const SynchronizeGradesWithLTIDialog = (
             </Label>
             <Select
               name="filter"
-              value={filterValue}
-              items={SUBMISSION_FILTER_OPTIONS}
+              value={filter}
+              items={SUBMISSION_SYNC_LTI_FILTER_OPTIONS}
               onValueChange={value =>
-                setFilterValue(value as 'latest' | 'best')
+                setFilter(value as 'latest' | 'best' | 'selection')
               }
             >
               <SelectTrigger
                 aria-placeholder="Choose an option"
-                className={`bg-white ${!filterValue && 'border border-[#DC182C]'}`}
+                className={`bg-white ${!filter && 'border border-[#DC182C]'}`}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {SUBMISSION_FILTER_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
+                  {SUBMISSION_SYNC_LTI_FILTER_OPTIONS.map(option => (
+                    <SelectItem
+                      disabled={option.value === 'selection' && !hasSelection}
+                      key={option.value}
+                      value={option.value}
+                    >
                       {option.label}
                     </SelectItem>
                   ))}

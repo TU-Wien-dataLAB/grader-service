@@ -1,5 +1,6 @@
 import { SubmissionRow } from './submissions-data-table';
 import { Submission } from '../../../../model/submission';
+import { IFile } from '../../../../services/local-file.service';
 
 const toRow = (s: Submission, label?: string): SubmissionRow => ({
   id: String(s.id),
@@ -42,4 +43,18 @@ export const formatSubmittedAt = (iso?: string) => {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(
     d.getHours()
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
+export const collectPaths = (items: IFile[]) => {
+  const paths: string[] = [];
+
+  for (const item of items) {
+    paths.push(item.path);
+
+    if (item.type === 'directory' && Array.isArray(item.content)) {
+      paths.push(...collectPaths(item.content));
+    }
+  }
+
+  return paths;
 };

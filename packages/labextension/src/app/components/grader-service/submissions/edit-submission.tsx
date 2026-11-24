@@ -11,12 +11,15 @@ import {
   openInFileBrowser
 } from '../../../../services/local-file.service';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getSubmissionById } from '../../../../services/queries/submissions.query';
+import {
+  getPulledSubmissionFiles,
+  getSubmissionById,
+  restoreLatestSubmission
+} from '../../../../services/queries/submissions.query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
 import { useFiles } from '../../../hooks/submissions/get-uploaded-files-hook';
 import {
   createOrOverrideEditRepository,
-  pullSubmissionFiles,
   pushSubmissionFiles
 } from '../../../../services/git.service';
 import { queryClient, useMutationStatus } from '../../../../widget';
@@ -24,6 +27,13 @@ import { SuccessBanner } from '../../ui/success-banner';
 import { ErrorBanner } from '../../ui/error-banner';
 import { assignmentQuery } from '../../../../services/queries/assignments.queries';
 import { RestoreSubmissionDialog } from './restore-submission';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '../../../shadcn-components/ui/tooltip';
+import { collectPaths } from './utils';
+import { useFilesChanged } from './use-files-status-hook';
 
 const EditSubmission = () => {
   const params = useParams();
@@ -39,7 +49,7 @@ const EditSubmission = () => {
   const [openRestoreConfirmationDialog, setOpenRestoreConfirmationDialog] =
     useState<boolean>(false);
 
-  const { data: submission, refetch: refetchSubmission } = useQuery(
+  const { data: submission } = useQuery(
     getSubmissionById(lectureId, assignmentId, submissionId)
   );
   const { data: lecture } = useQuery(lectureQuery(lectureId));
@@ -51,6 +61,7 @@ const EditSubmission = () => {
   );
 
   const { data: files = [], refetch: refetchFiles } = useFiles(path);
+  const { resetBaselines, anyChanged } = useFilesChanged(collectPaths(files));
 
   const goToSubmissionsView = () => {
     navigate(`/lectures/${lectureId}/assignments/${assignmentId}`, {
@@ -68,6 +79,14 @@ const EditSubmission = () => {
         status: 'success'
       });
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({
+        queryKey: ['submissionsById', submissionId]
+      });
+
+      resetBaselines();
+      queryClient.invalidateQueries({
+        queryKey: ['submissionFiles', submissionId]
+      });
     },
     onError: () => {
       setStatus({
@@ -77,20 +96,9 @@ const EditSubmission = () => {
     }
   });
 
-  const pullSubmissionFilesMutation = useMutation({
-    mutationFn: async () => {
-      await pullSubmissionFiles(lectureId, assignmentId, submissionId);
-    },
-    onSuccess: () => {
-      refetchFiles();
-    },
-    onError: () => {
-      setStatus({
-        message: 'Failed to pull submission files. Please, try again!',
-        status: 'error'
-      });
-    }
-  });
+  const { refetch: refetchPullFiles } = useQuery(
+    getPulledSubmissionFiles(lectureId, assignmentId, submissionId)
+  );
 
   const createOrOverrideEditRepositoryMutation = useMutation({
     mutationFn: async () => {
@@ -99,22 +107,22 @@ const EditSubmission = () => {
         assignmentId,
         submissionId
       );
+    },
+    onSuccess() {
+      queryClient.invalidateQueries({
+        queryKey: ['submissionById', submissionId]
+      });
+      refetchPullFiles().then(() => refetchFiles());
     }
   });
 
-  const restoreLatestSubmission = async () => {
-    await refetchSubmission();
-    refetchFiles();
-  };
+  const { refetch: refetchRestoreSubmission } = useQuery(
+    restoreLatestSubmission(lectureId, assignmentId, submission?.commit_hash)
+  );
 
   useEffect(() => {
     openInFileBrowser(path);
   }, [path]);
-
-  useEffect(() => {
-    createOrOverrideEditRepositoryMutation.mutate();
-    pullSubmissionFilesMutation.mutate();
-  }, []);
 
   return (
     <>
@@ -164,12 +172,21 @@ const EditSubmission = () => {
             <div>
               <SubmissionFiles files={files} />
               <div className="flex flex-start gap-4 mt-4">
-                <Button
-                  onClick={() => pushSubmissionFilesMutation.mutate()}
-                  variant="default"
-                >
-                  Replace submission
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger disabled={anyChanged}>
+                    <Button
+                      onClick={() => pushSubmissionFilesMutation.mutate()}
+                      variant="default"
+                      disabled={!anyChanged}
+                    >
+                      Replace submission
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    No changes have been made to the submission yet.
+                  </TooltipContent>
+                </Tooltip>
+
                 <Button variant="outline" onClick={goToSubmissionsView}>
                   Cancel
                 </Button>
@@ -200,7 +217,7 @@ const EditSubmission = () => {
         <RestoreSubmissionDialog
           openDialog={openRestoreConfirmationDialog}
           setOpenDialog={setOpenRestoreConfirmationDialog}
-          handleRestoreSubmission={restoreLatestSubmission}
+          handleRestoreSubmission={refetchRestoreSubmission}
         />
       )}
     </>
