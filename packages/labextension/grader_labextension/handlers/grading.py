@@ -6,7 +6,9 @@
 import os
 import shutil
 import urllib.parse
+from pathlib import Path
 
+from grader_labextension.services.dirs import create_dir
 from grader_service.errors import APIError
 from grader_service.artifact_types import ArtifactType
 from tornado.httpclient import HTTPResponse
@@ -70,17 +72,15 @@ class ExportGradesHandler(ExtensionBaseHandler):
 
         lecture = await self.get_lecture(lecture_id)
         assignment = await self.get_assignment(lecture_id, assignment_id)
-        dir_path = os.path.join(
-            self.root_dir, lecture["code"], "assignments", str(assignment["id"])
-        )
-        os.makedirs(dir_path, exist_ok=True)
+        dir_path = Path(self.root_dir) / lecture["code"] / "assignments" / str(assignment["id"])
+        create_dir(dir_path)
         csv_content = response.body.decode("utf-8")
         parsed_query_params = urllib.parse.parse_qs(query_params.lstrip("?"))
         filter_value = parsed_query_params.get("filter", ["none"])[0]
-        file_path = os.path.join(
-            dir_path, f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
+        file_path = (
+            dir_path / f"{_sanitize_filename(assignment['name'])}_{filter_value}_submissions.csv"
         )
-        with open(file_path, "w") as f:
+        with file_path.open("w") as f:
             f.write(csv_content)
 
         self.write({"status": "OK"})
@@ -178,18 +178,17 @@ class GradingManualHandler(ExtensionBaseHandler):
             artifact_type=artifact_type,
             config=self.config,
         )
-        git_service.path = os.path.join(
-            git_service.git_root_dir,
-            git_service.lecture_code,
-            "manualgrade",
-            str(git_service.assignment_id),
-            str(sub_id),
+        git_service.path = (
+            Path(git_service.git_root_dir)
+            / git_service.lecture_code
+            / "manualgrade"
+            / str(git_service.assignment_id)
+            / str(sub_id)
         )
-        self.log.info(f"Path: {git_service.path}")
-        if os.path.exists(git_service.path):
-            shutil.rmtree(git_service.path, ignore_errors=True)
+        self.log.info(f"Path: {git_service.path.as_posix()}")
 
-        os.makedirs(git_service.path, exist_ok=True)
+        shutil.rmtree(git_service.path, ignore_errors=True)
+        create_dir(git_service.path)
         try:
             if not git_service.is_git():
                 git_service.init()
@@ -283,16 +282,15 @@ class PullFeedbackHandler(ExtensionBaseHandler):
             artifact_type=ArtifactType.FEEDBACK,
             config=self.config,
         )
-        git_service.path = os.path.join(
-            git_service.git_root_dir,
-            git_service.lecture_code,
-            "feedback",
-            str(git_service.assignment_id),
-            str(sub_id),
+        git_service.path = (
+            Path(git_service.git_root_dir)
+            / git_service.lecture_code
+            / "feedback"
+            / str(git_service.assignment_id)
+            / str(sub_id)
         )
-        self.log.info(f"Path: {git_service.path}")
-        if not os.path.exists(git_service.path):
-            os.makedirs(git_service.path, exist_ok=True)
+        self.log.info(f"Path: {git_service.path.as_posix()}")
+        create_dir(git_service.path)
 
         if not git_service.is_git():
             git_service.init()
