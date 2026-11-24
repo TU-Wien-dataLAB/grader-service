@@ -32,7 +32,6 @@ import { EmptyDirIcon } from '../../../../assets/empty-dir-icon';
 import { FilesDataTable } from './files-table';
 import { ColumnFiltersState, RowSelectionState } from '@tanstack/react-table';
 import { Button } from '../../../shadcn-components/ui/button';
-import { getRemoteStatus } from '../../../../services/git.service';
 import { RepoType } from '../../utils/repo-type';
 import { SaveFilesDialog } from './save-files-dialog';
 import { LoadUpdatesDialog } from './load-updates-dialog';
@@ -44,6 +43,7 @@ import {
   UpdatesAvailableBadge,
   UpToDateBadge
 } from '../../ui/badges';
+import { remoteStatusQuery } from '../../../../services/queries/git.queries';
 
 interface IFilesViewProps {
   lectureId: number;
@@ -62,22 +62,13 @@ export const FilesView = (props: IFilesViewProps) => {
       return await getFiles(srcPath);
     }
   });
-  const { data: remoteRepoStatus } = useQuery({
-    queryKey: [
-      'remote-repo-status',
-      lecture.code,
+  const { data: remoteRepoStatus } = useQuery(
+    remoteStatusQuery(
+      lecture,
       props.assignmentId,
-      selectedDir
-    ],
-    queryFn: async () => {
-      return await getRemoteStatus(
-        props.lectureId,
-        props.assignmentId,
-        selectedDir === 'source' ? RepoType.SOURCE : RepoType.RELEASE
-      );
-    },
-    enabled: !!files
-  });
+      selectedDir === 'source' ? RepoType.SOURCE : RepoType.RELEASE
+    )
+  );
 
   const handleDirSwitch = async (dir: string) => {
     if (dir === selectedDir) {
