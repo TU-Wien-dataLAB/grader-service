@@ -5,14 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import os
 import urllib.parse
+from pathlib import Path
 
 import tornado
 from tornado.web import HTTPError, authenticated
 
 from grader_labextension.handlers.base_handler import ExtensionBaseHandler
 from grader_labextension.registry import register_handler
+from grader_labextension.services.dirs import create_dir
 from grader_labextension.services.request import RequestService, RequestServiceError
 
 
@@ -46,6 +47,8 @@ class LectureBaseHandler(ExtensionBaseHandler):
         except RequestServiceError as e:
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
+        # Create root directory if it doesn't exist (/lectures)
+        create_dir(Path(self.root_dir))
         self.write(json.dumps(response))
 
     @authenticated
@@ -109,6 +112,8 @@ class LectureObjectHandler(ExtensionBaseHandler):
         except RequestServiceError as e:
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
+
+        create_dir(Path(self.root_dir) / response_data["code"])
         self.write(json.dumps(response_data))
 
     @authenticated
@@ -158,18 +163,6 @@ class LectureStudentsHandler(ExtensionBaseHandler):
         self.write(json.dumps(response))
 
 
-def get_content_type_from_response(response):
-    """
-    Extract Content-Type from raw response string containing headers.
-    """
-    lines = response.split("\n")  # Split the response into lines
-    for line in lines:
-        if "Content-Type" in line:  # Look for the Content-Type header
-            key, value = line.split(":", 1)  # Split key and value
-            return value.strip()  # Return the Content-Type value, stripped of whitespace
-    return ""  # Default if Content-Type is not found
-
-
 @register_handler(path=r"api\/lectures\/(?P<lecture_id>\d*)\/submissions\/?")
 class SubmissionLectureHandler(ExtensionBaseHandler):
     """ "
@@ -213,31 +206,30 @@ class SubmissionLectureHandler(ExtensionBaseHandler):
             raise HTTPError(e.code, reason=e.message)
 
         lecture = await self.get_lecture(lecture_id)
-        dir_path = os.path.join(self.root_dir, lecture["code"])
-        os.makedirs(dir_path, exist_ok=True)
+        dir_path = Path(self.root_dir) / lecture["code"]
+        create_dir(dir_path)
 
         parsed_query_params = urllib.parse.parse_qs(query_params.lstrip("?"))
         filter_value = parsed_query_params.get("filter", ["none"])[0]
         format_value = parsed_query_params.get("format", ["json"])[0]
 
-        file_path = os.path.join(
-            dir_path, f"{lecture['name']}_{filter_value}_submissions.{format_value}"
-        )
+        file_path = dir_path / f"{lecture['name']}_{filter_value}_submissions.{format_value}"
+
         if format_value == "csv":
-            with open(file_path, "w", encoding="utf-8") as f:
+            with file_path.open("w", encoding="utf-8") as f:
                 f.write(response)
         elif format_value == "json":
             json_content = (
                 json.dumps(response, indent=2) if isinstance(response, dict) else response
             )
-            with open(file_path, "w", encoding="utf-8") as f:
+            with file_path.open("w", encoding="utf-8") as f:
                 f.write(json_content)
         else:
             raise HTTPError(400, reason="Invalid format specified")
         self.write(
             {
                 "status": "OK",
-                "message": f"File saved successfully: {file_path}",
-                "file_path": file_path,
+                "message": f"File saved successfully: {file_path.as_posix()}",
+                "file_path": file_path.as_posix(),
             }
         )

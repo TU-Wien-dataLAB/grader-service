@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import functools
 import os
+from pathlib import Path
 from typing import Awaitable, Optional
 
 from grader_service.handlers.base_handler import GraderErrorMixin
@@ -69,11 +70,11 @@ class ExtensionBaseHandler(GraderErrorMixin, APIHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.root_dir = os.path.expanduser(
-            os.path.join(
-                self.settings["server_root_dir"], HandlerConfig.instance().lectures_base_path
-            )
-        ).rstrip("/")
+        self.root_dir = (
+            (Path(self.settings["server_root_dir"]) / HandlerConfig.instance().lectures_base_path)
+            .expanduser()
+            .as_posix()
+        )
         # Lazily initialize RequestService to ensure network is ready
         self._request_service = None
 

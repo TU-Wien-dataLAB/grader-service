@@ -5,9 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import os
+from pathlib import Path
 
 import tornado
+
+from grader_labextension.services.dirs import create_dir
 from grader_service.errors import APIError
 from tornado.web import HTTPError, authenticated
 
@@ -44,26 +46,12 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
 
         # Create directories for every assignment
         try:
-            dirs = set(
-                filter(
-                    lambda e: e[0] != ".",
-                    os.listdir(
-                        os.path.expanduser(f"{self.root_dir}/{lecture['code']}/assignments")
-                    ),
-                )
-            )
+            assignments_dir = Path(self.root_dir) / lecture["code"] / "assignments"
+            dirs = {e.name for e in assignments_dir.iterdir() if not e.name.startswith(".")}
             for assignment in response:
-                if assignment["id"] not in dirs:
-                    self.log.info(
-                        f"Creating directory {self.root_dir}/{lecture['code']}/assignments/"
-                        f"{assignment['id']}"
-                    )
-                    os.makedirs(
-                        os.path.expanduser(
-                            f"{self.root_dir}/{lecture['code']}/assignments/{assignment['id']}"
-                        ),
-                        exist_ok=True,
-                    )
+                if str(assignment["id"]) not in dirs:
+                    self.log.info(f"Creating directory {assignments_dir / str(assignment['id'])}")
+                    create_dir(assignments_dir / str(assignment["id"]))
                 try:
                     dirs.remove(assignment["id"])
                 except KeyError:
@@ -95,18 +83,11 @@ class AssignmentBaseHandler(ExtensionBaseHandler):
             raise APIError(e.code, message=e.message)
         # if we did not get an error when creating the assignment (i.e. the user is authorized
         # etc.) then we can create the directory structure if it does not exist yet
-        os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/assignments/{response['id']}"),
-            exist_ok=True,
-        )
-        os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/source/{response['id']}"),
-            exist_ok=True,
-        )
-        os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/release/{response['id']}"),
-            exist_ok=True,
-        )
+        lecture_dir = Path(self.root_dir) / lecture["code"]
+        create_dir(lecture_dir / "assignments" / str(response["id"]))
+        create_dir(lecture_dir / "source" / str(response["id"]))
+        create_dir(lecture_dir / "release" / str(response["id"]))
+
         self.write(json.dumps(response))
 
 
@@ -166,11 +147,8 @@ class AssignmentObjectHandler(ExtensionBaseHandler):
         except RequestServiceError as e:
             self.log.error(e)
             raise HTTPError(e.code, reason=e.message)
+        create_dir(Path(self.root_dir) / lecture["code"] / "assignments" / str(response["id"]))
 
-        os.makedirs(
-            os.path.expanduser(f"{self.root_dir}/{lecture['code']}/assignments/{response['id']}"),
-            exist_ok=True,
-        )
         self.write(json.dumps(response))
 
     async def delete(self, lecture_id: int, assignment_id: int):
