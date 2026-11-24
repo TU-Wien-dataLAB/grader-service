@@ -18,7 +18,7 @@ import {
 } from '../../../../services/local-file.service';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  getPulledSubmissionFiles,
+  getPulledAutogradedOrOriginalFiles,
   getSubmissionById
 } from '../../../../services/queries/submissions.query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
@@ -59,12 +59,12 @@ export const SubmissionDetailsDialog = ({
   };
 
   const isSubmissionFilesPulled = useQuery(
-    getPulledSubmissionFiles(lectureId, assignmentId, submissionId)
+    getPulledAutogradedOrOriginalFiles(lectureId, assignmentId, submissionId)
   );
 
   const path =
     lecture && assignmentId
-      ? `${lectureBasePath}${lecture.code}/edit/${assignmentId}/${submissionId}`
+      ? `${lectureBasePath}${lecture.code}/manualgrade/${assignmentId}/${submissionId}`
       : null;
 
   const { data: files = [] } = useQuery<(IFile | TSubmissionDirectory)[]>({

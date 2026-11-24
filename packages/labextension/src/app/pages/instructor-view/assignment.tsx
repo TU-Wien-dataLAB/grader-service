@@ -46,7 +46,7 @@ export const Assignment = () => {
   useEffect(() => {
     if (activeTab === 'submissions') {
       openInFileBrowser(
-        `${lectureBasePath}${lecture?.code}/edit/${assignmentId}`
+        `${lectureBasePath}${lecture?.code}/manualgrade/${assignmentId}`
       );
     } else {
       openInFileBrowser(

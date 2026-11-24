@@ -5,7 +5,8 @@ import {
   resetFileBaseline,
   clearFileBaseline,
   fileStatusKey,
-  FILE_STATUS_EVENT
+  FILE_STATUS_EVENT,
+  ensureFileBaseline
 } from '../../../../services/file-status.service';
 import { GlobalObjects } from '../../../../index';
 
@@ -16,7 +17,6 @@ export function useFilesChanged(paths: string[]) {
 
   useEffect(() => {
     const pathSet = new Set(paths);
-
     // Drop entries for paths that no longer exist
     setChangedMap(prev => {
       const next: Record<string, boolean> = {};
@@ -69,7 +69,11 @@ export function useFilesChanged(paths: string[]) {
     window.addEventListener(FILE_STATUS_EVENT, onBaselineChanged);
     window.addEventListener('storage', onStorage);
 
-    checkAllFiles();
+    Promise.all(paths.map(path => ensureFileBaseline(path)))
+      .then(checkAllFiles)
+      .catch(() => {
+        if (active) checkAllFiles();
+      });
 
     return () => {
       active = false;
@@ -91,10 +95,9 @@ export function useFilesChanged(paths: string[]) {
     [pathsKey]
   );
 
-  const clearBaselines = useCallback(
-    () => paths.forEach(path => clearFileBaseline(path)),
-    [pathsKey]
-  );
+  const clearBaselines = useCallback(() => {
+    paths.forEach(path => clearFileBaseline(path));
+  }, [pathsKey]);
 
   return { changedMap, anyChanged, resetBaselines, clearBaselines };
 }

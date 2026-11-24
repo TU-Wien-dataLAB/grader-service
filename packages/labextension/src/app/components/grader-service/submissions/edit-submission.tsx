@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import SubmissionFiles from './submission-files';
 import { ArrowLeft } from 'lucide-react';
 import SubmissionDetailInfo from './submission-detail-info';
@@ -42,6 +42,7 @@ const EditSubmission = () => {
   const submissionId = Number(params.sid);
   const navigate = useNavigate();
   const { status, setStatus } = useMutationStatus();
+
   const { data: assignment } = useQuery(
     assignmentQuery(lectureId, assignmentId)
   );
@@ -61,7 +62,11 @@ const EditSubmission = () => {
   );
 
   const { data: files = [], refetch: refetchFiles } = useFiles(path);
-  const { resetBaselines, anyChanged } = useFilesChanged(collectPaths(files));
+  const filePaths = useMemo(() => collectPaths(files), [files]);
+  const { resetBaselines, anyChanged, clearBaselines } =
+    useFilesChanged(filePaths);
+
+  const clearBaselinesRef = useRef(clearBaselines);
 
   const goToSubmissionsView = () => {
     navigate(`/lectures/${lectureId}/assignments/${assignmentId}`, {
@@ -124,6 +129,14 @@ const EditSubmission = () => {
     openInFileBrowser(path);
   }, [path]);
 
+  useEffect(() => {
+    clearBaselinesRef.current = clearBaselines;
+  }, [clearBaselines]);
+
+  useEffect(() => {
+    return () => clearBaselinesRef.current();
+  }, []);
+
   return (
     <>
       <div
@@ -170,7 +183,7 @@ const EditSubmission = () => {
           </div>
           {submission?.edited ? (
             <div>
-              <SubmissionFiles files={files} />
+              <SubmissionFiles files={files} isEditMode />
               <div className="flex flex-start gap-4 mt-4">
                 <Tooltip>
                   <TooltipTrigger disabled={anyChanged}>

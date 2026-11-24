@@ -57,7 +57,7 @@ export const SubmissionsView = (props: TProps) => {
   const hasSelection = Object.values(rowSelection).some(Boolean);
 
   const { data: lecture } = useQuery(lectureQuery(lectureId));
-  const path = `${lectureBasePath}${lecture.code}/edit/${assignmentId}`;
+  const path = `${lectureBasePath}${lecture.code}/manualgrade/${assignmentId}`;
 
   // used for checking/unchecking a checkbox
   const toggle = (key: string, value: string, label: string) => {

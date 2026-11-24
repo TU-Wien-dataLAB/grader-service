@@ -8,8 +8,15 @@ import { useFileStatus } from './use-files-status-hook';
 const ROW_GRID =
   'grid grid-cols-[minmax(0,15rem)_15rem_6rem_auto] items-center gap-x-6';
 
-const FileLink = ({ file }: { file: IFile }) => {
-  const { changed } = useFileStatus(file.path);
+const FileLink = ({
+  file,
+  isEditMode
+}: {
+  file: IFile;
+  isEditMode: boolean;
+}) => {
+  const { changed } = useFileStatus(isEditMode ? file.path : null);
+
   return (
     <div
       onClick={() => openInNewTab(file.path)}
@@ -23,13 +30,25 @@ const FileLink = ({ file }: { file: IFile }) => {
     </div>
   );
 };
-const FileRow = ({ file }: { file: IFile }) => (
+const FileRow = ({
+  file,
+  isEditMode
+}: {
+  file: IFile;
+  isEditMode: boolean;
+}) => (
   <div className={`${ROW_GRID} rounded-xs bg-white py-2 px-4`}>
-    <FileLink file={file} />
+    <FileLink isEditMode={isEditMode} file={file} />
   </div>
 );
 
-const FolderCard = ({ folder }: { folder: TSubmissionDirectory }) => (
+const FolderCard = ({
+  folder,
+  isEditMode
+}: {
+  folder: TSubmissionDirectory;
+  isEditMode: boolean;
+}) => (
   <div className="rounded-xs bg-white py-2 px-4">
     <p className="font-medium">{folder.name}</p>
     <ul className="mt-3 space-y-3">
@@ -40,7 +59,7 @@ const FolderCard = ({ folder }: { folder: TSubmissionDirectory }) => (
               aria-hidden="true"
               className="ml-0.5 inline-block h-2.5 w-2.5 shrink-0 border-b-2 border-l-2 border-[#8D8D8D]"
             />
-            <FileLink file={file} />
+            <FileLink isEditMode={isEditMode} file={file} />
           </div>
           <span />
         </li>
@@ -51,18 +70,26 @@ const FolderCard = ({ folder }: { folder: TSubmissionDirectory }) => (
 
 interface ISubmissionFilesProps {
   files: (IFile | TSubmissionDirectory)[];
+  isEditMode?: boolean;
 }
 
-const SubmissionFiles = ({ files }: ISubmissionFilesProps) => {
+const SubmissionFiles = ({
+  files,
+  isEditMode = false
+}: ISubmissionFilesProps) => {
   return (
     <div className="space-y-2">
-      {files.map(item =>
-        item.type === 'directory' ? (
-          <FolderCard key={item.path} folder={item as TSubmissionDirectory} />
+      {files.map(item => {
+        return item.type === 'directory' ? (
+          <FolderCard
+            isEditMode={isEditMode}
+            key={item.path}
+            folder={item as TSubmissionDirectory}
+          />
         ) : (
-          <FileRow key={item.path} file={item} />
-        )
-      )}
+          <FileRow isEditMode={isEditMode} key={item.path} file={item} />
+        );
+      })}
     </div>
   );
 };

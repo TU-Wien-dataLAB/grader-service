@@ -73,7 +73,6 @@ const NewSubmission = (props: TProps) => {
 
   const createSubmissionMutation = useMutation({
     mutationFn: async (values: submissionFields) => {
-      console.log('selected files: ', values.files);
       await createSubmissionFiles(
         lectureId,
         assignmentId,

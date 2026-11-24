@@ -6,6 +6,7 @@ import {
   getSubmissions
 } from '../submissions.service';
 import { pullSubmissionFiles, restoreSubmission } from '../git.service';
+import { pullAutogradedOrOriginalFiles } from '../grading.service';
 
 export const getAllSubmissions = (lectureId: number, assignmentId: number) =>
   queryOptions({
@@ -53,7 +54,8 @@ export const restoreLatestSubmission = (
 ) =>
   queryOptions({
     queryKey: ['latestSubmission', commitHash],
-    queryFn: async () => restoreSubmission(lectureId, assignmentId, commitHash)
+    queryFn: async () => restoreSubmission(lectureId, assignmentId, commitHash),
+    enabled: false
   });
 
 export const exportSubmissionsData = (
@@ -64,4 +66,15 @@ export const exportSubmissionsData = (
   queryOptions({
     queryKey: ['exportSubmissions'],
     queryFn: async () => exportGrades(lectureId, filter, format)
+  });
+
+export const getPulledAutogradedOrOriginalFiles = (
+  lectureId: number,
+  assignmentId: number,
+  submissionId: number
+) =>
+  queryOptions({
+    queryKey: ['autogradedOrOriginalFiles', submissionId],
+    queryFn: async () =>
+      pullAutogradedOrOriginalFiles(lectureId, assignmentId, submissionId)
   });
