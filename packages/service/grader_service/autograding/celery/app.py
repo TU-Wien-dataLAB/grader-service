@@ -1,11 +1,11 @@
-from typing import Union
+from typing import Union, Optional
 
 from celery import Celery
 from sqlalchemy.orm import sessionmaker
 from traitlets import Dict
 from traitlets.config import SingletonConfigurable
 
-from grader_service.db import create_sync_session_maker
+from grader_service.db import session_maker
 
 
 class CeleryApp(SingletonConfigurable):
@@ -26,8 +26,8 @@ class CeleryApp(SingletonConfigurable):
     ).tag(config=True)
 
     app: Celery
-    _session_maker: Union[sessionmaker, None] = None
-    _db_url: Union[str, None] = None
+    _session_maker: Optional[sessionmaker] = None
+    _db_url: Optional[str] = None
 
     def __init__(self, config_file: Union[str, None] = None, **kwargs):
         super().__init__(**kwargs)
@@ -56,7 +56,7 @@ class CeleryApp(SingletonConfigurable):
     def session_maker(self) -> sessionmaker | None:
         if self._session_maker is None:
             self.log.info("Instantiating database connection")
-            self._session_maker = create_sync_session_maker(self._db_url)
+            self._session_maker = session_maker(self._db_url)
         return self._session_maker
 
     @property

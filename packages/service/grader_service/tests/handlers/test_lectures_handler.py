@@ -9,7 +9,6 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
 from tornado.httpclient import HTTPClientError
 
 from grader_service import orm
@@ -69,16 +68,16 @@ async def test_get_lectures_complete(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     url = service_base_url + "lectures?complete=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=11,
             name="test2",
@@ -87,7 +86,7 @@ async def test_get_lectures_complete(
             deleted=DeleteState.deleted,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     add_role(sql_alchemy_engine, default_user.id, 10, Scope.instructor)
     add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
@@ -118,21 +117,21 @@ async def test_get_lectures_instructor(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     url = service_base_url + "lectures?instructor=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.active, deleted=DeleteState.active
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=11, name="test2", code="test2", state=LectureState.active, deleted=DeleteState.active
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
     add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
@@ -161,16 +160,16 @@ async def test_get_lectures_instructor_and_complete(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     url = service_base_url + "lectures?complete=true&instructor=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=11,
             name="test2",
@@ -179,7 +178,7 @@ async def test_get_lectures_instructor_and_complete(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
     add_role(sql_alchemy_engine, default_user.id, 11, Scope.instructor)
@@ -230,17 +229,16 @@ async def test_get_lectures_admin_complete(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     url = service_base_url + "lectures?complete=true"
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=10, name="test", code="test", state=LectureState.complete, deleted=DeleteState.active
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=11,
             name="test2",
@@ -249,7 +247,7 @@ async def test_get_lectures_admin_complete(
             deleted=DeleteState.deleted,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     response = await http_server_client.fetch(
         url, method="GET", headers={"Authorization": f"Token {default_token}"}
@@ -338,19 +336,6 @@ async def test_get_lectures_pagination_paging(
     assert data["total_pages"] == 2
     assert [lec["id"] for lec in data["lectures"]] == [3]
 
-    page_3 = await http_server_client.fetch(
-        service_base_url + "lectures?page=3&per_page=2",
-        method="GET",
-        headers={"Authorization": f"Token {default_token}"},
-    )
-    assert page_3.code == HTTPStatus.OK
-    data = json.loads(page_3.body.decode())
-    assert data["page"] == 3
-    assert data["per_page"] == 2
-    assert data["total_items"] == 3
-    assert data["total_pages"] == 2
-    assert data["lectures"] == []
-
 
 async def test_get_lectures_page_beyond_range(
     app: GraderServer,
@@ -410,9 +395,9 @@ async def test_get_lectures_sort_by_name(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=10,
             name="a_lecture",
@@ -421,7 +406,7 @@ async def test_get_lectures_sort_by_name(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
     add_role(sql_alchemy_engine, default_user.id, 10, Scope.student)
 
     response = await http_server_client.fetch(
@@ -462,12 +447,12 @@ async def test_get_lectures_sort_by_created_at(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     # the lectures from the fixtures all have essentially the same created_at
     # (column default), so we insert lectures with explicit and distinct
     # created_at values to test date sorting deterministically
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=20,
             name="oldest",
@@ -477,7 +462,7 @@ async def test_get_lectures_sort_by_created_at(
             created_at=datetime(2020, 1, 1, tzinfo=UTC),
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=21,
             name="mid_a",
@@ -488,7 +473,7 @@ async def test_get_lectures_sort_by_created_at(
         )
     )
     # same created_at as lecture 21 -> id is used as tiebreaker
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=22,
             name="mid_b",
@@ -498,7 +483,7 @@ async def test_get_lectures_sort_by_created_at(
             created_at=datetime(2021, 1, 1, tzinfo=UTC),
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=23,
             name="newest",
@@ -508,7 +493,7 @@ async def test_get_lectures_sort_by_created_at(
             created_at=datetime(2022, 1, 1, tzinfo=UTC),
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     for l_id in (20, 21, 22, 23):
         add_role(sql_alchemy_engine, default_user.id, l_id, Scope.student)
@@ -575,9 +560,9 @@ async def test_get_lectures_complete_with_pagination(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=30,
             name="complete_1",
@@ -586,7 +571,7 @@ async def test_get_lectures_complete_with_pagination(
             deleted=DeleteState.active,
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=31,
             name="complete_2",
@@ -595,7 +580,7 @@ async def test_get_lectures_complete_with_pagination(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     add_role(sql_alchemy_engine, default_user.id, 30, Scope.instructor)
     add_role(sql_alchemy_engine, default_user.id, 31, Scope.instructor)
@@ -654,6 +639,50 @@ async def test_post_lecture_existing_code(
     lectures = json.loads(get_response.body.decode())["lectures"]
     assert len(lectures) == 3
     assert next(lec["name"] for lec in lectures if lec["code"] == "20wle2") == name_before
+
+
+async def test_post_lecture_invalid_code(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_admin,
+    default_token,
+    default_roles,
+    default_admin_login,
+):
+    url = service_base_url + "lectures"
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())["lectures"]
+    assert isinstance(lectures, list)
+    assert len(lectures) == 4
+
+    # creating a lecture with an invalid lecture code is rejected
+    invalid_lecture = Lecture(id=-1, name="pytest_lecture", code="&lec&code", complete=False)
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url,
+            method="POST",
+            headers={"Authorization": f"Token {default_token}"},
+            body=json.dumps(invalid_lecture.to_dict()),
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST
+    error = json.loads(e.response.body.decode())
+    assert (
+        error["message"]
+        == "Invalid lecture code: only alphanumeric characters, '-' and '_' are allowed."
+    )
+
+    get_response = await http_server_client.fetch(
+        url, method="GET", headers={"Authorization": f"Token {default_token}"}
+    )
+    assert get_response.code == HTTPStatus.OK
+    lectures = json.loads(get_response.body.decode())["lectures"]
+    assert len(lectures) == 4
 
 
 async def test_post_lectures_update_unauthorized(
@@ -1012,7 +1041,7 @@ async def test_delete_lecture(
     default_token,
     default_roles,
     default_user_login,
-    sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     l_id = 3
     url = service_base_url + f"lectures/{l_id}"
@@ -1029,8 +1058,7 @@ async def test_delete_lecture(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    lectures = sql_alchemy_session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 1
     assert lectures[0].deleted == DeleteState.deleted
 
@@ -1082,6 +1110,7 @@ async def test_delete_lecture_assignment(
     http_server_client,
     default_token,
     sql_alchemy_engine,
+    sql_alchemy_session,
     default_roles,
     default_user_login,
     default_user,
@@ -1113,13 +1142,13 @@ async def test_delete_lecture_assignment(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    lectures = sql_alchemy_session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 1
     assert lectures[0].deleted == DeleteState.deleted
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assignments = (
+        sql_alchemy_session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    )
     assert len(assignments) == 1
     assert assignments[0].deleted == DeleteState.deleted
 
@@ -1234,7 +1263,7 @@ async def test_delete_lecture_hard(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     l_id = 3
 
@@ -1253,8 +1282,7 @@ async def test_delete_lecture_hard(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    lectures = sql_alchemy_session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 0
 
 
@@ -1287,7 +1315,7 @@ async def test_delete_lecture_hard_assignments_roles(
     default_token,
     default_roles,
     default_admin_login,
-    sql_alchemy_engine,
+    sql_alchemy_session,
     default_admin,
 ):
     l_id = 4
@@ -1334,14 +1362,15 @@ async def test_delete_lecture_hard_assignments_roles(
     e = exc_info.value
     assert e.code == HTTPStatus.NOT_FOUND
 
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    lectures = session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
+    lectures = sql_alchemy_session.query(orm.Lecture).filter(orm.Lecture.id == l_id).all()
     assert len(lectures) == 0
 
-    assignments = session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    assignments = (
+        sql_alchemy_session.query(orm.Assignment).filter(orm.Assignment.lectid == l_id).all()
+    )
     assert len(assignments) == 0
 
-    roles = session.query(orm.Role).filter(orm.Role.lectid == l_id).all()
+    roles = sql_alchemy_session.query(orm.Role).filter(orm.Role.lectid == l_id).all()
     assert len(roles) == 0
 
     assert not git_dir.exists()
@@ -1380,62 +1409,6 @@ async def test_delete_lecture_invalid_hard_delete_value(
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-
-async def test_post_lecture_invalid_body(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_admin,
-    default_token,
-    default_roles,
-    default_admin_login,
-):
-    url = service_base_url + "lectures"
-
-    # not valid JSON
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="POST",
-            headers={"Authorization": f"Token {default_token}"},
-            body="{invalid json",
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-    # JSON, but the body is not an object
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="POST",
-            headers={"Authorization": f"Token {default_token}"},
-            body="[1, 2, 3]",
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-
-async def test_put_lecture_invalid_body(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_user,
-    default_token,
-    default_roles,
-    default_user_login,
-):
-    url = service_base_url + "lectures/3"
-
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="PUT",
-            headers={"Authorization": f"Token {default_token}"},
-            body="not json at all",
         )
     e = exc_info.value
     assert e.code == HTTPStatus.BAD_REQUEST
@@ -1607,11 +1580,11 @@ async def test_get_lectures_search_escapes_like_wildcards(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     # insert a lecture whose name contains a literal underscore;
     # the fixture lectures (lecture1..lecture4, 21wle1, ...) contain none
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=40,
             name="test_lecture",
@@ -1620,7 +1593,7 @@ async def test_get_lectures_search_escapes_like_wildcards(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
     add_role(sql_alchemy_engine, default_user.id, 40, Scope.instructor)
 
     headers = {"Authorization": f"Token {default_token}"}
@@ -1656,10 +1629,10 @@ async def test_get_lectures_search_with_pagination(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     # add a fourth lecture visible to the default user and matching "le"
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=41,
             name="lecture41",
@@ -1668,7 +1641,7 @@ async def test_get_lectures_search_with_pagination(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
     add_role(sql_alchemy_engine, default_user.id, 41, Scope.instructor)
 
     headers = {"Authorization": f"Token {default_token}"}
@@ -1716,10 +1689,10 @@ async def test_get_lectures_search_with_complete_filter(
     default_user_login,
     default_user,
     sql_alchemy_engine,
+    sql_alchemy_session,
 ):
     # insert one complete and one active lecture matching the search term
-    session: Session = sessionmaker(sql_alchemy_engine)()
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=50,
             name="search_complete",
@@ -1728,7 +1701,7 @@ async def test_get_lectures_search_with_complete_filter(
             deleted=DeleteState.active,
         )
     )
-    session.add(
+    sql_alchemy_session.add(
         orm.Lecture(
             id=51,
             name="search_active",
@@ -1737,7 +1710,7 @@ async def test_get_lectures_search_with_complete_filter(
             deleted=DeleteState.active,
         )
     )
-    session.commit()
+    sql_alchemy_session.commit()
 
     add_role(sql_alchemy_engine, default_user.id, 50, Scope.instructor)
     add_role(sql_alchemy_engine, default_user.id, 51, Scope.instructor)

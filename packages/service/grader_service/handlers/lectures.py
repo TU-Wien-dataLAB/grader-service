@@ -5,21 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
 
-from tornado.web import HTTPError
 
 from grader_service.api.models import LectureUpdateDto, LectureCreateDto
+from grader_service.errors import ServiceError, APIError
 from grader_service.handlers.base_handler import GraderBaseHandler, authorize
-from grader_service.handlers.handler_utils import (
-    get_bool_argument,
-    get_int_argument,
-    parse_json_dto,
-)
 from grader_service.orm.takepart import Scope
 from grader_service.registry import VersionSpecifier, register_handler
 from grader_service.services.lectures_service import (
+    LECTURE_SORTABLE_COLUMNS,
     DEFAULT_PER_PAGE,
     MAX_PER_PAGE,
-    LECTURE_SORTABLE_COLUMNS,
 )
 
 
@@ -40,7 +35,7 @@ class LectureBaseHandler(GraderBaseHandler):
         - complete: "true" | "false" -> filter by lecture state (complete or active)
         - instructor: "true" -> only lectures where the user has an elevated role (if eligible)
         - page: 1-based page number (default 1)
-        - per_page: items per page, 1-100 (default 20)
+        - per_page: items per page, 1-100 (DEFAULT_PER_PAGE = 20, MAX_PER_PAGE = 100)
         - sort_by: "id" | "name" | "created_at" (default "created_at")
         - order: "asc" | "desc" (default "asc")
         - search: case-insensitive substring filter on lecture name and code
@@ -48,28 +43,33 @@ class LectureBaseHandler(GraderBaseHandler):
         self.validate_parameters(
             "complete", "instructor", "page", "per_page", "sort_by", "order", "search"
         )
-        complete = get_bool_argument(self, "complete")
-        instructor = get_bool_argument(self, "instructor")
+        complete = self.get_bool_argument("complete")
+        instructor = self.get_bool_argument("instructor")
+        # only hit the database for the permission check if the instructor view was requested
+        has_elevated_permissions = instructor and self.services.lectures.has_elevated_permissions(
+            self.session, self.user
+        )
         search = self.get_argument("search", None)
 
-        page = get_int_argument(self, "page", default=1, minimum=1)
-        per_page = get_int_argument(
-            self, "per_page", default=DEFAULT_PER_PAGE, minimum=1, maximum=MAX_PER_PAGE
+        page = self.get_int_argument("page", default=1, minimum=1)
+        per_page = self.get_int_argument(
+            "per_page", default=DEFAULT_PER_PAGE, minimum=1, maximum=MAX_PER_PAGE
         )
 
         sort_by = self.get_argument("sort_by", "created_at")
         if sort_by not in LECTURE_SORTABLE_COLUMNS:
-            raise HTTPError(
-                400, reason=f"Invalid sort_by: must be one of {sorted(LECTURE_SORTABLE_COLUMNS)}"
+            raise APIError(
+                400, message=f"Invalid sort_by: must be one of {sorted(LECTURE_SORTABLE_COLUMNS)}"
             )
 
         order = self.get_argument("order", "asc")
         if order not in ("asc", "desc"):
-            raise HTTPError(400, reason="Invalid order: must be 'asc' or 'desc'")
+            raise APIError(400, message="Invalid order: must be 'asc' or 'desc'")
 
-        response = self.services.lectures.get_all_lectures(
+        lectures = self.services.lectures.get_all_lectures(
+            self.session,
             complete=complete,
-            instructor_view=instructor,
+            has_elevated_permissions=has_elevated_permissions,
             user=self.user,
             page=page,
             per_page=per_page,
@@ -77,7 +77,7 @@ class LectureBaseHandler(GraderBaseHandler):
             order=order,
             search=search,
         )
-        self.write_json(response)
+        self.write_json(lectures)
 
     @authorize([Scope.instructor, Scope.admin])
     async def post(self):
@@ -87,10 +87,15 @@ class LectureBaseHandler(GraderBaseHandler):
         :raises APIError: throws an error if the lecture code contains invalid characters or is already taken
         """
         self.validate_parameters()
-        lecture = self.services.lectures.create_lecture(parse_json_dto(self, LectureCreateDto))
+        try:
+            lecture = self.services.lectures.create_lecture(
+                self.session, self.parse_json_dto(LectureCreateDto)
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
 
         self.set_status(HTTPStatus.CREATED)
-        self.write_json(lecture.dto_to_dict())
+        self.write_json(lecture)
 
 
 @register_handler(r"\/api\/lectures\/(?P<lecture_id>\d*)\/?", VersionSpecifier.ALL)
@@ -98,21 +103,6 @@ class LectureObjectHandler(GraderBaseHandler):
     """
     Tornado Handler class for http requests to /lectures/{lecture_id}.
     """
-
-    @authorize([Scope.instructor, Scope.admin])
-    async def put(self, lecture_id: int):
-        """
-        Updates a lecture.
-
-        :param lecture_id: id of the lecture
-        :type lecture_id: int
-        """
-        self.validate_parameters()
-        lecture = self.services.lectures.update_lecture(
-            lecture_id, parse_json_dto(self, LectureUpdateDto), user=self.user
-        )
-
-        self.write_json(lecture.dto_to_dict())
 
     @authorize([Scope.student, Scope.tutor, Scope.instructor, Scope.admin])
     async def get(self, lecture_id: int):
@@ -122,8 +112,35 @@ class LectureObjectHandler(GraderBaseHandler):
         :return: lecture with given id
         """
         self.validate_parameters()
-        lecture = self.services.lectures.get_lecture_by_id(lecture_id, user=self.user)
-        self.write_json(lecture.dto_to_dict())
+        try:
+            lecture = self.services.lectures.get_lecture_by_id(
+                self.session, lecture_id, can_get_deleted_lecture=self.user.is_admin
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
+        self.write_json(lecture)
+
+    @authorize([Scope.instructor, Scope.admin])
+    async def put(self, lecture_id: int):
+        """
+        Updates a lecture.
+
+        :param lecture_id: id of the lecture
+        :type lecture_id: int
+        :return: updated lecture
+        """
+        self.validate_parameters()
+        try:
+            lecture = self.services.lectures.update_lecture(
+                self.session,
+                lecture_id,
+                self.parse_json_dto(LectureUpdateDto),
+                can_update_deleted_lecture=self.user.is_admin,
+            )
+        except ServiceError as e:
+            raise self.to_api_error(e)
+
+        self.write_json(lecture)
 
     @authorize([Scope.instructor, Scope.admin])
     async def delete(self, lecture_id: int):
@@ -139,16 +156,24 @@ class LectureObjectHandler(GraderBaseHandler):
 
         :param lecture_id: id of the lecture
         :type lecture_id: int
-        :raises HTTPError: throws an error if the lecture was already deleted
-        or was not found
+        :raises APIError: throws an error if the lecture was already deleted, was not found, or
+        a user is not authorized to hard delete the lecture
 
         """
         self.validate_parameters("hard_delete")
-        hard_delete = get_bool_argument(self, "hard_delete", default=False)
+        hard_delete = self.get_bool_argument("hard_delete", default=False)
 
-        await self.services.lectures.delete_lecture(
-            lecture_id, hard_delete=hard_delete, user=self.user
-        )
+        try:
+            if hard_delete:
+                if not self.user.is_admin:
+                    raise APIError(
+                        HTTPStatus.FORBIDDEN, message="Only admins can hard-delete lectures."
+                    )
+                await self.services.lectures.hard_delete_lecture(self.session, lecture_id)
+            else:
+                await self.services.lectures.soft_delete_lecture(self.session, lecture_id)
+        except ServiceError as e:
+            raise self.to_api_error(e)
         self.set_status(HTTPStatus.NO_CONTENT)
 
 
@@ -168,11 +193,9 @@ class LectureStudentsHandler(GraderBaseHandler):
         :param lecture_id: id of the lecture
         :return: a dictionary of user, tutor and instructor names lists
         """
-        students, tutors, instructors = self.services.lectures.get_lecture_users(lecture_id)
+        students, tutors, instructors = self.services.lectures.get_lecture_users(
+            self.session, lecture_id
+        )
 
-        lecture_users = {
-            "instructors": [i.dto_to_dict() for i in instructors],
-            "tutors": [t.dto_to_dict() for t in tutors],
-            "students": [s.dto_to_dict() for s in students],
-        }
+        lecture_users = {"instructors": instructors, "tutors": tutors, "students": students}
         self.write_json(lecture_users)

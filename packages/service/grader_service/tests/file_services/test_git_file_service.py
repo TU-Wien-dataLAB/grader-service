@@ -6,8 +6,11 @@ import pytest_asyncio
 from traitlets import TraitError
 
 from grader_service import utils
-from grader_service.services.file_services import FileServiceError
-from grader_service.services.file_services.git_file_service import GitFileService, construct_git_dir
+from grader_service.services.file_services import (
+    FileServiceError,
+    GitFileService,
+    construct_git_dir,
+)
 from grader_service.orm.submission import AutoStatus
 from grader_service.artifact_types import ArtifactType
 from grader_service.tests.handlers.db_util import create_user_submission_with_repo
