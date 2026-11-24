@@ -18,7 +18,7 @@ import {
   IGroupedAssignments
 } from '../../../../pages/instructor-view/lecture';
 import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-status-hook';
-import { useAssignmentRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
+import { useAssignmentFileRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
 import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
 import { RemoteFileStatus } from '../../../../../model/remoteFileStatus';
@@ -51,7 +51,7 @@ const dialogDescriptions: Record<RemoteFileStatus, string> = {
     'Your local changes are out of sync with the remote system. Please resolve the conflicts before releasing.',
   update_needed:
     'The assignment has been updated in the remote system. ' +
-    "The release will be done using the files from remote. You can go back to 'Notebooks and files' of this assignment and load the updates to see what would be released.",
+    "The release will be done using the files from remote. You can go back to 'Notebooks and files' of this assignment and load the updates to see what will be released.",
   up_to_date: '',
   no_backup: ''
 };
@@ -128,7 +128,7 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
   };
 
   /* file status handling needed for release action */
-  const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
+  const { filesLength, remoteStatus } = useAssignmentFileRemoteStatus(
     props.lecture.id,
     singleAssignment?.id
   );

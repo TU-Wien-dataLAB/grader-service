@@ -116,7 +116,7 @@ export const getFiles = async (path: string): Promise<IFile[]> => {
 
 export const getRelativePath = (
   lectureCode: string,
-  type: 'assignments' | 'source' | 'release',
+  type: string,
   assignmentId: number,
   path: string
 ) => {
@@ -128,7 +128,7 @@ export const getRelativePath = (
 
 export const extractRelativePaths = (
   lectureCode: string,
-  type: 'assignments' | 'source' | 'release',
+  type: string,
   assignmentId: number,
   file: IFile
 ) => {

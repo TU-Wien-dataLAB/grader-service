@@ -17,6 +17,7 @@ import { Eye, Pencil } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import { Button } from '../../../shadcn-components/ui/button';
+import { fileStatusIcon } from './file-status-icon';
 
 export type FileRow = {
   id: string;
@@ -62,6 +63,19 @@ export const FilesDataTable = (props: TTableProps) => {
             {getValue<string>()}
           </div>
         )
+      },
+      {
+        accessorKey: 'file_status',
+        header: 'Status',
+        enableGlobalFilter: false,
+        cell: ({ row }) => {
+          return fileStatusIcon(
+            props.lectureId,
+            props.assignmentId,
+            selectedDir,
+            row.original
+          );
+        }
       },
       {
         accessorKey: 'last_modified',
