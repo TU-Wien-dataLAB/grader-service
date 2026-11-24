@@ -21,11 +21,11 @@ import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-sta
 import { useAssignmentRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
 import { Textarea } from '../../../../shadcn-components/ui/textarea';
 import AssignmentGroupedCheckboxList from './grouped-assignments-checkbox-list';
-import { AssignmentReleaseRemoteStatusBadge } from '../utils/assignment-release-remote-status-badge';
 import { RemoteFileStatus } from '../../../../../model/remoteFileStatus';
 import { useAssignmentPush } from '../../../../hooks/assignment/assignment-push-hook';
 import { LectureDetailDto } from '../../../../../model/lectureDetailDto';
 import { RepoType } from '../../../utils/repo-type';
+import { assignmentFileStatus } from '../utils/assignment-metadata';
 
 interface IReleaseDialog {
   assignments: Assignment | IAssignmentChecked[] | IGroupedAssignments;
@@ -148,12 +148,8 @@ export const ReleaseDialog = (props: IReleaseDialog) => {
               <DialogTitle className="truncate max-w-[calc(100%-4rem)]">
                 {getDialogTitle()}
               </DialogTitle>
-              {singleAssignment && (
-                <AssignmentReleaseRemoteStatusBadge
-                  remoteRepoStatus={remoteStatus}
-                  filesLength={filesLength}
-                />
-              )}
+              {singleAssignment &&
+                assignmentFileStatus(filesLength, remoteStatus)}
             </div>
             {singleAssignment && (
               <DialogDescription>

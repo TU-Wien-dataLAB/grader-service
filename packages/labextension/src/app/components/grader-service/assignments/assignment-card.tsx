@@ -20,10 +20,13 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '../../../shadcn-components/ui/tooltip';
-import { assignmentStatus, gradingType } from './utils/assignment-metadata';
+import {
+  assignmentFileStatus,
+  assignmentStatus,
+  gradingType
+} from './utils/assignment-metadata';
 import { useNavigate, useParams } from 'react-router';
-import { useAssignmentRemoteStatus } from '../../../hooks/assignment/assignment-remote-status-hook';
-import { AssignmentReleaseRemoteStatusBadge } from './utils/assignment-release-remote-status-badge';
+import { useAssignmentFileRemoteStatus } from '../../../hooks/assignment/assignment-remote-status-hook';
 
 export interface IAssignment {
   key: React.Key;
@@ -47,7 +50,7 @@ export const AssignmentCard = (props: IAssignment) => {
 
   const lectureId = Number(params.id);
   /* file status handling needed for release action */
-  const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
+  const { filesLength, remoteStatus } = useAssignmentFileRemoteStatus(
     lectureId,
     props.assignment.id
   );
@@ -106,10 +109,7 @@ export const AssignmentCard = (props: IAssignment) => {
               props.assignment.settings.grading_method,
               props.assignment.status === 'complete'
             )}
-            <AssignmentReleaseRemoteStatusBadge
-              remoteRepoStatus={remoteStatus}
-              filesLength={filesLength}
-            />
+            {assignmentFileStatus(filesLength, remoteStatus)}
           </div>
           <div
             className={`grid grid-cols-3 ${

@@ -10,9 +10,9 @@ import { CornerDownRight } from 'lucide-react';
 import { IAssignmentChecked } from '../../../../pages/instructor-view/lecture';
 import { Assignment } from '../../../../../model/assignment';
 import { Label } from '../../../../shadcn-components/ui/label';
-import { useAssignmentRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
-import { AssignmentReleaseRemoteStatusBadge } from '../utils/assignment-release-remote-status-badge';
+import { useAssignmentFileRemoteStatus } from '../../../../hooks/assignment/assignment-remote-status-hook';
 import { AssignmentDetail } from '../../../../../model/assignmentDetail';
+import { assignmentFileStatus } from '../utils/assignment-metadata';
 
 interface IAssignmentGroupedCheckboxList {
   assignments: IAssignmentChecked[];
@@ -36,17 +36,12 @@ const AssignmentRowRemoteStatusBadge = ({
   lectureId: number;
   assignment: AssignmentDetail;
 }) => {
-  const { filesLength, remoteStatus } = useAssignmentRemoteStatus(
+  const { filesLength, remoteStatus } = useAssignmentFileRemoteStatus(
     lectureId,
     assignment.id,
     assignment.status === 'created'
   );
-  return (
-    <AssignmentReleaseRemoteStatusBadge
-      remoteRepoStatus={remoteStatus}
-      filesLength={filesLength}
-    />
-  );
+  return assignmentFileStatus(filesLength, remoteStatus);
 };
 
 const AssignmentGroupedCheckboxList = (

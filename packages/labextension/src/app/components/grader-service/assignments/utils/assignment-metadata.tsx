@@ -4,10 +4,15 @@ import {
   CreatedAssignmentBadge,
   FullyAutomaticGradingBadge,
   ManualGradingBadge,
-  ReleasedAssignmentBadge
+  NoFilesBadge,
+  OutOfSyncBadge,
+  ReleasedAssignmentBadge,
+  UnsavedChangesBadge,
+  UpdatesAvailableBadge
 } from '../../../ui/badges';
 import React from 'react';
 import { GradingMethod } from '../../../../../model/gradingMethod';
+import { RemoteFileStatus } from '../../../../../model/remoteFileStatus';
 
 export const gradingType = (gradingType: GradingMethod, complete: boolean) => {
   if (gradingType === GradingMethod.FullAuto) {
@@ -31,5 +36,22 @@ export const assignmentStatus = (status: string) => {
       return <ReleasedAssignmentBadge />;
     case 'complete':
       return <CompletedAssignmentBadge />;
+  }
+};
+
+export const assignmentFileStatus = (
+  filesLength: number | undefined,
+  status: RemoteFileStatus | undefined
+) => {
+  if (filesLength === 0) {
+    return <NoFilesBadge />;
+  }
+  switch (status) {
+    case RemoteFileStatus.UpdateNeeded:
+      return <UpdatesAvailableBadge />;
+    case RemoteFileStatus.UnsavedChanges:
+      return <UnsavedChangesBadge />;
+    case RemoteFileStatus.Divergent:
+      return <OutOfSyncBadge />;
   }
 };
