@@ -39,10 +39,22 @@ export const FilterLecturesButton = (props: IFilterLecturesButtonProps) => {
       <DropdownMenuContent align={'start'}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Status</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => props.setFilterBy('active')}>
+          <DropdownMenuItem
+            onClick={() => props.setFilterBy('all')}
+            active={props.filterBy === 'all'}
+          >
+            All
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => props.setFilterBy('active')}
+            active={props.filterBy === 'active'}
+          >
             Active
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => props.setFilterBy('completed')}>
+          <DropdownMenuItem
+            onClick={() => props.setFilterBy('completed')}
+            active={props.filterBy === 'completed'}
+          >
             Completed
           </DropdownMenuItem>
         </DropdownMenuGroup>

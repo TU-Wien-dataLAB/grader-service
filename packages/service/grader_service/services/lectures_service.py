@@ -51,7 +51,6 @@ class LecturesService(BaseService):
         search: str | None = None,
     ) -> LectureListDto:
         stmt = select(Lecture)
-
         if not user.is_admin:
             stmt = stmt.join(Role).where(
                 Role.user_id == user.id, Lecture.deleted == DeleteState.active
@@ -106,7 +105,7 @@ class LecturesService(BaseService):
 
         total_pages = math.ceil(total_items / per_page) if total_items > 0 else 0
         return LectureListDto(
-            lectures=[lec.dto_to_dict(omit_if_none={"student_count"}) for lec in lecture_dtos],
+            lectures=lecture_dtos,
             page=page,
             per_page=per_page,
             total_items=total_items,

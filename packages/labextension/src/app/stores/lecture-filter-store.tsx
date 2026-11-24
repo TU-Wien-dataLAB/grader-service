@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type FilterBy = 'active' | 'completed';
+export type FilterBy = 'active' | 'completed' | 'all';
 export type SortBy = { key?: string; dir: 'asc' | 'desc' };
 
 type LectureFiltersState = {

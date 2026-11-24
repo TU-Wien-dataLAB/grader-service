@@ -1287,6 +1287,9 @@
   .border-b-primary {
     border-bottom-color: var(--primary);
   }
+  .border-l-primary {
+    border-left-color: var(--primary);
+  }
   .border-l-transparent {
     border-left-color: transparent;
   }
@@ -3246,6 +3249,9 @@
   }
   .data-active\:border-b-primary[data-active] {
     border-bottom-color: var(--primary);
+  }
+  .data-active\:bg-blue-400[data-active] {
+    background-color: var(--color-blue-400);
   }
   .data-active\:bg-secondary[data-active] {
     background-color: var(--secondary);
