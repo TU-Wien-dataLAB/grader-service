@@ -126,8 +126,8 @@ export const SubmissionDetailsDialog = ({
     >
       <SheetContent
         side="right"
-        className="gap-0 overflow-y-auto bg-[#F5F5F5] pb-6 absolute"
-        style={{ width: '40vw', maxWidth: '100vw' }}
+        className="gap-0 overflow-y-auto bg-[#F5F5F5] pb-6"
+        style={{ width: '40%', maxWidth: '100%' }}
       >
         {submission && (
           <>
