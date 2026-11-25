@@ -1,18 +1,18 @@
-import { AssignmentDetail } from '../../../../model/assignmentDetail';
-import { ItemTypes } from '../../../shadcn-components/ui/card';
+import { AssignmentDetail } from '../../../../../model/assignmentDetail';
+import { ItemTypes } from '../../../../shadcn-components/ui/card';
 import React, { useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { ArrowRightFromLine, ChevronsUpDown } from 'lucide-react';
-import { Checkbox } from '../../../shadcn-components/ui/checkbox';
-import { IAssignmentChecked } from '../../../pages/instructor-view/lecture';
+import { Checkbox } from '../../../../shadcn-components/ui/checkbox';
+import { IAssignmentChecked } from '../../../../pages/instructor-view/lecture';
 import { AssignmentCard } from './assignment-card';
-import { Button } from '../../../shadcn-components/ui/button';
-import { useAssignmentUpdate } from '../../../hooks/assignment/assignment-update-hook';
+import { Button } from '../../../../shadcn-components/ui/button';
+import { useAssignmentUpdate } from '../../../../hooks/assignment/assignment-update-hook';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
-} from '../../../shadcn-components/ui/collapsible';
+} from '../../../../shadcn-components/ui/collapsible';
 
 export interface IAssignmentGroup {
   key: React.Key;

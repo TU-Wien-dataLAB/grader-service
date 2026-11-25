@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { Header } from '../../components/ui/header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shadcn-components/ui/tabs';
-import { UpcomingAssignments } from '../../components/grader-service/assignments/upcoming_assignments';
 import { lectureBasePath, openInFileBrowser } from '../../../services/local-file.service';
 import { Courses } from '../../components/grader-service/lectures/courses';
+import { UpcomingAssignments } from '../../components/grader-service/assignments/student/upcoming_assignments';
 
 
 export const Dashboard = () => {

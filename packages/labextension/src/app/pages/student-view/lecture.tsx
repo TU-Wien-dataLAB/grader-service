@@ -23,8 +23,8 @@ import { EmptyIcon } from '../../../assets/empty-icon';
 import { EmptyState } from '../../components/utils/empty-state';
 import { NoResultsFoundIcon } from '../../../assets/no-results-found-icon';
 import { X } from 'lucide-react';
-import { AssignmentCardStudent } from '../../components/grader-service/assignments/assignment-card-student';
 import { lectureBasePath, openInFileBrowser } from '../../../services/local-file.service';
+import { AssignmentCardStudent } from '../../components/grader-service/assignments/student/assignment-card-student';
 
 
 const STATIC_FILTERS_STUDENT: IFilterGroup[] = [

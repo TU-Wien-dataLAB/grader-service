@@ -1,11 +1,11 @@
 import React from 'react';
 import { UpcomingAssignmentCard } from './upcoming-assignment-card';
-import { Pagination, PaginationContent, PaginationFirst, PaginationItem, PaginationLast, PaginationNext, PaginationPrevious } from '../../../shadcn-components/ui/pagination';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../shadcn-components/ui/select';
-import { getUpcomingAssignments } from '../../../../services/assignments.service';
+import { Pagination, PaginationContent, PaginationFirst, PaginationItem, PaginationLast, PaginationNext, PaginationPrevious } from '../../../../shadcn-components/ui/pagination';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../../../shadcn-components/ui/select';
+import { getUpcomingAssignments } from '../../../../../services/assignments.service';
 import { useQuery } from '@tanstack/react-query';
-import { EmptyState } from '../../utils/empty-state';
-import { AllClearIcon } from '../../../../assets/all-clear-icon';
+import { EmptyState } from '../../../utils/empty-state';
+import { AllClearIcon } from '../../../../../assets/all-clear-icon';
 
 
 export const UpcomingAssignments = () => {

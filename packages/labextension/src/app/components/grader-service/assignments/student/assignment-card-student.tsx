@@ -5,24 +5,24 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../../shadcn-components/ui/card';
-import { Button } from '../../../shadcn-components/ui/button';
+} from '../../../../shadcn-components/ui/card';
+import { Button } from '../../../../shadcn-components/ui/button';
 import { Octagon, OctagonAlert } from 'lucide-react';
-import { getDateTime } from '../../utils/utils';
+import { getDateTime } from '../../../utils/utils';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from '../../../shadcn-components/ui/tooltip';
-import { Assignment } from '../../../../model/assignment';
+} from '../../../../shadcn-components/ui/tooltip';
+import { Assignment } from '../../../../../model/assignment';
 import { Link } from 'react-router';
 import { useParams } from 'react-router';
-import { getSubmissionCount, getSubmissions } from '../../../../services/submissions.service';
+import { getSubmissionCount, getSubmissions } from '../../../../../services/submissions.service';
 import { useQuery } from '@tanstack/react-query';
-import { ChangesAssignmentBadge, FeedbackAssignmentBadge, NewAssignmentBadge, NoSubmissionAssignmentBadge } from '../../ui/badges';
-import { MoreTimeIcon } from '../../../../assets/more-time-icon';
-import { getFiles, lectureBasePath } from '../../../../services/local-file.service';
-import { lectureQuery } from '../../../../services/queries/lectures.queries';
+import { ChangesAssignmentBadge, FeedbackAssignmentBadge, NewAssignmentBadge, NoSubmissionAssignmentBadge } from '../../../ui/badges';
+import { MoreTimeIcon } from '../../../../../assets/more-time-icon';
+import { getFiles, lectureBasePath } from '../../../../../services/local-file.service';
+import { lectureQuery } from '../../../../../services/queries/lectures.queries';
 
 export interface IAssignment {
   key: React.Key;

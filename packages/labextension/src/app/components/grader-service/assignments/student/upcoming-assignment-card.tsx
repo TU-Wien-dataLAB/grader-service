@@ -1,20 +1,20 @@
 import React from "react";
-import { Button } from "../../../shadcn-components/ui/button";
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "../../../shadcn-components/ui/card";
-import { ChangesAssignmentBadge, NewAssignmentBadge } from "../../ui/badges";
+import { Button } from "../../../../shadcn-components/ui/button";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "../../../../shadcn-components/ui/card";
+import { ChangesAssignmentBadge, NewAssignmentBadge } from "../../../ui/badges";
 import { CalendarX } from "lucide-react";
-import { MoreTimeIcon } from "../../../../assets/more-time-icon";
-import { getDeadlineParts } from "../../utils/deadline";
-import { UpcomingAssignment } from "../../../../services/assignments.service";
+import { MoreTimeIcon } from "../../../../../assets/more-time-icon";
+import { getDeadlineParts } from "../../../utils/deadline";
+import { UpcomingAssignment } from "../../../../../services/assignments.service";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getFiles, lectureBasePath } from "../../../../services/local-file.service";
+import { getFiles, lectureBasePath } from "../../../../../services/local-file.service";
 
 
 export const UpcomingAssignmentCard = ({ assignment }: { assignment: UpcomingAssignment } ) => {
   const deadline = getDeadlineParts(assignment.settings?.deadline);
 
-  const { data: isAssignmentfetched } = useQuery({
+  const { data: isAssignmentfetched, isPending } = useQuery({
     queryKey: ['filesStatus', assignment.lecture.id, assignment.id],
     queryFn: async () => {
         const files = await getFiles(`${lectureBasePath}${assignment.lecture?.code}/assignments/${assignment.id}`);
@@ -23,7 +23,7 @@ export const UpcomingAssignmentCard = ({ assignment }: { assignment: UpcomingAss
   }); 
 
   const badgeCase = () => {
-      if (!isAssignmentfetched) {
+      if (!isPending && !isAssignmentfetched) {
           return <NewAssignmentBadge className="ml-2 shrink-0" />;
       } else if (false) {
           return <ChangesAssignmentBadge className="ml-2 shrink-0" />;
