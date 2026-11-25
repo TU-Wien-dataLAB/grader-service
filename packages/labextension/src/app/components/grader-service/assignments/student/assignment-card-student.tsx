@@ -21,8 +21,8 @@ import { getSubmissionCount, getSubmissions } from '../../../../../services/subm
 import { useQuery } from '@tanstack/react-query';
 import { ChangesAssignmentBadge, FeedbackAssignmentBadge, NewAssignmentBadge, NoSubmissionAssignmentBadge } from '../../../ui/badges';
 import { MoreTimeIcon } from '../../../../../assets/more-time-icon';
-import { getFiles, lectureBasePath } from '../../../../../services/local-file.service';
 import { lectureQuery } from '../../../../../services/queries/lectures.queries';
+import { assignmentFilesStatusQuery } from '../../../../../services/queries/files.queries';
 
 export interface IAssignment {
   key: React.Key;
@@ -56,20 +56,16 @@ export const AssignmentCardStudent = (props: IAssignment) => {
       lectureQuery(lectureId)
     );
 
-    const { data: isAssignmentfetched } = useQuery({
-    queryKey: ['filesStatus', lectureId, props.assignment.id],
-    queryFn: async () => {
-        const files = await getFiles(`${lectureBasePath}${lecture?.code}/assignments/${props.assignment.id}`);
-        return files?.length > 0;
-    },
-    }); 
+    const { data: isAssignmentfetched, isPending } = useQuery(
+      assignmentFilesStatusQuery(lectureId, props.assignment.id, lecture?.code)
+    );
 
     const badgeCase = () => {
         const deadline = props.assignment.settings?.deadline
-        if (deadline && (new Date(deadline) < new Date()) && submissionCount === 0) {
+        if (!isPending && deadline && (new Date(deadline) < new Date()) && submissionCount === 0) {
             return <NoSubmissionAssignmentBadge/>;
         } 
-        else if (!isAssignmentfetched) {
+        else if (!isPending && !isAssignmentfetched) {
             return <NewAssignmentBadge/>;
         } else if (false) {
             return <ChangesAssignmentBadge/>;

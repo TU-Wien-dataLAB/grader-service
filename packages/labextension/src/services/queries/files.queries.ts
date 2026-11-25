@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { loadString } from '../storage.service';
+import { getFiles, lectureBasePath } from '../local-file.service';
 
 export const selectedDirQuery = (lectureId: number, assignmentId: number) =>
   queryOptions({
@@ -12,3 +13,19 @@ export const selectedDirQuery = (lectureId: number, assignmentId: number) =>
       return data || 'source';
     }
   });
+
+export const assignmentFilesStatusQuery = (
+lectureId: number,
+assignmentId: number,
+lectureCode?: string
+) =>
+queryOptions({
+  queryKey: ['filesStatus', lectureId, assignmentId],
+  queryFn: async () => {
+    const files = await getFiles(
+      `${lectureBasePath}${lectureCode}/assignments/${assignmentId}`
+    );
+    return (files?.length ?? 0) > 0;
+  },
+  enabled: !!lectureCode
+});
