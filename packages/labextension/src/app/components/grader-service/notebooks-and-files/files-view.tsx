@@ -155,15 +155,15 @@ export const FilesView = (props: IFilesViewProps) => {
   const remoteStatusBadge = () => {
     switch (remoteRepoStatus?.status) {
       case RemoteFileStatus.UpToDate:
-        return <UpToDateBadge />;
+        return <UpToDateBadge className={'ml-2'} />;
       case RemoteFileStatus.UpdateNeeded:
-        return <UpdatesAvailableBadge />;
+        return <UpdatesAvailableBadge className={'ml-2'} />;
       case RemoteFileStatus.UnsavedChanges:
-        return <UnsavedChangesBadge />;
+        return <UnsavedChangesBadge className={'ml-2'} />;
       case RemoteFileStatus.Divergent:
-        return <OutOfSyncBadge />;
+        return <OutOfSyncBadge className={'ml-2'} />;
       case RemoteFileStatus.NoBackup:
-        return <NoBackupBadge />;
+        return <NoBackupBadge className={'ml-2'} />;
     }
   };
   return (
@@ -184,9 +184,7 @@ export const FilesView = (props: IFilesViewProps) => {
         </div>
       ) : (
         <>
-          <div
-            className={'flex justify-between items-center self-stretch gap-2'}
-          >
+          <div className={'flex justify-between items-center self-stretch'}>
             <h2 className={'text-xl font-bold'}>Notebooks & files</h2>
             {remoteStatusBadge() ?? null}
             <NewNotebookDialog
