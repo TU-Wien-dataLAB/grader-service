@@ -30,7 +30,9 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: 'bg-muted',
-        line: 'gap-2 bg-transparent'
+        line: 'gap-2 bg-transparent',
+        underline:
+          'w-full justify-start rounded-none border-b border-border bg-transparent p-0'
       }
     },
     defaultVariants: {
@@ -62,7 +64,8 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
         "relative inline-flex flex-1 items-center justify-center gap-1 rounded-xs px-4 py-1.5 text-sm font-medium whitespace-nowrap text-primary transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start active:text-primary-hover hover:border-b-2 hover:text-primary-hover hover:border-b-primary-hover focus:ring-2 focus:ring-offset-2 focus:ring-primary focus-visible:outline-ring focus-visible:ring-1 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         'group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-secondary dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent',
         'data-active:bg-secondary data-active:text-primary data-active:border-b-2 data-active:border-b-primary dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground',
-        'after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100',
+        'after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:-bottom-1.25 group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100',
+        "flex-none px-4 py-1.5 text-primary border-b-2 border-transparent aria-selected:border-b-primary rounded-none aria-selected:bg-card hover:text-primary/80",
         className
       )}
       {...props}

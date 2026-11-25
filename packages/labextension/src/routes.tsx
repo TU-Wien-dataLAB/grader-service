@@ -6,6 +6,7 @@ import React from 'react';
 import { Lecture } from './app/pages/instructor-view/lecture';
 import { Lecture as StudentLecture } from './app/pages/student-view/lecture';
 import {
+  activeInstructorLecturesQuery,
   lectureQuery
 } from './services/queries/lectures.queries';
 import { queryClient } from './widget';
