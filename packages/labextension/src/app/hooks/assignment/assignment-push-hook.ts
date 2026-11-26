@@ -7,7 +7,7 @@ import { LectureDetailDto } from '../../../model/lectureDetailDto';
 
 const successMessages: Record<RepoType, string> = {
   source:
-    'Your changes have been saved successfully. The notebooks & files will now be pushed to the repository, and the updates will be visible to your students.',
+    'Your changes have been saved successfully. The notebooks & files will now be pushed to the remote system.',
   release: '',
   user: '',
   autograde: '',
@@ -48,11 +48,21 @@ export function useAssignmentPush() {
           ]
         }),
         queryClient.invalidateQueries({
+          queryKey: ['files-length']
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            'remote-file-status',
+            variables.lecture.id,
+            variables.assignmentId,
+            variables.repoType
+          ]
+        }),
+        queryClient.invalidateQueries({
           queryKey: [
             'remote-repo-status',
             variables.lecture.code,
-            variables.assignmentId,
-            variables.selectedDir
+            variables.assignmentId
           ]
         })
       ]);

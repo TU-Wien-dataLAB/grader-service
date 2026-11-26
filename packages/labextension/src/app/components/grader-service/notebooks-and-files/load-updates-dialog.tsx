@@ -42,11 +42,20 @@ export const LoadUpdatesDialog = (props: ILoadUpdatesDialogProps) => {
               ]
             }),
             queryClient.invalidateQueries({
+              queryKey: ['files-length']
+            }),
+            queryClient.invalidateQueries({
+              queryKey: [
+                'remote-file-status',
+                props.lecture.id,
+                props.assignmentId
+              ]
+            }),
+            queryClient.invalidateQueries({
               queryKey: [
                 'remote-repo-status',
                 props.lecture.code,
-                props.assignmentId,
-                props.selectedDir
+                props.assignmentId
               ]
             })
           ]);
