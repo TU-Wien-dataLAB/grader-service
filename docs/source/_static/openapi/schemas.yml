@@ -145,6 +145,11 @@ components:
           format: int64
           description: Total number of pages
           example: 1
+        total_items_unfiltered:
+          type: integer
+          format: int64
+          description: Total number of pages (unfiltered results)
+          example: 15
       example:
         lectures:
           - id: 1
@@ -413,12 +418,8 @@ components:
             items:
               $ref: "#/components/schemas/SubmissionListItemDto"
     RemoteFileStatus:
-      type: object
-      required: ["status"]
-      properties:
-        status:
-          type: string
-          enum: ["UP_TO_DATE", "DIVERGENT", "UPDATE_NEEDED", "UNSAVED_CHANGES", "NO_BACKUP"]
+      type: string
+      enum: ["up_to_date", "divergent", "update_needed", "unsaved_changes", "no_backup"]
     AutoStatus:
       type: string
       enum: [ "not_graded", "pending", "automatically_graded", "grading_failed" ]

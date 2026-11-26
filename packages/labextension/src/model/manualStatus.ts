@@ -8,10 +8,9 @@
  * Do not edit the class manually.
  */
 
-export type ManualStatus = 'not_graded' | 'manually_graded' | 'being_edited';
-
 export const ManualStatus = {
-  NotGraded: 'not_graded' as ManualStatus,
-  ManuallyGraded: 'manually_graded' as ManualStatus,
-  BeingEdited: 'being_edited' as ManualStatus
-};
+  NotGraded: 'not_graded',
+  ManuallyGraded: 'manually_graded',
+  BeingEdited: 'being_edited'
+} as const;
+export type ManualStatus = (typeof ManualStatus)[keyof typeof ManualStatus];

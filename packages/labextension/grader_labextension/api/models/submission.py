@@ -232,27 +232,6 @@ class Submission(Model):
         self._user_display_name = user_display_name
 
     @property
-    def user_display_name(self) -> str:
-        """Gets the user_display_name of this Submission.
-
-
-        :return: The user_display_name of this Submission.
-        :rtype: str
-        """
-        return self._user_display_name
-
-    @user_display_name.setter
-    def user_display_name(self, user_display_name: str):
-        """Sets the user_display_name of this Submission.
-
-
-        :param user_display_name: The user_display_name of this Submission.
-        :type user_display_name: str
-        """
-
-        self._user_display_name = user_display_name
-
-    @property
     def grading_score(self) -> float:
         """Gets the grading_score of this Submission.
 
