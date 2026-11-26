@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.orm import Session
 
 from grader_service.errors import NotFoundError, ConflictError
@@ -89,7 +89,7 @@ class BaseService:
             if assignment.status in {"released", "complete"}:
                 raise ConflictError("Cannot delete released or completed assignments!")
 
-    def delete_previous_assignments(
+    def hard_delete_previously_deleted_assignments(
         self, session: Session, assignments: list[Assignment], lecture_id: int
     ) -> list[int]:
         """Deletes previously soft-deleted assignments with the same names, if they exist.
@@ -97,7 +97,6 @@ class BaseService:
         When performing a soft-delete, previously soft-deleted assignments with the same
         names in the same lecture must be permanently removed (hard-deleted) first to avoid
         UNIQUE constraint violations before marking the current assignments as deleted.
-        All duplicates are fetched with a single query instead of one per assignment.
 
         :param assignments: the Assignment objects for which previous duplicates may exist
         :param lecture_id: id of the lecture to which the assignments belong
@@ -107,15 +106,14 @@ class BaseService:
         names = [a.name for a in assignments]
         if not names:
             return []
-        previously_deleted = session.scalars(
-            select(Assignment).where(
+        stmt = (
+            delete(Assignment)
+            .where(
                 Assignment.lectid == lecture_id,
                 Assignment.name.in_(names),
                 Assignment.deleted == DeleteState.deleted,
             )
-        ).all()
-        # capture the ids before the objects are deleted from the session
-        previously_deleted_ids = [a.id for a in previously_deleted]
-        for assignment in previously_deleted:
-            session.delete(assignment)
+            .returning(Assignment.id)
+        )
+        previously_deleted_ids = list(session.execute(stmt).scalars())
         return previously_deleted_ids

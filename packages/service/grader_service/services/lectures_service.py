@@ -186,19 +186,14 @@ class LecturesService(BaseService):
 
         assignments = list(lecture.assignments)
         self.validate_assignments_for_soft_delete(session, assignments)
-        previously_deleted_assignments = self.delete_previous_assignments(
-            session=session, assignments=assignments, lecture_id=lecture_id
-        )
 
-        # Flush so the duplicate DELETEs are executed before the UPDATEs
-        # that mark the current assignments as deleted.
-        session.flush()
-
-        for assignment in assignments:
-            assignment.deleted = DeleteState.deleted
-
-        lecture.deleted = DeleteState.deleted
         try:
+            previously_deleted_assignments = self.hard_delete_previously_deleted_assignments(
+                session=session, assignments=assignments, lecture_id=lecture_id
+            )
+            for assignment in assignments:
+                assignment.deleted = DeleteState.deleted
+            lecture.deleted = DeleteState.deleted
             session.commit()
         except Exception:
             if session.in_transaction():
