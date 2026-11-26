@@ -59,6 +59,7 @@ class GitBaseHandler(GraderBaseHandler):
             if self.process.stderr is not None:
                 self.process.stderr.close()
             IOLoop.current().spawn_callback(self._wait_and_log)
+        super().on_finish()
 
     async def _wait_and_log(self):
         try:
