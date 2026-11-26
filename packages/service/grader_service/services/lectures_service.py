@@ -12,7 +12,7 @@ from grader_service.api.models import (
     LectureListDto,
 )
 from grader_service.api.models.user import User as UserDto
-from grader_service.errors import ConflictError, InvalidInputError, NotFoundError
+from grader_service.errors import ConflictError, NotFoundError
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
 from grader_service.orm.takepart import Scope
@@ -113,31 +113,22 @@ class LecturesService(BaseService):
     ) -> LectureDetailDto:
         lecture = self.get_lecture(session, lecture_id)
 
-        if not can_get_deleted_lecture:
-            if lecture.deleted == DeleteState.deleted:
-                raise NotFoundError("Lecture not found")
+        if not can_get_deleted_lecture and lecture.deleted == DeleteState.deleted:
+            raise NotFoundError("Lecture not found")
         return to_lecture_detail_dto(lecture)
 
     def create_lecture(self, session: Session, lecture_dto: LectureCreateDto) -> LectureDetailDto:
+        lecture = Lecture()
+        lecture.name = lecture_dto.name
+        lecture.code = lecture_dto.code
+        lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
+        lecture.deleted = DeleteState.active
+
+        session.add(lecture)
         try:
-            lecture = session.scalars(
-                select(Lecture).where(Lecture.code == lecture_dto.code)
-            ).first()
-            if lecture is not None:
-                raise ConflictError("Lecture code already in use")
-
-            lecture = Lecture()
-            lecture.name = lecture_dto.name
-            lecture.code = lecture_dto.code
-            lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
-            lecture.deleted = DeleteState.active
-
-            session.add(lecture)
             session.commit()
-        except ValueError as e:
-            raise InvalidInputError(str(e))
         except IntegrityError:
-            # the unique constraint on the code caught a concurrent create
+            # constraint violation during insert, lecture code already exists
             session.rollback()
             raise ConflictError("Lecture code already in use")
         except Exception:
@@ -154,28 +145,27 @@ class LecturesService(BaseService):
         lecture_dto: LectureUpdateDto,
         can_update_deleted_lecture: bool,
     ) -> LectureDetailDto:
+        lecture = self.get_lecture(session, lecture_id)
+        if not can_update_deleted_lecture and lecture.deleted == DeleteState.deleted:
+            raise NotFoundError("Lecture was deleted.")
+
+        lecture.name = lecture_dto.name
+        lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
         try:
-            lecture = self.get_lecture(session, lecture_id)
-            if not can_update_deleted_lecture and lecture.deleted == DeleteState.deleted:
-                raise NotFoundError("Lecture was deleted.")
-
-            lecture.name = lecture_dto.name
-            lecture.state = LectureState.complete if lecture_dto.complete else LectureState.active
-
             session.commit()
-            return to_lecture_detail_dto(lecture)
         except Exception:
             if session.in_transaction():
                 session.rollback()
             raise
+        return to_lecture_detail_dto(lecture)
 
     async def hard_delete_lecture(self, session: Session, lecture_id: int) -> None:
         lecture = self.get_lecture(session, lecture_id)
         # capture the code before any commit, since accessing attributes of
         # ORM objects after they were deleted from the session is fragile
         lecture_code = lecture.code
+        session.delete(lecture)
         try:
-            session.delete(lecture)
             session.commit()
         except Exception:
             if session.in_transaction():
@@ -188,27 +178,27 @@ class LecturesService(BaseService):
                 log.exception("Failed to delete files of lecture %s", lecture_code)
 
     async def soft_delete_lecture(self, session: Session, lecture_id: int) -> None:
+        lecture = self.get_lecture(session, lecture_id)
+        lecture_code = lecture.code
+
+        if lecture.deleted == DeleteState.deleted:
+            raise NotFoundError("Lecture was deleted.")
+
+        assignments = list(lecture.assignments)
+        self.validate_assignments_for_soft_delete(session, assignments)
+        previously_deleted_assignments = self.delete_previous_assignments(
+            session=session, assignments=assignments, lecture_id=lecture_id
+        )
+
+        # Flush so the duplicate DELETEs are executed before the UPDATEs
+        # that mark the current assignments as deleted.
+        session.flush()
+
+        for assignment in assignments:
+            assignment.deleted = DeleteState.deleted
+
+        lecture.deleted = DeleteState.deleted
         try:
-            lecture = self.get_lecture(session, lecture_id)
-            lecture_code = lecture.code
-
-            if lecture.deleted == DeleteState.deleted:
-                raise NotFoundError("Lecture was deleted.")
-
-            assignments = list(lecture.assignments)
-            self.validate_assignments_for_soft_delete(session, assignments)
-            previously_deleted_assignments = self.delete_previous_assignments(
-                session=session, assignments=assignments, lecture_id=lecture_id
-            )
-
-            # Flush so the duplicate DELETEs are executed before the UPDATEs
-            # that mark the current assignments as deleted.
-            session.flush()
-
-            for assignment in assignments:
-                assignment.deleted = DeleteState.deleted
-
-            lecture.deleted = DeleteState.deleted
             session.commit()
         except Exception:
             if session.in_transaction():
