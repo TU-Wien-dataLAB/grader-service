@@ -514,15 +514,9 @@ async def test_get_lectures_sort_by_created_at(
     assert [lec["id"] for lec in data["lectures"]] == [3, 2, 1, 23, 22, 21, 20]
 
 
-async def test_get_lectures_invalid_query_params(
-    app: GraderServer,
-    service_base_url,
-    http_server_client,
-    default_token,
-    default_roles,
-    default_user_login,
-):
-    invalid_queries = [
+@pytest.mark.parametrize(
+    "query",
+    [
         "page=0",
         "page=abc",
         "page=-1",
@@ -534,15 +528,24 @@ async def test_get_lectures_invalid_query_params(
         "complete=yes",
         "instructor=1",
         "instructor=TRUE",
-    ]
-    for query in invalid_queries:
-        url = service_base_url + "lectures?" + query
-        with pytest.raises(HTTPClientError) as exc_info:
-            await http_server_client.fetch(
-                url, method="GET", headers={"Authorization": f"Token {default_token}"}
-            )
-        e = exc_info.value
-        assert e.code == HTTPStatus.BAD_REQUEST, f"query '{query}' did not return 400"
+    ],
+)
+async def test_get_lectures_invalid_query_params(
+    app: GraderServer,
+    service_base_url,
+    http_server_client,
+    default_token,
+    default_roles,
+    default_user_login,
+    query,
+):
+    url = service_base_url + "lectures?" + query
+    with pytest.raises(HTTPClientError) as exc_info:
+        await http_server_client.fetch(
+            url, method="GET", headers={"Authorization": f"Token {default_token}"}
+        )
+    e = exc_info.value
+    assert e.code == HTTPStatus.BAD_REQUEST, f"query '{query}' did not return 400"
 
 
 async def test_get_lectures_complete_with_pagination(
