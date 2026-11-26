@@ -6,11 +6,13 @@
 
 import copy
 import os
+from typing import Any, ClassVar, Protocol, TypeVar
 
 from kubernetes import config
 from kubernetes.client.models import (
     V1Container,
     V1EnvVar,
+    V1LocalObjectReference,
     V1ObjectMeta,
     V1Pod,
     V1PodSecurityContext,
@@ -21,6 +23,14 @@ from kubernetes.client.models import (
     V1Volume,
     V1VolumeMount,
 )
+from pydantic import BaseModel
+
+
+class K8sModel(Protocol):
+    attribute_map: ClassVar[dict[str, str]]
+
+
+K = TypeVar("K", bound=K8sModel)
 
 
 def get_current_namespace():
@@ -35,7 +45,7 @@ def get_current_namespace():
         return "default"
 
 
-def get_k8s_model(model_type, model_dict):
+def get_k8s_model(model_type: type[K], model_dict: dict[str, Any] | type[BaseModel]) -> K:
     """
     Returns an instance of type specified model_type from a model instance or
     representative dictionary.
@@ -56,7 +66,7 @@ def get_k8s_model(model_type, model_dict):
         )
 
 
-def _map_dict_keys_to_model_attributes(model_type, model_dict):
+def _map_dict_keys_to_model_attributes(model_type: K, model_dict: dict[str, str]) -> dict[str, str]:
     """
     Maps a dict's keys to the provided models attributes
     using its attribute_map attribute.
@@ -71,13 +81,13 @@ def _map_dict_keys_to_model_attributes(model_type, model_dict):
     return new_dict
 
 
-def _get_k8s_model_attribute(model_type, field_name):
+def _get_k8s_model_attribute(model_type: K, field_name: str) -> str:
     """
     Takes a model type and a Kubernetes API resource field name (such as
     "serviceAccount") and returns a related attribute name (such as
-    "service_account") to be used with  kubernetes.client.models objects. It is
-    impossible to prove a negative but it seems like it is always a question of
-    making camelCase to snake_case but by using the provided 'attribute_map' we
+    "service_account") to be used with kubernetes.client.models objects. It is
+    impossible to prove a negative, but it seems like it is always a question of
+    making camelCase to snake_case. By using the provided 'attribute_map' we
     also ensure that the fields actually exist.
 
     Example of V1PodSpec's attribute_map:
@@ -125,13 +135,13 @@ def make_pod(
     env: list[V1EnvVar],
     image: str,
     image_pull_policy: str,
-    image_pull_secrets: list | None = None,
+    image_pull_secrets: list[str] | None = None,
     working_dir: str | None = None,
-    volumes: list | None = None,
-    volume_mounts: list | None = None,
-    labels: dict | None = None,
-    annotations: dict | None = None,
-    tolerations: list | None = None,
+    volumes: list[dict[str, Any]] | None = None,
+    volume_mounts: list[dict[str, Any]] | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    tolerations: list[dict[str, str]] | None = None,
     run_as_user: int | None = None,
 ) -> V1Pod:
     """
@@ -143,15 +153,16 @@ def make_pod(
         env (list[V1EnvVar]): List of env vars to set in the autograde container.
         image (str): The Docker image to use for the pod's container.
         image_pull_policy (str): The image pull policy.
-        image_pull_secrets (Optional[list], default None): List of secrets to pull images
+        image_pull_secrets (list[str] | None, default None): List of secrets to pull images
             from private registries.
-        working_dir (Optional[str], default None): The working directory for the container.
-        volumes (Optional[list], default None): List of volumes to attach to the pod.
-        volume_mounts (Optional[list], default None): List of volume mounts for the container.
-        labels (Optional[dict], default None): Labels to associate with the pod.
-        annotations (Optional[dict], default None): Annotations to associate with the pod.
-        tolerations (Optional[list], default None): Tolerations to apply for the pod.
-        run_as_user (Optional[int], default None): The user ID under which the container should run.
+        working_dir (str | None, default None): The working directory for the container.
+        volumes (list[dict[str, Any]] | None, default None): List of volumes to attach to the pod.
+        volume_mounts (list[dict[str, Any]] | None, default None): List of volume mounts
+            for the container.
+        labels (dict[str, str] | None, default None): Labels to associate with the pod.
+        annotations (dict[str, str] | None, default None): Annotations to associate with the pod.
+        tolerations (list[dict[str, str]] | None, default None): Tolerations to apply for the pod.
+        run_as_user (int | None, default None): The user ID under which the container should run.
 
     Returns:
         V1Pod: The Kubernetes Pod specification object.
@@ -164,12 +175,6 @@ def make_pod(
         name=name, labels=(labels or {}).copy(), annotations=(annotations or {}).copy()
     )
 
-    pod.spec = V1PodSpec(
-        containers=[],
-        security_context=V1PodSecurityContext(),
-        image_pull_secrets=image_pull_secrets,
-        restart_policy="Never",
-    )
     # TODO maybe get userid of jupyterhub user
     autograde_container = V1Container(
         name="autograde",
@@ -183,7 +188,12 @@ def make_pod(
         volume_mounts=[get_k8s_model(V1VolumeMount, obj) for obj in (volume_mounts or [])],
     )
 
-    pod.spec.containers.append(autograde_container)
+    pod.spec = V1PodSpec(
+        containers=[autograde_container],
+        security_context=V1PodSecurityContext(),
+        image_pull_secrets=[V1LocalObjectReference(name=s) for s in (image_pull_secrets or [])],
+        restart_policy="Never",
+    )
     if tolerations:
         pod.spec.tolerations = [get_k8s_model(V1Toleration, obj) for obj in tolerations]
     if volumes:

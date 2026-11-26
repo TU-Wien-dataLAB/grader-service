@@ -113,6 +113,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     # Annotations to attach to the Kubernetes pod
     annotations = Dict(
         default_value={},
+        key_trait=Unicode(),
+        value_trait=Unicode(),
         allow_none=True,
         help="Annotations to associate with the pod. Defaults to an empty dictionary.",
     ).tag(config=True)
@@ -121,11 +123,13 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     convert_executable = Unicode(
         "grader-convert",
         allow_none=False,
-        help="The executable name for the grader container conversion. Defaults to 'grader-convert'.",
+        help="The name of the executable for the grader container conversion. Defaults to "
+        "'grader-convert'.",
     ).tag(config=True)
 
     # List of extra volumes to attach to the pod
     extra_volumes = List(
+        Dict(key_trait=Unicode()),
         default_value=[],
         allow_none=False,
         help="List of extra volumes to attach to the pod. Defaults to an empty list.",
@@ -133,6 +137,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
 
     # List of extra volume mounts to attach to the container
     extra_volume_mounts = List(
+        Dict(key_trait=Unicode(), value_trait=Unicode()),
         default_value=[],
         allow_none=False,
         help="List of extra volume mounts for the container. Defaults to an empty list.",
@@ -149,9 +154,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     image_pull_secrets = List(
         default_value=[],
         help="""Autograding pod image pull secrets list (str).
-                                      Used for pulling images from private registries. Defaults to None.""",
-        key_trait=Unicode(),
-        value_trait=Unicode(),
+        Used for pulling images from private registries. Defaults to None.""",
+        trait=Unicode(),
         allow_none=True,
     ).tag(config=True)
 
@@ -165,6 +169,8 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     # Labels to attach to the Kubernetes pod
     labels = Dict(
         default_value={},
+        key_trait=Unicode(),
+        value_trait=Unicode(),
         allow_none=True,
         help="Labels to associate with the pod. Defaults to an empty dictionary.",
     ).tag(config=True)
@@ -203,12 +209,11 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     ).tag(config=True)
 
     # Tolerations for the autograding pod
-    tolerations = Dict(
+    tolerations = List(
+        Dict(key_trait=Unicode(), value_trait=Unicode()),
         default_value=None,
-        help="""Autograding pod tolerations dictionary (str, str).
-                               Used to schedule pods on nodes with specific taints. Defaults to None.""",
-        key_trait=Unicode(),
-        value_trait=Unicode(),
+        help="""List of autograding pod tolerations dictionaries.
+        Used to schedule pods on nodes with specific taints. Defaults to None.""",
         allow_none=True,
     ).tag(config=True)
 
@@ -222,6 +227,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
     # Dictionary for additional volume configuration
     volume = Dict(
         default_value={},
+        key_trait=Unicode(),
         allow_none=False,
         help="Dictionary for volume configuration. Defaults to an empty dictionary.",
     ).tag(config=True)
@@ -344,7 +350,7 @@ class KubeAutogradeExecutor(LocalAutogradeExecutor):
             self.log.info(f"Started pod {grader_pod.name} in namespace {grader_pod.namespace}")
             status = grader_pod.poll()
             self.grading_logs = self._get_pod_logs(grader_pod)
-            self.log.info("Pod logs:\n" + self.grading_logs)
+            self.log.info("Pod logs:\n%s", self.grading_logs)
             if status == "Succeeded":
                 self.log.info(f"Pod {grader_pod.name} has successfully completed execution!")
             else:
