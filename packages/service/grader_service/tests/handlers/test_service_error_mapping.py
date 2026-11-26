@@ -1,4 +1,4 @@
-# Copyright (c) 2022, TU Wien
+# Copyright (c) 2026, TU Wien
 # All rights reserved.
 #
 # This source code is licensed under the BSD-style license found in the
