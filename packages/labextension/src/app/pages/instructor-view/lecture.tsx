@@ -17,7 +17,7 @@ import {
 } from '../../components/ui/filter-button';
 import { SortButton } from '../../components/ui/sort-button';
 import { AssignmentDetail } from '../../../model/assignmentDetail';
-import { AssignmentGroup } from '../../components/grader-service/assignments/assignment-group';
+import { AssignmentGroup } from '../../components/grader-service/assignments/instructor/assignment-group';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import withScrolling from 'react-dnd-scrolling';
@@ -32,8 +32,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../../shadcn-components/ui/dropdown-menu';
-import { AssignmentCreateEditDialog } from '../../components/grader-service/assignments/assignment-create-edit-dialog';
-import { ExportGradesDialog } from '../../components/grader-service/assignments/export-grades-dialog';
+import { AssignmentCreateEditDialog } from '../../components/grader-service/assignments/instructor/assignment-create-edit-dialog';
+import { ExportGradesDialog } from '../../components/grader-service/assignments/instructor/export-grades-dialog';
 import { lectureQuery } from '../../../services/queries/lectures.queries';
 import { assignmentsQuery } from '../../../services/queries/assignments.queries';
 import { useMutationStatus } from '../../../widget';

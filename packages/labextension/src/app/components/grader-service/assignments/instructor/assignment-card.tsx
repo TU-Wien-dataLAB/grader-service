@@ -1,5 +1,5 @@
 import React from 'react';
-import { AssignmentDetail } from '../../../../model/assignmentDetail';
+import { AssignmentDetail } from '../../../../../model/assignmentDetail';
 import { useDrag } from 'react-dnd';
 import {
   Card,
@@ -9,18 +9,18 @@ import {
   CardHeader,
   CardTitle,
   ItemTypes
-} from '../../../shadcn-components/ui/card';
-import { Checkbox } from '../../../shadcn-components/ui/checkbox';
-import { Button } from '../../../shadcn-components/ui/button';
+} from '../../../../shadcn-components/ui/card';
+import { Checkbox } from '../../../../shadcn-components/ui/checkbox';
+import { Button } from '../../../../shadcn-components/ui/button';
 import { OctagonAlert } from 'lucide-react';
-import { getDate } from '../../utils/utils';
-import { AssignmentActions } from './assignment-actions';
+import { getDate } from '../../../utils/utils';
+import { AssignmentActions } from '../instructor/assignment-actions';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from '../../../shadcn-components/ui/tooltip';
-import { assignmentStatus, gradingType } from '../../utils/assignment-metadata';
+} from '../../../../shadcn-components/ui/tooltip';
+import { assignmentStatus, gradingType } from '../../../utils/assignment-metadata';
 import { useNavigate, useParams } from 'react-router';
 
 export interface IAssignment {

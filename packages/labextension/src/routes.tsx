@@ -1,63 +1,99 @@
-import { createRoutesFromElements, Route } from 'react-router';
+import { createRoutesFromElements, redirect, Route } from 'react-router';
 import { Root } from './app/root';
 import { Dashboard } from './app/pages/instructor-view/dashboard';
+import { Dashboard as StudentDashboard } from './app/pages/student-view/dashboard';
 import React from 'react';
 import { Lecture } from './app/pages/instructor-view/lecture';
+import { Lecture as StudentLecture } from './app/pages/student-view/lecture';
 import {
   activeInstructorLecturesQuery,
   lectureQuery
 } from './services/queries/lectures.queries';
 import { queryClient } from './widget';
 import { getCurrentUserQuery } from './services/queries/users.queries';
-import {
-  assignmentQuery,
-  assignmentsQuery
-} from './services/queries/assignments.queries';
-import { Assignment } from './app/pages/instructor-view/assignment';
-import { selectedDirQuery } from './services/queries/files.queries';
+import { assignmentsQuery } from './services/queries/assignments.queries';
+import { UserPermissions } from './services/permission.service';
+import { Assignment } from './app/pages/student-view/assignment';
+
+type Role = 'instructor' | 'student';
+
+const getRole = (): Role =>
+  UserPermissions.hasElevatedPermissions() ? 'instructor' : 'student';
+
+const roleHome = (role: Role) => `/${role}`;
+
+// Redirects if the user is in the wrong view.
+const requireRole = (role: Role) => {
+  const actual = getRole();
+  if (actual !== role) throw redirect(roleHome(actual));
+};
 
 export const getRoutes = () => {
   return createRoutesFromElements(
     <Route
       element={<Root />}
-      path={'/*'}
+      path={'/'}
       loader={async () => {
         await queryClient.query(activeInstructorLecturesQuery());
         return null;
       }}
     >
+      <Route index loader={() => redirect(roleHome(getRole()))} />
       <Route
         index
         element={<Dashboard />}
+        path={'instructor'}
         loader={async () => {
-          await queryClient.query(getCurrentUserQuery());
+          requireRole('instructor');
+          await queryClient.ensureQueryData(getCurrentUserQuery());
           return null;
         }}
       ></Route>
       <Route
-        path={'lectures/:id'}
+        path={'instructor/lectures/:id'}
         element={<Lecture />}
         loader={async ({ params }) => {
-          await queryClient.query(lectureQuery(Number(params.id)));
-          await queryClient.query(assignmentsQuery(Number(params.id)));
+          requireRole('instructor');
+          await queryClient.ensureQueryData(lectureQuery(Number(params.id)));
+          await queryClient.ensureQueryData(
+            assignmentsQuery(Number(params.id))
+          );
           return null;
         }}
       ></Route>
       <Route
-        path={'lectures/:lid/assignments/:aid'}
-        element={<Assignment />}
-        loader={async ({ params }) => {
-          await Promise.all([
-            queryClient.query(
-              selectedDirQuery(Number(params.lid), Number(params.aid))
-            ),
-            queryClient.query(
-              assignmentQuery(Number(params.lid), Number(params.aid))
-            )
-          ]);
+        index
+        element={<StudentDashboard />}
+        path={'student'}
+        loader={async () => {
+          requireRole('student');
+          await queryClient.ensureQueryData(getCurrentUserQuery());
           return null;
         }}
-      />
+      ></Route>
+      <Route
+        path={'student/lectures/:id'}
+        element={<StudentLecture />}
+        loader={async ({ params }) => {
+          requireRole('student');
+          await queryClient.ensureQueryData(lectureQuery(Number(params.id)));
+          await queryClient.ensureQueryData(assignmentsQuery(Number(params.id)));
+          return null;
+        }}
+      ></Route>
+      <Route
+        path={'student/lectures/:lectureId/assignments/:assignmentId'}
+        element={<Assignment />}
+        loader={async ({ params }) => {
+          requireRole('student');
+          const lectureId = Number(params.lectureId);
+          await queryClient.ensureQueryData(lectureQuery(lectureId));
+          await queryClient.ensureQueryData(assignmentsQuery(lectureId));
+          return null;
+        }}
+      ></Route>
     </Route>
   );
 };
+
+

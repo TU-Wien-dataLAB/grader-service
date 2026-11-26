@@ -6,23 +6,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '../../../shadcn-components/ui/dialog';
+} from '../../../../shadcn-components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '../../../shadcn-components/ui/select';
-import { Button } from '../../../shadcn-components/ui/button';
-import { exportGrades } from '../../../../services/submissions.service';
+} from '../../../../shadcn-components/ui/select';
+import { Button } from '../../../../shadcn-components/ui/button';
+import { exportGrades } from '../../../../../services/submissions.service';
 import {
   lectureBasePath,
   openInFileBrowser,
   openInNewTab
-} from '../../../../services/local-file.service';
-import { Lecture } from '../../../../model/lecture';
-import { useMutationStatus } from '../../../../widget';
+} from '../../../../../services/local-file.service';
+import { Lecture } from '../../../../../model/lecture';
+import { useMutationStatus } from '../../../../../widget';
 
 interface IExportGradesDialogProps {
   lecture: Lecture;

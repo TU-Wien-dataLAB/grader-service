@@ -3,21 +3,23 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
-} from '../../../shadcn-components/ui/dropdown-menu';
+} from '../../../../shadcn-components/ui/dropdown-menu';
 import { EllipsisVertical } from 'lucide-react';
 import React, { useState } from 'react';
-import { AssignmentDetail } from '../../../../model/assignmentDetail';
-import { ReleaseDialog } from './release-dialog/release-dialog';
+import { AssignmentDetail } from '../../../../../model/assignmentDetail';
+import { ReleaseDialog } from '../release-dialog/release-dialog';
 import { useParams } from 'react-router';
-import { DeleteDialog } from './delete-dialog';
-import { useAssignmentStatus } from '../../../hooks/assignment/assignment-status-hook';
-import { AssignmentCreateEditDialog } from './assignment-create-edit-dialog';
+
+import { useAssignmentStatus } from '../../../../hooks/assignment/assignment-status-hook';
+
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from '../../../shadcn-components/ui/tooltip';
+} from '../../../../shadcn-components/ui/tooltip';
 import { CompleteDialog } from './complete-dialog';
+import { AssignmentCreateEditDialog } from './assignment-create-edit-dialog';
+import { DeleteDialog } from './delete-dialog';
 
 interface IAssignmentActions {
   assignment: AssignmentDetail;

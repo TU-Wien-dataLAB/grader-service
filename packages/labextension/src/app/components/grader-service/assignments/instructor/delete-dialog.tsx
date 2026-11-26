@@ -5,10 +5,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '../../../shadcn-components/ui/dialog';
-import { Assignment } from '../../../../model/assignment';
-import { Button } from '../../../shadcn-components/ui/button';
-import { useAssignmentStatus } from '../../../hooks/assignment/assignment-status-hook';
+} from '../../../../shadcn-components/ui/dialog';
+import { Assignment } from '../../../../../model/assignment';
+import { Button } from '../../../../shadcn-components/ui/button';
+import { useAssignmentDelete } from '../../../../hooks/assignment/assignment-delete-hook';
 
 interface IDeleteDialog {
   assignment: Assignment;
@@ -17,34 +17,37 @@ interface IDeleteDialog {
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export const CompleteDialog = (props: IDeleteDialog) => {
-  const { handleComplete } = useAssignmentStatus();
+export const DeleteDialog = (props: IDeleteDialog) => {
+  const { handleDeleteAssignment } = useAssignmentDelete();
   return (
     <Dialog open={props.openDialog} onOpenChange={props.setOpenDialog}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Complete assignment</DialogTitle>
+          <DialogTitle>Delete assignment</DialogTitle>
         </DialogHeader>
         <div
           className={
             'flex flex-col p-6 gap-4 items-start self-stretch border-t border-border break-all'
           }
         >
-          <p>
-            Do you want to mark "
-            <span className={'font-bold'}>{props.assignment.name}</span>"{' '}
-            complete? This action will hide the assignment for all students.
+          <p className="w-full">
+            Are you sure you want to delete "
+            <span className={'font-bold'}>{props.assignment.name}</span>
+            "? This action cannot be undone and all related data will be
+            permanently removed.
           </p>
         </div>
         <DialogFooter>
           <Button
             type={'button'}
+            variant={'destructive'}
+            interactive={false}
             onClick={() => {
               props.setOpenDialog(false);
-              handleComplete(props.assignment, props.lectureId);
+              handleDeleteAssignment(props.assignment.id, props.lectureId);
             }}
           >
-            Complete
+            Delete permanently
           </Button>
           <Button
             type={'button'}

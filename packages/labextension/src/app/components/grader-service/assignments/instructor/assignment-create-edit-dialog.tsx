@@ -6,19 +6,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '../../../shadcn-components/ui/dialog';
-import { Assignment } from '../../../../model/assignment';
+} from '../../../../shadcn-components/ui/dialog';
+import { Assignment } from '../../../../../model/assignment';
 import { AnyFieldApi, useForm, useStore } from '@tanstack/react-form';
-import { Input } from '../../../shadcn-components/ui/input';
+import { Input } from '../../../../shadcn-components/ui/input';
 import {
   Field,
   FieldGroup,
   FieldLabel
-} from '../../../shadcn-components/ui/field';
+} from '../../../../shadcn-components/ui/field';
 import {
   Combobox,
   ComboboxOptions
-} from '../../../shadcn-components/ui/creatable-combobox';
+} from '../../../../shadcn-components/ui/creatable-combobox';
 import {
   Select,
   SelectContent,
@@ -26,11 +26,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '../../../shadcn-components/ui/select';
-import { AssignmentSettings } from '../../../../model/assignmentSettings';
+} from '../../../../shadcn-components/ui/select';
+import { AssignmentSettings } from '../../../../../model/assignmentSettings';
 import AutogradeTypeEnum = AssignmentSettings.AutogradeTypeEnum;
-import { DatePickerTime } from '../../../shadcn-components/ui/date-time-picker';
-import { Button } from '../../../shadcn-components/ui/button';
+import { DatePickerTime } from '../../../../shadcn-components/ui/date-time-picker';
+import { Button } from '../../../../shadcn-components/ui/button';
 import {
   CalendarIcon,
   CirclePlus,
@@ -40,30 +40,30 @@ import {
   TrashIcon,
   XIcon
 } from 'lucide-react';
-import { Badge } from '../../../shadcn-components/ui/badge';
+import { Badge } from '../../../../shadcn-components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from '../../../shadcn-components/ui/tooltip';
+} from '../../../../shadcn-components/ui/tooltip';
 import {
   CELL_TIMEOUT,
   GRADING_METHOD,
   LATE_SUBMISSIONS,
   WHITELIST_FILE_PATTERNS
-} from './static/assignment-metadata-explainations';
-import { pluralize, buildPeriod } from '../../utils/utils';
+} from '../static/assignment-metadata-explainations';
+import { pluralize, buildPeriod } from '../../../utils/utils';
 import moment from 'moment';
-import { useGroups } from '../../../pages/instructor-view/lecture';
-import { Checkbox } from '../../../shadcn-components/ui/checkbox';
-import { useAssignmentUpdate } from '../../../hooks/assignment/assignment-update-hook';
-import { useAssignmentCreate } from '../../../hooks/assignment/assignment-create-hook';
-import { Separator } from '../../../shadcn-components/ui/separator';
+import { useGroups } from '../../../../pages/instructor-view/lecture';
+import { Checkbox } from '../../../../shadcn-components/ui/checkbox';
+import { useAssignmentUpdate } from '../../../../hooks/assignment/assignment-update-hook';
+import { useAssignmentCreate } from '../../../../hooks/assignment/assignment-create-hook';
+import { Separator } from '../../../../shadcn-components/ui/separator';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput
-} from '../../../shadcn-components/ui/input-group';
+} from '../../../../shadcn-components/ui/input-group';
 
 interface IAssignmentSettingsForm {
   assignment?: Assignment;
