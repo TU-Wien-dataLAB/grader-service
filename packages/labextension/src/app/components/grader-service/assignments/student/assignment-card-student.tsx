@@ -23,6 +23,7 @@ import { ChangesAssignmentBadge, FeedbackAssignmentBadge, NewAssignmentBadge, No
 import { MoreTimeIcon } from '../../../../../assets/more-time-icon';
 import { lectureQuery } from '../../../../../services/queries/lectures.queries';
 import { assignmentFilesStatusQuery } from '../../../../../services/queries/files.queries';
+import { Submission } from '../../../../../model/submission';
 
 export interface IAssignment {
   key: React.Key;
@@ -41,35 +42,35 @@ export const AssignmentCardStudent = (props: IAssignment) => {
     },
     });
 
-    const { data: feedbackStatus } = useQuery({
-    queryKey: ['feedbackStatus', lectureId, props.assignment.id],
+    const { data: submissions, isPending: isSubmissionsPending } = useQuery({
+    queryKey: ['submissions', lectureId, props.assignment.id],
     queryFn: async () => {
         const submissions = await getSubmissions(lectureId, props.assignment.id, undefined, false);
-        for (const s of submissions){
-            if(s.feedback_status) return true;
-        }
-        return false;
+        return submissions;
     },
     }); 
+
+    const hasFeedback = (submissions?: Submission[] | null): boolean =>
+      (submissions ?? []).some((s) => s.feedback_status === 'generated');
 
     const { data: lecture } = useQuery(
       lectureQuery(lectureId)
     );
 
-    const { data: isAssignmentfetched, isPending } = useQuery(
+    const { data: isAssignmentfetched, isPending: isAssignmentPending } = useQuery(
       assignmentFilesStatusQuery(lectureId, props.assignment.id, lecture?.code)
     );
 
     const badgeCase = () => {
         const deadline = props.assignment.settings?.deadline
-        if (!isPending && deadline && (new Date(deadline) < new Date()) && submissionCount === 0) {
+        if (!isSubmissionsPending && deadline && (new Date(deadline) < new Date()) && submissions.length === 0) {
             return <NoSubmissionAssignmentBadge/>;
         } 
-        else if (!isPending && !isAssignmentfetched) {
+        else if (!isAssignmentPending && !isAssignmentfetched) {
             return <NewAssignmentBadge/>;
         } else if (false) {
             return <ChangesAssignmentBadge/>;
-        }else if (feedbackStatus) {
+        }else if (!isSubmissionsPending && hasFeedback) {
             return <FeedbackAssignmentBadge/>;
         }
     }
