@@ -3,9 +3,11 @@ import { SearchField } from '../../ui/search';
 import { NewNotebookDialog } from './new-notebook-dialog';
 import { useQuery } from '@tanstack/react-query';
 import { lectureQuery } from '../../../../services/queries/lectures.queries';
-import { selectedDirQuery } from '../../../../services/queries/files.queries';
 import {
-  getFiles,
+  filesQuery,
+  selectedDirQuery
+} from '../../../../services/queries/files.queries';
+import {
   lectureBasePath,
   openInFileBrowser
 } from '../../../../services/local-file.service';
@@ -56,12 +58,9 @@ export const FilesView = (props: IFilesViewProps) => {
     selectedDirQuery(props.lectureId, props.assignmentId)
   );
   const { data: lecture } = useQuery(lectureQuery(props.lectureId));
-  const { data: files = [] } = useQuery({
-    queryKey: ['files', lecture.code, props.assignmentId, selectedDir],
-    queryFn: async () => {
-      return await getFiles(srcPath);
-    }
-  });
+  const { data: files = [] } = useQuery(
+    filesQuery(lecture.code, props.assignmentId, selectedDir)
+  );
   const { data: remoteRepoStatus } = useQuery(
     remoteStatusQuery(
       lecture,
@@ -75,7 +74,7 @@ export const FilesView = (props: IFilesViewProps) => {
       return;
     }
     if (dir === 'release') {
-      handleGenerateAssignmentReleaseVer(lecture.id, props.assignmentId);
+      handleGenerateAssignmentReleaseVer(lecture, props.assignmentId);
     }
     // set new dir
     storeString(
@@ -114,12 +113,10 @@ export const FilesView = (props: IFilesViewProps) => {
           queryKey: ['files', lecture.code, props.assignmentId, selectedDir]
         }),
         queryClient.invalidateQueries({
-          queryKey: [
-            'remote-repo-status',
-            lecture.code,
-            props.assignmentId,
-            selectedDir
-          ]
+          queryKey: ['files-length']
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['remote-repo-status', lecture.code, props.assignmentId]
         })
       ]);
     };

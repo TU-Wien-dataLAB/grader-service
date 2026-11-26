@@ -7,13 +7,15 @@ export const remoteStatusQuery = (
   lecture: LectureDetailDto,
   assignmentId: number,
   repo: RepoType,
+  enabled = true,
   reload = false
 ) =>
   queryOptions({
     queryKey: ['remote-repo-status', lecture.code, assignmentId, repo],
     queryFn: async () => {
       return await getRemoteStatus(lecture.id, assignmentId, repo, reload);
-    }
+    },
+    enabled: enabled
   });
 
 export const remoteFileStatusQuery = (
@@ -24,7 +26,7 @@ export const remoteFileStatusQuery = (
   reload = false
 ) =>
   queryOptions({
-    queryKey: ['remote-file-status', lectureId, assignmentId, repo, filePath],
+    queryKey: ['remote-file-status', lectureId, assignmentId, repo],
     queryFn: async () => {
       return await getRemoteFileStatus(
         lectureId,

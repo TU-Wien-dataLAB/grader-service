@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogClose,
@@ -26,12 +26,9 @@ import { Separator } from '../../../shadcn-components/ui/separator';
 import { PathExt } from '@jupyterlab/coreutils';
 import { useForm } from '@tanstack/react-form';
 import { Kernel } from '@jupyterlab/services';
-import {
-  getFiles,
-  lectureBasePath
-} from '../../../../services/local-file.service';
 import { useQuery } from '@tanstack/react-query';
 import { CircleAlert } from 'lucide-react';
+import { filesQuery } from '../../../../services/queries/files.queries';
 
 type KernelSelection =
   | { mode: 'none' }
@@ -88,21 +85,9 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
   const items = [noKernel, ...availableKernels, ...existingKernels];
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
-
-  const srcPath = useMemo(
-    () => `${lectureBasePath}${props.lectureCode}/source/${props.assignmentId}`,
-    [props.lectureCode, props.assignmentId]
+  const { data: files = [] } = useQuery(
+    filesQuery(props.lectureCode, props.assignmentId, 'source')
   );
-  const { data: files = [] } = useQuery({
-    queryKey: ['files', props.lectureCode, props.assignmentId, 'source'],
-    queryFn: async () => {
-      return await getFiles(srcPath);
-    }
-  });
-
-  const notebookExists = (notebookName: string): boolean => {
-    return files.some(file => file.name === notebookName);
-  };
 
   const createNamedNotebook = async (
     notebookName: string,
@@ -225,7 +210,7 @@ export const NewNotebookDialog = (props: INewNotebookDialogProps) => {
                     return 'Name is too long.';
                   } else if (trimmedValue.length === 0) {
                     return 'Name is empty.';
-                  } else if (notebookExists(trimmedValue)) {
+                  } else if (files.some(file => file.name === trimmedValue)) {
                     return 'Notebook already exists.';
                   }
                   return undefined;
