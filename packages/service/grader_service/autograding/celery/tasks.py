@@ -16,11 +16,10 @@ class GraderTask(Task):
     def __init__(self) -> None:
         self.celery = CeleryApp.instance()
         self.log = self.celery.log
-        self.Session = self.celery.sessionmaker
         self._sessions = {}
 
     def before_start(self, task_id, args, kwargs):
-        self._sessions[task_id] = self.Session()
+        self._sessions[task_id] = self.celery.session_maker()
         super().before_start(task_id, args, kwargs)
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):

@@ -1,7 +1,7 @@
 import pprint
-from datetime import datetime
-import typing
 
+import typing
+from datetime import datetime
 from grader_service.api import util
 
 T = typing.TypeVar('T')
@@ -48,6 +48,23 @@ class Model:
             else:
                 result[attr] = value
 
+        return result
+
+    def dto_to_dict(self):
+        """Serialize a generated DTO, dropping all None fields."""
+        result = {}
+        for attr in self.openapi_types:
+            value = getattr(self, attr)
+            if value is None:
+                continue
+            if isinstance(value, list):
+                result[attr] = [v.dto_to_dict() if isinstance(v, Model) else v for v in value]
+            elif isinstance(value, Model):
+                result[attr] = value.dto_to_dict()
+            elif isinstance(value, datetime):
+                result[attr] = value.isoformat()
+            else:
+                result[attr] = value
         return result
 
     def to_str(self):

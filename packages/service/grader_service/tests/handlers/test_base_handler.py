@@ -4,12 +4,16 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 import base64
+import json
 from datetime import datetime, timezone
+from http import HTTPStatus
 from unittest.mock import MagicMock
 
 import pytest
 from tornado.httpclient import HTTPClientError
 
+from grader_service.api.models.lecture_create_dto import LectureCreateDto
+from grader_service.errors import APIError
 from grader_service.handlers.base_handler import BaseHandler, GraderBaseHandler
 from grader_service.orm import Assignment
 
@@ -66,7 +70,7 @@ def test_assignment_serialization():
             "group": None,
             "cell_timeout": None,
             "max_submissions": 1,
-            "autograde_type": "unassisted",
+            "grading_method": "unassisted",
             "allowed_files": None,
         },
     }
@@ -81,6 +85,42 @@ def test_nested_serialization():
     o = [{"b": None}, {"a": 2}, "test", {"z": []}]
     s = GraderBaseHandler._serialize(o)
     assert o == s
+
+
+def test_parse_json_dto_valid_body():
+    handler = MagicMock()
+    handler.request.body = json.dumps({"name": "pytest_lecture", "code": "23wle1"}).encode()
+
+    dto = GraderBaseHandler.parse_json_dto(handler, LectureCreateDto)
+
+    assert isinstance(dto, LectureCreateDto)
+    assert dto.name == "pytest_lecture"
+    assert dto.code == "23wle1"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(b"{invalid", id="invalid-json"),
+        pytest.param(b"", id="empty-body"),
+        pytest.param(b'{"a": "\xff\xfe"}', id="invalid-utf8"),
+        pytest.param(b"42", id="json-number"),
+        pytest.param(b"42.5", id="json-float"),
+        pytest.param(b"true", id="json-boolean"),
+        pytest.param(b"null", id="json-null"),
+        pytest.param(b"[1, 2, 3]", id="json-list"),
+        pytest.param(b'"hello"', id="json-string"),
+    ],
+)
+def test_parse_json_dto_malformed_body(body):
+    handler = MagicMock()
+    handler.request.body = body
+
+    with pytest.raises(APIError) as exc_info:
+        GraderBaseHandler.parse_json_dto(handler, LectureCreateDto)
+
+    assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
+    assert exc_info.value.message
 
 
 @pytest.mark.parametrize(

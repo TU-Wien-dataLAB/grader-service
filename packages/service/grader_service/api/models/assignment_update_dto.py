@@ -115,7 +115,5 @@ class AssignmentUpdateDto(Model):
         :param settings: The settings of this AssignmentUpdateDto.
         :type settings: AssignmentSettings
         """
-        if settings is None:
-            raise ValueError("Invalid value for `settings`, must not be `None`")  # noqa: E501
 
         self._settings = settings

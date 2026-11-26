@@ -112,7 +112,7 @@ async def test_get_assignments_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
@@ -143,10 +143,7 @@ async def test_post_assignment(
     orig_len = len(assignments)
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -181,10 +178,7 @@ async def test_post_assignment_name_already_used(
     url = service_base_url + "lectures/3/assignments/"
 
     post_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -217,17 +211,14 @@ async def test_put_assignment_name_already_used(
 
     # Add assignments first
     post_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_assignment_2 = Assignment(
         id=-2,
         name="pytest2",
         status="created",
         points=0,
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        settings=AssignmentSettings(grading_method="manual"),
     )
     post_response = await http_server_client.fetch(
         post_url,
@@ -275,14 +266,11 @@ async def test_post_assignment_lecture_deleted(
     delete_response = await http_server_client.fetch(
         url, method="DELETE", headers={"Authorization": f"Token {default_token}"}
     )
-    assert delete_response.code == HTTPStatus.OK
+    assert delete_response.code == HTTPStatus.NO_CONTENT
 
     url = service_base_url + "lectures/3/assignments/"
     post_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
@@ -307,20 +295,6 @@ async def test_post_assignment_decode_error(
 
     # no assignment status given
     pre_assignment = Assignment(id=-1, name="pytest", settings=AssignmentSettings())
-    with pytest.raises(HTTPClientError) as exc_info:
-        await http_server_client.fetch(
-            url,
-            method="POST",
-            headers={"Authorization": f"Token {default_token}"},
-            body=json.dumps(pre_assignment.to_dict()),
-        )
-    e = exc_info.value
-    assert e.code == HTTPStatus.BAD_REQUEST
-
-    # no autograde type given
-    pre_assignment = Assignment(
-        id=-1, name="pytest", status="created", settings=AssignmentSettings(autograde_type=None)
-    )
     with pytest.raises(HTTPClientError) as exc_info:
         await http_server_client.fetch(
             url,
@@ -387,10 +361,7 @@ async def test_put_assignment(
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -431,10 +402,7 @@ async def test_put_assignment_wrong_lecture_id(
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -504,10 +472,7 @@ async def test_put_assignment_deleted_assignment(
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -548,10 +513,7 @@ async def test_put_assignment_no_point_changes(
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -593,10 +555,7 @@ async def test_get_assignment(
     url = service_base_url + "lectures/3/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -700,10 +659,7 @@ async def test_get_assignment_wrong_lecture_id(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -736,10 +692,7 @@ async def test_get_assignment_wrong_assignment_id(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -794,10 +747,7 @@ async def test_delete_assignment(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -842,10 +792,7 @@ async def test_delete_assignment_deleted_assignment(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -925,10 +872,7 @@ async def test_delete_assignment_same_name_twice(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -992,7 +936,7 @@ async def test_delete_released_assignment(
         id=-1,
         name="pytest",
         status="released",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        settings=AssignmentSettings(grading_method="manual"),
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1027,7 +971,7 @@ async def test_delete_complete_assignment(
         id=-1,
         name="pytest",
         status="complete",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        settings=AssignmentSettings(grading_method="manual"),
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1277,10 +1221,7 @@ async def test_assignment_reset_wrong_lecture_id(
     url = service_base_url + f"lectures/{l_id}/assignments/"
 
     pre_assignment = Assignment(
-        id=-1,
-        name="pytest",
-        status="created",
-        settings=AssignmentSettings(autograde_type="unassisted"),
+        id=-1, name="pytest", status="created", settings=AssignmentSettings(grading_method="manual")
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1481,7 +1422,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
         id=-1,
         name="pytest",
         status="created",
-        settings=AssignmentSettings(autograde_type="full_auto"),
+        settings=AssignmentSettings(grading_method="full_auto"),
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1491,7 +1432,7 @@ async def test_assignment_properties_properties_wrong_for_autograde(
     )
     assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
-    assert post_assignment.settings.autograde_type == "full_auto"
+    assert post_assignment.settings.grading_method == "full_auto"
     url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
     prop = {
         "_type": "GradeBookModel",
@@ -1678,7 +1619,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
         id=-1,
         name="pytest",
         status="created",
-        settings=AssignmentSettings(autograde_type="full_auto"),
+        settings=AssignmentSettings(grading_method="full_auto"),
     )
     post_response = await http_server_client.fetch(
         url,
@@ -1688,7 +1629,7 @@ async def test_assignment_properties_properties_manual_graded_with_auto_grading(
     )
     assert post_response.code == HTTPStatus.CREATED
     post_assignment = Assignment.from_dict(json.loads(post_response.body.decode()))
-    assert post_assignment.settings.autograde_type == "full_auto"
+    assert post_assignment.settings.grading_method == "full_auto"
     url = service_base_url + f"lectures/3/assignments/{post_assignment.id}/properties"
     prop = {
         "_type": "GradeBookModel",
