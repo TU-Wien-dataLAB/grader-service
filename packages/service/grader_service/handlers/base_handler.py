@@ -910,17 +910,19 @@ class GraderBaseHandler(GraderErrorMixin, BaseHandler):
 
     def parse_json_dto(self, dto_cls):
         """
-        Decodes the JSON request body into the given DTO class,
-        raising HTTPError 400 for malformed payloads.
+        Decodes the JSON request body into the given DTO class.
 
         :param dto_cls: the DTO class to deserialize the body into
         :return: the deserialized DTO
-        :raises HTTPError: if the body is not valid JSON or cannot be deserialized
+        :raises APIError: if the body is not valid JSON, is not a JSON
+            object, or cannot be deserialized
         """
         try:
             body = json_decode(self.request.body)
+            if not isinstance(body, dict):
+                raise APIError(HTTPStatus.BAD_REQUEST, message="Request body must be a JSON object")
             return dto_cls.from_dict(body)
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             raise APIError(HTTPStatus.BAD_REQUEST, message=str(e))
 
     def validate_parameters(self, *args):
