@@ -25,7 +25,7 @@ class BaseService:
             raise NotFoundError("No role found")
         return role
 
-    def has_elevated_permissions(self, session: Session, user: User) -> bool | None:
+    def elevated_role_exists(self, session: Session, user: User) -> bool:
         stmt = select(
             select(Lecture)
             .join(Role)

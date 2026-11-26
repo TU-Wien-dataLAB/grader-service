@@ -42,7 +42,7 @@ class LecturesService(BaseService):
         self,
         session: Session,
         complete: bool | None,
-        has_elevated_permissions: bool | None,
+        has_elevated_role: bool,
         user: User,
         page: int = 1,
         per_page: int = DEFAULT_PER_PAGE,
@@ -68,7 +68,7 @@ class LecturesService(BaseService):
                 Role.user_id == user.id, Lecture.deleted == DeleteState.active
             )
 
-            if has_elevated_permissions:
+            if has_elevated_role:
                 stmt = stmt.where(Role.role.in_([Scope.instructor, Scope.tutor]))
 
         # total count under the same filters the user can see,
@@ -92,9 +92,7 @@ class LecturesService(BaseService):
 
         lecture_dtos = [
             to_lecture_list_item_dto(
-                lec,
-                a_counts.get(lec.id, 0),
-                s_counts.get(lec.id, 0) if has_elevated_permissions else None,
+                lec, a_counts.get(lec.id, 0), s_counts.get(lec.id, 0) if has_elevated_role else None
             )
             for lec in lectures
         ]

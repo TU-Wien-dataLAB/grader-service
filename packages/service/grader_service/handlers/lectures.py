@@ -46,7 +46,7 @@ class LectureBaseHandler(GraderBaseHandler):
         complete = self.get_bool_argument("complete")
         instructor = self.get_bool_argument("instructor")
         # only hit the database for the permission check if the instructor view was requested
-        has_elevated_permissions = instructor and self.services.lectures.has_elevated_permissions(
+        has_elevated_role = instructor and self.services.lectures.elevated_role_exists(
             self.session, self.user
         )
         search = self.get_argument("search", None)
@@ -69,7 +69,7 @@ class LectureBaseHandler(GraderBaseHandler):
         lectures = self.services.lectures.get_all_lectures(
             self.session,
             complete=complete,
-            has_elevated_permissions=has_elevated_permissions,
+            has_elevated_role=has_elevated_role,
             user=self.user,
             page=page,
             per_page=per_page,
