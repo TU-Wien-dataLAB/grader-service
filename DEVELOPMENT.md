@@ -4,7 +4,7 @@ This guide covers setting up a development environment for the Grader Platform m
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.11+
 - [uv](https://docs.astral.sh/uv/) - Python package manager
 - Node.js 20+ (for labextension)
 - Docker and Docker Compose
@@ -22,7 +22,8 @@ cd grader
 make sync
 ```
 
-This creates a single virtual environment with both packages and all development, test, and documentation dependencies installed.
+This creates a single virtual environment with both packages and all development, test, and
+documentation dependencies installed.
 
 ### 2. Start Development Environment
 
@@ -31,6 +32,7 @@ make dev-up
 ```
 
 This starts:
+
 - Grader Service (with hot-reload)
 - JupyterHub
 - RabbitMQ
@@ -47,7 +49,8 @@ Access JupyterHub at `http://localhost:8080`
 - **Labextension**: Edit TypeScript files in `packages/labextension/src/`
 
 Service changes are picked up by the dev container; restart the service
-container if a reload is needed (`docker compose -f dev/docker-compose/docker-compose.yml restart service`).
+container if a reload is needed
+(`docker compose -f dev/docker-compose/docker-compose.yml restart service`).
 
 Labextension TypeScript changes are hot-reloaded: an in-pod watcher recompiles on save, so
 refreshing the browser tab picks up the rebuilt extension. See
@@ -130,8 +133,6 @@ make dev-up
 See [dev/docker-compose/README.md](dev/docker-compose/README.md) for the full
 development workflow, including editing the service and labextension.
 
-
-
 ## Debugging
 
 ### All Service Logs
@@ -196,7 +197,8 @@ pre-commit run --all-files
 
 ## Version Management
 
-Each package is versioned independently with [tbump](https://github.com/your-tools/tbump). tbump is a root dev dependency (`uv sync` installs it) and is configured in each package's `pyproject.toml`.
+Each package is versioned independently with [tbump](https://github.com/your-tools/tbump). tbump is
+a root dev dependency (`uv sync` installs it) and is configured in each package's `pyproject.toml`.
 
 ```bash
 # Bump service version (run from the package directory)
@@ -208,13 +210,18 @@ cd packages/labextension
 tbump minor
 ```
 
-tbump patches the version files, creates a `Bump ... to <version>` commit, creates the package tag (`grader-service-X.Y.Z` or `grader-labextension-X.Y.Z`), and pushes both the branch and the tag by default.
+tbump patches the version files, creates a `Bump ... to <version>` commit, creates the package tag
+(`grader-service-X.Y.Z` or `grader-labextension-X.Y.Z`), and pushes both the branch and the tag by
+default.
 
 ## Release Process
 
-1. Update the package's `CHANGELOG.md` (rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh `## [Unreleased]` above it) and commit.
-2. Run tbump from the package directory: `cd packages/service && tbump X.Y.Z` (bumps versions, commits, creates the tag, and pushes the branch + tag by default).
-3. Create a GitHub Release from the tag (triggers CI: build, test, publish to PyPI, Docker, and Helm).
+1. Update the package's `CHANGELOG.md` (rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a
+   fresh `## [Unreleased]` above it) and commit.
+2. Run tbump from the package directory: `cd packages/service && tbump X.Y.Z` (bumps versions,
+   commits, creates the tag, and pushes the branch + tag by default).
+3. Create a GitHub Release from the tag (triggers CI: build, test, publish to PyPI, Docker, and
+   Helm).
 5. Verify on PyPI, Docker Hub/GHCR, and the Helm repo.
 
 See [RELEASE.md](RELEASE.md) for the full release guide.
