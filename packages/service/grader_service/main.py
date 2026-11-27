@@ -242,31 +242,6 @@ class GraderService(config.Application):
             sys.exit(1)
         return proposal.value
 
-    flags = {  # noqa: RUF012  # TODO: unused, remove
-        "debug": (
-            {"Application": {"log_level": logging.DEBUG}},
-            "Set log-level to debug, for the most verbose logging.",
-        ),
-        "show-config": (
-            {"Application": {"show_config": True}},
-            "Show the application's configuration (human-readable format)",
-        ),
-        "show-config-json": (
-            {"Application": {"show_config_json": True}},
-            "Show the application's configuration (json format)",
-        ),
-        "generate-config": (
-            {"GraderService": {"generate_config": True}},
-            "generate default config file",
-        ),
-    }
-
-    aliases = {  # noqa: RUF012  # TODO: unused, remove
-        "log-level": "Application.log_level",
-        "f": "GraderService.config_file",
-        "config": "GraderService.config_file",
-    }
-
     log_level = Enum(
         [
             0,
