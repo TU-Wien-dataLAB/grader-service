@@ -95,3 +95,4 @@ data:
       email = {{ .Values.gitFileService.gitEmail }}
     [init]
       defaultBranch = main
+{{- end }}
