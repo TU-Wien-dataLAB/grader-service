@@ -1,8 +1,9 @@
 import json
 import logging
 import os
+import types
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Self
 
 from grader_service.convert.gradebook.models import (
     Comment,
@@ -28,13 +29,14 @@ def write_access(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         try:
-            self: "Gradebook" = args[0]
-            if not isinstance(self, Gradebook):
-                raise RuntimeError(
-                    "This decorator can only be used on methods inside Gradebook instances!"
-                )
+            self: Gradebook = args[0]
         except IndexError:
             raise RuntimeError(
+                "This decorator can only be used on methods inside Gradebook instances!"
+            )
+
+        if not isinstance(self, Gradebook):
+            raise TypeError(
                 "This decorator can only be used on methods inside Gradebook instances!"
             )
         self.dirty = True
@@ -59,9 +61,9 @@ class Gradebook:
 
     def __init__(
         self,
-        dest_json: Optional[str] = None,
-        data_dict: Optional[dict] = None,
-        log: logging.Logger = None,
+        dest_json: str | None = None,
+        data_dict: dict | None = None,
+        log: logging.Logger | None = None,
     ) -> None:
         if log is None:
             from traitlets import log as l
@@ -85,7 +87,7 @@ class Gradebook:
                 self.data: dict = json.loads(data)
         elif dest_json is not None:
             os.makedirs(os.path.dirname(self.json_file), exist_ok=True)
-            self.data: dict = {"notebooks": dict()}
+            self.data: dict = {"notebooks": {}}
             with open(self.json_file, "w") as f:
                 json.dump(self.data, f)
         self.model: GradeBookModel = GradeBookModel.from_dict(self.data)
@@ -93,12 +95,15 @@ class Gradebook:
         self.in_context: int = 0
         self.dirty: bool = False
 
-    def __enter__(self) -> "Gradebook":
+    def __enter__(self) -> Self:
         self.in_context += 1
         return self
 
     def __exit__(
-        self, exc_type: Optional[Any], exc_value: Optional[Any], traceback: Optional[Any]
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
     ) -> None:
         self.in_context -= 1
         if self.dirty and exc_type is None:
@@ -194,7 +199,7 @@ class Gradebook:
         except KeyError:
             raise MissingEntry()
 
-    def find_graded_cell(self, name: str, notebook: str) -> Union[GradeCell, TaskCell]:
+    def find_graded_cell(self, name: str, notebook: str) -> GradeCell | TaskCell:
         """
         Find a graded cell in a particular notebook. This can be either a GradeCell or a TaskCell.
         :param name: the name of the grade cell
@@ -203,8 +208,8 @@ class Gradebook:
         """
         nb = self.find_notebook(notebook)
         try:
-            return [x for x in nb.graded_cells if x.name == name][0]
-        except IndexError:
+            return next(x for x in nb.graded_cells if x.name == name)
+        except StopIteration:
             raise MissingEntry()
 
     @write_access
@@ -221,8 +226,8 @@ class Gradebook:
         except MissingEntry:
             grade_cell = self.add_grade_cell(name, notebook, **kwargs)
         else:
-            for attr in kwargs:
-                setattr(grade_cell, attr, kwargs[attr])
+            for attr, value in kwargs.items():
+                setattr(grade_cell, attr, value)
         return grade_cell
 
     # Solution cells
@@ -271,8 +276,8 @@ class Gradebook:
         except MissingEntry:
             solution_cell = self.add_solution_cell(name, notebook, **kwargs)
         else:
-            for attr in kwargs:
-                setattr(solution_cell, attr, kwargs[attr])
+            for attr, value in kwargs.items():
+                setattr(solution_cell, attr, value)
         return solution_cell
 
     # Task cells
@@ -319,8 +324,8 @@ class Gradebook:
         except MissingEntry:
             task_cell = self.add_task_cell(name, notebook, **kwargs)
         else:
-            for attr in kwargs:
-                setattr(task_cell, attr, kwargs[attr])
+            for attr, value in kwargs.items():
+                setattr(task_cell, attr, value)
         return task_cell
 
     # Source cell
@@ -368,8 +373,8 @@ class Gradebook:
         except MissingEntry:
             source_cell = self.add_source_cell(name, notebook, **kwargs)
         else:
-            for attr in kwargs:
-                setattr(source_cell, attr, kwargs[attr])
+            for attr, value in kwargs.items():
+                setattr(source_cell, attr, value)
         return source_cell
 
     # Grades
@@ -388,7 +393,7 @@ class Gradebook:
         grade_c: GradeCell = nb.grade_cells_dict.get(grade_cell, None)
         task_c: TaskCell = nb.task_cells_dict.get(grade_cell, None)
         solution_c: SolutionCell = nb.solution_cells_dict.get(grade_cell, None)
-        if all([x is None for x in [grade_c, task_c, solution_c]]):
+        if all(x is None for x in [grade_c, task_c, solution_c]):
             raise MissingEntry()
         grade.id = grade_cell
         grade.notebook_id = notebook
@@ -432,7 +437,7 @@ class Gradebook:
         grade_c: GradeCell = nb.grade_cells_dict.get(solution_cell, None)
         task_c: TaskCell = nb.task_cells_dict.get(solution_cell, None)
         solution_c: SolutionCell = nb.solution_cells_dict.get(solution_cell, None)
-        if all([x is None for x in [solution_c, task_c, solution_c]]):
+        if all(x is None for x in [solution_c, task_c, solution_c]):
             raise MissingEntry()
         comment.id = solution_cell
         comment.notebook_id = notebook

@@ -210,7 +210,7 @@ class JupyterHubRequestValidator(RequestValidator):
         app_log.debug("Saving authorization code %s, %s, %s, %s", client_id, log_code, args, kwargs)
         orm_client = self.db.query(OAuthClient).filter_by(identifier=client_id).first()
         if orm_client is None:
-            raise ValueError("No such client: %s" % client_id)
+            raise ValueError(f"No such client: {client_id}")
 
         orm_code = OAuthCode(
             code=code["code"],
@@ -300,7 +300,7 @@ class JupyterHubRequestValidator(RequestValidator):
         app_log.debug("Saving bearer token %s", log_token)
 
         if request.user is None:
-            raise ValueError("No user for access token: %s" % request.user)
+            raise ValueError(f"No user for access token: {request.user}")
         client = self.db.query(OAuthClient).filter_by(identifier=request.client.client_id).first()
         # FIXME: support refresh tokens
         # These should be in a new table
@@ -568,7 +568,7 @@ class GraderOAuthServer(WebApplicationServer):
 def make_provider(session_factory, url_prefix, login_url, **oauth_server_kwargs):
     """Make an OAuth provider"""
     db = session_factory()
-    oauth_server_kwargs.update(dict(url_prefix=url_prefix, login_url=login_url))
+    oauth_server_kwargs.update({"url_prefix": url_prefix, "login_url": login_url})
     validator = JupyterHubRequestValidator(db)
     server = GraderOAuthServer(db, validator, **oauth_server_kwargs)
     return server

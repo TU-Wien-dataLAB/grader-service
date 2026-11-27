@@ -1,7 +1,7 @@
 # LTI 1.3
 # Login initiation request arguments
 # https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-from typing import Any, Dict
+from typing import Any
 
 LTI13_CUSTOM_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/custom"
 
@@ -27,7 +27,7 @@ LTI13_AUTH_RESPONSE_ARGS = ["id_token", "state"]
 # Required message claims
 # http://www.imsglobal.org/spec/lti/v1p3/#required-message-claims
 # https://openid.net/specs/openid-connect-core-1_0.html#IDToken
-LTI13_GENERAL_REQUIRED_CLAIMS: Dict[str, Any] = {
+LTI13_GENERAL_REQUIRED_CLAIMS: dict[str, Any] = {
     "https://purl.imsglobal.org/spec/lti/claim/version": "1.3.0",
     "https://purl.imsglobal.org/spec/lti/claim/deployment_id": "",
     "https://purl.imsglobal.org/spec/lti/claim/target_link_uri": "",
@@ -40,7 +40,7 @@ LTI13_GENERAL_REQUIRED_CLAIMS: Dict[str, Any] = {
 }
 
 # Required claims with LtiResourceLinkRequest login flows
-LTI13_RESOURCE_LINK_REQUEST_REQUIRED_CLAIMS: Dict[str, Any] = {
+LTI13_RESOURCE_LINK_REQUEST_REQUIRED_CLAIMS: dict[str, Any] = {
     "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiResourceLinkRequest",
     "https://purl.imsglobal.org/spec/lti/claim/resource_link": {"id": ""},
     **LTI13_GENERAL_REQUIRED_CLAIMS,
@@ -55,7 +55,7 @@ LTI13_DEEP_LINKING_REQUIRED_CLAIMS = {
 # Optional message claims
 # We don't need the role_scope_mentor claim and some platforms don't send this claim by default.
 # http://www.imsglobal.org/spec/lti/v1p3/#optional-message-claims
-LTI13_GENERAL_OPTIONAL_CLAIMS: Dict[str, Any] = {
+LTI13_GENERAL_OPTIONAL_CLAIMS: dict[str, Any] = {
     "https://purl.imsglobal.org/spec/lti/claim/context": {
         "id": "",
         "label": "",

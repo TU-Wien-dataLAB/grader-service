@@ -6,7 +6,7 @@
 
 import json
 import os
-from typing import Callable, Dict, Optional, Union
+from collections.abc import Callable
 from urllib.parse import ParseResultBytes, quote_plus, urlencode, urlparse
 
 from tornado.escape import json_decode
@@ -27,13 +27,13 @@ class RequestService(SingletonConfigurable):
         self,
         method: str,
         endpoint: str,
-        body: Union[dict, str] = None,
-        header: Dict[str, str] = None,
+        body: dict | str | None = None,
+        header: dict[str, str] | None = None,
         decode_response: bool = True,
         request_timeout: float = 20.0,
         connect_timeout: float = 20.0,
-        response_callback: Optional[Callable[[HTTPResponse], None]] = None,
-    ) -> Union[dict, list, HTTPResponse]:
+        response_callback: Callable[[HTTPResponse], None] | None = None,
+    ) -> dict | list | HTTPResponse:
         self.log.info(self.url + endpoint)
         if self._service_cookie:
             header["Cookie"] = self._service_cookie

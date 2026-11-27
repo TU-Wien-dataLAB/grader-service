@@ -5,6 +5,7 @@ import pytest
 from nbformat import current_nbformat, read
 from nbformat.v4 import new_notebook
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.nbgraderformat.common import SchemaMismatchError, ValidationError
 from grader_service.convert.nbgraderformat.v1 import (
     MetadataValidatorV1,
@@ -18,7 +19,7 @@ from .. import create_code_cell, create_grade_cell, create_regular_cell, create_
 
 
 def test_set_false():
-    cell = create_grade_cell("", "code", "foo", 2, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 2, 0)
     del cell.metadata.nbgrader["solution"]
     del cell.metadata.nbgrader["locked"]
 
@@ -26,7 +27,7 @@ def test_set_false():
     assert not cell.metadata.nbgrader["solution"]
     assert not cell.metadata.nbgrader["locked"]
 
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     del cell.metadata.nbgrader["grade"]
     del cell.metadata.nbgrader["locked"]
 
@@ -36,7 +37,7 @@ def test_set_false():
 
 
 def test_remove_metadata():
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     cell.metadata.nbgrader["solution"] = False
 
     MetadataValidatorV1().upgrade_cell_metadata(cell)
@@ -44,7 +45,7 @@ def test_remove_metadata():
 
 
 def test_remove_points():
-    cell = create_solution_cell("", "code", "foo", 0)
+    cell = create_solution_cell("", CellType.CODE, "foo", 0)
     cell.metadata.nbgrader["points"] = 2
 
     MetadataValidatorV1().upgrade_cell_metadata(cell)
@@ -52,33 +53,33 @@ def test_remove_points():
 
 
 def test_set_points():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
-    cell = create_grade_cell("", "code", "foo", "1.5", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "1.5", 0)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 1.5
 
-    cell = create_grade_cell("", "code", "foo", 1, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 1, 0)
     del cell.metadata.nbgrader["points"]
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
-    cell = create_grade_cell("", "code", "foo", -1, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", -1, 0)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["points"] == 0.0
 
 
 def test_extra_keys():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     cell.metadata.nbgrader["foo"] = "bar"
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert "foo" not in cell.metadata.nbgrader
 
 
 def test_schema_version():
-    cell = create_grade_cell("", "code", "foo", "", 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", "", 0)
     del cell.metadata.nbgrader["schema_version"]
     MetadataValidatorV1().upgrade_cell_metadata(cell)
     assert cell.metadata.nbgrader["schema_version"] == 1
@@ -93,7 +94,8 @@ def test_read():
 def test_reads():
     currdir = os.path.split(__file__)[0]
     path = os.path.join(currdir, "files", "test-v1.ipynb")
-    contents = open(path, "r").read()
+    with open(path, "r") as f:
+        contents = f.read()
     reads_v1(contents, current_nbformat)
 
 
@@ -131,17 +133,17 @@ def test_upgrade_notebook_metadata():
     path = os.path.join(currdir, "files", "test-v0.ipynb")
     with open(path, "r") as fh:
         nb = read(fh, current_nbformat)
-    nb = MetadataValidatorV1().upgrade_notebook_metadata(nb)
+    MetadataValidatorV1().upgrade_notebook_metadata(nb)
 
 
 def test_upgrade_cell_metadata():
-    cell = create_grade_cell("", "code", "foo", 5, 0)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 0)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
 
-    cell = create_grade_cell("", "code", "foo", 5, 1)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
 
-    cell = create_grade_cell("", "code", "foo", 5, 2)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 2)
     MetadataValidatorV1().upgrade_cell_metadata(cell)
 
 
@@ -154,13 +156,13 @@ def test_regular_cells():
     validator.upgrade_cell_metadata(cell)
 
     # code cell with metadata, but not an nbgrader cell
-    cell = create_regular_cell("", "code", schema_version=1)
+    cell = create_regular_cell("", CellType.CODE, schema_version=1)
     del cell.metadata.nbgrader["task"]
     validator.validate_cell(cell)
 
     nb = new_notebook()
     cell1 = create_code_cell()
-    cell2 = create_regular_cell("", "code", schema_version=1)
+    cell2 = create_regular_cell("", CellType.CODE, schema_version=1)
     del cell2.metadata.nbgrader["task"]
     nb.cells = [cell1, cell2]
     validator.validate_nb(nb)
@@ -170,38 +172,38 @@ def test_invalid_metadata():
     validator = MetadataValidatorV1()
 
     # make sure the default cell works ok
-    cell = create_grade_cell("", "code", "foo", 5, 1)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     del cell.metadata.nbgrader["task"]
     validator.validate_cell(cell)
 
     # missing grade_id
-    cell = create_grade_cell("", "code", "foo", 5, 1)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     del cell.metadata.nbgrader["task"]
     del cell.metadata.nbgrader["grade_id"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # grade_id is empty
-    cell = create_grade_cell("", "code", "", 5, 1)
+    cell = create_grade_cell("", CellType.CODE, "", 5, 1)
     del cell.metadata.nbgrader["task"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # missing points
-    cell = create_grade_cell("", "code", "foo", 5, 1)
+    cell = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     del cell.metadata.nbgrader["task"]
     del cell.metadata.nbgrader["points"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # markdown grade cell not marked as a solution cell
-    cell = create_grade_cell("", "markdown", "foo", 5, 1)
+    cell = create_grade_cell("", CellType.MARKDOWN, "foo", 5, 1)
     del cell.metadata.nbgrader["task"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
 
     # markdown solution cell not marked as a grade cell
-    cell = create_solution_cell("", "markdown", "foo", 1)
+    cell = create_solution_cell("", CellType.MARKDOWN, "foo", 1)
     del cell.metadata.nbgrader["task"]
     with pytest.raises(ValidationError):
         validator.validate_cell(cell)
@@ -210,9 +212,9 @@ def test_invalid_metadata():
 def test_duplicate_cells():
     validator = MetadataValidatorV1()
     nb = new_notebook()
-    cell1 = create_grade_cell("", "code", "foo", 5, 1)
+    cell1 = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     del cell1.metadata.nbgrader["task"]
-    cell2 = create_grade_cell("", "code", "foo", 5, 1)
+    cell2 = create_grade_cell("", CellType.CODE, "foo", 5, 1)
     del cell2.metadata.nbgrader["task"]
     nb.cells = [cell1, cell2]
     with pytest.raises(ValidationError):

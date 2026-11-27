@@ -3,7 +3,7 @@ import hashlib
 import json
 import re
 import uuid
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 from urllib.parse import unquote
 
 from oauthlib.common import generate_token
@@ -165,7 +165,7 @@ class LTI13LoginInitHandler(BaseHandler):
         nonce: str,
         client_id: str,
         state: str,
-        lti_message_hint: Optional[str] = None,
+        lti_message_hint: str | None = None,
     ) -> None:
         """
         Overrides the OAuth2Mixin.authorize_redirect method to to initiate the LTI 1.3 / OIDC
@@ -306,13 +306,12 @@ class LTI13LoginInitHandler(BaseHandler):
 
     def get_redirect_uri(self) -> str:
         """Create uri to redirect user agent to after successful authorization by the LMS platform."""
-        return "{proto}://{host}{path}".format(
-            proto=self.authenticator.get_uri_scheme(self.request),
-            host=self.request.host,
-            path=self.authenticator.callback_url(self.application.base_url),
+        return (
+            f"{self.authenticator.get_uri_scheme(self.request)}://"
+            f"{self.request.host}{self.authenticator.callback_url(self.application.base_url)}"
         )
 
-    def _get_optional_arg(self, args: Dict[str, str], arg: str) -> Optional[str]:
+    def _get_optional_arg(self, args: dict[str, str], arg: str) -> str | None:
         """
         Return value of optional argument or None if not present.
         """
@@ -383,7 +382,7 @@ class LTI13CallbackHandler(BaseHandler):
         self.redirect(next_url)
         self.log.debug(f"Redirecting user {user.name} to {next_url}")
 
-    def decode_and_validate_launch_request(self) -> Dict[str, Any]:
+    def decode_and_validate_launch_request(self) -> dict[str, Any]:
         """Decrypt, verify and validate launch request parameters.
 
         Raises subclasses of `ValidationError` of `HTTPError` if anything fails.
@@ -437,7 +436,7 @@ class LTI13CallbackHandler(BaseHandler):
             self.log.warning(f"OAuth state mismatch: {cookie_state} != {url_state}")
             raise HTTPError(400, reason="OAuth state mismatch")
 
-    def check_nonce(self, id_token: Dict[str, Any]) -> None:
+    def check_nonce(self, id_token: dict[str, Any]) -> None:
         """Check if received nonce corresponds to hash of nonce state cookie"""
         received_nonce = id_token.get("nonce")
 

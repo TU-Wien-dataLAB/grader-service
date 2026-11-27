@@ -3,6 +3,7 @@ import warnings
 from textwrap import dedent
 
 import pytest
+from nbconvert.exporters import ResourcesDict
 from traitlets.config import Config
 
 from grader_service.convert.preprocessors import ClearSolutions
@@ -87,8 +88,8 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_code_solution_cell_solution_region(self, preprocessor):
         """Is a code solution cell correctly cleared when there is a solution region?"""
         cell = create_code_cell()
-        cell.metadata["nbgrader"] = dict(solution=True)
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {"solution": True}
+        resources = ResourcesDict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert (
@@ -106,7 +107,7 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_code_cell_solution_region(self, preprocessor):
         """Is an error thrown when there is a solution region but it's not a solution cell?"""
         cell = create_code_cell()
-        resources = dict(language="python")
+        resources = ResourcesDict(language="python")
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -114,8 +115,8 @@ class TestClearSolutions(BaseTestPreprocessor):
         """Is a code solution cell correctly cleared when there is no solution region?"""
         cell = create_code_cell()
         cell.source = """print("the answer!")"""
-        cell.metadata["nbgrader"] = dict(solution=True)
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {"solution": True}
+        resources = ResourcesDict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert (
@@ -133,8 +134,8 @@ class TestClearSolutions(BaseTestPreprocessor):
         """Is a code cell not cleared when there is no solution region?"""
         cell = create_code_cell()
         cell.source = """print("the answer!")"""
-        cell.metadata["nbgrader"] = dict()
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {}
+        resources = ResourcesDict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == """print("the answer!")"""
@@ -143,8 +144,8 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_text_solution_cell_no_region(self, preprocessor):
         """Is a text grade cell correctly cleared when there is no solution region?"""
         cell = create_text_cell()
-        cell.metadata["nbgrader"] = dict(solution=True)
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {"solution": True}
+        resources = ResourcesDict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "YOUR ANSWER HERE"
@@ -153,8 +154,8 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_text_cell_no_region(self, preprocessor):
         """Is a text grade cell not cleared when there is no solution region?"""
         cell = create_text_cell()
-        cell.metadata["nbgrader"] = dict()
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {}
+        resources = ResourcesDict(language="python")
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "this is the answer!\n"
@@ -171,8 +172,8 @@ class TestClearSolutions(BaseTestPreprocessor):
             ### END SOLUTION
             """
         ).strip()
-        cell.metadata["nbgrader"] = dict(solution=True)
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {"solution": True}
+        resources = ResourcesDict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "something something\nYOUR ANSWER HERE"
@@ -189,8 +190,8 @@ class TestClearSolutions(BaseTestPreprocessor):
                 ### END SOLUTION
             """
         ).strip()
-        cell.metadata["nbgrader"] = dict(solution=True)
-        resources = dict(language="python")
+        cell.metadata["nbgrader"] = {"solution": True}
+        resources = ResourcesDict(language="python")
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "something something\n    YOUR ANSWER HERE"
@@ -208,7 +209,7 @@ class TestClearSolutions(BaseTestPreprocessor):
             """
         ).strip()
 
-        resources = dict(language="python")
+        resources = ResourcesDict(language="python")
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -221,13 +222,13 @@ class TestClearSolutions(BaseTestPreprocessor):
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
-        preprocessor.preprocess(nb, {})
+        preprocessor.preprocess(nb, ResourcesDict())
 
     def test_remove_celltoolbar(self, preprocessor):
         """Is the celltoolbar removed?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
         nb.metadata["celltoolbar"] = "Create Assignment"
-        nb = preprocessor.preprocess(nb, {})[0]
+        nb = preprocessor.preprocess(nb, ResourcesDict())[0]
         assert "celltoolbar" not in nb.metadata
 
     def test_old_config(self):
@@ -235,7 +236,7 @@ class TestClearSolutions(BaseTestPreprocessor):
         c = Config()
         c.ClearSolutions.code_stub = "foo"
         pp = ClearSolutions(config=c)
-        assert pp.code_stub == dict(python="foo")
+        assert pp.code_stub == ResourcesDict(python="foo")
 
     def test_language_missing(self, preprocessor):
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
@@ -243,10 +244,10 @@ class TestClearSolutions(BaseTestPreprocessor):
         nb.metadata["kernelspec"]["language"] = "javascript"
 
         with pytest.raises(ValueError):
-            preprocessor.preprocess(nb, {})
+            preprocessor.preprocess(nb, ResourcesDict())
 
-        preprocessor.code_stub = dict(javascript="foo")
-        preprocessor.preprocess(nb, {})
+        preprocessor.code_stub = {"javascript": "foo"}
+        preprocessor.preprocess(nb, ResourcesDict())
 
     def test_deprecated_delimeter_config(self):
         """Does the deprecated delimeter config key still work and warn?"""

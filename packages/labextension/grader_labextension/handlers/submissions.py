@@ -267,7 +267,7 @@ class LtiSyncHandler(ExtensionBaseHandler):
         try:
             request.raise_for_status()
             request = request.json()
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.log.error(request["message"])
             raise HTTPError(request["status"], reason=request["message"])
         return request

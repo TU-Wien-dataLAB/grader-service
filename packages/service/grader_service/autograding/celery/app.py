@@ -1,5 +1,3 @@
-from typing import Union
-
 from celery import Celery
 from sqlalchemy.orm import scoped_session
 from traitlets import Dict
@@ -8,14 +6,14 @@ from traitlets.config import SingletonConfigurable
 
 class CeleryApp(SingletonConfigurable):
     conf = Dict(
-        default_value=dict(
-            broker_url="amqp://localhost",
-            result_backend="rpc://",
-            task_serializer="json",
-            result_serializer="json",
-            accept_content=["json"],
-            broker_connection_retry_on_startup=True,
-        ),
+        default_value={
+            "broker_url": "amqp://localhost",
+            "result_backend": "rpc://",
+            "task_serializer": "json",
+            "result_serializer": "json",
+            "accept_content": ["json"],
+            "broker_connection_retry_on_startup": True,
+        },
         help="Configuration for Celery app.",
     ).tag(config=True)
 
@@ -24,9 +22,9 @@ class CeleryApp(SingletonConfigurable):
     ).tag(config=True)
 
     app: Celery
-    _session_maker: Union[scoped_session, None] = None
+    _session_maker: scoped_session | None = None
 
-    def __init__(self, config_file: Union[str, None] = None, **kwargs):
+    def __init__(self, config_file: str | None = None, **kwargs):
         super().__init__(**kwargs)
         if not self.config:
             self.config_file = config_file

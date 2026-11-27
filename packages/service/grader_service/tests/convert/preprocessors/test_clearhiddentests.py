@@ -3,6 +3,7 @@ import warnings
 from textwrap import dedent
 
 import pytest
+from nbconvert.exporters import ResourcesDict
 from traitlets.config import Config
 
 from grader_service.convert.preprocessors import ClearHiddenTests
@@ -87,7 +88,7 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             ### END HIDDEN TESTS
             """
         ).strip()
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -102,8 +103,8 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata["nbgrader"] = dict(grade=True)
-        resources = dict()
+        cell.metadata["nbgrader"] = {"grade": True}
+        resources = ResourcesDict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
 
         assert cell.source == "assert True"
@@ -120,9 +121,9 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata["nbgrader"] = dict(grade=True)
+        cell.metadata["nbgrader"] = {"grade": True}
 
-        resources = dict()
+        resources = ResourcesDict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
         assert cell.metadata.nbgrader["grade"]
@@ -138,8 +139,8 @@ class TestClearHiddenTests(BaseTestPreprocessor):
                 ### END HIDDEN TESTS
             """
         ).strip()
-        cell.metadata["nbgrader"] = dict(grade=True)
-        resources = dict()
+        cell.metadata["nbgrader"] = {"grade": True}
+        resources = ResourcesDict()
 
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
@@ -157,7 +158,7 @@ class TestClearHiddenTests(BaseTestPreprocessor):
             """
         ).strip()
 
-        resources = dict()
+        resources = ResourcesDict()
         with pytest.raises(RuntimeError):
             preprocessor.preprocess_cell(cell, resources, 1)
 
@@ -177,9 +178,9 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         """Is a code cell not cleared when there is no hidden test region?"""
         cell = create_code_cell()
         cell.source = """assert True"""
-        cell.metadata["nbgrader"] = dict()
+        cell.metadata["nbgrader"] = {}
 
-        resources = dict()
+        resources = ResourcesDict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == """assert True"""
         assert not cell.metadata.nbgrader.get("grade", False)
@@ -188,9 +189,9 @@ class TestClearHiddenTests(BaseTestPreprocessor):
         """Is a text grade cell not cleared when there is no hidden test region?"""
         cell = create_text_cell()
         cell.source = """assert True"""
-        cell.metadata["nbgrader"] = dict()
+        cell.metadata["nbgrader"] = {}
 
-        resources = dict()
+        resources = ResourcesDict()
         cell = preprocessor.preprocess_cell(cell, resources, 1)[0]
         assert cell.source == "assert True"
         assert not cell.metadata.nbgrader.get("grade", False)
@@ -198,13 +199,13 @@ class TestClearHiddenTests(BaseTestPreprocessor):
     def test_preprocess_notebook(self, preprocessor):
         """Is the test notebook processed without error?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
-        preprocessor.preprocess(nb, {})
+        preprocessor.preprocess(nb, ResourcesDict())
 
     def test_remove_celltoolbar(self, preprocessor):
         """Is the celltoolbar removed?"""
         nb = self._read_nb(os.path.join("files", "test.ipynb"))
         nb.metadata["celltoolbar"] = "Create Assignment"
-        nb = preprocessor.preprocess(nb, {})[0]
+        nb = preprocessor.preprocess(nb, ResourcesDict())[0]
         assert "celltoolbar" not in nb.metadata
 
     def test_deprecated_delimeter_config(self):

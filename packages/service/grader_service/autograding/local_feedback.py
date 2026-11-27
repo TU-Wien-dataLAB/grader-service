@@ -8,10 +8,10 @@ import subprocess
 
 from traitlets.traitlets import Unicode
 
+from grader_service.artifact_types import ArtifactType
 from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.convert.converters.generate_feedback import GenerateFeedback
-from grader_service.artifact_types import ArtifactType
-from grader_service.orm.submission import FeedbackStatus, AutoStatus, ManualStatus
+from grader_service.orm.submission import AutoStatus, FeedbackStatus, ManualStatus
 
 
 class LocalFeedbackExecutor(LocalAutogradeExecutor):
@@ -94,9 +94,7 @@ class LocalFeedbackProcessExecutor(LocalFeedbackExecutor):
             "*.ipynb",
         ]
         self.log.info(f"Running {command}")
-        process = subprocess.run(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=None, text=True
-        )
+        process = subprocess.run(command, capture_output=True, cwd=None, text=True, check=False)
         if process.returncode == 0:
             self.log.info(process.stderr)
             self.log.info("Process has successfully completed execution!")

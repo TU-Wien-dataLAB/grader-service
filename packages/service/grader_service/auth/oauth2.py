@@ -387,10 +387,7 @@ class OAuthenticator(Authenticator):
     # Enable refresh_pre_spawn by default if self.enable_auth_state
     @default("refresh_pre_spawn")
     def _refresh_pre_spawn_default(self):
-        if self.enable_auth_state:
-            return True
-
-        return False
+        return bool(self.enable_auth_state)
 
     logout_redirect_url = Unicode(
         config=True,
@@ -546,10 +543,7 @@ class OAuthenticator(Authenticator):
 
     def _validate_server_cert_default(self):
         env_value = os.getenv(self.validate_server_cert_env, "")
-        if env_value == "0":
-            return False
-        else:
-            return True
+        return env_value != "0"
 
     http_request_kwargs = Dict(
         config=True,
@@ -624,7 +618,7 @@ class OAuthenticator(Authenticator):
             # log url without query params
             url = urlunparse(urlparse(req.url)._replace(query=""))
             app_log.error(f"Error {label} {e.code} {req.method} {url}: {message}")
-            raise e
+            raise
         else:
             if parse_json:
                 if resp.body:
@@ -672,7 +666,7 @@ class OAuthenticator(Authenticator):
         https://github.com/jupyterhub/jupyterhub/blob/4.0.1/jupyterhub/auth.py#L625-L648
         """
         if not self.validate_username(user.name):
-            raise ValueError("Invalid username: %s" % user.name)
+            raise ValueError(f"Invalid username: {user.name}")
         if not self.allow_all and self.allow_existing_users:
             self.allowed_users.add(user.name)
 
@@ -862,7 +856,7 @@ class OAuthenticator(Authenticator):
 
         url = url_concat(self.userdata_url, self.userdata_params)
         if self.userdata_token_method == "url":
-            url = url_concat(url, dict(access_token=access_token))
+            url = url_concat(url, {"access_token": access_token})
 
         return await self.httpfetch(
             url,
@@ -1001,13 +995,10 @@ class OAuthenticator(Authenticator):
         if auth_model["admin"]:
             return True
 
-        # allow users in allowed_users, note that allowed_users is appended
-        # automatically with existing users if it was configured truthy
-        if username in self.allowed_users:
-            return True
-
-        # users should be explicitly allowed via config, otherwise they aren't
-        return False
+        # Allow users in allowed_users, note that allowed_users is appended
+        # automatically with existing users if it was configured truthy.
+        # Users should be explicitly allowed via config, otherwise they aren't allowed.
+        return username in self.allowed_users
 
     # _deprecated_oauth_aliases should be a dictionary with a format as:
     #
@@ -1019,7 +1010,7 @@ class OAuthenticator(Authenticator):
     #     ),
     # }
     #
-    _deprecated_oauth_aliases = {}
+    _deprecated_oauth_aliases: dict[str, tuple[str, str, bool] | tuple[str, str]] = {}  # noqa: RUF012
 
     def _deprecated_oauth_trait(self, change):
         """observer for deprecated traits"""
@@ -1037,9 +1028,9 @@ class OAuthenticator(Authenticator):
             # protects backward-compatible config from warnings
             # if they set the same value under both names
             message = (
-                "{cls}.{old} is deprecated in {cls} {version}, use {cls}.{new} instead".format(
-                    cls=self.__class__.__name__, old=old_attr, new=new_attr, version=version
-                )
+                f"{self.__class__.__name__}.{old_attr} is deprecated in "
+                f"{self.__class__.__name__} {version}, "
+                f"use {self.__class__.__name__}.{new_attr} instead"
             )
 
             # set the value for the new attr only if they are the same type

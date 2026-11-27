@@ -1,6 +1,5 @@
 from dataclasses import asdict, dataclass
-from enum import Enum
-from typing import Dict, List, Optional, Set, Type, Union
+from enum import StrEnum
 
 
 @dataclass
@@ -9,7 +8,7 @@ class BaseModel:
         self._type = self.__class__.__name__
 
     @classmethod
-    def empty_dict(cls: Type["BaseModel"]) -> dict:
+    def empty_dict(cls: type["BaseModel"]) -> dict:
         fields = cls.__dataclass_fields__.keys()
         return {f: None for f in fields}
 
@@ -19,7 +18,7 @@ class BaseModel:
         return d
 
     @classmethod
-    def from_dict(cls: Type["BaseModel"], d: dict) -> Type["BaseModel"]:
+    def from_dict(cls: type["BaseModel"], d: dict) -> type["BaseModel"]:
         if d is None or len(d) == 0:
             return None
         d_no_type = {k: v for k, v in d.items() if k != "_type"}
@@ -96,7 +95,7 @@ class Grade(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
             return self.max_score_gradecell
 
     @classmethod
-    def from_dict(cls: Type["Grade"], d: dict) -> Type["Grade"]:
+    def from_dict(cls: type["Grade"], d: dict) -> type["Grade"]:
         if d is None or len(d) == 0:
             return None
         d = {k: v for k, v in d.items() if k not in ["_type", "max_score"]}
@@ -114,17 +113,16 @@ class Comment(BaseModel, IDMixin, NotebookRelashionship, CellRelashionship):
     manual_comment: str
 
     @property
-    def comment(self) -> Optional[str]:
+    def comment(self) -> str | None:
         if self.manual_comment is None:
             return self.auto_comment
         else:
             return self.manual_comment
 
 
-class CellType(Enum):
-    "code"
-
-    "markdown"
+class CellType(StrEnum):
+    CODE = "code"
+    MARKDOWN = "markdown"
 
 
 @dataclass
@@ -133,7 +131,7 @@ class BaseCell(BaseModel, IDMixin, NameMixin, NotebookRelashionship):
     comment_id: str  # we can have only one comment since we only process a single notebook
 
     @classmethod
-    def from_dict(cls: Type["BaseCell"], d: dict) -> Type["BaseCell"]:
+    def from_dict(cls: type["BaseCell"], d: dict) -> type["BaseCell"]:
         if d["_type"] == "GradeCell":
             return GradeCell.from_dict(d)
         elif d["_type"] == "SolutionCell":
@@ -153,7 +151,7 @@ class GradedMixin:
 @dataclass
 class GradeCell(BaseCell, GradedMixin):
     @classmethod
-    def from_dict(cls: Type["BaseCell"], d: dict) -> "GradeCell":
+    def from_dict(cls: type["BaseCell"], d: dict) -> "GradeCell":
         return GradeCell(
             max_score=d["max_score"],
             cell_type=d["cell_type"],
@@ -168,7 +166,7 @@ class GradeCell(BaseCell, GradedMixin):
 @dataclass
 class SolutionCell(BaseCell):
     @classmethod
-    def from_dict(cls: Type["BaseCell"], d: dict) -> "SolutionCell":
+    def from_dict(cls: type["BaseCell"], d: dict) -> "SolutionCell":
         return SolutionCell(
             id=d["id"],
             notebook_id=d["notebook_id"],
@@ -181,10 +179,10 @@ class SolutionCell(BaseCell):
 @dataclass
 class TaskCell(BaseCell, GradedMixin):
     @classmethod
-    def from_dict(cls: Type["BaseCell"], d: dict) -> "TaskCell":
+    def from_dict(cls: type["BaseCell"], d: dict) -> "TaskCell":
         return TaskCell(
             max_score=d["max_score"],
-            cell_type="code",  # cell_type from GradedMixin should always be 'code'
+            cell_type=CellType.CODE,  # cell_type from GradedMixin should always be 'code'
             id=d["id"],
             notebook_id=d["notebook_id"],
             name=d["name"],
@@ -209,19 +207,19 @@ class SourceCell(BaseModel, IDMixin, NameMixin, NotebookRelashionship):
     checksum: str
 
     @classmethod
-    def from_dict(cls: Type["BaseModel"], d: dict) -> Type["BaseModel"]:
+    def from_dict(cls: type["BaseModel"], d: dict) -> type["BaseModel"]:
         return super().from_dict(d)
 
 
 @dataclass
 class Notebook(BaseModel, IDMixin, NameMixin):
     kernelspec: str
-    grade_cells_dict: Dict[str, Type[GradeCell]]
-    solution_cells_dict: Dict[str, Type[SolutionCell]]
-    task_cells_dict: Dict[str, Type[TaskCell]]
-    source_cells_dict: Dict[str, Type[SourceCell]]
-    grades_dict: Dict[str, Type[Grade]]
-    comments_dict: Dict[str, Type[Comment]]
+    grade_cells_dict: dict[str, type[GradeCell]]
+    solution_cells_dict: dict[str, type[SolutionCell]]
+    task_cells_dict: dict[str, type[TaskCell]]
+    source_cells_dict: dict[str, type[SourceCell]]
+    grades_dict: dict[str, type[Grade]]
+    comments_dict: dict[str, type[Comment]]
     #: Whether this assignment has been flagged by a human grader
     flagged: bool
 
@@ -231,23 +229,23 @@ class Notebook(BaseModel, IDMixin, NameMixin):
             self.flagged = False
 
     @property
-    def grade_cells(self) -> List[GradeCell]:
+    def grade_cells(self) -> list[GradeCell]:
         return [x for x in self.grade_cells_dict.values() if isinstance(x, GradeCell)]
 
     @property
-    def solution_cells(self) -> List[SolutionCell]:
+    def solution_cells(self) -> list[SolutionCell]:
         return [x for x in self.solution_cells_dict.values() if isinstance(x, SolutionCell)]
 
     @property
-    def task_cells(self) -> List[TaskCell]:
+    def task_cells(self) -> list[TaskCell]:
         return [x for x in self.task_cells_dict.values() if isinstance(x, TaskCell)]
 
     @property
-    def source_cells(self) -> List[SourceCell]:
+    def source_cells(self) -> list[SourceCell]:
         return [x for x in self.source_cells_dict.values()]
 
     @property
-    def graded_cells(self) -> List[Union[GradeCell, TaskCell]]:
+    def graded_cells(self) -> list[GradeCell | TaskCell]:
         return self.grade_cells + self.task_cells
 
     @property
@@ -264,13 +262,13 @@ class Notebook(BaseModel, IDMixin, NameMixin):
             [
                 self.grades_dict[g.grade_id].score
                 for g in self.graded_cells
-                if g.cell_type == "code" and g is not None and g.grade_id is not None
+                if g.cell_type == CellType.CODE and g is not None and g.grade_id is not None
             ]
         )
 
     @property
     def max_code_score(self) -> float:
-        return sum([g.max_score for g in self.graded_cells if g.cell_type == "code"])
+        return sum([g.max_score for g in self.graded_cells if g.cell_type == CellType.CODE])
 
     @property
     def written_score(self) -> float:
@@ -278,28 +276,28 @@ class Notebook(BaseModel, IDMixin, NameMixin):
             [
                 self.grades_dict[g.grade_id].score
                 for g in self.graded_cells
-                if g.cell_type == "markdown"
+                if g.cell_type == CellType.MARKDOWN
             ]
         )
 
     @property
     def max_written_score(self) -> float:
-        return sum([g.max_score for g in self.graded_cells if g.cell_type == "markdown"])
+        return sum([g.max_score for g in self.graded_cells if g.cell_type == CellType.MARKDOWN])
 
     @property
     def failed_tests(self) -> bool:
-        return any([g.failed_tests for g in self.grades])
+        return any(g.failed_tests for g in self.grades)
 
     @property
-    def grades(self) -> List[Type[Grade]]:
+    def grades(self) -> list[type[Grade]]:
         return list(self.grades_dict.values())
 
     @property
-    def comments(self) -> List[Type[Comment]]:
+    def comments(self) -> list[type[Comment]]:
         return list(self.comments_dict.values())
 
     @classmethod
-    def from_dict(cls: Type["Notebook"], d: dict) -> "Notebook":
+    def from_dict(cls: type["Notebook"], d: dict) -> "Notebook":
         gc = {id: GradeCell.from_dict(v) for id, v in d["grade_cells_dict"].items()}
         sc = {i: SolutionCell.from_dict(v) for i, v in d["solution_cells_dict"].items()}
         tc = {id: TaskCell.from_dict(v) for id, v in d["task_cells_dict"].items()}
@@ -337,11 +335,11 @@ class Notebook(BaseModel, IDMixin, NameMixin):
 
 @dataclass
 class GradeBookModel(BaseModel):
-    notebooks: Dict[str, Notebook]
-    extra_files: List[str]
+    notebooks: dict[str, Notebook]
+    extra_files: list[str]
 
     def __str__(self):
-        return f"GradeBookModel: notebooks={list(self.notebooks.keys())}, extra_files={self.extra_files}"
+        return f"GradeBookModel: notebooks={list(self.notebooks)}, extra_files={self.extra_files}"
 
     @property
     def score(self) -> float:
@@ -358,11 +356,11 @@ class GradeBookModel(BaseModel):
         return max_score
 
     @property
-    def notebook_id_set(self) -> Set[str]:
-        return {x for x in self.notebooks.keys()}
+    def notebook_id_set(self) -> set[str]:
+        return set(self.notebooks)
 
     @classmethod
-    def from_dict(cls: Type["GradeBookModel"], d: dict) -> "GradeBookModel":
+    def from_dict(cls: type["GradeBookModel"], d: dict) -> "GradeBookModel":
         ns = {id: Notebook.from_dict(v) for id, v in d["notebooks"].items()}
         extra_files = d.get("extra_files", [])
         return GradeBookModel(notebooks=ns, extra_files=extra_files)

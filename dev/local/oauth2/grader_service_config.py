@@ -19,17 +19,17 @@ c.GraderService.log_level = "DEBUG"
 c.GraderService.autograde_executor_class = LocalAutogradeExecutor
 c.LocalAutogradeExecutor.default_cell_timeout = 200
 
-c.CeleryApp.conf = dict(
-    broker_url="amqp://localhost",
-    result_backend="rpc://",
-    task_serializer="json",
-    result_serializer="json",
-    accept_content=["json"],
-    broker_connection_retry_on_startup=True,
-    task_always_eager=True,
-)
+c.CeleryApp.conf = {
+    "broker_url": "amqp://localhost",
+    "result_backend": "rpc://",
+    "task_serializer": "json",
+    "result_serializer": "json",
+    "accept_content": ["json"],
+    "broker_connection_retry_on_startup": True,
+    "task_always_eager": True,
+}
 
-c.CeleryApp.worker_kwargs = dict(concurrency=1, pool="prefork")
+c.CeleryApp.worker_kwargs = {"concurrency": 1, "pool": "prefork"}
 
 
 # JupyterHub client config

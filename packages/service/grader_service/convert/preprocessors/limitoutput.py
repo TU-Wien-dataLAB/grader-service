@@ -1,9 +1,8 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 from traitlets import Integer
 
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors.base import NbGraderPreprocessor
 
 
@@ -19,7 +18,7 @@ class LimitOutput(NbGraderPreprocessor):
     )
 
     def _limit_stream_output(self, cell: NotebookNode) -> NotebookNode:
-        if self.max_lines == -1 or cell.cell_type != "code":
+        if self.max_lines == -1 or cell.cell_type != CellType.CODE:
             return cell
 
         length = 0
@@ -43,24 +42,23 @@ class LimitOutput(NbGraderPreprocessor):
         return cell
 
     def _limit_traceback(self, cell: NotebookNode) -> NotebookNode:
-        if self.max_traceback == -1 or cell.cell_type != "code":
+        if self.max_traceback == -1 or cell.cell_type != CellType.CODE:
             return cell
 
         for output in cell.outputs:
-            if output.output_type == "error":
-                if len(output.traceback) > self.max_traceback:
-                    start = int(self.max_traceback / 2)
-                    end = self.max_traceback - start - 1
-                    tb = output.traceback[:start]
-                    tb.append("... Traceback truncated ...")
-                    tb.extend(output.traceback[-end:])
-                    output.traceback = tb
+            if output.output_type == "error" and len(output.traceback) > self.max_traceback:
+                start = int(self.max_traceback / 2)
+                end = self.max_traceback - start - 1
+                tb = output.traceback[:start]
+                tb.append("... Traceback truncated ...")
+                tb.extend(output.traceback[-end:])
+                output.traceback = tb
 
         return cell
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         cell = self._limit_stream_output(cell)
         cell = self._limit_traceback(cell)
         return cell, resources

@@ -13,7 +13,7 @@ import asyncio
 
 from grader_labextension.handlers.base_handler import HandlerConfig
 from grader_labextension.registry import HandlerPathRegistry
-from grader_labextension.services.request import RequestServiceError
+from grader_labextension.services.request import RequestService, RequestServiceError
 
 
 def _jupyter_labextension_paths():
@@ -54,19 +54,18 @@ def setup_handlers(server_app):
 
     async def get_grader_config():
         log.info("Loading config from grader service...")
+        response = {}
         # Retry logic for DNS resolution issues
         for attempt in range(3):
             try:
                 # Create a fresh RequestService to get a new HTTP client
-                from grader_labextension.services.request import RequestService
-
                 RequestService.clear_instance()
                 request_service = RequestService.instance()
 
                 response: dict = await request_service.request(
                     "GET",
                     f"{handler_config.service_base_url}api/config",
-                    header=dict(Authorization="Token " + handler_config.grader_api_token),
+                    header={"Authorization": f"Token {handler_config.grader_api_token}"},
                 )
                 break  # Success
             except RequestServiceError as e:
@@ -74,14 +73,14 @@ def setup_handlers(server_app):
                 if attempt < 2:
                     await asyncio.sleep(1)  # Wait before retry
                 else:
-                    log.error("All attempts failed, using empty config")
-                    response = dict()
-            except Exception as e:
-                log.error(f"Unexpected error: {e}")
+                    log.error("All attempts to load grader config failed, using empty config")
+            except Exception as e:  # noqa: BLE001
+                log.error(f"Attempt {attempt + 1} failed unexpectedly: {e}")
                 if attempt < 2:
                     await asyncio.sleep(1)
                 else:
-                    response = dict()
+                    log.error("All attempts to load grader config failed, using empty config")
+
         for key, value in response.items():
             web_app.settings["page_config_data"][key] = value
 
@@ -91,13 +90,7 @@ def setup_handlers(server_app):
         # In test environment or when loop is already running
         # Schedule the task to run in the background (fire-and-forget)
         # Handlers will work with default values if config isn't loaded yet
-        async def load_config_with_error_handling():
-            try:
-                await get_grader_config()
-            except Exception as e:
-                log.error(f"Failed to load grader config: {e}")
-
-        asyncio.ensure_future(load_config_with_error_handling())
+        asyncio.ensure_future(get_grader_config())
         log.info("Grader config loading scheduled (async)")
     else:
         loop.run_until_complete(get_grader_config())

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from nbconvert.exporters.exporter import ResourcesDict
 from nbformat.notebooknode import NotebookNode
 
@@ -13,7 +11,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
 
     def preprocess(
         self, nb: NotebookNode, resources: ResourcesDict
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # pull information from the resources
         self.notebook_id = resources["unique_key"]
         self.json_path = resources["output_json_path"]
@@ -21,7 +19,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
 
         with self.gradebook:
             # process the cells
-            nb, resources = super(SaveAutoGrades, self).preprocess(nb, resources)
+            nb, resources = super().preprocess(nb, resources)
 
         return nb, resources
 
@@ -65,7 +63,7 @@ class SaveAutoGrades(NbGraderPreprocessor):
 
     def preprocess_cell(
         self, cell: NotebookNode, resources: ResourcesDict, cell_index: int
-    ) -> Tuple[NotebookNode, ResourcesDict]:
+    ) -> tuple[NotebookNode, ResourcesDict]:
         # if a cell doesn't have a grade id, ignore
         if not utils.grade_id_present(cell):
             return cell, resources

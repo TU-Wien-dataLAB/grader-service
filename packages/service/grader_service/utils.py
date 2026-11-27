@@ -10,7 +10,7 @@ import secrets
 import shutil
 import uuid
 from binascii import b2a_hex
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hmac import compare_digest
 from typing import Any
 
@@ -28,7 +28,7 @@ def isoformat(dt):
     if dt is None:
         return None
     if dt.tzinfo:
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        dt = dt.astimezone(UTC).replace(tzinfo=None)
     return dt.isoformat() + "Z"
 
 
@@ -73,9 +73,7 @@ def compare_token(compare, token):
     algorithm, srounds, salt, _ = compare.split(":")
     hashed = hash_token(token, salt=salt, rounds=int(srounds), algorithm=algorithm).encode("utf8")
     compare = compare.encode("utf8")
-    if compare_digest(compare, hashed):
-        return True
-    return False
+    return compare_digest(compare, hashed)
 
 
 def url_path_join(*pieces):
@@ -136,7 +134,7 @@ def utcnow(*, with_tz=True):
     if with_tz=False, returns UTC timestamp without tzinfo
     (used for most internal timestamp storage because databases often don't preserve tz info)
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if not with_tz:
         now = now.replace(tzinfo=None)
     return now

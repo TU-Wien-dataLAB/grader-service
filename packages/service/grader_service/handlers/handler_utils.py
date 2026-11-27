@@ -4,12 +4,11 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 from http import HTTPStatus
-from typing import Union
 
 from tornado.web import HTTPError
 
 
-def parse_ids(*args) -> Union[int, tuple[int, ...]]:
+def parse_ids(*args: int | str) -> int | tuple[int, ...]:
     """
     Validates that provided args are all integers.
 

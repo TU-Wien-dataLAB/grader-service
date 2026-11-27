@@ -67,10 +67,9 @@ class User(Base, Serializable):
             )
             return None
         # loading auth_state
-        if auth_state:
+        if auth_state and len(CryptKeeper.instance().keys) > 1:
             # Crypt has multiple keys, store again with new key for rotation.
-            if len(CryptKeeper.instance().keys) > 1:
-                await self.save_auth_state(auth_state)
+            await self.save_auth_state(auth_state)
         return auth_state
 
     def serialize(self):

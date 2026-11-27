@@ -6,7 +6,7 @@
 import csv
 import json
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
@@ -19,6 +19,7 @@ from tornado.web import HTTPError
 
 from grader_service.api.models import AssignmentSettings, Submission
 from grader_service.artifact_types import ArtifactType
+from grader_service.convert.gradebook.models import CellType
 from grader_service.file_services import GitFileService
 from grader_service.handlers.submissions import INSTRUCTOR_SUBMISSION_HASH, SubmissionHandler
 from grader_service.orm import Assignment as AssignmentORM
@@ -85,7 +86,7 @@ def test_calculate_late_submission_scaling(period, expected):
     a = AssignmentORM()
     role = Role()
     role.role = Scope.student
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     settings = {
         "deadline": now,
@@ -105,7 +106,7 @@ def test_calculate_late_submission_scaling_error():
     a = AssignmentORM()
     role = Role()
     role.role = Scope.student
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     settings = {"deadline": now, "late_submission": [{"period": "P1D", "scaling": 0.5}]}
     a.settings = settings
@@ -256,7 +257,7 @@ async def test_get_submissions_instructor_version(
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 2
-    assert all([isinstance(s, dict) for s in user_submission])
+    assert all(isinstance(s, dict) for s in user_submission)
     [Submission.from_dict(s) for s in user_submission]
 
     user_submission = submissions[2:4]
@@ -268,7 +269,7 @@ async def test_get_submissions_instructor_version(
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 2
-    assert all([isinstance(s, dict) for s in user_submission])
+    assert all(isinstance(s, dict) for s in user_submission)
     [Submission.from_dict(s) for s in user_submission]
 
 
@@ -346,7 +347,7 @@ async def test_get_submissions_latest_instructor_version(
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1
-    assert all([isinstance(s, dict) for s in user_submission])
+    assert all(isinstance(s, dict) for s in user_submission)
     [Submission.from_dict(s) for s in user_submission]
 
     user_submission = submissions[1:2]
@@ -358,7 +359,7 @@ async def test_get_submissions_latest_instructor_version(
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1
-    assert all([isinstance(s, dict) for s in user_submission])
+    assert all(isinstance(s, dict) for s in user_submission)
     [Submission.from_dict(s) for s in user_submission]
 
 
@@ -419,7 +420,7 @@ async def test_get_submissions_best_instructor_version(
 
     assert isinstance(user_submission, list)
     assert len(user_submission) == 1
-    assert all([isinstance(s, dict) for s in user_submission])
+    assert all(isinstance(s, dict) for s in user_submission)
     [Submission.from_dict(s) for s in user_submission]
 
 
@@ -782,7 +783,7 @@ async def test_put_submission_lecture_assignment_missmatch(
     insert_assignments(session, l_id)
     insert_submission(session, a_id, default_user.name, default_user.id)
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    now = datetime.now(UTC).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
         user_id=default_user.id,
@@ -822,7 +823,7 @@ async def test_put_submission_assignment_submission_missmatch(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/1/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    now = datetime.now(UTC).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
         user_id=default_user.id,
@@ -862,7 +863,7 @@ async def test_put_submission_wrong_submission(
     a_id = 1  # this assignment has no submissions
     url = service_base_url + f"lectures/{l_id}/assignments/{a_id}/submissions/99/"
 
-    now = datetime.now(timezone.utc).isoformat("T", "milliseconds")
+    now = datetime.now(UTC).isoformat("T", "milliseconds")
     pre_submission = Submission(
         id=-1,
         user_id=default_user.id,
@@ -1110,7 +1111,7 @@ async def test_delete_submission_after_deadline(
 
     session = sql_alchemy_sessionmaker()
     assign = session.get(AssignmentORM, 1)
-    assign.settings = {"deadline": datetime(1999, 6, 6, tzinfo=timezone.utc)}
+    assign.settings = {"deadline": datetime(1999, 6, 6, tzinfo=UTC)}
     session.commit()
 
     s_id = insert_submission(session, a_id, default_user.name).id
@@ -1409,7 +1410,7 @@ async def test_post_submission_max_submissions_assignment(
         name="pytest", lectid=l_id, points=20, status="released", deleted=DeleteState.active
     )
     assignment_orm.settings = AssignmentSettings(
-        deadline=datetime.now(tz=timezone.utc) + timedelta(weeks=2),
+        deadline=datetime.now(tz=UTC) + timedelta(weeks=2),
         max_submissions=1,
         autograde_type="unassisted",
     )
@@ -1548,7 +1549,7 @@ async def test_submission_properties_student(
                 "source_cells_dict": {
                     "cell-1e1d884e2e83e97f": {
                         "_type": "SourceCell",
-                        "cell_type": "code",
+                        "cell_type": CellType.CODE,
                         "checksum": "6453ffdd62ea1a1eabcf95616174dd88",
                         "id": None,
                         "locked": True,

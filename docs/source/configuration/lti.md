@@ -37,11 +37,11 @@ Each LTI platform is described as a dictionary in the `systems` list:
 ```python
 c.LTISyncGrades.systems = [
     {
-        "name": "MyMoodle",                            # unique identifier (required)
-        "url_pattern": "https://moodle.university.edu",   # base URL pattern (required)
-        "client_id": "my-client-id",                      # OAuth2 client ID (required)
+        "name": "MyMoodle",  # unique identifier (required)
+        "url_pattern": "https://moodle.university.edu",  # base URL pattern (required)
+        "client_id": "my-client-id",  # OAuth2 client ID (required)
         "token_url": "https://moodle.university.edu/mod/lti/token.php",  # token endpoint (required)
-        "private_key_path": "/secrets/lti/moodle_private_key.pem", # path to PEM-encoded RSA private key for JWT signing (required)
+        "private_key_path": "/secrets/lti/moodle_private_key.pem",  # path to PEM-encoded RSA private key for JWT signing (required)
         "platform_url": "https://moodle.university.edu",
         "deployment_id": "1",
     },
@@ -96,6 +96,7 @@ def my_resolve_lti_urls(platform, lecture, assignment, submissions):
         "membership_url": f"{platform.platform_url}/mod/lti/services.php/{platform.deployment_id}/memberships",
     }
 
+
 c.LTISyncGrades.resolve_lti_urls = my_resolve_lti_urls
 ```
 
@@ -121,6 +122,7 @@ def my_username_match(member, submission, platform, log):
     username = submission.get("user", "").get("username", "")
     return email.split("@")[0] == username
 
+
 c.LTISyncGrades.username_match = my_username_match
 ```
 
@@ -144,6 +146,7 @@ def my_select_systems(lecture, assignment, submissions, platforms):
     # Example: only sync to platforms whose url_pattern appears in lecture code
     code = lecture.get("code", "")
     return [p.name for p in platforms if p.url_pattern in code]
+
 
 c.LTISyncGrades.select_systems_for_sync = my_select_systems
 ```

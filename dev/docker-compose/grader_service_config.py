@@ -1,17 +1,14 @@
 import os
-from typing import Optional
 
-from jupyterhub.auth import Authenticator
-from traitlets import log as traitlets_log
-
-from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.auth.token import JupyterHubTokenAuthenticator
-
+from grader_service.autograding.local_grader import LocalAutogradeExecutor
 from grader_service.handlers.base_handler import BaseHandler
-from grader_service.orm import User, Lecture
+from grader_service.orm import Lecture, User
 from grader_service.orm.base import DeleteState
 from grader_service.orm.lecture import LectureState
-from grader_service.orm.takepart import Scope, Role
+from grader_service.orm.takepart import Role, Scope
+from jupyterhub.auth import Authenticator
+from traitlets import log as traitlets_log
 
 logger = traitlets_log.get_logger()
 
@@ -38,14 +35,14 @@ c.LocalAutogradeExecutor.default_cell_timeout = 200
 rabbit_mq_username = os.getenv("RABBITMQ_GRADER_SERVICE_USERNAME")
 rabbit_mq_password = os.getenv("RABBITMQ_GRADER_SERVICE_PASSWORD")
 
-c.CeleryApp.conf = dict(
-    broker_url=f"amqp://{rabbit_mq_username}:{rabbit_mq_password}@rabbitmq:5672/grader",
-    result_backend="rpc://",
-    task_serializer="json",
-    result_serializer="json",
-    accept_content=["json"],
-    broker_connection_retry_on_startup=True,
-)
+c.CeleryApp.conf = {
+    "broker_url": f"amqp://{rabbit_mq_username}:{rabbit_mq_password}@rabbitmq:5672/grader",
+    "result_backend": "rpc://",
+    "task_serializer": "json",
+    "result_serializer": "json",
+    "accept_content": ["json"],
+    "broker_connection_retry_on_startup": True,
+}
 
 
 c.GraderService.authenticator_class = JupyterHubTokenAuthenticator
@@ -59,7 +56,7 @@ def post_auth_hook(authenticator: Authenticator, handler: BaseHandler, authentic
     groups: list[str] = authentication["groups"]
 
     username = authentication["name"]
-    user_model: Optional[User] = session.query(User).filter(User.name == username).one_or_none()
+    user_model: User | None = session.query(User).filter(User.name == username).one_or_none()
     if user_model is None:
         user_model = User()
         user_model.name = username

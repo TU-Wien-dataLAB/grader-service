@@ -2,6 +2,7 @@ import pytest
 from nbformat.v4 import new_notebook, new_output
 
 from grader_service.convert.gradebook.gradebook import Gradebook
+from grader_service.convert.gradebook.models import CellType
 from grader_service.convert.preprocessors import GetGrades, SaveAutoGrades, SaveCells
 from grader_service.convert.utils import compute_checksum
 
@@ -17,7 +18,7 @@ def preprocessors():
 class TestGetGrades(BaseTestPreprocessor):
     def test_save_correct_code(self, preprocessors, gradebook: Gradebook, resources):
         """Is a passing code cell correctly graded?"""
-        cell = create_grade_cell("hello", "code", "foo", 1)
+        cell = create_grade_cell("hello", CellType.CODE, "foo", 1)
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
@@ -31,7 +32,7 @@ class TestGetGrades(BaseTestPreprocessor):
 
     def test_save_incorrect_code(self, preprocessors, gradebook, resources):
         """Is a failing code cell correctly graded?"""
-        cell = create_grade_cell("hello", "code", "foo", 1)
+        cell = create_grade_cell("hello", CellType.CODE, "foo", 1)
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         cell.outputs = [
             new_output("error", ename="NotImplementedError", evalue="", traceback=["error"])
@@ -48,7 +49,7 @@ class TestGetGrades(BaseTestPreprocessor):
 
     def test_save_unchanged_code(self, preprocessors, gradebook, resources):
         """Is an unchanged code cell given the correct comment?"""
-        cell = create_solution_cell("hello", "code", "foo")
+        cell = create_solution_cell("hello", CellType.CODE, "foo")
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
@@ -60,7 +61,7 @@ class TestGetGrades(BaseTestPreprocessor):
 
     def test_save_changed_code(self, preprocessors, gradebook, resources):
         """Is an unchanged code cell given the correct comment?"""
-        cell = create_solution_cell("hello", "code", "foo")
+        cell = create_solution_cell("hello", CellType.CODE, "foo")
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
@@ -73,7 +74,7 @@ class TestGetGrades(BaseTestPreprocessor):
 
     def test_save_unchanged_markdown(self, preprocessors, gradebook, resources):
         """Is an unchanged markdown cell correctly graded?"""
-        cell = create_grade_and_solution_cell("hello", "markdown", "foo", 1)
+        cell = create_grade_and_solution_cell("hello", CellType.MARKDOWN, "foo", 1)
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)
@@ -87,7 +88,7 @@ class TestGetGrades(BaseTestPreprocessor):
 
     def test_save_changed_markdown(self, preprocessors, gradebook, resources):
         """Is a changed markdown cell correctly graded?"""
-        cell = create_grade_and_solution_cell("hello", "markdown", "foo", 1)
+        cell = create_grade_and_solution_cell("hello", CellType.MARKDOWN, "foo", 1)
         cell.metadata.nbgrader["checksum"] = compute_checksum(cell)
         nb = new_notebook()
         nb.cells.append(cell)

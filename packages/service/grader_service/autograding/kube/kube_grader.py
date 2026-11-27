@@ -96,7 +96,7 @@ class GraderPod(LoggingConfigurable):
                 return "Failed"
 
             # Wait for the next poll
-            time.sleep(interval)
+            time.sleep(interval)  # noqa: ASYNC251
 
 
 class KubeAutogradeExecutor(LocalAutogradeExecutor):

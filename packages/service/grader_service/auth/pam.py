@@ -7,7 +7,7 @@ from grader_service.auth.local import LocalAuthenticator
 
 try:
     import pamela
-except Exception as e:
+except ImportError as e:
     pamela = None
     _pamela_error = e
 

@@ -12,9 +12,10 @@ import sys
 import tarfile
 import traceback
 import zipfile
+from collections.abc import Iterator
 from datetime import datetime
 from logging import Logger
-from typing import Any, Iterator, List, Optional, Tuple, Union
+from typing import Any
 
 import dateutil.parser
 from dateutil.tz import gettz
@@ -22,6 +23,7 @@ from nbformat.notebooknode import NotebookNode
 from tornado.log import LogFormatter
 
 from grader_service.api.models.assignment_settings import AssignmentSettings
+from grader_service.convert.gradebook.models import CellType
 
 # pwd is for unix passwords only, so we shouldn't import it on
 # windows machines
@@ -90,9 +92,7 @@ def is_solution(cell: NotebookNode) -> bool:
 
 def is_locked(cell: NotebookNode) -> bool:
     """Returns True if the cell source is locked (will be overwritten)."""
-    if "nbgrader" not in cell.metadata:
-        return False
-    elif is_solution(cell):
+    if "nbgrader" not in cell.metadata or is_solution(cell):
         return False
     elif is_grade(cell):
         return True
@@ -118,26 +118,23 @@ def get_partial_grade(output, max_points, log=None):
         # grade is a list
         if len(grade) > 1:
             if log:
-                warning_msg = """Cell output is {}, which is a list. For autograder tests, expecting output to indicate
-                partial credit and be single value between 0.0 and max_points.
-                Currently treating other output as full credit, but future
-                releases may treat as error.""".format(grade)
+                warning_msg = f"""Cell output is {grade}, which is a list. For autograder tests,
+                the output is expected to indicate partial credit and be a single value between 0.0
+                and max_points. Currently treating other output as full credit, but future releases
+                may treat it as error."""
                 log.warning(warning_msg)
             return max_points
         # if a single value in list, set grade to that value
         grade = grade[0]
     try:
-        # now that we have a single values for grade, can we
-        # convert to a float?
+        # now that we have a single values for grade, can we convert to a float?
         grade = float(grade)
     except ValueError:
         if log:
-            warning_msg = """Cell output is {}, which cannot be converted to
-            a float. For
-            autograder tests, expecting output to indicate
-            partial credit and be single value between 0.0 and max_points.
-            Currently treating other output as full credit, but future releases
-            may treat as error.""".format(grade)
+            warning_msg = f"""Cell output is {grade}, which cannot be converted to a float. For
+            autograder tests, the output is expected to indicate partial credit and be single value
+            between 0.0 and max_points. Currently treating other output as full credit, but future
+            releases may treat it as error."""
             log.warning(warning_msg)
         return max_points
     if grade >= 0.0:
@@ -146,13 +143,13 @@ def get_partial_grade(output, max_points, log=None):
         return grade
     else:
         if log:
-            warning_msg = """Cell output is {}, which is less than 0.0.
-            This is strange.""".format(grade)
+            warning_msg = f"""Cell output is {grade}, which is less than 0.0.
+            This is strange."""
             log.warning(warning_msg)
         return max_points
 
 
-def determine_grade(cell: NotebookNode, log: Logger = None) -> Tuple[Optional[float], float]:
+def determine_grade(cell: NotebookNode, log: Logger | None = None) -> tuple[float | None, float]:
     if not is_grade(cell):
         raise ValueError("cell is not a grade cell")
 
@@ -168,7 +165,7 @@ def determine_grade(cell: NotebookNode, log: Logger = None) -> Tuple[Optional[fl
         else:
             return None, max_points
 
-    elif cell.cell_type == "code":
+    elif cell.cell_type == CellType.CODE:
         # for code cells, we look at the output. There are three options:
         # 1. output contains an error (no credit);
         # 2. output is a value greater than 0 (partial credit);
@@ -220,7 +217,7 @@ def compute_checksum(cell: NotebookNode) -> str:
     return m.hexdigest()
 
 
-def parse_utc(ts: Union[datetime, str]) -> datetime:
+def parse_utc(ts: datetime | str) -> datetime:
     """Parses a timestamp into datetime format, converting it to UTC if necessary."""
     if ts is None:
         return None
@@ -233,7 +230,7 @@ def parse_utc(ts: Union[datetime, str]) -> datetime:
                 tz = int(tz)
             except ValueError:
                 tz = dateutil.tz.gettz(tz)
-            ts = dateutil.parser.parse(ts, tzinfos=dict(TZ=tz))
+            ts = dateutil.parser.parse(ts, tzinfos={"TZ": tz})
         else:
             ts = dateutil.parser.parse(ts)
     if ts.tzinfo is not None:
@@ -271,10 +268,7 @@ def check_mode(path, read=False, write=False, execute=False):
 
 def check_directory(path, read=False, write=False, execute=False):
     """Does that path exist and can the current user rwx."""
-    if os.path.isdir(path) and check_mode(path, read=read, write=write, execute=execute):
-        return True
-    else:
-        return False
+    return bool(os.path.isdir(path) and check_mode(path, read=read, write=write, execute=execute))
 
 
 def get_osusername():
@@ -305,7 +299,7 @@ def self_owned(path):
     return get_osusername() == find_owner(os.path.abspath(path))
 
 
-def is_ignored(filename: str, ignore_globs: List[str] = None) -> bool:
+def is_ignored(filename: str, ignore_globs: list[str] | None = None) -> bool:
     """Determines whether a filename should be ignored, based on whether it
     matches any file glob in the given list. Note that this only matches on the
     base filename itself, not the full path."""
@@ -357,9 +351,8 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
             if exclude and any(fnmatch.fnmatch(filename, glob) for glob in exclude):
                 if log:
                     log.debug(
-                        "Ignoring excluded file '{}' (see config option CourseDirectory.ignore)".format(
-                            fullname
-                        )
+                        "Ignoring excluded file %r (see config option CourseDirectory.ignore)",
+                        fullname,
                     )
                 ignored.append(filename)
             else:
@@ -367,17 +360,17 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
                     if include and not any(fnmatch.fnmatch(filename, glob) for glob in include):
                         if log:
                             log.debug(
-                                "Ignoring non included file '{}' (see config option CourseDirectory.include)".format(
-                                    fullname
-                                )
+                                "Ignoring non included file %r (see config option "
+                                "CourseDirectory.include)",
+                                fullname,
                             )
                         ignored.append(filename)
                     elif max_file_size and os.path.getsize(fullname) > 1000 * max_file_size:
                         if log:
                             log.warning(
-                                "Ignoring file too large '{}' (see config option CourseDirectory.max_file_size)".format(
-                                    fullname
-                                )
+                                "Ignoring file too large %r (see config option "
+                                "CourseDirectory.max_file_size)",
+                                fullname,
                             )
                         ignored.append(filename)
         return ignored
@@ -385,7 +378,7 @@ def ignore_patterns(exclude=None, include=None, max_file_size=None, log=None):
     return ignore_patterns
 
 
-def find_all_files(path: str, exclude: List[str] = None) -> List[str]:
+def find_all_files(path: str, exclude: list[str] | None = None) -> list[str]:
     """Recursively finds all filenames rooted at `path`, optionally excluding
     some based on filename globs."""
     files = []
@@ -405,7 +398,7 @@ def find_all_files(path: str, exclude: List[str] = None) -> List[str]:
 
 def find_all_notebooks(path):
     """Return a sorted list of notebooks recursively found rooted at `path`."""
-    notebooks = list()
+    notebooks = []
     rootpath = os.path.abspath(path)
     for _file in find_all_files(rootpath):
         if os.path.splitext(_file)[-1] == ".ipynb":
@@ -414,7 +407,7 @@ def find_all_notebooks(path):
     return notebooks
 
 
-def full_split(path: str) -> Tuple[str, ...]:
+def full_split(path: str) -> tuple[str, ...]:
     rest, last = os.path.split(path)
     if last == path:
         return (path,)
@@ -488,14 +481,14 @@ def unzip(src, dest, zip_ext=None, create_own_folder=False, tree=False):
         ('/path/to/extract/archive_filename/'). Default: False
     tree: bool
         Extract archive files within archive files (into their own
-        sub-directory) if True. Default: False
+        subdirectory) if True. Default: False
     """
     zip_ext = list(zip_ext or [".zip", ".gz"])
     filename, ext = os.path.splitext(os.path.basename(src))
     if ext not in zip_ext:
-        raise ValueError("Invalid archive file extension {}: {}".format(ext, src))
+        raise ValueError(f"Invalid archive file extension {ext}: {src}")
     if not check_directory(dest, write=True, execute=True):
-        raise OSError("Directory not found or unwritable: {}".format(dest))
+        raise OSError(f"Directory not found or unwritable: {dest}")
 
     if create_own_folder:
         # double splitext for .tar.gz
@@ -578,11 +571,10 @@ def capture_log(app, fmt="[%(levelname)s] %(message)s"):
     try:
         app.start()
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         log_buff.flush()
         val = log_buff.getvalue()
-        result = {"success": False}
-        result["error"] = traceback.format_exc()
+        result = {"success": False, "error": traceback.format_exc()}
         if val:
             result["log"] = val
 
@@ -602,14 +594,14 @@ def capture_log(app, fmt="[%(levelname)s] %(message)s"):
 
 def notebook_hash(path, unique_key=None):
     m = hashlib.md5()
-    m.update(open(path, "rb").read())
+    m.update(open(path, "rb").read())  # noqa: SIM115  # TODO: remove, unused
     if unique_key:
         m.update(to_bytes(unique_key))
     return m.hexdigest()
 
 
 def make_unique_key(course_id, assignment_id, notebook_id, student_id, timestamp):
-    return "+".join([course_id, assignment_id, notebook_id, student_id, timestamp])
+    return f"{course_id}+{assignment_id}+{notebook_id}+{student_id}+{timestamp}"
 
 
 def grade_id_present(cell):

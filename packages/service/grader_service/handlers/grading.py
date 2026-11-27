@@ -85,7 +85,7 @@ class GenerateFeedbackHandler(GraderBaseHandler):
             self.session.commit()
 
     @authorize([Scope.tutor, Scope.instructor])
-    async def get(self, lecture_id: int, assignment_id: int, sub_id):
+    async def get(self, lecture_id: int, assignment_id: int, sub_id: int):
         """
         Starts the process of generating feedback for a submission.
 

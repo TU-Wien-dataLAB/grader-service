@@ -6,4 +6,4 @@
 
 from grader_service.handlers.git.server import InfoRefsHandler, RPCHandler
 
-__all__ = ["RPCHandler", "InfoRefsHandler"]
+__all__ = ["InfoRefsHandler", "RPCHandler"]

@@ -19,7 +19,7 @@ class GenerateFeedback(BaseConverter):
 
     @default("classes")
     def _classes_default(self):
-        classes = super(GenerateFeedback, self)._classes_default()
+        classes = super()._classes_default()
         classes.append(HTMLExporter)
         return classes
 
@@ -39,9 +39,7 @@ class GenerateFeedback(BaseConverter):
         assignment_settings: AssignmentSettings,
         **kwargs: Any,
     ):
-        super(GenerateFeedback, self).__init__(
-            input_dir, output_dir, file_pattern, assignment_settings, **kwargs
-        )
+        super().__init__(input_dir, output_dir, file_pattern, assignment_settings, **kwargs)
         c = Config()
         # Note: nbconvert 6.0 completely changed how templates work: they can now be installed separately
         #  and can be given by name (classic is default)

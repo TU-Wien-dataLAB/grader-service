@@ -88,7 +88,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         plugin_manager: PluginManager | None = None,
         **kwargs,
     ):
-        kwargs.update(dict(static_path=self.static_file_path))
+        kwargs.update({"static_path": self.static_file_path})
         super().__init__(**kwargs)
         self.grader_service_dir = grader_service_dir
         self.file_service = file_service
@@ -99,7 +99,7 @@ class GraderServer(config.LoggingConfigurable, web.Application):
         self.session_maker = session_maker
         self.plugin_manager = plugin_manager or PluginManager()
 
-        jinja_options = dict(autoescape=True, enable_async=True)
+        jinja_options = {"autoescape": True, "enable_async": True}
         jinja_options.update(self.jinja_environment_options)
         base_path = self._template_paths_default()[0]
         if base_path not in self.template_paths:
