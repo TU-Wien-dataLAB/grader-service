@@ -43,9 +43,9 @@ class HandlerPathRegistry(metaclass=Singleton):
     @staticmethod
     def add(handler_cls, path: str):
         # check if class inherits from tornado RequestHandler
-        if RequestHandler not in handler_cls.__mro__:
-            raise ValueError(
-                f"Incorrect base class. Class {handler_cls} has to be extended from tornado "
+        if not issubclass(handler_cls, RequestHandler):
+            raise TypeError(
+                f"Incorrect base class. Class {handler_cls} has to inherit from tornado "
                 f"'RequestHandler' in order to be registered."
             )
         HandlerPathRegistry.registry[handler_cls] = path
